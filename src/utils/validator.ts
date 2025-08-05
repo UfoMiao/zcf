@@ -3,7 +3,6 @@ import { I18N, type SupportedLang } from '../constants';
 
 /**
  * Validate API Key format
- * Only allows letters, numbers, underscores and hyphens
  * @param apiKey - API Key to validate
  * @param lang - Language for error messages
  * @returns Validation result
@@ -16,31 +15,6 @@ export function validateApiKey(apiKey: string, lang: SupportedLang = 'zh-CN'): {
     return {
       isValid: false,
       error: i18n.apiKeyValidation.empty,
-    };
-  }
-
-  // Format validation: only allow letters, numbers, underscores, hyphens
-  const apiKeyPattern = /^[A-Za-z0-9_-]+$/;
-
-  if (!apiKeyPattern.test(apiKey)) {
-    return {
-      isValid: false,
-      error: i18n.apiKeyValidation.invalid,
-    };
-  }
-
-  // Length check (optional, adjust based on requirements)
-  if (apiKey.length < 1) {
-    return {
-      isValid: false,
-      error: i18n.apiKeyValidation.tooShort,
-    };
-  }
-
-  if (apiKey.length > 256) {
-    return {
-      isValid: false,
-      error: i18n.apiKeyValidation.tooLong,
     };
   }
 

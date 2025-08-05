@@ -3,7 +3,7 @@ import ansis from 'ansis';
 import { version } from '../../package.json';
 import { I18N } from '../constants';
 import { displayBanner } from '../utils/banner';
-import { 
+import {
   fullInitFeature,
   importWorkflowFeature,
   configureApiFeature,
@@ -11,7 +11,7 @@ import {
   configureDefaultModelFeature,
   configureAiMemoryFeature,
   clearZcfCacheFeature,
-  changeScriptLanguageFeature
+  changeScriptLanguageFeature,
 } from '../utils/features';
 import { selectScriptLanguage } from '../utils/prompts';
 import { readZcfConfig } from '../utils/zcf-config';
@@ -24,40 +24,24 @@ export async function showMainMenu() {
 
     // Get script language
     const zcfConfig = readZcfConfig();
-    let scriptLang = zcfConfig?.preferredLang || await selectScriptLanguage();
-    
+    let scriptLang = zcfConfig?.preferredLang || (await selectScriptLanguage());
+
     // Menu loop
     let exitMenu = false;
     while (!exitMenu) {
       const i18n = I18N[scriptLang];
-      
+
       // Display menu options
       console.log(ansis.cyan(i18n.selectFunction));
       console.log('');
-      console.log(`  ${ansis.cyan('1.')} ${i18n.menuOptions.fullInit}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.fullInit)}`);
-      console.log('');
-      console.log(`  ${ansis.cyan('2.')} ${i18n.menuOptions.importWorkflow}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.importWorkflow)}`);
-      console.log('');
-      console.log(`  ${ansis.cyan('3.')} ${i18n.menuOptions.configureApi}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.configureApi)}`);
-      console.log('');
-      console.log(`  ${ansis.cyan('4.')} ${i18n.menuOptions.configureMcp}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.configureMcp)}`);
-      console.log('');
-      console.log(`  ${ansis.cyan('5.')} ${i18n.menuOptions.configureModel}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.configureModel)}`);
-      console.log('');
-      console.log(`  ${ansis.cyan('6.')} ${i18n.menuOptions.configureAiMemory}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.configureAiMemory)}`);
-      console.log('');
-      console.log(`  ${ansis.gray('-.')} ${ansis.gray(i18n.menuOptions.clearCache)}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.clearCache)}`);
-      console.log('');
-      console.log(`  ${ansis.cyan('0.')} ${i18n.menuOptions.changeLanguage}`);
-      console.log(`     ${ansis.gray(i18n.menuDescriptions.changeLanguage)}`);
-      console.log('');
+      console.log(`  ${ansis.cyan('1.')} ${i18n.menuOptions.fullInit} ${ansis.gray('- ' + i18n.menuDescriptions.fullInit)}`);
+      console.log(`  ${ansis.cyan('2.')} ${i18n.menuOptions.importWorkflow} ${ansis.gray('- ' + i18n.menuDescriptions.importWorkflow)}`);
+      console.log(`  ${ansis.cyan('3.')} ${i18n.menuOptions.configureApi} ${ansis.gray('- ' + i18n.menuDescriptions.configureApi)}`);
+      console.log(`  ${ansis.cyan('4.')} ${i18n.menuOptions.configureMcp} ${ansis.gray('- ' + i18n.menuDescriptions.configureMcp)}`);
+      console.log(`  ${ansis.cyan('5.')} ${i18n.menuOptions.configureModel} ${ansis.gray('- ' + i18n.menuDescriptions.configureModel)}`);
+      console.log(`  ${ansis.cyan('6.')} ${i18n.menuOptions.configureAiMemory} ${ansis.gray('- ' + i18n.menuDescriptions.configureAiMemory)}`);
+      console.log(`  ${ansis.cyan('0.')} ${i18n.menuOptions.changeLanguage} ${ansis.gray('- ' + i18n.menuDescriptions.changeLanguage)}`);
+      console.log(`  ${ansis.gray('-.')} ${ansis.gray(i18n.menuOptions.clearCache)} ${ansis.gray('- ' + i18n.menuDescriptions.clearCache)}`);
       console.log(`  ${ansis.red('q.')} ${ansis.red(i18n.menuOptions.exit)}`);
       console.log('');
 
@@ -67,9 +51,9 @@ export async function showMainMenu() {
         name: 'choice',
         message: i18n.enterChoice || 'Enter your choice',
         validate: (value) => {
-          const valid = ['1', '2', '3', '4', '5', '6', '-', '0', 'q', 'Q'];
+          const valid = ['1', '2', '3', '4', '5', '6', '0', '-', 'q', 'Q'];
           return valid.includes(value) || 'Invalid choice. Please enter a valid option.';
-        }
+        },
       });
 
       if (!response.choice) {
@@ -102,7 +86,24 @@ export async function showMainMenu() {
           await clearZcfCacheFeature(scriptLang);
           break;
         case '0':
-          scriptLang = await changeScriptLanguageFeature(scriptLang);
+          const newLang = await changeScriptLanguageFeature(scriptLang);
+          if (newLang !== scriptLang) {
+            scriptLang = newLang;
+            // Show return to menu prompt in the new language immediately
+            console.log('\n' + ansis.dim('─'.repeat(50)) + '\n');
+            const newI18n = I18N[scriptLang];
+            const continueResponse = await prompts({
+              type: 'confirm',
+              name: 'continue',
+              message: newI18n.returnToMenu,
+              initial: true,
+            });
+            if (!continueResponse.continue) {
+              exitMenu = true;
+              console.log(ansis.cyan(newI18n.goodbye));
+            }
+            continue; // Skip the normal flow and go to next iteration
+          }
           break;
         case 'q':
           exitMenu = true;
@@ -113,13 +114,13 @@ export async function showMainMenu() {
       // Add spacing between operations
       if (!exitMenu && response.choice.toLowerCase() !== 'q') {
         console.log('\n' + ansis.dim('─'.repeat(50)) + '\n');
-        
+
         // Ask if user wants to continue
         const continueResponse = await prompts({
           type: 'confirm',
           name: 'continue',
           message: i18n.returnToMenu,
-          initial: true
+          initial: true,
         });
 
         if (!continueResponse.continue) {
@@ -133,12 +134,12 @@ export async function showMainMenu() {
     const defaultLang = zcfConfig?.preferredLang || 'en';
     const errorMsg = I18N[defaultLang].error;
     console.error(ansis.red(`${errorMsg}:`), error);
-    
+
     // Log error details for debugging
     if (error instanceof Error) {
       console.error(ansis.gray(`Stack: ${error.stack}`));
     }
-    
+
     process.exit(1);
   }
 }

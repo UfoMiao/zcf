@@ -73,9 +73,6 @@ export const I18N = {
     cancelled: '操作已取消',
     apiKeyValidation: {
       empty: 'API Key 不能为空',
-      invalid: 'API Key 格式无效。只能包含字母、数字、下划线（_）和连字符（-）',
-      tooShort: 'API Key 长度太短（至少需要 1 个字符）',
-      tooLong: 'API Key 长度太长（最多 256 个字符）',
       example: '示例格式: sk-abcdef123456_789xyz',
     },
     noExistingConfig: '未找到现有配置。请先运行 `zcf`。',
@@ -96,7 +93,7 @@ export const I18N = {
       configureModel: '配置默认模型',
       configureAiMemory: '配置 Claude 全局记忆',
       clearCache: '清除 ZCF 偏好缓存',
-      changeLanguage: '修改脚本语言',
+      changeLanguage: '更改界面语言 / Change Interface Language',
       exit: '退出',
     },
     menuDescriptions: {
@@ -107,7 +104,7 @@ export const I18N = {
       configureModel: '设置默认模型（opus/sonnet）',
       configureAiMemory: '配置 AI 输出语言和角色风格',
       clearCache: '清除偏好语言等缓存',
-      changeLanguage: '更改界面语言',
+      changeLanguage: '更改 ZCF 界面语言',
     },
     returnToMenu: '返回主菜单？',
     goodbye: '再见！👋',
@@ -131,8 +128,11 @@ export const I18N = {
     // Language
     languageChanged: '语言已更改',
     // Windows MCP
-    fixWindowsMcp: '检测到 Windows 系统，是否修复 MCP 配置？',
+    fixWindowsMcp: '修复 Windows MCP 配置',
+    fixWindowsMcpDesc: '修复 Windows 平台 MCP 命令配置问题',
     windowsMcpFixed: 'Windows MCP 配置已修复',
+    configureMcpServices: '配置 MCP 服务',
+    selectMcpOption: '选择 MCP 配置选项',
   },
   en: {
     selectScriptLang: 'Select script language',
@@ -182,9 +182,6 @@ export const I18N = {
     cancelled: 'Operation cancelled',
     apiKeyValidation: {
       empty: 'API Key cannot be empty',
-      invalid: 'Invalid API Key format. Only letters, numbers, underscores (_) and hyphens (-) are allowed',
-      tooShort: 'API Key is too short (minimum 1 characters required)',
-      tooLong: 'API Key is too long (maximum 256 characters allowed)',
       example: 'Example format: sk-abcdef123456_789xyz',
     },
     noExistingConfig: 'No existing configuration found. Please run `zcf` first.',
@@ -205,7 +202,7 @@ export const I18N = {
       configureModel: 'Configure default model',
       configureAiMemory: 'Configure Claude global memory',
       clearCache: 'Clear ZCF preference cache',
-      changeLanguage: 'Change script language',
+      changeLanguage: 'Change interface language / 更改界面语言',
       exit: 'Exit',
     },
     menuDescriptions: {
@@ -216,7 +213,7 @@ export const I18N = {
       configureModel: 'Set default model (opus/sonnet)',
       configureAiMemory: 'Configure AI output language and personality',
       clearCache: 'Clear preference language and other caches',
-      changeLanguage: 'Change interface language',
+      changeLanguage: 'Change ZCF interface language',
     },
     returnToMenu: 'Return to main menu?',
     goodbye: 'Goodbye! 👋',
@@ -240,8 +237,11 @@ export const I18N = {
     // Language
     languageChanged: 'Language changed',
     // Windows MCP
-    fixWindowsMcp: 'Windows detected. Fix MCP configuration?',
+    fixWindowsMcp: 'Fix Windows MCP Configuration',
+    fixWindowsMcpDesc: 'Fix Windows platform MCP command configuration issues',
     windowsMcpFixed: 'Windows MCP configuration fixed',
+    configureMcpServices: 'Configure MCP Services',
+    selectMcpOption: 'Select MCP configuration option',
   },
 };
 
