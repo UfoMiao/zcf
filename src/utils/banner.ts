@@ -1,4 +1,5 @@
 import ansis from 'ansis';
+import { version, homepage } from '../../package.json';
 
 export function displayBanner(subtitle?: string) {
   const defaultSubtitle = 'One-click configuration tool for Claude Code';
@@ -22,4 +23,9 @@ export function displayBanner(subtitle?: string) {
 ╚════════════════════════════════════════════════════════════════╝
 `)
   );
+}
+
+export function displayBannerWithInfo(subtitle?: string) {
+  displayBanner(subtitle);
+  console.log(ansis.gray(`  Version: ${ansis.cyan(version)}  |  ${ansis.cyan(homepage)}\n`));
 }

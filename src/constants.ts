@@ -26,7 +26,7 @@ export type AiOutputLanguage = keyof typeof AI_OUTPUT_LANGUAGES;
 
 export const I18N = {
   'zh-CN': {
-    selectScriptLang: '选择脚本语言',
+    selectScriptLang: '选择ZCF显示语言',
     selectConfigLang: '选择 Claude Code 配置语言',
     selectAiOutputLang: '选择 AI 输出语言',
     aiOutputLangHint: 'AI 将使用此语言回复你的问题',
@@ -110,8 +110,8 @@ export const I18N = {
       configureMcp: '配置 MCP',
       configureModel: '配置默认模型',
       configureAiMemory: '配置 Claude 全局记忆',
-      clearCache: '清除 ZCF 偏好缓存',
-      changeLanguage: '更改界面语言 / Change Interface Language',
+      clearCache: '清除偏好缓存',
+      changeLanguage: '更改显示语言 / Select display language',
       exit: '退出',
     },
     menuDescriptions: {
@@ -139,6 +139,10 @@ export const I18N = {
     customPersonalityHint: '定义你自己的个性',
     enterCustomPersonality: '请输入自定义个性描述',
     personalityConfigured: 'AI 个性已配置',
+    existingPersonality: '检测到已有 AI 个性配置',
+    currentPersonality: '当前个性',
+    modifyPersonality: '是否修改 AI 个性配置？',
+    keepPersonality: '保持当前个性配置',
     // Cache
     confirmClearCache: '确认清除所有 ZCF 偏好缓存？',
     cacheCleared: 'ZCF 缓存已清除',
@@ -151,9 +155,49 @@ export const I18N = {
     windowsMcpFixed: 'Windows MCP 配置已修复',
     configureMcpServices: '配置 MCP 服务',
     selectMcpOption: '选择 MCP 配置选项',
+    // Validation messages
+    invalidChoice: '无效选择。请输入有效选项。',
+    urlRequired: 'URL 为必填项',
+    invalidUrl: '无效的 URL',
+    keyRequired: '密钥为必填项',
+    invalidKeyFormat: '无效的密钥格式',
+    directiveCannotBeEmpty: '指令不能为空',
+    languageRequired: '语言为必填项',
+    // Error messages
+    failedToSetOnboarding: '设置入门完成标志失败：',
+    failedToWriteMcpConfig: '写入 MCP 配置失败：',
+    templateDirNotFound: '模板目录未找到：',
+    failedToReadTemplateSettings: '读取模板 settings.json 失败：',
+    failedToMergeSettings: '合并 settings.json 失败：',
+    preservingExistingSettings: '由于合并错误，保留现有的 settings.json',
+    // File system errors
+    failedToReadFile: '读取文件失败：',
+    failedToWriteFile: '写入文件失败：',
+    failedToCopyFile: '复制文件失败：',
+    failedToReadDirectory: '读取目录失败：',
+    failedToGetStats: '获取文件状态失败：',
+    sourceDirNotExist: '源目录不存在：',
+    // JSON config errors
+    invalidConfiguration: '配置无效，使用默认值',
+    failedToParseJson: '解析 JSON 文件失败：',
+    failedToBackupConfig: '备份配置文件失败：',
+    // MCP errors
+    failedToAddOnboardingFlag: '添加 hasCompletedOnboarding 标志失败：',
+    // AI personality errors
+    failedToApplyPersonality: '应用个性指令失败：',
+    // Status messages
+    notConfigured: '未配置',
+    none: '无',
+    // CLI options
+    runFullInit: '直接运行完整初始化',
+    forceOverwrite: '强制覆盖现有配置',
+    initClaudeConfig: '初始化 Claude Code 配置',
+    updatePromptsOnly: '仅更新 Claude Code 提示',
+    // Misc
+    spaceToSelectReturn: '- 空格选择，回车提交',
   },
   en: {
-    selectScriptLang: 'Select script language',
+    selectScriptLang: 'Select ZCF display language',
     selectConfigLang: 'Select Claude Code configuration language',
     selectAiOutputLang: 'Select AI output language',
     aiOutputLangHint: 'AI will respond to you in this language',
@@ -237,8 +281,8 @@ export const I18N = {
       configureMcp: 'Configure MCP',
       configureModel: 'Configure default model',
       configureAiMemory: 'Configure Claude global memory',
-      clearCache: 'Clear ZCF preference cache',
-      changeLanguage: 'Change interface language / 更改界面语言',
+      clearCache: 'Clear preference cache',
+      changeLanguage: 'Select display language / 更改显示语言',
       exit: 'Exit',
     },
     menuDescriptions: {
@@ -266,6 +310,10 @@ export const I18N = {
     customPersonalityHint: 'Define your own personality',
     enterCustomPersonality: 'Enter custom personality description',
     personalityConfigured: 'AI personality configured',
+    existingPersonality: 'Existing AI personality configuration',
+    currentPersonality: 'Current personality',
+    modifyPersonality: 'Modify AI personality?',
+    keepPersonality: 'Keeping existing personality',
     // Cache
     confirmClearCache: 'Confirm clear all ZCF preference cache?',
     cacheCleared: 'ZCF cache cleared',
@@ -278,6 +326,46 @@ export const I18N = {
     windowsMcpFixed: 'Windows MCP configuration fixed',
     configureMcpServices: 'Configure MCP Services',
     selectMcpOption: 'Select MCP configuration option',
+    // Validation messages
+    invalidChoice: 'Invalid choice. Please enter a valid option.',
+    urlRequired: 'URL is required',
+    invalidUrl: 'Invalid URL',
+    keyRequired: 'Key is required',
+    invalidKeyFormat: 'Invalid key format',
+    directiveCannotBeEmpty: 'Directive cannot be empty',
+    languageRequired: 'Language is required',
+    // Error messages
+    failedToSetOnboarding: 'Failed to set onboarding completion flag:',
+    failedToWriteMcpConfig: 'Failed to write MCP config:',
+    templateDirNotFound: 'Template directory not found:',
+    failedToReadTemplateSettings: 'Failed to read template settings.json:',
+    failedToMergeSettings: 'Failed to merge settings.json:',
+    preservingExistingSettings: 'Preserving existing settings.json due to merge error',
+    // File system errors
+    failedToReadFile: 'Failed to read file:',
+    failedToWriteFile: 'Failed to write file:',
+    failedToCopyFile: 'Failed to copy file:',
+    failedToReadDirectory: 'Failed to read directory:',
+    failedToGetStats: 'Failed to get stats for:',
+    sourceDirNotExist: 'Source directory does not exist:',
+    // JSON config errors
+    invalidConfiguration: 'Invalid configuration, using default value',
+    failedToParseJson: 'Failed to parse JSON file:',
+    failedToBackupConfig: 'Failed to backup config file:',
+    // MCP errors
+    failedToAddOnboardingFlag: 'Failed to add hasCompletedOnboarding flag:',
+    // AI personality errors
+    failedToApplyPersonality: 'Failed to apply personality directive:',
+    // Status messages
+    notConfigured: 'Not configured',
+    none: 'None',
+    // CLI options
+    runFullInit: 'Run full initialization directly',
+    forceOverwrite: 'Force overwrite existing configuration',
+    initClaudeConfig: 'Initialize Claude Code configuration',
+    updatePromptsOnly: 'Update Claude Code prompts only',
+    // Misc
+    spaceToSelectReturn: '- Space to select. Return to submit',
   },
 };
 

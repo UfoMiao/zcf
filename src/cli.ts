@@ -28,6 +28,23 @@ cli
     }
   })
 
+// Init command
+cli
+  .command('init', 'Initialize Claude Code configuration')
+  .alias('i')
+  .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+  .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
+  .option('--ai-output-lang, -a <lang>', 'AI output language')
+  .option('--force, -f', 'Force overwrite existing configuration')
+  .action(async (options) => {
+    await init({
+      lang: options.lang,
+      configLang: options.configLang,
+      aiOutputLang: options.aiOutputLang,
+      force: options.force
+    })
+  })
+
 // Update command
 cli
   .command('update', 'Update Claude Code prompts only')
@@ -50,9 +67,11 @@ cli.help((sections) => {
     title: ansis.yellow('Commands / 命令:'),
     body: [
       `  ${ansis.cyan('zcf')}              Show interactive menu (default) / 显示交互式菜单（默认）`,
+      `  ${ansis.cyan('zcf init')} | ${ansis.cyan('i')}     Initialize Claude Code configuration / 初始化 Claude Code 配置`,
       `  ${ansis.cyan('zcf update')} | ${ansis.cyan('u')}   Update workflow-related md files / 仅更新工作流相关md`,
       '',
-      ansis.gray('  Shortcut / 快捷方式:'),
+      ansis.gray('  Shortcuts / 快捷方式:'),
+      `  ${ansis.cyan('zcf i')}            Quick init / 快速初始化`,
       `  ${ansis.cyan('zcf u')}            Quick update / 快速更新`
     ].join('\n')
   })
@@ -76,7 +95,9 @@ cli.help((sections) => {
       ansis.gray('  # Show interactive menu / 显示交互式菜单'),
       `  ${ansis.cyan('npx zcf')}`,
       '',
-      ansis.gray('  # Run full initialization directly / 直接运行完整初始化'),
+      ansis.gray('  # Run full initialization / 运行完整初始化'),
+      `  ${ansis.cyan('npx zcf init')}`,
+      `  ${ansis.cyan('npx zcf i')}`,
       `  ${ansis.cyan('npx zcf --init')}`,
       '',
       ansis.gray('  # Update workflow-related md files only / 仅更新工作流相关md文件'),

@@ -5,276 +5,53 @@ import { version } from '../../package.json';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
 import { CLAUDE_DIR, I18N, LANG_LABELS, MCP_SERVICES, SETTINGS_FILE, SUPPORTED_LANGS } from '../constants';
 import type { McpServerConfig } from '../types';
-import { displayBanner } from '../utils/banner';
-import { applyAiLanguageDirective, backupExistingConfig, configureApi, copyConfigFiles, ensureClaudeDir, getExistingApiConfig, type ApiConfig } from '../utils/config';
+import { configureAiPersonality } from '../utils/ai-personality';
+import { displayBannerWithInfo } from '../utils/banner';
+import {
+  applyAiLanguageDirective,
+  backupExistingConfig,
+  configureApi,
+  copyConfigFiles,
+  ensureClaudeDir,
+  getExistingApiConfig,
+} from '../utils/config';
+import {
+  configureApiCompletely,
+  modifyApiConfigPartially,
+} from '../utils/config-operations';
 import { installClaudeCode, isClaudeCodeInstalled } from '../utils/installer';
-import { addCompletedOnboarding, backupMcpConfig, buildMcpServerConfig, fixWindowsMcpConfig, mergeMcpServers, readMcpConfig, writeMcpConfig } from '../utils/mcp';
+import {
+  addCompletedOnboarding,
+  backupMcpConfig,
+  buildMcpServerConfig,
+  fixWindowsMcpConfig,
+  mergeMcpServers,
+  readMcpConfig,
+  writeMcpConfig,
+} from '../utils/mcp';
 import { isWindows } from '../utils/platform';
 import { resolveAiOutputLanguage, selectScriptLanguage } from '../utils/prompts';
+import { formatApiKeyDisplay } from '../utils/validator';
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config';
-import { validateApiKey, formatApiKeyDisplay } from '../utils/validator';
 
 export interface InitOptions {
   lang?: SupportedLang;
   configLang?: SupportedLang;
   aiOutputLang?: AiOutputLanguage | string;
   force?: boolean;
+  skipBanner?: boolean;
 }
 
-/**
- * Configure API completely (for new config or full modification)
- */
-async function configureApiCompletely(
-  i18n: typeof I18N['zh-CN'], 
-  scriptLang: SupportedLang,
-  preselectedAuthType?: 'auth_token' | 'api_key'
-): Promise<ApiConfig | null> {
-  let authType = preselectedAuthType;
-  
-  if (!authType) {
-    const authResponse = await prompts({
-      type: 'select',
-      name: 'authType',
-      message: i18n.configureApi,
-      choices: [
-        { 
-          title: i18n.useAuthToken, 
-          value: 'auth_token',
-          description: ansis.gray(i18n.authTokenDesc)
-        },
-        { 
-          title: i18n.useApiKey, 
-          value: 'api_key',
-          description: ansis.gray(i18n.apiKeyDesc)
-        },
-      ],
-    });
-    
-    if (!authResponse.authType) {
-      console.log(ansis.yellow(i18n.cancelled));
-      return null;
-    }
-    
-    authType = authResponse.authType;
-  }
-  
-  const urlResponse = await prompts({
-    type: 'text',
-    name: 'url',
-    message: i18n.enterApiUrl,
-    validate: (value) => {
-      if (!value) return 'URL is required';
-      try {
-        new URL(value);
-        return true;
-      } catch {
-        return 'Invalid URL';
-      }
-    },
-  });
-  
-  if (urlResponse.url === undefined) {
-    console.log(ansis.yellow(i18n.cancelled));
-    return null;
-  }
-  
-  const keyMessage = authType === 'auth_token' ? i18n.enterAuthToken : i18n.enterApiKey;
-  const keyResponse = await prompts({
-    type: 'text',
-    name: 'key',
-    message: keyMessage,
-    validate: (value) => {
-      if (!value) {
-        return `${authType === 'auth_token' ? 'Auth Token' : 'API Key'} is required`;
-      }
-      
-      const validation = validateApiKey(value, scriptLang);
-      if (!validation.isValid) {
-        return validation.error || 'Invalid API Key format';
-      }
-      
-      return true;
-    },
-  });
-  
-  if (keyResponse.key === undefined) {
-    console.log(ansis.yellow(i18n.cancelled));
-    return null;
-  }
-  
-  console.log(ansis.gray(`  API Key: ${formatApiKeyDisplay(keyResponse.key)}`));
-  
-  return { url: urlResponse.url, key: keyResponse.key, authType };
-}
-
-/**
- * Modify API configuration partially
- */
-export async function modifyApiConfigPartially(
-  existingConfig: ApiConfig,
-  i18n: typeof I18N['zh-CN'],
-  scriptLang: SupportedLang
-): Promise<void> {
-  let currentConfig: ApiConfig = { ...existingConfig };
-  
-  while (true) {
-    // Re-read config to ensure we have the latest values
-    const latestConfig = getExistingApiConfig();
-    if (latestConfig) {
-      currentConfig = latestConfig;
-    }
-    
-    const modifyResponse = await prompts({
-      type: 'select',
-      name: 'item',
-      message: i18n.selectModifyItems,
-      choices: [
-        { title: i18n.modifyApiUrl, value: 'url' },
-        { title: i18n.modifyApiKey, value: 'key' },
-        { title: i18n.modifyAuthType, value: 'authType' },
-      ],
-    });
-    
-    if (!modifyResponse.item) {
-      console.log(ansis.yellow(i18n.cancelled));
-      return;
-    }
-    
-    if (modifyResponse.item === 'url') {
-      const urlResponse = await prompts({
-        type: 'text',
-        name: 'url',
-        message: i18n.enterNewApiUrl.replace('{url}', currentConfig.url || 'None'),
-        initial: currentConfig.url,
-        validate: (value) => {
-          if (!value) return 'URL is required';
-          try {
-            new URL(value);
-            return true;
-          } catch {
-            return 'Invalid URL';
-          }
-        },
-      });
-      
-      if (urlResponse.url === undefined) {
-        continue;
-      }
-      
-      // Update and save immediately
-      currentConfig.url = urlResponse.url;
-      const savedConfig = configureApi(currentConfig);
-      
-      if (savedConfig) {
-        console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
-        console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${savedConfig.url}`));
-      }
-    } else if (modifyResponse.item === 'key') {
-      const authType = currentConfig.authType || 'auth_token';
-      const keyMessage = authType === 'auth_token' 
-        ? i18n.enterNewApiKey.replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : 'None')
-        : i18n.enterNewApiKey.replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : 'None');
-        
-      const keyResponse = await prompts({
-        type: 'text',
-        name: 'key',
-        message: keyMessage,
-        validate: (value) => {
-          if (!value) {
-            return 'Key is required';
-          }
-          
-          const validation = validateApiKey(value, scriptLang);
-          if (!validation.isValid) {
-            return validation.error || 'Invalid Key format';
-          }
-          
-          return true;
-        },
-      });
-      
-      if (keyResponse.key === undefined) {
-        continue;
-      }
-      
-      // Update and save immediately
-      currentConfig.key = keyResponse.key;
-      const savedConfig = configureApi(currentConfig);
-      
-      if (savedConfig) {
-        console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
-        console.log(ansis.gray(`  ${i18n.apiConfigKey}: ${formatApiKeyDisplay(savedConfig.key)}`));
-      }
-    } else if (modifyResponse.item === 'authType') {
-      const authResponse = await prompts({
-        type: 'select',
-        name: 'authType',
-        message: i18n.selectNewAuthType.replace('{type}', currentConfig.authType || 'None'),
-        choices: [
-          { title: 'Auth Token (OAuth)', value: 'auth_token' },
-          { title: 'API Key', value: 'api_key' },
-        ],
-        initial: currentConfig.authType === 'api_key' ? 1 : 0,
-      });
-      
-      if (authResponse.authType === undefined) {
-        continue;
-      }
-      
-      // Update and save immediately
-      currentConfig.authType = authResponse.authType;
-      const savedConfig = configureApi(currentConfig);
-      
-      if (savedConfig) {
-        console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
-        console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${savedConfig.authType}`));
-      }
-    }
-    
-    // Ask if user wants to continue modifying
-    const continueResponse = await prompts({
-      type: 'confirm',
-      name: 'continue',
-      message: i18n.continueModification,
-      initial: true,
-    });
-    
-    if (!continueResponse.continue) {
-      break;
-    }
-  }
-}
-
-
-export async function updatePromptOnly(configLang: SupportedLang, scriptLang: SupportedLang, aiOutputLang?: AiOutputLanguage | string) {
-  const i18n = I18N[scriptLang];
-  
-  // Backup existing config
-  const backupDir = backupExistingConfig();
-  if (backupDir) {
-    console.log(ansis.gray(`✔ ${i18n.backupSuccess}: ${backupDir}`));
-  }
-  
-  // Copy only documentation files
-  copyConfigFiles(configLang, true);
-  
-  // Apply AI language directive if provided
-  if (aiOutputLang) {
-    applyAiLanguageDirective(aiOutputLang);
-  }
-  
-  console.log(ansis.green(`✔ ${i18n.configSuccess} ${CLAUDE_DIR}`));
-  console.log('\n' + ansis.cyan(i18n.complete));
-}
 
 
 export async function init(options: InitOptions = {}) {
   try {
     // Display banner
-    displayBanner();
-  console.log(ansis.gray(`  Version: ${ansis.cyan(version)}  |  ${ansis.cyan('https://github.com/UfoMiao/zcf')}\n`));
+    if (!options.skipBanner) {
+      displayBannerWithInfo();
+    }
 
-    // Step 1: Select script language
+    // Step 1: Select ZCF display language
     const scriptLang = await selectScriptLanguage(options.lang);
 
     const i18n = I18N[scriptLang];
@@ -291,12 +68,12 @@ export async function init(options: InitOptions = {}) {
           value: l,
         })),
       });
-      
+
       if (!response.lang) {
         console.log(ansis.yellow(i18n.cancelled));
         process.exit(0);
       }
-      
+
       configLang = response.lang as SupportedLang;
     }
 
@@ -345,12 +122,12 @@ export async function init(options: InitOptions = {}) {
           { title: i18n.skip, value: 'skip' },
         ],
       });
-      
+
       if (!actionResponse.action) {
         console.log(ansis.yellow(i18n.cancelled));
         process.exit(0);
       }
-      
+
       action = actionResponse.action;
 
       if (action === 'skip') {
@@ -369,14 +146,20 @@ export async function init(options: InitOptions = {}) {
     if (!onlyUpdateDocs && (isNewInstall || action === 'backup' || action === 'merge')) {
       // Check for existing API configuration
       const existingApiConfig = getExistingApiConfig();
-      
+
       if (existingApiConfig) {
         // Display existing configuration
         console.log('\n' + ansis.blue(`ℹ ${i18n.existingApiConfig}`));
-        console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${existingApiConfig.url || 'Not configured'}`));
-        console.log(ansis.gray(`  ${i18n.apiConfigKey}: ${existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : 'Not configured'}`));
-        console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${existingApiConfig.authType || 'Not configured'}\n`));
-        
+        console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${existingApiConfig.url || i18n.notConfigured}`));
+        console.log(
+          ansis.gray(
+            `  ${i18n.apiConfigKey}: ${
+              existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.notConfigured
+            }`
+          )
+        );
+        console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${existingApiConfig.authType || i18n.notConfigured}\n`));
+
         // Ask user what to do with existing config
         const actionResponse = await prompts({
           type: 'select',
@@ -389,12 +172,12 @@ export async function init(options: InitOptions = {}) {
             { title: i18n.skipApi, value: 'skip' },
           ],
         });
-        
+
         if (!actionResponse.action) {
           console.log(ansis.yellow(i18n.cancelled));
           process.exit(0);
         }
-        
+
         if (actionResponse.action === 'keep' || actionResponse.action === 'skip') {
           // Keep existing config, no changes needed
           apiConfig = null;
@@ -413,28 +196,28 @@ export async function init(options: InitOptions = {}) {
           name: 'apiChoice',
           message: i18n.configureApi,
           choices: [
-            { 
-              title: i18n.useAuthToken, 
+            {
+              title: i18n.useAuthToken,
               value: 'auth_token',
-              description: ansis.gray(i18n.authTokenDesc)
+              description: ansis.gray(i18n.authTokenDesc),
             },
-            { 
-              title: i18n.useApiKey, 
+            {
+              title: i18n.useApiKey,
               value: 'api_key',
-              description: ansis.gray(i18n.apiKeyDesc)
+              description: ansis.gray(i18n.apiKeyDesc),
             },
-            { 
-              title: i18n.skipApi, 
-              value: 'skip'
+            {
+              title: i18n.skipApi,
+              value: 'skip',
             },
           ],
         });
-        
+
         if (!apiResponse.apiChoice) {
           console.log(ansis.yellow(i18n.cancelled));
           process.exit(0);
         }
-        
+
         if (apiResponse.apiChoice !== 'skip') {
           apiConfig = await configureApiCompletely(i18n, scriptLang, apiResponse.apiChoice);
         }
@@ -465,8 +248,10 @@ export async function init(options: InitOptions = {}) {
       copyConfigFiles(configLang, false);
     }
 
-    // Step 8: Apply language directive to CLAUDE.md
+    // Step 8: Apply language directive to language.md
     applyAiLanguageDirective(aiOutputLang);
+    // Step 8.5: Configure AI personality
+    await configureAiPersonality(scriptLang);
 
     // Step 9: Apply API configuration (skip if only updating docs)
     if (apiConfig && !onlyUpdateDocs) {
@@ -475,12 +260,12 @@ export async function init(options: InitOptions = {}) {
         console.log(ansis.green(`✔ ${i18n.apiConfigSuccess}`));
         console.log(ansis.gray(`  URL: ${configuredApi.url}`));
         console.log(ansis.gray(`  Key: ${formatApiKeyDisplay(configuredApi.key)}`));
-        
+
         // Add hasCompletedOnboarding flag after successful API configuration
         try {
           addCompletedOnboarding();
         } catch (error) {
-          console.error(ansis.red('Failed to set onboarding completion flag:'), error);
+          console.error(ansis.red(i18n.failedToSetOnboarding), error);
         }
       }
     }
@@ -502,9 +287,17 @@ export async function init(options: InitOptions = {}) {
       if (mcpResponse.shouldConfigureMcp) {
         // Show Windows-specific notice
         if (isWindows()) {
-          console.log(ansis.blue(`ℹ ${scriptLang === 'zh-CN' ? '检测到 Windows 系统，将自动配置兼容格式' : 'Windows detected, will configure compatible format'}`));
+          console.log(
+            ansis.blue(
+              `ℹ ${
+                scriptLang === 'zh-CN'
+                  ? '检测到 Windows 系统，将自动配置兼容格式'
+                  : 'Windows detected, will configure compatible format'
+              }`
+            )
+          );
         }
-        
+
         // Create choices array with "All" option first
         const choices = [
           {
@@ -525,7 +318,7 @@ export async function init(options: InitOptions = {}) {
           message: i18n.selectMcpServices,
           choices,
           instructions: false,
-          hint: '- Space to select. Return to submit',
+          hint: i18n.spaceToSelectReturn,
         });
 
         if (selectedResponse.services === undefined) {
@@ -562,7 +355,7 @@ export async function init(options: InitOptions = {}) {
                 type: 'text',
                 name: 'apiKey',
                 message: service.apiKeyPrompt![scriptLang],
-                validate: (value) => !!value || 'API Key is required',
+                validate: (value) => !!value || i18n.keyRequired,
               });
 
               if (apiKeyResponse.apiKey === undefined) {
@@ -584,7 +377,7 @@ export async function init(options: InitOptions = {}) {
           // Merge with existing config
           const existingConfig = readMcpConfig();
           let mergedConfig = mergeMcpServers(existingConfig, newServers);
-          
+
           // Fix Windows config if needed
           mergedConfig = fixWindowsMcpConfig(mergedConfig);
 
@@ -593,20 +386,20 @@ export async function init(options: InitOptions = {}) {
             writeMcpConfig(mergedConfig);
             console.log(ansis.green(`✔ ${i18n.mcpConfigSuccess}`));
           } catch (error) {
-            console.error(ansis.red(`Failed to write MCP config: ${error}`));
+            console.error(ansis.red(`${i18n.failedToWriteMcpConfig} ${error}`));
           }
         }
       }
     }
 
-    // Step 11: Save zcf config
+    // Step 12: Save zcf config
     updateZcfConfig({
       version,
       preferredLang: scriptLang,
       aiOutputLang: aiOutputLang,
     });
 
-    // Step 12: Success message
+    // Step 13: Success message
     console.log(ansis.green(`✔ ${i18n.configSuccess} ${CLAUDE_DIR}`));
     console.log('\n' + ansis.cyan(i18n.complete));
   } catch (error) {

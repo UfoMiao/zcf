@@ -2,30 +2,50 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Claude Code](https://img.shields.io/badge/Claude-Code-blue)](https://claude.ai/code)
+[![Version](https://img.shields.io/npm/v/zcf)](https://www.npmjs.com/package/zcf)
 
 [中文](README.md) | **English**
 
-> Zero-config, one-click setup for Claude Code with bilingual support and intelligent agent system
+> Zero-config, one-click setup for Claude Code with bilingual support, intelligent agent system and personalized AI assistant
 
 ![Rendering](./src/assets/screenshot.webp)
 
 ## 🚀 Quick Start
 
-### Choose based on your situation:
+### 🎯 Recommended: Use Interactive Menu (v2.0 New)
+
+```bash
+npx zcf          # Open interactive menu and choose operations based on your needs
+```
+
+Menu options include:
+- `1` Full initialization (equivalent to `zcf i`)
+- `2` Import workflows (equivalent to `zcf u`)
+- `3-6` Configuration management (API, MCP, Model, AI personality, etc.)
+- More features...
+
+### Or, use direct commands:
 
 #### 🆕 First time using Claude Code
 
 ```bash
-npx zcf          # Full setup: Install Claude Code + Import workflows + Configure API + Set up MCP services
+npx zcf i        # Execute full initialization directly: Install Claude Code + Import workflows + Configure API + Set up MCP services
+# or
+npx zcf → select 1  # Execute full initialization via menu
 ```
 
 #### 🔄 Already have Claude Code installed
 
 ```bash
-npx zcf u        # Import workflows only: Quick add AI workflows and command system
+npx zcf u        # Update workflows only: Quick add AI workflows and command system
+# or
+npx zcf → select 2  # Execute workflow update via menu
 ```
 
-> **Note**: `zcf u` is short for `zcf update`, designed for existing users to import workflow-related files only, preserving your API and MCP configurations.
+> **Note**: 
+> - Since v2.0, `zcf` opens the interactive menu by default, providing a visual operation interface
+> - You can choose operations through the menu or use commands directly for quick execution
+> - `zcf i` = full initialization, `zcf u` = update workflows only
 
 ### Setup Process
 
@@ -58,13 +78,15 @@ After configuration:
 - Script interaction language: Controls installation prompts language
 - Configuration file language: Determines which configuration set to install (zh-CN/en)
 - AI output language: Choose the language for AI responses (supports Chinese, English, and custom languages)
+- AI personality: Support multiple preset personalities (Professional, Catgirl, Friendly, Mentor) or custom
 
 ### 🔧 Smart Installation
 
 - Auto-detects Claude Code installation status
 - Uses npm for automatic installation (ensures compatibility)
 - Cross-platform support (Windows/macOS/Linux)
-- Automatic MCP service configuration (new feature)
+- Automatic MCP service configuration
+- Smart configuration merging and partial modification support (v2.0 new)
 
 ### 📦 Complete Configuration
 
@@ -80,25 +102,51 @@ After configuration:
   - **API Key**: For API keys from Anthropic Console
 - Custom API URL support
 - Support for manual configuration later
+- Partial modification: Update only needed configuration items (v2.0 new)
 
 ### 💾 Configuration Management
 
 - Smart backup of existing configurations (all backups saved in ~/.claude/backup/)
-- Configuration merge option
+- Configuration merge option (v2.0 enhanced: supports deep merge)
 - Safe overwrite mechanism
 - Automatic backup before MCP configuration changes
+- Default model configuration (v2.0 new)
+- AI memory management (v2.0 new)
+- ZCF cache cleanup (v2.0 new)
 
 ## 📖 Usage Instructions
 
-### Interactive Configuration Flow
+### Interactive Menu (v2.0)
 
 ```bash
 $ npx zcf
 
-? Select script language / 选择脚本语言:
+ ZCF - Zero-Config Claude-Code Flow v2.0.0
+
+? Select ZCF display language / 选择ZCF显示语言:
   ❯ 简体中文
     English
 
+Select function:
+  -------- Claude Code --------
+  1. Full initialization - Install and configure everything
+  2. Import workflows - Update AI workflows and commands  
+  3. Configure API - Manage API authentication
+  4. Configure MCP services - Manage MCP integrations
+  5. Configure default model - Set default AI model
+  6. Configure AI memory - Set up AI memory management
+  
+  ------------ ZCF ------------
+  0. Change language - Switch interface language
+  -. Clear cache - Clear ZCF cache files
+  q. Exit
+
+Enter your choice: _
+```
+
+### Full Initialization Flow (Select 1 or use `zcf i`)
+
+```bash
 ? Select Claude Code configuration language:
   ❯ 简体中文 (zh-CN) - Chinese (easier for Chinese users to customize)
     English (en) - English (recommended, lower token consumption)
@@ -109,6 +157,13 @@ $ npx zcf
     English
     Custom
     (Supports Japanese, French, German, and more)
+
+? Select AI personality:
+  ❯ Professional Assistant(Default)
+    Catgirl Assistant
+    Friendly Assistant
+    Mentor Mode
+    Custom
 
 ? Claude Code not found. Install automatically? (Y/n)
 
@@ -156,7 +211,8 @@ $ npx zcf
 
 | Command      | Alias   | Description                                  |
 | ------------ | ------- | -------------------------------------------- |
-| `zcf`        | -       | Initialize configuration (default)           |
+| `zcf`        | -       | Show interactive menu (v2.0 default command) |
+| `zcf init`   | `zcf i` | Initialize Claude Code configuration         |
 | `zcf update` | `zcf u` | Update workflow-related md files with backup |
 
 #### Common Options
@@ -186,15 +242,20 @@ npx zcf -v
 #### Usage Examples
 
 ```bash
-# First-time installation, interactive setup
+# Show interactive menu (default)
 npx zcf
+
+# First-time installation, complete initialization
+npx zcf i
+npx zcf init              # Full command
 
 # Update workflow-related md files with backup, keep API and MCP configs
 npx zcf u
+npx zcf update            # Full command
 
 # Force reinitialize with Chinese config
-npx zcf --config-lang zh-CN --force
-npx zcf -c zh-CN -f      # Using short options
+npx zcf i --config-lang zh-CN --force
+npx zcf i -c zh-CN -f      # Using short options
 
 # Update to English prompts (lower token consumption)
 npx zcf u --config-lang en
@@ -215,9 +276,12 @@ claude-code-config/
 │   ├── utils/           # Utility functions
 │   └── constants.ts     # Constant definitions
 ├── templates/            # Configuration templates
+│   ├── CLAUDE.md        # Project level config (v2.0 new)
 │   ├── settings.json    # Base configuration (with privacy env vars)
 │   ├── en/              # English version
-│   │   ├── CLAUDE.md    # Core principles
+│   │   ├── rules.md     # Core principles (formerly CLAUDE.md)
+│   │   ├── personality.md # AI personality (v2.0 new)
+│   │   ├── mcp.md       # MCP services guide (v2.0 new)
 │   │   ├── agents/      # AI agents
 │   │   └── commands/    # Command definitions
 │   └── zh-CN/           # Chinese version
@@ -225,12 +289,13 @@ claude-code-config/
 └── dist/                # Build output
 ```
 
-## ✨ Core Features
+## ✨ Core Features (v2.0 Enhanced)
 
 ### 🤖 Professional Agents
 
 - **Task Planner**: Breaks down complex tasks into executable steps
 - **UI/UX Designer**: Provides professional interface design guidance
+- **AI Personality**: Support multiple preset personalities and custom (v2.0 new)
 
 ### ⚡ Command System
 
@@ -239,9 +304,11 @@ claude-code-config/
 
 ### 🔧 Smart Configuration
 
-- API key management
+- API key management (supports partial modification)
 - Fine-grained permission control
-- Multiple Claude model support
+- Multiple Claude model support (configurable default model)
+- Interactive menu system (v2.0 new)
+- AI memory management (v2.0 new)
 
 ## 🎯 Development Workflow
 

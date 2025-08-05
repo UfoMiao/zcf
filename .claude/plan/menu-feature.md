@@ -11,7 +11,7 @@
 5. 配置默认模型（opus,sonnet）
 6. 配置 claude 全局记忆（含现在有的 AI 输出语言,再增加一个子选项,配置 AI 输出角色风格:比如猫娘）
    -. 清除 zcf 偏好缓存（偏好语言等）
-7. change script language/更改界面语言
+7. change script language/更改 ZCF 显示语言
 
 ## 实施步骤
 

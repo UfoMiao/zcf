@@ -5,19 +5,22 @@ import { version } from '../../package.json';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
 import { I18N, LANG_LABELS, SETTINGS_FILE, SUPPORTED_LANGS } from '../constants';
 import { displayBanner } from '../utils/banner';
+import { updatePromptOnly } from '../utils/config-operations';
 import { resolveAiOutputLanguage, selectScriptLanguage } from '../utils/prompts';
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config';
-import { updatePromptOnly } from './init';
 
 export interface UpdateOptions {
   configLang?: SupportedLang;
   aiOutputLang?: AiOutputLanguage | string;
+  skipBanner?: boolean;
 }
 
 export async function update(options: UpdateOptions = {}) {
   try {
     // Display banner
-    displayBanner('Update configuration for Claude Code');
+    if (!options.skipBanner) {
+      displayBanner('Update configuration for Claude Code');
+    }
 
     // Get script language from config or ask user
     const scriptLang = await selectScriptLanguage();

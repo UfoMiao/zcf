@@ -1,17 +1,28 @@
 import dayjs from 'dayjs';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'pathe';
+import { fileURLToPath } from 'node:url';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
-import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, CLAUDE_MD_FILE, SETTINGS_FILE } from '../constants';
+import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, SETTINGS_FILE, I18N } from '../constants';
+import { 
+  exists, 
+  ensureDir, 
+  copyFile, 
+  copyDir, 
+  writeFile,
+  type CopyDirOptions 
+} from './fs-operations';
+import { readJsonConfig, writeJsonConfig } from './json-config';
+import { deepMerge, mergeArraysUnique } from './object-utils';
+import type { ClaudeSettings, ApiConfig } from '../types/config';
+import { readZcfConfig } from './zcf-config';
+export type { ApiConfig } from '../types/config';
 
 export function ensureClaudeDir() {
-  if (!existsSync(CLAUDE_DIR)) {
-    mkdirSync(CLAUDE_DIR, { recursive: true });
-  }
+  ensureDir(CLAUDE_DIR);
 }
 
 export function backupExistingConfig() {
-  if (!existsSync(CLAUDE_DIR)) {
+  if (!exists(CLAUDE_DIR)) {
     return null;
   }
 
@@ -20,127 +31,79 @@ export function backupExistingConfig() {
   const backupDir = join(backupBaseDir, `backup_${timestamp}`);
 
   // Create backup directory
-  mkdirSync(backupDir, { recursive: true });
+  ensureDir(backupDir);
 
   // Copy all files from CLAUDE_DIR to backup directory (excluding backup folder itself)
-  const entries = readdirSync(CLAUDE_DIR);
-  for (const entry of entries) {
-    if (entry === 'backup') continue; // Skip backup directory itself
-    const srcPath = join(CLAUDE_DIR, entry);
-    const destPath = join(backupDir, entry);
-    const stat = statSync(srcPath);
-
-    if (stat.isDirectory()) {
-      copyDirectory(srcPath, destPath);
-    } else {
-      copyFileSync(srcPath, destPath);
-    }
-  }
+  const filter: CopyDirOptions['filter'] = (path) => {
+    return !path.includes('/backup');
+  };
+  
+  copyDir(CLAUDE_DIR, backupDir, { filter });
 
   return backupDir;
 }
 
 export function copyConfigFiles(lang: SupportedLang, onlyMd: boolean = false) {
   // Get the root directory of the package
-  const currentFileUrl = new URL(import.meta.url);
-  const currentFilePath = currentFileUrl.pathname;
+  const currentFilePath = fileURLToPath(import.meta.url);
   // Navigate from dist/shared/xxx.mjs to package root
   const distDir = dirname(dirname(currentFilePath));
   const rootDir = dirname(distDir);
   const sourceDir = join(rootDir, 'templates', lang);
   const baseTemplateDir = join(rootDir, 'templates');
 
-  if (!existsSync(sourceDir)) {
-    throw new Error(`Template directory not found: ${sourceDir}`);
+  if (!exists(sourceDir)) {
+    throw new Error(`${I18N[readZcfConfig()?.preferredLang || 'en'].templateDirNotFound} ${sourceDir}`);
   }
 
   if (onlyMd) {
     // Only copy .md files and maintain directory structure
-    copyMdFiles(sourceDir, CLAUDE_DIR);
+    const mdFilter: CopyDirOptions['filter'] = (path, stats) => {
+      return stats.isDirectory() || path.endsWith('.md');
+    };
+    copyDir(sourceDir, CLAUDE_DIR, { filter: mdFilter });
   } else {
-    // Copy all files from language-specific directory
-    copyDirectory(sourceDir, CLAUDE_DIR);
+    // Copy all files from language-specific directory except settings.json
+    const filter: CopyDirOptions['filter'] = (path) => {
+      return !path.endsWith('settings.json');
+    };
+    copyDir(sourceDir, CLAUDE_DIR, { filter });
 
     // Intelligently merge settings.json instead of copying
     const baseSettingsPath = join(baseTemplateDir, 'settings.json');
     const destSettingsPath = join(CLAUDE_DIR, 'settings.json');
-    if (existsSync(baseSettingsPath)) {
+    if (exists(baseSettingsPath)) {
       mergeSettingsFile(baseSettingsPath, destSettingsPath);
     }
   }
-}
-
-function copyMdFiles(src: string, dest: string) {
-  if (!existsSync(dest)) {
-    mkdirSync(dest, { recursive: true });
-  }
-
-  const entries = readdirSync(src);
-
-  for (const entry of entries) {
-    const srcPath = join(src, entry);
-    const destPath = join(dest, entry);
-    const stat = statSync(srcPath);
-
-    if (stat.isDirectory()) {
-      // Recursively copy directories to maintain structure
-      copyMdFiles(srcPath, destPath);
-    } else if (entry.endsWith('.md')) {
-      // Only copy .md files
-      copyFileSync(srcPath, destPath);
-    }
+  
+  // Always copy CLAUDE.md from base template directory
+  const claudeMdSource = join(baseTemplateDir, 'CLAUDE.md');
+  const claudeMdDest = join(CLAUDE_DIR, 'CLAUDE.md');
+  if (exists(claudeMdSource)) {
+    copyFile(claudeMdSource, claudeMdDest);
   }
 }
 
-function copyDirectory(src: string, dest: string) {
-  if (!existsSync(dest)) {
-    mkdirSync(dest, { recursive: true });
-  }
+// These functions have been replaced by the more generic copyDir with filters
 
-  const entries = readdirSync(src);
 
-  for (const entry of entries) {
-    // Skip settings.json in language-specific directories (will use base template)
-    if (entry === 'settings.json') {
-      continue;
-    }
-
-    const srcPath = join(src, entry);
-    const destPath = join(dest, entry);
-    const stat = statSync(srcPath);
-
-    if (stat.isDirectory()) {
-      copyDirectory(srcPath, destPath);
-    } else {
-      copyFileSync(srcPath, destPath);
-    }
-  }
-}
-
-export interface ApiConfig {
-  url: string;
-  key: string;
-  authType?: 'auth_token' | 'api_key';
-}
+// ApiConfig type has been moved to types/config.ts
 
 /**
  * Read default settings.json configuration from template directory
  */
-function getDefaultSettings(): any {
+function getDefaultSettings(): ClaudeSettings {
   try {
     // Get template directory path
-    const currentFileUrl = new URL(import.meta.url);
-    const currentFilePath = currentFileUrl.pathname;
+    const currentFilePath = fileURLToPath(import.meta.url);
     const distDir = dirname(dirname(currentFilePath));
     const rootDir = dirname(distDir);
     const templateSettingsPath = join(rootDir, 'templates', 'settings.json');
 
-    if (existsSync(templateSettingsPath)) {
-      const content = readFileSync(templateSettingsPath, 'utf-8');
-      return JSON.parse(content);
-    }
+    return readJsonConfig<ClaudeSettings>(templateSettingsPath) || {};
   } catch (error) {
-    console.error('Failed to read template settings.json:', error);
+    console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToReadTemplateSettings, error);
     return {};
   }
 }
@@ -152,15 +115,10 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
   let settings = getDefaultSettings();
 
   // Merge with existing user configuration if available
-  if (existsSync(SETTINGS_FILE)) {
-    const content = readFileSync(SETTINGS_FILE, 'utf-8');
-    try {
-      const existingSettings = JSON.parse(content);
-      // Use deepMerge for deep merge, preserving user's custom configuration
-      settings = deepMerge(settings, existingSettings);
-    } catch (error) {
-      console.error('Failed to parse existing settings.json, using defaults:', error);
-    }
+  const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE);
+  if (existingSettings) {
+    // Use deepMerge for deep merge, preserving user's custom configuration
+    settings = deepMerge(settings, existingSettings);
   }
 
   // Ensure env object exists
@@ -184,76 +142,37 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
     settings.env.ANTHROPIC_BASE_URL = apiConfig.url;
   }
 
-  writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  writeJsonConfig(SETTINGS_FILE, settings);
   return apiConfig;
 }
 
 export function mergeConfigs(sourceFile: string, targetFile: string) {
-  if (!existsSync(sourceFile)) return;
+  if (!exists(sourceFile)) return;
 
-  let target: any = {};
-  if (existsSync(targetFile)) {
-    const content = readFileSync(targetFile, 'utf-8');
-    try {
-      target = JSON.parse(content);
-    } catch {
-      target = {};
-    }
-  }
-
-  const source = JSON.parse(readFileSync(sourceFile, 'utf-8'));
+  const target = readJsonConfig<ClaudeSettings>(targetFile) || {};
+  const source = readJsonConfig<ClaudeSettings>(sourceFile) || {};
 
   // Deep merge logic
   const merged = deepMerge(target, source);
 
-  writeFileSync(targetFile, JSON.stringify(merged, null, 2));
+  writeJsonConfig(targetFile, merged);
 }
 
 export function updateDefaultModel(model: 'opus' | 'sonnet') {
   let settings = getDefaultSettings();
   
-  if (existsSync(SETTINGS_FILE)) {
-    const content = readFileSync(SETTINGS_FILE, 'utf-8');
-    try {
-      settings = JSON.parse(content);
-    } catch (error) {
-      console.error('Failed to parse existing settings.json:', error);
-    }
+  const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE);
+  if (existingSettings) {
+    settings = existingSettings;
   }
   
   // Update model in settings
   settings.model = model;
   
-  writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+  writeJsonConfig(SETTINGS_FILE, settings);
 }
 
-/**
- * Merge arrays with unique values
- */
-function mergeArraysUnique(arr1: any[], arr2: any[]): any[] {
-  const combined = [...(arr1 || []), ...(arr2 || [])];
-  return [...new Set(combined)];
-}
-
-/**
- * Deep merge with options for array handling
- */
-function deepMerge(target: any, source: any, options: { mergeArrays?: boolean } = {}): any {
-  const result = { ...target };
-
-  for (const key in source) {
-    if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || {}, source[key], options);
-    } else if (Array.isArray(source[key]) && options.mergeArrays) {
-      // Merge arrays if option is enabled
-      result[key] = mergeArraysUnique(result[key], source[key]);
-    } else {
-      result[key] = source[key];
-    }
-  }
-
-  return result;
-}
+// Utility functions have been moved to object-utils.ts
 
 /**
  * Merge settings.json intelligently
@@ -262,27 +181,32 @@ function deepMerge(target: any, source: any, options: { mergeArrays?: boolean } 
 export function mergeSettingsFile(templatePath: string, targetPath: string): void {
   try {
     // Read template settings
-    const templateContent = readFileSync(templatePath, 'utf-8');
-    const templateSettings = JSON.parse(templateContent);
+    const templateSettings = readJsonConfig<ClaudeSettings>(templatePath);
+    if (!templateSettings) {
+      console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToReadTemplateSettings);
+      return;
+    }
     
     // If target doesn't exist, just copy template
-    if (!existsSync(targetPath)) {
-      writeFileSync(targetPath, JSON.stringify(templateSettings, null, 2));
+    if (!exists(targetPath)) {
+      writeJsonConfig(targetPath, templateSettings);
       return;
     }
     
     // Read existing settings
-    const existingContent = readFileSync(targetPath, 'utf-8');
-    const existingSettings = JSON.parse(existingContent);
+    const existingSettings = readJsonConfig<ClaudeSettings>(targetPath) || {};
     
     // Special handling for env variables - preserve all user's env vars
     const mergedEnv = {
-      ...templateSettings.env,  // Template env vars first
-      ...existingSettings.env   // User's env vars override (preserving API keys, etc.)
+      ...(templateSettings.env || {}),  // Template env vars first
+      ...(existingSettings.env || {})   // User's env vars override (preserving API keys, etc.)
     };
     
     // Merge settings with special handling for arrays
-    const mergedSettings = deepMerge(templateSettings, existingSettings, { mergeArrays: true });
+    const mergedSettings = deepMerge(templateSettings, existingSettings, { 
+      mergeArrays: true,
+      arrayMergeStrategy: 'unique'
+    });
     
     // Ensure user's env vars are preserved
     mergedSettings.env = mergedEnv;
@@ -296,15 +220,15 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
     }
     
     // Write merged settings
-    writeFileSync(targetPath, JSON.stringify(mergedSettings, null, 2));
+    writeJsonConfig(targetPath, mergedSettings);
   } catch (error) {
-    console.error('Failed to merge settings.json:', error);
+    console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToMergeSettings, error);
     // If merge fails, preserve existing file
-    if (existsSync(targetPath)) {
-      console.error('Preserving existing settings.json due to merge error');
+    if (exists(targetPath)) {
+      console.error(I18N[readZcfConfig()?.preferredLang || 'en'].preservingExistingSettings);
     } else {
       // If no existing file and merge failed, copy template as fallback
-      copyFileSync(templatePath, targetPath);
+      copyFile(templatePath, targetPath);
     }
   }
 }
@@ -313,67 +237,42 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
  * Get existing API configuration from settings.json
  */
 export function getExistingApiConfig(): ApiConfig | null {
-  if (!existsSync(SETTINGS_FILE)) {
+  const settings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE);
+  
+  if (!settings || !settings.env) {
     return null;
   }
 
-  try {
-    const content = readFileSync(SETTINGS_FILE, 'utf-8');
-    const settings = JSON.parse(content);
-    
-    if (!settings.env) {
-      return null;
-    }
-
-    const { ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL } = settings.env;
-    
-    // Check if any API configuration exists
-    if (!ANTHROPIC_BASE_URL && !ANTHROPIC_API_KEY && !ANTHROPIC_AUTH_TOKEN) {
-      return null;
-    }
-
-    // Determine auth type based on which key is present
-    let authType: 'auth_token' | 'api_key' | undefined;
-    let key: string | undefined;
-    
-    if (ANTHROPIC_AUTH_TOKEN) {
-      authType = 'auth_token';
-      key = ANTHROPIC_AUTH_TOKEN;
-    } else if (ANTHROPIC_API_KEY) {
-      authType = 'api_key';
-      key = ANTHROPIC_API_KEY;
-    }
-
-    return {
-      url: ANTHROPIC_BASE_URL || '',
-      key: key || '',
-      authType
-    };
-  } catch (error) {
-    console.error('Failed to read existing API config:', error);
+  const { ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL } = settings.env;
+  
+  // Check if any API configuration exists
+  if (!ANTHROPIC_BASE_URL && !ANTHROPIC_API_KEY && !ANTHROPIC_AUTH_TOKEN) {
     return null;
   }
+
+  // Determine auth type based on which key is present
+  let authType: 'auth_token' | 'api_key' | undefined;
+  let key: string | undefined;
+  
+  if (ANTHROPIC_AUTH_TOKEN) {
+    authType = 'auth_token';
+    key = ANTHROPIC_AUTH_TOKEN;
+  } else if (ANTHROPIC_API_KEY) {
+    authType = 'api_key';
+    key = ANTHROPIC_API_KEY;
+  }
+
+  return {
+    url: ANTHROPIC_BASE_URL || '',
+    key: key || '',
+    authType
+  };
 }
 
 export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string) {
-  // Read the existing CLAUDE.md file
-  if (!existsSync(CLAUDE_MD_FILE)) {
-    return;
-  }
-
-  let content = readFileSync(CLAUDE_MD_FILE, 'utf-8');
-
-  // Remove any existing language directive at the beginning
-  const lines = content.split('\n');
-  if (lines[0] && lines[0].startsWith('Always respond in')) {
-    lines.shift(); // Remove the first line
-    // Also remove empty line after it if exists
-    if (lines[0] === '') {
-      lines.shift();
-    }
-    content = lines.join('\n');
-  }
-
+  // Write language directive to a separate language.md file
+  const languageFile = join(CLAUDE_DIR, 'language.md');
+  
   // Prepare the language directive
   let directive = '';
   if (aiOutputLang === 'custom') {
@@ -386,9 +285,7 @@ export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string
     directive = `Always respond in ${aiOutputLang}`;
   }
 
-  // Add the new directive at the beginning
-  const newContent = directive + '\n\n' + content;
-
-  // Write back to the file
-  writeFileSync(CLAUDE_MD_FILE, newContent, 'utf-8');
+  // Write to language.md file directly without markers
+  writeFile(languageFile, directive);
 }
+

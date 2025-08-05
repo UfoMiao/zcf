@@ -1,5 +1,95 @@
 # Changelog
 
+## 2.0.0
+
+### Major Changes
+
+- ## ZCF 2.0.0 - 重大更新
+
+  ### 新增功能
+
+  #### 交互式菜单系统
+
+  - 新增 `zcf menu` 命令（默认命令改为显示菜单）
+  - 提供可视化配置管理界面
+  - 支持所有功能的图形化操作
+
+  #### AI 个性化配置
+
+  - 支持多种预设 AI 人格（专业助手、猫娘助手、友好助手、导师模式）
+  - 支持自定义 AI 人格
+  - AI 输出语言独立配置
+
+  #### 配置管理增强
+
+  - API 配置支持部分修改
+  - 新增默认模型配置功能
+  - 新增 AI 记忆管理功能
+  - 配置合并支持深度合并
+  - 新增 ZCF 缓存清理功能
+
+  #### 项目结构优化
+
+  - 模板文件重构：CLAUDE.md 拆分为 rules.md、personality.md 和 mcp.md
+  - 新增项目级 CLAUDE.md 模板
+  - 代码模块化重构，提升可维护性
+
+  ### 改进
+
+  - 命令行体验优化
+  - 错误处理增强
+  - 跨平台兼容性提升
+
+  ### 破坏性变更
+
+  - `zcf` 默认命令从初始化改为显示菜单
+  - 初始化命令改为 `zcf init` 或 `zcf i`
+  - 模板文件结构调整
+
+  ***
+
+  ## ZCF 2.0.0 - Major Update
+
+  ### New Features
+
+  #### Interactive Menu System
+
+  - Added `zcf menu` command (default command now shows menu)
+  - Provides visual configuration management interface
+  - Supports graphical operation for all features
+
+  #### AI Personality Configuration
+
+  - Support multiple preset AI personalities (Professional, Catgirl, Friendly, Mentor)
+  - Support custom AI personality
+  - Independent AI output language configuration
+
+  #### Enhanced Configuration Management
+
+  - API configuration supports partial modification
+  - Added default model configuration
+  - Added AI memory management
+  - Configuration merge supports deep merge
+  - Added ZCF cache cleanup
+
+  #### Project Structure Optimization
+
+  - Template files refactoring: CLAUDE.md split into rules.md, personality.md, and mcp.md
+  - Added project-level CLAUDE.md template
+  - Code modularization for better maintainability
+
+  ### Improvements
+
+  - Optimized CLI experience
+  - Enhanced error handling
+  - Improved cross-platform compatibility
+
+  ### Breaking Changes
+
+  - `zcf` default command changed from initialization to showing menu
+  - Initialization command changed to `zcf init` or `zcf i`
+  - Template file structure adjustment
+
 ## 1.2.0
 
 ### Minor Changes

@@ -2,18 +2,14 @@ import prompts from '@posva/prompts';
 import ansis from 'ansis';
 import { existsSync, unlinkSync } from 'node:fs';
 import type { SupportedLang } from '../constants';
-import { CLAUDE_DIR, I18N, LANG_LABELS, MCP_SERVICES, SETTINGS_FILE, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../constants';
+import { I18N, LANG_LABELS, MCP_SERVICES, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../constants';
 import type { McpServerConfig } from '../types';
 import { 
   applyAiLanguageDirective, 
-  backupExistingConfig, 
   configureApi, 
-  copyConfigFiles, 
-  ensureClaudeDir,
   updateDefaultModel,
   getExistingApiConfig
 } from './config';
-import { installClaudeCode, isClaudeCodeInstalled } from './installer';
 import { 
   backupMcpConfig, 
   buildMcpServerConfig, 
@@ -27,120 +23,14 @@ import { resolveAiOutputLanguage } from './prompts';
 import { readZcfConfig, updateZcfConfig } from './zcf-config';
 import { validateApiKey, formatApiKeyDisplay } from './validator';
 import { configureAiPersonality } from './ai-personality';
-import { updatePromptOnly, modifyApiConfigPartially } from '../commands/init';
+import { modifyApiConfigPartially } from './config-operations';
 
 // Helper function to handle cancelled operations
 function handleCancellation(scriptLang: SupportedLang): void {
   console.log(ansis.yellow(I18N[scriptLang].cancelled));
 }
 
-// Full initialization (current init command logic)
-export async function fullInitFeature(scriptLang: SupportedLang) {
-  const i18n = I18N[scriptLang];
-  
-  // Select config language
-  const configLangResponse = await prompts({
-    type: 'select',
-    name: 'lang',
-    message: i18n.selectConfigLang,
-    choices: SUPPORTED_LANGS.map((l) => ({
-      title: `${LANG_LABELS[l]} - ${i18n.configLangHint[l]}`,
-      value: l,
-    })),
-  });
-  
-  if (!configLangResponse.lang) {
-    handleCancellation(scriptLang);
-    return;
-  }
-  
-  const configLang = configLangResponse.lang as SupportedLang;
-  
-  // Install Claude Code if needed
-  const installed = await isClaudeCodeInstalled();
-  if (!installed) {
-    const response = await prompts({
-      type: 'confirm',
-      name: 'shouldInstall',
-      message: i18n.installPrompt,
-      initial: true,
-    });
 
-    if (response.shouldInstall) {
-      await installClaudeCode(scriptLang);
-    }
-  } else {
-    console.log(ansis.green(`✔ ${i18n.installSuccess}`));
-  }
-  
-  // Handle existing config
-  ensureClaudeDir();
-  if (existsSync(SETTINGS_FILE)) {
-    const backupDir = backupExistingConfig();
-    if (backupDir) {
-      console.log(ansis.gray(`✔ ${i18n.backupSuccess}: ${backupDir}`));
-    }
-  }
-  
-  // Copy config files
-  copyConfigFiles(configLang, false);
-  
-  // Configure API
-  await configureApiFeature(scriptLang);
-  
-  // Configure MCP
-  await configureMcpFeature(scriptLang);
-  
-  // Apply AI language
-  const zcfConfig = readZcfConfig();
-  const aiOutputLang = await resolveAiOutputLanguage(scriptLang, undefined, zcfConfig);
-  applyAiLanguageDirective(aiOutputLang);
-  
-  // Save config
-  updateZcfConfig({
-    preferredLang: scriptLang,
-    aiOutputLang: aiOutputLang,
-  });
-  
-  console.log(ansis.green(`✔ ${i18n.configSuccess} ${CLAUDE_DIR}`));
-  console.log('\n' + ansis.cyan(i18n.complete));
-}
-
-// Import workflow only
-export async function importWorkflowFeature(scriptLang: SupportedLang) {
-  const i18n = I18N[scriptLang];
-  
-  if (!existsSync(SETTINGS_FILE)) {
-    console.log(ansis.yellow(i18n.noExistingConfig));
-    return;
-  }
-  
-  const configLangResponse = await prompts({
-    type: 'select',
-    name: 'lang',
-    message: i18n.selectConfigLang,
-    choices: SUPPORTED_LANGS.map((l) => ({
-      title: `${LANG_LABELS[l]} - ${i18n.configLangHint[l]}`,
-      value: l,
-    })),
-  });
-  
-  if (!configLangResponse.lang) {
-    handleCancellation(scriptLang);
-    return;
-  }
-  
-  const configLang = configLangResponse.lang as SupportedLang;
-  const zcfConfig = readZcfConfig();
-  const aiOutputLang = await resolveAiOutputLanguage(scriptLang, undefined, zcfConfig);
-  
-  await updatePromptOnly(configLang, scriptLang, aiOutputLang);
-  
-  updateZcfConfig({
-    preferredLang: scriptLang,
-    aiOutputLang: aiOutputLang,
-  });
-}
 
 // Configure API
 export async function configureApiFeature(scriptLang: SupportedLang) {
@@ -152,9 +42,9 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
   if (existingApiConfig) {
     // Display existing configuration
     console.log('\n' + ansis.blue(`ℹ ${i18n.existingApiConfig}`));
-    console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${existingApiConfig.url || 'Not configured'}`));
-    console.log(ansis.gray(`  ${i18n.apiConfigKey}: ${existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : 'Not configured'}`));
-    console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${existingApiConfig.authType || 'Not configured'}\n`));
+    console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${existingApiConfig.url || i18n.notConfigured}`));
+    console.log(ansis.gray(`  ${i18n.apiConfigKey}: ${existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.notConfigured}`));
+    console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${existingApiConfig.authType || i18n.notConfigured}\n`));
     
     // Ask user what to do with existing config
     const actionResponse = await prompts({
@@ -218,12 +108,12 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
     name: 'url',
     message: i18n.enterApiUrl,
     validate: (value) => {
-      if (!value) return 'URL is required';
+      if (!value) return i18n.urlRequired;
       try {
         new URL(value);
         return true;
       } catch {
-        return 'Invalid URL';
+        return i18n.invalidUrl;
       }
     },
   });
@@ -240,12 +130,12 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
     message: keyMessage,
     validate: (value) => {
       if (!value) {
-        return `${apiChoice === 'auth_token' ? 'Auth Token' : 'API Key'} is required`;
+        return i18n.keyRequired;
       }
       
       const validation = validateApiKey(value, scriptLang);
       if (!validation.isValid) {
-        return validation.error || 'Invalid API Key format';
+        return validation.error || i18n.invalidKeyFormat;
       }
       
       return true;
@@ -308,7 +198,7 @@ export async function configureMcpFeature(scriptLang: SupportedLang) {
     message: i18n.selectMcpServices,
     choices,
     instructions: false,
-    hint: '- Space to select. Return to submit',
+    hint: i18n.spaceToSelectReturn,
   });
 
   if (!selectedResponse.services) {
@@ -339,7 +229,7 @@ export async function configureMcpFeature(scriptLang: SupportedLang) {
           type: 'text',
           name: 'apiKey',
           message: service.apiKeyPrompt![scriptLang],
-          validate: (value) => !!value || 'API Key is required',
+          validate: (value) => !!value || i18n.keyRequired,
         });
 
         if (apiKeyResponse.apiKey) {

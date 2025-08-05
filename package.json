@@ -1,11 +1,11 @@
 {
   "name": "zcf",
   "type": "module",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "packageManager": "pnpm@9.15.9",
   "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
   "license": "MIT",
-  "homepage": "https://github.com/UfoMiao/zcf#readme",
+  "homepage": "https://github.com/UfoMiao/zcf",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/UfoMiao/zcf.git"

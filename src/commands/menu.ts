@@ -1,11 +1,8 @@
 import prompts from '@posva/prompts';
 import ansis from 'ansis';
-import { version } from '../../package.json';
 import { I18N } from '../constants';
-import { displayBanner } from '../utils/banner';
+import { displayBannerWithInfo } from '../utils/banner';
 import {
-  fullInitFeature,
-  importWorkflowFeature,
   configureApiFeature,
   configureMcpFeature,
   configureDefaultModelFeature,
@@ -13,14 +10,15 @@ import {
   clearZcfCacheFeature,
   changeScriptLanguageFeature,
 } from '../utils/features';
+import { init } from './init';
+import { update } from './update';
 import { selectScriptLanguage } from '../utils/prompts';
 import { readZcfConfig } from '../utils/zcf-config';
 
 export async function showMainMenu() {
   try {
     // Display banner
-    displayBanner();
-    console.log(ansis.gray(`  Version: ${ansis.cyan(version)}  |  ${ansis.cyan('https://github.com/UfoMiao/zcf')}\n`));
+    displayBannerWithInfo();
 
     // Get script language
     const zcfConfig = readZcfConfig();
@@ -33,15 +31,45 @@ export async function showMainMenu() {
 
       // Display menu options
       console.log(ansis.cyan(i18n.selectFunction));
+      console.log('  -------- Claude Code --------');
+      console.log(
+        `  ${ansis.cyan('1.')} ${i18n.menuOptions.fullInit} ${ansis.gray('- ' + i18n.menuDescriptions.fullInit)}`
+      );
+      console.log(
+        `  ${ansis.cyan('2.')} ${i18n.menuOptions.importWorkflow} ${ansis.gray(
+          '- ' + i18n.menuDescriptions.importWorkflow
+        )}`
+      );
+      console.log(
+        `  ${ansis.cyan('3.')} ${i18n.menuOptions.configureApi} ${ansis.gray(
+          '- ' + i18n.menuDescriptions.configureApi
+        )}`
+      );
+      console.log(
+        `  ${ansis.cyan('4.')} ${i18n.menuOptions.configureMcp} ${ansis.gray(
+          '- ' + i18n.menuDescriptions.configureMcp
+        )}`
+      );
+      console.log(
+        `  ${ansis.cyan('5.')} ${i18n.menuOptions.configureModel} ${ansis.gray(
+          '- ' + i18n.menuDescriptions.configureModel
+        )}`
+      );
+      console.log(
+        `  ${ansis.cyan('6.')} ${i18n.menuOptions.configureAiMemory} ${ansis.gray(
+          '- ' + i18n.menuDescriptions.configureAiMemory
+        )}`
+      );
       console.log('');
-      console.log(`  ${ansis.cyan('1.')} ${i18n.menuOptions.fullInit} ${ansis.gray('- ' + i18n.menuDescriptions.fullInit)}`);
-      console.log(`  ${ansis.cyan('2.')} ${i18n.menuOptions.importWorkflow} ${ansis.gray('- ' + i18n.menuDescriptions.importWorkflow)}`);
-      console.log(`  ${ansis.cyan('3.')} ${i18n.menuOptions.configureApi} ${ansis.gray('- ' + i18n.menuDescriptions.configureApi)}`);
-      console.log(`  ${ansis.cyan('4.')} ${i18n.menuOptions.configureMcp} ${ansis.gray('- ' + i18n.menuDescriptions.configureMcp)}`);
-      console.log(`  ${ansis.cyan('5.')} ${i18n.menuOptions.configureModel} ${ansis.gray('- ' + i18n.menuDescriptions.configureModel)}`);
-      console.log(`  ${ansis.cyan('6.')} ${i18n.menuOptions.configureAiMemory} ${ansis.gray('- ' + i18n.menuDescriptions.configureAiMemory)}`);
-      console.log(`  ${ansis.cyan('0.')} ${i18n.menuOptions.changeLanguage} ${ansis.gray('- ' + i18n.menuDescriptions.changeLanguage)}`);
-      console.log(`  ${ansis.gray('-.')} ${ansis.gray(i18n.menuOptions.clearCache)} ${ansis.gray('- ' + i18n.menuDescriptions.clearCache)}`);
+      console.log('  ------------ ZCF ------------');
+      console.log(
+        `  ${ansis.cyan('0.')} ${i18n.menuOptions.changeLanguage} ${ansis.gray(
+          '- ' + i18n.menuDescriptions.changeLanguage
+        )}`
+      );
+      console.log(
+        `  ${ansis.cyan('-.')} ${i18n.menuOptions.clearCache} ${ansis.gray('- ' + i18n.menuDescriptions.clearCache)}`
+      );
       console.log(`  ${ansis.red('q.')} ${ansis.red(i18n.menuOptions.exit)}`);
       console.log('');
 
@@ -52,7 +80,7 @@ export async function showMainMenu() {
         message: i18n.enterChoice || 'Enter your choice',
         validate: (value) => {
           const valid = ['1', '2', '3', '4', '5', '6', '0', '-', 'q', 'Q'];
-          return valid.includes(value) || 'Invalid choice. Please enter a valid option.';
+          return valid.includes(value) || i18n.invalidChoice;
         },
       });
 
@@ -65,10 +93,10 @@ export async function showMainMenu() {
       // Handle menu selection
       switch (response.choice.toLowerCase()) {
         case '1':
-          await fullInitFeature(scriptLang);
+          await init({ lang: scriptLang, skipBanner: true });
           break;
         case '2':
-          await importWorkflowFeature(scriptLang);
+          await update({ skipBanner: true });
           break;
         case '3':
           await configureApiFeature(scriptLang);
