@@ -46,3 +46,17 @@ export function showApiKeyError(error: string, lang: SupportedLang = 'zh-CN'): v
   console.log(ansis.red(`✗ ${error}`));
   console.log(ansis.gray(i18n.apiKeyValidation.example));
 }
+
+/**
+ * Detect auth type from API key format
+ * @param apiKey - API Key to analyze
+ * @returns Detected auth type
+ */
+export function detectAuthType(apiKey: string): 'auth_token' | 'api_key' {
+  // Claude API keys typically start with 'sk-ant-'
+  if (apiKey.startsWith('sk-ant-')) {
+    return 'auth_token';
+  }
+  // Default to api_key for other formats
+  return 'api_key';
+}

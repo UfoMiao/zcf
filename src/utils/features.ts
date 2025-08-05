@@ -10,7 +10,8 @@ import {
   configureApi, 
   copyConfigFiles, 
   ensureClaudeDir,
-  updateDefaultModel
+  updateDefaultModel,
+  getExistingApiConfig
 } from './config';
 import { installClaudeCode, isClaudeCodeInstalled } from './installer';
 import { 
@@ -26,7 +27,7 @@ import { resolveAiOutputLanguage } from './prompts';
 import { readZcfConfig, updateZcfConfig } from './zcf-config';
 import { validateApiKey, formatApiKeyDisplay } from './validator';
 import { configureAiPersonality } from './ai-personality';
-import { updatePromptOnly } from '../commands/init';
+import { updatePromptOnly, modifyApiConfigPartially } from '../commands/init';
 
 // Helper function to handle cancelled operations
 function handleCancellation(scriptLang: SupportedLang): void {
@@ -145,6 +146,45 @@ export async function importWorkflowFeature(scriptLang: SupportedLang) {
 export async function configureApiFeature(scriptLang: SupportedLang) {
   const i18n = I18N[scriptLang];
   
+  // Check for existing API configuration
+  const existingApiConfig = getExistingApiConfig();
+  
+  if (existingApiConfig) {
+    // Display existing configuration
+    console.log('\n' + ansis.blue(`ℹ ${i18n.existingApiConfig}`));
+    console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${existingApiConfig.url || 'Not configured'}`));
+    console.log(ansis.gray(`  ${i18n.apiConfigKey}: ${existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : 'Not configured'}`));
+    console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${existingApiConfig.authType || 'Not configured'}\n`));
+    
+    // Ask user what to do with existing config
+    const actionResponse = await prompts({
+      type: 'select',
+      name: 'action',
+      message: i18n.selectApiAction,
+      choices: [
+        { title: i18n.keepExistingConfig, value: 'keep' },
+        { title: i18n.modifyAllConfig, value: 'modify-all' },
+        { title: i18n.modifyPartialConfig, value: 'modify-partial' },
+      ],
+    });
+    
+    if (!actionResponse.action) {
+      handleCancellation(scriptLang);
+      return;
+    }
+    
+    if (actionResponse.action === 'keep') {
+      console.log(ansis.green(`✔ ${i18n.keepExistingConfig}`));
+      return;
+    } else if (actionResponse.action === 'modify-partial') {
+      // Handle partial modification
+      await modifyApiConfigPartially(existingApiConfig, i18n, scriptLang);
+      return;
+    }
+    // If 'modify-all', continue to full configuration below
+  }
+  
+  // Full configuration (new or modify-all)
   const apiResponse = await prompts({
     type: 'select',
     name: 'apiChoice',

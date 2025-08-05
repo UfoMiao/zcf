@@ -61,11 +61,11 @@ export function copyConfigFiles(lang: SupportedLang, onlyMd: boolean = false) {
     // Copy all files from language-specific directory
     copyDirectory(sourceDir, CLAUDE_DIR);
 
-    // Copy base settings.json from templates root directory
+    // Intelligently merge settings.json instead of copying
     const baseSettingsPath = join(baseTemplateDir, 'settings.json');
     const destSettingsPath = join(CLAUDE_DIR, 'settings.json');
     if (existsSync(baseSettingsPath)) {
-      copyFileSync(baseSettingsPath, destSettingsPath);
+      mergeSettingsFile(baseSettingsPath, destSettingsPath);
     }
   }
 }
@@ -163,14 +163,26 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
     }
   }
 
+  // Ensure env object exists
+  if (!settings.env) {
+    settings.env = {};
+  }
+
   // Update API configuration based on auth type
   if (apiConfig.authType === 'api_key') {
     settings.env.ANTHROPIC_API_KEY = apiConfig.key;
-  } else {
-    // Default to AUTH_TOKEN for backward compatibility
+    // Remove auth token if switching to API key
+    delete settings.env.ANTHROPIC_AUTH_TOKEN;
+  } else if (apiConfig.authType === 'auth_token') {
     settings.env.ANTHROPIC_AUTH_TOKEN = apiConfig.key;
+    // Remove API key if switching to auth token
+    delete settings.env.ANTHROPIC_API_KEY;
   }
-  settings.env.ANTHROPIC_BASE_URL = apiConfig.url;
+  
+  // Always update URL if provided
+  if (apiConfig.url) {
+    settings.env.ANTHROPIC_BASE_URL = apiConfig.url;
+  }
 
   writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
   return apiConfig;
@@ -215,18 +227,132 @@ export function updateDefaultModel(model: 'opus' | 'sonnet') {
   writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
 }
 
-function deepMerge(target: any, source: any): any {
+/**
+ * Merge arrays with unique values
+ */
+function mergeArraysUnique(arr1: any[], arr2: any[]): any[] {
+  const combined = [...(arr1 || []), ...(arr2 || [])];
+  return [...new Set(combined)];
+}
+
+/**
+ * Deep merge with options for array handling
+ */
+function deepMerge(target: any, source: any, options: { mergeArrays?: boolean } = {}): any {
   const result = { ...target };
 
   for (const key in source) {
     if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
-      result[key] = deepMerge(result[key] || {}, source[key]);
+      result[key] = deepMerge(result[key] || {}, source[key], options);
+    } else if (Array.isArray(source[key]) && options.mergeArrays) {
+      // Merge arrays if option is enabled
+      result[key] = mergeArraysUnique(result[key], source[key]);
     } else {
       result[key] = source[key];
     }
   }
 
   return result;
+}
+
+/**
+ * Merge settings.json intelligently
+ * Preserves user's environment variables and custom configurations
+ */
+export function mergeSettingsFile(templatePath: string, targetPath: string): void {
+  try {
+    // Read template settings
+    const templateContent = readFileSync(templatePath, 'utf-8');
+    const templateSettings = JSON.parse(templateContent);
+    
+    // If target doesn't exist, just copy template
+    if (!existsSync(targetPath)) {
+      writeFileSync(targetPath, JSON.stringify(templateSettings, null, 2));
+      return;
+    }
+    
+    // Read existing settings
+    const existingContent = readFileSync(targetPath, 'utf-8');
+    const existingSettings = JSON.parse(existingContent);
+    
+    // Special handling for env variables - preserve all user's env vars
+    const mergedEnv = {
+      ...templateSettings.env,  // Template env vars first
+      ...existingSettings.env   // User's env vars override (preserving API keys, etc.)
+    };
+    
+    // Merge settings with special handling for arrays
+    const mergedSettings = deepMerge(templateSettings, existingSettings, { mergeArrays: true });
+    
+    // Ensure user's env vars are preserved
+    mergedSettings.env = mergedEnv;
+    
+    // Handle permissions.allow array specially to avoid duplicates
+    if (mergedSettings.permissions && mergedSettings.permissions.allow) {
+      mergedSettings.permissions.allow = mergeArraysUnique(
+        templateSettings.permissions?.allow || [],
+        existingSettings.permissions?.allow || []
+      );
+    }
+    
+    // Write merged settings
+    writeFileSync(targetPath, JSON.stringify(mergedSettings, null, 2));
+  } catch (error) {
+    console.error('Failed to merge settings.json:', error);
+    // If merge fails, preserve existing file
+    if (existsSync(targetPath)) {
+      console.error('Preserving existing settings.json due to merge error');
+    } else {
+      // If no existing file and merge failed, copy template as fallback
+      copyFileSync(templatePath, targetPath);
+    }
+  }
+}
+
+/**
+ * Get existing API configuration from settings.json
+ */
+export function getExistingApiConfig(): ApiConfig | null {
+  if (!existsSync(SETTINGS_FILE)) {
+    return null;
+  }
+
+  try {
+    const content = readFileSync(SETTINGS_FILE, 'utf-8');
+    const settings = JSON.parse(content);
+    
+    if (!settings.env) {
+      return null;
+    }
+
+    const { ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL } = settings.env;
+    
+    // Check if any API configuration exists
+    if (!ANTHROPIC_BASE_URL && !ANTHROPIC_API_KEY && !ANTHROPIC_AUTH_TOKEN) {
+      return null;
+    }
+
+    // Determine auth type based on which key is present
+    let authType: 'auth_token' | 'api_key' | undefined;
+    let key: string | undefined;
+    
+    if (ANTHROPIC_AUTH_TOKEN) {
+      authType = 'auth_token';
+      key = ANTHROPIC_AUTH_TOKEN;
+    } else if (ANTHROPIC_API_KEY) {
+      authType = 'api_key';
+      key = ANTHROPIC_API_KEY;
+    }
+
+    return {
+      url: ANTHROPIC_BASE_URL || '',
+      key: key || '',
+      authType
+    };
+  } catch (error) {
+    console.error('Failed to read existing API config:', error);
+    return null;
+  }
 }
 
 export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string) {
