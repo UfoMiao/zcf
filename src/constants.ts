@@ -85,6 +85,54 @@ export const I18N = {
       'zh-CN': '中文版配置',
       en: '英文版配置',
     },
+    // Menu related
+    selectFunction: '请选择功能',
+    enterChoice: '请输入选项',
+    menuOptions: {
+      fullInit: '完整初始化',
+      importWorkflow: '导入工作流',
+      configureApi: '配置 API',
+      configureMcp: '配置 MCP',
+      configureModel: '配置默认模型',
+      configureAiMemory: '配置 Claude 全局记忆',
+      clearCache: '清除 ZCF 偏好缓存',
+      changeLanguage: '修改脚本语言',
+      exit: '退出',
+    },
+    menuDescriptions: {
+      fullInit: '安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务',
+      importWorkflow: '仅导入/更新工作流相关文件',
+      configureApi: '配置 API URL 和认证信息',
+      configureMcp: '配置 MCP 服务（含 Windows 修复）',
+      configureModel: '设置默认模型（opus/sonnet）',
+      configureAiMemory: '配置 AI 输出语言和角色风格',
+      clearCache: '清除偏好语言等缓存',
+      changeLanguage: '更改界面语言',
+    },
+    returnToMenu: '返回主菜单？',
+    goodbye: '再见！👋',
+    // Model config
+    selectDefaultModel: '选择默认模型',
+    modelConfigSuccess: '默认模型已配置',
+    // AI memory config
+    selectMemoryOption: '选择配置选项',
+    configureAiLanguage: '配置 AI 输出语言',
+    configureAiPersonality: '配置 AI 个性风格',
+    aiLanguageConfigured: 'AI 输出语言已配置',
+    // AI personality
+    selectAiPersonality: '选择 AI 个性风格',
+    customPersonalityHint: '定义你自己的个性',
+    enterCustomPersonality: '请输入自定义个性描述',
+    personalityConfigured: 'AI 个性已配置',
+    // Cache
+    confirmClearCache: '确认清除所有 ZCF 偏好缓存？',
+    cacheCleared: 'ZCF 缓存已清除',
+    noCacheFound: '未找到缓存文件',
+    // Language
+    languageChanged: '语言已更改',
+    // Windows MCP
+    fixWindowsMcp: '检测到 Windows 系统，是否修复 MCP 配置？',
+    windowsMcpFixed: 'Windows MCP 配置已修复',
   },
   en: {
     selectScriptLang: 'Select script language',
@@ -146,6 +194,54 @@ export const I18N = {
       'zh-CN': 'Chinese configuration',
       en: 'English configuration',
     },
+    // Menu related
+    selectFunction: 'Select function',
+    enterChoice: 'Enter your choice',
+    menuOptions: {
+      fullInit: 'Full initialization',
+      importWorkflow: 'Import workflow',
+      configureApi: 'Configure API',
+      configureMcp: 'Configure MCP',
+      configureModel: 'Configure default model',
+      configureAiMemory: 'Configure Claude global memory',
+      clearCache: 'Clear ZCF preference cache',
+      changeLanguage: 'Change script language',
+      exit: 'Exit',
+    },
+    menuDescriptions: {
+      fullInit: 'Install Claude Code + Import workflow + Configure API + Configure MCP services',
+      importWorkflow: 'Import/update workflow-related files only',
+      configureApi: 'Configure API URL and authentication',
+      configureMcp: 'Configure MCP services (includes Windows fix)',
+      configureModel: 'Set default model (opus/sonnet)',
+      configureAiMemory: 'Configure AI output language and personality',
+      clearCache: 'Clear preference language and other caches',
+      changeLanguage: 'Change interface language',
+    },
+    returnToMenu: 'Return to main menu?',
+    goodbye: 'Goodbye! 👋',
+    // Model config
+    selectDefaultModel: 'Select default model',
+    modelConfigSuccess: 'Default model configured',
+    // AI memory config
+    selectMemoryOption: 'Select configuration option',
+    configureAiLanguage: 'Configure AI output language',
+    configureAiPersonality: 'Configure AI personality',
+    aiLanguageConfigured: 'AI output language configured',
+    // AI personality
+    selectAiPersonality: 'Select AI personality',
+    customPersonalityHint: 'Define your own personality',
+    enterCustomPersonality: 'Enter custom personality description',
+    personalityConfigured: 'AI personality configured',
+    // Cache
+    confirmClearCache: 'Confirm clear all ZCF preference cache?',
+    cacheCleared: 'ZCF cache cleared',
+    noCacheFound: 'No cache file found',
+    // Language
+    languageChanged: 'Language changed',
+    // Windows MCP
+    fixWindowsMcp: 'Windows detected. Fix MCP configuration?',
+    windowsMcpFixed: 'Windows MCP configuration fixed',
   },
 };
 

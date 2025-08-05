@@ -197,6 +197,24 @@ export function mergeConfigs(sourceFile: string, targetFile: string) {
   writeFileSync(targetFile, JSON.stringify(merged, null, 2));
 }
 
+export function updateDefaultModel(model: 'opus' | 'sonnet') {
+  let settings = getDefaultSettings();
+  
+  if (existsSync(SETTINGS_FILE)) {
+    const content = readFileSync(SETTINGS_FILE, 'utf-8');
+    try {
+      settings = JSON.parse(content);
+    } catch (error) {
+      console.error('Failed to parse existing settings.json:', error);
+    }
+  }
+  
+  // Update model in settings
+  settings.model = model;
+  
+  writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
+}
+
 function deepMerge(target: any, source: any): any {
   const result = { ...target };
 
