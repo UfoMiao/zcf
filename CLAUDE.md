@@ -2,133 +2,157 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 开发命令
+## Project Overview
 
+ZCF (Zero-Config Claude-Code Flow) is a CLI tool that automatically configures Claude Code environments. It's built with TypeScript and distributed as an npm package. The tool provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows.
+
+## Development Guidelines
+
+- **Documentation Language**: Except for README_zh, all code comments and documentation should be written in English
+
+## Development Commands
+
+### Build & Run
 ```bash
-# 开发模式运行
+# Development (uses tsx for TypeScript execution)
 pnpm dev
 
-# 构建项目
+# Build for production (uses unbuild)
 pnpm build
 
-# 类型检查
+# Type checking
 pnpm typecheck
+```
 
-# 本地测试构建结果
+### Testing
+```bash
+# Run all tests
 pnpm test
 
-# 版本管理
+# Run tests in watch mode (for development)
+pnpm test:watch
+
+# Run tests with UI
+pnpm test:ui
+
+# Generate coverage report
+pnpm test:coverage
+
+# Run tests once
+pnpm test:run
+
+# Run specific test file
+pnpm vitest utils/config.test.ts
+
+# Run tests matching pattern
+pnpm vitest --grep "should handle"
+```
+
+### Release & Publishing
+```bash
+# Create a changeset for version updates
 pnpm changeset
+
+# Update package version based on changesets
 pnpm version
+
+# Build and publish to npm
 pnpm release
 ```
 
-## 项目架构
+## Architecture & Code Organization
 
-这是一个 Claude Code 零配置工具 (ZCF - Zero-Config Claude-Code Flow)，用于自动化配置 Claude Code 的工作环境。当前版本: v2.3.0
+### Entry Points
+- `bin/zcf.mjs` - CLI executable entry point
+- `src/cli.ts` - CLI setup and parsing
+- `src/cli-setup.ts` - Command registration and routing
+- `src/index.ts` - Library exports
 
-### 核心组件
+### Core Commands
+- `src/commands/init.ts` - Full initialization flow (install Claude Code + configure API + setup MCP)
+- `src/commands/update.ts` - Update workflow-related markdown files only
+- `src/commands/menu.ts` - Interactive menu system (default command)
 
-1. **CLI 入口** (`src/cli.ts`)：使用 cac 构建的命令行界面，处理用户交互和命令解析
+### Utilities Architecture
+The project follows a modular utility architecture:
 
-2. **初始化流程** (`src/commands/init.ts`)：多步配置流程
+- **Configuration Management**
+  - `utils/config.ts` - Core configuration operations (backup, copy, API setup)
+  - `utils/config-operations.ts` - Advanced config operations (partial updates, merging)
+  - `utils/json-config.ts` - JSON file operations with error handling
+  - `utils/zcf-config.ts` - ZCF-specific configuration persistence
 
-   - 选择 ZCF 显示语言（中文/英文）
-   - 选择配置语言（决定复制哪套模板）
-   - 选择 AI 输出语言和个性（v2.0 新增）
-   - 检测并安装 Claude Code
-   - 处理现有配置（备份/合并/跳过）
-   - 配置 API（支持部分修改）
-   - 复制配置文件
-   - 配置 MCP 服务（自动配置，支持多选）
-   - 处理需要 API Key 的服务
-   - 生成并保存 ~/.claude.json
+- **MCP (Model Context Protocol) Services**
+  - `utils/mcp.ts` - MCP configuration management
+  - `utils/mcp-selector.ts` - Interactive MCP service selection
 
-3. **命令系统** (`src/commands/`)
+- **Installation & Platform**
+  - `utils/installer.ts` - Claude Code installation logic
+  - `utils/platform.ts` - Cross-platform compatibility (Windows/macOS/Linux/Termux)
 
-   - `init.ts`：完整初始化流程
-   - `update.ts`：更新工作流文件
-   - `menu.ts`：交互式菜单系统（v2.0 新增，现使用 inquirer 提供更稳定的 UI）
+- **User Interaction**
+  - `utils/prompts.ts` - Language selection and user prompts
+  - `utils/ai-personality.ts` - AI personality configuration
+  - `utils/banner.ts` - CLI banner display
 
-4. **工具函数**
+### Key Design Patterns
 
-   - `utils/installer.ts`：Claude Code 安装检测和自动安装（支持增强命令检测）
-   - `utils/config.ts`：配置文件管理（备份、复制、合并）
-   - `utils/config-operations.ts`：配置部分修改（v2.0 新增）
-   - `utils/config-validator.ts`：配置验证（v2.0 新增）
-   - `utils/platform.ts`：跨平台路径处理（支持 Windows/macOS/Linux/Termux）
-   - `utils/mcp.ts`：MCP 配置管理（读取、写入、合并、备份）
-   - `utils/ai-personality.ts`：AI 个性化配置（v2.0 新增）
-   - `utils/features.ts`：功能模块管理（v2.0 新增）
-   - `utils/zcf-config.ts`：ZCF 配置持久化（v2.0 新增）
+1. **Modular Command Structure**: Each command is self-contained with its own options interface
+2. **I18N Support**: All user-facing strings support zh-CN and en localization
+3. **Error Handling**: Graceful error handling with user-friendly messages
+4. **Configuration Merging**: Smart config merging to preserve user customizations
+5. **Cross-Platform Support**: Special handling for Windows paths and Termux environment
 
-5. **模板系统** (`templates/`)：优化的配置结构
-   - `CLAUDE.md`：项目级配置模板（v2.0 新增）
-   - `settings.json`：基础配置（含隐私保护环境变量）
-   - `en/` 和 `zh-CN/`：语言特定配置
-     - `rules.md`：系统指令和原则（原 CLAUDE.md）
-     - `personality.md`：AI 个性化指令（v2.0 新增）
-     - `mcp.md`：MCP 服务使用说明（v2.0 新增）
-     - `technical-guides.md`：技术执行指南（v2.2 新增，包含危险操作确认和路径处理）
-     - `agents/`：AI 代理定义（planner、ui-ux-designer）
-     - `commands/`：自定义命令（feat、workflow）
+### Testing Strategy
 
-### 构建配置
+The project uses Vitest with a layered testing approach:
 
-使用 unbuild 构建工具，配置在 `build.config.ts`：
+1. **Core Tests** (`*.test.ts`) - Basic functionality and main flows
+2. **Edge Tests** (`*.edge.test.ts`) - Boundary conditions and error scenarios
+3. **Coverage Goals**: 90% for lines, functions, and statements
 
-- 入口：src/index 和 src/cli
-- 输出：ESM 格式到 dist/
-- 内联所有依赖
+Tests extensively use mocking for:
+- File system operations
+- External command execution
+- User prompts
+- Platform detection
 
-### 发布流程
+### Important Implementation Details
 
-作为 npm 包 `zcf`，支持 npx 直接执行：
+1. **Windows Compatibility**: MCP configurations require special handling for Windows paths (using `cmd /c` wrapper)
+2. **Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/`
+3. **API Configuration**: Supports both Auth Token (OAuth) and API Key authentication methods
+4. **Template System**: Configuration templates are stored in `templates/` with language-specific subdirectories
+5. **Error Recovery**: Exit prompt errors are handled separately to ensure clean termination
 
-- bin 入口：`bin/zcf.mjs`
-- 发布文件：dist、bin、templates
+### Type System
 
-## 代码规范
+The project uses strict TypeScript with:
+- Explicit type definitions in `src/types/` and `src/types.ts`
+- Interface-based design for options and configurations
+- Proper null/undefined handling throughout
 
-- TypeScript 严格模式
-- ESM 模块系统
-- 使用 inquirer 处理交互（v2.1 中替换了 @posva/prompts，解决 UI 渲染问题）
-- 使用 ansis 处理终端颜色
-- 路径处理使用 pathe 确保跨平台兼容
-- 使用 dayjs 处理时间格式化
-- 代码注释用英文
-- 使用 changeset 进行版本管理
-- CHANGELOG 用双语,不要在同一行,整体一个语言,中文在上,英文在下
-- 不需要主动 npm 发布，有 github actions 自动发布
+## Common Development Tasks
 
-## 版本特性更新
+### Adding a New MCP Service
+1. Add service definition to `MCP_SERVICES` in `src/constants.ts`
+2. Update types in `src/types.ts` if needed
+3. Test the service configuration flow
 
-### v2.3.0 新增特性
-- **危险操作确认机制**：提升 Claude Code 使用安全性
-- **优化技术指南**：减少 token 消耗约 30%
+### Adding a New Command
+1. Create command file in `src/commands/`
+2. Define options interface
+3. Register in `src/cli-setup.ts`
+4. Add corresponding tests
 
-### v2.2.0 新增特性
-- **技术执行指南**：提供命令执行最佳实践
-- **跨平台路径处理**：自动为包含空格的路径添加引号
-- **优先使用 ripgrep**：提升文件内容搜索性能
+### Updating Translations
+1. Modify `I18N` object in `src/constants.ts`
+2. Ensure all new strings have both zh-CN and en versions
+3. Test both language flows
 
-### v2.1.0 新增特性
-- **Termux 环境支持**：支持在 Android 终端运行
-- **增强命令检测**：自动识别可用命令
-- **修复和优化**：
-  - 修复 API 配置后返回菜单问题
-  - 替换 @posva/prompts 为 inquirer
-  - 修复中文模板描述
-
-### v2.0.0 新增特性
-- **交互式菜单**：`zcf` 默认命令提供可视化配置管理
-- **AI 个性化**：支持多种预设人格和自定义人格
-- **配置增强**：
-  - API 配置部分修改
-  - 默认模型配置
-  - AI 记忆管理
-  - 智能配置合并
-- **模板重构**：
-  - 将 CLAUDE.md 拆分为 rules.md、personality.md 和 mcp.md
-  - 新增项目级 CLAUDE.md 模板
-- **ZCF 缓存管理**：支持清理 ZCF 配置缓存
+### Debugging Tips
+- Use `pnpm dev` for rapid testing during development
+- Check `~/.claude/` for generated configurations
+- Review `~/.claude/backup/` for configuration history
+- Test cross-platform behavior with platform detection mocks
+```

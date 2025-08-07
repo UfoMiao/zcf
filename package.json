@@ -26,7 +26,11 @@
     "build": "unbuild",
     "typecheck": "tsc",
     "prepublishOnly": "npm run build",
-    "test": "npm run build && node bin/zcf.mjs",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "test:run": "vitest run",
+    "test:watch": "vitest watch",
     "changeset": "changeset",
     "version": "changeset version",
     "release": "pnpm build && changeset publish"
@@ -44,9 +48,12 @@
     "@changesets/cli": "^2.29.5",
     "@types/inquirer": "^9.0.8",
     "@types/node": "^22.17.0",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
-    "unbuild": "^3.6.0"
+    "unbuild": "^3.6.0",
+    "vitest": "^3.2.4"
   },
   "keywords": [
     "claude",

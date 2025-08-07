@@ -62,6 +62,11 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
 export function sanitizeClaudeSettings(settings: any): ClaudeSettings {
   const sanitized: ClaudeSettings = {};
 
+  // Handle null/undefined/non-object input
+  if (!settings || typeof settings !== 'object') {
+    return sanitized;
+  }
+
   // Copy valid model
   if (settings.model && ['opus', 'sonnet'].includes(settings.model)) {
     sanitized.model = settings.model;

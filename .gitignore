@@ -9,3 +9,27 @@ dist
 package-lock.json
 yarn.lock
 test.mjs
+
+# Test coverage reports
+coverage
+.nyc_output
+*.lcov
+.coverage
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea
+
+# Test artifacts
+*.test.tmp
+*.spec.tmp
+test-results
+junit.xml
+
+# Vitest
+.vitest-result.json
+
+# Test temporary output files
+*-output.txt

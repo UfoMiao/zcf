@@ -53,5 +53,15 @@ jobs:
       - name: Build package
         run: pnpm build
 
-      - name: Test build
-        run: pnpm test
+      - name: Run tests with coverage
+        run: pnpm test:coverage
+
+      - name: Upload coverage reports
+        if: matrix.os == 'ubuntu-latest' && matrix.node-version == 20
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ./coverage
+          flags: unit-tests
+          name: zcf-coverage
+          fail_ci_if_error: false
