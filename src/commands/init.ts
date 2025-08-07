@@ -35,6 +35,7 @@ import { resolveAiOutputLanguage, selectScriptLanguage } from '../utils/prompts'
 import { formatApiKeyDisplay } from '../utils/validator';
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config';
 import { selectMcpServices } from '../utils/mcp-selector';
+import { selectAndInstallWorkflows } from '../utils/workflow-installer';
 
 export interface InitOptions {
   lang?: SupportedLang;
@@ -237,9 +238,15 @@ export async function init(options: InitOptions = {}) {
     }
 
     if (action === 'docs-only') {
+      // Only copy base config files without agents/commands
       copyConfigFiles(configLang, true);
+      // Select and install workflows
+      await selectAndInstallWorkflows(configLang, scriptLang);
     } else if (['backup', 'merge', 'new'].includes(action)) {
+      // Copy all base config files
       copyConfigFiles(configLang, false);
+      // Select and install workflows
+      await selectAndInstallWorkflows(configLang, scriptLang);
     }
 
     // Step 8: Apply language directive to language.md

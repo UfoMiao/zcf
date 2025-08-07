@@ -214,6 +214,17 @@ export const I18N = {
     spaceToSelectReturn: '- 空格选择，回车提交',
     // Windows detection
     windowsDetected: '检测到 Windows 系统，将自动配置兼容格式',
+    // BMAD agents
+    selectWorkflowType: '选择要安装的工作流类型',
+    workflowOption: {
+      featPlanUx: '功能规划和 UX 设计 (feat + planner + ui-ux-designer)',
+      sixStepsWorkflow: '六步工作流 (workflow)',
+      bmadWorkflow: 'BMAD 敏捷开发流程 (7个专业AI代理)',
+    },
+    bmadAgentsTitle: 'BMAD-METHOD 代理',
+    selectBmadAgents: '选择要安装的 BMAD 代理',
+    bmadAgentInstalled: '已安装 BMAD 代理',
+    atLeastOneAgent: '至少选择一个代理',
   },
   en: {
     selectScriptLang: 'Select ZCF display language',
@@ -406,6 +417,17 @@ export const I18N = {
     spaceToSelectReturn: '- Space to select. Return to submit',
     // Windows detection
     windowsDetected: 'Windows detected, will configure compatible format',
+    // BMAD agents
+    selectWorkflowType: 'Select workflow type to install',
+    workflowOption: {
+      featPlanUx: 'Feature Planning and UX Design (feat + planner + ui-ux-designer)',
+      sixStepsWorkflow: 'Six Steps Workflow (workflow)',
+      bmadWorkflow: 'BMAD Agile Development Process (7 specialized AI agents)',
+    },
+    bmadAgentsTitle: 'BMAD-METHOD Agents',
+    selectBmadAgents: 'Select BMAD agents to install',
+    bmadAgentInstalled: 'Installed BMAD agents',
+    atLeastOneAgent: 'You must choose at least one agent',
   },
 };
 

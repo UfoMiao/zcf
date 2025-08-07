@@ -8,6 +8,7 @@ import { updatePromptOnly } from '../utils/config-operations';
 import { resolveAiOutputLanguage, selectScriptLanguage } from '../utils/prompts';
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config';
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler';
+import { selectAndInstallWorkflows } from '../utils/workflow-installer';
 
 export interface UpdateOptions {
   configLang?: SupportedLang;
@@ -57,6 +58,9 @@ export async function update(options: UpdateOptions = {}) {
 
     // Execute prompt-only update with AI language
     await updatePromptOnly(configLang, scriptLang, aiOutputLang);
+    
+    // Select and install workflows
+    await selectAndInstallWorkflows(configLang, scriptLang);
 
     // Update zcf config with new version and AI language preference
     updateZcfConfig({

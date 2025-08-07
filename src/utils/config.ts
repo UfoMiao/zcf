@@ -58,15 +58,19 @@ export function copyConfigFiles(lang: SupportedLang, onlyMd: boolean = false) {
   }
 
   if (onlyMd) {
-    // Only copy .md files and maintain directory structure
+    // Only copy .md files and maintain directory structure, exclude agents and commands dirs
     const mdFilter: CopyDirOptions['filter'] = (path, stats) => {
-      return stats.isDirectory() || path.endsWith('.md');
+      const relativePath = path.replace(sourceDir, '').replace(/^[/\\]/, '');
+      const isInAgentsOrCommands = relativePath.startsWith('agents') || relativePath.startsWith('commands');
+      return !isInAgentsOrCommands && (stats.isDirectory() || path.endsWith('.md'));
     };
     copyDir(sourceDir, CLAUDE_DIR, { filter: mdFilter });
   } else {
-    // Copy all files from language-specific directory except settings.json
+    // Copy all files from language-specific directory except settings.json, agents, and commands
     const filter: CopyDirOptions['filter'] = (path) => {
-      return !path.endsWith('settings.json');
+      const relativePath = path.replace(sourceDir, '').replace(/^[/\\]/, '');
+      const isInAgentsOrCommands = relativePath.startsWith('agents') || relativePath.startsWith('commands');
+      return !path.endsWith('settings.json') && !isInAgentsOrCommands;
     };
     copyDir(sourceDir, CLAUDE_DIR, { filter });
 
