@@ -9,6 +9,7 @@ import {
   copyFile, 
   copyDir, 
   writeFile,
+  readDir,
   type CopyDirOptions 
 } from './fs-operations';
 import { readJsonConfig, writeJsonConfig } from './json-config';
@@ -50,30 +51,12 @@ export function copyConfigFiles(lang: SupportedLang, onlyMd: boolean = false) {
   // Navigate from dist/shared/xxx.mjs to package root
   const distDir = dirname(dirname(currentFilePath));
   const rootDir = dirname(distDir);
-  const sourceDir = join(rootDir, 'templates', lang);
   const baseTemplateDir = join(rootDir, 'templates');
 
-  if (!exists(sourceDir)) {
-    throw new Error(`${I18N[readZcfConfig()?.preferredLang || 'en'].templateDirNotFound} ${sourceDir}`);
-  }
+  // Copy Claude memory files (mcp.md, personality.md, rules.md, technical-guides.md)
+  copyClaudeMemoryFiles(lang, rootDir);
 
-  if (onlyMd) {
-    // Only copy .md files and maintain directory structure, exclude agents and commands dirs
-    const mdFilter: CopyDirOptions['filter'] = (path, stats) => {
-      const relativePath = path.replace(sourceDir, '').replace(/^[/\\]/, '');
-      const isInAgentsOrCommands = relativePath.startsWith('agents') || relativePath.startsWith('commands');
-      return !isInAgentsOrCommands && (stats.isDirectory() || path.endsWith('.md'));
-    };
-    copyDir(sourceDir, CLAUDE_DIR, { filter: mdFilter });
-  } else {
-    // Copy all files from language-specific directory except settings.json, agents, and commands
-    const filter: CopyDirOptions['filter'] = (path) => {
-      const relativePath = path.replace(sourceDir, '').replace(/^[/\\]/, '');
-      const isInAgentsOrCommands = relativePath.startsWith('agents') || relativePath.startsWith('commands');
-      return !path.endsWith('settings.json') && !isInAgentsOrCommands;
-    };
-    copyDir(sourceDir, CLAUDE_DIR, { filter });
-
+  if (!onlyMd) {
     // Intelligently merge settings.json instead of copying
     const baseSettingsPath = join(baseTemplateDir, 'settings.json');
     const destSettingsPath = join(CLAUDE_DIR, 'settings.json');
@@ -88,6 +71,28 @@ export function copyConfigFiles(lang: SupportedLang, onlyMd: boolean = false) {
   if (exists(claudeMdSource)) {
     copyFile(claudeMdSource, claudeMdDest);
   }
+}
+
+/**
+ * Copy Claude memory related files only
+ */
+function copyClaudeMemoryFiles(lang: SupportedLang, rootDir: string) {
+  const memorySourceDir = join(rootDir, 'templates', lang, 'memory');
+  
+  if (!exists(memorySourceDir)) {
+    console.warn(`Memory directory not found: ${memorySourceDir}`);
+    return;
+  }
+
+  // Copy all files from memory directory directly to CLAUDE_DIR
+  const files = readDir(memorySourceDir);
+  files.forEach(file => {
+    if (file.endsWith('.md')) {
+      const sourcePath = join(memorySourceDir, file);
+      const destPath = join(CLAUDE_DIR, file);
+      copyFile(sourcePath, destPath);
+    }
+  });
 }
 
 // These functions have been replaced by the more generic copyDir with filters

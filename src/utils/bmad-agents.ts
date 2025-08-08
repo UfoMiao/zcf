@@ -2,7 +2,6 @@ import { join, dirname } from 'pathe';
 import { copyFile, mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import inquirer from 'inquirer';
 import ansis from 'ansis';
 import type { SupportedLang } from '../constants';
 import { CLAUDE_DIR, I18N } from '../constants';
@@ -26,31 +25,11 @@ const BMAD_AGENTS: BmadAgent[] = [
 export async function installBmadAgents(configLang: SupportedLang, scriptLang: SupportedLang): Promise<boolean> {
   const i18n = I18N[scriptLang];
   
-  console.log(ansis.cyan('\n🏗️ BMAD-METHOD Agents'));
-  console.log(ansis.gray('Select which BMAD agents to install:\n'));
+  console.log(ansis.cyan(`\n🏗️ ${i18n.installingBmadAgents}`));
+  console.log(ansis.gray(`${i18n.installingAllBmadAgents}:\n`));
   
-  // Multi-select prompt for agents
-  const { selectedAgents } = await inquirer.prompt<{ selectedAgents: string[] }>({
-    type: 'checkbox',
-    name: 'selectedAgents',
-    message: `${i18n.selectBmadAgents}${i18n.multiSelectHint}`,
-    choices: BMAD_AGENTS.map(agent => ({
-      name: `${agent.name} - ${ansis.gray(agent.description)}`,
-      value: agent.id,
-      checked: false,
-    })),
-    validate: (answer) => {
-      if (answer.length < 1) {
-        return i18n.atLeastOneAgent || 'You must choose at least one agent.';
-      }
-      return true;
-    },
-  });
-
-  if (!selectedAgents || selectedAgents.length === 0) {
-    console.log(ansis.yellow('No agents selected'));
-    return false;
-  }
+  // Auto-install all BMAD agents
+  const selectedAgents = BMAD_AGENTS.map(agent => agent.id);
 
   // Create agents directory
   const agentsDir = join(CLAUDE_DIR, 'agents');
@@ -70,7 +49,7 @@ export async function installBmadAgents(configLang: SupportedLang, scriptLang: S
     
     if (existsSync(sourcePath)) {
       await copyFile(sourcePath, destPath);
-      console.log(ansis.gray(`  ✔ Installed BMAD ${agentId} agent`));
+      console.log(ansis.gray(`  ✔ ${i18n.installedBmadAgent}: ${agentId}`));
     }
   }
 
@@ -85,9 +64,9 @@ export async function installBmadAgents(configLang: SupportedLang, scriptLang: S
   
   if (existsSync(workflowSource)) {
     await copyFile(workflowSource, workflowDest);
-    console.log(ansis.gray('  ✔ Installed BMAD workflow command'));
+    console.log(ansis.gray(`  ✔ ${i18n.installedBmadWorkflowCommand}`));
   }
 
-  console.log(ansis.green(`\n✔ Successfully installed ${selectedAgents.length} BMAD agents`));
+  console.log(ansis.green(`\n✔ ${i18n.bmadAgentsInstallSuccess}: ${selectedAgents.length}`));
   return true;
 }

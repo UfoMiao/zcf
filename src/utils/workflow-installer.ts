@@ -1,14 +1,13 @@
 import { join, dirname } from 'pathe';
-import { copyFile, mkdir } from 'node:fs/promises';
+import { copyFile, mkdir, rm } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
 import ansis from 'ansis';
 import type { SupportedLang } from '../constants';
 import { CLAUDE_DIR, I18N } from '../constants';
-import { installBmadAgents } from './bmad-agents';
-
-export type WorkflowType = 'featPlanUx' | 'sixStepsWorkflow' | 'bmadWorkflow';
+import { getOrderedWorkflows, getWorkflowConfig } from '../config/workflows';
+import type { WorkflowType, WorkflowConfig, WorkflowInstallResult } from '../types/workflow';
 
 function getRootDir(): string {
   const currentFilePath = fileURLToPath(import.meta.url);
@@ -21,29 +20,25 @@ export async function selectAndInstallWorkflows(
   scriptLang: SupportedLang
 ): Promise<void> {
   const i18n = I18N[scriptLang];
+  const workflows = getOrderedWorkflows();
+
+  // Build choices from configuration
+  const choices = workflows.map(workflow => {
+    const nameKey = workflow.id as keyof typeof i18n.workflowOption;
+    const name = i18n.workflowOption[nameKey] || workflow.id;
+    return {
+      name,
+      value: workflow.id,
+      checked: workflow.defaultSelected,
+    };
+  });
 
   // Multi-select workflow types
   const { selectedWorkflows } = await inquirer.prompt<{ selectedWorkflows: WorkflowType[] }>({
     type: 'checkbox',
     name: 'selectedWorkflows',
     message: `${i18n.selectWorkflowType}${i18n.multiSelectHint}`,
-    choices: [
-      {
-        name: i18n.workflowOption.featPlanUx,
-        value: 'featPlanUx',
-        checked: true, // Default selected
-      },
-      {
-        name: i18n.workflowOption.sixStepsWorkflow,
-        value: 'sixStepsWorkflow',
-        checked: false,
-      },
-      {
-        name: i18n.workflowOption.bmadWorkflow,
-        value: 'bmadWorkflow',
-        checked: false,
-      },
-    ],
+    choices,
   });
 
   if (!selectedWorkflows || selectedWorkflows.length === 0) {
@@ -51,79 +46,137 @@ export async function selectAndInstallWorkflows(
     return;
   }
 
-  // Ensure directories exist
-  const agentsDir = join(CLAUDE_DIR, 'agents');
-  const commandsDir = join(CLAUDE_DIR, 'commands');
-  
-  if (!existsSync(agentsDir)) {
-    await mkdir(agentsDir, { recursive: true });
-  }
-  if (!existsSync(commandsDir)) {
-    await mkdir(commandsDir, { recursive: true });
-  }
+  // Clean up old version files before installation
+  await cleanupOldVersionFiles(scriptLang);
 
-  // Install selected workflows
-  for (const workflow of selectedWorkflows) {
-    switch (workflow) {
-      case 'featPlanUx':
-        await installFeatPlanUx(configLang, scriptLang);
-        break;
-      case 'sixStepsWorkflow':
-        await installSixStepsWorkflow(configLang, scriptLang);
-        break;
-      case 'bmadWorkflow':
-        await installBmadAgents(configLang, scriptLang);
-        break;
+  // Install selected workflows with their dependencies
+  for (const workflowId of selectedWorkflows) {
+    const config = getWorkflowConfig(workflowId);
+    if (config) {
+      await installWorkflowWithDependencies(config, configLang, scriptLang);
     }
   }
 }
 
-async function installFeatPlanUx(configLang: SupportedLang, _scriptLang: SupportedLang): Promise<void> {
+async function installWorkflowWithDependencies(
+  config: WorkflowConfig,
+  configLang: SupportedLang,
+  scriptLang: SupportedLang
+): Promise<WorkflowInstallResult> {
   const rootDir = getRootDir();
-  const templateDir = join(rootDir, 'templates', configLang);
-  
-  console.log(ansis.cyan('\n📋 Installing Feature Planning and UX Design workflow...'));
-  
-  // Copy feat command
-  const featSource = join(templateDir, 'commands', 'feat.md');
-  const featDest = join(CLAUDE_DIR, 'commands', 'feat.md');
-  if (existsSync(featSource)) {
-    await copyFile(featSource, featDest);
-    console.log(ansis.gray('  ✔ Installed feat command'));
+  const i18n = I18N[scriptLang];
+  const result: WorkflowInstallResult = {
+    workflow: config.id,
+    success: true,
+    installedCommands: [],
+    installedAgents: [],
+    errors: [],
+  };
+
+  const workflowName = i18n.workflowOption[config.id as keyof typeof i18n.workflowOption] || config.id;
+  console.log(ansis.cyan(`\n📦 ${i18n.installingWorkflow}: ${workflowName}...`));
+
+  // Install commands to new structure
+  const commandsDir = join(CLAUDE_DIR, 'commands', 'zcf');
+  if (!existsSync(commandsDir)) {
+    await mkdir(commandsDir, { recursive: true });
   }
   
-  // Copy planner agent
-  const plannerSource = join(templateDir, 'agents', 'planner.md');
-  const plannerDest = join(CLAUDE_DIR, 'agents', 'planner.md');
-  if (existsSync(plannerSource)) {
-    await copyFile(plannerSource, plannerDest);
-    console.log(ansis.gray('  ✔ Installed planner agent'));
+  for (const commandFile of config.commands) {
+    const commandSource = join(rootDir, 'templates', configLang, 'workflow', config.category, 'commands', commandFile);
+    // Rename command files based on outputDir
+    const destFileName = `${config.outputDir}.md`;
+    const commandDest = join(commandsDir, destFileName);
+    
+    if (existsSync(commandSource)) {
+      try {
+        await copyFile(commandSource, commandDest);
+        result.installedCommands.push(destFileName);
+        console.log(ansis.gray(`  ✔ ${i18n.installedCommand}: zcf/${destFileName}`));
+      } catch (error) {
+        const errorMsg = `${i18n.failedToInstallCommand} ${commandFile}: ${error}`;
+        result.errors?.push(errorMsg);
+        console.error(ansis.red(`  ✗ ${errorMsg}`));
+        result.success = false;
+      }
+    }
   }
-  
-  // Copy ui-ux-designer agent
-  const uiuxSource = join(templateDir, 'agents', 'ui-ux-designer.md');
-  const uiuxDest = join(CLAUDE_DIR, 'agents', 'ui-ux-designer.md');
-  if (existsSync(uiuxSource)) {
-    await copyFile(uiuxSource, uiuxDest);
-    console.log(ansis.gray('  ✔ Installed ui-ux-designer agent'));
+
+  // Install agents if autoInstallAgents is true
+  if (config.autoInstallAgents && config.agents.length > 0) {
+    const agentsCategoryDir = join(CLAUDE_DIR, 'agents', 'zcf', config.category);
+    if (!existsSync(agentsCategoryDir)) {
+      await mkdir(agentsCategoryDir, { recursive: true });
+    }
+    
+    for (const agent of config.agents) {
+      const agentSource = join(rootDir, 'templates', configLang, 'workflow', config.category, 'agents', agent.filename);
+      const agentDest = join(agentsCategoryDir, agent.filename);
+      
+      if (existsSync(agentSource)) {
+        try {
+          await copyFile(agentSource, agentDest);
+          result.installedAgents.push(agent.filename);
+          console.log(ansis.gray(`  ✔ ${i18n.installedAgent}: zcf/${config.category}/${agent.filename}`));
+        } catch (error) {
+          const errorMsg = `${i18n.failedToInstallAgent} ${agent.filename}: ${error}`;
+          result.errors?.push(errorMsg);
+          console.error(ansis.red(`  ✗ ${errorMsg}`));
+          if (agent.required) {
+            result.success = false;
+          }
+        }
+      }
+    }
   }
-  
-  console.log(ansis.green('✔ Feature Planning and UX Design workflow installed'));
+
+  if (result.success) {
+    console.log(ansis.green(`✔ ${workflowName} ${i18n.workflowInstallSuccess}`));
+  } else {
+    console.log(ansis.red(`✗ ${workflowName} ${i18n.workflowInstallError}`));
+  }
+
+  return result;
 }
 
-async function installSixStepsWorkflow(configLang: SupportedLang, _scriptLang: SupportedLang): Promise<void> {
-  const rootDir = getRootDir();
-  const templateDir = join(rootDir, 'templates', configLang);
+async function cleanupOldVersionFiles(scriptLang: SupportedLang): Promise<void> {
+  const i18n = I18N[scriptLang];
+  console.log(ansis.cyan(`\n🧹 ${i18n.cleaningOldFiles || 'Cleaning up old version files'}...`));
   
-  console.log(ansis.cyan('\n⚙️ Installing Six Steps Workflow...'));
+  // Old command files to remove
+  const oldCommandFiles = [
+    join(CLAUDE_DIR, 'commands', 'workflow.md'),
+    join(CLAUDE_DIR, 'commands', 'feat.md'),
+  ];
   
-  // Copy workflow command
-  const workflowSource = join(templateDir, 'commands', 'workflow.md');
-  const workflowDest = join(CLAUDE_DIR, 'commands', 'workflow.md');
-  if (existsSync(workflowSource)) {
-    await copyFile(workflowSource, workflowDest);
-    console.log(ansis.gray('  ✔ Installed workflow command'));
+  // Old agent files to remove
+  const oldAgentFiles = [
+    join(CLAUDE_DIR, 'agents', 'planner.md'),
+    join(CLAUDE_DIR, 'agents', 'ui-ux-designer.md'),
+  ];
+  
+  // Clean up old command files
+  for (const file of oldCommandFiles) {
+    if (existsSync(file)) {
+      try {
+        await rm(file, { force: true });
+        console.log(ansis.gray(`  ✔ ${i18n.removedOldFile || 'Removed old file'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+      } catch (error) {
+        console.error(ansis.yellow(`  ⚠ ${i18n.failedToRemoveFile || 'Failed to remove'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+      }
+    }
   }
   
-  console.log(ansis.green('✔ Six Steps Workflow installed'));
+  // Clean up old agent files
+  for (const file of oldAgentFiles) {
+    if (existsSync(file)) {
+      try {
+        await rm(file, { force: true });
+        console.log(ansis.gray(`  ✔ ${i18n.removedOldFile || 'Removed old file'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+      } catch (error) {
+        console.error(ansis.yellow(`  ⚠ ${i18n.failedToRemoveFile || 'Failed to remove'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+      }
+    }
+  }
 }
+
