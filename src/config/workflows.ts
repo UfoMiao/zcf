@@ -34,7 +34,7 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
     descriptionKey: 'workflowDescription.bmadWorkflow',
     defaultSelected: true,
     order: 3,
-    commands: ['bmad-workflow.md'],
+    commands: ['bmad.md'],
     agents: [
       { id: 'analyst', filename: 'analyst.md', required: true },
       { id: 'pm', filename: 'pm.md', required: true },
@@ -46,12 +46,12 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
     ],
     autoInstallAgents: true,
     category: 'bmad',
-    outputDir: 'bmad-workflow',
+    outputDir: 'bmad',
   },
 ];
 
 export function getWorkflowConfig(workflowId: string): WorkflowConfig | undefined {
-  return WORKFLOW_CONFIGS.find(config => config.id === workflowId);
+  return WORKFLOW_CONFIGS.find((config) => config.id === workflowId);
 }
 
 export function getOrderedWorkflows(): WorkflowConfig[] {

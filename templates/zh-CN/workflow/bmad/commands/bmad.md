@@ -9,27 +9,33 @@ description: 'BMAD-METHOD 敏捷开发工作流 - 使用7个专业AI代理进行
 ## 使用方法
 
 ```bash
-/bmad-workflow <代理名称> [命令参数]
+/zcf:bmad <代理名称> [命令参数]
 ```
 
 ## 可用代理
 
 1. **analyst** (Mary) - 商业分析师
+
    - 市场研究、头脑风暴、竞争分析、项目简报
 
 2. **pm** (John) - 产品经理
-   - 创建PRD、产品策略、功能优先级、路线图规划
+
+   - 创建 PRD、产品策略、功能优先级、路线图规划
 
 3. **architect** (Winston) - 架构师
-   - 系统设计、架构文档、技术选型、API设计
+
+   - 系统设计、架构文档、技术选型、API 设计
 
 4. **sm** (Bob) - Scrum Master
+
    - 故事创建、史诗管理、敏捷流程指导
 
 5. **dev** (James) - 全栈开发者
+
    - 代码实现、调试、重构、开发最佳实践
 
-6. **qa** (Quinn) - 高级开发者兼QA架构师
+6. **qa** (Quinn) - 高级开发者兼 QA 架构师
+
    - 代码审查、重构、测试规划、质量保证
 
 7. **po** (Sarah) - 产品负责人
@@ -38,24 +44,27 @@ description: 'BMAD-METHOD 敏捷开发工作流 - 使用7个专业AI代理进行
 ## 工作流程示例
 
 ### 1. 新项目启动
+
 ```bash
-/bmad-workflow analyst *create-project-brief
-/bmad-workflow pm *create-prd
-/bmad-workflow architect *create-full-stack-architecture
+/zcf:bmad analyst *create-project-brief
+/zcf:bmad pm *create-prd
+/zcf:bmad architect *create-full-stack-architecture
 ```
 
 ### 2. 故事开发流程
+
 ```bash
-/bmad-workflow sm *draft
-/bmad-workflow dev *develop-story
-/bmad-workflow qa *review
+/zcf:bmad sm *draft
+/zcf:bmad dev *develop-story
+/zcf:bmad qa *review
 ```
 
 ### 3. 产品规划
+
 ```bash
-/bmad-workflow analyst *brainstorm "新功能构思"
-/bmad-workflow pm *create-epic
-/bmad-workflow po *execute-checklist-po
+/zcf:bmad analyst *brainstorm "新功能构思"
+/zcf:bmad pm *create-epic
+/zcf:bmad po *execute-checklist-po
 ```
 
 ## 激活代理

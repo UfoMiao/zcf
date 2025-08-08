@@ -9,7 +9,7 @@ description: '专业AI编程助手，提供结构化六阶段开发工作流（�
 ## 使用方法
 
 ```bash
-/workflow <任务描述>
+/zcf:workflow <任务描述>
 ```
 
 ## 上下文

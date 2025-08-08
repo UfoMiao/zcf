@@ -9,27 +9,33 @@ Manage the complete software development lifecycle using BMAD-METHOD's 7 special
 ## Usage
 
 ```bash
-/bmad-workflow <agent-name> [command-args]
+/zcf:bmad <agent-name> [command-args]
 ```
 
 ## Available Agents
 
 1. **analyst** (Mary) - Business Analyst
+
    - Market research, brainstorming, competitive analysis, project briefing
 
 2. **pm** (John) - Product Manager
+
    - Creating PRDs, product strategy, feature prioritization, roadmap planning
 
 3. **architect** (Winston) - Architect
+
    - System design, architecture documents, technology selection, API design
 
 4. **sm** (Bob) - Scrum Master
+
    - Story creation, epic management, agile process guidance
 
 5. **dev** (James) - Full Stack Developer
+
    - Code implementation, debugging, refactoring, development best practices
 
 6. **qa** (Quinn) - Senior Developer & QA Architect
+
    - Code review, refactoring, test planning, quality assurance
 
 7. **po** (Sarah) - Product Owner
@@ -38,24 +44,27 @@ Manage the complete software development lifecycle using BMAD-METHOD's 7 special
 ## Workflow Examples
 
 ### 1. New Project Kickoff
+
 ```bash
-/bmad-workflow analyst *create-project-brief
-/bmad-workflow pm *create-prd
-/bmad-workflow architect *create-full-stack-architecture
+/zcf:bmad analyst *create-project-brief
+/zcf:bmad pm *create-prd
+/zcf:bmad architect *create-full-stack-architecture
 ```
 
 ### 2. Story Development Flow
+
 ```bash
-/bmad-workflow sm *draft
-/bmad-workflow dev *develop-story
-/bmad-workflow qa *review
+/zcf:bmad sm *draft
+/zcf:bmad dev *develop-story
+/zcf:bmad qa *review
 ```
 
 ### 3. Product Planning
+
 ```bash
-/bmad-workflow analyst *brainstorm "new feature ideas"
-/bmad-workflow pm *create-epic
-/bmad-workflow po *execute-checklist-po
+/zcf:bmad analyst *brainstorm "new feature ideas"
+/zcf:bmad pm *create-epic
+/zcf:bmad po *execute-checklist-po
 ```
 
 ## Activating Agent

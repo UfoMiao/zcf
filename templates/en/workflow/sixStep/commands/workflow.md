@@ -9,7 +9,7 @@ Execute structured development workflow with quality gates and MCP service integ
 ## Usage
 
 ```bash
-/workflow <TASK_DESCRIPTION>
+/zcf:workflow <TASK_DESCRIPTION>
 ```
 
 ## Context
