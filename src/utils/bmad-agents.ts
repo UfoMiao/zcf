@@ -33,7 +33,7 @@ export async function installBmadAgents(configLang: SupportedLang, scriptLang: S
   const { selectedAgents } = await inquirer.prompt<{ selectedAgents: string[] }>({
     type: 'checkbox',
     name: 'selectedAgents',
-    message: 'Choose BMAD agents:',
+    message: `${i18n.selectBmadAgents}${i18n.multiSelectHint}`,
     choices: BMAD_AGENTS.map(agent => ({
       name: `${agent.name} - ${ansis.gray(agent.description)}`,
       value: agent.id,
@@ -41,7 +41,7 @@ export async function installBmadAgents(configLang: SupportedLang, scriptLang: S
     })),
     validate: (answer) => {
       if (answer.length < 1) {
-        return 'You must choose at least one agent.';
+        return i18n.atLeastOneAgent || 'You must choose at least one agent.';
       }
       return true;
     },

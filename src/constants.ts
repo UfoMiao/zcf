@@ -26,6 +26,7 @@ export type AiOutputLanguage = keyof typeof AI_OUTPUT_LANGUAGES;
 
 export const I18N = {
   'zh-CN': {
+    multiSelectHint: '（空格选择，a全选，i反选，回车确认）',
     selectScriptLang: '选择ZCF显示语言',
     selectConfigLang: '选择 Claude Code 配置语言',
     selectAiOutputLang: '选择 AI 输出语言',
@@ -81,7 +82,7 @@ export const I18N = {
     configSuccess: '配置文件已复制到',
     apiConfigSuccess: 'API 配置完成',
     mcpConfigSuccess: 'MCP 服务已配置',
-    selectMcpServices: '选择要安装的 MCP 服务（空格选择，a全选，i反选，回车确认）',
+    selectMcpServices: '选择要安装的 MCP 服务',
     allServices: '全部安装',
     mcpServiceInstalled: '已选择的 MCP 服务',
     enterExaApiKey: '请输入 Exa API Key（可从 https://dashboard.exa.ai/api-keys 获取）',
@@ -227,6 +228,7 @@ export const I18N = {
     atLeastOneAgent: '至少选择一个代理',
   },
   en: {
+    multiSelectHint: ' (Space to select, a to select all, i to invert, Enter to confirm)',
     selectScriptLang: 'Select ZCF display language',
     selectConfigLang: 'Select Claude Code configuration language',
     selectAiOutputLang: 'Select AI output language',
@@ -282,8 +284,7 @@ export const I18N = {
     configSuccess: 'Config files copied to',
     apiConfigSuccess: 'API configured',
     mcpConfigSuccess: 'MCP services configured',
-    selectMcpServices:
-      'Select MCP services to install (space to select, a to select all, i to deselect, enter to confirm)',
+    selectMcpServices: 'Select MCP services to install',
     allServices: 'Install all',
     mcpServiceInstalled: 'Selected MCP services',
     enterExaApiKey: 'Enter Exa API Key (get from https://dashboard.exa.ai/api-keys)',

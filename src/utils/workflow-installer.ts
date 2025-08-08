@@ -26,7 +26,7 @@ export async function selectAndInstallWorkflows(
   const { selectedWorkflows } = await inquirer.prompt<{ selectedWorkflows: WorkflowType[] }>({
     type: 'checkbox',
     name: 'selectedWorkflows',
-    message: i18n.selectWorkflowType,
+    message: `${i18n.selectWorkflowType}${i18n.multiSelectHint}`,
     choices: [
       {
         name: i18n.workflowOption.featPlanUx,
@@ -78,8 +78,7 @@ export async function selectAndInstallWorkflows(
   }
 }
 
-async function installFeatPlanUx(configLang: SupportedLang, scriptLang: SupportedLang): Promise<void> {
-  const i18n = I18N[scriptLang];
+async function installFeatPlanUx(configLang: SupportedLang, _scriptLang: SupportedLang): Promise<void> {
   const rootDir = getRootDir();
   const templateDir = join(rootDir, 'templates', configLang);
   
@@ -112,8 +111,7 @@ async function installFeatPlanUx(configLang: SupportedLang, scriptLang: Supporte
   console.log(ansis.green('✔ Feature Planning and UX Design workflow installed'));
 }
 
-async function installSixStepsWorkflow(configLang: SupportedLang, scriptLang: SupportedLang): Promise<void> {
-  const i18n = I18N[scriptLang];
+async function installSixStepsWorkflow(configLang: SupportedLang, _scriptLang: SupportedLang): Promise<void> {
   const rootDir = getRootDir();
   const templateDir = join(rootDir, 'templates', configLang);
   

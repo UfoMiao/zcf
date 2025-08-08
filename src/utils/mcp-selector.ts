@@ -21,7 +21,7 @@ export async function selectMcpServices(scriptLang: SupportedLang): Promise<stri
   const { services } = await inquirer.prompt<{ services: string[] }>({
     type: 'checkbox',
     name: 'services',
-    message: i18n.selectMcpServices,
+    message: `${i18n.selectMcpServices}${i18n.multiSelectHint}`,
     choices,
   });
 
