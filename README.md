@@ -45,6 +45,16 @@ npx zcf u        # Update workflows only: Quick add AI workflows and command sys
 npx zcf → select 2  # Execute workflow update via menu
 ```
 
+#### 🎯 BMad Workflow (New Feature)
+
+BMad (Business-Minded Agile Development) is an enterprise-grade workflow system that provides:
+- Complete team of specialized AI agents (PO, PM, Architect, Dev, QA, etc.)
+- Structured development process with quality gates
+- Automatic documentation generation
+- Support for both greenfield and brownfield projects
+
+After installation, use `/bmad-init` to initialize the BMad workflow in your project.
+
 > **Note**:
 >
 > - Since v2.0, `zcf` opens the interactive menu by default, providing a visual operation interface
@@ -135,17 +145,17 @@ $ npx zcf
 
 Select function:
   -------- Claude Code --------
-  1. Full initialization - Install and configure everything
-  2. Import workflows - Update AI workflows and commands
-  3. Configure API - Manage API authentication
-  4. Configure MCP services - Manage MCP integrations
-  5. Configure default model - Set default AI model
-  6. Configure AI personality - Set AI assistant personality
-  7. Configure AI memory - Set up AI memory management
+  1. Full initialization - Install Claude Code + Import workflow + Configure API + Configure MCP services
+  2. Import workflow - Import/update workflow-related files only
+  3. Configure API - Configure API URL and authentication
+  4. Configure MCP - Configure MCP services (includes Windows fix)
+  5. Configure default model - Set default model (opus/sonnet)
+  6. Configure Claude global memory - Configure AI output language and personality
+  7. Import recommended environment variables and permissions - Import privacy protection environment variables and system permissions
 
   ------------ ZCF ------------
-  0. Change language - Switch interface language
-  -. Clear cache - Clear ZCF cache files
+  0. Select display language / 更改显示语言 - Change ZCF interface language
+  -. Clear preference cache - Clear preference language and other caches
   q. Exit
 
 Enter your choice: _
@@ -194,6 +204,20 @@ Enter your choice: _
 
 ✔ All config files backed up to ~/.claude/backup/xxx
 ✔ Config files copied to ~/.claude
+
+? Select workflows to install (space to select, enter to confirm)
+  ❯ ◉ Six Steps Workflow (workflow) - Complete 6-phase development process
+    ◉ Feature Planning and UX Design (feat + planner + ui-ux-designer) - Structured feature development
+    ◉ BMAD-Method Extension Installer - Enterprise agile development workflow
+
+✔ Installing workflows...
+  ✔ Installed command: zcf/workflow.md
+  ✔ Installed command: zcf/feat.md
+  ✔ Installed agent: zcf/plan/planner.md
+  ✔ Installed agent: zcf/plan/ui-ux-designer.md
+  ✔ Installed command: zcf/bmad-init.md
+✔ Workflow installation successful
+
 ✔ API configured
 
 ? Configure MCP services? (Y/n)
@@ -303,11 +327,24 @@ zcf/
 - **Task Planner**: Breaks down complex tasks into executable steps
 - **UI/UX Designer**: Provides professional interface design guidance
 - **AI Personality**: Support multiple preset personalities and custom (v2.0 new)
+- **BMad Team** (New): Complete agile development team including:
+  - Product Owner (PO): Requirements elicitation and prioritization
+  - Project Manager (PM): Planning and coordination
+  - System Architect: Technical design and architecture
+  - Developer: Implementation and coding
+  - QA Engineer: Testing and quality assurance
+  - Scrum Master (SM): Process facilitation
+  - Business Analyst: Requirements analysis
+  - UX Expert: User experience design
 
 ### ⚡ Command System
 
 - **Feature Development** (`/feat`): Structured new feature development
 - **Workflow** (`/workflow`): Complete six-phase development workflow
+- **BMad Workflow** (`/bmad-init`): Initialize BMad workflow for enterprise development
+  - Supports both greenfield (new projects) and brownfield (existing projects)
+  - Provides comprehensive templates for PRDs, architecture docs, and user stories
+  - Integrated quality gates and checklist system
 
 ### 🔧 Smart Configuration
 

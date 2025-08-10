@@ -1,28 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import inquirer from 'inquirer';
+import ansis from 'ansis';
+import {
+  configureApiCompletely,
+  modifyApiConfigPartially,
+  updatePromptOnly,
+} from '../../../src/utils/config-operations';
+import * as config from '../../../src/utils/config';
+import * as aiPersonality from '../../../src/utils/ai-personality';
+import * as validator from '../../../src/utils/validator';
+import { I18N } from '../../../src/constants';
+import type { ApiConfig } from '../../../src/types/config';
 
-vi.mock('inquirer', () => ({
-  default: {
-    prompt: vi.fn()
-  }
-}));
-
-vi.mock('../../../src/utils/config', () => ({
-  applyAiLanguageDirective: vi.fn(),
-  backupExistingConfig: vi.fn(),
-  configureApi: vi.fn(),
-  copyConfigFiles: vi.fn(),
-  getExistingApiConfig: vi.fn()
-}));
-
-vi.mock('../../../src/utils/ai-personality', () => ({
-  configureAiPersonality: vi.fn()
-}));
-
-vi.mock('../../../src/utils/validator', () => ({
-  formatApiKeyDisplay: vi.fn(),
-  validateApiKey: vi.fn()
-}));
+vi.mock('inquirer');
+vi.mock('../../../src/utils/config');
+vi.mock('../../../src/utils/ai-personality');
+vi.mock('../../../src/utils/validator');
 
 describe('config-operations utilities', () => {
   beforeEach(() => {
@@ -31,118 +24,534 @@ describe('config-operations utilities', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
-  it('should load config-operations module', async () => {
-    const module = await import('../../../src/utils/config-operations');
-    expect(module).toBeDefined();
-  });
-
-  it('should export all functions', async () => {
-    const module = await import('../../../src/utils/config-operations');
-    
-    expect(module.configureApiCompletely).toBeDefined();
-    expect(module.modifyApiConfigPartially).toBeDefined();
-    expect(module.updatePromptOnly).toBeDefined();
-    
-    expect(typeof module.configureApiCompletely).toBe('function');
-    expect(typeof module.modifyApiConfigPartially).toBe('function');
-    expect(typeof module.updatePromptOnly).toBe('function');
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('configureApiCompletely', () => {
-    it('should configure API completely', async () => {
-      const { configureApiCompletely } = await import('../../../src/utils/config-operations');
-      const { I18N } = await import('../../../src/constants');
+    const i18n = I18N['en'];
+
+    it('should configure API with auth token', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ authType: 'auth_token' })
+        .mockResolvedValueOnce({ url: 'https://api.example.com' })
+        .mockResolvedValueOnce({ key: 'test-auth-token' });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+      vi.mocked(validator.formatApiKeyDisplay).mockReturnValue('test-****-token');
+
+      const result = await configureApiCompletely(i18n, 'en');
+
+      expect(result).toEqual({
+        url: 'https://api.example.com',
+        key: 'test-auth-token',
+        authType: 'auth_token',
+      });
+
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3);
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('test-****-token')
+      );
+    });
+
+    it('should configure API with API key', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ authType: 'api_key' })
+        .mockResolvedValueOnce({ url: 'https://api.example.com' })
+        .mockResolvedValueOnce({ key: 'sk-test-api-key' });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+      vi.mocked(validator.formatApiKeyDisplay).mockReturnValue('sk-****-key');
+
+      const result = await configureApiCompletely(i18n, 'en');
+
+      expect(result).toEqual({
+        url: 'https://api.example.com',
+        key: 'sk-test-api-key',
+        authType: 'api_key',
+      });
+    });
+
+    it('should use preselected auth type', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ url: 'https://api.example.com' })
+        .mockResolvedValueOnce({ key: 'test-key' });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+
+      const result = await configureApiCompletely(i18n, 'en', 'api_key');
+
+      expect(result).toEqual({
+        url: 'https://api.example.com',
+        key: 'test-key',
+        authType: 'api_key',
+      });
+
+      // Should skip auth type prompt
+      expect(inquirer.prompt).toHaveBeenCalledTimes(2);
+    });
+
+    it('should validate URL format', async () => {
+      const urlPrompt = {
+        type: 'input',
+        name: 'url',
+        message: i18n.enterApiUrl,
+        validate: expect.any(Function),
+      };
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ authType: 'auth_token' })
+        .mockImplementationOnce(async (prompt: any) => {
+          // Test URL validation
+          const validator = prompt.validate;
+          expect(validator('')).toBe(i18n.urlRequired);
+          expect(validator('not-a-url')).toBe(i18n.invalidUrl);
+          expect(validator('https://valid.url')).toBe(true);
+          return { url: 'https://api.example.com' };
+        })
+        .mockResolvedValueOnce({ key: 'test-key' });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+
+      await configureApiCompletely(i18n, 'en');
+
+      expect(inquirer.prompt).toHaveBeenCalledWith(
+        expect.objectContaining(urlPrompt)
+      );
+    });
+
+    it('should validate API key format', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ authType: 'api_key' })
+        .mockResolvedValueOnce({ url: 'https://api.example.com' })
+        .mockImplementationOnce(async (prompt: any) => {
+          // Test key validation
+          const keyValidator = prompt.validate;
+          
+          vi.mocked(validator.validateApiKey)
+            .mockReturnValueOnce({ isValid: false, error: 'Invalid format' })
+            .mockReturnValueOnce({ isValid: true, error: null });
+          
+          expect(keyValidator('')).toBe(i18n.keyRequired);
+          expect(keyValidator('invalid')).toBe('Invalid format');
+          expect(keyValidator('valid-key')).toBe(true);
+          
+          return { key: 'valid-key' };
+        });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+
+      await configureApiCompletely(i18n, 'en');
+
+      expect(validator.validateApiKey).toHaveBeenCalled();
+    });
+
+    it('should handle cancellation at auth type selection', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ authType: undefined });
+
+      const result = await configureApiCompletely(i18n, 'en');
+
+      expect(result).toBeNull();
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.cancelled)
+      );
+    });
+
+    it('should handle cancellation at URL input', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ authType: 'auth_token' })
+        .mockResolvedValueOnce({ url: undefined });
+
+      const result = await configureApiCompletely(i18n, 'en');
+
+      expect(result).toBeNull();
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.cancelled)
+      );
+    });
+
+    it('should handle cancellation at key input', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ authType: 'api_key' })
+        .mockResolvedValueOnce({ url: 'https://api.example.com' })
+        .mockResolvedValueOnce({ key: undefined });
+
+      const result = await configureApiCompletely(i18n, 'en');
+
+      expect(result).toBeNull();
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.cancelled)
+      );
+    });
+
+    it('should work with Chinese language', async () => {
+      const zhI18n = I18N['zh-CN'];
       
-      vi.mocked(inquirer.prompt).mockResolvedValue({ authType: 'api_key' });
-      
-      const result = await configureApiCompletely(I18N['zh-CN'], 'zh-CN', 'api_key');
-      
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ authType: 'auth_token' })
+        .mockResolvedValueOnce({ url: 'https://api.example.com' })
+        .mockResolvedValueOnce({ key: 'test-token' });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+
+      const result = await configureApiCompletely(zhI18n, 'zh-CN');
+
       expect(result).toBeDefined();
+      expect(inquirer.prompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: zhI18n.configureApi,
+        })
+      );
     });
   });
 
   describe('modifyApiConfigPartially', () => {
-    it('should modify API config partially - single field', async () => {
-      const { modifyApiConfigPartially } = await import('../../../src/utils/config-operations');
-      const { getExistingApiConfig } = await import('../../../src/utils/config');
-      const { validateApiKey } = await import('../../../src/utils/validator');
-      const { I18N } = await import('../../../src/constants');
-      
-      vi.mocked(getExistingApiConfig).mockReturnValue({
-        apiKey: 'old-key',
-        apiUrl: 'old-url',
-        modelId: 'old-model',
-        prompt: 'old-prompt'
-      } as any);
-      
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ item: 'apiKey' })
-        .mockResolvedValueOnce({ apiKey: 'new-key' });
-      
-      vi.mocked(validateApiKey).mockReturnValue(true);
-      
-      await modifyApiConfigPartially(I18N['zh-CN'], 'zh-CN');
-      
-      expect(inquirer.prompt).toHaveBeenCalled();
+    const i18n = I18N['en'];
+    const mockConfig: ApiConfig = {
+      url: 'https://old-api.example.com',
+      key: 'old-key',
+      authType: 'auth_token',
+    };
+
+    beforeEach(() => {
+      vi.mocked(config.getExistingApiConfig).mockReturnValue(mockConfig);
+      vi.mocked(config.configureApi).mockReturnValue(mockConfig);
     });
 
-    it('should modify API config partially - multiple fields', async () => {
-      const { modifyApiConfigPartially } = await import('../../../src/utils/config-operations');
-      const { getExistingApiConfig } = await import('../../../src/utils/config');
-      const { I18N } = await import('../../../src/constants');
-      
-      vi.mocked(getExistingApiConfig).mockReturnValue({
-        apiKey: 'old-key',
-        apiUrl: 'old-url',
-        modelId: 'old-model',
-        prompt: 'old-prompt'
-      } as any);
-      
+    it('should modify URL only', async () => {
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ item: 'multiple' })
-        .mockResolvedValueOnce({ items: ['apiKey', 'apiUrl'] })
-        .mockResolvedValueOnce({ apiKey: 'new-key' })
-        .mockResolvedValueOnce({ apiUrl: 'new-url' });
-      
-      await modifyApiConfigPartially(I18N['zh-CN'], 'zh-CN');
-      
-      expect(inquirer.prompt).toHaveBeenCalled();
+        .mockResolvedValueOnce({ item: 'url' })
+        .mockResolvedValueOnce({ url: 'https://new-api.example.com' });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(config.configureApi).toHaveBeenCalledWith({
+        ...mockConfig,
+        url: 'https://new-api.example.com',
+      });
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('https://new-api.example.com')
+      );
     });
 
-    it('should handle cancel action', async () => {
-      const { modifyApiConfigPartially } = await import('../../../src/utils/config-operations');
-      const { getExistingApiConfig } = await import('../../../src/utils/config');
-      const { I18N } = await import('../../../src/constants');
+    it('should modify API key only', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'key' })
+        .mockResolvedValueOnce({ key: 'new-key' });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+      vi.mocked(validator.formatApiKeyDisplay).mockReturnValue('new-****');
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(config.configureApi).toHaveBeenCalledWith({
+        ...mockConfig,
+        key: 'new-key',
+      });
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('new-****')
+      );
+    });
+
+    it('should modify auth type only', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'authType' })
+        .mockResolvedValueOnce({ authType: 'api_key' });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(config.configureApi).toHaveBeenCalledWith({
+        ...mockConfig,
+        authType: 'api_key',
+      });
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining('api_key')
+      );
+    });
+
+    it('should validate new URL', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'url' })
+        .mockImplementationOnce(async (prompt: any) => {
+          const validator = prompt.validate;
+          expect(validator('')).toBe(i18n.urlRequired);
+          expect(validator('invalid-url')).toBe(i18n.invalidUrl);
+          expect(validator('https://valid.url')).toBe(true);
+          return { url: 'https://new-api.example.com' };
+        });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(config.configureApi).toHaveBeenCalled();
+    });
+
+    it('should validate new API key', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'key' })
+        .mockImplementationOnce(async (prompt: any) => {
+          const keyValidator = prompt.validate;
+          
+          vi.mocked(validator.validateApiKey)
+            .mockReturnValueOnce({ isValid: false, error: 'Invalid format' })
+            .mockReturnValueOnce({ isValid: true, error: null });
+          
+          expect(keyValidator('')).toBe(i18n.keyRequired);
+          expect(keyValidator('invalid')).toBe('Invalid format');
+          expect(keyValidator('valid-key')).toBe(true);
+          
+          return { key: 'valid-key' };
+        });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(validator.validateApiKey).toHaveBeenCalled();
+    });
+
+    it('should handle cancellation at item selection', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ item: undefined });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.cancelled)
+      );
+      expect(config.configureApi).not.toHaveBeenCalled();
+    });
+
+    it('should handle cancellation during URL modification', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'url' })
+        .mockResolvedValueOnce({ url: undefined });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.cancelled)
+      );
+      expect(config.configureApi).not.toHaveBeenCalled();
+    });
+
+    it('should handle cancellation during key modification', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'key' })
+        .mockResolvedValueOnce({ key: undefined });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.cancelled)
+      );
+      expect(config.configureApi).not.toHaveBeenCalled();
+    });
+
+    it('should handle cancellation during auth type modification', async () => {
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'authType' })
+        .mockResolvedValueOnce({ authType: undefined });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.cancelled)
+      );
+      expect(config.configureApi).not.toHaveBeenCalled();
+    });
+
+    it('should re-read config to get latest values', async () => {
+      const updatedConfig: ApiConfig = {
+        ...mockConfig,
+        url: 'https://updated-api.example.com',
+      };
+
+      vi.mocked(config.getExistingApiConfig).mockReturnValue(updatedConfig);
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'url' })
+        .mockResolvedValueOnce({ url: 'https://newest-api.example.com' });
+
+      await modifyApiConfigPartially(mockConfig, i18n, 'en');
+
+      expect(config.getExistingApiConfig).toHaveBeenCalled();
+      expect(inquirer.prompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('https://updated-api.example.com'),
+          default: 'https://updated-api.example.com',
+        })
+      );
+    });
+
+    it('should handle missing existing config gracefully', async () => {
+      vi.mocked(config.getExistingApiConfig).mockReturnValue(null);
       
-      vi.mocked(getExistingApiConfig).mockReturnValue({
-        apiKey: 'old-key'
-      } as any);
+      const emptyConfig: ApiConfig = {
+        url: '',
+        key: '',
+        authType: 'auth_token',
+      };
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'url' })
+        .mockResolvedValueOnce({ url: 'https://new-api.example.com' });
+
+      await modifyApiConfigPartially(emptyConfig, i18n, 'en');
+
+      expect(config.configureApi).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: 'https://new-api.example.com',
+        })
+      );
+    });
+
+    it('should display correct message for auth token vs API key', async () => {
+      const apiKeyConfig: ApiConfig = {
+        ...mockConfig,
+        authType: 'api_key',
+      };
+
+      vi.mocked(config.getExistingApiConfig).mockReturnValue(apiKeyConfig);
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'key' })
+        .mockResolvedValueOnce({ key: 'new-api-key' });
+
+      vi.mocked(validator.validateApiKey).mockReturnValue({
+        isValid: true,
+        error: null,
+      });
+      vi.mocked(validator.formatApiKeyDisplay).mockReturnValue('old-****');
+
+      await modifyApiConfigPartially(apiKeyConfig, i18n, 'en');
+
+      // Check that the second call (for entering the key) uses the correct message
+      const secondCall = vi.mocked(inquirer.prompt).mock.calls[1];
+      expect(secondCall[0].message).toContain('Enter new API Key');
+    });
+
+    it('should work with Chinese language', async () => {
+      const zhI18n = I18N['zh-CN'];
       
-      vi.mocked(inquirer.prompt).mockResolvedValue({ item: 'cancel' });
-      
-      await modifyApiConfigPartially(I18N['zh-CN'], 'zh-CN');
-      
-      expect(inquirer.prompt).toHaveBeenCalledTimes(1);
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ item: 'url' })
+        .mockResolvedValueOnce({ url: 'https://new-api.example.com' });
+
+      await modifyApiConfigPartially(mockConfig, zhI18n, 'zh-CN');
+
+      expect(inquirer.prompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: zhI18n.selectModifyItems,
+        })
+      );
     });
   });
 
   describe('updatePromptOnly', () => {
-    it('should update prompt field only', async () => {
-      const { updatePromptOnly } = await import('../../../src/utils/config-operations');
-      const { I18N } = await import('../../../src/constants');
-      
-      await updatePromptOnly(I18N['zh-CN'], 'zh-CN');
-      
-      expect(console.log).toHaveBeenCalled();
+    const backupDir = '/backup/dir';
+
+    beforeEach(() => {
+      vi.mocked(config.backupExistingConfig).mockReturnValue(backupDir);
     });
 
-    it('should handle no existing config', async () => {
-      const { updatePromptOnly } = await import('../../../src/utils/config-operations');
-      const { I18N } = await import('../../../src/constants');
+    it('should backup existing config', async () => {
+      await updatePromptOnly('en', 'en');
+
+      expect(config.backupExistingConfig).toHaveBeenCalled();
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(backupDir)
+      );
+    });
+
+    it('should copy only documentation files', async () => {
+      await updatePromptOnly('zh-CN', 'zh-CN');
+
+      expect(config.copyConfigFiles).toHaveBeenCalledWith('zh-CN', true);
+    });
+
+    it('should apply AI language directive if provided', async () => {
+      await updatePromptOnly('en', 'en', 'Chinese');
+
+      expect(config.applyAiLanguageDirective).toHaveBeenCalledWith('Chinese');
+    });
+
+    it('should not apply AI language directive if not provided', async () => {
+      await updatePromptOnly('en', 'en');
+
+      expect(config.applyAiLanguageDirective).not.toHaveBeenCalled();
+    });
+
+    it('should configure AI personality', async () => {
+      await updatePromptOnly('en', 'en');
+
+      expect(aiPersonality.configureAiPersonality).toHaveBeenCalledWith('en');
+    });
+
+    it('should show success message', async () => {
+      const i18n = I18N['en'];
       
-      await updatePromptOnly(I18N['zh-CN'], 'zh-CN');
+      await updatePromptOnly('en', 'en');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.configSuccess)
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(i18n.complete)
+      );
+    });
+
+    it('should handle no backup directory', async () => {
+      vi.mocked(config.backupExistingConfig).mockReturnValue(null);
+
+      await updatePromptOnly('en', 'en');
+
+      expect(config.copyConfigFiles).toHaveBeenCalled();
+      expect(aiPersonality.configureAiPersonality).toHaveBeenCalled();
+    });
+
+    it('should work with different config and script languages', async () => {
+      await updatePromptOnly('zh-CN', 'en', 'English');
+
+      expect(config.copyConfigFiles).toHaveBeenCalledWith('zh-CN', true);
+      expect(config.applyAiLanguageDirective).toHaveBeenCalledWith('English');
+      expect(aiPersonality.configureAiPersonality).toHaveBeenCalledWith('en');
+    });
+
+    it('should show Chinese success messages', async () => {
+      const zhI18n = I18N['zh-CN'];
       
-      expect(console.log).toHaveBeenCalled();
+      await updatePromptOnly('zh-CN', 'zh-CN');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(zhI18n.configSuccess)
+      );
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(zhI18n.complete)
+      );
     });
   });
 });

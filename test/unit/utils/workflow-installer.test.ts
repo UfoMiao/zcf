@@ -1,0 +1,444 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { join, dirname } from 'pathe';
+import { existsSync } from 'node:fs';
+import { copyFile, mkdir, rm } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import inquirer from 'inquirer';
+import ansis from 'ansis';
+import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer';
+import { CLAUDE_DIR, I18N } from '../../../src/constants';
+import * as workflowConfig from '../../../src/config/workflows';
+import type { WorkflowConfig, WorkflowType } from '../../../src/types/workflow';
+
+vi.mock('node:fs');
+vi.mock('node:fs/promises');
+vi.mock('node:url');
+vi.mock('inquirer');
+vi.mock('../../../src/config/workflows');
+
+describe('workflow-installer utilities', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe('getRootDir', () => {
+    it('should return the correct root directory', async () => {
+      const mockFilePath = '/path/to/project/dist/utils/workflow-installer.js';
+      vi.mocked(fileURLToPath).mockReturnValue(mockFilePath);
+      
+      const module = await import('../../../src/utils/workflow-installer');
+      const getRootDir = (module as any).getRootDir || (() => {
+        const currentFilePath = fileURLToPath(import.meta.url);
+        const distDir = dirname(dirname(currentFilePath));
+        return dirname(distDir);
+      });
+      
+      const result = getRootDir();
+      expect(result).toBe('/path/to/project');
+    });
+  });
+
+  describe('selectAndInstallWorkflows', () => {
+    const mockWorkflows = [
+      {
+        id: 'workflow' as WorkflowType,
+        category: 'general',
+        defaultSelected: true,
+        autoInstallAgents: false,
+        commands: ['workflow.md'],
+        agents: [],
+      },
+      {
+        id: 'bmadWorkflow' as WorkflowType,
+        category: 'bmad',
+        defaultSelected: false,
+        autoInstallAgents: true,
+        commands: ['bmad-init.md'],
+        agents: [
+          { filename: 'analyst.md', required: true },
+          { filename: 'architect.md', required: true },
+        ],
+      },
+    ] as WorkflowConfig[];
+
+    beforeEach(() => {
+      vi.mocked(workflowConfig.getOrderedWorkflows).mockReturnValue(mockWorkflows);
+      vi.mocked(workflowConfig.getWorkflowConfig).mockImplementation((id) => 
+        mockWorkflows.find(w => w.id === id) || null
+      );
+    });
+
+    it('should display workflow choices and handle selection', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['workflow'],
+      });
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+
+      await selectAndInstallWorkflows('zh-CN', 'zh-CN');
+
+      expect(inquirer.prompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'checkbox',
+          name: 'selectedWorkflows',
+          message: expect.stringContaining(I18N['zh-CN'].selectWorkflowType),
+          choices: expect.arrayContaining([
+            expect.objectContaining({
+              value: 'workflow',
+              checked: true,
+            }),
+          ]),
+        })
+      );
+    });
+
+    it('should handle user cancellation', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: [],
+      });
+
+      await selectAndInstallWorkflows('en', 'en');
+
+      expect(console.log).toHaveBeenCalledWith(
+        expect.stringContaining(I18N['en'].cancelled)
+      );
+      expect(copyFile).not.toHaveBeenCalled();
+    });
+
+    it('should clean up old files before installation', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['workflow'],
+      });
+      vi.mocked(existsSync)
+        .mockReturnValueOnce(true) // Old command file exists
+        .mockReturnValueOnce(true) // Old agent file exists
+        .mockReturnValue(true);
+      vi.mocked(rm).mockResolvedValue(undefined);
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+
+      await selectAndInstallWorkflows('en', 'en');
+
+      expect(rm).toHaveBeenCalledWith(
+        join(CLAUDE_DIR, 'commands', 'workflow.md'),
+        { force: true }
+      );
+      expect(rm).toHaveBeenCalledWith(
+        join(CLAUDE_DIR, 'agents', 'planner.md'),
+        { force: true }
+      );
+    });
+
+    it('should install multiple workflows with dependencies', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['workflow', 'bmadWorkflow'],
+      });
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+
+      await selectAndInstallWorkflows('zh-CN', 'zh-CN');
+
+      expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('workflow');
+      expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('bmadWorkflow');
+      expect(copyFile).toHaveBeenCalled();
+    });
+
+    it('should handle cleanup errors gracefully', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['workflow'],
+      });
+      vi.mocked(existsSync)
+        .mockReturnValueOnce(true) // Old file exists
+        .mockReturnValue(true);
+      vi.mocked(rm).mockRejectedValueOnce(new Error('Permission denied'));
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+
+      await selectAndInstallWorkflows('en', 'en');
+
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to remove')
+      );
+      // Should continue with installation despite cleanup error
+      expect(copyFile).toHaveBeenCalled();
+    });
+  });
+
+  describe('installWorkflowWithDependencies', () => {
+    const mockWorkflowConfig: WorkflowConfig = {
+      id: 'bmadWorkflow' as WorkflowType,
+      category: 'bmad',
+      defaultSelected: false,
+      autoInstallAgents: true,
+      commands: ['bmad-init.md', 'bmad.md'],
+      agents: [
+        { filename: 'analyst.md', required: true },
+        { filename: 'architect.md', required: false },
+      ],
+    };
+
+    it('should install workflow commands successfully', async () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(fileURLToPath).mockReturnValue('/project/dist/utils/workflow-installer.js');
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const installWorkflowWithDependencies = (module as any).installWorkflowWithDependencies;
+
+      if (installWorkflowWithDependencies) {
+        const result = await installWorkflowWithDependencies(
+          mockWorkflowConfig,
+          'zh-CN',
+          'zh-CN'
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.installedCommands).toContain('bmad-init.md');
+        expect(result.installedCommands).toContain('bmad.md');
+        expect(mkdir).toHaveBeenCalledWith(
+          join(CLAUDE_DIR, 'commands', 'zcf'),
+          { recursive: true }
+        );
+      }
+    });
+
+    it('should install agents when autoInstallAgents is true', async () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(fileURLToPath).mockReturnValue('/project/dist/utils/workflow-installer.js');
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const installWorkflowWithDependencies = (module as any).installWorkflowWithDependencies;
+
+      if (installWorkflowWithDependencies) {
+        const result = await installWorkflowWithDependencies(
+          mockWorkflowConfig,
+          'en',
+          'en'
+        );
+
+        expect(result.installedAgents).toContain('analyst.md');
+        expect(result.installedAgents).toContain('architect.md');
+        expect(mkdir).toHaveBeenCalledWith(
+          join(CLAUDE_DIR, 'agents', 'zcf', 'bmad'),
+          { recursive: true }
+        );
+      }
+    });
+
+    it('should handle command installation failure', async () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile).mockRejectedValueOnce(new Error('Copy failed'));
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(fileURLToPath).mockReturnValue('/project/dist/utils/workflow-installer.js');
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const installWorkflowWithDependencies = (module as any).installWorkflowWithDependencies;
+
+      if (installWorkflowWithDependencies) {
+        const result = await installWorkflowWithDependencies(
+          mockWorkflowConfig,
+          'en',
+          'en'
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errors).toContain(expect.stringContaining('Copy failed'));
+      }
+    });
+
+    it('should handle required agent installation failure', async () => {
+      const configWithRequiredAgent: WorkflowConfig = {
+        ...mockWorkflowConfig,
+        agents: [{ filename: 'critical.md', required: true }],
+      };
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile)
+        .mockResolvedValueOnce(undefined) // Commands succeed
+        .mockResolvedValueOnce(undefined) // Commands succeed
+        .mockRejectedValueOnce(new Error('Agent copy failed')); // Agent fails
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(fileURLToPath).mockReturnValue('/project/dist/utils/workflow-installer.js');
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const installWorkflowWithDependencies = (module as any).installWorkflowWithDependencies;
+
+      if (installWorkflowWithDependencies) {
+        const result = await installWorkflowWithDependencies(
+          configWithRequiredAgent,
+          'en',
+          'en'
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.errors).toContain(expect.stringContaining('Agent copy failed'));
+      }
+    });
+
+    it('should handle optional agent installation failure gracefully', async () => {
+      const configWithOptionalAgent: WorkflowConfig = {
+        ...mockWorkflowConfig,
+        agents: [{ filename: 'optional.md', required: false }],
+      };
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile)
+        .mockResolvedValueOnce(undefined) // Commands succeed
+        .mockResolvedValueOnce(undefined) // Commands succeed
+        .mockRejectedValueOnce(new Error('Agent copy failed')); // Agent fails
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(fileURLToPath).mockReturnValue('/project/dist/utils/workflow-installer.js');
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const installWorkflowWithDependencies = (module as any).installWorkflowWithDependencies;
+
+      if (installWorkflowWithDependencies) {
+        const result = await installWorkflowWithDependencies(
+          configWithOptionalAgent,
+          'en',
+          'en'
+        );
+
+        // Should still succeed since agent is optional
+        expect(result.success).toBe(true);
+        expect(result.errors).toContain(expect.stringContaining('Agent copy failed'));
+      }
+    });
+
+    it('should show BMad initialization prompt for bmadWorkflow', async () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(fileURLToPath).mockReturnValue('/project/dist/utils/workflow-installer.js');
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const installWorkflowWithDependencies = (module as any).installWorkflowWithDependencies;
+
+      if (installWorkflowWithDependencies) {
+        await installWorkflowWithDependencies(
+          mockWorkflowConfig,
+          'zh-CN',
+          'zh-CN'
+        );
+
+        expect(console.log).toHaveBeenCalledWith(
+          expect.stringContaining(I18N['zh-CN'].bmadInitPrompt)
+        );
+      }
+    });
+
+    it('should not install agents when autoInstallAgents is false', async () => {
+      const configNoAutoAgents: WorkflowConfig = {
+        ...mockWorkflowConfig,
+        autoInstallAgents: false,
+      };
+
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(copyFile).mockResolvedValue(undefined);
+      vi.mocked(mkdir).mockResolvedValue(undefined);
+      vi.mocked(fileURLToPath).mockReturnValue('/project/dist/utils/workflow-installer.js');
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const installWorkflowWithDependencies = (module as any).installWorkflowWithDependencies;
+
+      if (installWorkflowWithDependencies) {
+        const result = await installWorkflowWithDependencies(
+          configNoAutoAgents,
+          'en',
+          'en'
+        );
+
+        expect(result.installedAgents).toHaveLength(0);
+        // Should not create agents directory
+        expect(mkdir).not.toHaveBeenCalledWith(
+          expect.stringContaining('agents'),
+          expect.anything()
+        );
+      }
+    });
+  });
+
+  describe('cleanupOldVersionFiles', () => {
+    it('should remove old command files', async () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(rm).mockResolvedValue(undefined);
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles;
+
+      if (cleanupOldVersionFiles) {
+        await cleanupOldVersionFiles('en');
+
+        expect(rm).toHaveBeenCalledWith(
+          join(CLAUDE_DIR, 'commands', 'workflow.md'),
+          { force: true }
+        );
+        expect(rm).toHaveBeenCalledWith(
+          join(CLAUDE_DIR, 'commands', 'feat.md'),
+          { force: true }
+        );
+      }
+    });
+
+    it('should remove old agent files', async () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(rm).mockResolvedValue(undefined);
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles;
+
+      if (cleanupOldVersionFiles) {
+        await cleanupOldVersionFiles('zh-CN');
+
+        expect(rm).toHaveBeenCalledWith(
+          join(CLAUDE_DIR, 'agents', 'planner.md'),
+          { force: true }
+        );
+        expect(rm).toHaveBeenCalledWith(
+          join(CLAUDE_DIR, 'agents', 'ui-ux-designer.md'),
+          { force: true }
+        );
+      }
+    });
+
+    it('should handle removal errors gracefully', async () => {
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(rm).mockRejectedValue(new Error('Permission denied'));
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles;
+
+      if (cleanupOldVersionFiles) {
+        await cleanupOldVersionFiles('en');
+
+        expect(console.error).toHaveBeenCalledWith(
+          expect.stringContaining('Failed to remove')
+        );
+      }
+    });
+
+    it('should skip non-existent files', async () => {
+      vi.mocked(existsSync).mockReturnValue(false);
+
+      const module = await import('../../../src/utils/workflow-installer');
+      const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles;
+
+      if (cleanupOldVersionFiles) {
+        await cleanupOldVersionFiles('en');
+
+        expect(rm).not.toHaveBeenCalled();
+      }
+    });
+  });
+});

@@ -74,6 +74,15 @@ pnpm release
 - `src/commands/update.ts` - Update workflow-related markdown files only
 - `src/commands/menu.ts` - Interactive menu system (default command)
 
+### Workflow System Architecture
+- `src/config/workflows.ts` - Workflow configuration and management
+- `src/utils/workflow-installer.ts` - Workflow installation logic with dependency handling
+- `src/types/workflow.ts` - Workflow type definitions
+- Templates organized under `templates/{lang}/workflow/{category}/`
+  - Commands: Slash commands for Claude Code
+  - Agents: AI agent personalities and capabilities
+  - BMad workflow: Enterprise-grade development workflow with specialized agents
+
 ### Utilities Architecture
 The project follows a modular utility architecture:
 
@@ -96,6 +105,12 @@ The project follows a modular utility architecture:
   - `utils/ai-personality.ts` - AI personality configuration
   - `utils/banner.ts` - CLI banner display
 
+- **Workflow System**
+  - `utils/workflow-installer.ts` - Install workflows with commands and agents
+  - `config/workflows.ts` - Workflow definitions and configurations
+  - Supports modular workflow installation with dependencies
+  - Automatic cleanup of old version files
+
 ### Key Design Patterns
 
 1. **Modular Command Structure**: Each command is self-contained with its own options interface
@@ -116,6 +131,12 @@ The project uses Vitest with a layered testing approach:
 2. **Edge Tests** (`*.edge.test.ts`) - Boundary conditions and error scenarios
 3. **Coverage Goals**: 90% for lines, functions, and statements
 
+#### Key Testing Areas
+- **Workflow Installation**: Test workflow selection, dependency resolution, and file installation
+- **Configuration Operations**: Test API configuration flows, partial updates, and validation
+- **MCP Services**: Test service selection and configuration
+- **Platform Compatibility**: Test cross-platform behavior with mocks
+
 Tests extensively use mocking for:
 - File system operations
 - External command execution
@@ -129,6 +150,8 @@ Tests extensively use mocking for:
 3. **API Configuration**: Supports both Auth Token (OAuth) and API Key authentication methods
 4. **Template System**: Configuration templates are stored in `templates/` with language-specific subdirectories
 5. **Error Recovery**: Exit prompt errors are handled separately to ensure clean termination
+6. **Workflow Installation**: Supports modular workflow installation with automatic dependency resolution
+7. **BMad Integration**: Enterprise workflow with specialized agents for complete SDLC management
 
 ### Type System
 
@@ -149,6 +172,13 @@ The project uses strict TypeScript with:
 2. Define options interface
 3. Register in `src/cli-setup.ts`
 4. Add corresponding tests
+
+### Adding a New Workflow
+1. Define workflow configuration in `src/config/workflows.ts`
+2. Add workflow type to `WorkflowType` in `src/types/workflow.ts`
+3. Create template files under `templates/{lang}/workflow/{category}/`
+4. Add translation keys for workflow name and descriptions
+5. Test workflow installation and cleanup
 
 ### Updating Translations
 1. Add or modify translation strings in the appropriate module under `src/i18n/locales/{lang}/`
