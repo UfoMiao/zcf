@@ -48,4 +48,15 @@ export const configuration = {
   envImportSuccess: 'Environment variables imported',
   permissionsImportSuccess: 'Permissions imported',
   openingSettingsJson: 'Opening settings.json...',
+  
+  // JSON config related
+  invalidConfiguration: 'Invalid configuration',
+  failedToParseJson: 'Failed to parse JSON file:',
+  failedToBackupConfig: 'Failed to backup config',
+  failedToReadTemplateSettings: 'Failed to read template settings',
+  failedToMergeSettings: 'Failed to merge settings',
+  preservingExistingSettings: 'Preserving existing settings',
+  memoryDirNotFound: 'Memory directory not found',
+  failedToSetOnboarding: 'Failed to set onboarding flag',
+  fixWindowsMcp: 'Fix Windows MCP configuration?',
 };

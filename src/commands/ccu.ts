@@ -16,7 +16,7 @@ export async function executeCcusage(args: string[] = []): Promise<void> {
     const command = 'npx';
     const commandArgs = ['ccusage@latest', ...args];
     
-    console.log(ansis.cyan(i18n.runningCcusage));
+    console.log(ansis.cyan(i18n.tools.runningCcusage));
     console.log(ansis.gray(`$ npx ccusage@latest ${args.join(' ')}`));
     console.log('');
     
@@ -33,10 +33,10 @@ export async function executeCcusage(args: string[] = []): Promise<void> {
     const lang = getValidLanguage(rawLang);
     const i18n = I18N[lang];
     
-    console.error(ansis.red(i18n.ccusageFailed));
-    console.error(ansis.yellow(i18n.checkNetworkConnection));
+    console.error(ansis.red(i18n.tools.ccusageFailed));
+    console.error(ansis.yellow(i18n.tools.checkNetworkConnection));
     if (process.env.DEBUG) {
-      console.error(ansis.gray(i18n.errorDetails), error);
+      console.error(ansis.gray(i18n.tools.errorDetails), error);
     }
     // Only exit in production, not during tests
     if (process.env.NODE_ENV !== 'test') {

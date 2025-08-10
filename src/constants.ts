@@ -27,10 +27,9 @@ export const AI_OUTPUT_LANGUAGES = {
 
 export type AiOutputLanguage = keyof typeof AI_OUTPUT_LANGUAGES;
 
-// Re-export I18N for backward compatibility
-// Import translations with proxy support
-import { translations } from './i18n';
-export const I18N = translations;
+// Import I18N structure
+import { I18N as I18N_STRUCTURE } from './i18n';
+export const I18N = I18N_STRUCTURE;
 
 export const MCP_SERVICES: McpService[] = [
   {

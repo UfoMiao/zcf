@@ -36,15 +36,15 @@ export async function update(options: UpdateOptions = {}) {
       const { lang } = await inquirer.prompt<{ lang: SupportedLang }>({
         type: 'list',
         name: 'lang',
-        message: i18n.updateConfigLangPrompt,
+        message: i18n.workflow.updateConfigLangPrompt,
         choices: SUPPORTED_LANGS.map((l) => ({
-          name: `${LANG_LABELS[l]} - ${i18n.configLangHint[l]}`,
+          name: `${LANG_LABELS[l]} - ${i18n.language.configLangHint[l]}`,
           value: l,
         })),
       });
 
       if (!lang) {
-        console.log(ansis.yellow(i18n.cancelled));
+        console.log(ansis.yellow(i18n.common.cancelled));
         process.exit(0);
       }
 
@@ -54,7 +54,7 @@ export async function update(options: UpdateOptions = {}) {
     // Select AI output language
     const aiOutputLang = await resolveAiOutputLanguage(scriptLang, options.aiOutputLang, zcfConfig);
 
-    console.log(ansis.cyan(`\n${i18n.updatingPrompts}\n`));
+    console.log(ansis.cyan(`\n${i18n.workflow.updatingPrompts}\n`));
 
     // Execute prompt-only update with AI language
     await updatePromptOnly(configLang, scriptLang, aiOutputLang);

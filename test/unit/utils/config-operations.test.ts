@@ -9,7 +9,7 @@ import {
 import * as config from '../../../src/utils/config';
 import * as aiPersonality from '../../../src/utils/ai-personality';
 import * as validator from '../../../src/utils/validator';
-import { I18N } from '../../../src/constants';
+import { getTranslation } from '../../../src/i18n';
 import type { ApiConfig } from '../../../src/types/config';
 
 vi.mock('inquirer');
@@ -29,7 +29,7 @@ describe('config-operations utilities', () => {
   });
 
   describe('configureApiCompletely', () => {
-    const i18n = I18N['en'];
+    const i18n = getTranslation('en');
 
     it('should configure API with auth token', async () => {
       vi.mocked(inquirer.prompt)
@@ -104,7 +104,7 @@ describe('config-operations utilities', () => {
       const urlPrompt = {
         type: 'input',
         name: 'url',
-        message: i18n.enterApiUrl,
+        message: i18n.api.enterApiUrl,
         validate: expect.any(Function),
       };
 
@@ -113,8 +113,8 @@ describe('config-operations utilities', () => {
         .mockImplementationOnce(async (prompt: any) => {
           // Test URL validation
           const validator = prompt.validate;
-          expect(validator('')).toBe(i18n.urlRequired);
-          expect(validator('not-a-url')).toBe(i18n.invalidUrl);
+          expect(validator('')).toBe(i18n.api.urlRequired);
+          expect(validator('not-a-url')).toBe(i18n.api.invalidUrl);
           expect(validator('https://valid.url')).toBe(true);
           return { url: 'https://api.example.com' };
         })
@@ -144,7 +144,7 @@ describe('config-operations utilities', () => {
             .mockReturnValueOnce({ isValid: false, error: 'Invalid format' })
             .mockReturnValueOnce({ isValid: true, error: null });
           
-          expect(keyValidator('')).toBe(i18n.keyRequired);
+          expect(keyValidator('')).toBe(i18n.api.keyRequired);
           expect(keyValidator('invalid')).toBe('Invalid format');
           expect(keyValidator('valid-key')).toBe(true);
           
@@ -168,7 +168,7 @@ describe('config-operations utilities', () => {
 
       expect(result).toBeNull();
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.cancelled)
+        expect.stringContaining(i18n.common.cancelled)
       );
     });
 
@@ -181,7 +181,7 @@ describe('config-operations utilities', () => {
 
       expect(result).toBeNull();
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.cancelled)
+        expect.stringContaining(i18n.common.cancelled)
       );
     });
 
@@ -195,12 +195,12 @@ describe('config-operations utilities', () => {
 
       expect(result).toBeNull();
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.cancelled)
+        expect.stringContaining(i18n.common.cancelled)
       );
     });
 
     it('should work with Chinese language', async () => {
-      const zhI18n = I18N['zh-CN'];
+      const zhI18n = getTranslation('zh-CN');
       
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ authType: 'auth_token' })
@@ -217,14 +217,14 @@ describe('config-operations utilities', () => {
       expect(result).toBeDefined();
       expect(inquirer.prompt).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: zhI18n.configureApi,
+          message: zhI18n.api.configureApi,
         })
       );
     });
   });
 
   describe('modifyApiConfigPartially', () => {
-    const i18n = I18N['en'];
+    const i18n = getTranslation('en');
     const mockConfig: ApiConfig = {
       url: 'https://old-api.example.com',
       key: 'old-key',
@@ -298,8 +298,8 @@ describe('config-operations utilities', () => {
         .mockResolvedValueOnce({ item: 'url' })
         .mockImplementationOnce(async (prompt: any) => {
           const validator = prompt.validate;
-          expect(validator('')).toBe(i18n.urlRequired);
-          expect(validator('invalid-url')).toBe(i18n.invalidUrl);
+          expect(validator('')).toBe(i18n.api.urlRequired);
+          expect(validator('invalid-url')).toBe(i18n.api.invalidUrl);
           expect(validator('https://valid.url')).toBe(true);
           return { url: 'https://new-api.example.com' };
         });
@@ -319,7 +319,7 @@ describe('config-operations utilities', () => {
             .mockReturnValueOnce({ isValid: false, error: 'Invalid format' })
             .mockReturnValueOnce({ isValid: true, error: null });
           
-          expect(keyValidator('')).toBe(i18n.keyRequired);
+          expect(keyValidator('')).toBe(i18n.api.keyRequired);
           expect(keyValidator('invalid')).toBe('Invalid format');
           expect(keyValidator('valid-key')).toBe(true);
           
@@ -342,7 +342,7 @@ describe('config-operations utilities', () => {
       await modifyApiConfigPartially(mockConfig, i18n, 'en');
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.cancelled)
+        expect.stringContaining(i18n.common.cancelled)
       );
       expect(config.configureApi).not.toHaveBeenCalled();
     });
@@ -355,7 +355,7 @@ describe('config-operations utilities', () => {
       await modifyApiConfigPartially(mockConfig, i18n, 'en');
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.cancelled)
+        expect.stringContaining(i18n.common.cancelled)
       );
       expect(config.configureApi).not.toHaveBeenCalled();
     });
@@ -368,7 +368,7 @@ describe('config-operations utilities', () => {
       await modifyApiConfigPartially(mockConfig, i18n, 'en');
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.cancelled)
+        expect.stringContaining(i18n.common.cancelled)
       );
       expect(config.configureApi).not.toHaveBeenCalled();
     });
@@ -381,7 +381,7 @@ describe('config-operations utilities', () => {
       await modifyApiConfigPartially(mockConfig, i18n, 'en');
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.cancelled)
+        expect.stringContaining(i18n.common.cancelled)
       );
       expect(config.configureApi).not.toHaveBeenCalled();
     });
@@ -455,7 +455,7 @@ describe('config-operations utilities', () => {
     });
 
     it('should work with Chinese language', async () => {
-      const zhI18n = I18N['zh-CN'];
+      const zhI18n = getTranslation('zh-CN');
       
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ item: 'url' })
@@ -465,7 +465,7 @@ describe('config-operations utilities', () => {
 
       expect(inquirer.prompt).toHaveBeenCalledWith(
         expect.objectContaining({
-          message: zhI18n.selectModifyItems,
+          message: zhI18n.api.selectModifyItems,
         })
       );
     });
@@ -512,15 +512,15 @@ describe('config-operations utilities', () => {
     });
 
     it('should show success message', async () => {
-      const i18n = I18N['en'];
+      const i18n = getTranslation('en');
       
       await updatePromptOnly('en', 'en');
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.configSuccess)
+        expect.stringContaining(i18n.configuration.configSuccess)
       );
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.complete)
+        expect.stringContaining(i18n.common.complete)
       );
     });
 
@@ -542,15 +542,15 @@ describe('config-operations utilities', () => {
     });
 
     it('should show Chinese success messages', async () => {
-      const zhI18n = I18N['zh-CN'];
+      const zhI18n = getTranslation('zh-CN');
       
       await updatePromptOnly('zh-CN', 'zh-CN');
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(zhI18n.configSuccess)
+        expect.stringContaining(zhI18n.configuration.configSuccess)
       );
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(zhI18n.complete)
+        expect.stringContaining(zhI18n.common.complete)
       );
     });
   });

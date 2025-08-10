@@ -1,7 +1,7 @@
 import dayjs from 'dayjs';
 import { join } from 'pathe';
 import { exists, readFile, writeFile, copyFile, ensureDir } from './fs-operations';
-import { I18N } from '../constants';
+import { getTranslation } from '../i18n';
 import { readZcfConfig } from './zcf-config';
 
 export interface JsonConfigOptions<T> {
@@ -29,8 +29,8 @@ export function readJsonConfig<T>(path: string, options: JsonConfigOptions<T> = 
 
     // Validate if validator provided
     if (validate && !validate(data)) {
-      const i18n = I18N[readZcfConfig()?.preferredLang || 'en'];
-      console.warn(`${i18n.invalidConfiguration} (${path})`);
+      const i18n = getTranslation(readZcfConfig()?.preferredLang || 'en');
+      console.warn(`${i18n.configuration.invalidConfiguration} (${path})`);
       return defaultValue;
     }
 
@@ -41,8 +41,8 @@ export function readJsonConfig<T>(path: string, options: JsonConfigOptions<T> = 
 
     return data as T;
   } catch (error) {
-    const i18n = I18N[readZcfConfig()?.preferredLang || 'en'];
-    console.error(`${i18n.failedToParseJson} ${path}`, error);
+    const i18n = getTranslation(readZcfConfig()?.preferredLang || 'en');
+    console.error(`${i18n.configuration.failedToParseJson} ${path}`, error);
     return defaultValue;
   }
 }
@@ -94,8 +94,8 @@ export function backupJsonConfig(path: string, backupDir?: string): string | nul
     copyFile(path, backupPath);
     return backupPath;
   } catch (error) {
-    const i18n = I18N[readZcfConfig()?.preferredLang || 'en'];
-    console.error(i18n.failedToBackupConfig, error);
+    const i18n = getTranslation(readZcfConfig()?.preferredLang || 'en');
+    console.error(i18n.configuration.failedToBackupConfig, error);
     return null;
   }
 }

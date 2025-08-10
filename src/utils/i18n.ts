@@ -1,4 +1,4 @@
-import { getTranslation, type SupportedLang, type TranslationKeys } from '../i18n';
+import { getTranslation, type SupportedLang, type TranslationStructure } from '../i18n';
 
 let currentLang: SupportedLang = 'zh-CN';
 
@@ -10,7 +10,7 @@ export function getLanguage(): SupportedLang {
   return currentLang;
 }
 
-export function t(): TranslationKeys {
+export function t(): TranslationStructure {
   return getTranslation(currentLang);
 }
 

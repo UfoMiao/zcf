@@ -30,21 +30,4 @@ export const zhCN: TranslationStructure = {
   ccr: ccrMessages,
 };
 
-// For backward compatibility during migration
-export const zhCNFlat = {
-  ...common,
-  ...language,
-  ...installation,
-  ...api,
-  ...configuration,
-  ...mcp,
-  ...menu,
-  ...workflow,
-  ...cli,
-  ...bmad,
-  ...errors,
-  ...tools,
-  ...ccrMessages,
-};
-
 export const zhCNMcpServices: McpServicesTranslations = mcpServices;

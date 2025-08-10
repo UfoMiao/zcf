@@ -1,5 +1,6 @@
 import ansis from 'ansis';
-import { I18N, type SupportedLang } from '../constants';
+import { type SupportedLang } from '../constants';
+import { getTranslation } from '../i18n';
 
 /**
  * Validate API Key format
@@ -8,13 +9,13 @@ import { I18N, type SupportedLang } from '../constants';
  * @returns Validation result
  */
 export function validateApiKey(apiKey: string, lang: SupportedLang = 'zh-CN'): { isValid: boolean; error?: string } {
-  const i18n = I18N[lang];
+  const i18n = getTranslation(lang);
 
   // Empty check
   if (!apiKey || apiKey.trim() === '') {
     return {
       isValid: false,
-      error: i18n.apiKeyValidation.empty,
+      error: i18n.api.apiKeyValidation.empty,
     };
   }
 
@@ -41,10 +42,10 @@ export function formatApiKeyDisplay(apiKey: string): string {
  * @param lang - Language for example format
  */
 export function showApiKeyError(error: string, lang: SupportedLang = 'zh-CN'): void {
-  const i18n = I18N[lang];
+  const i18n = getTranslation(lang);
 
   console.log(ansis.red(`✗ ${error}`));
-  console.log(ansis.gray(i18n.apiKeyValidation.example));
+  console.log(ansis.gray(i18n.api.apiKeyValidation.example));
 }
 
 /**

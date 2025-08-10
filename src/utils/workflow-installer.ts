@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
 import ansis from 'ansis';
 import type { SupportedLang } from '../constants';
-import { CLAUDE_DIR, I18N } from '../constants';
+import { getTranslation } from '../i18n';
+import { CLAUDE_DIR } from '../constants';
 import { getOrderedWorkflows, getWorkflowConfig } from '../config/workflows';
 import type { WorkflowType, WorkflowConfig, WorkflowInstallResult } from '../types/workflow';
 
@@ -19,13 +20,13 @@ export async function selectAndInstallWorkflows(
   configLang: SupportedLang,
   scriptLang: SupportedLang
 ): Promise<void> {
-  const i18n = I18N[scriptLang];
+  const i18n = getTranslation(scriptLang);
   const workflows = getOrderedWorkflows();
 
   // Build choices from configuration
   const choices = workflows.map(workflow => {
-    const nameKey = workflow.id as keyof typeof i18n.workflowOption;
-    const name = i18n.workflowOption[nameKey] || workflow.id;
+    const nameKey = workflow.id as keyof typeof i18n.workflow.workflowOption;
+    const name = i18n.workflow.workflowOption[nameKey] || workflow.id;
     return {
       name,
       value: workflow.id,
@@ -37,12 +38,12 @@ export async function selectAndInstallWorkflows(
   const { selectedWorkflows } = await inquirer.prompt<{ selectedWorkflows: WorkflowType[] }>({
     type: 'checkbox',
     name: 'selectedWorkflows',
-    message: `${i18n.selectWorkflowType}${i18n.multiSelectHint}`,
+    message: `${i18n.workflow.selectWorkflowType}${i18n.common.multiSelectHint}`,
     choices,
   });
 
   if (!selectedWorkflows || selectedWorkflows.length === 0) {
-    console.log(ansis.yellow(i18n.cancelled));
+    console.log(ansis.yellow(i18n.common.cancelled));
     return;
   }
 
@@ -64,7 +65,7 @@ async function installWorkflowWithDependencies(
   scriptLang: SupportedLang
 ): Promise<WorkflowInstallResult> {
   const rootDir = getRootDir();
-  const i18n = I18N[scriptLang];
+  const i18n = getTranslation(scriptLang);
   const result: WorkflowInstallResult = {
     workflow: config.id,
     success: true,
@@ -73,8 +74,8 @@ async function installWorkflowWithDependencies(
     errors: [],
   };
 
-  const workflowName = i18n.workflowOption[config.id as keyof typeof i18n.workflowOption] || config.id;
-  console.log(ansis.cyan(`\n📦 ${i18n.installingWorkflow}: ${workflowName}...`));
+  const workflowName = i18n.workflow.workflowOption[config.id as keyof typeof i18n.workflow.workflowOption] || config.id;
+  console.log(ansis.cyan(`\n📦 ${i18n.workflow.installingWorkflow}: ${workflowName}...`));
 
   // Install commands to new structure
   const commandsDir = join(CLAUDE_DIR, 'commands', 'zcf');
@@ -92,9 +93,9 @@ async function installWorkflowWithDependencies(
       try {
         await copyFile(commandSource, commandDest);
         result.installedCommands.push(destFileName);
-        console.log(ansis.gray(`  ✔ ${i18n.installedCommand}: zcf/${destFileName}`));
+        console.log(ansis.gray(`  ✔ ${i18n.workflow.installedCommand}: zcf/${destFileName}`));
       } catch (error) {
-        const errorMsg = `${i18n.failedToInstallCommand} ${commandFile}: ${error}`;
+        const errorMsg = `${i18n.workflow.failedToInstallCommand} ${commandFile}: ${error}`;
         result.errors?.push(errorMsg);
         console.error(ansis.red(`  ✗ ${errorMsg}`));
         result.success = false;
@@ -117,9 +118,9 @@ async function installWorkflowWithDependencies(
         try {
           await copyFile(agentSource, agentDest);
           result.installedAgents.push(agent.filename);
-          console.log(ansis.gray(`  ✔ ${i18n.installedAgent}: zcf/${config.category}/${agent.filename}`));
+          console.log(ansis.gray(`  ✔ ${i18n.workflow.installedAgent}: zcf/${config.category}/${agent.filename}`));
         } catch (error) {
-          const errorMsg = `${i18n.failedToInstallAgent} ${agent.filename}: ${error}`;
+          const errorMsg = `${i18n.workflow.failedToInstallAgent} ${agent.filename}: ${error}`;
           result.errors?.push(errorMsg);
           console.error(ansis.red(`  ✗ ${errorMsg}`));
           if (agent.required) {
@@ -131,22 +132,22 @@ async function installWorkflowWithDependencies(
   }
 
   if (result.success) {
-    console.log(ansis.green(`✔ ${workflowName} ${i18n.workflowInstallSuccess}`));
+    console.log(ansis.green(`✔ ${workflowName} ${i18n.workflow.workflowInstallSuccess}`));
     
     // Show special prompt for BMAD workflow
     if (config.id === 'bmadWorkflow') {
-      console.log(ansis.cyan(`\n${i18n.bmadInitPrompt}`));
+      console.log(ansis.cyan(`\n${i18n.bmad.bmadInitPrompt}`));
     }
   } else {
-    console.log(ansis.red(`✗ ${workflowName} ${i18n.workflowInstallError}`));
+    console.log(ansis.red(`✗ ${workflowName} ${i18n.workflow.workflowInstallError}`));
   }
 
   return result;
 }
 
 async function cleanupOldVersionFiles(scriptLang: SupportedLang): Promise<void> {
-  const i18n = I18N[scriptLang];
-  console.log(ansis.cyan(`\n🧹 ${i18n.cleaningOldFiles || 'Cleaning up old version files'}...`));
+  const i18n = getTranslation(scriptLang);
+  console.log(ansis.cyan(`\n🧹 ${i18n.workflow.cleaningOldFiles || 'Cleaning up old version files'}...`));
   
   // Old command files to remove
   const oldCommandFiles = [
@@ -165,9 +166,9 @@ async function cleanupOldVersionFiles(scriptLang: SupportedLang): Promise<void> 
     if (existsSync(file)) {
       try {
         await rm(file, { force: true });
-        console.log(ansis.gray(`  ✔ ${i18n.removedOldFile || 'Removed old file'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+        console.log(ansis.gray(`  ✔ ${i18n.workflow.removedOldFile || 'Removed old file'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
       } catch (error) {
-        console.error(ansis.yellow(`  ⚠ ${i18n.failedToRemoveFile || 'Failed to remove'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+        console.error(ansis.yellow(`  ⚠ ${i18n.workflow.failedToRemoveFile || 'Failed to remove'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
       }
     }
   }
@@ -177,9 +178,9 @@ async function cleanupOldVersionFiles(scriptLang: SupportedLang): Promise<void> 
     if (existsSync(file)) {
       try {
         await rm(file, { force: true });
-        console.log(ansis.gray(`  ✔ ${i18n.removedOldFile || 'Removed old file'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+        console.log(ansis.gray(`  ✔ ${i18n.workflow.removedOldFile || 'Removed old file'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
       } catch (error) {
-        console.error(ansis.yellow(`  ⚠ ${i18n.failedToRemoveFile || 'Failed to remove'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
+        console.error(ansis.yellow(`  ⚠ ${i18n.workflow.failedToRemoveFile || 'Failed to remove'}: ${file.replace(CLAUDE_DIR, '~/.claude')}`));
       }
     }
   }

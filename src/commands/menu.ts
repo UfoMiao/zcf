@@ -33,72 +33,72 @@ export async function showMainMenu() {
       const i18n = I18N[scriptLang];
 
       // Display menu options
-      console.log(ansis.cyan(i18n.selectFunction));
+      console.log(ansis.cyan(i18n.menu.selectFunction));
       console.log('  -------- Claude Code --------');
       console.log(
-        `  ${ansis.cyan('1.')} ${i18n.menuOptions.fullInit} ${ansis.gray('- ' + i18n.menuDescriptions.fullInit)}`
+        `  ${ansis.cyan('1.')} ${i18n.menu.menuOptions.fullInit} ${ansis.gray('- ' + i18n.menu.menuDescriptions.fullInit)}`
       );
       console.log(
-        `  ${ansis.cyan('2.')} ${i18n.menuOptions.importWorkflow} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.importWorkflow
+        `  ${ansis.cyan('2.')} ${i18n.menu.menuOptions.importWorkflow} ${ansis.gray(
+          '- ' + i18n.menu.menuDescriptions.importWorkflow
         )}`
       );
       console.log(
-        `  ${ansis.cyan('3.')} ${i18n.menuOptions.configureApiOrCcr} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.configureApiOrCcr
+        `  ${ansis.cyan('3.')} ${i18n.menu.menuOptions.configureApiOrCcr} ${ansis.gray(
+          '- ' + i18n.menu.menuDescriptions.configureApiOrCcr
         )}`
       );
       console.log(
-        `  ${ansis.cyan('4.')} ${i18n.menuOptions.configureMcp} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.configureMcp
+        `  ${ansis.cyan('4.')} ${i18n.menu.menuOptions.configureMcp} ${ansis.gray(
+          '- ' + i18n.menu.menuDescriptions.configureMcp
         )}`
       );
       console.log(
-        `  ${ansis.cyan('5.')} ${i18n.menuOptions.configureModel} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.configureModel
+        `  ${ansis.cyan('5.')} ${i18n.menu.menuOptions.configureModel} ${ansis.gray(
+          '- ' + i18n.menu.menuDescriptions.configureModel
         )}`
       );
       console.log(
-        `  ${ansis.cyan('6.')} ${i18n.menuOptions.configureAiMemory} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.configureAiMemory
+        `  ${ansis.cyan('6.')} ${i18n.menu.menuOptions.configureAiMemory} ${ansis.gray(
+          '- ' + i18n.menu.menuDescriptions.configureAiMemory
         )}`
       );
       console.log(
-        `  ${ansis.cyan('7.')} ${i18n.menuOptions.configureEnvPermission} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.configureEnvPermission
+        `  ${ansis.cyan('7.')} ${i18n.menu.menuOptions.configureEnvPermission} ${ansis.gray(
+          '- ' + i18n.menu.menuDescriptions.configureEnvPermission
         )}`
       );
       console.log('');
-      console.log(`  --------- ${i18n.menuSections.otherTools} ----------`);
+      console.log(`  --------- ${i18n.menu.menuSections.otherTools} ----------`);
       console.log(
-        `  ${ansis.cyan('U.')} ${i18n.menuOptions.ccusage} ${ansis.gray('- ' + i18n.menuDescriptions.ccusage)}`
+        `  ${ansis.cyan('U.')} ${i18n.menu.menuOptions.ccusage} ${ansis.gray('- ' + i18n.menu.menuDescriptions.ccusage)}`
       );
       console.log('');
       console.log('  ------------ ZCF ------------');
       console.log(
-        `  ${ansis.cyan('0.')} ${i18n.menuOptions.changeLanguage} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.changeLanguage
+        `  ${ansis.cyan('0.')} ${i18n.menu.menuOptions.changeLanguage} ${ansis.gray(
+          '- ' + i18n.menu.menuDescriptions.changeLanguage
         )}`
       );
       console.log(
-        `  ${ansis.cyan('-.')} ${i18n.menuOptions.clearCache} ${ansis.gray('- ' + i18n.menuDescriptions.clearCache)}`
+        `  ${ansis.cyan('-.')} ${i18n.menu.menuOptions.clearCache} ${ansis.gray('- ' + i18n.menu.menuDescriptions.clearCache)}`
       );
-      console.log(`  ${ansis.red('Q.')} ${ansis.red(i18n.menuOptions.exit)}`);
+      console.log(`  ${ansis.red('Q.')} ${ansis.red(i18n.menu.menuOptions.exit)}`);
       console.log('');
 
       // Get user input
       const { choice } = await inquirer.prompt<{ choice: string }>({
         type: 'input',
         name: 'choice',
-        message: i18n.enterChoice,
+        message: i18n.common.enterChoice,
         validate: (value) => {
           const valid = ['1', '2', '3', '4', '5', '6', '7', 'u', 'U', '0', '-', 'q', 'Q'];
-          return valid.includes(value) || i18n.invalidChoice;
+          return valid.includes(value) || i18n.common.invalidChoice;
         },
       });
 
       if (!choice) {
-        console.log(ansis.yellow(i18n.cancelled));
+        console.log(ansis.yellow(i18n.common.cancelled));
         exitMenu = true;
         break;
       }
@@ -141,7 +141,7 @@ export async function showMainMenu() {
           break;
         case 'q':
           exitMenu = true;
-          console.log(ansis.cyan(i18n.goodbye));
+          console.log(ansis.cyan(i18n.common.goodbye));
           break;
       }
 
@@ -159,13 +159,13 @@ export async function showMainMenu() {
         const { continue: shouldContinue } = await inquirer.prompt<{ continue: boolean }>({
           type: 'confirm',
           name: 'continue',
-          message: i18n.returnToMenu,
+          message: i18n.common.returnToMenu,
           default: true,
         });
 
         if (!shouldContinue) {
           exitMenu = true;
-          console.log(ansis.cyan(i18n.goodbye));
+          console.log(ansis.cyan(i18n.common.goodbye));
         }
       }
     }

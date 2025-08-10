@@ -6,7 +6,8 @@ import { fileURLToPath } from 'node:url';
 import inquirer from 'inquirer';
 import ansis from 'ansis';
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer';
-import { CLAUDE_DIR, I18N } from '../../../src/constants';
+import { CLAUDE_DIR } from '../../../src/constants';
+import { getTranslation } from '../../../src/i18n';
 import * as workflowConfig from '../../../src/config/workflows';
 import type { WorkflowConfig, WorkflowType } from '../../../src/types/workflow';
 
@@ -88,7 +89,7 @@ describe('workflow-installer utilities', () => {
         expect.objectContaining({
           type: 'checkbox',
           name: 'selectedWorkflows',
-          message: expect.stringContaining(I18N['zh-CN'].selectWorkflowType),
+          message: expect.stringContaining(getTranslation('zh-CN').workflow.selectWorkflowType),
           choices: expect.arrayContaining([
             expect.objectContaining({
               value: 'workflow',
@@ -107,7 +108,7 @@ describe('workflow-installer utilities', () => {
       await selectAndInstallWorkflows('en', 'en');
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(I18N['en'].cancelled)
+        expect.stringContaining(getTranslation('en').common.cancelled)
       );
       expect(copyFile).not.toHaveBeenCalled();
     });

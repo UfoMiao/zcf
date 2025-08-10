@@ -63,8 +63,8 @@ export async function init(options: InitOptions = {}) {
     
     // Show Termux environment info if detected
     if (isTermux()) {
-      console.log(ansis.yellow(`\nℹ ${i18n.termuxDetected}`));
-      console.log(ansis.gray(i18n.termuxEnvironmentInfo));
+      console.log(ansis.yellow(`\nℹ ${i18n.installation.termuxDetected}`));
+      console.log(ansis.gray(i18n.installation.termuxEnvironmentInfo));
     }
 
     // Step 2: Select config language
@@ -73,15 +73,15 @@ export async function init(options: InitOptions = {}) {
       const { lang } = await inquirer.prompt<{ lang: SupportedLang }>({
         type: 'list',
         name: 'lang',
-        message: i18n.selectConfigLang,
+        message: i18n.language.selectConfigLang,
         choices: SUPPORTED_LANGS.map((l) => ({
-          name: `${LANG_LABELS[l]} - ${i18n.configLangHint[l]}`,
+          name: `${LANG_LABELS[l]} - ${i18n.language.configLangHint[l]}`,
           value: l,
         })),
       });
 
       if (!lang) {
-        console.log(ansis.yellow(i18n.cancelled));
+        console.log(ansis.yellow(i18n.common.cancelled));
         process.exit(0);
       }
 
@@ -98,19 +98,19 @@ export async function init(options: InitOptions = {}) {
       const { shouldInstall } = await inquirer.prompt<{ shouldInstall: boolean }>({
         type: 'confirm',
         name: 'shouldInstall',
-        message: i18n.installPrompt,
+        message: i18n.installation.installPrompt,
         default: true,
       });
 
       if (shouldInstall === undefined) {
-        console.log(ansis.yellow(i18n.cancelled));
+        console.log(ansis.yellow(i18n.common.cancelled));
         process.exit(0);
       }
 
       if (shouldInstall) {
         await installClaudeCode(scriptLang);
       } else {
-        console.log(ansis.yellow(i18n.skip));
+        console.log(ansis.yellow(i18n.common.skip));
       }
     } else {
       console.log(ansis.green(`✔ ${i18n.installation.installSuccess}`));
@@ -124,17 +124,17 @@ export async function init(options: InitOptions = {}) {
       const { action: userAction } = await inquirer.prompt<{ action: string }>({
         type: 'list',
         name: 'action',
-        message: i18n.existingConfig,
+        message: i18n.configuration.existingConfig,
         choices: [
-          { name: i18n.backupAndOverwrite, value: 'backup' },
-          { name: i18n.updateDocsOnly, value: 'docs-only' },
-          { name: i18n.mergeConfig, value: 'merge' },
-          { name: i18n.skip, value: 'skip' },
+          { name: i18n.configuration.backupAndOverwrite, value: 'backup' },
+          { name: i18n.configuration.updateDocsOnly, value: 'docs-only' },
+          { name: i18n.configuration.mergeConfig, value: 'merge' },
+          { name: i18n.common.skip, value: 'skip' },
         ],
       });
 
       if (!userAction) {
-        console.log(ansis.yellow(i18n.cancelled));
+        console.log(ansis.yellow(i18n.common.cancelled));
         process.exit(0);
       }
 
@@ -142,7 +142,7 @@ export async function init(options: InitOptions = {}) {
 
       // Handle special cases early
       if (action === 'skip') {
-        console.log(ansis.yellow(i18n.skip));
+        console.log(ansis.yellow(i18n.common.skip));
         return;
       }
     }
@@ -156,33 +156,33 @@ export async function init(options: InitOptions = {}) {
 
       if (existingApiConfig) {
         // Display existing configuration
-        console.log('\n' + ansis.blue(`ℹ ${i18n.existingApiConfig}`));
-        console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${existingApiConfig.url || i18n.notConfigured}`));
+        console.log('\n' + ansis.blue(`ℹ ${i18n.api.existingApiConfig}`));
+        console.log(ansis.gray(`  ${i18n.api.apiConfigUrl}: ${existingApiConfig.url || i18n.common.notConfigured}`));
         console.log(
           ansis.gray(
-            `  ${i18n.apiConfigKey}: ${
-              existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.notConfigured
+            `  ${i18n.api.apiConfigKey}: ${
+              existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.common.notConfigured
             }`
           )
         );
-        console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${existingApiConfig.authType || i18n.notConfigured}\n`));
+        console.log(ansis.gray(`  ${i18n.api.apiConfigAuthType}: ${existingApiConfig.authType || i18n.common.notConfigured}\n`));
 
         // Ask user what to do with existing config
         const { action: apiAction } = await inquirer.prompt<{ action: string }>({
           type: 'list',
           name: 'action',
-          message: i18n.selectApiAction,
+          message: i18n.api.selectApiAction,
           choices: [
-            { name: i18n.keepExistingConfig, value: 'keep' },
-            { name: i18n.modifyAllConfig, value: 'modify-all' },
-            { name: i18n.modifyPartialConfig, value: 'modify-partial' },
-            { name: i18n.useCcrProxy, value: 'use-ccr' },
-            { name: i18n.skipApi, value: 'skip' },
+            { name: i18n.api.keepExistingConfig, value: 'keep' },
+            { name: i18n.api.modifyAllConfig, value: 'modify-all' },
+            { name: i18n.api.modifyPartialConfig, value: 'modify-partial' },
+            { name: i18n.api.useCcrProxy, value: 'use-ccr' },
+            { name: i18n.api.skipApi, value: 'skip' },
           ],
         });
 
         if (!apiAction) {
-          console.log(ansis.yellow(i18n.cancelled));
+          console.log(ansis.yellow(i18n.common.cancelled));
           process.exit(0);
         }
 
@@ -194,7 +194,7 @@ export async function init(options: InitOptions = {}) {
             try {
               addCompletedOnboarding();
             } catch (error) {
-              console.error(ansis.red(i18n.failedToSetOnboarding), error);
+              console.error(ansis.red(i18n.configuration.failedToSetOnboarding), error);
             }
           }
         } else if (apiAction === 'modify-partial') {
@@ -209,16 +209,16 @@ export async function init(options: InitOptions = {}) {
           // Handle CCR proxy configuration
           const ccrInstalled = await isCcrInstalled();
           if (!ccrInstalled) {
-            console.log(ansis.yellow(`${i18n.installingCcr}`));
+            console.log(ansis.yellow(`${i18n.ccr.installingCcr}`));
             await installCcr(scriptLang);
           } else {
-            console.log(ansis.green(`✔ ${i18n.ccrAlreadyInstalled}`));
+            console.log(ansis.green(`✔ ${i18n.ccr.ccrAlreadyInstalled}`));
           }
           
           // Setup CCR configuration
           const ccrConfigured = await setupCcrConfiguration(scriptLang);
           if (ccrConfigured) {
-            console.log(ansis.green(`✔ ${i18n.ccrSetupComplete}`));
+            console.log(ansis.green(`✔ ${i18n.ccr.ccrSetupComplete}`));
             // CCR configuration already sets up the proxy in settings.json
             // addCompletedOnboarding is already called inside setupCcrConfiguration
             apiConfig = null; // No need for traditional API config
@@ -229,32 +229,32 @@ export async function init(options: InitOptions = {}) {
         const { apiChoice } = await inquirer.prompt<{ apiChoice: string }>({
           type: 'list',
           name: 'apiChoice',
-          message: i18n.configureApi,
+          message: i18n.api.configureApi,
           choices: [
             {
-              name: `${i18n.useAuthToken} - ${ansis.gray(i18n.authTokenDesc)}`,
+              name: `${i18n.api.useAuthToken} - ${ansis.gray(i18n.api.authTokenDesc)}`,
               value: 'auth_token',
-              short: i18n.useAuthToken,
+              short: i18n.api.useAuthToken,
             },
             {
-              name: `${i18n.useApiKey} - ${ansis.gray(i18n.apiKeyDesc)}`,
+              name: `${i18n.api.useApiKey} - ${ansis.gray(i18n.api.apiKeyDesc)}`,
               value: 'api_key',
-              short: i18n.useApiKey,
+              short: i18n.api.useApiKey,
             },
             {
-              name: `${i18n.useCcrProxy} - ${ansis.gray(i18n.ccrProxyDesc)}`,
+              name: `${i18n.api.useCcrProxy} - ${ansis.gray(i18n.api.ccrProxyDesc)}`,
               value: 'ccr_proxy',
-              short: i18n.useCcrProxy,
+              short: i18n.api.useCcrProxy,
             },
             {
-              name: i18n.skipApi,
+              name: i18n.api.skipApi,
               value: 'skip',
             },
           ],
         });
 
         if (!apiChoice) {
-          console.log(ansis.yellow(i18n.cancelled));
+          console.log(ansis.yellow(i18n.common.cancelled));
           process.exit(0);
         }
 
@@ -264,13 +264,13 @@ export async function init(options: InitOptions = {}) {
           if (!ccrInstalled) {
             await installCcr(scriptLang);
           } else {
-            console.log(ansis.green(`✔ ${i18n.ccrAlreadyInstalled}`));
+            console.log(ansis.green(`✔ ${i18n.ccr.ccrAlreadyInstalled}`));
           }
           
           // Setup CCR configuration
           const ccrConfigured = await setupCcrConfiguration(scriptLang);
           if (ccrConfigured) {
-            console.log(ansis.green(`✔ ${i18n.ccrSetupComplete}`));
+            console.log(ansis.green(`✔ ${i18n.ccr.ccrSetupComplete}`));
             // CCR configuration already sets up the proxy in settings.json
             // addCompletedOnboarding is already called inside setupCcrConfiguration
             apiConfig = null; // No need for traditional API config
@@ -285,7 +285,7 @@ export async function init(options: InitOptions = {}) {
     if (['backup', 'docs-only', 'merge'].includes(action)) {
       const backupDir = backupExistingConfig();
       if (backupDir) {
-        console.log(ansis.gray(`✔ ${i18n.backupSuccess}: ${backupDir}`));
+        console.log(ansis.gray(`✔ ${i18n.configuration.backupSuccess}: ${backupDir}`));
       }
     }
 
@@ -310,7 +310,7 @@ export async function init(options: InitOptions = {}) {
     if (apiConfig && action !== 'docs-only') {
       const configuredApi = configureApi(apiConfig);
       if (configuredApi) {
-        console.log(ansis.green(`✔ ${i18n.apiConfigSuccess}`));
+        console.log(ansis.green(`✔ ${i18n.api.apiConfigSuccess}`));
         console.log(ansis.gray(`  URL: ${configuredApi.url}`));
         console.log(ansis.gray(`  Key: ${formatApiKeyDisplay(configuredApi.key)}`));
         // addCompletedOnboarding is now called inside configureApi
@@ -322,19 +322,19 @@ export async function init(options: InitOptions = {}) {
       const { shouldConfigureMcp } = await inquirer.prompt<{ shouldConfigureMcp: boolean }>({
         type: 'confirm',
         name: 'shouldConfigureMcp',
-        message: i18n.configureMcp,
+        message: i18n.mcp.configureMcp,
         default: true,
       });
 
       if (shouldConfigureMcp === undefined) {
-        console.log(ansis.yellow(i18n.cancelled));
+        console.log(ansis.yellow(i18n.common.cancelled));
         process.exit(0);
       }
 
       if (shouldConfigureMcp) {
         // Show Windows-specific notice
         if (isWindows()) {
-          console.log(ansis.blue(`ℹ ${I18N[scriptLang].windowsDetected}`));
+          console.log(ansis.blue(`ℹ ${i18n.installation.windowsDetected}`));
         }
 
         // Use common MCP selector
@@ -348,7 +348,7 @@ export async function init(options: InitOptions = {}) {
           // Backup existing MCP config if exists
           const mcpBackupPath = backupMcpConfig();
           if (mcpBackupPath) {
-            console.log(ansis.gray(`✔ ${i18n.mcpBackupSuccess}: ${mcpBackupPath}`));
+            console.log(ansis.gray(`✔ ${i18n.mcp.mcpBackupSuccess}: ${mcpBackupPath}`));
           }
 
           // Build MCP server configs
@@ -366,11 +366,11 @@ export async function init(options: InitOptions = {}) {
                 type: 'input',
                 name: 'apiKey',
                 message: service.apiKeyPrompt![scriptLang],
-                validate: (value) => !!value || i18n.keyRequired,
+                validate: (value) => !!value || i18n.api.keyRequired,
               });
 
               if (apiKey === undefined) {
-                console.log(ansis.yellow(`${i18n.skip}: ${service.name[scriptLang]}`));
+                console.log(ansis.yellow(`${i18n.common.skip}: ${service.name[scriptLang]}`));
                 continue;
               }
 
@@ -395,9 +395,9 @@ export async function init(options: InitOptions = {}) {
           // Write the config with error handling
           try {
             writeMcpConfig(mergedConfig);
-            console.log(ansis.green(`✔ ${i18n.mcpConfigSuccess}`));
+            console.log(ansis.green(`✔ ${i18n.mcp.mcpConfigSuccess}`));
           } catch (error) {
-            console.error(ansis.red(`${i18n.failedToWriteMcpConfig} ${error}`));
+            console.error(ansis.red(`${i18n.configuration.failedToWriteMcpConfig} ${error}`));
           }
         }
       }
@@ -411,8 +411,8 @@ export async function init(options: InitOptions = {}) {
     });
 
     // Step 13: Success message
-    console.log(ansis.green(`✔ ${i18n.configSuccess} ${CLAUDE_DIR}`));
-    console.log('\n' + ansis.cyan(i18n.complete));
+    console.log(ansis.green(`✔ ${i18n.configuration.configSuccess} ${CLAUDE_DIR}`));
+    console.log('\n' + ansis.cyan(i18n.common.complete));
   } catch (error) {
     if (!handleExitPromptError(error)) {
       handleGeneralError(error, options.lang);

@@ -6,7 +6,7 @@ export const menu = {
   menuOptions: {
     fullInit: 'Full initialization',
     importWorkflow: 'Import workflow',
-    configureApiOrCcr: 'Configure API or CCR Proxy',
+    configureApiOrCcr: 'Configure API / CCR proxy',
     configureApi: 'Configure API',
     configureMcp: 'Configure MCP',
     configureModel: 'Configure default model',

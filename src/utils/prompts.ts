@@ -2,7 +2,8 @@ import ansis from 'ansis';
 import inquirer from 'inquirer';
 import { version } from '../../package.json';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
-import { AI_OUTPUT_LANGUAGES, I18N, LANG_LABELS, SUPPORTED_LANGS } from '../constants';
+import { AI_OUTPUT_LANGUAGES, LANG_LABELS, SUPPORTED_LANGS } from '../constants';
+import { getTranslation } from '../i18n';
 import type { ZcfConfig } from './zcf-config';
 import { readZcfConfig, updateZcfConfig } from './zcf-config';
 
@@ -13,9 +14,9 @@ export async function selectAiOutputLanguage(
   scriptLang: SupportedLang,
   defaultLang?: AiOutputLanguage | string
 ): Promise<AiOutputLanguage | string> {
-  const i18n = I18N[scriptLang];
+  const i18n = getTranslation(scriptLang);
 
-  console.log(ansis.dim(`\n  ${i18n.aiOutputLangHint}\n`));
+  console.log(ansis.dim(`\n  ${i18n.language.aiOutputLangHint}\n`));
 
   const aiLangChoices = Object.entries(AI_OUTPUT_LANGUAGES).map(([key, value]) => ({
     title: value.label,
@@ -28,7 +29,7 @@ export async function selectAiOutputLanguage(
   const { lang } = await inquirer.prompt<{ lang: string }>({
     type: 'list',
     name: 'lang',
-    message: i18n.selectAiOutputLang,
+    message: i18n.language.selectAiOutputLang,
     choices: aiLangChoices.map((choice) => ({
       name: choice.title,
       value: choice.value,
@@ -37,7 +38,7 @@ export async function selectAiOutputLanguage(
   });
 
   if (!lang) {
-    console.log(ansis.yellow(i18n.cancelled));
+    console.log(ansis.yellow(i18n.common.cancelled));
     process.exit(0);
   }
 
@@ -48,12 +49,12 @@ export async function selectAiOutputLanguage(
     const { customLang } = await inquirer.prompt<{ customLang: string }>({
       type: 'input',
       name: 'customLang',
-      message: i18n.enterCustomLanguage,
-      validate: (value) => !!value || i18n.languageRequired,
+      message: i18n.language.enterCustomLanguage,
+      validate: (value) => !!value || i18n.language?.languageRequired || 'Language is required',
     });
 
     if (!customLang) {
-      console.log(ansis.yellow(i18n.cancelled));
+      console.log(ansis.yellow(i18n.common.cancelled));
       process.exit(0);
     }
 
@@ -114,7 +115,7 @@ export async function resolveAiOutputLanguage(
   commandLineOption?: AiOutputLanguage | string,
   savedConfig?: ZcfConfig | null
 ): Promise<AiOutputLanguage | string> {
-  const i18n = I18N[scriptLang];
+  const i18n = getTranslation(scriptLang);
 
   // Priority 1: Command line option
   if (commandLineOption) {
@@ -123,7 +124,7 @@ export async function resolveAiOutputLanguage(
 
   // Priority 2: Saved config
   if (savedConfig?.aiOutputLang) {
-    console.log(ansis.gray(`✔ ${i18n.aiOutputLangHint}: ${savedConfig.aiOutputLang}`));
+    console.log(ansis.gray(`✔ ${i18n.language.aiOutputLangHint}: ${savedConfig.aiOutputLang}`));
     return savedConfig.aiOutputLang;
   }
 

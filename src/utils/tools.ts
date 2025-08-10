@@ -2,6 +2,7 @@ import inquirer from 'inquirer';
 import ansis from 'ansis';
 import { executeCcusage } from '../commands/ccu';
 import { I18N } from '../constants';
+import { getTranslation } from '../i18n';
 
 /**
  * Validates and returns a valid language code
@@ -15,26 +16,26 @@ export function getValidLanguage(lang: any): 'zh-CN' | 'en' {
 export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<void> {
   // Validate language and provide fallback to English
   const validLang = getValidLanguage(scriptLang);
-  const i18n = I18N[validLang];
+  const i18n = getTranslation(validLang);
   
   console.log('');
-  console.log(ansis.cyan(i18n.menuOptions.ccusage));
-  console.log(ansis.gray(`${i18n.ccusageDescription} - https://github.com/ryoppippi/ccusage`));
+  console.log(ansis.cyan(i18n.menu.menuOptions.ccusage));
+  console.log(ansis.gray(`${i18n.tools.ccusageDescription} - https://github.com/ryoppippi/ccusage`));
   console.log('');
   
   const choices = [
-    { name: i18n.ccusageModes.daily, value: 'daily' },
-    { name: i18n.ccusageModes.monthly, value: 'monthly' },
-    { name: i18n.ccusageModes.session, value: 'session' },
-    { name: i18n.ccusageModes.blocks, value: 'blocks' },
-    { name: i18n.ccusageModes.custom, value: 'custom' },
-    { name: i18n.back, value: 'back' },
+    { name: i18n.tools.ccusageModes.daily, value: 'daily' },
+    { name: i18n.tools.ccusageModes.monthly, value: 'monthly' },
+    { name: i18n.tools.ccusageModes.session, value: 'session' },
+    { name: i18n.tools.ccusageModes.blocks, value: 'blocks' },
+    { name: i18n.tools.ccusageModes.custom, value: 'custom' },
+    { name: i18n.common.back, value: 'back' },
   ];
   
   const { mode } = await inquirer.prompt<{ mode: string }>({
     type: 'list',
     name: 'mode',
-    message: i18n.selectAnalysisMode,
+    message: i18n.tools.selectAnalysisMode,
     choices,
   });
   
@@ -48,7 +49,7 @@ export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<voi
     const { customArgs } = await inquirer.prompt<{ customArgs: string }>({
       type: 'input',
       name: 'customArgs',
-      message: i18n.enterCustomArgs,
+      message: i18n.tools.enterCustomArgs,
       default: '',
     });
     
@@ -92,6 +93,6 @@ export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<voi
   await inquirer.prompt({
     type: 'input',
     name: 'continue',
-    message: ansis.gray(i18n.pressEnterToContinue),
+    message: ansis.gray(i18n.tools.pressEnterToContinue),
   });
 }

@@ -2,14 +2,14 @@ import { exec } from 'tinyexec'
 import ansis from 'ansis'
 import { commandExists, isTermux, getTermuxPrefix } from './platform'
 import type { SupportedLang } from '../constants'
-import { I18N } from '../constants'
+import { getTranslation } from '../i18n'
 
 export async function isClaudeCodeInstalled(): Promise<boolean> {
   return await commandExists('claude')
 }
 
 export async function installClaudeCode(lang: SupportedLang): Promise<void> {
-  const i18n = I18N[lang]
+  const i18n = getTranslation(lang)
   
   // Check if running in Termux
   if (isTermux()) {

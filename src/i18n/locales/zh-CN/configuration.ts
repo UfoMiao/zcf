@@ -47,4 +47,15 @@ export const configuration = {
   envImportSuccess: '环境变量已导入',
   permissionsImportSuccess: '权限配置已导入',
   openingSettingsJson: '正在打开 settings.json...',
+  
+  // JSON config related
+  invalidConfiguration: '配置无效',
+  failedToParseJson: '解析 JSON 文件失败:',
+  failedToBackupConfig: '备份配置失败',
+  failedToReadTemplateSettings: '读取模板设置失败',
+  failedToMergeSettings: '合并设置失败',
+  preservingExistingSettings: '保留现有设置',
+  memoryDirNotFound: '未找到记忆目录',
+  failedToSetOnboarding: '设置引导标志失败',
+  fixWindowsMcp: '修复 Windows MCP 配置？',
 };

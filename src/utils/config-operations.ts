@@ -1,6 +1,7 @@
 import inquirer from 'inquirer';
 import ansis from 'ansis';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
+import { getTranslation } from '../i18n';
 import { CLAUDE_DIR, I18N } from '../constants';
 import type { ApiConfig } from '../types/config';
 import {
@@ -27,23 +28,23 @@ export async function configureApiCompletely(
     const { authType: selectedAuthType } = await inquirer.prompt<{ authType: 'auth_token' | 'api_key' }>({
       type: 'list',
       name: 'authType',
-      message: i18n.configureApi,
+      message: i18n.api.configureApi,
       choices: [
         {
-          name: `${i18n.useAuthToken} - ${ansis.gray(i18n.authTokenDesc)}`,
+          name: `${i18n.api.useAuthToken} - ${ansis.gray(i18n.api.authTokenDesc)}`,
           value: 'auth_token',
-          short: i18n.useAuthToken,
+          short: i18n.api.useAuthToken,
         },
         {
-          name: `${i18n.useApiKey} - ${ansis.gray(i18n.apiKeyDesc)}`,
+          name: `${i18n.api.useApiKey} - ${ansis.gray(i18n.api.apiKeyDesc)}`,
           value: 'api_key',
-          short: i18n.useApiKey,
+          short: i18n.api.useApiKey,
         },
       ],
     });
 
     if (!selectedAuthType) {
-      console.log(ansis.yellow(i18n.cancelled));
+      console.log(ansis.yellow(i18n.common.cancelled));
       return null;
     }
 
@@ -53,36 +54,36 @@ export async function configureApiCompletely(
   const { url } = await inquirer.prompt<{ url: string }>({
     type: 'input',
     name: 'url',
-    message: i18n.enterApiUrl,
+    message: i18n.api.enterApiUrl,
     validate: (value) => {
-      if (!value) return i18n.urlRequired;
+      if (!value) return i18n.api.urlRequired;
       try {
         new URL(value);
         return true;
       } catch {
-        return i18n.invalidUrl;
+        return i18n.api.invalidUrl;
       }
     },
   });
 
   if (url === undefined) {
-    console.log(ansis.yellow(i18n.cancelled));
+    console.log(ansis.yellow(i18n.common.cancelled));
     return null;
   }
 
-  const keyMessage = authType === 'auth_token' ? i18n.enterAuthToken : i18n.enterApiKey;
+  const keyMessage = authType === 'auth_token' ? i18n.api.enterAuthToken : i18n.api.enterApiKey;
   const { key } = await inquirer.prompt<{ key: string }>({
     type: 'input',
     name: 'key',
     message: keyMessage,
     validate: (value) => {
       if (!value) {
-        return i18n.keyRequired;
+        return i18n.api.keyRequired;
       }
 
       const validation = validateApiKey(value, scriptLang);
       if (!validation.isValid) {
-        return validation.error || i18n.invalidKeyFormat;
+        return validation.error || i18n.api.invalidKeyFormat;
       }
 
       return true;
@@ -90,7 +91,7 @@ export async function configureApiCompletely(
   });
 
   if (key === undefined) {
-    console.log(ansis.yellow(i18n.cancelled));
+    console.log(ansis.yellow(i18n.common.cancelled));
     return null;
   }
 
@@ -118,16 +119,16 @@ export async function modifyApiConfigPartially(
   const { item } = await inquirer.prompt<{ item: 'url' | 'key' | 'authType' }>({
     type: 'list',
     name: 'item',
-    message: i18n.selectModifyItems,
+    message: i18n.api.selectModifyItems,
     choices: [
-      { name: i18n.modifyApiUrl, value: 'url' },
-      { name: i18n.modifyApiKey, value: 'key' },
-      { name: i18n.modifyAuthType, value: 'authType' },
+      { name: i18n.api.modifyApiUrl, value: 'url' },
+      { name: i18n.api.modifyApiKey, value: 'key' },
+      { name: i18n.api.modifyAuthType, value: 'authType' },
     ],
   });
 
   if (!item) {
-    console.log(ansis.yellow(i18n.cancelled));
+    console.log(ansis.yellow(i18n.common.cancelled));
     return;
   }
 
@@ -135,21 +136,21 @@ export async function modifyApiConfigPartially(
     const { url } = await inquirer.prompt<{ url: string }>({
       type: 'input',
       name: 'url',
-      message: i18n.enterNewApiUrl.replace('{url}', currentConfig.url || i18n.none),
+      message: i18n.api.enterNewApiUrl.replace('{url}', currentConfig.url || i18n.common.none),
       default: currentConfig.url,
       validate: (value) => {
-        if (!value) return i18n.urlRequired;
+        if (!value) return i18n.api.urlRequired;
         try {
           new URL(value);
           return true;
         } catch {
-          return i18n.invalidUrl;
+          return i18n.api.invalidUrl;
         }
       },
     });
 
     if (url === undefined) {
-      console.log(ansis.yellow(i18n.cancelled));
+      console.log(ansis.yellow(i18n.common.cancelled));
       return;
     }
 
@@ -158,16 +159,16 @@ export async function modifyApiConfigPartially(
     const savedConfig = configureApi(currentConfig);
 
     if (savedConfig) {
-      console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
-      console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${savedConfig.url}`));
+      console.log(ansis.green(`✔ ${i18n.api.modificationSaved}`));
+      console.log(ansis.gray(`  ${i18n.api.apiConfigUrl}: ${savedConfig.url}`));
       // Note: addCompletedOnboarding is already called inside configureApi
     }
   } else if (item === 'key') {
     const authType = currentConfig.authType || 'auth_token';
     const keyMessage =
       authType === 'auth_token'
-        ? i18n.enterNewApiKey.replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.none)
-        : i18n.enterNewApiKey.replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.none);
+        ? i18n.api.enterNewApiKey.replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.common.none)
+        : i18n.api.enterNewApiKey.replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.common.none);
 
     const { key } = await inquirer.prompt<{ key: string }>({
       type: 'input',
@@ -175,12 +176,12 @@ export async function modifyApiConfigPartially(
       message: keyMessage,
       validate: (value) => {
         if (!value) {
-          return i18n.keyRequired;
+          return i18n.api.keyRequired;
         }
 
         const validation = validateApiKey(value, scriptLang);
         if (!validation.isValid) {
-          return validation.error || i18n.invalidKeyFormat;
+          return validation.error || i18n.api.invalidKeyFormat;
         }
 
         return true;
@@ -188,7 +189,7 @@ export async function modifyApiConfigPartially(
     });
 
     if (key === undefined) {
-      console.log(ansis.yellow(i18n.cancelled));
+      console.log(ansis.yellow(i18n.common.cancelled));
       return;
     }
 
@@ -197,15 +198,15 @@ export async function modifyApiConfigPartially(
     const savedConfig = configureApi(currentConfig);
 
     if (savedConfig) {
-      console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
-      console.log(ansis.gray(`  ${i18n.apiConfigKey}: ${formatApiKeyDisplay(savedConfig.key)}`));
+      console.log(ansis.green(`✔ ${i18n.api.modificationSaved}`));
+      console.log(ansis.gray(`  ${i18n.api.apiConfigKey}: ${formatApiKeyDisplay(savedConfig.key)}`));
       // Note: addCompletedOnboarding is already called inside configureApi
     }
   } else if (item === 'authType') {
     const { authType } = await inquirer.prompt<{ authType: 'auth_token' | 'api_key' }>({
       type: 'list',
       name: 'authType',
-      message: i18n.selectNewAuthType.replace('{type}', currentConfig.authType || i18n.none),
+      message: i18n.api.selectNewAuthType.replace('{type}', currentConfig.authType || i18n.common.none),
       choices: [
         { name: 'Auth Token (OAuth)', value: 'auth_token' },
         { name: 'API Key', value: 'api_key' },
@@ -214,7 +215,7 @@ export async function modifyApiConfigPartially(
     });
 
     if (authType === undefined) {
-      console.log(ansis.yellow(i18n.cancelled));
+      console.log(ansis.yellow(i18n.common.cancelled));
       return;
     }
 
@@ -223,8 +224,8 @@ export async function modifyApiConfigPartially(
     const savedConfig = configureApi(currentConfig);
 
     if (savedConfig) {
-      console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
-      console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${savedConfig.authType}`));
+      console.log(ansis.green(`✔ ${i18n.api.modificationSaved}`));
+      console.log(ansis.gray(`  ${i18n.api.apiConfigAuthType}: ${savedConfig.authType}`));
       // Note: addCompletedOnboarding is already called inside configureApi
     }
   }
@@ -238,12 +239,12 @@ export async function updatePromptOnly(
   scriptLang: SupportedLang,
   aiOutputLang?: AiOutputLanguage | string
 ) {
-  const i18n = I18N[scriptLang];
+  const i18n = getTranslation(scriptLang);
 
   // Backup existing config
   const backupDir = backupExistingConfig();
   if (backupDir) {
-    console.log(ansis.gray(`✔ ${i18n.backupSuccess}: ${backupDir}`));
+    console.log(ansis.gray(`✔ ${i18n.configuration.backupSuccess}: ${backupDir}`));
   }
 
   // Copy only documentation files
@@ -257,6 +258,6 @@ export async function updatePromptOnly(
   // Configure AI personality
   await configureAiPersonality(scriptLang);
 
-  console.log(ansis.green(`✔ ${i18n.configSuccess} ${CLAUDE_DIR}`));
-  console.log('\n' + ansis.cyan(i18n.complete));
+  console.log(ansis.green(`✔ ${i18n.configuration.configSuccess} ${CLAUDE_DIR}`));
+  console.log('\n' + ansis.cyan(i18n.common.complete));
 }

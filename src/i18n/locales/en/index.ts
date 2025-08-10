@@ -30,21 +30,4 @@ export const en: TranslationStructure = {
   ccr: ccrMessages,
 };
 
-// For backward compatibility during migration
-export const enFlat = {
-  ...common,
-  ...language,
-  ...installation,
-  ...api,
-  ...configuration,
-  ...mcp,
-  ...menu,
-  ...workflow,
-  ...cli,
-  ...bmad,
-  ...errors,
-  ...tools,
-  ...ccrMessages,
-};
-
 export const enMcpServices: McpServicesTranslations = mcpServices;

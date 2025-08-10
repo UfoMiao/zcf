@@ -7,44 +7,45 @@ describe('i18n utilities', () => {
     it('should return translations for English', () => {
       setLanguage('en');
       const translations = t();
-      expect(translations.yes).toBe('Yes');
-      expect(translations.no).toBe('No');
-      expect(translations.cancelled).toBe('Operation cancelled');
+      expect(translations.common.yes).toBe('Yes');
+      expect(translations.common.no).toBe('No');
+      expect(translations.common.cancelled).toBe('Operation cancelled');
     });
 
     it('should return translations for Chinese', () => {
       setLanguage('zh-CN');
       const translations = t();
-      expect(translations.yes).toBe('是');
-      expect(translations.no).toBe('否');
-      expect(translations.cancelled).toBe('操作已取消');
+      expect(translations.common.yes).toBe('是');
+      expect(translations.common.no).toBe('否');
+      expect(translations.common.cancelled).toBe('操作已取消');
     });
 
     it('should have nested translation objects', () => {
       setLanguage('en');
       const translations = t();
-      expect(translations.menuOptions).toBeDefined();
-      expect(translations.menuOptions.fullInit).toBe('Full initialization');
-      expect(translations.menuDescriptions).toBeDefined();
-      expect(translations.menuDescriptions.fullInit).toBe('Install Claude Code + Import workflow + Configure API + Configure MCP services');
+      expect(translations.menu).toBeDefined();
+      expect(translations.menu.menuOptions).toBeDefined();
+      expect(translations.menu.menuOptions.fullInit).toBe('Full initialization');
+      expect(translations.menu.menuDescriptions).toBeDefined();
+      expect(translations.menu.menuDescriptions.fullInit).toBe('Install Claude Code + Import workflow + Configure API + Configure MCP services');
     });
 
     it('should switch between languages', () => {
       setLanguage('en');
       let translations = t();
-      expect(translations.yes).toBe('Yes');
+      expect(translations.common.yes).toBe('Yes');
       
       setLanguage('zh-CN');
       translations = t();
-      expect(translations.yes).toBe('是');
+      expect(translations.common.yes).toBe('是');
     });
 
     it('should have all required keys', () => {
       setLanguage('en');
       const translations = t();
-      expect(translations.selectFunction).toBeDefined();
-      expect(translations.configureApi).toBeDefined();
-      expect(translations.configureMcp).toBeDefined();
+      expect(translations.menu.selectFunction).toBeDefined();
+      expect(translations.api.configureApi).toBeDefined();
+      expect(translations.mcp.configureMcp).toBeDefined();
     });
   });
 
@@ -91,11 +92,11 @@ describe('i18n utilities', () => {
     it('should affect t() output', () => {
       setLanguage('en');
       let translations = t();
-      expect(translations.yes).toBe('Yes');
+      expect(translations.common.yes).toBe('Yes');
       
       setLanguage('zh-CN');
       translations = t();
-      expect(translations.yes).toBe('是');
+      expect(translations.common.yes).toBe('是');
     });
 
     it('should maintain language state', () => {
@@ -112,26 +113,28 @@ describe('i18n utilities', () => {
     it('should have workflow options in Chinese', () => {
       setLanguage('zh-CN');
       const translations = t();
-      expect(translations.workflowOption).toBeDefined();
-      expect(translations.workflowOption.sixStepsWorkflow).toBe('六步工作流 (workflow)');
-      expect(translations.workflowOption.featPlanUx).toBe('功能规划和 UX 设计 (feat + planner + ui-ux-designer)');
-      expect(translations.workflowOption.bmadWorkflow).toBe('BMAD-Method 扩展安装器 (支持敏捷开发工作流)');
+      expect(translations.workflow).toBeDefined();
+      expect(translations.workflow.workflowOption).toBeDefined();
+      expect(translations.workflow.workflowOption.sixStepsWorkflow).toBe('六步工作流 (workflow)');
+      expect(translations.workflow.workflowOption.featPlanUx).toBe('功能规划和 UX 设计 (feat + planner + ui-ux-designer)');
+      expect(translations.workflow.workflowOption.bmadWorkflow).toBe('BMAD-Method 扩展安装器 (支持敏捷开发工作流)');
     });
 
     it('should have workflow options in English', () => {
       setLanguage('en');
       const translations = t();
-      expect(translations.workflowOption).toBeDefined();
-      expect(translations.workflowOption.sixStepsWorkflow).toBe('Six Steps Workflow (workflow)');
-      expect(translations.workflowOption.featPlanUx).toBe('Feature Planning and UX Design (feat + planner + ui-ux-designer)');
-      expect(translations.workflowOption.bmadWorkflow).toBe('BMAD-Method Extension Installer (Agile Development Workflow)');
+      expect(translations.workflow).toBeDefined();
+      expect(translations.workflow.workflowOption).toBeDefined();
+      expect(translations.workflow.workflowOption.sixStepsWorkflow).toBe('Six Steps Workflow (workflow)');
+      expect(translations.workflow.workflowOption.featPlanUx).toBe('Feature Planning and UX Design (feat + planner + ui-ux-designer)');
+      expect(translations.workflow.workflowOption.bmadWorkflow).toBe('BMAD-Method Extension Installer (Agile Development Workflow)');
     });
 
     it('should have workflow install success messages', () => {
       setLanguage('en');
       const translations = t();
-      expect(translations.workflowInstallSuccess).toBeDefined();
-      expect(translations.workflowInstallError).toBeDefined();
+      expect(translations.workflow.workflowInstallSuccess).toBeDefined();
+      expect(translations.workflow.workflowInstallError).toBeDefined();
     });
   });
 
@@ -139,19 +142,19 @@ describe('i18n utilities', () => {
     it('should have menu options', () => {
       setLanguage('en');
       const translations = t();
-      expect(translations.menuOptions).toBeDefined();
-      expect(translations.menuOptions.fullInit).toBe('Full initialization');
-      expect(translations.menuOptions.importWorkflow).toBe('Import workflow');
-      expect(translations.menuOptions.configureApi).toBe('Configure API');
-      expect(translations.menuOptions.configureMcp).toBe('Configure MCP');
+      expect(translations.menu.menuOptions).toBeDefined();
+      expect(translations.menu.menuOptions.fullInit).toBe('Full initialization');
+      expect(translations.menu.menuOptions.importWorkflow).toBe('Import workflow');
+      expect(translations.menu.menuOptions.configureApiOrCcr).toBe('Configure API / CCR proxy');
+      expect(translations.menu.menuOptions.configureMcp).toBe('Configure MCP');
     });
 
     it('should have menu descriptions', () => {
       setLanguage('zh-CN');
       const translations = t();
-      expect(translations.menuDescriptions).toBeDefined();
-      expect(translations.menuDescriptions.fullInit).toBe('安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务');
-      expect(translations.menuDescriptions.importWorkflow).toBe('仅导入/更新工作流相关文件');
+      expect(translations.menu.menuDescriptions).toBeDefined();
+      expect(translations.menu.menuDescriptions.fullInit).toBe('安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务');
+      expect(translations.menu.menuDescriptions.importWorkflow).toBe('仅导入/更新工作流相关文件');
     });
   });
 
@@ -159,18 +162,18 @@ describe('i18n utilities', () => {
     it('should have API related translations', () => {
       setLanguage('en');
       const translations = t();
-      expect(translations.configureApi).toBe('Select API authentication method');
-      expect(translations.useApiKey).toBe('Use API Key (Key authentication)');
-      expect(translations.useAuthToken).toBe('Use Auth Token (OAuth authentication)');
-      expect(translations.enterApiKey).toBe('Enter API Key');
+      expect(translations.api.configureApi).toBe('Select API authentication method');
+      expect(translations.api.useApiKey).toBe('Use API Key (Key authentication)');
+      expect(translations.api.useAuthToken).toBe('Use Auth Token (OAuth authentication)');
+      expect(translations.api.enterApiKey).toBe('Enter API Key');
     });
 
     it('should have API validation messages', () => {
       setLanguage('zh-CN');
       const translations = t();
-      expect(translations.apiKeyValidation).toBeDefined();
-      expect(translations.apiKeyValidation.empty).toBe('API Key 不能为空');
-      expect(translations.apiKeyValidation.example).toBe('示例格式: sk-abcdef123456_789xyz');
+      expect(translations.api.apiKeyValidation).toBeDefined();
+      expect(translations.api.apiKeyValidation.empty).toBe('API Key 不能为空');
+      expect(translations.api.apiKeyValidation.example).toBe('示例格式: sk-abcdef123456_789xyz');
     });
   });
 });

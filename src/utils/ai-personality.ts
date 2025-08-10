@@ -2,7 +2,8 @@ import inquirer from 'inquirer';
 import ansis from 'ansis';
 import { join } from 'pathe';
 import type { SupportedLang } from '../constants';
-import { CLAUDE_DIR, I18N } from '../constants';
+import { CLAUDE_DIR } from '../constants';
+import { getTranslation } from '../i18n';
 import { readZcfConfig, updateZcfConfig } from './zcf-config';
 import { writeFile } from './fs-operations';
 
@@ -75,27 +76,27 @@ export function getPersonalityInfo(personalityId: string): AiPersonality | undef
 }
 
 export async function configureAiPersonality(scriptLang: SupportedLang, showExisting: boolean = true) {
-  const i18n = I18N[scriptLang];
+  const i18n = getTranslation(scriptLang);
   const existingPersonality = getExistingPersonality();
   
   // Show existing personality if any
   if (showExisting && existingPersonality) {
     const personalityInfo = getPersonalityInfo(existingPersonality);
     if (personalityInfo) {
-      console.log('\n' + ansis.blue(`ℹ ${i18n.existingPersonality || 'Existing AI personality configuration'}`));
+      console.log('\n' + ansis.blue(`ℹ ${i18n.configuration.existingPersonality || 'Existing AI personality configuration'}`));
       console.log(
-        ansis.gray(`  ${i18n.currentPersonality || 'Current personality'}: ${personalityInfo.name[scriptLang]}`)
+        ansis.gray(`  ${i18n.configuration.currentPersonality || 'Current personality'}: ${personalityInfo.name[scriptLang]}`)
       );
 
       const { modify } = await inquirer.prompt<{ modify: boolean }>({
         type: 'confirm',
         name: 'modify',
-        message: i18n.modifyPersonality || 'Modify AI personality?',
+        message: i18n.configuration.modifyPersonality || 'Modify AI personality?',
         default: false,
       });
 
       if (!modify) {
-        console.log(ansis.green(`✔ ${i18n.keepPersonality || 'Keeping existing personality'}`));
+        console.log(ansis.green(`✔ ${i18n.configuration.keepPersonality || 'Keeping existing personality'}`));
         return;
       }
     }
@@ -105,11 +106,11 @@ export async function configureAiPersonality(scriptLang: SupportedLang, showExis
   const { personality } = await inquirer.prompt<{ personality: string }>({
     type: 'list',
     name: 'personality',
-    message: i18n.selectAiPersonality || 'Select AI personality',
+    message: i18n.configuration.selectAiPersonality || 'Select AI personality',
     choices: AI_PERSONALITIES.map((p) => ({
       name: p.id !== 'custom'
         ? `${p.name[scriptLang]} - ${ansis.gray(p.directive[scriptLang].substring(0, 50) + '...')}`
-        : `${p.name[scriptLang]} - ${ansis.gray(i18n.customPersonalityHint || 'Define your own personality')}`,
+        : `${p.name[scriptLang]} - ${ansis.gray(i18n.configuration.customPersonalityHint || 'Define your own personality')}`,
       value: p.id,
       short: p.name[scriptLang],
     })),
@@ -117,7 +118,7 @@ export async function configureAiPersonality(scriptLang: SupportedLang, showExis
   });
 
   if (!personality) {
-    console.log(ansis.yellow(i18n.cancelled));
+    console.log(ansis.yellow(i18n.common.cancelled));
     return;
   }
 
@@ -128,12 +129,12 @@ export async function configureAiPersonality(scriptLang: SupportedLang, showExis
     const { customDirective } = await inquirer.prompt<{ customDirective: string }>({
       type: 'input',
       name: 'customDirective',
-      message: i18n.enterCustomPersonality || 'Enter custom personality directive',
-      validate: (value) => !!value || i18n.directiveCannotBeEmpty,
+      message: i18n.configuration.enterCustomPersonality || 'Enter custom personality directive',
+      validate: (value) => !!value || i18n.configuration.directiveCannotBeEmpty,
     });
 
     if (!customDirective) {
-      console.log(ansis.yellow(i18n.cancelled));
+      console.log(ansis.yellow(i18n.common.cancelled));
       return;
     }
 
@@ -151,7 +152,7 @@ export async function configureAiPersonality(scriptLang: SupportedLang, showExis
   // Save personality choice to config
   updateZcfConfig({ aiPersonality: personality });
 
-  console.log(ansis.green(`✔ ${i18n.personalityConfigured || 'AI personality configured'}`));
+  console.log(ansis.green(`✔ ${i18n.configuration.personalityConfigured || 'AI personality configured'}`));
 }
 
 async function applyPersonalityDirective(directive: string) {
@@ -161,6 +162,8 @@ async function applyPersonalityDirective(directive: string) {
     // Write the personality directive to personality.md
     writeFile(personalityFile, directive);
   } catch (error) {
-    console.error(ansis.red(I18N[readZcfConfig()?.preferredLang || 'en'].failedToApplyPersonality), error);
+    const lang = readZcfConfig()?.preferredLang || 'en';
+    const errorI18n = getTranslation(lang);
+    console.error(ansis.red(errorI18n.configuration.failedToApplyPersonality || 'Failed to apply personality'), error);
   }
 }

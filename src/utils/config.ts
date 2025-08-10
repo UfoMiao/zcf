@@ -2,7 +2,8 @@ import dayjs from 'dayjs';
 import { dirname, join } from 'pathe';
 import { fileURLToPath } from 'node:url';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
-import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, SETTINGS_FILE, I18N } from '../constants';
+import { getTranslation } from '../i18n';
+import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, SETTINGS_FILE } from '../constants';
 import { 
   exists, 
   ensureDir, 
@@ -81,8 +82,8 @@ function copyClaudeMemoryFiles(lang: SupportedLang, rootDir: string) {
   const memorySourceDir = join(rootDir, 'templates', lang, 'memory');
   
   if (!exists(memorySourceDir)) {
-    const i18n = I18N[lang];
-    throw new Error(`${i18n.memoryDirNotFound || 'Memory directory not found:'} ${memorySourceDir}`);
+    const i18n = getTranslation(lang);
+    throw new Error(`${i18n.configuration.memoryDirNotFound || 'Memory directory not found:'} ${memorySourceDir}`);
   }
 
   // Copy all files from memory directory directly to CLAUDE_DIR
@@ -114,7 +115,9 @@ function getDefaultSettings(): ClaudeSettings {
 
     return readJsonConfig<ClaudeSettings>(templateSettingsPath) || {};
   } catch (error) {
-    console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToReadTemplateSettings, error);
+    const lang = readZcfConfig()?.preferredLang || 'en';
+    const i18n = getTranslation(lang);
+    console.error(i18n.configuration.failedToReadTemplateSettings || 'Failed to read template settings', error);
     return {};
   }
 }
@@ -160,7 +163,9 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
     addCompletedOnboarding();
   } catch (error) {
     // Log error but don't fail the API configuration
-    console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToSetOnboarding, error);
+    const lang = readZcfConfig()?.preferredLang || 'en';
+    const i18n = getTranslation(lang);
+    console.error(i18n.configuration.failedToSetOnboarding || 'Failed to set onboarding flag', error);
   }
   
   return apiConfig;
@@ -203,7 +208,9 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
     // Read template settings
     const templateSettings = readJsonConfig<ClaudeSettings>(templatePath);
     if (!templateSettings) {
-      console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToReadTemplateSettings);
+      const lang = readZcfConfig()?.preferredLang || 'en';
+      const i18n = getTranslation(lang);
+      console.error(i18n.configuration?.failedToReadTemplateSettings || 'Failed to read template settings');
       return;
     }
     
@@ -242,10 +249,14 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
     // Write merged settings
     writeJsonConfig(targetPath, mergedSettings);
   } catch (error) {
-    console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToMergeSettings, error);
+    const lang = readZcfConfig()?.preferredLang || 'en';
+    const i18n = getTranslation(lang);
+    console.error(i18n.configuration.failedToMergeSettings || 'Failed to merge settings', error);
     // If merge fails, preserve existing file
     if (exists(targetPath)) {
-      console.error(I18N[readZcfConfig()?.preferredLang || 'en'].preservingExistingSettings);
+      const lang2 = readZcfConfig()?.preferredLang || 'en';
+      const i18n2 = getTranslation(lang2);
+      console.warn(i18n2.configuration.preservingExistingSettings || 'Preserving existing settings');
     } else {
       // If no existing file and merge failed, copy template as fallback
       copyFile(templatePath, targetPath);
