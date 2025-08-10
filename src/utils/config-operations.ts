@@ -4,6 +4,7 @@ import type { AiOutputLanguage, SupportedLang } from '../constants';
 import { getTranslation } from '../i18n';
 import { CLAUDE_DIR, I18N } from '../constants';
 import type { ApiConfig } from '../types/config';
+import { addNumbersToChoices } from './prompt-helpers';
 import {
   applyAiLanguageDirective,
   backupExistingConfig,
@@ -29,7 +30,7 @@ export async function configureApiCompletely(
       type: 'list',
       name: 'authType',
       message: i18n.api.configureApi,
-      choices: [
+      choices: addNumbersToChoices([
         {
           name: `${i18n.api.useAuthToken} - ${ansis.gray(i18n.api.authTokenDesc)}`,
           value: 'auth_token',
@@ -40,7 +41,7 @@ export async function configureApiCompletely(
           value: 'api_key',
           short: i18n.api.useApiKey,
         },
-      ],
+      ]),
     });
 
     if (!selectedAuthType) {
@@ -120,11 +121,11 @@ export async function modifyApiConfigPartially(
     type: 'list',
     name: 'item',
     message: i18n.api.selectModifyItems,
-    choices: [
+    choices: addNumbersToChoices([
       { name: i18n.api.modifyApiUrl, value: 'url' },
       { name: i18n.api.modifyApiKey, value: 'key' },
       { name: i18n.api.modifyAuthType, value: 'authType' },
-    ],
+    ]),
   });
 
   if (!item) {
@@ -207,10 +208,10 @@ export async function modifyApiConfigPartially(
       type: 'list',
       name: 'authType',
       message: i18n.api.selectNewAuthType.replace('{type}', currentConfig.authType || i18n.common.none),
-      choices: [
+      choices: addNumbersToChoices([
         { name: 'Auth Token (OAuth)', value: 'auth_token' },
         { name: 'API Key', value: 'api_key' },
-      ],
+      ]),
       default: currentConfig.authType === 'api_key' ? 1 : 0,
     });
 

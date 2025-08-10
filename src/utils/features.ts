@@ -4,6 +4,7 @@ import { existsSync, unlinkSync } from 'node:fs';
 import type { SupportedLang } from '../constants';
 import { LANG_LABELS, MCP_SERVICES, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../constants';
 import { getTranslation } from '../i18n';
+import { addNumbersToChoices } from './prompt-helpers';
 import type { McpServerConfig } from '../types';
 import { 
   applyAiLanguageDirective, 
@@ -58,12 +59,12 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
       type: 'list',
       name: 'action',
       message: i18n.api.selectApiAction,
-      choices: [
+      choices: addNumbersToChoices([
         { name: i18n.api.keepExistingConfig, value: 'keep' },
         { name: i18n.api.modifyAllConfig, value: 'modify-all' },
         { name: i18n.api.modifyPartialConfig, value: 'modify-partial' },
         { name: i18n.api.useCcrProxy, value: 'use-ccr' },
-      ],
+      ]),
     });
     
     if (!action) {
@@ -111,7 +112,7 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
     type: 'list',
     name: 'apiChoice',
     message: i18n.api.configureApi,
-    choices: [
+    choices: addNumbersToChoices([
       { 
         name: `${i18n.api.useAuthToken} - ${ansis.gray(i18n.api.authTokenDesc)}`,
         value: 'auth_token',
@@ -128,7 +129,7 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
         short: i18n.api.useCcrProxy
       },
       { name: i18n.api.skipApi, value: 'skip' },
-    ],
+    ])
   });
   
   if (!apiChoice || apiChoice === 'skip') {
@@ -288,10 +289,10 @@ export async function configureDefaultModelFeature(scriptLang: SupportedLang) {
     type: 'list',
     name: 'model',
     message: 'Select default model',
-    choices: [
+    choices: addNumbersToChoices([
       { name: 'Opus', value: 'opus' as const },
       { name: 'Sonnet', value: 'sonnet' as const },
-    ],
+    ]),
   });
   
   if (!model) {
@@ -311,7 +312,7 @@ export async function configureAiMemoryFeature(scriptLang: SupportedLang) {
     type: 'list',
     name: 'option',
     message: 'Select configuration option',
-    choices: [
+    choices: addNumbersToChoices([
       { 
         name: i18n.configuration.configureAiLanguage || 'Configure AI output language',
         value: 'language'
@@ -320,7 +321,7 @@ export async function configureAiMemoryFeature(scriptLang: SupportedLang) {
         name: i18n.configuration.configureAiPersonality || 'Configure AI personality',
         value: 'personality'
       },
-    ],
+    ]),
   });
   
   if (!option) {
@@ -370,10 +371,10 @@ export async function changeScriptLanguageFeature(currentLang: SupportedLang): P
     type: 'list',
     name: 'lang',
     message: i18n.language.selectScriptLang,
-    choices: SUPPORTED_LANGS.map((l) => ({
+    choices: addNumbersToChoices(SUPPORTED_LANGS.map((l) => ({
       name: LANG_LABELS[l],
       value: l,
-    })),
+    }))),
     default: SUPPORTED_LANGS.indexOf(currentLang)
   });
   
@@ -396,7 +397,7 @@ export async function configureEnvPermissionFeature(scriptLang: SupportedLang) {
     type: 'list',
     name: 'choice',
     message: i18n.configuration?.selectEnvPermissionOption || 'Select option',
-    choices: [
+    choices: addNumbersToChoices([
       {
         name: `${i18n.configuration?.importRecommendedEnv || 'Import environment'} ${ansis.gray('- ' + (i18n.configuration?.importRecommendedEnvDesc || 'Import env settings'))}`,
         value: 'env'
@@ -409,7 +410,7 @@ export async function configureEnvPermissionFeature(scriptLang: SupportedLang) {
         name: `${i18n.configuration?.openSettingsJson || 'Open settings'} ${ansis.gray('- ' + (i18n.configuration?.openSettingsJsonDesc || 'View settings file'))}`,
         value: 'open'
       }
-    ]
+    ])
   });
   
   if (!choice) {

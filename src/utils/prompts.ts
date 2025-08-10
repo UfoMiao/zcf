@@ -6,6 +6,7 @@ import { AI_OUTPUT_LANGUAGES, LANG_LABELS, SUPPORTED_LANGS } from '../constants'
 import { getTranslation } from '../i18n';
 import type { ZcfConfig } from './zcf-config';
 import { readZcfConfig, updateZcfConfig } from './zcf-config';
+import { addNumbersToChoices } from './prompt-helpers';
 
 /**
  * Prompt user to select AI output language
@@ -30,10 +31,10 @@ export async function selectAiOutputLanguage(
     type: 'list',
     name: 'lang',
     message: i18n.language.selectAiOutputLang,
-    choices: aiLangChoices.map((choice) => ({
+    choices: addNumbersToChoices(aiLangChoices.map((choice) => ({
       name: choice.title,
       value: choice.value,
-    })),
+    }))),
     default: defaultChoice,
   });
 
@@ -84,10 +85,10 @@ export async function selectScriptLanguage(currentLang?: SupportedLang): Promise
     type: 'list',
     name: 'lang',
     message: 'Select ZCF display language / 选择ZCF显示语言',
-    choices: SUPPORTED_LANGS.map((l) => ({
+    choices: addNumbersToChoices(SUPPORTED_LANGS.map((l) => ({
       name: LANG_LABELS[l],
       value: l,
-    })),
+    }))),
   });
 
   if (!lang) {

@@ -9,6 +9,7 @@ import { resolveAiOutputLanguage, selectScriptLanguage } from '../utils/prompts'
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config';
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler';
 import { selectAndInstallWorkflows } from '../utils/workflow-installer';
+import { addNumbersToChoices } from '../utils/prompt-helpers';
 
 export interface UpdateOptions {
   configLang?: SupportedLang;
@@ -37,10 +38,10 @@ export async function update(options: UpdateOptions = {}) {
         type: 'list',
         name: 'lang',
         message: i18n.workflow.updateConfigLangPrompt,
-        choices: SUPPORTED_LANGS.map((l) => ({
+        choices: addNumbersToChoices(SUPPORTED_LANGS.map((l) => ({
           name: `${LANG_LABELS[l]} - ${i18n.language.configLangHint[l]}`,
           value: l,
-        })),
+        }))),
       });
 
       if (!lang) {

@@ -6,6 +6,7 @@ import { CLAUDE_DIR } from '../constants';
 import { getTranslation } from '../i18n';
 import { readZcfConfig, updateZcfConfig } from './zcf-config';
 import { writeFile } from './fs-operations';
+import { addNumbersToChoices } from './prompt-helpers';
 
 interface AiPersonality {
   id: string;
@@ -107,13 +108,13 @@ export async function configureAiPersonality(scriptLang: SupportedLang, showExis
     type: 'list',
     name: 'personality',
     message: i18n.configuration.selectAiPersonality || 'Select AI personality',
-    choices: AI_PERSONALITIES.map((p) => ({
+    choices: addNumbersToChoices(AI_PERSONALITIES.map((p) => ({
       name: p.id !== 'custom'
         ? `${p.name[scriptLang]} - ${ansis.gray(p.directive[scriptLang].substring(0, 50) + '...')}`
         : `${p.name[scriptLang]} - ${ansis.gray(i18n.configuration.customPersonalityHint || 'Define your own personality')}`,
       value: p.id,
       short: p.name[scriptLang],
-    })),
+    }))),
     default: existingPersonality ? AI_PERSONALITIES.findIndex((p) => p.id === existingPersonality) : 0,
   });
 

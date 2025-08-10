@@ -5,6 +5,7 @@ import { version } from '../../package.json';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
 import { CLAUDE_DIR, I18N, LANG_LABELS, MCP_SERVICES, SETTINGS_FILE, SUPPORTED_LANGS } from '../constants';
 import type { McpServerConfig } from '../types';
+import { addNumbersToChoices } from '../utils/prompt-helpers';
 import { configureAiPersonality } from '../utils/ai-personality';
 import { displayBannerWithInfo } from '../utils/banner';
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler';
@@ -74,10 +75,10 @@ export async function init(options: InitOptions = {}) {
         type: 'list',
         name: 'lang',
         message: i18n.language.selectConfigLang,
-        choices: SUPPORTED_LANGS.map((l) => ({
+        choices: addNumbersToChoices(SUPPORTED_LANGS.map((l) => ({
           name: `${LANG_LABELS[l]} - ${i18n.language.configLangHint[l]}`,
           value: l,
-        })),
+        }))),
       });
 
       if (!lang) {
@@ -125,12 +126,12 @@ export async function init(options: InitOptions = {}) {
         type: 'list',
         name: 'action',
         message: i18n.configuration.existingConfig,
-        choices: [
+        choices: addNumbersToChoices([
           { name: i18n.configuration.backupAndOverwrite, value: 'backup' },
           { name: i18n.configuration.updateDocsOnly, value: 'docs-only' },
           { name: i18n.configuration.mergeConfig, value: 'merge' },
           { name: i18n.common.skip, value: 'skip' },
-        ],
+        ]),
       });
 
       if (!userAction) {
@@ -172,13 +173,13 @@ export async function init(options: InitOptions = {}) {
           type: 'list',
           name: 'action',
           message: i18n.api.selectApiAction,
-          choices: [
+          choices: addNumbersToChoices([
             { name: i18n.api.keepExistingConfig, value: 'keep' },
             { name: i18n.api.modifyAllConfig, value: 'modify-all' },
             { name: i18n.api.modifyPartialConfig, value: 'modify-partial' },
             { name: i18n.api.useCcrProxy, value: 'use-ccr' },
             { name: i18n.api.skipApi, value: 'skip' },
-          ],
+          ]),
         });
 
         if (!apiAction) {

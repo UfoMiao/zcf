@@ -3,6 +3,7 @@ import ansis from 'ansis';
 import { executeCcusage } from '../commands/ccu';
 import { I18N } from '../constants';
 import { getTranslation } from '../i18n';
+import { addNumbersToChoices } from './prompt-helpers';
 
 /**
  * Validates and returns a valid language code
@@ -36,7 +37,7 @@ export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<voi
     type: 'list',
     name: 'mode',
     message: i18n.tools.selectAnalysisMode,
-    choices,
+    choices: addNumbersToChoices(choices),
   });
   
   if (mode === 'back') {
