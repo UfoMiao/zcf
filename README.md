@@ -146,7 +146,7 @@ $ npx zcf
 
 Select function:
   -------- Claude Code --------
-  1. Full initialization - Install Claude Code + Import workflow + Configure API + Configure MCP services
+  1. Full initialization - Install Claude Code + Import workflow + Configure API or CCR proxy + Configure MCP services
   2. Import workflow - Import/update workflow-related files only
   3. Configure API - Configure API URL and authentication
   4. Configure MCP - Configure MCP services (includes Windows fix)

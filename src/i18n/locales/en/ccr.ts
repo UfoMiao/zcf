@@ -16,12 +16,19 @@ export const ccrMessages = {
   
   // Existing config
   existingCcrConfig: 'Existing CCR configuration found',
-  overwriteCcrConfig: 'Overwrite existing CCR configuration?',
+  overwriteCcrConfig: 'Backup existing CCR configuration and reconfigure?',
   keepingExistingConfig: 'Keeping existing configuration',
+  backupCcrConfig: 'Backing up existing CCR configuration...',
+  ccrBackupSuccess: 'CCR configuration backed up to: {path}',
+  ccrBackupFailed: 'Failed to backup CCR configuration',
   
   // Model selection
   selectDefaultModelForProvider: 'Select default model for {provider}:',
   enterApiKeyForProvider: 'Enter API key for {provider}:',
+  
+  // Skip option
+  skipOption: 'Skip, configure in CCR manually',
+  skipConfiguring: 'Skipping preset configuration, will create empty configuration framework',
   
   // Success/Error messages
   ccrConfigSuccess: 'CCR configuration saved',
@@ -31,4 +38,16 @@ export const ccrMessages = {
   fetchPresetsError: 'Failed to fetch provider presets',
   failedToStartCcrService: 'Failed to start CCR service',
   errorStartingCcrService: 'Error starting CCR service',
+  
+  // CCR service status
+  restartingCcr: 'Restarting CCR service...',
+  checkingCcrStatus: 'Checking CCR service status...',
+  ccrRestartSuccess: 'CCR service restarted',
+  ccrRestartFailed: 'Failed to restart CCR service',
+  
+  // Configuration tips
+  configTips: 'Configuration Tips',
+  useClaudeCommand: 'Use the claude command to start Claude Code (not ccr code)',
+  advancedConfigTip: 'You can use the ccr ui command for advanced configuration',
+  manualConfigTip: 'After manually modifying the configuration file, run ccr restart to apply changes',
 };

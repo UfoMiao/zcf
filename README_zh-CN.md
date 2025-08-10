@@ -32,7 +32,7 @@ npx zcf          # 打开交互式菜单，根据你的需求选择操作
 #### 🆕 首次使用 Claude Code
 
 ```bash
-npx zcf i        # 直接执行完整初始化：安装 Claude Code + 导入工作流 + 配置 API + 设置 MCP 服务
+npx zcf i        # 直接执行完整初始化：安装 Claude Code + 导入工作流 + 配置 API 或 CCR 代理 + 设置 MCP 服务
 # 或
 npx zcf → 选择 1  # 通过菜单执行完整初始化
 ```
@@ -145,7 +145,7 @@ $ npx zcf
 
 请选择功能:
   -------- Claude Code --------
-  1. 完整初始化 - 安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务
+  1. 完整初始化 - 安装 Claude Code + 导入工作流 + 配置 API 或 CCR 代理 + 配置 MCP 服务
   2. 导入工作流 - 仅导入/更新工作流相关文件
   3. 配置 API - 配置 API URL 和认证信息
   4. 配置 MCP - 配置 MCP 服务（含 Windows 修复）

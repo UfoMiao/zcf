@@ -4,7 +4,7 @@
 
 为 npx zcf 增加一个面板功能，可以按数字选择对应功能：
 
-1. 完整初始化（安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务)
+1. 完整初始化（安装 Claude Code + 导入工作流 + 配置 API 或 CCR 代理 + 配置 MCP 服务)
 2. 导入工作流
 3. 配置 API
 4. 配置 MCP（含 Windows MCP 异常修复功能）

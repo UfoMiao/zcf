@@ -36,6 +36,7 @@ export interface InstallationTranslations {
   installPrompt: string;
   installing: string;
   installSuccess: string;
+  alreadyInstalled: string;
   installFailed: string;
   npmNotFound: string;
   termuxDetected: string;

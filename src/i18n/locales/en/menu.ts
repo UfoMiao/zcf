@@ -20,7 +20,7 @@ export const menu = {
     exit: 'Exit',
   },
   menuDescriptions: {
-    fullInit: 'Install Claude Code + Import workflow + Configure API + Configure MCP services',
+    fullInit: 'Install Claude Code + Import workflow + Configure API or CCR proxy + Configure MCP services',
     importWorkflow: 'Import/update workflow-related files only',
     configureApiOrCcr: 'Configure API URL, authentication or CCR proxy',
     configureApi: 'Configure API URL and authentication',

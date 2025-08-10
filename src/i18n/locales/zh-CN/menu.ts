@@ -20,7 +20,7 @@ export const menu = {
     exit: '退出',
   },
   menuDescriptions: {
-    fullInit: '安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务',
+    fullInit: '安装 Claude Code + 导入工作流 + 配置 API 或 CCR 代理 + 配置 MCP 服务',
     importWorkflow: '仅导入/更新工作流相关文件',
     configureApiOrCcr: '配置 API URL、认证信息或 CCR 代理',
     configureApi: '配置 API URL 和认证信息',

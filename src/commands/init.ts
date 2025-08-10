@@ -114,7 +114,7 @@ export async function init(options: InitOptions = {}) {
         console.log(ansis.yellow(i18n.common.skip));
       }
     } else {
-      console.log(ansis.green(`✔ ${i18n.installation.installSuccess}`));
+      console.log(ansis.green(`✔ ${i18n.installation.alreadyInstalled}`));
     }
 
     // Step 5: Handle existing config

@@ -2,6 +2,7 @@ export const installation = {
   installPrompt: 'Claude Code not found. Install automatically?',
   installing: 'Installing Claude Code...',
   installSuccess: 'Claude Code installed successfully',
+  alreadyInstalled: 'Claude Code is already installed',
   installFailed: 'Failed to install Claude Code',
   npmNotFound: 'npm is not installed. Please install Node.js and npm first.',
   

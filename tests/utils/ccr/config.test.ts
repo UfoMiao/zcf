@@ -1,26 +1,28 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { existsSync, mkdirSync } from 'node:fs';
+import inquirer from 'inquirer';
+import { copyFileSync, existsSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-import inquirer from 'inquirer';
-import {
-  ensureCcrConfigDir,
-  readCcrConfig,
-  writeCcrConfig,
-  configureCcrProxy,
-  selectCcrPreset,
-  configureCcrWithPreset,
-  setupCcrConfiguration,
-  configureCcrFeature
-} from '../../../src/utils/ccr/config';
-import * as jsonConfig from '../../../src/utils/json-config';
-import * as config from '../../../src/utils/config';
-import * as presets from '../../../src/utils/ccr/presets';
-import * as mcp from '../../../src/utils/mcp';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as i18n from '../../../src/i18n';
 import type { CcrConfig, ProviderPreset } from '../../../src/types/ccr';
+import {
+  backupCcrConfig,
+  configureCcrFeature,
+  configureCcrProxy,
+  configureCcrWithPreset,
+  ensureCcrConfigDir,
+  readCcrConfig,
+  selectCcrPreset,
+  setupCcrConfiguration,
+  writeCcrConfig,
+} from '../../../src/utils/ccr/config';
+import * as presets from '../../../src/utils/ccr/presets';
+import * as config from '../../../src/utils/config';
+import * as jsonConfig from '../../../src/utils/json-config';
+import * as mcp from '../../../src/utils/mcp';
 
 vi.mock('node:fs');
+vi.mock('node:child_process');
 vi.mock('inquirer');
 vi.mock('../../../src/utils/json-config');
 vi.mock('../../../src/utils/config');
@@ -42,22 +44,35 @@ describe('CCR config', () => {
       enterApiKeyForProvider: 'Enter API key for {provider}',
       selectDefaultModelForProvider: 'Select default model for {provider}',
       existingCcrConfig: 'Existing CCR config found',
-      overwriteCcrConfig: 'Overwrite existing config?',
+      overwriteCcrConfig: 'Backup existing CCR configuration and reconfigure?',
       keepingExistingConfig: 'Keeping existing config',
+      backupCcrConfig: 'Backing up existing CCR configuration...',
+      ccrBackupSuccess: 'CCR configuration backed up to: {path}',
+      ccrBackupFailed: 'Failed to backup CCR configuration',
       ccrConfigSuccess: 'CCR configured successfully',
       proxyConfigSuccess: 'Proxy configured successfully',
-      ccrConfigFailed: 'CCR configuration failed'
+      ccrConfigFailed: 'CCR configuration failed',
+      skipOption: 'Skip, configure in CCR manually',
+      skipConfiguring: 'Skipping preset configuration',
+      restartingCcr: 'Restarting CCR service...',
+      checkingCcrStatus: 'Checking CCR status...',
+      ccrRestartSuccess: 'CCR service restarted',
+      ccrRestartFailed: 'Failed to restart CCR',
+      configTips: 'Configuration Tips',
+      advancedConfigTip: 'Use ccr ui for advanced configuration',
+      manualConfigTip: 'Run ccr restart after manual changes',
+      useClaudeCommand: 'Use claude command to start Claude Code',
     },
     common: {
-      cancelled: 'Cancelled'
+      cancelled: 'Cancelled',
     },
     api: {
-      keyRequired: 'API key is required'
+      keyRequired: 'API key is required',
     },
     configuration: {
       backupSuccess: 'Backup created',
-      failedToSetOnboarding: 'Failed to set onboarding flag'
-    }
+      failedToSetOnboarding: 'Failed to set onboarding flag',
+    },
   };
 
   beforeEach(() => {
@@ -110,8 +125,8 @@ describe('CCR config', () => {
         APIKEY: 'test-key',
         Providers: [],
         Router: {
-          default: 'provider,model'
-        }
+          default: 'provider,model',
+        },
       };
 
       vi.mocked(existsSync).mockReturnValue(true);
@@ -128,7 +143,7 @@ describe('CCR config', () => {
     it('should ensure directory exists and write config', () => {
       const mockConfig: CcrConfig = {
         Providers: [],
-        Router: { default: 'test' }
+        Router: { default: 'test' },
       };
 
       vi.mocked(existsSync).mockReturnValue(true);
@@ -149,7 +164,7 @@ describe('CCR config', () => {
         PORT: 8080,
         APIKEY: 'custom-key',
         Providers: [],
-        Router: { default: 'test' }
+        Router: { default: 'test' },
       };
 
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings);
@@ -162,8 +177,8 @@ describe('CCR config', () => {
         expect.objectContaining({
           env: {
             ANTHROPIC_BASE_URL: 'http://192.168.1.1:8080',
-            ANTHROPIC_API_KEY: 'custom-key'
-          }
+            ANTHROPIC_API_KEY: 'custom-key',
+          },
         })
       );
     });
@@ -172,7 +187,7 @@ describe('CCR config', () => {
       const mockSettings = {};
       const mockCcrConfig: CcrConfig = {
         Providers: [],
-        Router: { default: 'test' }
+        Router: { default: 'test' },
       };
 
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings);
@@ -185,8 +200,8 @@ describe('CCR config', () => {
         expect.objectContaining({
           env: {
             ANTHROPIC_BASE_URL: 'http://127.0.0.1:3456',
-            ANTHROPIC_API_KEY: 'sk-ccr'
-          }
+            ANTHROPIC_API_KEY: 'sk-zcf-x-ccr',
+          },
         })
       );
     });
@@ -201,8 +216,8 @@ describe('CCR config', () => {
           baseURL: 'https://api.test.com',
           requiresApiKey: true,
           models: ['model1', 'model2'],
-          description: 'Test provider'
-        }
+          description: 'Test provider',
+        },
       ];
 
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue(mockPresets);
@@ -215,7 +230,7 @@ describe('CCR config', () => {
         expect.objectContaining({
           type: 'list',
           name: 'preset',
-          message: 'Select a CCR preset'
+          message: 'Select a CCR preset',
         })
       );
     });
@@ -226,9 +241,7 @@ describe('CCR config', () => {
       const result = await selectCcrPreset('zh-CN');
 
       expect(result).toBeNull();
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('No presets available')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('No presets available'));
     });
 
     it('should handle user cancellation', async () => {
@@ -237,8 +250,8 @@ describe('CCR config', () => {
           name: 'Test',
           provider: 'test',
           requiresApiKey: false,
-          models: ['model1']
-        }
+          models: ['model1'],
+        },
       ];
 
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue(mockPresets);
@@ -249,8 +262,34 @@ describe('CCR config', () => {
       const result = await selectCcrPreset('en');
 
       expect(result).toBeNull();
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Cancelled')
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Cancelled'));
+    });
+
+    it('should return "skip" when user selects skip option', async () => {
+      const mockPresets: ProviderPreset[] = [
+        {
+          name: 'Test Provider',
+          provider: 'test',
+          baseURL: 'https://api.test.com',
+          requiresApiKey: true,
+          models: ['model1'],
+          description: 'Test provider',
+        },
+      ];
+
+      vi.mocked(presets.fetchProviderPresets).mockResolvedValue(mockPresets);
+      vi.mocked(inquirer.prompt).mockResolvedValue({ preset: 'skip' });
+
+      const result = await selectCcrPreset('en');
+
+      expect(result).toBe('skip');
+      expect(inquirer.prompt).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'list',
+          name: 'preset',
+          message: 'Select a CCR preset',
+          choices: expect.arrayContaining([expect.objectContaining({ value: 'skip' })]),
+        })
       );
     });
   });
@@ -262,7 +301,7 @@ describe('CCR config', () => {
         provider: 'provider1',
         baseURL: 'https://api.provider1.com',
         requiresApiKey: true,
-        models: ['model1', 'model2']
+        models: ['model1', 'model2'],
       };
 
       vi.mocked(inquirer.prompt)
@@ -275,13 +314,13 @@ describe('CCR config', () => {
         LOG: false,
         HOST: '127.0.0.1',
         PORT: 3456,
-        APIKEY: 'sk-ccr',
+        APIKEY: 'sk-zcf-x-ccr',
         Providers: [
           expect.objectContaining({
             name: 'Provider1',
             api_key: 'test-api-key',
-            models: ['model1', 'model2']
-          })
+            models: ['model1', 'model2'],
+          }),
         ],
         Router: {
           default: 'Provider1,model2',
@@ -289,8 +328,8 @@ describe('CCR config', () => {
           think: 'Provider1,model2',
           longContext: 'Provider1,model2',
           longContextThreshold: 60000,
-          webSearch: 'Provider1,model2'
-        }
+          webSearch: 'Provider1,model2',
+        },
       });
     });
 
@@ -299,7 +338,7 @@ describe('CCR config', () => {
         name: 'FreeProvider',
         provider: 'free',
         requiresApiKey: false,
-        models: ['free-model']
+        models: ['free-model'],
       };
 
       const result = await configureCcrWithPreset(mockPreset, 'zh-CN');
@@ -314,7 +353,7 @@ describe('CCR config', () => {
         provider: 'transform',
         requiresApiKey: false,
         models: ['model1'],
-        transformer: { use: ['enhancetool'] }
+        transformer: { use: ['enhancetool'] },
       };
 
       const result = await configureCcrWithPreset(mockPreset, 'en');
@@ -329,7 +368,7 @@ describe('CCR config', () => {
         name: 'TestProvider',
         provider: 'test',
         requiresApiKey: false,
-        models: ['model1']
+        models: ['model1'],
       };
 
       vi.mocked(existsSync).mockReturnValue(false);
@@ -349,13 +388,13 @@ describe('CCR config', () => {
     it('should handle existing configuration with overwrite', async () => {
       const existingConfig: CcrConfig = {
         Providers: [],
-        Router: { default: 'old' }
+        Router: { default: 'old' },
       };
       const mockPreset: ProviderPreset = {
         name: 'NewProvider',
         provider: 'new',
         requiresApiKey: false,
-        models: ['model1']
+        models: ['model1'],
       };
 
       vi.mocked(existsSync).mockReturnValue(true);
@@ -369,16 +408,14 @@ describe('CCR config', () => {
       const result = await setupCcrConfiguration('zh-CN');
 
       expect(result).toBe(true);
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Existing CCR config found')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Existing CCR config found'));
     });
 
     it('should keep existing configuration when not overwriting', async () => {
       const existingConfig: CcrConfig = {
         HOST: 'existing-host',
         Providers: [],
-        Router: { default: 'existing' }
+        Router: { default: 'existing' },
       };
 
       vi.mocked(existsSync).mockReturnValue(true);
@@ -389,11 +426,55 @@ describe('CCR config', () => {
       const result = await setupCcrConfiguration('en');
 
       expect(result).toBe(true);
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Keeping existing config')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Keeping existing config'));
       // Should still configure proxy
       expect(jsonConfig.writeJsonConfig).toHaveBeenCalled();
+    });
+  });
+
+  describe('backupCcrConfig', () => {
+    it('should backup existing CCR config successfully', () => {
+      const mockCcrConfig = {
+        Providers: ['test'],
+        Router: { default: 'test' },
+      };
+
+      vi.mocked(existsSync).mockImplementation((path) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('config.json')) return true;
+        return false;
+      });
+      vi.mocked(copyFileSync).mockImplementation(() => undefined);
+
+      const result = backupCcrConfig('en');
+
+      expect(result).toBeTruthy();
+      // No need to create backup directory since it's the same as config directory
+      expect(copyFileSync).toHaveBeenCalled();
+    });
+
+    it('should return null when no existing config', () => {
+      vi.mocked(existsSync).mockReturnValue(false);
+
+      const result = backupCcrConfig('zh-CN');
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle backup errors gracefully', () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        const pathStr = path.toString();
+        if (pathStr.includes('config.json')) return true;
+        return false;
+      });
+      vi.mocked(copyFileSync).mockImplementation(() => {
+        throw new Error('Permission denied');
+      });
+
+      const result = backupCcrConfig('en');
+
+      expect(result).toBeNull();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to backup'), expect.any(String));
     });
   });
 
@@ -403,27 +484,23 @@ describe('CCR config', () => {
       vi.mocked(config.backupExistingConfig).mockReturnValue(backupDir);
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue([]);
-      
+
       await configureCcrFeature('en');
 
       expect(config.backupExistingConfig).toHaveBeenCalled();
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Backup created')
-      );
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Backup created'));
     });
 
     it('should handle backup failure gracefully', async () => {
       vi.mocked(config.backupExistingConfig).mockReturnValue(null);
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue([]);
-      
+
       await configureCcrFeature('zh-CN');
 
       expect(config.backupExistingConfig).toHaveBeenCalled();
       // Should not log backup success
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(
-        expect.stringContaining('Backup created')
-      );
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining('Backup created'));
     });
   });
 });

@@ -2,6 +2,7 @@ export const installation = {
   installPrompt: '检测到 Claude Code 未安装，是否自动安装？',
   installing: '正在安装 Claude Code...',
   installSuccess: 'Claude Code 安装成功',
+  alreadyInstalled: 'Claude Code 已安装',
   installFailed: 'Claude Code 安装失败',
   npmNotFound: 'npm 未安装。请先安装 Node.js 和 npm。',
   
