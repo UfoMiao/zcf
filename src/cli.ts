@@ -2,6 +2,11 @@
 import cac from 'cac';
 import { setupCommands } from './cli-setup';
 
-const cli = cac('zcf');
-setupCommands(cli);
-cli.parse();
+async function main() {
+  // Setup and run CLI
+  const cli = cac('zcf');
+  setupCommands(cli);
+  cli.parse();
+}
+
+main().catch(console.error);

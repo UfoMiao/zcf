@@ -1,5 +1,5 @@
-import inquirer from 'inquirer';
 import ansis from 'ansis';
+import inquirer from 'inquirer';
 import { version } from '../../package.json';
 import type { AiOutputLanguage, SupportedLang } from '../constants';
 import { AI_OUTPUT_LANGUAGES, I18N, LANG_LABELS, SUPPORTED_LANGS } from '../constants';
@@ -29,7 +29,7 @@ export async function selectAiOutputLanguage(
     type: 'list',
     name: 'lang',
     message: i18n.selectAiOutputLang,
-    choices: aiLangChoices.map(choice => ({
+    choices: aiLangChoices.map((choice) => ({
       name: choice.title,
       value: choice.value,
     })),

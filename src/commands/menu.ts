@@ -14,7 +14,7 @@ import {
 import { init } from './init';
 import { update } from './update';
 import { selectScriptLanguage } from '../utils/prompts';
-import { readZcfConfig } from '../utils/zcf-config';
+import { readZcfConfigAsync } from '../utils/zcf-config';
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler';
 
 export async function showMainMenu() {
@@ -23,7 +23,7 @@ export async function showMainMenu() {
     displayBannerWithInfo();
 
     // Get script language
-    const zcfConfig = readZcfConfig();
+    const zcfConfig = await readZcfConfigAsync();
     let scriptLang = zcfConfig?.preferredLang || (await selectScriptLanguage());
 
     // Menu loop
@@ -120,14 +120,14 @@ export async function showMainMenu() {
         case '7':
           await configureEnvPermissionFeature(scriptLang);
           break;
-        case '-':
-          await clearZcfCacheFeature(scriptLang);
-          break;
         case '0':
           const newLang = await changeScriptLanguageFeature(scriptLang);
           if (newLang !== scriptLang) {
             scriptLang = newLang;
           }
+          break;
+        case '-':
+          await clearZcfCacheFeature(scriptLang);
           break;
         case 'q':
           exitMenu = true;

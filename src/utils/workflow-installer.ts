@@ -84,8 +84,8 @@ async function installWorkflowWithDependencies(
   
   for (const commandFile of config.commands) {
     const commandSource = join(rootDir, 'templates', configLang, 'workflow', config.category, 'commands', commandFile);
-    // Rename command files based on outputDir
-    const destFileName = `${config.outputDir}.md`;
+    // Keep original file names for all commands
+    const destFileName = commandFile;
     const commandDest = join(commandsDir, destFileName);
     
     if (existsSync(commandSource)) {
@@ -132,6 +132,11 @@ async function installWorkflowWithDependencies(
 
   if (result.success) {
     console.log(ansis.green(`✔ ${workflowName} ${i18n.workflowInstallSuccess}`));
+    
+    // Show special prompt for BMAD workflow
+    if (config.id === 'bmadWorkflow') {
+      console.log(ansis.cyan(`\n${i18n.bmadInitPrompt}`));
+    }
   } else {
     console.log(ansis.red(`✗ ${workflowName} ${i18n.workflowInstallError}`));
   }

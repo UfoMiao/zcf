@@ -1,4 +1,6 @@
 import type { ClaudeSettings } from '../types/config';
+import { I18N, type SupportedLang } from '../constants';
+import { readZcfConfig } from './zcf-config';
 
 /**
  * Validate Claude settings configuration
@@ -7,6 +9,11 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
   if (!settings || typeof settings !== 'object') {
     return false;
   }
+
+  // Get i18n based on user's preferred language
+  const zcfConfig = readZcfConfig();
+  const lang: SupportedLang = zcfConfig?.preferredLang || 'en';
+  const i18n = I18N[lang];
 
   // Validate model if present
   if (settings.model && !['opus', 'sonnet'].includes(settings.model)) {
@@ -17,7 +24,7 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
   // Validate env object if present
   if (settings.env) {
     if (typeof settings.env !== 'object') {
-      console.warn('Invalid env configuration: expected object');
+      console.warn(i18n.invalidEnvConfig || 'Invalid env configuration: expected object');
       return false;
     }
 
@@ -25,17 +32,17 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
     const { ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL } = settings.env;
     
     if (ANTHROPIC_BASE_URL && typeof ANTHROPIC_BASE_URL !== 'string') {
-      console.warn('Invalid ANTHROPIC_BASE_URL: expected string');
+      console.warn(i18n.invalidApiUrl || 'Invalid ANTHROPIC_BASE_URL: expected string');
       return false;
     }
 
     if (ANTHROPIC_API_KEY && typeof ANTHROPIC_API_KEY !== 'string') {
-      console.warn('Invalid ANTHROPIC_API_KEY: expected string');
+      console.warn(i18n.invalidApiKey || 'Invalid ANTHROPIC_API_KEY: expected string');
       return false;
     }
 
     if (ANTHROPIC_AUTH_TOKEN && typeof ANTHROPIC_AUTH_TOKEN !== 'string') {
-      console.warn('Invalid ANTHROPIC_AUTH_TOKEN: expected string');
+      console.warn(i18n.invalidAuthToken || 'Invalid ANTHROPIC_AUTH_TOKEN: expected string');
       return false;
     }
   }
@@ -43,12 +50,12 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
   // Validate permissions if present
   if (settings.permissions) {
     if (typeof settings.permissions !== 'object') {
-      console.warn('Invalid permissions configuration: expected object');
+      console.warn(i18n.invalidPermissionsConfig || 'Invalid permissions configuration: expected object');
       return false;
     }
 
     if (settings.permissions.allow && !Array.isArray(settings.permissions.allow)) {
-      console.warn('Invalid permissions.allow: expected array');
+      console.warn(i18n.invalidPermissionsAllow || 'Invalid permissions.allow: expected array');
       return false;
     }
   }

@@ -1,4 +1,5 @@
-import { ZCF_CONFIG_FILE, type AiOutputLanguage, type SupportedLang } from '../constants';
+import { existsSync } from 'node:fs';
+import { ZCF_CONFIG_FILE, LEGACY_ZCF_CONFIG_FILE, type AiOutputLanguage, type SupportedLang } from '../constants';
 import { readJsonConfig, writeJsonConfig } from './json-config';
 
 export interface ZcfConfig {
@@ -9,12 +10,26 @@ export interface ZcfConfig {
   lastUpdated: string;
 }
 
+
 export function readZcfConfig(): ZcfConfig | null {
-  return readJsonConfig<ZcfConfig>(ZCF_CONFIG_FILE);
+  // Try new location first
+  let config = readJsonConfig<ZcfConfig>(ZCF_CONFIG_FILE);
+  
+  // If not found, try legacy location (for backward compatibility)
+  if (!config && existsSync(LEGACY_ZCF_CONFIG_FILE)) {
+    config = readJsonConfig<ZcfConfig>(LEGACY_ZCF_CONFIG_FILE);
+  }
+  
+  return config;
+}
+
+export async function readZcfConfigAsync(): Promise<ZcfConfig | null> {
+  return readZcfConfig();
 }
 
 export function writeZcfConfig(config: ZcfConfig): void {
   try {
+    // Always write to new location
     writeJsonConfig(ZCF_CONFIG_FILE, config);
   } catch (error) {
     // Silently fail if cannot write config - user's system may have permission issues
@@ -32,4 +47,17 @@ export function updateZcfConfig(updates: Partial<ZcfConfig>): void {
     lastUpdated: new Date().toISOString(),
   };
   writeZcfConfig(newConfig);
+}
+
+export async function getZcfConfig(): Promise<ZcfConfig> {
+  const config = await readZcfConfigAsync();
+  return config || {
+    version: '1.0.0',
+    preferredLang: 'en',
+    lastUpdated: new Date().toISOString(),
+  };
+}
+
+export async function saveZcfConfig(config: ZcfConfig): Promise<void> {
+  writeZcfConfig(config);
 }

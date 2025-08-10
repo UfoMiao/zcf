@@ -1,0 +1,28 @@
+export const menu = {
+  selectFunction: '请选择功能',
+  menuOptions: {
+    fullInit: '完整初始化',
+    importWorkflow: '导入工作流',
+    configureApi: '配置 API',
+    configureMcp: '配置 MCP',
+    configureModel: '配置默认模型',
+    configureAiMemory: '配置 Claude 全局记忆',
+    configureEnvPermission: '导入推荐环境变量和权限配置',
+    installBmad: '安装 BMad Method',
+    clearCache: '清除偏好缓存',
+    changeLanguage: '更改显示语言 / Select display language',
+    exit: '退出',
+  },
+  menuDescriptions: {
+    fullInit: '安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务',
+    importWorkflow: '仅导入/更新工作流相关文件',
+    configureApi: '配置 API URL 和认证信息',
+    configureMcp: '配置 MCP 服务（含 Windows 修复）',
+    configureModel: '设置默认模型（opus/sonnet）',
+    configureAiMemory: '配置 AI 输出语言和角色风格',
+    configureEnvPermission: '导入隐私保护环境变量和系统权限配置',
+    installBmad: 'AI 驱动的开发方法论框架',
+    clearCache: '清除偏好语言等缓存',
+    changeLanguage: '更改 ZCF 界面语言',
+  },
+};

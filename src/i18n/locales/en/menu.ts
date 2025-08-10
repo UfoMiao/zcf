@@ -1,0 +1,28 @@
+export const menu = {
+  selectFunction: 'Select function',
+  menuOptions: {
+    fullInit: 'Full initialization',
+    importWorkflow: 'Import workflow',
+    configureApi: 'Configure API',
+    configureMcp: 'Configure MCP',
+    configureModel: 'Configure default model',
+    configureAiMemory: 'Configure Claude global memory',
+    configureEnvPermission: 'Import recommended environment variables and permissions',
+    installBmad: 'Install BMad Method',
+    clearCache: 'Clear preference cache',
+    changeLanguage: 'Select display language / 更改显示语言',
+    exit: 'Exit',
+  },
+  menuDescriptions: {
+    fullInit: 'Install Claude Code + Import workflow + Configure API + Configure MCP services',
+    importWorkflow: 'Import/update workflow-related files only',
+    configureApi: 'Configure API URL and authentication',
+    configureMcp: 'Configure MCP services (includes Windows fix)',
+    configureModel: 'Set default model (opus/sonnet)',
+    configureAiMemory: 'Configure AI output language and personality',
+    configureEnvPermission: 'Import privacy protection environment variables and system permissions',
+    installBmad: 'AI-driven development methodology framework',
+    clearCache: 'Clear preference language and other caches',
+    changeLanguage: 'Change ZCF interface language',
+  },
+};

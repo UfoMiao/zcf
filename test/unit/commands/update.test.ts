@@ -125,10 +125,12 @@ describe('update command', () => {
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('chinese-simplified');
       vi.mocked(updatePromptOnly).mockResolvedValue(undefined);
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined);
+      // Mock workflow selection - user cancels
+      vi.mocked(inquirer.prompt).mockResolvedValue({ selectedWorkflows: [] });
       
       await update({ configLang: 'en', aiOutputLang: 'chinese-simplified', skipBanner: true });
       
-      expect(inquirer.prompt).not.toHaveBeenCalled();
+      expect(inquirer.prompt).toHaveBeenCalled(); // Now expects workflow selection
       expect(updatePromptOnly).toHaveBeenCalledWith('en', 'zh-CN', 'chinese-simplified');
     });
 

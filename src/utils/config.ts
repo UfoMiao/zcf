@@ -80,13 +80,13 @@ function copyClaudeMemoryFiles(lang: SupportedLang, rootDir: string) {
   const memorySourceDir = join(rootDir, 'templates', lang, 'memory');
   
   if (!exists(memorySourceDir)) {
-    console.warn(`Memory directory not found: ${memorySourceDir}`);
-    return;
+    const i18n = I18N[lang];
+    throw new Error(`${i18n.memoryDirNotFound || 'Memory directory not found:'} ${memorySourceDir}`);
   }
 
   // Copy all files from memory directory directly to CLAUDE_DIR
   const files = readDir(memorySourceDir);
-  files.forEach(file => {
+  files?.forEach(file => {
     if (file.endsWith('.md')) {
       const sourcePath = join(memorySourceDir, file);
       const destPath = join(CLAUDE_DIR, file);

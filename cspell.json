@@ -3,6 +3,6 @@
   "version": "0.2",
   "language": "en,en-US",
   "allowCompoundWords": true,
-  "words": ["zcf", "bmad", "webp"],
+  "words": ["zcf", "bmad", "webp", "pathe", "vitest", "rollup", "npmjs", "miaoda"],
   "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/*-dist/**", "**/icons/**", "pnpm-lock.yaml", "**/*.log"]
 }

@@ -86,24 +86,24 @@ describe('config utilities', () => {
 
     it('should copy only .md files when onlyMd is true', () => {
       vi.mocked(fsOps.exists).mockReturnValue(true);
+      vi.mocked(fsOps.readDir).mockReturnValue(['test.md', 'test.txt', 'another.md']);
       
       copyConfigFiles('en', true);
       
-      const copyDirCall = vi.mocked(fsOps.copyDir).mock.calls[0];
-      const filter = copyDirCall[2]?.filter;
-      const mockStats = { isDirectory: () => false };
-      
-      expect(filter?.('file.md', mockStats as any)).toBe(true);
-      expect(filter?.('file.txt', mockStats as any)).toBe(false);
+      // Should copy memory .md files and CLAUDE.md
+      expect(fsOps.copyFile).toHaveBeenCalledTimes(3); // 2 .md files from memory + CLAUDE.md
     });
 
     it('should merge settings.json when copying all files', () => {
       vi.mocked(fsOps.exists).mockReturnValue(true);
+      vi.mocked(fsOps.readDir).mockReturnValue(['test.md']);
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({});
       
       copyConfigFiles('en', false);
       
-      expect(fsOps.copyDir).toHaveBeenCalled();
-      expect(fsOps.copyFile).toHaveBeenCalled(); // For CLAUDE.md
+      // Should merge settings.json
+      expect(jsonConfig.readJsonConfig).toHaveBeenCalled();
+      expect(fsOps.copyFile).toHaveBeenCalled(); // For CLAUDE.md and memory files
     });
   });
 

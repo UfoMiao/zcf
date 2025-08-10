@@ -100,6 +100,10 @@ The project follows a modular utility architecture:
 
 1. **Modular Command Structure**: Each command is self-contained with its own options interface
 2. **I18N Support**: All user-facing strings support zh-CN and en localization
+   - Translations are organized in `src/i18n/` with modular structure
+   - Each language has separate modules for different features (common, api, menu, etc.)
+   - Use `t()` function from `utils/i18n.ts` to get translations
+   - Use `format()` function for string interpolation with placeholders
 3. **Error Handling**: Graceful error handling with user-friendly messages
 4. **Configuration Merging**: Smart config merging to preserve user customizations
 5. **Cross-Platform Support**: Special handling for Windows paths and Termux environment
@@ -147,9 +151,15 @@ The project uses strict TypeScript with:
 4. Add corresponding tests
 
 ### Updating Translations
-1. Modify `I18N` object in `src/constants.ts`
-2. Ensure all new strings have both zh-CN and en versions
-3. Test both language flows
+1. Add or modify translation strings in the appropriate module under `src/i18n/locales/{lang}/`
+   - Common strings: `common.ts`
+   - API-related: `api.ts`
+   - Menu items: `menu.ts`
+   - Workflow & BMad: `workflow.ts`, `bmad.ts`
+   - Error messages: `errors.ts`
+2. Update the corresponding file for both `zh-CN` and `en` languages
+3. If adding new keys, update the `TranslationKeys` interface in `src/i18n/types.ts`
+4. Test both language flows
 
 ### Debugging Tips
 - Use `pnpm dev` for rapid testing during development

@@ -1,0 +1,17 @@
+export const common = {
+  // Basic
+  multiSelectHint: '（空格选择，a全选，i反选，回车确认）',
+  yes: '是',
+  no: '否',
+  skip: '跳过',
+  cancelled: '操作已取消',
+  error: '错误',
+  complete: "🎉 配置完成！使用 'claude' 命令开始体验。",
+  none: '无',
+  notConfigured: '未配置',
+  spaceToSelectReturn: '- 空格选择，回车提交',
+  enterChoice: '请输入选项，回车确认',
+  invalidChoice: '无效选择。请输入有效选项。',
+  goodbye: '👋 感谢使用 ZCF！再见！',
+  returnToMenu: '返回主菜单？',
+};

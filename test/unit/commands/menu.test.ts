@@ -8,11 +8,12 @@ vi.mock('inquirer', () => ({
 }));
 
 vi.mock('../../../src/utils/prompts', () => ({
-  selectScriptLanguage: vi.fn()
+  selectScriptLanguage: vi.fn().mockResolvedValue('zh-CN')
 }));
 
 vi.mock('../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(),
+  readZcfConfigAsync: vi.fn(),
   updateZcfConfig: vi.fn()
 }));
 
@@ -127,9 +128,9 @@ describe('menu command', () => {
     it('should handle language change option', async () => {
       const { showMainMenu } = await import('../../../src/commands/menu');
       const { changeScriptLanguageFeature } = await import('../../../src/utils/features');
-      const { readZcfConfig } = await import('../../../src/utils/zcf-config');
+      const { readZcfConfigAsync } = await import('../../../src/utils/zcf-config');
       
-      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN' } as any);
+      vi.mocked(readZcfConfigAsync).mockResolvedValue({ preferredLang: 'zh-CN' } as any);
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '0' })
         .mockResolvedValueOnce({ choice: 'q' });
@@ -142,10 +143,10 @@ describe('menu command', () => {
 
     it('should handle errors gracefully', async () => {
       const { showMainMenu } = await import('../../../src/commands/menu');
-      const { readZcfConfig } = await import('../../../src/utils/zcf-config');
+      const { readZcfConfigAsync } = await import('../../../src/utils/zcf-config');
       const { handleGeneralError } = await import('../../../src/utils/error-handler');
       
-      vi.mocked(readZcfConfig).mockReturnValue(null);
+      vi.mocked(readZcfConfigAsync).mockResolvedValue({ preferredLang: 'zh-CN' } as any);
       const error = new Error('Test error');
       vi.mocked(inquirer.prompt).mockRejectedValue(error);
       

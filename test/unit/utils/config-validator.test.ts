@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { validateClaudeSettings, sanitizeClaudeSettings } from '../../../src/utils/config-validator';
 
+vi.mock('../../../src/utils/zcf-config', () => ({
+  readZcfConfig: vi.fn().mockReturnValue({ preferredLang: 'en' })
+}));
+
 describe('config-validator utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks();
