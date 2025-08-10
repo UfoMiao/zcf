@@ -1,7 +1,7 @@
 export type SupportedLang = 'zh-CN' | 'en';
 
-export interface TranslationKeys {
-  // Common
+// Module-specific translation interfaces
+export interface CommonTranslations {
   multiSelectHint: string;
   yes: string;
   no: string;
@@ -17,8 +17,9 @@ export interface TranslationKeys {
   goodbye: string;
   returnToMenu: string;
   back: string;
-  
-  // Language selection
+}
+
+export interface LanguageTranslations {
   selectScriptLang: string;
   selectConfigLang: string;
   selectAiOutputLang: string;
@@ -29,33 +30,34 @@ export interface TranslationKeys {
     'zh-CN': string;
     en: string;
   };
-  
-  // Installation
+}
+
+export interface InstallationTranslations {
   installPrompt: string;
   installing: string;
   installSuccess: string;
   installFailed: string;
   npmNotFound: string;
-  
-  // Termux specific
   termuxDetected: string;
   termuxInstallHint: string;
   termuxPathInfo: string;
   termuxEnvironmentInfo: string;
-  
-  // API configuration
+  windowsDetected: string;
+}
+
+export interface ApiTranslations {
   configureApi: string;
   useAuthToken: string;
   authTokenDesc: string;
   useApiKey: string;
   apiKeyDesc: string;
+  useCcrProxy: string;
+  ccrProxyDesc: string;
   skipApi: string;
   enterApiUrl: string;
   enterAuthToken: string;
   enterApiKey: string;
   apiConfigSuccess: string;
-  
-  // API modification
   existingApiConfig: string;
   apiConfigUrl: string;
   apiConfigKey: string;
@@ -73,8 +75,6 @@ export interface TranslationKeys {
   enterNewApiUrl: string;
   enterNewApiKey: string;
   selectNewAuthType: string;
-  
-  // API validation
   apiKeyValidation: {
     empty: string;
     example: string;
@@ -83,160 +83,25 @@ export interface TranslationKeys {
   invalidUrl: string;
   keyRequired: string;
   invalidKeyFormat: string;
-  
-  // Configuration
-  existingConfig: string;
-  backupAndOverwrite: string;
-  updateDocsOnly: string;
-  mergeConfig: string;
-  backupSuccess: string;
-  copying: string;
-  configSuccess: string;
-  noExistingConfig: string;
-  updatingPrompts: string;
-  updateConfigLangPrompt: string;
-  updateConfigLangChoice: {
-    'zh-CN': string;
-    en: string;
-  };
-  
-  // MCP services
-  configureMcp: string;
-  selectMcpServices: string;
-  allServices: string;
-  mcpServiceInstalled: string;
-  enterExaApiKey: string;
-  skipMcp: string;
-  mcpConfigSuccess: string;
-  mcpBackupSuccess: string;
-  fixWindowsMcp: string;
-  fixWindowsMcpDesc: string;
-  windowsMcpFixed: string;
-  configureMcpServices: string;
-  selectMcpOption: string;
-  
-  // Windows specific
-  windowsDetected: string;
-  
-  // Menu
-  selectFunction: string;
-  menuSections: {
-    otherTools: string;
-  };
-  menuOptions: {
-    fullInit: string;
-    importWorkflow: string;
-    configureApi: string;
-    configureMcp: string;
-    configureModel: string;
-    configureAiMemory: string;
-    configureEnvPermission: string;
-    ccusage: string;
-    installBmad: string;
-    clearCache: string;
-    changeLanguage: string;
-    exit: string;
-  };
-  menuDescriptions: {
-    fullInit: string;
-    importWorkflow: string;
-    configureApi: string;
-    configureMcp: string;
-    configureModel: string;
-    configureAiMemory: string;
-    configureEnvPermission: string;
-    ccusage: string;
-    installBmad: string;
-    clearCache: string;
-    changeLanguage: string;
-  };
-  
-  // Model configuration
-  selectDefaultModel: string;
-  modelConfigSuccess: string;
-  
-  // AI memory configuration
-  selectMemoryOption: string;
-  configureAiLanguage: string;
-  configureAiPersonality: string;
-  aiLanguageConfigured: string;
-  
-  // AI personality
-  selectAiPersonality: string;
-  customPersonalityHint: string;
-  enterCustomPersonality: string;
-  personalityConfigured: string;
-  existingPersonality: string;
-  currentPersonality: string;
-  modifyPersonality: string;
-  keepPersonality: string;
-  directiveCannotBeEmpty: string;
-  languageRequired: string;
-  
-  // Cache
-  confirmClearCache: string;
-  cacheCleared: string;
-  noCacheFound: string;
-  
-  // Tools - CCUsage
-  runningCcusage: string;
-  ccusageDescription: string;
-  selectAnalysisMode: string;
-  ccusageModes: {
-    daily: string;
-    monthly: string;
-    session: string;
-    blocks: string;
-    custom: string;
-  };
-  enterCustomArgs: string;
-  pressEnterToContinue: string;
-  ccusageFailed: string;
-  checkNetworkConnection: string;
-  errorDetails: string;
-  
-  // Environment and permissions
-  selectEnvPermissionOption: string;
-  importRecommendedEnv: string;
-  importRecommendedEnvDesc: string;
-  importRecommendedPermissions: string;
-  importRecommendedPermissionsDesc: string;
-  openSettingsJson: string;
-  openSettingsJsonDesc: string;
-  envImportSuccess: string;
-  permissionsImportSuccess: string;
-  openingSettingsJson: string;
-  
-  // CLI options
-  runFullInit: string;
-  forceOverwrite: string;
-  initClaudeConfig: string;
-  updatePromptsOnly: string;
-  
-  // Workflow selection
-  selectWorkflowType: string;
-  workflowOption: {
-    featPlanUx: string;
-    sixStepsWorkflow: string;
-    bmadWorkflow: string;
-  };
-  
-  // BMAD workflow
-  bmadInitPrompt: string;
-  bmadInstallSuccess: string;
-  
-  // Workflow installation
-  installingWorkflow: string;
-  installedCommand: string;
-  installedAgent: string;
-  failedToInstallCommand: string;
-  failedToInstallAgent: string;
-  workflowInstallSuccess: string;
-  workflowInstallError: string;
-  cleaningOldFiles: string;
-  removedOldFile: string;
-  
-  // BMad workflow
+}
+
+export interface BmadTranslations {
+  description: string;
+  directoryOption: string;
+  forceOption: string;
+  versionOption: string;
+  checkingExisting: string;
+  alreadyInstalled: string;
+  existingAction: string;
+  actionUpdate: string;
+  actionReinstall: string;
+  actionSkip: string;
+  installationSkipped: string;
+  installing: string;
+  installSuccess: string;
+  installFailed: string;
+  installError: string;
+  nextSteps: string;
   installingBmadWorkflow: string;
   bmadWorkflowInstalled: string;
   bmadWorkflowFailed: string;
@@ -255,41 +120,68 @@ export interface TranslationKeys {
   configuringBmad: string;
   bmadConfigured: string;
   bmadConfigFailed: string;
-  
-  // Error messages
-  failedToSetOnboarding: string;
-  failedToWriteMcpConfig: string;
-  templateDirNotFound: string;
-  failedToReadTemplateSettings: string;
-  failedToMergeSettings: string;
-  preservingExistingSettings: string;
-  failedToReadFile: string;
-  failedToWriteFile: string;
-  failedToCopyFile: string;
-  failedToRemoveFile: string;
-  failedToReadDirectory: string;
-  failedToGetStats: string;
-  sourceDirNotExist: string;
-  memoryDirNotFound: string;
-  invalidConfiguration: string;
-  failedToParseJson: string;
-  failedToBackupConfig: string;
-  invalidEnvConfig: string;
-  invalidApiUrl: string;
-  invalidApiKey: string;
-  invalidAuthToken: string;
-  invalidPermissionsConfig: string;
-  invalidPermissionsAllow: string;
-  failedToAddOnboardingFlag: string;
-  failedToApplyPersonality: string;
 }
 
-export interface McpServiceTranslation {
-  name: string;
-  description: string;
-  apiKeyPrompt?: string;
+export interface WorkflowTranslations {
+  selectWorkflow: string;
+  selectedWorkflows: string;
+  installingWorkflow: string;
+  workflowInstalled: string;
+  workflowFailed: string;
+  cleaningOldFiles: string;
+  oldFilesCleaned: string;
+  selectWorkflowPrompt: string;
+  basePrompts: string;
+  basePromptsDesc: string;
+  commonCommands: string;
+  commonCommandsDesc: string;
+  workflowAgents: string;
+  workflowAgentsDesc: string;
+  bmadWorkflow: string;
+  bmadWorkflowDesc: string;
+  bmadInitPrompt: string;
+  bmadInstallSuccess: string;
+  installingWorkflows: string;
+  installingSingleWorkflow: string;
+  workflowsInstalled: string;
+  workflowsFailed: string;
+  workflowProgress: string;
 }
 
+// Main translation structure with namespaces
+export interface TranslationStructure {
+  common: any;
+  language: any;
+  installation: any;
+  api: any;
+  bmad: any;
+  workflow: any;
+  configuration: any;
+  mcp: any;
+  menu: any;
+  cli: any;
+  errors: any;
+  tools: any;
+  ccr: any;
+}
+
+// For backward compatibility during migration
+export interface TranslationKeys extends 
+  CommonTranslations,
+  LanguageTranslations,
+  InstallationTranslations,
+  ApiTranslations,
+  BmadTranslations,
+  WorkflowTranslations {
+  // All flattened keys for backward compatibility
+  [key: string]: any;
+}
+
+// MCP Services translations (keep separate)
 export interface McpServicesTranslations {
-  [serviceId: string]: McpServiceTranslation;
+  [key: string]: {
+    name: string;
+    description: string;
+    apiKeyPrompt?: string;
+  };
 }

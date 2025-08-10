@@ -5,6 +5,8 @@ export const api = {
   authTokenDesc: '适用于通过 OAuth 或浏览器登录获取的令牌',
   useApiKey: '使用 API Key (密钥认证)',
   apiKeyDesc: '适用于从 Anthropic Console 获取的 API 密钥',
+  useCcrProxy: '使用 CCR 代理',
+  ccrProxyDesc: '通过 Claude Code Router 使用多个 AI 模型',
   skipApi: '跳过（稍后手动配置）',
   enterApiUrl: '请输入 API URL',
   enterAuthToken: '请输入 Auth Token',

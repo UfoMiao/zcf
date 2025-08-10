@@ -246,7 +246,7 @@ Enter your choice: _
 | `zcf`        | -       | Show interactive menu (v2.0 default command) |
 | `zcf init`   | `zcf i` | Initialize Claude Code configuration         |
 | `zcf update` | `zcf u` | Update workflow-related md files with backup |
-| `zcf ccu`    | -       | Run Claude Code usage analysis tool         |
+| `zcf ccu`    | -       | Run Claude Code usage analysis tool          |
 
 #### Common Options
 

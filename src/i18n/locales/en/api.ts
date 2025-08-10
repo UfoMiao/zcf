@@ -5,6 +5,8 @@ export const api = {
   authTokenDesc: 'For tokens obtained via OAuth or browser login',
   useApiKey: 'Use API Key (Key authentication)',
   apiKeyDesc: 'For API keys from Anthropic Console',
+  useCcrProxy: 'Use CCR Proxy',
+  ccrProxyDesc: 'Use multiple AI models via Claude Code Router',
   skipApi: 'Skip (configure manually later)',
   enterApiUrl: 'Enter API URL',
   enterAuthToken: 'Enter Auth Token',

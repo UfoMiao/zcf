@@ -26,6 +26,9 @@ import { configureAiPersonality } from './ai-personality';
 import { modifyApiConfigPartially } from './config-operations';
 import { selectMcpServices } from './mcp-selector';
 import { importRecommendedEnv, importRecommendedPermissions, openSettingsJson } from './simple-config';
+import { isCcrInstalled, installCcr } from './ccr/installer';
+import { setupCcrConfiguration } from './ccr/config';
+import { addCompletedOnboarding } from './mcp';
 
 // Helper function to handle cancelled operations
 function handleCancellation(scriptLang: SupportedLang): void {
@@ -57,6 +60,7 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
         { name: i18n.keepExistingConfig, value: 'keep' },
         { name: i18n.modifyAllConfig, value: 'modify-all' },
         { name: i18n.modifyPartialConfig, value: 'modify-partial' },
+        { name: i18n.useCcrProxy, value: 'use-ccr' },
       ],
     });
     
@@ -67,10 +71,34 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
     
     if (action === 'keep') {
       console.log(ansis.green(`✔ ${i18n.keepExistingConfig}`));
+      // Ensure onboarding flag is set for existing API config
+      try {
+        addCompletedOnboarding();
+      } catch (error) {
+        console.error(ansis.red(i18n.failedToSetOnboarding), error);
+      }
       return;
     } else if (action === 'modify-partial') {
       // Handle partial modification
       await modifyApiConfigPartially(existingApiConfig, i18n, scriptLang);
+      // addCompletedOnboarding is already called inside modifyApiConfigPartially -> configureApi
+      return;
+    } else if (action === 'use-ccr') {
+      // Handle CCR proxy configuration
+      const ccrInstalled = await isCcrInstalled();
+      if (!ccrInstalled) {
+        console.log(ansis.yellow(`${i18n.installingCcr}`));
+        await installCcr(scriptLang);
+      } else {
+        console.log(ansis.green(`✔ ${i18n.ccrAlreadyInstalled}`));
+      }
+      
+      // Setup CCR configuration
+      const ccrConfigured = await setupCcrConfiguration(scriptLang);
+      if (ccrConfigured) {
+        console.log(ansis.green(`✔ ${i18n.ccrSetupComplete}`));
+        // addCompletedOnboarding is already called inside setupCcrConfiguration
+      }
       return;
     }
     // If 'modify-all', continue to full configuration below
@@ -92,11 +120,35 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
         value: 'api_key',
         short: i18n.useApiKey
       },
+      {
+        name: `${i18n.useCcrProxy} - ${ansis.gray(i18n.ccrProxyDesc)}`,
+        value: 'ccr_proxy',
+        short: i18n.useCcrProxy
+      },
       { name: i18n.skipApi, value: 'skip' },
     ],
   });
   
   if (!apiChoice || apiChoice === 'skip') {
+    return;
+  }
+  
+  // Handle CCR proxy configuration
+  if (apiChoice === 'ccr_proxy') {
+    const ccrInstalled = await isCcrInstalled();
+    if (!ccrInstalled) {
+      console.log(ansis.yellow(`${i18n.installingCcr}`));
+      await installCcr(scriptLang);
+    } else {
+      console.log(ansis.green(`✔ ${i18n.ccrAlreadyInstalled}`));
+    }
+    
+    // Setup CCR configuration
+    const ccrConfigured = await setupCcrConfiguration(scriptLang);
+    if (ccrConfigured) {
+      console.log(ansis.green(`✔ ${i18n.ccrSetupComplete}`));
+      // addCompletedOnboarding is already called inside setupCcrConfiguration
+    }
     return;
   }
   
@@ -153,6 +205,7 @@ export async function configureApiFeature(scriptLang: SupportedLang) {
     console.log(ansis.green(`✔ ${i18n.apiConfigSuccess}`));
     console.log(ansis.gray(`  URL: ${configuredApi.url}`));
     console.log(ansis.gray(`  Key: ${formatApiKeyDisplay(configuredApi.key)}`));
+    // addCompletedOnboarding is already called inside configureApi
   }
 }
 

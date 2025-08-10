@@ -17,6 +17,7 @@ import { deepMerge } from './object-utils';
 import type { ClaudeSettings, ApiConfig } from '../types/config';
 import { readZcfConfig } from './zcf-config';
 import { mergeAndCleanPermissions } from './permission-cleaner';
+import { addCompletedOnboarding } from './mcp';
 export type { ApiConfig } from '../types/config';
 
 export function ensureClaudeDir() {
@@ -153,6 +154,15 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
   }
 
   writeJsonConfig(SETTINGS_FILE, settings);
+  
+  // Add hasCompletedOnboarding flag after successful API configuration
+  try {
+    addCompletedOnboarding();
+  } catch (error) {
+    // Log error but don't fail the API configuration
+    console.error(I18N[readZcfConfig()?.preferredLang || 'en'].failedToSetOnboarding, error);
+  }
+  
   return apiConfig;
 }
 

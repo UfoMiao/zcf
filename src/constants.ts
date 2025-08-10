@@ -28,7 +28,7 @@ export const AI_OUTPUT_LANGUAGES = {
 export type AiOutputLanguage = keyof typeof AI_OUTPUT_LANGUAGES;
 
 // Re-export I18N for backward compatibility
-// This will be deprecated in future versions
+// Import translations with proxy support
 import { translations } from './i18n';
 export const I18N = translations;
 

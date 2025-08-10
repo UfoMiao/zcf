@@ -5,6 +5,7 @@ import { init } from './commands/init';
 import { showMainMenu } from './commands/menu';
 import { update } from './commands/update';
 import { executeCcusage } from './commands/ccu';
+import { ccr } from './commands/ccr';
 
 export interface CliOptions {
   init?: boolean;
@@ -44,6 +45,14 @@ export function setupCommands(cli: CAC) {
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
     .action(async (options) => {
       await handleUpdateCommand(options);
+    });
+
+  // CCR command - Configure Claude Code Router
+  cli
+    .command('ccr', 'Configure Claude Code Router for model proxy')
+    .option('--lang, -l <lang>', 'Display language (zh-CN, en)')
+    .action(async (options) => {
+      await ccr({ lang: options.lang });
     });
 
   // CCU command - Claude Code usage analysis
@@ -102,6 +111,7 @@ export function customizeHelp(sections: any[]) {
         'i'
       )}     Initialize Claude Code configuration / 初始化 Claude Code 配置`,
       `  ${ansis.cyan('zcf update')} | ${ansis.cyan('u')}   Update workflow-related md files / 仅更新工作流相关md`,
+      `  ${ansis.cyan('zcf ccr')}          Configure Claude Code Router / 配置模型代理`,
       `  ${ansis.cyan('zcf ccu')} [args]   Run Claude Code usage analysis / 运行 Claude Code 用量分析`,
       '',
       ansis.gray('  Shortcuts / 快捷方式:'),

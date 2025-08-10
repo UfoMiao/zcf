@@ -106,11 +106,13 @@ export function addCompletedOnboarding(): void {
       config = { mcpServers: {} };
     }
 
+    // Check if already set to avoid redundant operations
+    if (config.hasCompletedOnboarding === true) {
+      return; // Already set, no need to update
+    }
+
     // Add hasCompletedOnboarding flag
     config.hasCompletedOnboarding = true;
-
-    // Fix Windows config if needed
-    config = fixWindowsMcpConfig(config);
 
     // Write updated config
     writeMcpConfig(config);

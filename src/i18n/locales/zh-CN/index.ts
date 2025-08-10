@@ -10,9 +10,28 @@ import { cli } from './cli';
 import { bmad } from './bmad';
 import { errors } from './errors';
 import { tools } from './tools';
-import type { TranslationKeys, McpServicesTranslations } from '../../types';
+import { ccrMessages } from './ccr';
+import type { TranslationStructure, McpServicesTranslations } from '../../types';
 
-export const zhCN: TranslationKeys = {
+// New structure with namespaces
+export const zhCN: TranslationStructure = {
+  common,
+  language,
+  installation,
+  api,
+  configuration,
+  mcp,
+  menu,
+  workflow,
+  cli,
+  bmad,
+  errors,
+  tools,
+  ccr: ccrMessages,
+};
+
+// For backward compatibility during migration
+export const zhCNFlat = {
   ...common,
   ...language,
   ...installation,
@@ -25,6 +44,7 @@ export const zhCN: TranslationKeys = {
   ...bmad,
   ...errors,
   ...tools,
+  ...ccrMessages,
 };
 
 export const zhCNMcpServices: McpServicesTranslations = mcpServices;

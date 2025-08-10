@@ -44,8 +44,8 @@ export async function showMainMenu() {
         )}`
       );
       console.log(
-        `  ${ansis.cyan('3.')} ${i18n.menuOptions.configureApi} ${ansis.gray(
-          '- ' + i18n.menuDescriptions.configureApi
+        `  ${ansis.cyan('3.')} ${i18n.menuOptions.configureApiOrCcr} ${ansis.gray(
+          '- ' + i18n.menuDescriptions.configureApiOrCcr
         )}`
       );
       console.log(

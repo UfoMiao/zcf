@@ -160,6 +160,7 @@ export async function modifyApiConfigPartially(
     if (savedConfig) {
       console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
       console.log(ansis.gray(`  ${i18n.apiConfigUrl}: ${savedConfig.url}`));
+      // Note: addCompletedOnboarding is already called inside configureApi
     }
   } else if (item === 'key') {
     const authType = currentConfig.authType || 'auth_token';
@@ -198,6 +199,7 @@ export async function modifyApiConfigPartially(
     if (savedConfig) {
       console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
       console.log(ansis.gray(`  ${i18n.apiConfigKey}: ${formatApiKeyDisplay(savedConfig.key)}`));
+      // Note: addCompletedOnboarding is already called inside configureApi
     }
   } else if (item === 'authType') {
     const { authType } = await inquirer.prompt<{ authType: 'auth_token' | 'api_key' }>({
@@ -223,6 +225,7 @@ export async function modifyApiConfigPartially(
     if (savedConfig) {
       console.log(ansis.green(`✔ ${i18n.modificationSaved}`));
       console.log(ansis.gray(`  ${i18n.apiConfigAuthType}: ${savedConfig.authType}`));
+      // Note: addCompletedOnboarding is already called inside configureApi
     }
   }
 }
