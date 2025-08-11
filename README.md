@@ -24,7 +24,8 @@ Menu options include:
 
 - `1` Full initialization (equivalent to `zcf i`)
 - `2` Import workflows (equivalent to `zcf u`)
-- `3-6` Configuration management (API, MCP, Model, AI personality, etc.)
+- `3-7` Configuration management (API/CCR, MCP, Model, AI personality, etc.)
+- `R` Claude Code Router management (new feature)
 - More features...
 
 ### Or, use direct commands:
@@ -45,7 +46,13 @@ npx zcf u        # Update workflows only: Quick add AI workflows and command sys
 npx zcf → select 2  # Execute workflow update via menu
 ```
 
-#### 🎯 BMad Workflow (New Feature)
+> **Note**:
+>
+> - Since v2.0, `zcf` opens the interactive menu by default, providing a visual operation interface
+> - You can choose operations through the menu or use commands directly for quick execution
+> - `zcf i` = full initialization, `zcf u` = update workflows only
+
+#### 🎯 BMad Workflow (v2.7 New Feature)
 
 BMad (Business-Minded Agile Development) is an enterprise-grade workflow system that provides:
 
@@ -56,11 +63,29 @@ BMad (Business-Minded Agile Development) is an enterprise-grade workflow system 
 
 After installation, use `/bmad-init` to initialize the BMad workflow in your project.
 
-> **Note**:
->
-> - Since v2.0, `zcf` opens the interactive menu by default, providing a visual operation interface
-> - You can choose operations through the menu or use commands directly for quick execution
-> - `zcf i` = full initialization, `zcf u` = update workflows only
+#### 🚀 CCR (Claude Code Router) Support (v2.8 New Feature)
+
+CCR is a powerful proxy router that enables:
+
+- **Free Model Access**: Use free AI models (like Gemini, DeepSeek) through Claude Code interface
+- **Custom Routing**: Route different types of requests to different models based on your rules
+- **Cost Optimization**: Significantly reduce API costs by using appropriate models for different tasks
+- **Easy Management**: Interactive menu for CCR configuration and service control
+
+To access CCR features:
+
+```bash
+npx zcf ccr      # Open CCR management menu
+```
+
+CCR menu options:
+
+- Initialize CCR - Install and configure CCR with preset providers
+- Start UI - Launch CCR web interface for advanced configuration
+- Service Control - Start/stop/restart CCR service
+- Check Status - View current CCR service status
+
+After CCR setup, ZCF automatically configures Claude Code to use CCR as the API proxy.
 
 ### Setup Process
 
@@ -68,7 +93,7 @@ Full initialization (`npx zcf`) will automatically:
 
 - ✅ Detect and install Claude Code
 - ✅ Select AI output language (new feature)
-- ✅ Configure API keys
+- ✅ Configure API keys or CCR proxy
 - ✅ Select and configure MCP services
 - ✅ Set up all necessary configuration files
 
@@ -148,7 +173,7 @@ Select function:
   -------- Claude Code --------
   1. Full initialization - Install Claude Code + Import workflow + Configure API or CCR proxy + Configure MCP services
   2. Import workflow - Import/update workflow-related files only
-  3. Configure API - Configure API URL and authentication
+  3. Configure API - Configure API URL and authentication (supports CCR proxy)
   4. Configure MCP - Configure MCP services (includes Windows fix)
   5. Configure default model - Set default model (opus/sonnet)
   6. Configure Claude global memory - Configure AI output language and personality
@@ -192,6 +217,8 @@ Enter your choice: _
     For tokens obtained via OAuth or browser login
     Use API Key (Key authentication)
     For API keys from Anthropic Console
+    Configure CCR Proxy (Claude Code Router)
+    Use free models and custom routing to reduce costs and explore the possibilities of Claude Code
     Skip (configure manually later)
 
 ? Enter API URL: https://api.anthropic.com
@@ -241,12 +268,13 @@ Enter your choice: _
 
 #### Commands Quick Reference
 
-| Command      | Alias   | Description                                  |
-| ------------ | ------- | -------------------------------------------- |
-| `zcf`        | -       | Show interactive menu (v2.0 default command) |
-| `zcf init`   | `zcf i` | Initialize Claude Code configuration         |
-| `zcf update` | `zcf u` | Update workflow-related md files with backup |
-| `zcf ccu`    | -       | Run Claude Code usage analysis tool          |
+| Command      | Alias   | Description                                   |
+| ------------ | ------- | --------------------------------------------- |
+| `zcf`        | -       | Show interactive menu (v2.0 default command)  |
+| `zcf init`   | `zcf i` | Initialize Claude Code configuration          |
+| `zcf update` | `zcf u` | Update workflow-related md files with backup  |
+| `zcf ccu`    | -       | Run Claude Code usage analysis tool           |
+| `zcf ccr`    | -       | Open CCR (Claude Code Router) management menu |
 
 #### Common Options
 

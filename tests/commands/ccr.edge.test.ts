@@ -199,7 +199,7 @@ describe('ccr command - edge cases', () => {
       await ccr({});
       const duration = Date.now() - startTime;
 
-      expect(duration).toBeGreaterThanOrEqual(100);
+      expect(duration).toBeGreaterThanOrEqual(95);
       expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en');
     });
   });

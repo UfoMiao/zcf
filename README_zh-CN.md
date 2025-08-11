@@ -24,7 +24,8 @@ npx zcf          # 打开交互式菜单，根据你的需求选择操作
 
 - `1` 完整初始化（等同于 `zcf i`）
 - `2` 导入工作流（等同于 `zcf u`）
-- `3-6` 配置管理（API、MCP、模型、AI 个性等）
+- `3-7` 配置管理（API/CCR、MCP、模型、AI 个性等）
+- `R` Claude Code Router 管理（新功能）
 - 更多功能选项...
 
 ### 或者，直接使用命令：
@@ -45,9 +46,16 @@ npx zcf u        # 仅更新工作流：快速添加 AI 工作流和命令系统
 npx zcf → 选择 2  # 通过菜单执行工作流更新
 ```
 
-#### 🎯 BMad 工作流（新功能）
+> **提示**：
+>
+> - v2.0 起，`zcf` 默认打开交互式菜单，提供可视化操作界面
+> - 你可以通过菜单选择操作，也可以直接使用命令快捷执行
+> - `zcf i` = 完整初始化，`zcf u` = 仅更新工作流
+
+#### 🎯 BMad 工作流（v2.7 新功能）
 
 BMad（Business-Minded Agile Development）是企业级的工作流系统，提供：
+
 - 完整的专业 AI 代理团队（PO、PM、架构师、开发、QA 等）
 - 结构化的开发流程与质量关卡
 - 自动化文档生成
@@ -55,11 +63,29 @@ BMad（Business-Minded Agile Development）是企业级的工作流系统，提�
 
 安装后，使用 `/bmad-init` 在项目中初始化 BMad 工作流。
 
-> **提示**：
->
-> - v2.0 起，`zcf` 默认打开交互式菜单，提供可视化操作界面
-> - 你可以通过菜单选择操作，也可以直接使用命令快捷执行
-> - `zcf i` = 完整初始化，`zcf u` = 仅更新工作流
+#### 🚀 CCR (Claude Code Router) 支持（v2.8 新功能）
+
+CCR 是一个强大的代理路由器，可以实现：
+
+- **免费模型接入**：通过 Claude Code 界面使用免费 AI 模型（如 Gemini、DeepSeek）
+- **自定义路由**：根据规则将不同类型的请求路由到不同的模型
+- **成本优化**：通过为不同任务使用合适的模型，显著降低 API 成本
+- **便捷管理**：提供交互式菜单进行 CCR 配置和服务控制
+
+访问 CCR 功能：
+
+```bash
+npx zcf ccr      # 打开 CCR 管理菜单
+```
+
+CCR 菜单选项：
+
+- 初始化 CCR - 安装并配置 CCR，支持预设提供商
+- 启动 UI - 启动 CCR Web 界面进行高级配置
+- 服务控制 - 启动/停止/重启 CCR 服务
+- 检查状态 - 查看当前 CCR 服务状态
+
+CCR 设置完成后，ZCF 会自动配置 Claude Code 使用 CCR 作为 API 代理。
 
 ### 初始化流程
 
@@ -67,7 +93,7 @@ BMad（Business-Minded Agile Development）是企业级的工作流系统，提�
 
 - ✅ 检测并安装 Claude Code
 - ✅ 选择 AI 输出语言（新增）
-- ✅ 配置 API 密钥
+- ✅ 配置 API 密钥或 CCR 代理
 - ✅ 选择并配置 MCP 服务
 - ✅ 设置所有必要的配置文件
 
@@ -147,7 +173,7 @@ $ npx zcf
   -------- Claude Code --------
   1. 完整初始化 - 安装 Claude Code + 导入工作流 + 配置 API 或 CCR 代理 + 配置 MCP 服务
   2. 导入工作流 - 仅导入/更新工作流相关文件
-  3. 配置 API - 配置 API URL 和认证信息
+  3. 配置 API - 配置 API URL 和认证信息（支持 CCR 代理）
   4. 配置 MCP - 配置 MCP 服务（含 Windows 修复）
   5. 配置默认模型 - 设置默认模型（opus/sonnet）
   6. 配置 Claude 全局记忆 - 配置 AI 输出语言和角色风格
@@ -191,6 +217,8 @@ Enter your choice: _
     适用于通过 OAuth 或浏览器登录获取的令牌
     使用 API Key (密钥认证)
     适用于从 Anthropic Console 获取的 API 密钥
+    配置 CCR 代理（Claude Code Router）
+    使用免费模型和自定义路由，降低成本，探索Claude Code 的可能性
     跳过（稍后手动配置）
 
 ? 请输入 API URL: https://api.anthropic.com
@@ -240,12 +268,13 @@ Enter your choice: _
 
 #### 命令速查表
 
-| 命令         | 缩写    | 说明                            |
-| ------------ | ------- | ------------------------------- |
-| `zcf`        | -       | 显示交互式菜单（v2.0 默认命令） |
-| `zcf init`   | `zcf i` | 初始化 Claude Code 配置         |
-| `zcf update` | `zcf u` | 更新 Prompt 文档并备份旧配置    |
-| `zcf ccu`    | -       | 运行 Claude Code 用量分析工具   |
+| 命令         | 缩写    | 说明                                   |
+| ------------ | ------- | -------------------------------------- |
+| `zcf`        | -       | 显示交互式菜单（v2.0 默认命令）        |
+| `zcf init`   | `zcf i` | 初始化 Claude Code 配置                |
+| `zcf update` | `zcf u` | 更新 Prompt 文档并备份旧配置           |
+| `zcf ccu`    | -       | 运行 Claude Code 用量分析工具          |
+| `zcf ccr`    | -       | 打开 CCR (Claude Code Router) 管理菜单 |
 
 #### 常用选项
 
