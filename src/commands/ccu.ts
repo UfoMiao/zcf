@@ -1,13 +1,13 @@
 import ansis from 'ansis';
 import { x } from 'tinyexec';
-import { I18N } from '../constants';
+import { I18N, type SupportedLang } from '../constants';
 import { readZcfConfigAsync } from '../utils/zcf-config';
 import { getValidLanguage } from '../utils/tools';
 
 export async function executeCcusage(args: string[] = []): Promise<void> {
   try {
     // Get user's preferred language with validation
-    let lang = 'en';
+    let lang: SupportedLang = 'en';
     try {
       const zcfConfig = await readZcfConfigAsync();
       const rawLang = zcfConfig?.preferredLang || 'en';
@@ -34,7 +34,7 @@ export async function executeCcusage(args: string[] = []): Promise<void> {
     });
   } catch (error) {
     // Get user's preferred language for error messages with validation
-    let lang = 'en';
+    let lang: SupportedLang = 'en';
     try {
       const zcfConfig = await readZcfConfigAsync();
       const rawLang = zcfConfig?.preferredLang || 'en';
