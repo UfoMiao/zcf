@@ -7,17 +7,23 @@ import { getValidLanguage } from '../utils/tools';
 export async function executeCcusage(args: string[] = []): Promise<void> {
   try {
     // Get user's preferred language with validation
-    const zcfConfig = await readZcfConfigAsync();
-    const rawLang = zcfConfig?.preferredLang || 'en';
-    const lang = getValidLanguage(rawLang);
+    let lang = 'en';
+    try {
+      const zcfConfig = await readZcfConfigAsync();
+      const rawLang = zcfConfig?.preferredLang || 'en';
+      lang = getValidLanguage(rawLang);
+    } catch {
+      // If config read fails, use default language
+      lang = 'en';
+    }
     const i18n = I18N[lang];
     
     // Construct the command with arguments
     const command = 'npx';
-    const commandArgs = ['ccusage@latest', ...args];
+    const commandArgs = ['ccusage@latest', ...(args || [])];
     
     console.log(ansis.cyan(i18n.tools.runningCcusage));
-    console.log(ansis.gray(`$ npx ccusage@latest ${args.join(' ')}`));
+    console.log(ansis.gray(`$ npx ccusage@latest ${(args || []).join(' ')}`));
     console.log('');
     
     // Execute ccusage with inherited stdio for real-time output
@@ -28,9 +34,15 @@ export async function executeCcusage(args: string[] = []): Promise<void> {
     });
   } catch (error) {
     // Get user's preferred language for error messages with validation
-    const zcfConfig = await readZcfConfigAsync();
-    const rawLang = zcfConfig?.preferredLang || 'en';
-    const lang = getValidLanguage(rawLang);
+    let lang = 'en';
+    try {
+      const zcfConfig = await readZcfConfigAsync();
+      const rawLang = zcfConfig?.preferredLang || 'en';
+      lang = getValidLanguage(rawLang);
+    } catch {
+      // If config read fails in error handler, use default
+      lang = 'en';
+    }
     const i18n = I18N[lang];
     
     console.error(ansis.red(i18n.tools.ccusageFailed));

@@ -1,12 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ccr } from '../../src/commands/ccr';
-import * as ccrInstaller from '../../src/utils/ccr/installer';
-import * as ccrConfig from '../../src/utils/ccr/config';
+import * as ccrMenu from '../../src/utils/tools/ccr-menu';
 import * as errorHandler from '../../src/utils/error-handler';
+import * as zcfConfig from '../../src/utils/zcf-config';
+import * as prompts from '../../src/utils/prompts';
+import * as banner from '../../src/utils/banner';
+import * as menu from '../../src/commands/menu';
 
-vi.mock('../../src/utils/ccr/installer');
-vi.mock('../../src/utils/ccr/config');
+vi.mock('../../src/utils/tools/ccr-menu');
 vi.mock('../../src/utils/error-handler');
+vi.mock('../../src/utils/zcf-config');
+vi.mock('../../src/utils/prompts');
+vi.mock('../../src/utils/banner');
+vi.mock('../../src/commands/menu');
 
 describe('ccr command - edge cases', () => {
   const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -14,6 +20,17 @@ describe('ccr command - edge cases', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    
+    // Default mocks
+    vi.mocked(banner.displayBannerWithInfo).mockImplementation(() => {});
+    vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
+      preferredLang: 'en',
+    } as any);
+    vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('en');
+    vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false);
+    vi.mocked(menu.showMainMenu).mockResolvedValue();
+    vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
+    vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -22,46 +39,38 @@ describe('ccr command - edge cases', () => {
 
   describe('boundary conditions', () => {
     it('should handle empty options object', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null);
+      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN');
 
       await ccr({});
 
-      expect(ccrConfig.configureCcrFeature).toHaveBeenCalledWith('zh-CN');
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
     });
 
     it('should handle undefined options', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null);
+      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN');
 
       await ccr(undefined);
 
-      expect(ccrConfig.configureCcrFeature).toHaveBeenCalledWith('zh-CN');
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
     });
 
-    it('should handle invalid language fallback', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
-
+    it('should handle invalid language in options', async () => {
       // @ts-ignore - testing invalid input
       await ccr({ lang: 'invalid-lang' });
 
-      // Should handle the error due to undefined i18n
-      expect(errorHandler.handleGeneralError).toHaveBeenCalled();
+      // Should still call showCcrMenu with the provided value
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('invalid-lang');
     });
-  });
 
-  describe('concurrent execution', () => {
-    it('should handle multiple concurrent ccr calls', async () => {
+    it('should handle concurrent executions', async () => {
       let callCount = 0;
-      vi.mocked(ccrInstaller.isCcrInstalled).mockImplementation(async () => {
+      vi.mocked(ccrMenu.showCcrMenu).mockImplementation(async () => {
         callCount++;
         await new Promise(resolve => setTimeout(resolve, 10));
-        return true;
+        return false;
       });
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
 
       const promises = [
         ccr({ lang: 'en' }),
@@ -72,34 +81,29 @@ describe('ccr command - edge cases', () => {
       await Promise.all(promises);
 
       expect(callCount).toBe(3);
-      expect(ccrConfig.configureCcrFeature).toHaveBeenCalledTimes(3);
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledTimes(3);
     });
   });
 
   describe('error recovery', () => {
-    it('should handle installation retry scenario', async () => {
-      let attemptCount = 0;
-      vi.mocked(ccrInstaller.isCcrInstalled).mockImplementation(async () => {
-        attemptCount++;
-        if (attemptCount === 1) return false;
-        return true;
-      });
-      vi.mocked(ccrInstaller.installCcr).mockResolvedValue();
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
+    it('should handle menu errors gracefully', async () => {
+      vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(new Error('Menu error'));
+      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
 
       await ccr({ lang: 'en' });
 
-      expect(ccrInstaller.installCcr).toHaveBeenCalledTimes(1);
-      expect(ccrConfig.configureCcrFeature).toHaveBeenCalledTimes(1);
+      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(
+        expect.any(Error),
+        'en'
+      );
     });
 
     it('should handle mixed error types', async () => {
       const customError = new Error('Custom error');
       customError.name = 'CustomError';
       
-      vi.mocked(ccrInstaller.isCcrInstalled).mockRejectedValue(customError);
+      vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(customError);
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
 
       await ccr({ lang: 'en' });
 
@@ -107,87 +111,96 @@ describe('ccr command - edge cases', () => {
       expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(customError, 'en');
     });
 
-    it('should handle configuration partial failure', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockImplementation(async () => {
-        throw new Error('Partial config failure');
+    it('should handle null config gracefully', async () => {
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null);
+      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('en');
+
+      await ccr({ skipBanner: true });
+
+      expect(prompts.selectScriptLanguage).toHaveBeenCalled();
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en');
+    });
+
+    it('should handle undefined preferredLang in config', async () => {
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
+        // preferredLang is undefined
+      } as any);
+      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN');
+
+      await ccr({});
+
+      expect(prompts.selectScriptLanguage).toHaveBeenCalled();
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
+    });
+  });
+
+  describe('integration scenarios', () => {
+    it('should handle full flow with all options', async () => {
+      vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(true);
+
+      await ccr({ 
+        lang: 'zh-CN',
+        skipBanner: false
       });
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
+
+      expect(banner.displayBannerWithInfo).toHaveBeenCalled();
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
+      expect(menu.showMainMenu).not.toHaveBeenCalled();
+    });
+
+    it('should handle menu navigation back', async () => {
+      vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false);
 
       await ccr({ lang: 'en' });
 
-      expect(errorHandler.handleGeneralError).toHaveBeenCalled();
+      expect(menu.showMainMenu).toHaveBeenCalled();
     });
-  });
 
-  describe('state management', () => {
-    it('should maintain state consistency on error', async () => {
-      const error = new Error('State error');
-      vi.mocked(ccrInstaller.isCcrInstalled).mockRejectedValue(error);
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
+    it('should handle exit during menu', async () => {
+      const exitError = new Error('User exited');
+      exitError.name = 'ExitPromptError';
+      
+      vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(exitError);
+      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(true);
 
       await ccr({ lang: 'en' });
 
-      // Verify no partial operations were completed
-      expect(ccrInstaller.installCcr).not.toHaveBeenCalled();
-      expect(ccrConfig.configureCcrFeature).not.toHaveBeenCalled();
-    });
-
-    it('should handle cleanup on installation failure', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(false);
-      vi.mocked(ccrInstaller.installCcr).mockRejectedValue(new Error('Install failed'));
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
-
-      await ccr({ lang: 'en' });
-
-      // Configuration should not be attempted after installation failure
-      expect(ccrConfig.configureCcrFeature).not.toHaveBeenCalled();
+      expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(exitError);
+      expect(menu.showMainMenu).not.toHaveBeenCalled();
     });
   });
 
-  describe('special characters and encoding', () => {
-    it('should handle special characters in error messages', async () => {
-      const specialError = new Error('Error with 特殊字符 and émojis 🚀');
-      vi.mocked(ccrInstaller.isCcrInstalled).mockRejectedValue(specialError);
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
-
-      await ccr({ lang: 'zh-CN' });
-
-      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(specialError, 'zh-CN');
-    });
-  });
-
-  describe('timeout and performance', () => {
-    it('should handle slow installation process', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(false);
-      vi.mocked(ccrInstaller.installCcr).mockImplementation(async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
+  describe('performance scenarios', () => {
+    it('should handle rapid successive calls', async () => {
+      let executionCount = 0;
+      vi.mocked(ccrMenu.showCcrMenu).mockImplementation(async () => {
+        executionCount++;
+        return false;
       });
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
+
+      const promises = [];
+      for (let i = 0; i < 10; i++) {
+        promises.push(ccr({ lang: i % 2 === 0 ? 'en' : 'zh-CN' }));
+      }
+
+      await Promise.all(promises);
+
+      expect(executionCount).toBe(10);
+    });
+
+    it('should handle slow config read', async () => {
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockImplementation(
+        () => new Promise(resolve => 
+          setTimeout(() => resolve({ preferredLang: 'en' } as any), 100)
+        )
+      );
 
       const startTime = Date.now();
-      await ccr({ lang: 'en' });
-      const endTime = Date.now();
+      await ccr({});
+      const duration = Date.now() - startTime;
 
-      expect(endTime - startTime).toBeGreaterThanOrEqual(100);
-      expect(ccrInstaller.installCcr).toHaveBeenCalled();
-    });
-
-    it('should handle slow configuration process', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockImplementation(async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
-      });
-
-      const startTime = Date.now();
-      await ccr({ lang: 'en' });
-      const endTime = Date.now();
-
-      expect(endTime - startTime).toBeGreaterThanOrEqual(50);
+      expect(duration).toBeGreaterThanOrEqual(100);
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en');
     });
   });
 });

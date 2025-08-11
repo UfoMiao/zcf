@@ -311,7 +311,7 @@ describe('CCR config', () => {
       const result = await configureCcrWithPreset(mockPreset, 'en');
 
       expect(result).toMatchObject({
-        LOG: false,
+        LOG: true,
         HOST: '127.0.0.1',
         PORT: 3456,
         APIKEY: 'sk-zcf-x-ccr',

@@ -9,13 +9,35 @@ vi.mock('inquirer');
 vi.mock('../../../src/utils/ccr/installer');
 vi.mock('../../../src/utils/ccr/config');
 vi.mock('../../../src/utils/ccr/commands');
+vi.mock('../../../src/utils/error-handler', () => ({
+  handleGeneralError: vi.fn((error: Error) => {
+    console.error(`Error: ${error.message}`);
+  }),
+  handleExitPromptError: vi.fn(),
+}));
 
 describe('CCR Menu', () => {
   let consoleLogSpy: any;
+  let consoleErrorSpy: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    // Mock readCcrConfig to return a valid CCR config by default
+    vi.mocked(ccrConfig.readCcrConfig).mockReturnValue({
+      APIKEY: 'test-key',
+      Providers: [
+        {
+          Provider: 'anthropic',
+          APIKey: 'test-key',
+        },
+      ],
+      Router: {
+        Routes: [],
+      },
+    } as any);
   });
 
   it('should display CCR menu options', async () => {
@@ -66,7 +88,7 @@ describe('CCR Menu', () => {
 
     await showCcrMenu('en');
 
-    expect(ccrCommands.runCcrUi).toHaveBeenCalledWith('en');
+    expect(ccrCommands.runCcrUi).toHaveBeenCalledWith('en', 'test-key');
   });
 
   it('should handle check status option', async () => {

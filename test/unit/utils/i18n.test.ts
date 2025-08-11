@@ -27,7 +27,7 @@ describe('i18n utilities', () => {
       expect(translations.menu.menuOptions).toBeDefined();
       expect(translations.menu.menuOptions.fullInit).toBe('Full initialization');
       expect(translations.menu.menuDescriptions).toBeDefined();
-      expect(translations.menu.menuDescriptions.fullInit).toBe('Install Claude Code + Import workflow + Configure API + Configure MCP services');
+      expect(translations.menu.menuDescriptions.fullInit).toBe('Install Claude Code + Import workflow + Configure API or CCR proxy + Configure MCP services');
     });
 
     it('should switch between languages', () => {
@@ -153,7 +153,7 @@ describe('i18n utilities', () => {
       setLanguage('zh-CN');
       const translations = t();
       expect(translations.menu.menuDescriptions).toBeDefined();
-      expect(translations.menu.menuDescriptions.fullInit).toBe('安装 Claude Code + 导入工作流 + 配置 API + 配置 MCP 服务');
+      expect(translations.menu.menuDescriptions.fullInit).toBe('安装 Claude Code + 导入工作流 + 配置 API 或 CCR 代理 + 配置 MCP 服务');
       expect(translations.menu.menuDescriptions.importWorkflow).toBe('仅导入/更新工作流相关文件');
     });
   });

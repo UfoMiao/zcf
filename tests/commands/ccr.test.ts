@@ -1,14 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ccr } from '../../src/commands/ccr';
-import * as ccrInstaller from '../../src/utils/ccr/installer';
-import * as ccrConfig from '../../src/utils/ccr/config';
+import * as ccrMenu from '../../src/utils/tools/ccr-menu';
 import * as errorHandler from '../../src/utils/error-handler';
-import { I18N } from '../../src/constants';
-import ansis from 'ansis';
+import * as zcfConfig from '../../src/utils/zcf-config';
+import * as prompts from '../../src/utils/prompts';
+import * as banner from '../../src/utils/banner';
+import * as menu from '../../src/commands/menu';
 
-vi.mock('../../src/utils/ccr/installer');
-vi.mock('../../src/utils/ccr/config');
+vi.mock('../../src/utils/tools/ccr-menu');
 vi.mock('../../src/utils/error-handler');
+vi.mock('../../src/utils/zcf-config');
+vi.mock('../../src/utils/prompts');
+vi.mock('../../src/utils/banner');
+vi.mock('../../src/commands/menu');
 
 describe('ccr command', () => {
   let consoleLogSpy: any;
@@ -18,6 +22,17 @@ describe('ccr command', () => {
     vi.clearAllMocks();
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    // Default mocks
+    vi.mocked(banner.displayBannerWithInfo).mockImplementation(() => {});
+    vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
+      preferredLang: 'en',
+    } as any);
+    vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('en');
+    vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false);
+    vi.mocked(menu.showMainMenu).mockResolvedValue();
+    vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
+    vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -26,78 +41,63 @@ describe('ccr command', () => {
   });
 
   describe('basic functionality', () => {
-    it('should configure CCR when already installed', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
+    it('should show CCR menu with provided language', async () => {
+      await ccr({ lang: 'en' });
+
+      expect(banner.displayBannerWithInfo).toHaveBeenCalled();
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en');
+      expect(menu.showMainMenu).toHaveBeenCalled();
+    });
+
+    it('should show CCR menu with config language', async () => {
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
+        preferredLang: 'zh-CN',
+      } as any);
+
+      await ccr({});
+
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
+    });
+
+    it('should prompt for language when not configured', async () => {
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null);
+      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN');
+
+      await ccr({});
+
+      expect(prompts.selectScriptLanguage).toHaveBeenCalled();
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
+    });
+
+    it('should skip banner when skipBanner is true', async () => {
+      await ccr({ skipBanner: true, lang: 'en' });
+
+      expect(banner.displayBannerWithInfo).not.toHaveBeenCalled();
+    });
+
+    it('should not show main menu when continueInCcr is true', async () => {
+      vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(true);
 
       await ccr({ lang: 'en' });
 
-      expect(ccrInstaller.isCcrInstalled).toHaveBeenCalledTimes(1);
-      expect(ccrInstaller.installCcr).not.toHaveBeenCalled();
-      expect(ccrConfig.configureCcrFeature).toHaveBeenCalledWith('en');
-      // Check actual messages from I18N
-      const expectedInstalled = I18N['en'].ccr.ccrAlreadyInstalled;
-      const expectedComplete = I18N['en'].ccr.ccrSetupComplete;
-      
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedInstalled)
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedComplete)
-      );
+      expect(menu.showMainMenu).not.toHaveBeenCalled();
     });
 
-    it('should install and configure CCR when not installed', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(false);
-      vi.mocked(ccrInstaller.installCcr).mockResolvedValue();
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
+    it('should not show main menu when skipBanner is true', async () => {
+      vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false);
 
-      await ccr({ lang: 'zh-CN' });
+      await ccr({ skipBanner: true, lang: 'en' });
 
-      expect(ccrInstaller.isCcrInstalled).toHaveBeenCalledTimes(1);
-      expect(ccrInstaller.installCcr).toHaveBeenCalledWith('zh-CN');
-      expect(ccrConfig.configureCcrFeature).toHaveBeenCalledWith('zh-CN');
-      // Check actual messages from I18N
-      const expectedInstalling = I18N['zh-CN'].ccr.installingCcr;
-      
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedInstalling)
-      );
-    });
-
-    it('should use default language when not specified', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-
-      await ccr();
-
-      expect(ccrConfig.configureCcrFeature).toHaveBeenCalledWith('zh-CN');
-    });
-
-    it('should handle configuration success', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-
-      await ccr({ lang: 'en' });
-
-      const expectedComplete = I18N['en'].ccr.ccrSetupComplete;
-      
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedComplete)
-      );
+      expect(menu.showMainMenu).not.toHaveBeenCalled();
     });
   });
 
   describe('error handling', () => {
-    it('should handle exit prompt error', async () => {
-      const exitError = new Error('User cancelled');
+    it('should handle exit prompt errors', async () => {
+      const exitError = new Error('User exited');
       exitError.name = 'ExitPromptError';
       
-      vi.mocked(ccrInstaller.isCcrInstalled).mockRejectedValue(exitError);
+      vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(exitError);
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(true);
 
       await ccr({ lang: 'en' });
@@ -107,11 +107,10 @@ describe('ccr command', () => {
     });
 
     it('should handle general errors', async () => {
-      const generalError = new Error('Network error');
+      const generalError = new Error('Something went wrong');
       
-      vi.mocked(ccrInstaller.isCcrInstalled).mockRejectedValue(generalError);
+      vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(generalError);
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
 
       await ccr({ lang: 'en' });
 
@@ -119,67 +118,41 @@ describe('ccr command', () => {
       expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(generalError, 'en');
     });
 
-    it('should handle installation errors', async () => {
-      const installError = new Error('Permission denied');
-      
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(false);
-      vi.mocked(ccrInstaller.installCcr).mockRejectedValue(installError);
+    it('should handle config read errors', async () => {
+      const configError = new Error('Config error');
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockRejectedValue(configError);
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
 
-      await ccr({ lang: 'en' });
+      await ccr({});
 
-      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(installError, 'en');
-    });
-
-    it('should handle configuration errors', async () => {
-      const configError = new Error('Config write failed');
-      
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockRejectedValue(configError);
-      vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false);
-      vi.mocked(errorHandler.handleGeneralError).mockImplementation(() => {});
-
-      await ccr({ lang: 'zh-CN' });
-
-      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(configError, 'zh-CN');
+      // Should handle the error
+      expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(configError);
+      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(configError, undefined);
+      // Should not call menu since error occurred
+      expect(ccrMenu.showCcrMenu).not.toHaveBeenCalled();
     });
   });
 
   describe('internationalization', () => {
-    it('should display messages in English', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(true);
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
-
+    it('should use English language', async () => {
       await ccr({ lang: 'en' });
 
-      const expectedConfigure = I18N['en'].ccr.configureCcr;
-      const expectedInstalled = I18N['en'].ccr.ccrAlreadyInstalled;
-      
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedConfigure)
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedInstalled)
-      );
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en');
     });
 
-    it('should display messages in Chinese', async () => {
-      vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue(false);
-      vi.mocked(ccrInstaller.installCcr).mockResolvedValue();
-      vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue();
-
+    it('should use Chinese language', async () => {
       await ccr({ lang: 'zh-CN' });
 
-      const expectedConfigure = I18N['zh-CN'].ccr.configureCcr;
-      const expectedInstalling = I18N['zh-CN'].ccr.installingCcr;
-      
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedConfigure)
-      );
-      expect(consoleLogSpy).toHaveBeenCalledWith(
-        expect.stringContaining(expectedInstalling)
-      );
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
+    });
+
+    it('should use default language when not specified', async () => {
+      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null);
+      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN');
+
+      await ccr({});
+
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN');
     });
   });
 });
