@@ -202,7 +202,7 @@ export async function configureCcrWithPreset(preset: ProviderPreset, scriptLang:
 
   // Build complete config
   const config: CcrConfig = {
-    LOG: false,
+    LOG: true,
     CLAUDE_PATH: '',
     HOST: '127.0.0.1',
     PORT: 3456,
@@ -239,13 +239,20 @@ export async function restartAndCheckCcrStatus(scriptLang: SupportedLang): Promi
   }
 }
 
-export function showConfigurationTips(scriptLang: SupportedLang): void {
+export function showConfigurationTips(scriptLang: SupportedLang, apiKey?: string): void {
   const i18n = getTranslation(scriptLang);
 
   console.log(ansis.bold.cyan(`\n📌 ${i18n.ccr.configTips}:`));
   console.log(ansis.blue(`  • ${i18n.ccr.advancedConfigTip}`));
   console.log(ansis.blue(`  • ${i18n.ccr.manualConfigTip}`));
   console.log(ansis.bold.yellow(`  • ${i18n.ccr.useClaudeCommand}`));
+  
+  // Show API key for UI login
+  if (apiKey) {
+    console.log(ansis.bold.green(`  • ${i18n.ccr.ccrUiApiKey || 'CCR UI API Key'}: ${apiKey}`));
+    console.log(ansis.gray(`    ${i18n.ccr.ccrUiApiKeyHint || 'Use this API key to login to CCR UI'}`));
+  }
+  
   console.log(''); // Add empty line for better readability
 }
 
@@ -327,8 +334,8 @@ export async function setupCcrConfiguration(scriptLang: SupportedLang): Promise<
     // Restart CCR and check status
     await restartAndCheckCcrStatus(scriptLang);
 
-    // Show configuration tips
-    showConfigurationTips(scriptLang);
+    // Show configuration tips with API key
+    showConfigurationTips(scriptLang, config.APIKEY);
 
     // Add hasCompletedOnboarding flag after successful CCR configuration
     try {

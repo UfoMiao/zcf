@@ -4,6 +4,7 @@ import { executeCcusage } from '../commands/ccu';
 import { I18N } from '../constants';
 import { getTranslation } from '../i18n';
 import { addNumbersToChoices } from './prompt-helpers';
+import { showCcrMenu } from './tools/ccr-menu';
 
 /**
  * Validates and returns a valid language code
@@ -96,4 +97,9 @@ export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<voi
     name: 'continue',
     message: ansis.gray(i18n.tools.pressEnterToContinue),
   });
+}
+
+export async function runCcrMenuFeature(scriptLang: 'zh-CN' | 'en'): Promise<void> {
+  const validLang = getValidLanguage(scriptLang);
+  await showCcrMenu(validLang);
 }

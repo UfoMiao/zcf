@@ -40,8 +40,6 @@ export const ccrMessages = {
   errorStartingCcrService: '启动 CCR 服务时出错',
   
   // CCR service status
-  restartingCcr: '正在重启 CCR 服务...',
-  checkingCcrStatus: '正在检查 CCR 服务状态...',
   ccrRestartSuccess: 'CCR 服务已重启',
   ccrRestartFailed: 'CCR 服务重启失败',
   
@@ -50,4 +48,45 @@ export const ccrMessages = {
   useClaudeCommand: '请使用 claude 命令启动 Claude Code（而非 ccr code）',
   advancedConfigTip: '您可以使用 ccr ui 命令进行更高级的配置',
   manualConfigTip: '手动修改配置文件后，请执行 ccr restart 使配置生效',
+  
+  // CCR Menu
+  ccrMenuTitle: 'CCR - Claude Code Router 管理',
+  ccrMenuOptions: {
+    initCcr: '初始化 CCR',
+    startUi: '启动 CCR UI',
+    checkStatus: '查询 CCR 状态',
+    restart: '重启 CCR',
+    start: '启动 CCR',
+    stop: '停止 CCR',
+    back: '返回主菜单',
+  },
+  ccrMenuDescriptions: {
+    initCcr: '安装并配置 CCR',
+    startUi: '打开 Web 界面管理 CCR',
+    checkStatus: '查看 CCR 服务运行状态',
+    restart: '重启 CCR 服务',
+    start: '启动 CCR 服务',
+    stop: '停止 CCR 服务',
+  },
+  
+  // Command execution messages
+  startingCcrUi: '正在启动 CCR UI...',
+  ccrUiStarted: 'CCR UI 已启动',
+  checkingCcrStatus: '正在查询 CCR 状态...',
+  ccrStatusTitle: 'CCR 状态信息：',
+  restartingCcr: '正在重启 CCR...',
+  ccrRestarted: 'CCR 已重启',
+  startingCcr: '正在启动 CCR...',
+  ccrStarted: 'CCR 已启动',
+  stoppingCcr: '正在停止 CCR...',
+  ccrStopped: 'CCR 已停止',
+  ccrCommandFailed: '执行 CCR 命令失败',
+  
+  // Configuration check messages
+  ccrNotConfigured: 'CCR 尚未配置。请先初始化 CCR。',
+  pleaseInitFirst: '请选择选项 1 来初始化 CCR。',
+  
+  // UI API Key messages
+  ccrUiApiKey: 'CCR UI 登录密钥',
+  ccrUiApiKeyHint: '使用此密钥登录 CCR UI 界面',
 };

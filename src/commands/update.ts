@@ -37,7 +37,7 @@ export async function update(options: UpdateOptions = {}) {
       const { lang } = await inquirer.prompt<{ lang: SupportedLang }>({
         type: 'list',
         name: 'lang',
-        message: i18n.workflow.updateConfigLangPrompt,
+        message: i18n.language.updateConfigLangPrompt,
         choices: addNumbersToChoices(SUPPORTED_LANGS.map((l) => ({
           name: `${LANG_LABELS[l]} - ${i18n.language.configLangHint[l]}`,
           value: l,

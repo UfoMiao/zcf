@@ -1,34 +1,34 @@
-import ansis from 'ansis';
 import type { SupportedLang } from '../constants';
-import { I18N } from '../constants';
-import { isCcrInstalled, installCcr } from '../utils/ccr/installer';
-import { configureCcrFeature } from '../utils/ccr/config';
+import { showCcrMenu } from '../utils/tools/ccr-menu';
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler';
+import { readZcfConfigAsync } from '../utils/zcf-config';
+import { selectScriptLanguage } from '../utils/prompts';
+import { displayBannerWithInfo } from '../utils/banner';
+import { showMainMenu } from './menu';
 
 export interface CcrOptions {
   lang?: SupportedLang;
+  skipBanner?: boolean;
 }
 
 export async function ccr(options: CcrOptions = {}) {
   try {
-    const scriptLang = options.lang || 'zh-CN';
-    const i18n = I18N[scriptLang];
-    
-    console.log(ansis.cyan(`\n🚀 ${i18n.ccr.configureCcr}`));
-    
-    // Check if CCR is installed
-    const ccrInstalled = await isCcrInstalled();
-    if (!ccrInstalled) {
-      console.log(ansis.yellow(`${i18n.ccr.installingCcr}`));
-      await installCcr(scriptLang);
-    } else {
-      console.log(ansis.green(`✔ ${i18n.ccr.ccrAlreadyInstalled}`));
+    // Display banner if not skipped
+    if (!options.skipBanner) {
+      displayBannerWithInfo();
     }
     
-    // Configure CCR (includes backup)
-    await configureCcrFeature(scriptLang);
+    // Get script language from config or ask user
+    const zcfConfig = await readZcfConfigAsync();
+    const scriptLang = options.lang || zcfConfig?.preferredLang || (await selectScriptLanguage());
     
-    console.log(ansis.green(`\n✔ ${i18n.ccr.ccrSetupComplete}`));
+    // Show CCR menu
+    const continueInCcr = await showCcrMenu(scriptLang);
+    
+    // If user selected back (0) and not called from main menu, show main menu
+    if (!continueInCcr && !options.skipBanner) {
+      await showMainMenu();
+    }
   } catch (error) {
     if (!handleExitPromptError(error)) {
       handleGeneralError(error, options.lang);

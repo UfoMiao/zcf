@@ -40,8 +40,6 @@ export const ccrMessages = {
   errorStartingCcrService: 'Error starting CCR service',
   
   // CCR service status
-  restartingCcr: 'Restarting CCR service...',
-  checkingCcrStatus: 'Checking CCR service status...',
   ccrRestartSuccess: 'CCR service restarted',
   ccrRestartFailed: 'Failed to restart CCR service',
   
@@ -50,4 +48,45 @@ export const ccrMessages = {
   useClaudeCommand: 'Use the claude command to start Claude Code (not ccr code)',
   advancedConfigTip: 'You can use the ccr ui command for advanced configuration',
   manualConfigTip: 'After manually modifying the configuration file, run ccr restart to apply changes',
+  
+  // CCR Menu
+  ccrMenuTitle: 'CCR - Claude Code Router Management',
+  ccrMenuOptions: {
+    initCcr: 'Initialize CCR',
+    startUi: 'Start CCR UI',
+    checkStatus: 'Check CCR Status',
+    restart: 'Restart CCR',
+    start: 'Start CCR',
+    stop: 'Stop CCR',
+    back: 'Back to Main Menu',
+  },
+  ccrMenuDescriptions: {
+    initCcr: 'Install and configure CCR',
+    startUi: 'Open web interface to manage CCR',
+    checkStatus: 'View CCR service status',
+    restart: 'Restart CCR service',
+    start: 'Start CCR service',
+    stop: 'Stop CCR service',
+  },
+  
+  // Command execution messages
+  startingCcrUi: 'Starting CCR UI...',
+  ccrUiStarted: 'CCR UI started',
+  checkingCcrStatus: 'Checking CCR status...',
+  ccrStatusTitle: 'CCR Status:',
+  restartingCcr: 'Restarting CCR...',
+  ccrRestarted: 'CCR restarted',
+  startingCcr: 'Starting CCR...',
+  ccrStarted: 'CCR started',
+  stoppingCcr: 'Stopping CCR...',
+  ccrStopped: 'CCR stopped',
+  ccrCommandFailed: 'Failed to execute CCR command',
+  
+  // Configuration check messages
+  ccrNotConfigured: 'CCR is not configured yet. Please initialize CCR first.',
+  pleaseInitFirst: 'Please select option 1 to initialize CCR.',
+  
+  // UI API Key messages
+  ccrUiApiKey: 'CCR UI API Key',
+  ccrUiApiKeyHint: 'Use this API key to login to CCR UI',
 };
