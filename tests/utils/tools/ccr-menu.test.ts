@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { existsSync } from 'node:fs';
 import inquirer from 'inquirer';
 import { showCcrMenu } from '../../../src/utils/tools/ccr-menu';
 import * as ccrInstaller from '../../../src/utils/ccr/installer';
 import * as ccrConfig from '../../../src/utils/ccr/config';
 import * as ccrCommands from '../../../src/utils/ccr/commands';
 
+vi.mock('node:fs');
 vi.mock('inquirer');
 vi.mock('../../../src/utils/ccr/installer');
 vi.mock('../../../src/utils/ccr/config');
@@ -24,6 +26,9 @@ describe('CCR Menu', () => {
     vi.clearAllMocks();
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    
+    // Mock existsSync to return true for CCR config file
+    vi.mocked(existsSync).mockReturnValue(true);
     
     // Mock readCcrConfig to return a valid CCR config by default
     vi.mocked(ccrConfig.readCcrConfig).mockReturnValue({
