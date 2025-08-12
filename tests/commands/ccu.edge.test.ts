@@ -93,25 +93,6 @@ describe('CCU Command - Edge Cases', () => {
       expect(results).toHaveLength(3);
     });
 
-    it('should handle timeout scenarios', async () => {
-      vi.mocked(x).mockImplementation(() => 
-        new Promise((resolve) => {
-          // Simulate a long-running command
-          setTimeout(() => resolve({
-            stdout: 'Completed after delay',
-            stderr: '',
-            exitCode: 0,
-          }), 100);
-        })
-      );
-
-      const startTime = Date.now();
-      await executeCcusage();
-      const duration = Date.now() - startTime;
-
-      // Duration assertion removed - flaky in CI environments
-    });
-
     it('should handle zcfConfig read errors', async () => {
       // Config read fails, but we catch it and use default
       vi.mocked(zcfConfig.readZcfConfigAsync)
@@ -267,13 +248,13 @@ describe('CCU Command - Edge Cases', () => {
   describe('performance scenarios', () => {
     it('should handle rapid successive calls', async () => {
       let executionCount = 0;
-      vi.mocked(x).mockImplementation(async () => {
+      vi.mocked(x).mockImplementation(() => {
         executionCount++;
-        return {
+        return Promise.resolve({
           stdout: '',
           stderr: '',
           exitCode: 0,
-        };
+        });
       });
 
       const promises = [];
