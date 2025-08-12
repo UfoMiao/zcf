@@ -76,9 +76,35 @@ export function getPersonalityInfo(personalityId: string): AiPersonality | undef
   return AI_PERSONALITIES.find((p) => p.id === personalityId);
 }
 
-export async function configureAiPersonality(scriptLang: SupportedLang, showExisting: boolean = true) {
+export async function configureAiPersonality(scriptLang: SupportedLang, preselectedPersonality?: string | boolean) {
+  // Handle backward compatibility: if boolean is passed, it's the old showExisting parameter
+  const showExisting = typeof preselectedPersonality === 'boolean' ? preselectedPersonality : true;
+  const preselected = typeof preselectedPersonality === 'string' ? preselectedPersonality : undefined;
   const i18n = getTranslation(scriptLang);
   const existingPersonality = getExistingPersonality();
+  
+  // If preselected personality is provided, skip prompts
+  if (preselected) {
+    let directive = '';
+    
+    if (preselected === 'custom') {
+      // For custom personality in non-interactive mode, use a default
+      directive = 'You are a helpful assistant.';
+    } else {
+      const selected = AI_PERSONALITIES.find((p) => p.id === preselected);
+      if (selected) {
+        directive = selected.directive[scriptLang];
+      } else {
+        console.error(ansis.red(`Invalid personality: ${preselected}`));
+        return;
+      }
+    }
+    
+    await applyPersonalityDirective(directive);
+    updateZcfConfig({ aiPersonality: preselected });
+    console.log(ansis.green(`✔ ${i18n.configuration.personalityConfigured || 'AI personality configured'}`));
+    return;
+  }
   
   // Show existing personality if any
   if (showExisting && existingPersonality) {
