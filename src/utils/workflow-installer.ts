@@ -18,7 +18,8 @@ function getRootDir(): string {
 
 export async function selectAndInstallWorkflows(
   configLang: SupportedLang,
-  scriptLang: SupportedLang
+  scriptLang: SupportedLang,
+  preselectedWorkflows?: string[]
 ): Promise<void> {
   const i18n = getTranslation(scriptLang);
   const workflows = getOrderedWorkflows();
@@ -34,13 +35,20 @@ export async function selectAndInstallWorkflows(
     };
   });
 
-  // Multi-select workflow types
-  const { selectedWorkflows } = await inquirer.prompt<{ selectedWorkflows: WorkflowType[] }>({
-    type: 'checkbox',
-    name: 'selectedWorkflows',
-    message: `${i18n.workflow.selectWorkflowType}${i18n.common.multiSelectHint}`,
-    choices,
-  });
+  // Multi-select workflow types or use preselected
+  let selectedWorkflows: WorkflowType[];
+  
+  if (preselectedWorkflows) {
+    selectedWorkflows = preselectedWorkflows as WorkflowType[];
+  } else {
+    const response = await inquirer.prompt<{ selectedWorkflows: WorkflowType[] }>({
+      type: 'checkbox',
+      name: 'selectedWorkflows',
+      message: `${i18n.workflow.selectWorkflowType}${i18n.common.multiSelectHint}`,
+      choices,
+    });
+    selectedWorkflows = response.selectedWorkflows;
+  }
 
   if (!selectedWorkflows || selectedWorkflows.length === 0) {
     console.log(ansis.yellow(i18n.common.cancelled));

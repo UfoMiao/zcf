@@ -14,6 +14,17 @@ export interface CliOptions {
   configLang?: 'zh-CN' | 'en';
   aiOutputLang?: string;
   force?: boolean;
+  skipPrompt?: boolean;
+  installClaude?: string;
+  configAction?: string;
+  apiType?: string;
+  apiKey?: string;
+  authToken?: string;
+  apiUrl?: string;
+  mcpServices?: string;
+  mcpApiKeys?: string;
+  workflows?: string;
+  aiPersonality?: string;
 }
 
 export function setupCommands(cli: CAC) {
@@ -35,6 +46,17 @@ export function setupCommands(cli: CAC) {
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
     .option('--ai-output-lang, -a <lang>', 'AI output language')
     .option('--force, -f', 'Force overwrite existing configuration')
+    .option('--skip-prompt', 'Skip all interactive prompts (non-interactive mode)')
+    .option('--install-claude <choice>', 'Install Claude Code (yes/no/skip)')
+    .option('--config-action <action>', 'Config handling (new/backup/merge/docs-only/skip)')
+    .option('--api-type <type>', 'API type (auth_token/api_key/ccr_proxy/skip)')
+    .option('--api-key <key>', 'API key for api_key type')
+    .option('--auth-token <token>', 'Auth token for auth_token type')
+    .option('--api-url <url>', 'Custom API URL')
+    .option('--mcp-services <services>', 'Comma-separated MCP services to install')
+    .option('--mcp-api-keys <json>', 'JSON object with API keys for MCP services')
+    .option('--workflows <workflows>', 'Comma-separated workflows to install')
+    .option('--ai-personality <type>', 'AI personality type')
     .action(async (options) => {
       await handleInitCommand(options);
     });
@@ -98,6 +120,17 @@ export async function handleInitCommand(options: CliOptions) {
     configLang: options.configLang,
     aiOutputLang: options.aiOutputLang,
     force: options.force,
+    skipPrompt: options.skipPrompt,
+    installClaude: options.installClaude as 'yes' | 'no' | 'skip' | undefined,
+    configAction: options.configAction as 'new' | 'backup' | 'merge' | 'docs-only' | 'skip' | undefined,
+    apiType: options.apiType as 'auth_token' | 'api_key' | 'ccr_proxy' | 'skip' | undefined,
+    apiKey: options.apiKey,
+    authToken: options.authToken,
+    apiUrl: options.apiUrl,
+    mcpServices: options.mcpServices,
+    mcpApiKeys: options.mcpApiKeys,
+    workflows: options.workflows,
+    aiPersonality: options.aiPersonality,
   });
 }
 

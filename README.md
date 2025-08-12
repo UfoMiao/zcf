@@ -41,6 +41,35 @@ npx zcf i        # Execute full initialization directly: Install Claude Code + I
 npx zcf → select 1  # Execute full initialization via menu
 ```
 
+#### 🤖 Non-interactive Mode (New)
+
+For CI/CD and automated setups, use `--skip-prompt` with configuration parameters:
+
+```bash
+# Complete non-interactive initialization
+npx zcf i --skip-prompt \
+  --lang en \
+  --config-lang en \
+  --ai-output-lang en \
+  --install-claude yes \
+  --config-action new \
+  --api-type api_key \
+  --api-key "sk-ant-..." \
+  --mcp-services "context7,deepwiki" \
+  --workflows "workflow,agents"
+
+# Skip Claude Code installation and configure API only
+npx zcf i --skip-prompt \
+  --install-claude skip \
+  --api-type auth_token \
+  --auth-token "your-token"
+
+# Use CCR proxy mode
+npx zcf i --skip-prompt \
+  --api-type ccr_proxy \
+  --install-claude yes
+```
+
 #### 🔄 Already have Claude Code installed
 
 ```bash
@@ -364,6 +393,27 @@ npx zcf u -c en            # Using short option
 # Run Claude Code usage analysis tool (powered by ccusage)
 npx zcf ccu               # Daily usage (default), or use: monthly, session, blocks
 ```
+
+#### Non-interactive Mode Parameters
+
+When using `--skip-prompt`, the following parameters are available:
+
+| Parameter | Description | Values | Required |
+|-----------|-------------|--------|----------|
+| `--skip-prompt` | Skip all interactive prompts | - | Yes (for non-interactive mode) |
+| `--lang, -l` | ZCF display language | `zh-CN`, `en` | No (default: `en`) |
+| `--config-lang, -c` | Configuration language | `zh-CN`, `en` | No (default: `en`) |
+| `--ai-output-lang, -a` | AI output language | `zh-CN`, `en`, custom | No (default: `en`) |
+| `--install-claude` | Install Claude Code | `yes`, `no`, `skip` | No (default: `skip`) |
+| `--config-action` | Config handling | `new`, `backup`, `merge`, `docs-only`, `skip` | No (default: `new`) |
+| `--api-type` | API configuration type | `auth_token`, `api_key`, `ccr_proxy`, `skip` | No (default: `skip`) |
+| `--api-key` | API key (for api_key type) | string | Required when `api-type=api_key` |
+| `--auth-token` | Auth token (for auth_token type) | string | Required when `api-type=auth_token` |
+| `--api-url` | Custom API URL | URL string | No (default: official API) |
+| `--mcp-services` | MCP services to install | comma-separated list | No |
+| `--mcp-api-keys` | API keys for MCP services | JSON string | No |
+| `--workflows` | Workflows to install | comma-separated list | No |
+| `--ai-personality` | AI personality type | `professional`, `catgirl`, `friendly`, `mentor`, custom | No |
 
 ## 📁 Project Structure
 
