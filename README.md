@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/UfoMiao/zcf/graph/badge.svg?token=HZI6K4Y7D7)](https://codecov.io/gh/UfoMiao/zcf)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/UfoMiao/zcf)
 
-[中文](README_zh-CN.md) | **English** | [Changelog](CHANGELOG.md)
+[中文](README_zh-CN.md) | **English** | [Changelog](CHANGELOG.md) | [Security Audit](CODE_AUDIT.md)
 
 > Zero-config, one-click setup for Claude Code with bilingual support, intelligent agent system and personalized AI assistant
 
