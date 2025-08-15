@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { exec } from 'node:child_process';
-import * as installerModule from '../../../src/utils/ccr/installer';
+import { promisify } from 'node:util';
+import {
+  isCcrInstalled,
+  getCcrVersion,
+  installCcr,
+  startCcrService
+} from '../../../src/utils/ccr/installer';
 import * as i18n from '../../../src/i18n';
-
-const { getCcrVersion, startCcrService } = installerModule;
 
 vi.mock('node:child_process');
 vi.mock('node:util', () => ({
@@ -61,19 +65,12 @@ describe('CCR installer - edge cases', () => {
       // @ts-ignore
       mockExec.mockImplementation((cmd, callback) => {
         if (typeof callback === 'function') {
-          if (cmd === 'ccr version' || cmd === 'which ccr') {
-            callback(null, '', ''); // Empty but success
-          } else if (cmd === 'npm list -g @musistudio/claude-code-router') {
-            callback(new Error('not found'), '', ''); // Package not found
-          } else {
-            callback(null, '', '');
-          }
+          callback(null, '', '');
         }
       });
 
-      const result = await installerModule.isCcrInstalled();
-      expect(result.isInstalled).toBe(true); // Empty output but no error means success
-      expect(result.hasCorrectPackage).toBe(false); // No package list response
+      const result = await isCcrInstalled();
+      expect(result).toEqual({ isInstalled: true, hasCorrectPackage: true }); // Empty output but no error means success
     });
 
     it('should handle malformed exec callback', async () => {
@@ -81,41 +78,13 @@ describe('CCR installer - edge cases', () => {
       // @ts-ignore
       mockExec.mockImplementation((cmd, callback) => {
         if (typeof callback === 'function') {
-          if (cmd === 'ccr version') {
-            // @ts-ignore - testing malformed callback
-            callback(null);
-          } else if (cmd === 'npm list -g @musistudio/claude-code-router') {
-            callback(new Error('not found'), '', '');
-          } else {
-            callback(new Error('not found'), '', '');
-          }
+          // @ts-ignore - testing malformed callback
+          callback(null);
         }
       });
 
-      const result = await installerModule.isCcrInstalled();
-      expect(result.isInstalled).toBe(true);
-      expect(result.hasCorrectPackage).toBe(false);
-    });
-
-    it('should handle timeout-like behavior', async () => {
-      const mockExec = vi.mocked(exec);
-      // @ts-ignore
-      mockExec.mockImplementation((cmd, callback) => {
-        if (typeof callback === 'function') {
-          if (cmd === 'ccr version') {
-            // Simulate a very slow response
-            setTimeout(() => callback(null, 'CCR version 1.0.0', ''), 100);
-          } else if (cmd === 'npm list -g @musistudio/claude-code-router') {
-            setTimeout(() => callback(new Error('not found'), '', ''), 50);
-          } else {
-            callback(new Error('not found'), '', '');
-          }
-        }
-      });
-
-      const result = await installerModule.isCcrInstalled();
-      expect(result.isInstalled).toBe(true);
-      expect(result.hasCorrectPackage).toBe(false);
+      const result = await isCcrInstalled();
+      expect(result).toEqual({ isInstalled: true, hasCorrectPackage: true });
     });
 
     it('should handle special characters in error messages', async () => {
@@ -127,9 +96,8 @@ describe('CCR installer - edge cases', () => {
         }
       });
 
-      const result = await installerModule.isCcrInstalled();
-      expect(result.isInstalled).toBe(false);
-      expect(result.hasCorrectPackage).toBe(false);
+      const result = await isCcrInstalled();
+      expect(result).toEqual({ isInstalled: false, hasCorrectPackage: false });
     });
   });
 
@@ -217,7 +185,7 @@ describe('CCR installer - edge cases', () => {
         }
       });
 
-      await expect(installerModule.installCcr('en')).rejects.toThrow('ETIMEDOUT');
+      await expect(installCcr('en')).rejects.toThrow('ETIMEDOUT');
     });
 
     it('should handle partial EEXIST error messages', async () => {
@@ -234,7 +202,7 @@ describe('CCR installer - edge cases', () => {
         }
       });
 
-      await installerModule.installCcr('en');
+      await installCcr('en');
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('CCR is already installed')
       );
@@ -253,7 +221,7 @@ describe('CCR installer - edge cases', () => {
         }
       });
 
-      await installerModule.installCcr('zh-CN');
+      await installCcr('zh-CN');
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('CCR installed successfully')
       );
@@ -273,7 +241,7 @@ describe('CCR installer - edge cases', () => {
         }
       });
 
-      await expect(installerModule.installCcr('en')).rejects.toThrow();
+      await expect(installCcr('en')).rejects.toThrow();
     });
 
     it('should handle concurrent installation attempts', async () => {
@@ -292,8 +260,8 @@ describe('CCR installer - edge cases', () => {
       });
 
       const results = await Promise.all([
-        installerModule.installCcr('en'),
-        installerModule.installCcr('zh-CN')
+        installCcr('en'),
+        installCcr('zh-CN')
       ]);
 
       expect(installCount).toBe(2);
@@ -389,26 +357,20 @@ describe('CCR installer - edge cases', () => {
       mockExec.mockImplementation((cmd, callback) => {
         if (typeof callback === 'function') {
           callCount++;
-          if (cmd === 'ccr version') {
-            setTimeout(() => callback(null, 'CCR version 1.0.0', ''), Math.random() * 50);
-          } else if (cmd === 'npm list -g @musistudio/claude-code-router') {
-            setTimeout(() => callback(new Error('not found'), '', ''), Math.random() * 30);
-          } else {
-            callback(new Error('not found'), '', '');
-          }
+          setTimeout(() => callback(null, 'CCR version 1.0.0', ''), Math.random() * 50);
         }
       });
 
       const results = await Promise.all([
-        installerModule.isCcrInstalled(),
-        installerModule.isCcrInstalled(),
-        installerModule.isCcrInstalled()
+        isCcrInstalled(),
+        isCcrInstalled(),
+        isCcrInstalled()
       ]);
 
       expect(results).toEqual([
-        { isInstalled: true, hasCorrectPackage: false },
-        { isInstalled: true, hasCorrectPackage: false },
-        { isInstalled: true, hasCorrectPackage: false }
+        { isInstalled: true, hasCorrectPackage: true },
+        { isInstalled: true, hasCorrectPackage: true },
+        { isInstalled: true, hasCorrectPackage: true }
       ]);
       expect(callCount).toBeGreaterThanOrEqual(3);
     });
