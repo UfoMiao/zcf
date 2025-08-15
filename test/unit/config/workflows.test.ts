@@ -25,7 +25,7 @@ describe('workflows configuration', () => {
 
     it('should have correct commands for gitWorkflow', () => {
       const gitWorkflow = WORKFLOW_CONFIGS.find((w) => w.id === 'gitWorkflow');
-      expect(gitWorkflow?.commands).toEqual(['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md']);
+      expect(gitWorkflow?.commands).toEqual(['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md']);
     });
 
     it('should have no agents for gitWorkflow', () => {
@@ -114,7 +114,7 @@ describe('workflows configuration', () => {
 
       expect(gitWorkflow).toMatchObject({
         id: 'gitWorkflow',
-        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md'],
+        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
         agents: [],
         category: 'git',
       });

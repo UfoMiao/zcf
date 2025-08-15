@@ -4,7 +4,7 @@ export const workflow = {
     featPlanUx: 'Feature Planning and UX Design (feat + planner + ui-ux-designer)',
     sixStepsWorkflow: 'Six Steps Workflow (workflow)',
     bmadWorkflow: 'BMAD-Method Extension Installer (Agile Development Workflow)',
-    gitWorkflow: 'Git Commands (commit + rollback + cleanBranches)',
+    gitWorkflow: 'Git Commands (commit + rollback + cleanBranches + worktree)',
   },
 
   // BMAD workflow

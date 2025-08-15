@@ -255,7 +255,7 @@ $ npx zcf
 ? 选择要安装的工作流（空格选择，回车确认）
   ❯ ◉ 六步工作流 (workflow) - 完整的六阶段开发流程
     ◉ 功能规划和 UX 设计 (feat + planner + ui-ux-designer) - 结构化新功能开发
-    ◉ Git 指令 (commit + rollback + cleanBranches) - 简化的 Git 操作
+    ◉ Git 指令 (commit + rollback + cleanBranches + worktree) - 简化的 Git 操作
     ◉ BMAD-Method 扩展安装器 - 企业级敏捷开发工作流
 
 ✔ 正在安装工作流...
@@ -266,6 +266,7 @@ $ npx zcf
   ✔ 已安装命令: zcf/git/git-commit.md
   ✔ 已安装命令: zcf/git/git-rollback.md
   ✔ 已安装命令: zcf/git/git-cleanBranches.md
+  ✔ 已安装命令: zcf/git/git-worktree.md
   ✔ 已安装命令: zcf/bmad-init.md
 ✔ 工作流安装成功
 
@@ -401,6 +402,7 @@ zcf/
   - `/git-commit`：智能提交，自动暂存和生成提交信息
   - `/git-rollback`：安全回滚到之前的提交，带备份功能
   - `/git-cleanBranches`：清理已合并的分支，保持仓库整洁
+  - `/git-worktree`：管理 Git 工作树，支持 IDE 集成和内容迁移
 - **BMad 工作流** (`/bmad-init`)：初始化企业级开发的 BMad 工作流
   - 支持全新项目（greenfield）和现有项目（brownfield）
   - 提供 PRD、架构文档、用户故事的完整模板

@@ -169,12 +169,14 @@
   - 新增 Git 工作流命令套件，包含智能提交、安全回滚、分支清理功能
   - 添加 /zcf-update-docs 命令，自动检查并同步文档与代码实现
   - Git 命令支持自动暂存、智能生成提交信息、批量分支清理
+  - 感谢@konbakuyomu 提供的 git commands
 
   ## New Features
 
   - Add Git workflow command suite with smart commit, safe rollback, and branch cleanup
   - Add /zcf-update-docs command for automatic documentation synchronization
   - Git commands support auto-staging, intelligent commit message generation, and batch branch cleanup
+  - Thank you to @konbakuyomu for providing these Git commands
 
   ## 优化
 

@@ -73,7 +73,7 @@ describe('workflow-installer utilities', () => {
         category: 'git',
         defaultSelected: true,
         autoInstallAgents: false,
-        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md'],
+        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
         agents: [],
         order: 4,
         outputDir: 'git',
@@ -195,8 +195,8 @@ describe('workflow-installer utilities', () => {
       await selectAndInstallWorkflows('zh-CN', 'zh-CN');
 
       expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('gitWorkflow');
-      // Should copy all git command files
-      expect(copyFile).toHaveBeenCalledTimes(3);
+      // Should copy all git command files (including git-worktree.md)
+      expect(copyFile).toHaveBeenCalledTimes(4);
       expect(copyFile).toHaveBeenCalledWith(
         expect.stringContaining('git-commit.md'),
         expect.stringContaining('git-commit.md')
@@ -243,8 +243,8 @@ describe('workflow-installer utilities', () => {
 
       expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('workflow');
       expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('gitWorkflow');
-      // Should copy files for both workflows (1 + 3 = 4)
-      expect(copyFile).toHaveBeenCalledTimes(4);
+      // Should copy files for both workflows (1 + 4 = 5)
+      expect(copyFile).toHaveBeenCalledTimes(5);
     });
   });
 
@@ -422,7 +422,7 @@ describe('workflow-installer utilities', () => {
         category: 'git',
         defaultSelected: true,
         autoInstallAgents: false,
-        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md'],
+        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
         agents: [],
         order: 4,
         outputDir: 'git',
@@ -463,7 +463,7 @@ describe('workflow-installer utilities', () => {
         category: 'git',
         defaultSelected: true,
         autoInstallAgents: false,
-        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md'],
+        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
         agents: [],
         order: 4,
         outputDir: 'git',

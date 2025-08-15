@@ -34,7 +34,7 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
     descriptionKey: 'workflowDescription.gitWorkflow',
     defaultSelected: true,
     order: 3,
-    commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md'],
+    commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
     agents: [],
     autoInstallAgents: false,
     category: 'git',
