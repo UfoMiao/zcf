@@ -7,6 +7,8 @@ export const updater: UpdaterTranslations = {
   ccrUpToDate: 'CCR 已是最新版本 (v{version})',
   claudeCodeNotInstalled: 'Claude Code 未安装',
   claudeCodeUpToDate: 'Claude Code 已是最新版本 (v{version})',
+  cometixLineNotInstalled: 'CCometixLine 未安装',
+  cometixLineUpToDate: 'CCometixLine 已是最新版本 (v{version})',
   cannotCheckVersion: '无法检查最新版本',
   currentVersion: '当前版本: v{version}',
   latestVersion: '最新版本: v{version}',

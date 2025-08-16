@@ -1,10 +1,15 @@
-import { defineConfig } from 'vitest/config';
 import { resolve } from 'pathe';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/.zcf/**',
+    ],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
@@ -13,6 +18,7 @@ export default defineConfig({
         'dist',
         'bin',
         'templates',
+        '.zcf',
         '*.config.ts',
         '*.config.mjs',
         'test/**',

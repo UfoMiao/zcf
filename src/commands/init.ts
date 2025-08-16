@@ -39,6 +39,7 @@ import { selectMcpServices } from '../utils/mcp-selector';
 import { selectAndInstallWorkflows } from '../utils/workflow-installer';
 import { isCcrInstalled, installCcr } from '../utils/ccr/installer';
 import { setupCcrConfiguration } from '../utils/ccr/config';
+import { isCometixLineInstalled, installCometixLine } from '../utils/cometix/installer';
 
 export interface InitOptions {
   lang?: SupportedLang;
@@ -401,6 +402,30 @@ export async function init(options: InitOptions = {}) {
           }
         }
       }
+    }
+
+    // Step 11: Ask about CCometixLine installation
+    const cometixInstalled = await isCometixLineInstalled();
+    if (!cometixInstalled) {
+      const { shouldInstallCometix } = await inquirer.prompt<{ shouldInstallCometix: boolean }>({
+        type: 'confirm',
+        name: 'shouldInstallCometix',
+        message: i18n.cometix.installCometixPrompt,
+        default: true,
+      });
+
+      if (shouldInstallCometix === undefined) {
+        console.log(ansis.yellow(i18n.common.cancelled));
+        process.exit(0);
+      }
+
+      if (shouldInstallCometix) {
+        await installCometixLine(scriptLang);
+      } else {
+        console.log(ansis.yellow(i18n.cometix.cometixSkipped));
+      }
+    } else {
+      console.log(ansis.green(`✔ ${i18n.cometix.cometixAlreadyInstalled}`));
     }
 
     // Step 12: Save zcf config

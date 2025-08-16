@@ -5,6 +5,7 @@ import { I18N } from '../constants';
 import { getTranslation } from '../i18n';
 import { addNumbersToChoices } from './prompt-helpers';
 import { showCcrMenu } from './tools/ccr-menu';
+import { showCometixMenu } from './cometix/menu';
 
 /**
  * Validates and returns a valid language code
@@ -102,4 +103,9 @@ export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<voi
 export async function runCcrMenuFeature(scriptLang: 'zh-CN' | 'en'): Promise<void> {
   const validLang = getValidLanguage(scriptLang);
   await showCcrMenu(validLang);
+}
+
+export async function runCometixMenuFeature(scriptLang: 'zh-CN' | 'en'): Promise<void> {
+  const validLang = getValidLanguage(scriptLang);
+  await showCometixMenu(validLang);
 }

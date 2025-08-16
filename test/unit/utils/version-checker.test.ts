@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { compareVersions, shouldUpdate } from '../../../src/utils/version-checker';
 
 // These functions don't have dependencies, so we can test them directly
@@ -55,4 +55,5 @@ describe('version-checker', () => {
       expect(shouldUpdate('', '')).toBe(true);
     });
   });
+
 });

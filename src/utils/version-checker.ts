@@ -82,3 +82,20 @@ export async function checkClaudeCodeVersion(): Promise<{
     needsUpdate: currentVersion && latestVersion ? shouldUpdate(currentVersion, latestVersion) : false
   };
 }
+
+export async function checkCometixLineVersion(): Promise<{
+  installed: boolean;
+  currentVersion: string | null;
+  latestVersion: string | null;
+  needsUpdate: boolean;
+}> {
+  const currentVersion = await getInstalledVersion('ccometix');
+  const latestVersion = await getLatestVersion('ccometix');
+  
+  return {
+    installed: currentVersion !== null,
+    currentVersion,
+    latestVersion,
+    needsUpdate: currentVersion && latestVersion ? shouldUpdate(currentVersion, latestVersion) : false
+  };
+}

@@ -27,7 +27,7 @@ npx zcf          # 打开交互式菜单，根据你的需求选择操作
 - `3-7` 配置管理（API/CCR、MCP、模型设置、AI 个性等）
 - `R` Claude Code Router 管理（v2.8.1 增强）
 - `U` ccusage - Claude Code 用量分析
-- `+` 检查更新 - 检查并更新 Claude Code 和 CCR 的版本
+- `+` 检查更新 - 检查并更新 Claude Code、CCR 和 CCometixLine 的版本（v2.10.0+ 增强）
 - 更多功能选项...
 
 ### 或者，直接使用命令：
@@ -75,6 +75,16 @@ npx zcf → 选择 2  # 通过菜单执行工作流更新
 - **便捷管理**：提供交互式菜单进行 CCR 配置和服务控制
 - **自动更新**：CCR 和 Claude Code 的自动版本检查和更新（v2.8.1+）
 
+#### 📊 CCometixLine 支持（状态栏工具）（v2.10.0+ 新增）
+
+[CCometixLine](https://github.com/Haleclipse/CCometixLine) 是一个基于 Rust 的高性能状态栏工具，提供：
+
+- **实时用量追踪**：实时监控 Claude Code API 使用情况
+- **Git 集成**：显示 Git 状态和分支信息
+- **状态栏显示**：与终端状态栏原生集成
+- **性能优化**：使用 Rust 构建，资源消耗极低
+- **自动更新**：已集成到 ZCF 的更新检查系统
+
 访问 CCR 功能：
 
 ```bash
@@ -83,10 +93,10 @@ npx zcf ccr      # 打开 CCR 管理菜单
 npx zcf → 选择 R
 ```
 
-检查更新（v2.8.1+）：
+检查更新（v2.8.1+，CCometixLine 支持 v2.10.0+）：
 
 ```bash
-npx zcf check-updates  # 检查并更新 Claude Code 和 CCR 到最新版本
+npx zcf check-updates  # 检查并更新 Claude Code、CCR 和 CCometixLine 到最新版本
 # 或
 npx zcf → 选择 +
 ```
@@ -197,6 +207,7 @@ $ npx zcf
   --------- 其他工具 ----------
   R. CCR 管理 - Claude Code Router 管理
   U. CCUsage - Claude Code 用量分析工具
+  L. CCometixLine - 基于 Rust 的高性能 Claude Code 状态栏工具，集成 Git 信息和实时使用量跟踪（v2.10.0+ 新增）
 
   ------------ ZCF ------------
   0. 更改显示语言 / Select display language - 更改 ZCF 界面语言
@@ -499,6 +510,7 @@ ZCF 现已支持在 Android Termux 环境中运行：
 
 - [LINUX DO - 新的理想型社区](https://linux.do)
 - [CCR](https://github.com/musistudio/claude-code-router)
+- [CCometixLine](https://github.com/Haleclipse/CCometixLine)
 - [ccusage](https://github.com/ryoppippi/ccusage)
 - [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD)
 

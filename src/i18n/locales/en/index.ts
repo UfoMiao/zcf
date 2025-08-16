@@ -11,6 +11,7 @@ import { bmad } from './bmad';
 import { errors } from './errors';
 import { tools } from './tools';
 import { ccrMessages } from './ccr';
+import { cometixMessages } from './cometix';
 import { updater } from './updater';
 import type { TranslationStructure, McpServicesTranslations } from '../../types';
 
@@ -29,6 +30,7 @@ export const en: TranslationStructure = {
   errors,
   tools,
   ccr: ccrMessages,
+  cometix: cometixMessages,
   updater,
 };
 

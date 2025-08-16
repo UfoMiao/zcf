@@ -164,6 +164,7 @@ export interface TranslationStructure {
   errors: any;
   tools: any;
   ccr: any;
+  cometix: any;
   updater: any;
 }
 
@@ -187,6 +188,8 @@ export interface UpdaterTranslations {
   ccrUpToDate: string;
   claudeCodeNotInstalled: string;
   claudeCodeUpToDate: string;
+  cometixLineNotInstalled: string;
+  cometixLineUpToDate: string;
   cannotCheckVersion: string;
   currentVersion: string;
   latestVersion: string;
