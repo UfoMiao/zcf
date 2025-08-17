@@ -15,16 +15,16 @@ export interface CliOptions {
   aiOutputLang?: string;
   force?: boolean;
   skipPrompt?: boolean;
-  installClaude?: string;
-  configAction?: string;
+  // Non-interactive parameters
+  configAction?: string; // default: backup
   apiType?: string;
-  apiKey?: string;
-  authToken?: string;
+  apiKey?: string; // Used for both API key and auth token
   apiUrl?: string;
-  mcpServices?: string;
-  mcpApiKeys?: string;
-  workflows?: string;
-  aiPersonality?: string;
+  mcpServices?: string; // default: all non-key services, "skip" to skip all
+  workflows?: string; // default: all workflows, "skip" to skip all
+  aiPersonality?: string; // default: professional
+  allLang?: string; // New: unified language parameter
+  installCometixLine?: string | boolean; // New: CCometixLine installation control, default: true
 }
 
 export function setupCommands(cli: CAC) {
@@ -46,17 +46,16 @@ export function setupCommands(cli: CAC) {
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
     .option('--ai-output-lang, -a <lang>', 'AI output language')
     .option('--force, -f', 'Force overwrite existing configuration')
-    .option('--skip-prompt', 'Skip all interactive prompts (non-interactive mode)')
-    .option('--install-claude <choice>', 'Install Claude Code (yes/no/skip)')
-    .option('--config-action <action>', 'Config handling (new/backup/merge/docs-only/skip)')
-    .option('--api-type <type>', 'API type (auth_token/api_key/ccr_proxy/skip)')
-    .option('--api-key <key>', 'API key for api_key type')
-    .option('--auth-token <token>', 'Auth token for auth_token type')
-    .option('--api-url <url>', 'Custom API URL')
-    .option('--mcp-services <services>', 'Comma-separated MCP services to install')
-    .option('--mcp-api-keys <json>', 'JSON object with API keys for MCP services')
-    .option('--workflows <workflows>', 'Comma-separated workflows to install')
-    .option('--ai-personality <type>', 'AI personality type')
+    .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
+    .option('--config-action, -o <action>', 'Config handling (new/backup/merge/docs-only/skip), default: backup')
+    .option('--api-type, -t <type>', 'API type (auth_token/api_key/ccr_proxy/skip)')
+    .option('--api-key, -k <key>', 'API key (used for both API key and auth token types)')
+    .option('--api-url, -u <url>', 'Custom API URL')
+    .option('--mcp-services, -m <services>', 'Comma-separated MCP services to install (context7,mcp-deepwiki,Playwright,exa), "skip" to skip all, "all" for all non-key services, default: all')
+    .option('--workflows, -w <workflows>', 'Comma-separated workflows to install (sixStepsWorkflow,featPlanUx,gitWorkflow,bmadWorkflow), "skip" to skip all, "all" for all workflows, default: all')
+    .option('--ai-personality, -p <type>', 'AI personality type (professional,catgirl,friendly,mentor,custom), default: professional')
+    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
+    .option('--install-cometix-line, -x <value>', 'Install CCometixLine statusline tool (true/false), default: true')
     .action(async (options) => {
       await handleInitCommand(options);
     });
@@ -121,16 +120,15 @@ export async function handleInitCommand(options: CliOptions) {
     aiOutputLang: options.aiOutputLang,
     force: options.force,
     skipPrompt: options.skipPrompt,
-    installClaude: options.installClaude as 'yes' | 'no' | 'skip' | undefined,
     configAction: options.configAction as 'new' | 'backup' | 'merge' | 'docs-only' | 'skip' | undefined,
     apiType: options.apiType as 'auth_token' | 'api_key' | 'ccr_proxy' | 'skip' | undefined,
     apiKey: options.apiKey,
-    authToken: options.authToken,
     apiUrl: options.apiUrl,
     mcpServices: options.mcpServices,
-    mcpApiKeys: options.mcpApiKeys,
     workflows: options.workflows,
     aiPersonality: options.aiPersonality,
+    allLang: options.allLang,
+    installCometixLine: options.installCometixLine,
   });
 }
 
@@ -174,6 +172,19 @@ export function customizeHelp(sections: any[]) {
       `  ${ansis.green('--force, -f')}               Force overwrite / 强制覆盖现有配置`,
       `  ${ansis.green('--help, -h')}                Display help / 显示帮助`,
       `  ${ansis.green('--version, -v')}             Display version / 显示版本`,
+      '',
+      ansis.gray('  Non-interactive mode (for CI/CD) / 非交互模式（适用于CI/CD）:'),
+      `  ${ansis.green('--skip-prompt, -s')}         Skip all prompts / 跳过所有交互提示`,
+      `  ${ansis.green('--api-type, -t')} <type>      API type / API类型 (auth_token, api_key, ccr_proxy, skip)`,
+      `  ${ansis.green('--api-key, -k')} <key>       API key (for both types) / API密钥（适用于所有类型）`,
+      `  ${ansis.green('--api-url, -u')} <url>       Custom API URL / 自定义API地址`,
+      `  ${ansis.green('--ai-output-lang, -a')} <lang> AI output language / AI输出语言`,
+      `  ${ansis.green('--all-lang, -g')} <lang>     Set all language params / 统一设置所有语言参数`,
+      `  ${ansis.green('--config-action, -o')} <action> Config handling / 配置处理 (default: backup)`,
+      `  ${ansis.green('--mcp-services, -m')} <list>  MCP services / MCP服务 (default: all non-key services)`,
+      `  ${ansis.green('--workflows, -w')} <list>    Workflows / 工作流 (default: all workflows)`,
+      `  ${ansis.green('--ai-personality, -p')} <type> AI personality / AI个性 (default: professional)`,
+      `  ${ansis.green('--install-cometix-line, -x')} <value> Install statusline tool / 安装状态栏工具 (default: true)`,
     ].join('\n'),
   });
 
@@ -202,6 +213,11 @@ export function customizeHelp(sections: any[]) {
       ansis.gray('  # Check and update tools / 检查并更新工具'),
       `  ${ansis.cyan('npx zcf check-updates')}     ${ansis.gray('# Update Claude Code, CCR and CCometixLine')}`,
       `  ${ansis.cyan('npx zcf check')}`,
+      '',
+      ansis.gray('  # Non-interactive mode (CI/CD) / 非交互模式（CI/CD）'),
+      `  ${ansis.cyan('npx zcf i --skip-prompt --api-type api_key --api-key "sk-ant-..."')}`,
+      `  ${ansis.cyan('npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "key"')}`,
+      `  ${ansis.cyan('npx zcf i --skip-prompt --api-type ccr_proxy')}`,
       '',
       ansis.gray('  # Force overwrite with Chinese config / 强制使用中文配置覆盖'),
       `  ${ansis.cyan('npx zcf --init -c zh-CN -f')}`,

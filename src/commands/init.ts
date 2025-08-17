@@ -46,22 +46,56 @@ export interface InitOptions {
   force?: boolean;
   skipBanner?: boolean;
   skipPrompt?: boolean;
-  installClaude?: 'yes' | 'no' | 'skip';
+  // Non-interactive parameters
   configAction?: 'new' | 'backup' | 'merge' | 'docs-only' | 'skip';
   apiType?: 'auth_token' | 'api_key' | 'ccr_proxy' | 'skip';
-  apiKey?: string;
-  authToken?: string;
+  apiKey?: string; // Used for both API key and auth token
   apiUrl?: string;
-  mcpServices?: string[] | string;
-  mcpApiKeys?: Record<string, string> | string;
-  workflows?: string[] | string;
+  mcpServices?: string[] | string | boolean;
+  workflows?: string[] | string | boolean;
   aiPersonality?: string;
+  allLang?: string; // New: unified language parameter
+  installCometixLine?: string | boolean; // New: CCometixLine installation control
 }
 
 function validateSkipPromptOptions(options: InitOptions) {
-  // Validate installClaude
-  if (options.installClaude && !['yes', 'no', 'skip'].includes(options.installClaude)) {
-    throw new Error(`Invalid installClaude value: ${options.installClaude}. Must be 'yes', 'no', or 'skip'`);
+  // Apply --all-lang logic first
+  if (options.allLang) {
+    if (options.allLang === 'zh-CN' || options.allLang === 'en') {
+      // Use allLang for all three language parameters
+      options.lang = options.allLang as SupportedLang;
+      options.configLang = options.allLang as SupportedLang;
+      options.aiOutputLang = options.allLang;
+    } else {
+      // Use en for lang/config-lang, allLang for ai-output-lang
+      options.lang = 'en';
+      options.configLang = 'en';
+      options.aiOutputLang = options.allLang;
+    }
+  }
+
+  // Set defaults
+  if (!options.configAction) {
+    options.configAction = 'backup';
+  }
+  if (!options.lang) {
+    options.lang = 'en';
+  }
+  if (!options.configLang) {
+    options.configLang = 'en';
+  }
+  if (!options.aiOutputLang) {
+    options.aiOutputLang = 'en';
+  }
+  if (!options.aiPersonality) {
+    options.aiPersonality = 'professional';
+  }
+  // Parse installCometixLine parameter
+  if (typeof options.installCometixLine === 'string') {
+    options.installCometixLine = options.installCometixLine.toLowerCase() === 'true';
+  }
+  if (options.installCometixLine === undefined) {
+    options.installCometixLine = true;
   }
 
   // Validate configAction
@@ -78,20 +112,26 @@ function validateSkipPromptOptions(options: InitOptions) {
     );
   }
 
-  // Validate required API parameters
+  // Validate required API parameters (both use apiKey now)
   if (options.apiType === 'api_key' && !options.apiKey) {
     throw new Error('API key is required when apiType is "api_key"');
   }
 
-  if (options.apiType === 'auth_token' && !options.authToken) {
-    throw new Error('Auth token is required when apiType is "auth_token"');
+  if (options.apiType === 'auth_token' && !options.apiKey) {
+    throw new Error('API key is required when apiType is "auth_token"');
   }
 
   // Parse and validate MCP services
   if (typeof options.mcpServices === 'string') {
-    options.mcpServices = options.mcpServices.split(',').map((s) => s.trim());
+    if (options.mcpServices === 'skip') {
+      options.mcpServices = false;
+    } else if (options.mcpServices === 'all') {
+      options.mcpServices = MCP_SERVICES.filter(s => !s.requiresApiKey).map(s => s.id);
+    } else {
+      options.mcpServices = options.mcpServices.split(',').map((s) => s.trim());
+    }
   }
-  if (options.mcpServices) {
+  if (Array.isArray(options.mcpServices)) {
     const validServices = MCP_SERVICES.map((s) => s.id);
     for (const service of options.mcpServices) {
       if (!validServices.includes(service)) {
@@ -100,26 +140,37 @@ function validateSkipPromptOptions(options: InitOptions) {
     }
   }
 
-  // Parse MCP API keys
-  if (typeof options.mcpApiKeys === 'string') {
-    try {
-      options.mcpApiKeys = JSON.parse(options.mcpApiKeys);
-    } catch {
-      throw new Error('Invalid mcpApiKeys format. Must be a valid JSON object');
-    }
-  }
-
   // Parse and validate workflows
   if (typeof options.workflows === 'string') {
-    options.workflows = options.workflows.split(',').map((s) => s.trim());
+    if (options.workflows === 'skip') {
+      options.workflows = false;
+    } else if (options.workflows === 'all') {
+      options.workflows = WORKFLOW_CONFIGS.map((w: any) => w.id);
+    } else {
+      options.workflows = options.workflows.split(',').map((s) => s.trim());
+    }
   }
-  if (options.workflows) {
+  if (Array.isArray(options.workflows)) {
     const validWorkflows = WORKFLOW_CONFIGS.map((w: any) => w.id);
     for (const workflow of options.workflows) {
       if (!validWorkflows.includes(workflow)) {
         throw new Error(`Invalid workflow: ${workflow}. Available workflows: ${validWorkflows.join(', ')}`);
       }
     }
+  }
+
+  // Set default MCP services (use "all" as explicit default)
+  if (options.mcpServices === undefined) {
+    options.mcpServices = 'all';
+    // Convert "all" to actual service array
+    options.mcpServices = MCP_SERVICES.filter(s => !s.requiresApiKey).map(s => s.id);
+  }
+
+  // Set default workflows (use "all" as explicit default)
+  if (options.workflows === undefined) {
+    options.workflows = 'all';
+    // Convert "all" to actual workflow array
+    options.workflows = WORKFLOW_CONFIGS.map((w: any) => w.id);
   }
 }
 
@@ -177,16 +228,12 @@ export async function init(options: InitOptions = {}) {
       ? options.aiOutputLang || 'en'
       : await resolveAiOutputLanguage(scriptLang, options.aiOutputLang, zcfConfig);
 
-    // Step 4: Check and install Claude Code
+    // Step 4: Check and install Claude Code (auto-install in skip-prompt mode)
     const installed = await isClaudeCodeInstalled();
     if (!installed) {
       if (options.skipPrompt) {
-        // In skip-prompt mode, use installClaude option
-        if (options.installClaude === 'yes') {
-          await installClaudeCode(scriptLang);
-        } else if (options.installClaude === 'no' || options.installClaude === 'skip') {
-          console.log(ansis.yellow(i18n.common.skip));
-        }
+        // In skip-prompt mode, auto-install Claude Code
+        await installClaudeCode(scriptLang);
       } else {
         const { shouldInstall } = await inquirer.prompt<{ shouldInstall: boolean }>({
           type: 'confirm',
@@ -216,8 +263,8 @@ export async function init(options: InitOptions = {}) {
 
     if (existsSync(SETTINGS_FILE) && !options.force) {
       if (options.skipPrompt) {
-        // In skip-prompt mode, use configAction option
-        action = options.configAction || 'new';
+        // In skip-prompt mode, use configAction option (default: backup)
+        action = options.configAction || 'backup';
         if (action === 'skip') {
           console.log(ansis.yellow(i18n.common.skip));
           return;
@@ -258,10 +305,10 @@ export async function init(options: InitOptions = {}) {
     if (action !== 'docs-only' && (isNewInstall || ['backup', 'merge'].includes(action))) {
       // In skip-prompt mode, handle API configuration directly
       if (options.skipPrompt) {
-        if (options.apiType === 'auth_token' && options.authToken) {
+        if (options.apiType === 'auth_token' && options.apiKey) {
           apiConfig = {
             authType: 'auth_token',
-            key: options.authToken,
+            key: options.apiKey,
             url: options.apiUrl || 'https://api.anthropic.com',
           };
         } else if (options.apiType === 'api_key' && options.apiKey) {
@@ -427,18 +474,24 @@ export async function init(options: InitOptions = {}) {
       // Only copy base config files without agents/commands
       copyConfigFiles(configLang!, true);
       // Select and install workflows
-      if (options.skipPrompt && options.workflows) {
-        await selectAndInstallWorkflows(configLang!, scriptLang, options.workflows as string[]);
-      } else if (!options.skipPrompt) {
+      if (options.skipPrompt) {
+        // Use provided workflows or default to all workflows, skip if false
+        if (options.workflows !== false) {
+          await selectAndInstallWorkflows(configLang!, scriptLang, options.workflows as string[]);
+        }
+      } else {
         await selectAndInstallWorkflows(configLang!, scriptLang);
       }
     } else if (['backup', 'merge', 'new'].includes(action)) {
       // Copy all base config files
       copyConfigFiles(configLang!, false);
       // Select and install workflows
-      if (options.skipPrompt && options.workflows) {
-        await selectAndInstallWorkflows(configLang!, scriptLang, options.workflows as string[]);
-      } else if (!options.skipPrompt) {
+      if (options.skipPrompt) {
+        // Use provided workflows or default to all workflows, skip if false
+        if (options.workflows !== false) {
+          await selectAndInstallWorkflows(configLang!, scriptLang, options.workflows as string[]);
+        }
+      } else {
         await selectAndInstallWorkflows(configLang!, scriptLang);
       }
     }
@@ -446,9 +499,10 @@ export async function init(options: InitOptions = {}) {
     // Step 8: Apply language directive to language.md
     applyAiLanguageDirective(aiOutputLang as AiOutputLanguage | string);
     // Step 8.5: Configure AI personality
-    if (options.skipPrompt && options.aiPersonality) {
-      await configureAiPersonality(scriptLang, options.aiPersonality);
-    } else if (!options.skipPrompt) {
+    if (options.skipPrompt) {
+      // Use provided personality or default to 'professional'
+      await configureAiPersonality(scriptLang, options.aiPersonality!);
+    } else {
       await configureAiPersonality(scriptLang);
     }
 
@@ -468,8 +522,8 @@ export async function init(options: InitOptions = {}) {
       let shouldConfigureMcp = false;
 
       if (options.skipPrompt) {
-        // In skip-prompt mode, configure MCP if services are provided
-        shouldConfigureMcp = !!options.mcpServices && (options.mcpServices as string[]).length > 0;
+        // In skip-prompt mode, configure MCP only if services are not explicitly disabled
+        shouldConfigureMcp = options.mcpServices !== false;
       } else {
         const { shouldConfigureMcp: userChoice } = await inquirer.prompt<{ shouldConfigureMcp: boolean }>({
           type: 'confirm',
@@ -522,34 +576,24 @@ export async function init(options: InitOptions = {}) {
 
             // Handle services that require API key
             if (service.requiresApiKey) {
-              let apiKey: string | undefined;
-
-              if (options.skipPrompt && options.mcpApiKeys) {
-                apiKey = (options.mcpApiKeys as Record<string, string>)[serviceId];
-                if (!apiKey) {
-                  console.log(ansis.yellow(`${i18n.common.skip}: ${service.name[scriptLang]} (no API key provided)`));
-                  continue;
-                }
-              } else if (!options.skipPrompt) {
+              if (options.skipPrompt) {
+                // In skip-prompt mode, skip services that require API keys
+                console.log(ansis.yellow(`${i18n.common.skip}: ${service.name[scriptLang]} (requires API key)`));
+                continue;
+              } else {
                 const response = await inquirer.prompt<{ apiKey: string }>({
                   type: 'input',
                   name: 'apiKey',
                   message: service.apiKeyPrompt![scriptLang],
                   validate: (value) => !!value || i18n.api.keyRequired,
                 });
-                apiKey = response.apiKey;
-              }
+                
+                if (!response.apiKey) {
+                  console.log(ansis.yellow(`${i18n.common.skip}: ${service.name[scriptLang]}`));
+                  continue;
+                }
 
-              if (apiKey === undefined) {
-                console.log(ansis.yellow(`${i18n.common.skip}: ${service.name[scriptLang]}`));
-                continue;
-              }
-
-              if (apiKey) {
-                config = buildMcpServerConfig(service.config, apiKey, service.apiKeyPlaceholder, service.apiKeyEnvVar);
-              } else {
-                // Skip this service if no API key provided
-                continue;
+                config = buildMcpServerConfig(service.config, response.apiKey, service.apiKeyPlaceholder, service.apiKeyEnvVar);
               }
             }
 
@@ -574,19 +618,28 @@ export async function init(options: InitOptions = {}) {
       }
     }
 
-    // Step 11: Ask about CCometixLine installation
+    // Step 11: CCometixLine installation
     const cometixInstalled = await isCometixLineInstalled();
     if (!cometixInstalled) {
-      const { shouldInstallCometix } = await inquirer.prompt<{ shouldInstallCometix: boolean }>({
-        type: 'confirm',
-        name: 'shouldInstallCometix',
-        message: i18n.cometix.installCometixPrompt,
-        default: true,
-      });
+      let shouldInstallCometix = false;
 
-      if (shouldInstallCometix === undefined) {
-        console.log(ansis.yellow(i18n.common.cancelled));
-        process.exit(0);
+      if (options.skipPrompt) {
+        // Use installCometixLine option or default to true
+        shouldInstallCometix = options.installCometixLine !== false;
+      } else {
+        const { shouldInstallCometix: userChoice } = await inquirer.prompt<{ shouldInstallCometix: boolean }>({
+          type: 'confirm',
+          name: 'shouldInstallCometix',
+          message: i18n.cometix.installCometixPrompt,
+          default: true,
+        });
+
+        if (userChoice === undefined) {
+          console.log(ansis.yellow(i18n.common.cancelled));
+          process.exit(0);
+        }
+
+        shouldInstallCometix = userChoice;
       }
 
       if (shouldInstallCometix) {

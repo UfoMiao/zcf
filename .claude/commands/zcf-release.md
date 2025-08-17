@@ -5,7 +5,7 @@ Automate version release and code commit using changeset.
 ## Usage
 
 ```bash
-/zcf-release [-p|-mi|-ma]
+/zcf-release [-p|-mi|-ma|<version>]
 ```
 
 ## Parameters
@@ -13,6 +13,7 @@ Automate version release and code commit using changeset.
 - `-p` or `--patch`: Patch version (default) - bug fixes, minor changes
 - `-mi` or `--minor`: Minor version - new features, backward compatible
 - `-ma` or `--major`: Major version - breaking changes, incompatible
+- `<version>`: Specific version number (e.g., 1.2.3, 2.0.0-beta.1) - directly use provided version
 
 ## Context
 
@@ -37,28 +38,41 @@ Parse arguments: $ARGUMENTS
 
 ```bash
 VERSION_TYPE="patch"  # Default to patch version
+SPECIFIC_VERSION=""   # For user-specified exact version
 
-case "$ARGUMENTS" in
-  -p|--patch)
-    VERSION_TYPE="patch"
-    ;;
-  -mi|--minor)
-    VERSION_TYPE="minor"
-    ;;
-  -ma|--major)
-    VERSION_TYPE="major"
-    ;;
-  "")
-    VERSION_TYPE="patch"
-    ;;
-  *)
-    echo "Unknown parameter: $ARGUMENTS"
-    echo "Usage: /zcf-release [-p|-mi|-ma]"
-    exit 1
-    ;;
-esac
-
-echo "🚀 Preparing to release $VERSION_TYPE version"
+# Check if argument looks like a version number (matches semver pattern)
+if [[ "$ARGUMENTS" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-].*)?$ ]]; then
+  SPECIFIC_VERSION="$ARGUMENTS"
+  VERSION_TYPE="custom"
+  echo "🚀 Preparing to release exact version: $SPECIFIC_VERSION"
+else
+  case "$ARGUMENTS" in
+    -p|--patch)
+      VERSION_TYPE="patch"
+      ;;
+    -mi|--minor)
+      VERSION_TYPE="minor"
+      ;;
+    -ma|--major)
+      VERSION_TYPE="major"
+      ;;
+    "")
+      VERSION_TYPE="patch"
+      ;;
+    *)
+      echo "❌ Unknown parameter: $ARGUMENTS"
+      echo "Usage: /zcf-release [-p|-mi|-ma|<version>]"
+      echo "Examples:"
+      echo "  /zcf-release -p          # Patch version bump"
+      echo "  /zcf-release -mi         # Minor version bump"
+      echo "  /zcf-release -ma         # Major version bump"
+      echo "  /zcf-release 1.2.3       # Exact version"
+      echo "  /zcf-release 2.0.0-beta.1 # Pre-release version"
+      exit 1
+      ;;
+  esac
+  echo "🚀 Preparing to release $VERSION_TYPE version"
+fi
 ```
 
 ### 2. Check Working Directory Status
@@ -174,15 +188,27 @@ CHANGESET_FILE=".changeset/release-$TIMESTAMP.md"
 
 # Create changeset file
 echo "📝 Creating changeset file..."
-cat > "$CHANGESET_FILE" << 'EOF'
+if [ "$VERSION_TYPE" = "custom" ]; then
+  # For specific version, use the exact version number
+  cat > "$CHANGESET_FILE" << EOF
+---
+"zcf": $SPECIFIC_VERSION
+---
+
+[Bilingual CHANGELOG content generated based on actual changes]
+EOF
+  echo "✅ Changeset file created with exact version: $SPECIFIC_VERSION"
+else
+  # For version type (patch/minor/major), use the type
+  cat > "$CHANGESET_FILE" << EOF
 ---
 "zcf": $VERSION_TYPE
 ---
 
 [Bilingual CHANGELOG content generated based on actual changes]
 EOF
-
-echo "✅ Changeset file created: $CHANGESET_FILE"
+  echo "✅ Changeset file created with version type: $VERSION_TYPE"
+fi
 ```
 
 ### 6. Update Version Number
@@ -201,7 +227,11 @@ pnpm changeset version
 
 # Get new version number
 NEW_VERSION=$(node -p "require('./package.json').version")
-echo "📦 New version: v$NEW_VERSION"
+if [ "$VERSION_TYPE" = "custom" ]; then
+  echo "📦 New version set to: v$NEW_VERSION (specified: $SPECIFIC_VERSION)"
+else
+  echo "📦 New version: v$NEW_VERSION"
+fi
 
 # Show CHANGELOG update
 echo -e "\n📋 CHANGELOG has been updated, please review the content"
@@ -248,10 +278,10 @@ echo "👀 View release status: https://github.com/UfoMiao/zcf/actions"
 
 ## Complete Workflow Summary
 
-1. **Preparation Phase**: Check parameters, working directory status
+1. **Preparation Phase**: Check parameters (version type or exact version), working directory status
 2. **Analysis Phase**: Analyze commit history and file changes
 3. **Generation Phase**: Create bilingual CHANGELOG
-4. **Execution Phase**: Update version, commit, push (NO TAGS!)
+4. **Execution Phase**: Update version (automatic bump or exact version), commit, push (NO TAGS!)
 5. **Release Phase**: GitHub Actions auto publish with automatic tagging
 
 ## Important Notes
@@ -268,10 +298,19 @@ Other notes:
 
 - Ensure all code has been tested
 - CHANGELOG must follow bilingual format standards
-- Choose the correct version type
+- When using version types (-p/-mi/-ma), choose the correct type for your changes
+- When providing exact version numbers, ensure they follow semantic versioning (e.g., 1.2.3, 2.0.0-beta.1)
+- Exact version numbers bypass automatic version determination - use carefully
 - Carefully review CHANGELOG content before release
 - **No manual cleanup needed**: `changeset version` automatically deletes temporary changeset files
 - The `.changeset/` directory should only contain config files, not temporary release files
+
+**Version Parameter Examples**:
+- `/zcf-release` or `/zcf-release -p` - Auto patch bump (2.9.11 → 2.9.12)
+- `/zcf-release -mi` - Auto minor bump (2.9.11 → 2.10.0)  
+- `/zcf-release -ma` - Auto major bump (2.9.11 → 3.0.0)
+- `/zcf-release 1.5.0` - Exact version (→ 1.5.0)
+- `/zcf-release 3.0.0-alpha.1` - Pre-release version (→ 3.0.0-alpha.1)
 
 ---
 

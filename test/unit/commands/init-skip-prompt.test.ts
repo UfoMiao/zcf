@@ -65,6 +65,25 @@ vi.mock('../../../src/config/workflows', () => ({
   ]
 }));
 
+vi.mock('../../../src/constants', () => ({
+  MCP_SERVICES: [
+    { id: 'context7', name: 'Context7', requiresApiKey: false },
+    { id: 'mcp-deepwiki', name: 'DeepWiki', requiresApiKey: false },
+    { id: 'exa', name: 'Exa', requiresApiKey: true }
+  ],
+  CLAUDE_DIR: '/test/.claude',
+  SETTINGS_FILE: '/test/.claude/settings.json',
+  I18N: {
+    en: {
+      installation: { alreadyInstalled: 'Already installed' },
+      common: { skip: 'Skip', cancelled: 'Cancelled', complete: 'Complete' },
+      configuration: { configSuccess: 'Config success' }
+    }
+  },
+  LANG_LABELS: { en: 'English', 'zh-CN': '中文' },
+  SUPPORTED_LANGS: ['en', 'zh-CN']
+}));
+
 vi.mock('../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn().mockReturnValue({}),
   updateZcfConfig: vi.fn()
@@ -88,11 +107,16 @@ vi.mock('../../../src/utils/ccr/config', () => ({
   setupCcrConfiguration: vi.fn()
 }));
 
+vi.mock('../../../src/utils/cometix/installer', () => ({
+  isCometixLineInstalled: vi.fn(),
+  installCometixLine: vi.fn()
+}));
+
 vi.mock('node:fs', () => ({
   existsSync: vi.fn()
 }));
 
-describe('init command with --skip-prompt', () => {
+describe('init command with simplified parameters', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -104,47 +128,8 @@ describe('init command with --skip-prompt', () => {
     vi.restoreAllMocks();
   });
 
-  describe('skip-prompt mode', () => {
-    it('should skip all prompts when skipPrompt is true', async () => {
-      const inquirer = await import('inquirer');
-      const { isClaudeCodeInstalled, installClaudeCode } = await import('../../../src/utils/installer');
-      const { copyConfigFiles, configureApi, applyAiLanguageDirective } = await import('../../../src/utils/config');
-      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer');
-      const { updateZcfConfig } = await import('../../../src/utils/zcf-config');
-
-      vi.mocked(existsSync).mockReturnValue(false);
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(false);
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        aiOutputLang: 'en',
-        installClaude: 'yes',
-        configAction: 'new',
-        apiType: 'skip',
-        skipBanner: true
-      };
-
-      await init(options);
-
-      // Should not call any prompts
-      expect(inquirer.default.prompt).not.toHaveBeenCalled();
-      
-      // Should install Claude Code when installClaude is 'yes'
-      expect(installClaudeCode).toHaveBeenCalledWith('en');
-      
-      // Should copy config files
-      expect(copyConfigFiles).toHaveBeenCalled();
-      
-      // Should apply language directive
-      expect(applyAiLanguageDirective).toHaveBeenCalledWith('en');
-      
-      // Should update zcf config
-      expect(updateZcfConfig).toHaveBeenCalled();
-    });
-
-    it('should configure API with auth token when provided', async () => {
+  describe('simplified parameter structure', () => {
+    it('should work with only --api-key (no --auth-token needed)', async () => {
       const { configureApi } = await import('../../../src/utils/config');
       const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
@@ -153,10 +138,33 @@ describe('init command with --skip-prompt', () => {
 
       const options: InitOptions = {
         skipPrompt: true,
+        apiType: 'api_key',
+        apiKey: 'sk-ant-test-key',
+        skipBanner: true,
         lang: 'en',
-        configLang: 'en',
+        configLang: 'en'
+      };
+
+      await init(options);
+
+      expect(configureApi).toHaveBeenCalledWith({
+        authType: 'api_key',
+        key: 'sk-ant-test-key',
+        url: 'https://api.anthropic.com'
+      });
+    });
+
+    it('should work with auth token using same --api-key parameter', async () => {
+      const { configureApi } = await import('../../../src/utils/config');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+
+      const options: InitOptions = {
+        skipPrompt: true,
         apiType: 'auth_token',
-        authToken: 'test-auth-token',
+        apiKey: 'test-auth-token', // Use apiKey for auth token too
         skipBanner: true
       };
 
@@ -169,80 +177,62 @@ describe('init command with --skip-prompt', () => {
       });
     });
 
-    it('should configure API with API key when provided', async () => {
-      const { configureApi } = await import('../../../src/utils/config');
+    it('should use default configAction=backup when not specified', async () => {
+      const { backupExistingConfig } = await import('../../../src/utils/config');
       const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
-      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(existsSync).mockReturnValue(true); // Existing config
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
 
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        apiType: 'api_key',
-        apiKey: 'sk-ant-test-key',
-        apiUrl: 'https://custom.api.com',
+        // No configAction specified - should default to 'backup'
         skipBanner: true
       };
 
       await init(options);
 
-      expect(configureApi).toHaveBeenCalledWith({
-        authType: 'api_key',
-        key: 'sk-ant-test-key',
-        url: 'https://custom.api.com'
-      });
+      expect(backupExistingConfig).toHaveBeenCalled();
     });
 
-    it('should configure CCR proxy when selected', async () => {
-      const { isCcrInstalled, installCcr } = await import('../../../src/utils/ccr/installer');
-      const { setupCcrConfiguration } = await import('../../../src/utils/ccr/config');
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+    it('should auto-install Claude Code by default (no --install-claude needed)', async () => {
+      const { installClaudeCode, isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
       vi.mocked(existsSync).mockReturnValue(false);
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
-      vi.mocked(isCcrInstalled).mockResolvedValue(false);
-      vi.mocked(setupCcrConfiguration).mockResolvedValue(true);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(false); // Not installed
 
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'zh-CN',
-        configLang: 'zh-CN',
-        apiType: 'ccr_proxy',
+        // No installClaude specified - should auto-install
         skipBanner: true
       };
 
       await init(options);
 
-      expect(installCcr).toHaveBeenCalledWith('zh-CN');
-      expect(setupCcrConfiguration).toHaveBeenCalledWith('zh-CN');
+      expect(installClaudeCode).toHaveBeenCalledWith('en'); // Default lang
     });
 
-    it('should configure MCP services when provided', async () => {
-      const { writeMcpConfig, mergeMcpServers, readMcpConfig } = await import('../../../src/utils/mcp');
+    it('should not install MCP services requiring API keys by default', async () => {
+      const { writeMcpConfig, readMcpConfig } = await import('../../../src/utils/mcp');
       const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
       vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
       vi.mocked(readMcpConfig).mockReturnValue({ mcpServers: {} });
-      vi.mocked(mergeMcpServers).mockReturnValue({ mcpServers: { context7: {} } });
 
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        mcpServices: ['context7', 'mcp-deepwiki'],
+        // No mcpServices specified - should only install services that don't require keys
         skipBanner: true
       };
 
       await init(options);
 
-      expect(mergeMcpServers).toHaveBeenCalled();
+      // Should configure MCP with default services (non-key services only)
       expect(writeMcpConfig).toHaveBeenCalled();
     });
 
-    it('should configure workflows when provided', async () => {
+    it('should select all services and workflows by default when not specified', async () => {
       const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer');
       const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
@@ -251,18 +241,20 @@ describe('init command with --skip-prompt', () => {
 
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        workflows: ['sixStepsWorkflow', 'featPlanUx'],
         skipBanner: true
       };
 
       await init(options);
 
-      expect(selectAndInstallWorkflows).toHaveBeenCalledWith('en', 'en', ['sixStepsWorkflow', 'featPlanUx']);
+      // Should install all default workflows
+      expect(selectAndInstallWorkflows).toHaveBeenCalledWith(
+        'en', 
+        'en',
+        ['sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'] // All workflows
+      );
     });
 
-    it('should configure AI personality when provided', async () => {
+    it('should use default AI personality when not specified', async () => {
       const { configureAiPersonality } = await import('../../../src/utils/ai-personality');
       const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
@@ -271,144 +263,253 @@ describe('init command with --skip-prompt', () => {
 
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        aiPersonality: 'professional',
         skipBanner: true
       };
 
       await init(options);
 
-      expect(configureAiPersonality).toHaveBeenCalledWith('en', 'professional');
+      expect(configureAiPersonality).toHaveBeenCalledWith('en', 'professional'); // Default personality
     });
+  });
 
-    it('should handle existing config with backup action', async () => {
-      const { backupExistingConfig, copyConfigFiles } = await import('../../../src/utils/config');
+  describe('--all-lang parameter', () => {
+    it('should use --all-lang for all three language parameters when en', async () => {
+      const { copyConfigFiles, applyAiLanguageDirective } = await import('../../../src/utils/config');
       const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
-      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(existsSync).mockReturnValue(false);
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
-      vi.mocked(backupExistingConfig).mockReturnValue('/backup/path');
 
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        configAction: 'backup',
+        allLang: 'en',
         skipBanner: true
       };
 
       await init(options);
 
-      expect(backupExistingConfig).toHaveBeenCalled();
-      expect(copyConfigFiles).toHaveBeenCalled();
+      expect(copyConfigFiles).toHaveBeenCalledWith('en', false);
+      expect(applyAiLanguageDirective).toHaveBeenCalledWith('en');
     });
 
-    it('should validate required parameters in skip-prompt mode', async () => {
+    it('should use en for lang/config-lang and custom value for ai-output-lang when not zh-CN/en', async () => {
+      const { copyConfigFiles, applyAiLanguageDirective } = await import('../../../src/utils/config');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
+        allLang: 'fr', // French - not supported config language
+        skipBanner: true
+      };
+
+      await init(options);
+
+      // lang and config-lang should be en, ai-output-lang should be fr
+      expect(copyConfigFiles).toHaveBeenCalledWith('en', false);
+      expect(applyAiLanguageDirective).toHaveBeenCalledWith('fr');
+    });
+  });
+
+  describe('install-CCometixLine parameter', () => {
+    it('should install CCometixLine by default when install-CCometixLine is true', async () => {
+      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+      vi.mocked(isCometixLineInstalled).mockResolvedValue(false);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        installCometixLine: true,
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(installCometixLine).toHaveBeenCalledWith('en');
+    });
+
+    it('should install CCometixLine by default when install-CCometixLine is not specified', async () => {
+      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+      vi.mocked(isCometixLineInstalled).mockResolvedValue(false);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        // installCometixLine not specified - should default to true
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(installCometixLine).toHaveBeenCalledWith('en');
+    });
+
+    it('should not install CCometixLine when install-CCometixLine is false', async () => {
+      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+      vi.mocked(isCometixLineInstalled).mockResolvedValue(false);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        installCometixLine: false,
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(installCometixLine).not.toHaveBeenCalled();
+    });
+
+    it('should handle string "false" for install-CCometixLine parameter', async () => {
+      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+      vi.mocked(isCometixLineInstalled).mockResolvedValue(false);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        installCometixLine: 'false',
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(installCometixLine).not.toHaveBeenCalled();
+    });
+
+    it('should handle string "true" for install-CCometixLine parameter', async () => {
+      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+      vi.mocked(isCometixLineInstalled).mockResolvedValue(false);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        installCometixLine: 'true',
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(installCometixLine).toHaveBeenCalledWith('en');
+    });
+  });
+
+  describe('mcp and workflow skip values', () => {
+    it('should skip all MCP services when mcp-services is "skip"', async () => {
+      const { writeMcpConfig } = await import('../../../src/utils/mcp');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        mcpServices: 'skip',
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(writeMcpConfig).not.toHaveBeenCalled();
+    });
+
+    it('should skip all MCP services when mcp-services is false boolean', async () => {
+      const { writeMcpConfig } = await import('../../../src/utils/mcp');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        mcpServices: false as any,
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(writeMcpConfig).not.toHaveBeenCalled();
+    });
+
+    it('should skip all workflows when workflows is "skip"', async () => {
+      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        workflows: 'skip',
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(selectAndInstallWorkflows).not.toHaveBeenCalled();
+    });
+
+    it('should skip all workflows when workflows is false boolean', async () => {
+      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        workflows: false as any,
+        skipBanner: true
+      };
+
+      await init(options);
+
+      expect(selectAndInstallWorkflows).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('parameter validation (simplified)', () => {
+    it('should require apiKey when apiType is api_key', async () => {
+      const options: InitOptions = {
+        skipPrompt: true,
         apiType: 'api_key',
-        // Missing apiKey which is required for api_key type
+        // Missing apiKey
         skipBanner: true
       };
 
       await expect(init(options)).rejects.toThrow('API key is required when apiType is "api_key"');
     });
 
-    it('should validate MCP service IDs', async () => {
+    it('should require apiKey when apiType is auth_token', async () => {
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        mcpServices: ['invalid-service'],
+        apiType: 'auth_token',
+        // Missing apiKey (now used for auth token too)
         skipBanner: true
       };
 
-      await expect(init(options)).rejects.toThrow('Invalid MCP service: invalid-service');
-    });
-
-    it('should not install Claude Code when installClaude is "skip"', async () => {
-      const { installClaudeCode, isClaudeCodeInstalled } = await import('../../../src/utils/installer');
-
-      vi.mocked(existsSync).mockReturnValue(false);
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(false);
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        installClaude: 'skip',
-        skipBanner: true
-      };
-
-      await init(options);
-
-      expect(installClaudeCode).not.toHaveBeenCalled();
-    });
-
-    it('should handle MCP services with API keys', async () => {
-      const { writeMcpConfig, buildMcpServerConfig } = await import('../../../src/utils/mcp');
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
-
-      vi.mocked(existsSync).mockReturnValue(false);
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
-      vi.mocked(buildMcpServerConfig).mockReturnValue({
-        type: 'stdio',
-        command: 'npx',
-        args: ['-y', 'mcp-service'],
-        env: { API_KEY: 'test-key' }
-      });
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        mcpServices: ['exa'],
-        mcpApiKeys: {
-          exa: 'test-exa-key'
-        },
-        skipBanner: true
-      };
-
-      await init(options);
-
-      expect(buildMcpServerConfig).toHaveBeenCalled();
-      expect(writeMcpConfig).toHaveBeenCalled();
-    });
-  });
-
-  describe('parameter validation', () => {
-    it('should validate installClaude values', async () => {
-      const options: InitOptions = {
-        skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        installClaude: 'invalid' as any,
-        skipBanner: true
-      };
-
-      await expect(init(options)).rejects.toThrow('Invalid installClaude value: invalid');
-    });
-
-    it('should validate configAction values', async () => {
-      const options: InitOptions = {
-        skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        configAction: 'invalid' as any,
-        skipBanner: true
-      };
-
-      await expect(init(options)).rejects.toThrow('Invalid configAction value: invalid');
+      await expect(init(options)).rejects.toThrow('API key is required when apiType is "auth_token"');
     });
 
     it('should validate apiType values', async () => {
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
         apiType: 'invalid' as any,
         skipBanner: true
       };
@@ -416,32 +517,28 @@ describe('init command with --skip-prompt', () => {
       await expect(init(options)).rejects.toThrow('Invalid apiType value: invalid');
     });
 
-    it('should validate workflow IDs', async () => {
+    it('should validate MCP services including false value', async () => {
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        workflows: ['invalid-workflow'],
+        mcpServices: 'context7,invalid-service',
+        skipBanner: true
+      };
+
+      await expect(init(options)).rejects.toThrow('Invalid MCP service: invalid-service');
+    });
+
+    it('should validate workflows including false value', async () => {
+      const options: InitOptions = {
+        skipPrompt: true,
+        workflows: 'sixStepsWorkflow,invalid-workflow',
         skipBanner: true
       };
 
       await expect(init(options)).rejects.toThrow('Invalid workflow: invalid-workflow');
     });
 
-    it('should require authToken when apiType is auth_token', async () => {
-      const options: InitOptions = {
-        skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        apiType: 'auth_token',
-        skipBanner: true
-      };
-
-      await expect(init(options)).rejects.toThrow('Auth token is required when apiType is "auth_token"');
-    });
-
-    it('should use default API URL when not provided', async () => {
-      const { configureApi } = await import('../../../src/utils/config');
+    it('should handle "all" value for mcp-services', async () => {
+      const { writeMcpConfig } = await import('../../../src/utils/mcp');
       const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
 
       vi.mocked(existsSync).mockReturnValue(false);
@@ -449,20 +546,37 @@ describe('init command with --skip-prompt', () => {
 
       const options: InitOptions = {
         skipPrompt: true,
-        lang: 'en',
-        configLang: 'en',
-        apiType: 'api_key',
-        apiKey: 'sk-ant-test',
+        mcpServices: 'all',
         skipBanner: true
       };
 
       await init(options);
 
-      expect(configureApi).toHaveBeenCalledWith({
-        authType: 'api_key',
-        key: 'sk-ant-test',
-        url: 'https://api.anthropic.com'
-      });
+      // Should configure MCP with all non-key services
+      expect(writeMcpConfig).toHaveBeenCalled();
+    });
+
+    it('should handle "all" value for workflows', async () => {
+      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer');
+      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer');
+
+      vi.mocked(existsSync).mockReturnValue(false);
+      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true);
+
+      const options: InitOptions = {
+        skipPrompt: true,
+        workflows: 'all',
+        skipBanner: true
+      };
+
+      await init(options);
+
+      // Should install all workflows
+      expect(selectAndInstallWorkflows).toHaveBeenCalledWith(
+        'en', 
+        'en',
+        ['sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow']
+      );
     });
   });
 });

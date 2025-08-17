@@ -230,4 +230,126 @@ describe('cli-setup', () => {
       expect(cli.globalCommand.versionNumber).toBe(version);
     });
   });
+
+  describe('Command line argument shortcuts', () => {
+    let cli: any;
+
+    beforeEach(() => {
+      cli = cac('zcf-test');
+      setupCommands(cli);
+    });
+
+    describe('New single-character shortcuts', () => {
+      it('should recognize -s as shortcut for --skip-prompt', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-s'], { run: false });
+        expect(parsed.options.skipPrompt).toBe(true);
+      });
+
+      it('should recognize -c as shortcut for --config-lang', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-c', 'zh-CN'], { run: false });
+        expect(parsed.options.configLang).toBe('zh-CN');
+      });
+
+      it('should recognize -a as shortcut for --ai-output-lang', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-a', 'en'], { run: false });
+        expect(parsed.options.aiOutputLang).toBe('en');
+      });
+
+      it('should recognize -o as shortcut for --config-action', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-o', 'backup'], { run: false });
+        expect(parsed.options.configAction).toBe('backup');
+      });
+
+      it('should recognize -t as shortcut for --api-type', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-t', 'api_key'], { run: false });
+        expect(parsed.options.apiType).toBe('api_key');
+      });
+
+      it('should recognize -k as shortcut for --api-key', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-k', 'sk-test'], { run: false });
+        expect(parsed.options.apiKey).toBe('sk-test');
+      });
+
+      it('should recognize -u as shortcut for --api-url', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-u', 'https://api.example.com'], { run: false });
+        expect(parsed.options.apiUrl).toBe('https://api.example.com');
+      });
+
+      it('should recognize -m as shortcut for --mcp-services', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-m', 'context7,exa'], { run: false });
+        expect(parsed.options.mcpServices).toBe('context7,exa');
+      });
+
+      it('should recognize -w as shortcut for --workflows', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-w', 'bmadWorkflow'], { run: false });
+        expect(parsed.options.workflows).toBe('bmadWorkflow');
+      });
+
+      it('should recognize -p as shortcut for --ai-personality', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-p', 'mentor'], { run: false });
+        expect(parsed.options.aiPersonality).toBe('mentor');
+      });
+
+      it('should recognize -g as shortcut for --all-lang', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-g', 'zh-CN'], { run: false });
+        expect(parsed.options.allLang).toBe('zh-CN');
+      });
+
+      it('should recognize -x as shortcut for --install-cometix-line', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-x', 'false'], { run: false });
+        expect(parsed.options.installCometixLine).toBe('false');
+      });
+
+      it('should work with multiple new shortcuts together', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-s', '-c', 'zh-CN', '-a', 'en', '-t', 'api_key'], { run: false });
+        expect(parsed.options.skipPrompt).toBe(true);
+        expect(parsed.options.configLang).toBe('zh-CN');
+        expect(parsed.options.aiOutputLang).toBe('en');
+        expect(parsed.options.apiType).toBe('api_key');
+      });
+    });
+
+    describe('Shortcut conflict prevention', () => {
+      it('should not conflict with existing -l shortcut (lang)', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-l', 'zh-CN'], { run: false });
+        expect(parsed.options.lang).toBe('zh-CN');
+      });
+
+      it('should not conflict with existing -f shortcut (force)', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-f'], { run: false });
+        expect(parsed.options.force).toBe(true);
+      });
+    });
+
+    describe('Help text verification', () => {
+      it('should display all shortcuts in help text', () => {
+        const helpSections = customizeHelp([]);
+        const optionsSection = helpSections.find(s => s.title.includes('Options'));
+        
+        // All new single-character shortcuts should be present
+        expect(optionsSection.body).toContain('-s'); // skip-prompt
+        expect(optionsSection.body).toContain('-c'); // config-lang
+        expect(optionsSection.body).toContain('-a'); // ai-output-lang
+        expect(optionsSection.body).toContain('-o'); // config-action
+        expect(optionsSection.body).toContain('-t'); // api-type
+        expect(optionsSection.body).toContain('-k'); // api-key
+        expect(optionsSection.body).toContain('-u'); // api-url
+        expect(optionsSection.body).toContain('-m'); // mcp-services
+        expect(optionsSection.body).toContain('-w'); // workflows
+        expect(optionsSection.body).toContain('-p'); // ai-personality
+        expect(optionsSection.body).toContain('-g'); // all-lang
+        expect(optionsSection.body).toContain('-x'); // install-cometix-line
+      });
+
+      it('should have proper formatting in help text', () => {
+        const helpSections = customizeHelp([]);
+        const optionsSection = helpSections.find(s => s.title.includes('Options'));
+        
+        // Should contain properly formatted options
+        expect(optionsSection.body).toContain('--skip-prompt, -s');
+        expect(optionsSection.body).toContain('--config-lang, -c');
+        expect(optionsSection.body).toContain('--ai-output-lang, -a');
+      });
+    });
+  });
 });
