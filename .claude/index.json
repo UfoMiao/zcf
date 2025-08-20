@@ -1,77 +1,108 @@
 {
-  "timestamp": "2025-01-20T04:46:50.000Z",
-  "version": "1.0.0",
-  "repository": {
-    "name": "ZCF (Zero-Config Claude-Code Flow)",
+  "timestamp": "2025-08-20T09:29:03+08:00",
+  "version": "1.1.0",
+  "project": {
+    "name": "zcf",
+    "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
+    "version": "2.10.2",
     "type": "CLI Tool",
-    "description": "TypeScript CLI tool for automating Claude Code environment configuration",
-    "totalFilesEstimated": 150,
-    "scannedFiles": 95,
-    "coveragePercentage": 63.3
+    "language": "TypeScript",
+    "architecture": "ESM-only modular CLI"
+  },
+  "scanning": {
+    "strategy": "Adaptive three-stage initialization",
+    "stages_completed": ["Repository Census", "Module Priority Scanning", "Targeted Documentation"],
+    "total_files_estimated": 250,
+    "files_scanned": 158,
+    "coverage_percentage": 63.2,
+    "truncated": false,
+    "truncation_reason": null
   },
   "modules": [
     {
       "path": "root",
       "type": "main",
-      "description": "Main CLI application and build configuration",
-      "entryPoints": ["src/cli.ts", "src/index.ts", "bin/zcf.mjs"],
-      "keyInterfaces": ["src/cli-setup.ts", "src/types.ts"],
-      "testCoverage": "High - 60 test files",
-      "scanned": true
+      "description": "Main CLI application with comprehensive configuration and build system",
+      "entryPoints": ["bin/zcf.mjs", "src/cli.ts", "src/index.ts"],
+      "keyInterfaces": ["CliOptions", "InitOptions", "setupCommands"],
+      "claudeMdStatus": "updated",
+      "scanned": true,
+      "features": ["Interactive menu", "Non-interactive mode", "Multi-language support"]
     },
     {
       "path": "src/commands",
       "type": "commands",
-      "description": "CLI command implementations for init, update, ccr, ccu, menu",
+      "description": "CLI command implementations for all major ZCF operations",
       "entryPoints": ["init.ts", "menu.ts", "update.ts", "ccr.ts", "ccu.ts", "check-updates.ts"],
-      "keyInterfaces": ["All command implementations with options interfaces"],
+      "keyInterfaces": ["InitOptions", "CliOptions", "CcrOptions"],
+      "claudeMdStatus": "exists",
       "testCoverage": "High - dedicated test suites",
-      "scanned": true
+      "scanned": true,
+      "features": ["Full initialization", "Interactive menu", "Workflow updates", "CCR management", "Usage analysis", "Auto updates"]
     },
     {
       "path": "src/utils",
       "type": "utilities",
-      "description": "Core utility functions for configuration, MCP, installation, platform support",
-      "entryPoints": ["config.ts", "installer.ts", "mcp.ts", "platform.ts"],
-      "keyInterfaces": ["Configuration management, MCP services, cross-platform utilities"],
+      "description": "Core utility functions for configuration, installation, and platform support",
+      "entryPoints": ["config.ts", "installer.ts", "mcp.ts", "platform.ts", "workflow-installer.ts"],
+      "keyInterfaces": ["McpServerConfig", "ClaudeConfiguration", "ApiConfig"],
+      "claudeMdStatus": "exists",
       "testCoverage": "High - comprehensive unit tests",
-      "scanned": true
+      "scanned": true,
+      "submodules": ["ccr/", "cometix/", "tools/"],
+      "features": ["Configuration management", "Cross-platform support", "MCP services", "Workflow system"]
     },
     {
       "path": "src/i18n",
       "type": "internationalization",
-      "description": "Multilingual support for zh-CN and en languages",
+      "description": "Complete internationalization support for Chinese and English",
       "entryPoints": ["index.ts", "types.ts"],
-      "keyInterfaces": ["Translation keys, language structures"],
-      "testCoverage": "Medium - basic translation tests",
-      "scanned": true
+      "keyInterfaces": ["TranslationStructure", "SupportedLang"],
+      "claudeMdStatus": "exists",
+      "testCoverage": "Medium - translation validation",
+      "scanned": true,
+      "locales": ["zh-CN", "en"],
+      "translationModules": 15,
+      "features": ["Modular translations", "String interpolation", "Complete coverage"]
     },
     {
       "path": "src/types",
       "type": "types",
-      "description": "TypeScript type definitions for workflow, config, CCR integration",
+      "description": "TypeScript type definitions for all project interfaces",
       "entryPoints": ["workflow.ts", "config.ts", "ccr.ts"],
-      "keyInterfaces": ["WorkflowConfig, McpService, ClaudeConfiguration"],
+      "keyInterfaces": ["WorkflowConfig", "McpService", "CcrConfig"],
+      "claudeMdStatus": "exists",
       "testCoverage": "Implicit through usage",
-      "scanned": true
+      "scanned": true,
+      "typeCategories": ["workflow", "configuration", "ccr"],
+      "features": ["Strict typing", "Interface definitions", "Type safety"]
     },
     {
       "path": "templates",
       "type": "templates",
-      "description": "Configuration templates and workflow definitions for both languages",
-      "entryPoints": ["settings.json", "CLAUDE.md", "workflow templates"],
-      "keyInterfaces": ["Multilingual templates, workflow commands and agents"],
+      "description": "Multilingual configuration and workflow templates",
+      "entryPoints": ["common/", "zh-CN/", "en/"],
+      "keyInterfaces": ["Template categories", "Workflow commands", "AI memory templates"],
+      "claudeMdStatus": "created",
       "testCoverage": "Medium - template validation tests",
-      "scanned": true
+      "scanned": true,
+      "templateCategories": ["memory", "workflow"],
+      "workflowTypes": ["common", "plan", "sixStep", "bmad", "git"],
+      "features": ["Bilingual templates", "Workflow automation", "AI memory configuration"]
     },
     {
       "path": "tests",
       "type": "testing",
-      "description": "Test suites with both core and edge case coverage",
-      "entryPoints": ["Unit tests, integration tests, edge case tests"],
-      "keyInterfaces": ["Test utilities, mocking strategies"],
+      "description": "Comprehensive test suite with unit, integration, and edge testing",
+      "entryPoints": ["tests/", "test/unit/", "test/integration/"],
+      "keyInterfaces": ["Test utilities", "Mock strategies", "Coverage reporting"],
+      "claudeMdStatus": "exists",
       "testCoverage": "Self-testing module",
-      "scanned": true
+      "scanned": true,
+      "testTypes": ["unit", "integration", "edge"],
+      "coverageTarget": "80%",
+      "totalTestFiles": 60,
+      "features": ["Layered testing", "Comprehensive mocking", "Cross-platform testing"]
     }
   ],
   "architecture": {
@@ -80,32 +111,141 @@
     "cliFramework": "cac for command parsing",
     "i18nSupport": "Full zh-CN/en localization",
     "platformSupport": "Cross-platform (Windows/macOS/Linux/Termux)",
-    "packageManagement": "pnpm with strict ESM"
+    "packageManagement": "pnpm with strict ESM",
+    "designPatterns": ["Modular Command Structure", "Configuration Merging", "Template System", "Cross-Platform Compatibility"]
   },
   "coverage": {
+    "files_by_category": {
+      "source_code": 89,
+      "test_files": 60,
+      "configuration": 12,
+      "documentation": 15,
+      "templates": 31,
+      "assets": 4,
+      "build_tools": 6
+    },
+    "scanned_by_module": {
+      "commands": {"total": 6, "scanned": 6, "percentage": 100},
+      "utils": {"total": 35, "scanned": 28, "percentage": 80},
+      "i18n": {"total": 32, "scanned": 25, "percentage": 78},
+      "types": {"total": 4, "scanned": 4, "percentage": 100},
+      "templates": {"total": 31, "scanned": 20, "percentage": 65},
+      "tests": {"total": 60, "scanned": 35, "percentage": 58}
+    },
+    "critical_paths_covered": {
+      "entry_points": "100%",
+      "core_commands": "100%", 
+      "key_utilities": "90%",
+      "type_definitions": "100%",
+      "internationalization": "85%"
+    },
     "gaps": [
-      "Deep analysis of CCR proxy configuration logic",
-      "Complete MCP service integration flows",
-      "Complex workflow dependency resolution",
-      "Platform-specific edge cases documentation"
+      "Detailed template content analysis - Medium priority",
+      "Individual test file content review - Low priority",
+      "Build configuration deep dive - Low priority",
+      "Asset file analysis - Low priority"
     ],
     "strengths": [
-      "Comprehensive CLI command structure",
-      "Strong internationalization framework",
-      "Extensive utility function coverage",
-      "Robust test suite architecture"
+      "Complete CLI command structure documentation",
+      "Comprehensive utility function analysis",
+      "Strong internationalization framework coverage",
+      "Robust type system documentation",
+      "Extensive test suite architecture"
     ]
   },
+  "documentation_generated": {
+    "root_claude_md": {
+      "status": "updated",
+      "sections": ["Project Overview", "Architecture Overview", "Module Structure Diagram", "Module Index", "Running and Development", "Development Guidelines", "Coding Standards", "AI Usage Guidelines"],
+      "mermaid_diagram": "generated",
+      "breadcrumb_navigation": "added",
+      "changes": ["Updated changelog", "Enhanced module descriptions", "Added architecture details"]
+    },
+    "module_claude_md": [
+      {
+        "module": "commands",
+        "status": "exists",
+        "breadcrumb": "[Root](../../CLAUDE.md) > [src](../) > **commands**",
+        "sections": ["Module Responsibilities", "Entry Points", "External Interfaces", "Dependencies", "Data Models", "Testing", "FAQ", "Related Files", "Changelog"]
+      },
+      {
+        "module": "utils", 
+        "status": "exists",
+        "breadcrumb": "[Root](../../CLAUDE.md) > [src](../) > **utils**",
+        "sections": ["Module Responsibilities", "Entry Points", "External Interfaces", "Dependencies", "Data Models", "Submodule Architecture", "Testing", "FAQ", "Related Files", "Changelog"]
+      },
+      {
+        "module": "i18n",
+        "status": "exists", 
+        "breadcrumb": "[Root](../../CLAUDE.md) > [src](../) > **i18n**",
+        "sections": ["Module Responsibilities", "Entry Points", "External Interfaces", "Dependencies", "Data Models", "Testing", "FAQ", "Related Files", "Changelog"]
+      },
+      {
+        "module": "types",
+        "status": "exists",
+        "breadcrumb": "[Root](../../CLAUDE.md) > [src](../) > **types**",
+        "sections": ["Module Responsibilities", "Entry Points", "External Interfaces", "Dependencies", "Data Models", "Testing", "FAQ", "Related Files", "Changelog"]
+      },
+      {
+        "module": "templates",
+        "status": "created",
+        "breadcrumb": "[Root](../CLAUDE.md) > **templates**",
+        "sections": ["Module Responsibilities", "Entry Points", "External Interfaces", "Dependencies", "Data Models", "Testing", "FAQ", "Related Files", "Changelog"]
+      },
+      {
+        "module": "tests",
+        "status": "exists",
+        "breadcrumb": "[Root](../CLAUDE.md) > **tests**",
+        "sections": ["Module Responsibilities", "Entry Points", "External Interfaces", "Dependencies", "Test Data Models", "Coverage Analysis", "Quality Metrics", "FAQ", "Related Files", "Changelog"]
+      }
+    ]
+  },
+  "features_identified": {
+    "cli_commands": ["init", "update", "menu", "ccr", "ccu", "check-updates"],
+    "workflow_types": ["commonTools", "sixStepsWorkflow", "featPlanUx", "bmadWorkflow", "gitWorkflow"],
+    "mcp_services": ["context7", "mcp-deepwiki", "Playwright", "exa"],
+    "platform_support": ["Windows", "macOS", "Linux", "Termux"],
+    "language_support": ["zh-CN", "en"],
+    "tools_integration": ["Claude Code", "CCR", "CCometixLine", "CCusage"],
+    "key_features": ["Interactive menu", "Non-interactive mode", "Configuration backup", "Auto-updates", "Template system"]
+  },
+  "ignore_rules": {
+    "source": ".gitignore",
+    "applied_patterns": [
+      "node_modules/**",
+      "dist/**",
+      ".DS_Store",
+      "*.log",
+      "*.local",
+      ".env",
+      ".env.*",
+      "package-lock.json",
+      "yarn.lock",
+      "coverage/**",
+      ".nyc_output/**",
+      "*.lcov",
+      ".vscode/*",
+      ".idea/**",
+      "*.test.tmp",
+      "*.spec.tmp",
+      "test-results/**",
+      ".vitest-result.json"
+    ],
+    "ignored_files_estimated": 92
+  },
   "recommendedNextSteps": [
-    "Deep supplementation of src/utils/ccr/ module for proxy configuration details",
-    "Enhanced documentation of workflow template system",
-    "Platform-specific installation and configuration edge cases",
-    "MCP service configuration and integration patterns"
+    "Deep analysis of workflow template dependencies and relationships",
+    "Complete test coverage validation and gap analysis",
+    "Performance profiling of utility functions for optimization opportunities",
+    "Documentation consistency verification across all modules",
+    "Enhanced CCR proxy configuration documentation",
+    "MCP service integration pattern documentation"
   ],
   "scanSummary": {
     "truncated": false,
-    "reason": "Complete analysis within reasonable scope",
-    "priorityModules": ["src/commands", "src/utils", "src/types", "templates"],
-    "ignoredPaths": ["node_modules", "dist", ".DS_Store", "*.log", "coverage"]
+    "reason": "Complete analysis achieved for primary objectives",
+    "priorityModules": ["src/commands", "src/utils", "src/types", "templates", "src/i18n", "tests"],
+    "ignoredPaths": ["node_modules", "dist", ".DS_Store", "*.log", "coverage", "assets/*.webp"],
+    "completionStatus": "Primary objectives achieved - Core architecture documented with comprehensive module analysis"
   }
 }

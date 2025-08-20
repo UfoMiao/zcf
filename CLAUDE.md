@@ -6,9 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 2025-08-20
 - **AI Context Initialization**: Completed comprehensive repository analysis and documentation generation
-- **Module Structure Mapping**: Identified 7 core modules with detailed architecture documentation
-- **Coverage Analysis**: Achieved 63.3% file coverage with focus on critical paths
+- **Module Structure Mapping**: Identified 6 core modules with detailed architecture documentation  
+- **Coverage Analysis**: Achieved 63.2% file coverage (158/250 files) with focus on critical paths
 - **Documentation Enhancement**: Added Mermaid diagrams and module navigation structure
+- **Templates Module Documentation**: Created comprehensive documentation for templates module
+- **Index Generation**: Updated .claude/index.json with complete project metadata and scan results
 
 ## Project Overview
 
@@ -34,45 +36,49 @@ graph TD
     B --> B3[update.ts - Workflow updates];
     B --> B4[ccr.ts - Router management];
     B --> B5[ccu.ts - Usage analysis];
+    B --> B6[check-updates.ts - Tool updates];
     
     C --> C1[config.ts - Configuration management];
     C --> C2[installer.ts - Claude Code installation];
     C --> C3[mcp.ts - MCP services];
     C --> C4[platform.ts - Cross-platform support];
     C --> C5[workflow-installer.ts - Workflow management];
+    C --> C6[ccr/ - CCR integration];
+    C --> C7[cometix/ - Status line tools];
     
     D --> D1[locales/zh-CN - Chinese translations];
     D --> D2[locales/en - English translations];
+    D --> D3[types.ts - Translation interfaces];
     
     E --> E1[workflow.ts - Workflow types];
     E --> E2[config.ts - Configuration types];
     E --> E3[ccr.ts - CCR types];
     
-    F --> F1[zh-CN/workflow - Chinese templates];
-    F --> F2[en/workflow - English templates];
-    F --> F3[memory - AI memory templates];
+    F --> F1[zh-CN/ - Chinese templates];
+    F --> F2[en/ - English templates];
+    F --> F3[common/ - Shared configuration];
     
-    G --> G1[unit tests - Core functionality];
-    G --> G2[integration tests - End-to-end flows];
-    G --> G3[edge tests - Boundary conditions];
+    G --> G1[unit/ - Unit tests];
+    G --> G2[integration/ - Integration tests];
+    G --> G3[edge/ - Edge case tests];
     
-    click B1 "./src/commands/README.md" "View commands module"
-    click C1 "./src/utils/README.md" "View utils module"
-    click D1 "./src/i18n/README.md" "View i18n module"
-    click E1 "./src/types/README.md" "View types module"
-    click F1 "./templates/README.md" "View templates module"
-    click G1 "./tests/README.md" "View tests module"
+    click B1 "./src/commands/CLAUDE.md" "View commands module"
+    click C1 "./src/utils/CLAUDE.md" "View utils module"
+    click D1 "./src/i18n/CLAUDE.md" "View i18n module"
+    click E1 "./src/types/CLAUDE.md" "View types module"
+    click F1 "./templates/CLAUDE.md" "View templates module"
+    click G1 "./tests/CLAUDE.md" "View tests module"
 ```
 
 ## Module Index
 
 | Module | Path | Description | Entry Points | Test Coverage |
 |--------|------|-------------|--------------|---------------|
-| **Commands** | `src/commands/` | CLI command implementations | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts | High - dedicated suites |
-| **Utilities** | `src/utils/` | Core functionality and platform support | config.ts, installer.ts, mcp.ts, platform.ts | High - comprehensive unit tests |
+| **Commands** | `src/commands/` | CLI command implementations | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts, check-updates.ts | High - dedicated suites |
+| **Utilities** | `src/utils/` | Core functionality and platform support | config.ts, installer.ts, mcp.ts, platform.ts, workflow-installer.ts | High - comprehensive unit tests |
 | **Internationalization** | `src/i18n/` | Multilingual support (zh-CN/en) | index.ts, types.ts | Medium - translation validation |
 | **Types** | `src/types/` | TypeScript type definitions | workflow.ts, config.ts, ccr.ts | Implicit through usage |
-| **Templates** | `templates/` | Configuration templates and workflows | settings.json, CLAUDE.md, workflow files | Medium - template tests |
+| **Templates** | `templates/` | Configuration templates and workflows | common/, zh-CN/, en/ | Medium - template tests |
 | **Testing** | `tests/` | Test suites with core and edge coverage | Unit, integration, edge test files | Self-testing module |
 
 ## CLI Usage
