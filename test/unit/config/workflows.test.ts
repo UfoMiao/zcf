@@ -15,7 +15,7 @@ describe('workflows configuration', () => {
         nameKey: 'workflowOption.gitWorkflow',
         descriptionKey: 'workflowDescription.gitWorkflow',
         defaultSelected: true,
-        order: 3,
+        order: 4,
         category: 'git',
         outputDir: 'git',
         autoInstallAgents: false,
@@ -39,7 +39,7 @@ describe('workflows configuration', () => {
     })
 
     it('should have valid categories', () => {
-      const validCategories = ['plan', 'sixStep', 'bmad', 'git']
+      const validCategories = ['common', 'plan', 'sixStep', 'bmad', 'git']
       WORKFLOW_CONFIGS.forEach((config) => {
         expect(validCategories).toContain(config.category)
       })
@@ -61,7 +61,7 @@ describe('workflows configuration', () => {
     })
 
     it('should return correct config for all existing workflows', () => {
-      const workflowIds = ['sixStepsWorkflow', 'featPlanUx', 'bmadWorkflow', 'gitWorkflow']
+      const workflowIds = ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'bmadWorkflow', 'gitWorkflow']
       workflowIds.forEach((id) => {
         const config = getWorkflowConfig(id)
         expect(config).toBeDefined()
@@ -94,7 +94,7 @@ describe('workflows configuration', () => {
       const gitWorkflow = workflows.find(w => w.id === 'gitWorkflow')
 
       expect(gitWorkflow).toBeDefined()
-      expect(gitWorkflow?.order).toBe(3)
+      expect(gitWorkflow?.order).toBe(4)
     })
 
     it('should return all configured workflows', () => {

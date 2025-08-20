@@ -70,7 +70,7 @@ export function copyConfigFiles(lang: SupportedLang, onlyMd: boolean = false) {
   }
 
   // Always copy CLAUDE.md from base template directory
-  const claudeMdSource = join(baseTemplateDir, 'CLAUDE.md')
+  const claudeMdSource = join(baseTemplateDir, 'common', 'CLAUDE.md')
   const claudeMdDest = join(CLAUDE_DIR, 'CLAUDE.md')
   if (exists(claudeMdSource)) {
     copyFile(claudeMdSource, claudeMdDest)
@@ -112,7 +112,7 @@ function getDefaultSettings(): ClaudeSettings {
     const currentFilePath = fileURLToPath(import.meta.url)
     const distDir = dirname(dirname(currentFilePath))
     const rootDir = dirname(distDir)
-    const templateSettingsPath = join(rootDir, 'templates', 'settings.json')
+    const templateSettingsPath = join(rootDir, 'templates', 'common', 'settings.json')
 
     return readJsonConfig<ClaudeSettings>(templateSettingsPath) || {}
   }

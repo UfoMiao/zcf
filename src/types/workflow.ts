@@ -1,7 +1,9 @@
-export type WorkflowType = 'sixStepsWorkflow' | 'featPlanUx' | 'bmadWorkflow' | 'gitWorkflow'
+export type WorkflowType = 'commonTools' | 'sixStepsWorkflow' | 'featPlanUx' | 'bmadWorkflow' | 'gitWorkflow'
 
 export type AgentType
-  = | 'planner'
+  = | 'init-architect'
+    | 'get-current-datetime'
+    | 'planner'
     | 'ui-ux-designer'
     | 'bmad-analyst'
     | 'bmad-pm'
@@ -26,7 +28,7 @@ export interface WorkflowConfig {
   commands: string[]
   agents: WorkflowAgent[]
   autoInstallAgents: boolean
-  category: 'plan' | 'sixStep' | 'bmad' | 'git'
+  category: 'common' | 'plan' | 'sixStep' | 'bmad' | 'git'
   outputDir: string
 }
 

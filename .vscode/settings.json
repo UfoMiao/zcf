@@ -40,6 +40,8 @@
   // search
   "search.searchEditor.singleClickBehaviour": "peekDefinition",
   "search.followSymlinks": false,
+  "search.useParentIgnoreFiles": false,
+  "search.useGlobalIgnoreFiles": false,
   // Exclude these folders/files when using the search function.
   "search.exclude": {
     "**/node_modules": true,

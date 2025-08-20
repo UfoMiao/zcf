@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 // Get template settings
 function getTemplateSettings(): any {
-  const templatePath = join(__dirname, '../../templates/settings.json')
+  const templatePath = join(__dirname, '../../templates/common/settings.json')
   const content = readFileSync(templatePath, 'utf-8')
   return JSON.parse(content)
 }

@@ -1,10 +1,19 @@
 export const workflow = {
   selectWorkflowType: 'Select workflow type to install',
   workflowOption: {
+    commonTools: 'Common Tools (Hierarchical Directory Initialization + General-purpose agents)',
     featPlanUx: 'Feature Planning and UX Design (feat + planner + ui-ux-designer)',
     sixStepsWorkflow: 'Six Steps Workflow (workflow)',
     bmadWorkflow: 'BMAD-Method Extension Installer (Agile Development Workflow)',
     gitWorkflow: 'Git Commands (commit + rollback + cleanBranches + worktree)',
+  },
+
+  workflowDescription: {
+    commonTools: 'Provides project initialization and architecture analysis tools, including hierarchical directory initialization commands and intelligent architecture analysis agents',
+    featPlanUx: 'Feature planning and user experience design workflow with planning and UX design agents',
+    sixStepsWorkflow: 'Professional development assistant structured six-step workflow',
+    bmadWorkflow: 'BMAD-Method enterprise-grade agile development workflow extension',
+    gitWorkflow: 'Git version control related commands collection',
   },
 
   // BMAD workflow

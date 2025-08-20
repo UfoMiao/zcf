@@ -1,0 +1,111 @@
+{
+  "timestamp": "2025-01-20T04:46:50.000Z",
+  "version": "1.0.0",
+  "repository": {
+    "name": "ZCF (Zero-Config Claude-Code Flow)",
+    "type": "CLI Tool",
+    "description": "TypeScript CLI tool for automating Claude Code environment configuration",
+    "totalFilesEstimated": 150,
+    "scannedFiles": 95,
+    "coveragePercentage": 63.3
+  },
+  "modules": [
+    {
+      "path": "root",
+      "type": "main",
+      "description": "Main CLI application and build configuration",
+      "entryPoints": ["src/cli.ts", "src/index.ts", "bin/zcf.mjs"],
+      "keyInterfaces": ["src/cli-setup.ts", "src/types.ts"],
+      "testCoverage": "High - 60 test files",
+      "scanned": true
+    },
+    {
+      "path": "src/commands",
+      "type": "commands",
+      "description": "CLI command implementations for init, update, ccr, ccu, menu",
+      "entryPoints": ["init.ts", "menu.ts", "update.ts", "ccr.ts", "ccu.ts", "check-updates.ts"],
+      "keyInterfaces": ["All command implementations with options interfaces"],
+      "testCoverage": "High - dedicated test suites",
+      "scanned": true
+    },
+    {
+      "path": "src/utils",
+      "type": "utilities",
+      "description": "Core utility functions for configuration, MCP, installation, platform support",
+      "entryPoints": ["config.ts", "installer.ts", "mcp.ts", "platform.ts"],
+      "keyInterfaces": ["Configuration management, MCP services, cross-platform utilities"],
+      "testCoverage": "High - comprehensive unit tests",
+      "scanned": true
+    },
+    {
+      "path": "src/i18n",
+      "type": "internationalization",
+      "description": "Multilingual support for zh-CN and en languages",
+      "entryPoints": ["index.ts", "types.ts"],
+      "keyInterfaces": ["Translation keys, language structures"],
+      "testCoverage": "Medium - basic translation tests",
+      "scanned": true
+    },
+    {
+      "path": "src/types",
+      "type": "types",
+      "description": "TypeScript type definitions for workflow, config, CCR integration",
+      "entryPoints": ["workflow.ts", "config.ts", "ccr.ts"],
+      "keyInterfaces": ["WorkflowConfig, McpService, ClaudeConfiguration"],
+      "testCoverage": "Implicit through usage",
+      "scanned": true
+    },
+    {
+      "path": "templates",
+      "type": "templates",
+      "description": "Configuration templates and workflow definitions for both languages",
+      "entryPoints": ["settings.json", "CLAUDE.md", "workflow templates"],
+      "keyInterfaces": ["Multilingual templates, workflow commands and agents"],
+      "testCoverage": "Medium - template validation tests",
+      "scanned": true
+    },
+    {
+      "path": "tests",
+      "type": "testing",
+      "description": "Test suites with both core and edge case coverage",
+      "entryPoints": ["Unit tests, integration tests, edge case tests"],
+      "keyInterfaces": ["Test utilities, mocking strategies"],
+      "testCoverage": "Self-testing module",
+      "scanned": true
+    }
+  ],
+  "architecture": {
+    "buildSystem": "unbuild with TypeScript",
+    "testFramework": "Vitest with coverage reporting",
+    "cliFramework": "cac for command parsing",
+    "i18nSupport": "Full zh-CN/en localization",
+    "platformSupport": "Cross-platform (Windows/macOS/Linux/Termux)",
+    "packageManagement": "pnpm with strict ESM"
+  },
+  "coverage": {
+    "gaps": [
+      "Deep analysis of CCR proxy configuration logic",
+      "Complete MCP service integration flows",
+      "Complex workflow dependency resolution",
+      "Platform-specific edge cases documentation"
+    ],
+    "strengths": [
+      "Comprehensive CLI command structure",
+      "Strong internationalization framework",
+      "Extensive utility function coverage",
+      "Robust test suite architecture"
+    ]
+  },
+  "recommendedNextSteps": [
+    "Deep supplementation of src/utils/ccr/ module for proxy configuration details",
+    "Enhanced documentation of workflow template system",
+    "Platform-specific installation and configuration edge cases",
+    "MCP service configuration and integration patterns"
+  ],
+  "scanSummary": {
+    "truncated": false,
+    "reason": "Complete analysis within reasonable scope",
+    "priorityModules": ["src/commands", "src/utils", "src/types", "templates"],
+    "ignoredPaths": ["node_modules", "dist", ".DS_Store", "*.log", "coverage"]
+  }
+}

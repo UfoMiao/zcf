@@ -2,9 +2,78 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Change Log (Changelog)
+
+### 2025-08-20
+- **AI Context Initialization**: Completed comprehensive repository analysis and documentation generation
+- **Module Structure Mapping**: Identified 7 core modules with detailed architecture documentation
+- **Coverage Analysis**: Achieved 63.3% file coverage with focus on critical paths
+- **Documentation Enhancement**: Added Mermaid diagrams and module navigation structure
+
 ## Project Overview
 
 ZCF (Zero-Config Claude-Code Flow) is a CLI tool that automatically configures Claude Code environments. It's built with TypeScript and distributed as an npm package. The tool provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows.
+
+## Architecture Overview
+
+ZCF follows a modular CLI architecture with strict TypeScript typing, comprehensive internationalization, and cross-platform support. The project is built using modern tooling including unbuild, Vitest, and ESM-only configuration.
+
+### Module Structure Diagram
+
+```mermaid
+graph TD
+    A[ZCF Root] --> B[src/commands];
+    A --> C[src/utils];
+    A --> D[src/i18n];
+    A --> E[src/types];
+    A --> F[templates];
+    A --> G[tests];
+    
+    B --> B1[init.ts - Full initialization];
+    B --> B2[menu.ts - Interactive UI];
+    B --> B3[update.ts - Workflow updates];
+    B --> B4[ccr.ts - Router management];
+    B --> B5[ccu.ts - Usage analysis];
+    
+    C --> C1[config.ts - Configuration management];
+    C --> C2[installer.ts - Claude Code installation];
+    C --> C3[mcp.ts - MCP services];
+    C --> C4[platform.ts - Cross-platform support];
+    C --> C5[workflow-installer.ts - Workflow management];
+    
+    D --> D1[locales/zh-CN - Chinese translations];
+    D --> D2[locales/en - English translations];
+    
+    E --> E1[workflow.ts - Workflow types];
+    E --> E2[config.ts - Configuration types];
+    E --> E3[ccr.ts - CCR types];
+    
+    F --> F1[zh-CN/workflow - Chinese templates];
+    F --> F2[en/workflow - English templates];
+    F --> F3[memory - AI memory templates];
+    
+    G --> G1[unit tests - Core functionality];
+    G --> G2[integration tests - End-to-end flows];
+    G --> G3[edge tests - Boundary conditions];
+    
+    click B1 "./src/commands/README.md" "View commands module"
+    click C1 "./src/utils/README.md" "View utils module"
+    click D1 "./src/i18n/README.md" "View i18n module"
+    click E1 "./src/types/README.md" "View types module"
+    click F1 "./templates/README.md" "View templates module"
+    click G1 "./tests/README.md" "View tests module"
+```
+
+## Module Index
+
+| Module | Path | Description | Entry Points | Test Coverage |
+|--------|------|-------------|--------------|---------------|
+| **Commands** | `src/commands/` | CLI command implementations | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts | High - dedicated suites |
+| **Utilities** | `src/utils/` | Core functionality and platform support | config.ts, installer.ts, mcp.ts, platform.ts | High - comprehensive unit tests |
+| **Internationalization** | `src/i18n/` | Multilingual support (zh-CN/en) | index.ts, types.ts | Medium - translation validation |
+| **Types** | `src/types/` | TypeScript type definitions | workflow.ts, config.ts, ccr.ts | Implicit through usage |
+| **Templates** | `templates/` | Configuration templates and workflows | settings.json, CLAUDE.md, workflow files | Medium - template tests |
+| **Testing** | `tests/` | Test suites with core and edge coverage | Unit, integration, edge test files | Self-testing module |
 
 ## CLI Usage
 
@@ -22,20 +91,7 @@ npx zcf ccu [args...]      # Run ccusage with arguments
 npx zcf check-updates [--lang <en|zh-CN>]  # Check tool updates
 ```
 
-## Development Guidelines
-
-- **Documentation Language**: Except for README_zh, all code comments and documentation should be written in English
-- **Test-Driven Development (TDD)**: All development must follow TDD methodology
-  - Write tests BEFORE implementing functionality
-  - Follow Red-Green-Refactor cycle: write failing test → implement minimal code → refactor
-  - Ensure each function/feature has corresponding test coverage before implementation
-- When writing tests, first verify if relevant test files already exist to avoid unnecessary duplication
-- **Internationalization (i18n) Guidelines**:
-  - All prompts, logs, and error messages must support i18n
-  - Use project-wide i18n approach instead of single-file language detection
-  - Implement translations consistently across the entire project
-
-## Development Commands
+## Running and Development
 
 ### Build & Run
 
@@ -60,7 +116,7 @@ pnpm lint
 pnpm lint:fix
 ```
 
-### Testing
+### Testing Strategy
 
 ```bash
 # Run all tests
@@ -85,7 +141,72 @@ pnpm vitest utils/config.test.ts
 pnpm vitest --grep "should handle"
 ```
 
-### Release & Publishing
+The project uses Vitest with a layered testing approach:
+1. **Core Tests** (`*.test.ts`) - Basic functionality and main flows
+2. **Edge Tests** (`*.edge.test.ts`) - Boundary conditions and error scenarios
+3. **Coverage Goals**: 80% minimum across lines, functions, branches, and statements
+
+## Development Guidelines
+
+### Core Principles
+
+- **Documentation Language**: Except for README_zh-CN, all code comments and documentation should be written in English
+  - Code comments must be in English
+  - All documentation files (*.md) must be in English except README_zh-CN
+  - API documentation and inline documentation must use English
+  - Git commit messages should be in English
+
+- **Test-Driven Development (TDD)**: All development must follow TDD methodology
+  - Write tests BEFORE implementing functionality
+  - Follow Red-Green-Refactor cycle: write failing test → implement minimal code → refactor
+  - Ensure each function/feature has corresponding test coverage before implementation
+  - When writing tests, first verify if relevant test files already exist to avoid unnecessary duplication
+  - Minimum 80% coverage required across lines, functions, branches, and statements
+
+- **Internationalization (i18n) Guidelines**:
+  - All user-facing prompts, logs, and error messages must support i18n
+  - Use project-wide i18n approach instead of single-file language detection
+  - Implement translations consistently across the entire project
+  - Support both zh-CN and en locales
+  - Use `t()` function from `utils/i18n.ts` to get translations
+  - Use `format()` function for string interpolation with placeholders
+
+## Coding Standards
+
+- **ESM-Only**: Project is fully ESM with no CommonJS fallbacks
+- **Path Handling**: Uses `pathe` for cross-platform path operations
+- **Command Execution**: Uses `tinyexec` for better cross-platform support
+- **TypeScript**: Strict TypeScript with explicit type definitions
+- **Error Handling**: Graceful error handling with user-friendly messages
+- **Cross-Platform Support**: Special handling for Windows paths and Termux environment
+
+## AI Usage Guidelines
+
+### Key Architecture Patterns
+
+1. **Modular Command Structure**: Each command is self-contained with its own options interface
+2. **I18N Support**: All user-facing strings support zh-CN and en localization
+3. **Configuration Merging**: Smart config merging to preserve user customizations
+4. **Cross-Platform Support**: Windows/macOS/Linux/Termux compatibility
+5. **Template System**: Language-specific templates with workflow categorization
+
+### Important Implementation Details
+
+1. **Windows Compatibility**: MCP configurations require special handling for Windows paths
+2. **Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/`
+3. **API Configuration**: Supports both Auth Token (OAuth) and API Key authentication
+4. **Workflow System**: Modular workflow installation with dependency resolution
+5. **CCR Integration**: Claude Code Router proxy management
+6. **Auto-Update System**: Automated tool updating for Claude Code, CCR, and CCometixLine
+
+### Testing Philosophy
+
+- Extensive mocking for file system operations, external commands, and user prompts
+- Cross-platform testing with platform detection mocks
+- Comprehensive edge case testing for boundary conditions and error scenarios
+- 80% minimum coverage across all metrics
+
+## Release & Publishing
 
 ```bash
 # Create a changeset for version updates
@@ -98,215 +219,11 @@ pnpm version
 pnpm release
 ```
 
-## Architecture & Code Organization
+---
 
-### Entry Points
-
-- `bin/zcf.mjs` - CLI executable entry point
-- `src/cli.ts` - CLI setup and parsing
-- `src/cli-setup.ts` - Command registration and routing
-- `src/index.ts` - Library exports
-
-### Core Commands
-
-- `src/commands/init.ts` - Full initialization flow (install Claude Code + configure API + setup MCP)
-- `src/commands/update.ts` - Update workflow-related markdown files only
-- `src/commands/menu.ts` - Interactive menu system (default command)
-- `src/commands/ccr.ts` - Claude Code Router management and menu system
-- `src/commands/ccu.ts` - CCusage integration for Claude Code usage analysis
-- `src/commands/check-updates.ts` - Tool update checker for Claude Code, CCR, and CCometixLine
-
-### Workflow System Architecture
-
-- `src/config/workflows.ts` - Workflow configuration and management
-- `src/utils/workflow-installer.ts` - Workflow installation logic with dependency handling
-- `src/types/workflow.ts` - Workflow type definitions
-- Templates organized under `templates/{lang}/workflow/{category}/`
-  - Commands: Slash commands for Claude Code
-  - Agents: AI agent personalities and capabilities
-  - BMad workflow: Enterprise-grade development workflow with specialized agents
-
-### Utilities Architecture
-
-The project follows a modular utility architecture:
-
-- **Configuration Management**
-  - `utils/config.ts` - Core configuration operations (backup, copy, API setup)
-  - `utils/config-operations.ts` - Advanced config operations (partial updates, merging)
-  - `utils/json-config.ts` - JSON file operations with error handling
-  - `utils/zcf-config.ts` - ZCF-specific configuration persistence
-
-- **MCP (Model Context Protocol) Services**
-  - `utils/mcp.ts` - MCP configuration management
-  - `utils/mcp-selector.ts` - Interactive MCP service selection
-
-- **Installation & Platform**
-  - `utils/installer.ts` - Claude Code installation logic
-  - `utils/platform.ts` - Cross-platform compatibility (Windows/macOS/Linux/Termux)
-
-- **User Interaction**
-  - `utils/prompts.ts` - Language selection and user prompts
-  - `utils/ai-personality.ts` - AI personality configuration
-  - `utils/banner.ts` - CLI banner display
-
-- **Workflow System**
-  - `utils/workflow-installer.ts` - Install workflows with commands and agents
-  - `config/workflows.ts` - Workflow definitions and configurations
-  - Supports modular workflow installation with dependencies
-  - Automatic cleanup of old version files
-
-### Key Design Patterns
-
-1. **Modular Command Structure**: Each command is self-contained with its own options interface
-2. **I18N Support**: All user-facing strings support zh-CN and en localization
-   - Translations are organized in `src/i18n/` with modular structure
-   - Each language has separate modules for different features (common, api, menu, etc.)
-   - Use `t()` function from `utils/i18n.ts` to get translations
-   - Use `format()` function for string interpolation with placeholders
-3. **Error Handling**: Graceful error handling with user-friendly messages
-4. **Configuration Merging**: Smart config merging to preserve user customizations
-5. **Cross-Platform Support**: Special handling for Windows paths and Termux environment
-
-### Testing Strategy
-
-The project uses Vitest with a layered testing approach:
-
-1. **Core Tests** (`*.test.ts`) - Basic functionality and main flows
-2. **Edge Tests** (`*.edge.test.ts`) - Boundary conditions and error scenarios
-3. **Coverage Goals**: 90% for lines, functions, and statements
-
-#### Key Testing Areas
-
-- **Workflow Installation**: Test workflow selection, dependency resolution, and file installation
-- **Configuration Operations**: Test API configuration flows, partial updates, and validation
-- **MCP Services**: Test service selection and configuration
-- **Platform Compatibility**: Test cross-platform behavior with mocks
-
-Tests extensively use mocking for:
-
-- File system operations
-- External command execution
-- User prompts
-- Platform detection
-
-### Important Implementation Details
-
-1. **Windows Compatibility**: MCP configurations require special handling for Windows paths (using `cmd /c` wrapper)
-2. **Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/`
-3. **API Configuration**: Supports both Auth Token (OAuth) and API Key authentication methods
-4. **Template System**: Configuration templates are stored in `templates/` with language-specific subdirectories
-5. **Error Recovery**: Exit prompt errors are handled separately to ensure clean termination
-6. **Workflow Installation**: Supports modular workflow installation with automatic dependency resolution
-7. **BMad Integration**: Enterprise workflow with specialized agents for complete Software Development Life Cycle (SDLC) management
-8. **CCR Integration**: Claude Code Router management through dedicated command and menu system
-9. **CCusage Integration**: Integration with npx ccusage for Claude Code usage analysis and statistics
-10. **Auto-Update System**: Automated checking and updating of Claude Code, CCR, and CCometixLine tools
-
-### Type System
-
-The project uses strict TypeScript with:
-
-- Explicit type definitions in `src/types/` and `src/types.ts`
-- Interface-based design for options and configurations
-- Proper null/undefined handling throughout
-
-## Common Development Tasks
-
-### Adding a New MCP Service
-
-1. Add service definition to `MCP_SERVICES` in `src/constants.ts`
-2. Update types in `src/types.ts` if needed
-3. Test the service configuration flow
-
-### Adding a New Command
-
-1. Create command file in `src/commands/`
-2. Define options interface
-3. Register in `src/cli-setup.ts`
-4. Add corresponding tests
-
-### Adding a New Workflow
-
-1. Define workflow configuration in `src/config/workflows.ts`
-2. Add workflow type to `WorkflowType` in `src/types/workflow.ts`
-3. Create template files under `templates/{lang}/workflow/{category}/`
-4. Add translation keys for workflow name and descriptions
-5. Test workflow installation and cleanup
-
-### Updating Translations
-
-1. Add or modify translation strings in the appropriate module under `src/i18n/locales/{lang}/`
-   - Common strings: `common.ts`
-   - API-related: `api.ts`
-   - Menu items: `menu.ts`
-   - Workflow & BMad: `workflow.ts`, `bmad.ts`
-   - Error messages: `errors.ts`
-2. Update the corresponding file for both `zh-CN` and `en` languages
-3. If adding new keys, update the `TranslationKeys` interface in `src/i18n/types.ts`
-4. Test both language flows
-
-### Debugging Tips
-
-- Use `pnpm dev` for rapid testing during development
-- Check `~/.claude/` for generated configurations
-- Review `~/.claude/backup/` for configuration history
-- Test cross-platform behavior with platform detection mocks
-
-## Additional Development Insights
-
-### Build System & TypeScript
-
-- **unbuild**: Uses unbuild for production builds with ESM-only output and dependency inlining
-- **tsx**: Development runtime uses tsx for direct TypeScript execution
-- **Type Coverage**: Strict TypeScript with coverage goals set at 80% minimum across all metrics in vitest.config.ts
-- **Testing Philosophy**: Layered testing approach with core tests (_.test.ts) and edge case tests (_.edge.test.ts)
-
-### CLI Architecture Patterns
-
-The CLI follows a modular command pattern:
-
-- `src/cli.ts` - Minimal entry point using cac for argument parsing
-- `src/cli-setup.ts` - Command registration hub with extensive help customization
-- Each command is self-contained with its own options interface and action handler
-- Non-interactive mode support for CI/CD with comprehensive parameter validation
-
-### Key Architectural Decisions
-
-1. **ESM-Only**: Project is fully ESM with no CommonJS fallbacks (package.json type: "module")
-2. **Path Handling**: Uses `pathe` for cross-platform path operations (critical for Windows compatibility)
-3. **Command Execution**: Uses `tinyexec` instead of child_process for better cross-platform support
-4. **Configuration Strategy**: Smart merging with automatic backup to `~/.claude/backup/` before any modifications
-5. **Template System**: Language-specific templates under `templates/{lang}/` with workflow categorization
-
-### Integration Points
-
-- **CCR Integration**: Special handling for Claude Code Router proxy configuration
-- **CCometixLine Integration**: Rust-based statusline tool integration with automatic updates
-- **MCP Services**: Dynamic service configuration with Windows-specific command wrappers (`cmd /c`)
-- **BMad Workflow**: Enterprise development workflow integration with specialized agents
-
-### Error Handling Philosophy
-
-- Graceful degradation with user-friendly error messages
-- Automatic backup before dangerous operations
-- Platform-specific error handling (especially Windows path issues in MCP configs)
-- Separate error handling for exit prompts to ensure clean termination
-
-### Performance Considerations
-
-- Lazy loading of dependencies where possible
-- Efficient file operations using streaming where appropriate
-- Parallel execution of independent operations (like multiple MCP service installs)
-- Template caching for repeated operations
-
-### Code Quality Standards
-
-- 80% minimum coverage across lines, functions, branches, and statements
-- Extensive mocking for file system operations, external command execution, and user prompts
-- Cross-platform testing with platform detection mocks
-- Comprehensive edge case testing for boundary conditions and error scenarios
-- **ESLint Integration**: Uses @antfu/eslint-config with formatters enabled
-  - Run `pnpm lint` to check code style and quality
-  - Run `pnpm lint:fix` to automatically fix issues
-  - Ignores `.bmad-core/` and `.claude/` directories
-  - Allows `console.log` statements for CLI output
+**Important Reminders**:
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless absolutely necessary for achieving your goal
+- ALWAYS prefer editing an existing file to creating a new one
+- NEVER proactively create documentation files unless explicitly requested
+- Never save working files, text/mds and tests to the root folder
