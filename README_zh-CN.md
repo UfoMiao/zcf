@@ -83,7 +83,7 @@ npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" -
 | `--api-key, -k`              | API 密钥（用于 API 密钥和认证令牌类型） | 字符串                                                                                  | `api-type` 不为 `skip` 时必需 | -                                                                                      |
 | `--api-url, -u`              | 自定义 API URL                          | URL 字符串                                                                              | 否                            | 官方 API                                                                               |
 | `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `mcp-deepwiki`, `Playwright`, `exa`, 或 `skip` 表示跳过全部                 | 否                            | `all`                                                                                  |
-| `--workflows, -w`            | 要安装的工作流（多选，逗号分隔）        | `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
+| `--workflows, -w`            | 要安装的工作流（多选，逗号分隔）        | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--ai-personality, -p`       | AI 个性类型                             | `professional`, `catgirl`, `friendly`, `mentor`, `custom`                               | 否                            | `professional`                                                                         |
 | `--install-cometix-line, -x` | 安装 CCometixLine 状态栏工具            | `true`, `false`                                                                         | 否                            | `true`                                                                                 |
 
@@ -307,7 +307,8 @@ $ npx zcf
 ✔ 配置文件已复制到 ~/.claude
 
 ? 选择要安装的工作流（空格选择，回车确认）
-  ❯ ◉ 六步工作流 (workflow) - 完整的六阶段开发流程
+  ❯ ◉ 通用工具 (init-project + init-architect + get-current-datetime) - 基础项目初始化和实用命令
+    ◉ 六步工作流 (workflow) - 完整的六阶段开发流程
     ◉ 功能规划和 UX 设计 (feat + planner + ui-ux-designer) - 结构化新功能开发
     ◉ Git 指令 (commit + rollback + cleanBranches + worktree) - 简化的 Git 操作
     ◉ BMAD-Method 扩展安装器 - 企业级敏捷开发工作流
@@ -346,13 +347,14 @@ $ npx zcf
 
 #### 命令速查表
 
-| 命令         | 缩写    | 说明                                                                            |
-| ------------ | ------- | ------------------------------------------------------------------------------- |
-| `zcf`        | -       | 显示交互式菜单（v2.0 默认命令）                                                 |
-| `zcf init`   | `zcf i` | 初始化 Claude Code 配置                                                         |
-| `zcf update` | `zcf u` | 更新 Prompt 文档并备份旧配置                                                    |
-| `zcf ccu`    | -       | 运行 Claude Code 用量分析工具 - [ccusage](https://github.com/ryoppippi/ccusage) |
-| `zcf ccr`    | -       | 打开 CCR (Claude Code Router) 管理菜单                                          |
+| 命令                   | 缩写    | 说明                                                                            |
+| ---------------------- | ------- | ------------------------------------------------------------------------------- |
+| `zcf`                  | -       | 显示交互式菜单（v2.0 默认命令）                                                 |
+| `zcf init`             | `zcf i` | 初始化 Claude Code 配置                                                         |
+| `zcf update`           | `zcf u` | 更新 Prompt 文档并备份旧配置                                                    |
+| `zcf ccu`              | -       | 运行 Claude Code 用量分析工具 - [ccusage](https://github.com/ryoppippi/ccusage) |
+| `zcf ccr`              | -       | 打开 CCR (Claude Code Router) 管理菜单                                          |
+| `zcf check-updates`    | -       | 检查并更新 Claude Code、CCR 和 CCometixLine 的版本                              |
 
 #### 常用选项
 

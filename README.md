@@ -83,7 +83,7 @@ When using `--skip-prompt`, the following parameters are available:
 | `--api-key, -k`              | API key (for both API key and auth token types)         | string                                                                              | Required when `api-type` is not `skip` | -                                                                                                                                |
 | `--api-url, -u`              | Custom API URL                                          | URL string                                                                          | No                                     | official API                                                                                                                     |
 | `--mcp-services, -m`         | MCP services to install (multi-select, comma-separated) | `context7`, `mcp-deepwiki`, `Playwright`, `exa`, or `skip` for none                 | No                                     | `all`                                                                                                                            |
-| `--workflows, -w`            | Workflows to install (multi-select, comma-separated)    | `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, or `skip` for none | No                                     | `all`                                                                                                                            |
+| `--workflows, -w`            | Workflows to install (multi-select, comma-separated)    | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--ai-personality, -p`       | AI personality type                                     | `professional`, `catgirl`, `friendly`, `mentor`, `custom`                           | No                                     | `professional`                                                                                                                   |
 | `--install-cometix-line, -x` | Install CCometixLine statusline tool                    | `true`, `false`                                                                     | No                                     | `true`                                                                                                                           |
 
@@ -307,7 +307,8 @@ Enter your choice: _
 ✔ Config files copied to ~/.claude
 
 ? Select workflows to install (space to select, enter to confirm)
-  ❯ ◉ Six Steps Workflow (workflow) - Complete 6-phase development process
+  ❯ ◉ Common Tools (init-project + init-architect + get-current-datetime) - Essential project initialization and utility commands
+    ◉ Six Steps Workflow (workflow) - Complete 6-phase development process
     ◉ Feature Planning and UX Design (feat + planner + ui-ux-designer) - Structured feature development
     ◉ Git Commands (commit + rollback + cleanBranches + worktree) - Streamlined Git operations
     ◉ BMAD-Method Extension Installer - Enterprise agile development workflow
@@ -346,13 +347,14 @@ Enter your choice: _
 
 #### Commands Quick Reference
 
-| Command      | Alias   | Description                                                                           |
-| ------------ | ------- | ------------------------------------------------------------------------------------- |
-| `zcf`        | -       | Show interactive menu (v2.0 default command)                                          |
-| `zcf init`   | `zcf i` | Initialize Claude Code configuration                                                  |
-| `zcf update` | `zcf u` | Update workflow-related md files with backup                                          |
-| `zcf ccu`    | -       | Run Claude Code usage analysis tool - [ccusage](https://github.com/ryoppippi/ccusage) |
-| `zcf ccr`    | -       | Open CCR (Claude Code Router) management menu                                         |
+| Command                | Alias   | Description                                                                           |
+| ---------------------- | ------- | ------------------------------------------------------------------------------------- |
+| `zcf`                  | -       | Show interactive menu (v2.0 default command)                                          |
+| `zcf init`             | `zcf i` | Initialize Claude Code configuration                                                  |
+| `zcf update`           | `zcf u` | Update workflow-related md files with backup                                          |
+| `zcf ccu`              | -       | Run Claude Code usage analysis tool - [ccusage](https://github.com/ryoppippi/ccusage) |
+| `zcf ccr`              | -       | Open CCR (Claude Code Router) management menu                                         |
+| `zcf check-updates`    | -       | Check and update Claude Code, CCR and CCometixLine versions                           |
 
 #### Common Options
 

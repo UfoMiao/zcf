@@ -5,13 +5,6 @@ export type AgentType
     | 'get-current-datetime'
     | 'planner'
     | 'ui-ux-designer'
-    | 'bmad-analyst'
-    | 'bmad-pm'
-    | 'bmad-architect'
-    | 'bmad-sm'
-    | 'bmad-dev'
-    | 'bmad-qa'
-    | 'bmad-po'
 
 export interface WorkflowAgent {
   id: string
