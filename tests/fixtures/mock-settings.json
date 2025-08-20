@@ -1,0 +1,10 @@
+{
+  "env": {
+    "ANTHROPIC_API_KEY": "test-api-key",
+    "ANTHROPIC_BASE_URL": "https://api.test.com"
+  },
+  "model": "sonnet",
+  "permissions": {
+    "allow": ["read", "write"]
+  }
+}
