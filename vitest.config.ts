@@ -21,7 +21,7 @@ export default defineConfig({
         '.zcf',
         '*.config.ts',
         '*.config.mjs',
-        'test/**',
+        'tests/**',
         '**/*.test.ts',
         '**/*.spec.ts',
         '**/types.ts',
