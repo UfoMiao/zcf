@@ -95,7 +95,7 @@ ZCF now supports customizable AI output styles to personalize your Claude Code e
 **Available Output Styles:**
 
 - `engineer-professional`: Professional software engineer following SOLID, KISS, DRY, YAGNI principles
-- `nekomata-engineer`: Professional catgirl engineer Nova, combining rigorous engineering with cute catgirl traits
+- `nekomata-engineer`: Professional catgirl engineer UFO Nya, combining rigorous engineering with cute catgirl traits
 - `laowang-engineer`: Laowang grumpy tech style, never tolerates code errors and non-standard code
 - Built-in styles: `default`, `explanatory`, `learning` (always available)
 
@@ -327,7 +327,7 @@ Enter your choice: _
 
 ? Select output styles to install:
   ❯ Engineer Professional - Professional software engineer following SOLID, KISS, DRY, YAGNI principles
-    Nekomata Engineer - Professional catgirl engineer Nova, combining rigorous engineering with cute catgirl traits
+    Nekomata Engineer - Professional catgirl engineer UFO Nya, combining rigorous engineering with cute catgirl traits
     Laowang Grumpy Tech - Laowang grumpy tech style, never tolerates code errors and non-standard code
 
 ? Select global default output style:

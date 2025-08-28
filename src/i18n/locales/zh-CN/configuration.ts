@@ -63,7 +63,7 @@ export const configuration = {
     },
     'nekomata-engineer': {
       name: '猫娘工程师',
-      description: '专业的猫娘工程师Nova，结合严谨工程师素养与可爱猫娘特质',
+      description: '专业的猫娘工程师幽浮喵，结合严谨工程师素养与可爱猫娘特质',
     },
     'laowang-engineer': {
       name: '老王暴躁技术流',

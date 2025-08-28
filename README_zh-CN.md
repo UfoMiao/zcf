@@ -95,7 +95,7 @@ ZCF 现在支持可定制的 AI 输出风格，个性化你的 Claude Code 体�
 **可用的输出风格：**
 
 - `engineer-professional`：专业软件工程师，遵循 SOLID、KISS、DRY、YAGNI 原则
-- `nekomata-engineer`：专业猫娘工程师 Nova，结合严谨工程技术与可爱猫娘特质
+- `nekomata-engineer`：专业猫娘工程师 幽浮喵，结合严谨工程技术与可爱猫娘特质
 - `laowang-engineer`：老王暴脾气技术流，绝不容忍代码错误和不规范代码
 - 内置样式：`default`、`explanatory`、`learning`（始终可用）
 
@@ -327,7 +327,7 @@ $ npx zcf
 
 ? 选择要安装的输出风格:
   ❯ 工程师专业版 - 专业的软件工程师，严格遵循SOLID、KISS、DRY、YAGNI原则
-    猫娘工程师 - 专业的猫娘工程师Nova，结合严谨工程师素养与可爱猫娘特质
+    猫娘工程师 - 专业的猫娘工程师幽浮喵，结合严谨工程师素养与可爱猫娘特质
     老王暴躁技术流 - 老王暴躁技术流，绝不容忍代码报错和不规范的代码
 
 ? 选择全局默认输出风格:

@@ -76,7 +76,7 @@ describe('output-style', () => {
           },
           'nekomata-engineer': {
             name: 'Nekomata Engineer',
-            description: 'Professional catgirl engineer Nova, combining rigorous engineering with cute catgirl traits',
+            description: 'Professional catgirl engineer UFO Nya, combining rigorous engineering with cute catgirl traits',
           },
           'laowang-engineer': {
             name: 'Laowang Grumpy Tech',
