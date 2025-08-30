@@ -127,7 +127,6 @@ describe('cCR installer - edge cases', () => {
       const version = await getCcrVersion()
       expect(version).toBe('3.0.0')
     })
-
   })
 
   describe('installCcr - edge cases', () => {
@@ -207,7 +206,6 @@ describe('cCR installer - edge cases', () => {
 
       await expect(installCcr('en')).rejects.toThrow()
     })
-
   })
 
   describe('startCcrService - edge cases', () => {
@@ -272,7 +270,6 @@ describe('cCR installer - edge cases', () => {
       await startCcrService(undefined)
       expect(i18n.getTranslation).toHaveBeenCalledWith('zh-CN')
     })
-
   })
 
   describe('race conditions', () => {

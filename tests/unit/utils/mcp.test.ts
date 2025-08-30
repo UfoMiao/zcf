@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ClAUDE_CONFIG_FILE } from '../../../src/constants'
 import { getMcpService } from '../../../src/config/mcp-services'
+import { ClAUDE_CONFIG_FILE } from '../../../src/constants'
 import * as jsonConfig from '../../../src/utils/json-config'
 import {
   backupMcpConfig,

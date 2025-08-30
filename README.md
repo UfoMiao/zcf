@@ -132,7 +132,7 @@ After installation, use `/bmad-init` to initialize the BMad workflow in your pro
 [Spec Workflow](https://github.com/Pimzino/spec-workflow-mcp) is a comprehensive MCP service that provides structured feature development workflow from requirements to implementation:
 
 - **Requirements Analysis**: Structured requirements gathering and documentation
-- **Design Phase**: Detailed technical design and architecture planning  
+- **Design Phase**: Detailed technical design and architecture planning
 - **Task Management**: Automatic task breakdown and progress tracking
 - **Implementation Workflow**: Systematic approach from requirements to implementation
 - **Interactive Dashboard**: Built-in dashboard for workflow visualization and management

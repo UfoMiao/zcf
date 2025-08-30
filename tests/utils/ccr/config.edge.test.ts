@@ -1,8 +1,8 @@
 import type { CcrConfig, ProviderPreset } from '../../../src/types/ccr'
 import { existsSync, mkdirSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
 import inquirer from 'inquirer'
+import { join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as i18n from '../../../src/i18n'
 import {

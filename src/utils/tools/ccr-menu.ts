@@ -1,9 +1,9 @@
 import type { SupportedLang } from '../../constants'
 import { existsSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
+import { join } from 'pathe'
 import { I18N } from '../../constants'
 import {
   runCcrRestart,

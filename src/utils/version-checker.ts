@@ -24,7 +24,7 @@ export async function getInstalledVersion(command: string, maxRetries = 3): Prom
       const versionMatch = stdout.match(/(\d+\.\d+\.\d+(?:-[\w.]+)?)/)
       return versionMatch ? versionMatch[1] : null
     }
-    catch (error) {
+    catch {
       if (attempt === maxRetries) {
         // Final attempt failed, return null
         return null
@@ -42,7 +42,7 @@ export async function getLatestVersion(packageName: string, maxRetries = 3): Pro
       const { stdout } = await execAsync(`npm view ${packageName} version`)
       return stdout.trim()
     }
-    catch (error) {
+    catch {
       if (attempt === maxRetries) {
         // Final attempt failed, return null
         return null

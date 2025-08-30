@@ -25,7 +25,8 @@
       "mcp__exa",
       "mcp__context7",
       "mcp__mcp-deepwiki",
-      "mcp__Playwright"
+      "mcp__Playwright",
+      "mcp__spec-workflow"
     ],
     "deny": []
   },
