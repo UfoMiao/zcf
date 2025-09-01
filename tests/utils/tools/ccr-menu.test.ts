@@ -20,12 +20,11 @@ vi.mock('../../../src/utils/error-handler', () => ({
 
 describe('cCR Menu', () => {
   let consoleLogSpy: any
-  let _consoleErrorSpy: any
 
   beforeEach(() => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-    _consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(console, 'error').mockImplementation(() => {})
 
     // Mock existsSync to return true for CCR config file
     vi.mocked(existsSync).mockReturnValue(true)
@@ -48,7 +47,7 @@ describe('cCR Menu', () => {
   it('should display CCR menu options', async () => {
     vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '0' })
 
-    await showCcrMenu('en')
+    await showCcrMenu()
 
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCR - Claude Code Router Management'))
     expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Initialize CCR'))
@@ -64,11 +63,11 @@ describe('cCR Menu', () => {
     vi.mocked(ccrInstaller.installCcr).mockResolvedValue()
     vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue()
 
-    await showCcrMenu('zh-CN')
+    await showCcrMenu()
 
     expect(ccrInstaller.isCcrInstalled).toHaveBeenCalled()
-    expect(ccrInstaller.installCcr).toHaveBeenCalledWith('zh-CN')
-    expect(ccrConfig.configureCcrFeature).toHaveBeenCalledWith('zh-CN')
+    expect(ccrInstaller.installCcr).toHaveBeenCalled()
+    expect(ccrConfig.configureCcrFeature).toHaveBeenCalled()
   })
 
   it('should skip CCR installation if already installed', async () => {
@@ -78,11 +77,11 @@ describe('cCR Menu', () => {
     vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue({ isInstalled: true, hasCorrectPackage: true })
     vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue()
 
-    await showCcrMenu('en')
+    await showCcrMenu()
 
     expect(ccrInstaller.isCcrInstalled).toHaveBeenCalled()
     expect(ccrInstaller.installCcr).not.toHaveBeenCalled()
-    expect(ccrConfig.configureCcrFeature).toHaveBeenCalledWith('en')
+    expect(ccrConfig.configureCcrFeature).toHaveBeenCalled()
   })
 
   it('should handle start UI option', async () => {
@@ -91,9 +90,9 @@ describe('cCR Menu', () => {
       .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrUi).mockResolvedValue()
 
-    await showCcrMenu('en')
+    await showCcrMenu()
 
-    expect(ccrCommands.runCcrUi).toHaveBeenCalledWith('en', 'test-key')
+    expect(ccrCommands.runCcrUi).toHaveBeenCalledWith('test-key')
   })
 
   it('should handle check status option', async () => {
@@ -102,9 +101,9 @@ describe('cCR Menu', () => {
       .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrStatus).mockResolvedValue()
 
-    await showCcrMenu('zh-CN')
+    await showCcrMenu()
 
-    expect(ccrCommands.runCcrStatus).toHaveBeenCalledWith('zh-CN')
+    expect(ccrCommands.runCcrStatus).toHaveBeenCalled()
   })
 
   it('should handle restart option', async () => {
@@ -113,9 +112,9 @@ describe('cCR Menu', () => {
       .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrRestart).mockResolvedValue()
 
-    await showCcrMenu('en')
+    await showCcrMenu()
 
-    expect(ccrCommands.runCcrRestart).toHaveBeenCalledWith('en')
+    expect(ccrCommands.runCcrRestart).toHaveBeenCalled()
   })
 
   it('should handle start option', async () => {
@@ -124,9 +123,9 @@ describe('cCR Menu', () => {
       .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrStart).mockResolvedValue()
 
-    await showCcrMenu('en')
+    await showCcrMenu()
 
-    expect(ccrCommands.runCcrStart).toHaveBeenCalledWith('en')
+    expect(ccrCommands.runCcrStart).toHaveBeenCalled()
   })
 
   it('should handle stop option', async () => {
@@ -135,15 +134,15 @@ describe('cCR Menu', () => {
       .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrStop).mockResolvedValue()
 
-    await showCcrMenu('en')
+    await showCcrMenu()
 
-    expect(ccrCommands.runCcrStop).toHaveBeenCalledWith('en')
+    expect(ccrCommands.runCcrStop).toHaveBeenCalled()
   })
 
   it('should return false when back option is selected', async () => {
     vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '0' })
 
-    const result = await showCcrMenu('en')
+    const result = await showCcrMenu()
 
     expect(result).toBe(false)
   })
@@ -155,7 +154,7 @@ describe('cCR Menu', () => {
       .mockResolvedValueOnce({ choice: '0' })
     vi.mocked(ccrCommands.runCcrStatus).mockResolvedValue()
 
-    await showCcrMenu('en')
+    await showCcrMenu()
 
     expect(ccrCommands.runCcrStatus).toHaveBeenCalledTimes(1)
     expect(inquirer.prompt).toHaveBeenCalledTimes(3)

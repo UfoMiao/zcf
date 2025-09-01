@@ -12,6 +12,18 @@ import * as zcfConfig from '../../../src/utils/zcf-config'
 
 vi.mock('../../../src/utils/fs-operations')
 vi.mock('../../../src/utils/zcf-config')
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
+    i18n: {
+      t: vi.fn((key: string) => key),
+    },
+  }
+})
 vi.mock('dayjs', () => ({
   default: () => ({
     format: () => '2024-01-01_12-00-00',
@@ -348,14 +360,14 @@ describe('json-config utilities', () => {
         vi.mocked(fsOps.readFile).mockReturnValue('{"valid": "json"}')
         vi.mocked(zcfConfig.readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN' } as any)
 
-        const validator = vi.fn().mockReturnValue(false)
+        const validator = vi.fn().mockReturnValue(false) as any
         const result = readJsonConfig('/test.json', {
           validate: validator,
           defaultValue: { default: true },
         })
 
         expect(result).toEqual({ default: true })
-        expect(console.log).toHaveBeenCalledWith(expect.stringContaining('配置无效'))
+        expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Invalid configuration'))
       })
 
       it('should handle validation failure without ZCF config', () => {
@@ -363,7 +375,7 @@ describe('json-config utilities', () => {
         vi.mocked(fsOps.readFile).mockReturnValue('{"valid": "json"}')
         vi.mocked(zcfConfig.readZcfConfig).mockReturnValue(null)
 
-        const validator = vi.fn().mockReturnValue(false)
+        const validator = vi.fn().mockReturnValue(false) as any
         const result = readJsonConfig('/test.json', {
           validate: validator,
           defaultValue: { default: true },
@@ -381,7 +393,7 @@ describe('json-config utilities', () => {
         const result = readJsonConfig('/test.json')
 
         expect(result).toBe(null)
-        expect(console.error).toHaveBeenCalledWith('Failed to parse JSON file: /test.json', expect.any(Error))
+        expect(console.error).toHaveBeenCalledWith('Failed to parse JSON: /test.json', expect.any(Error))
       })
     })
 

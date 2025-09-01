@@ -1,0 +1,20 @@
+{
+  "cannotCheckVersion": "Cannot check latest version",
+  "ccrNotInstalled": "CCR is not installed",
+  "ccrUpToDate": "CCR is up to date (v{{version}})",
+  "checkFailed": "Version check failed",
+  "checkingTools": "Checking tool versions",
+  "checkingVersion": "Checking version...",
+  "claudeCodeNotInstalled": "Claude Code is not installed",
+  "claudeCodeUpToDate": "Claude Code is up to date (v{{version}})",
+  "cometixLineNotInstalled": "CCometixLine is not installed",
+  "cometixLineUpToDate": "CCometixLine is up to date (v{{version}})",
+  "confirmUpdate": "Update {{tool}} to the latest version?",
+  "currentVersion": "Current version: v{{version}}",
+  "errorCheckingUpdates": "Error checking updates:",
+  "latestVersion": "Latest version: v{{version}}",
+  "updateFailed": "{{tool}} update failed",
+  "updateSkipped": "Update skipped",
+  "updateSuccess": "{{tool}} updated successfully!",
+  "updating": "Updating {{tool}}..."
+}

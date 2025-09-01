@@ -4,6 +4,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Change Log (Changelog)
 
+### 2025-09-01
+
+- **Architecture Refresh & i18n Enhancement**: Comprehensive project analysis and documentation update
+- **Project Version**: Current v2.12.4 with advanced i18next internationalization and enhanced CLI features  
+- **Internationalization Upgrade**: Implemented comprehensive i18next system replacing previous language detection approach
+- **Module Analysis**: Complete analysis of 7 core modules with enhanced TypeScript architecture and testing coverage
+- **Coverage Analysis**: Achieved 88%+ file coverage (200/225 source files) with focus on critical path optimization
+- **Documentation Enhancement**: Updated architecture diagrams, enhanced module navigation, and improved cross-platform documentation
+- **CLI Enhancement**: Advanced command-line interface with improved error handling and user experience
+- **Template System**: Enhanced multilingual template system with professional AI personality styles
+
 ### 2025-08-28
 
 - **Architecture Initialization Update**: Comprehensive repository analysis and documentation refresh
@@ -32,17 +43,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ZCF (Zero-Config Claude-Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v2.12.2 features enhanced engineering templates, intelligent IDE detection, and comprehensive multi-platform support.
+ZCF (Zero-Config Claude-Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v2.12.4 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, and comprehensive multi-platform support including Termux compatibility.
 
 ## Architecture Overview
 
-ZCF follows a modular CLI architecture with strict TypeScript typing, comprehensive internationalization, and cross-platform support. The project is built using modern tooling including unbuild, Vitest, ESM-only configuration, and @antfu/eslint-config for code quality.
+ZCF follows a modular CLI architecture with strict TypeScript typing, comprehensive i18next-based internationalization, and cross-platform support. The project is built using modern tooling including unbuild, Vitest, ESM-only configuration, and @antfu/eslint-config for code quality. The architecture emphasizes robust error handling, user-friendly interfaces, and extensive testing coverage.
 
 ### Module Structure Diagram
 
 ```mermaid
 graph TD
-    A["🚀 ZCF Root (v2.12.2)"] --> B["src/commands"];
+    A["🚀 ZCF Root (v2.12.4)"] --> B["src/commands"];
     A --> C["src/utils"];
     A --> D["src/i18n"];
     A --> E["src/types"];
@@ -68,14 +79,15 @@ graph TD
 
     D --> D1["locales/zh-CN/ - Chinese translations"];
     D --> D2["locales/en/ - English translations"];
-    D --> D3["types.ts - Translation interfaces"];
-    D --> D4["index.ts - I18n system"];
+    D --> D3["index.ts - i18next system"];
+    D --> D4["types.ts - Translation interfaces"];
 
     E --> E1["workflow.ts - Workflow types"];
     E --> E2["config.ts - Configuration types"];
     E --> E3["ccr.ts - CCR types"];
 
     F --> F1["workflows.ts - Workflow definitions"];
+    F --> F2["mcp-services.ts - MCP configurations"];
 
     G --> G1["zh-CN/ - Chinese templates"];
     G --> G2["en/ - English templates"];
@@ -103,9 +115,9 @@ graph TD
 | ------------------------ | --------------- | --------------------------------------- | ------------------------------------------------------------------- | ------------------------------- |
 | **Commands**             | `src/commands/` | CLI command implementations             | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts, check-updates.ts       | High - dedicated suites         |
 | **Utilities**            | `src/utils/`    | Core functionality and platform support | config.ts, installer.ts, mcp.ts, platform.ts, workflow-installer.ts | High - comprehensive unit tests |
-| **Internationalization** | `src/i18n/`     | Multilingual support (zh-CN/en)         | index.ts, types.ts, locales/                                        | Medium - translation validation |
+| **Internationalization** | `src/i18n/`     | i18next multilingual support (zh-CN/en) | index.ts, locales/                                                   | High - translation validation   |
 | **Types**                | `src/types/`    | TypeScript type definitions             | workflow.ts, config.ts, ccr.ts                                      | Implicit through usage          |
-| **Configuration**        | `src/config/`   | Workflow and system configurations      | workflows.ts                                                        | High - config validation tests  |
+| **Configuration**        | `src/config/`   | Workflow and system configurations      | workflows.ts, mcp-services.ts                                       | High - config validation tests  |
 | **Templates**            | `templates/`    | Configuration templates and workflows   | common/, zh-CN/, en/, output-styles/                                | Medium - template tests         |
 | **Testing**              | `tests/`        | Test suites with core and edge coverage | Unit, integration, edge test files                                  | Self-testing module             |
 
@@ -199,54 +211,57 @@ The project uses Vitest with a layered testing approach:
   - Minimum 80% coverage required across lines, functions, branches, and statements
 
 - **Internationalization (i18n) Guidelines**:
-  - All user-facing prompts, logs, and error messages must support i18n
-  - Use project-wide i18n approach instead of single-file language detection
-  - Implement translations consistently across the entire project
-  - Support both zh-CN and en locales
-  - Use `getTranslation()` function from `i18n/index.ts` to get translations
-  - Use template strings with placeholders for string interpolation
+  - All user-facing prompts, logs, and error messages must support i18n via i18next
+  - Use project-wide i18n approach with centralized language management
+  - Implement translations consistently across the entire project using namespace-based organization
+  - Support both zh-CN and en locales with complete feature parity
+  - Use `i18n.t()` function for all translatable strings with proper namespace prefixes
+  - Organize translations in logical namespaces (common, cli, menu, errors, etc.)
 
 ## Coding Standards
 
 - **ESM-Only**: Project is fully ESM with no CommonJS fallbacks
 - **Path Handling**: Uses `pathe` for cross-platform path operations
 - **Command Execution**: Uses `tinyexec` for better cross-platform support
-- **TypeScript**: Strict TypeScript with explicit type definitions
-- **Error Handling**: Graceful error handling with user-friendly messages
-- **Cross-Platform Support**: Special handling for Windows paths and Termux environment
-- **Code Formatting**: Uses @antfu/eslint-config for consistent code style
-- **Testing Organization**: Tests organized in `tests/` directory with unit/integration/edge structure
+- **TypeScript**: Strict TypeScript with explicit type definitions and ESNext configuration
+- **Error Handling**: Comprehensive error handling with user-friendly i18n messages
+- **Cross-Platform Support**: Special handling for Windows paths, macOS, Linux, and Termux environment
+- **Code Formatting**: Uses @antfu/eslint-config for consistent code style with strict rules
+- **Testing Organization**: Tests organized in `tests/` directory with unit/integration/edge structure and 80% coverage requirement
 
 ## AI Usage Guidelines
 
 ### Key Architecture Patterns
 
-1. **Modular Command Structure**: Each command is self-contained with its own options interface
-2. **I18N Support**: All user-facing strings support zh-CN and en localization
-3. **Configuration Merging**: Smart config merging to preserve user customizations
-4. **Cross-Platform Support**: Windows/macOS/Linux/Termux compatibility
-5. **Template System**: Language-specific templates with workflow categorization
-6. **IDE Integration**: Intelligent IDE detection and auto-open functionality for git-worktree
+1. **Modular Command Structure**: Each command is self-contained with its own options interface and comprehensive error handling
+2. **i18next I18N Support**: All user-facing strings support zh-CN and en localization with namespace-based organization
+3. **Configuration Merging**: Smart config merging with backup system to preserve user customizations
+4. **Cross-Platform Support**: Windows/macOS/Linux/Termux compatibility with platform-specific adaptations
+5. **Template System**: Language-specific templates with workflow categorization and AI personality support
+6. **IDE Integration**: Intelligent IDE detection and auto-open functionality for git-worktree environments
 7. **AI Personality System**: Professional output styles including engineer-professional, laowang-engineer, and nekomata-engineer
+8. **Tool Integration**: Comprehensive integration with CCR proxy, CCusage analytics, and Cometix status line tools
 
 ### Important Implementation Details
 
-1. **Windows Compatibility**: MCP configurations require special handling for Windows paths
-2. **Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/`
-3. **API Configuration**: Supports both Auth Token (OAuth) and API Key authentication
-4. **Workflow System**: Modular workflow installation with dependency resolution
-5. **CCR Integration**: Claude Code Router proxy management
-6. **Auto-Update System**: Automated tool updating for Claude Code, CCR, and CCometixLine
-7. **Common Tools Workflow**: New workflow category with init-project command and related agents
+1. **Windows Compatibility**: MCP configurations require special handling for Windows paths with proper escaping
+2. **Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/` for recovery
+3. **API Configuration**: Supports both Auth Token (OAuth) and API Key authentication with validation
+4. **Workflow System**: Modular workflow installation with dependency resolution and conflict management
+5. **CCR Integration**: Claude Code Router proxy management with configuration validation
+6. **Auto-Update System**: Automated tool updating for Claude Code, CCR, and CCometixLine with version checking
+7. **Common Tools Workflow**: New workflow category with init-project command and related agents for project setup
 8. **Enhanced Template System**: Multi-language templates with professional output styles and comprehensive workflow coverage
+9. **i18next Integration**: Advanced internationalization with namespace-based translation management and dynamic language switching
 
 ### Testing Philosophy
 
-- Extensive mocking for file system operations, external commands, and user prompts
-- Cross-platform testing with platform detection mocks
-- Comprehensive edge case testing for boundary conditions and error scenarios
-- 80% minimum coverage across all metrics
-- Tests organized in dedicated `tests/` directory with clear categorization
+- Extensive mocking for file system operations, external commands, and user prompts with realistic scenarios
+- Cross-platform testing with platform detection mocks and environment-specific test cases
+- Comprehensive edge case testing for boundary conditions, error scenarios, and recovery mechanisms
+- 80% minimum coverage across all metrics with quality-focused test design
+- Tests organized in dedicated `tests/` directory with clear categorization and helper functions
+- Integration testing for complete workflow scenarios and external tool interactions
 
 ## Release & Publishing
 

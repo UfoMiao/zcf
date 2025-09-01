@@ -1,22 +1,14 @@
-import type { SupportedLang } from '../constants'
 import process from 'node:process'
 import ansis from 'ansis'
+import { i18n } from '../i18n'
 import { checkAndUpdateTools } from '../utils/auto-updater'
-import { selectScriptLanguage } from '../utils/prompts'
 
-export interface CheckUpdatesOptions {
-  lang?: SupportedLang
-}
-
-export async function checkUpdates(options: CheckUpdatesOptions = {}): Promise<void> {
-  // Select language first
-  const scriptLang = options.lang || await selectScriptLanguage()
-
+export async function checkUpdates(): Promise<void> {
   try {
-    await checkAndUpdateTools(scriptLang)
+    await checkAndUpdateTools()
   }
   catch (error) {
-    console.error(ansis.red('Error checking updates:'), error)
+    console.error(ansis.red(i18n.t('updater:errorCheckingUpdates')), error)
     process.exit(1)
   }
 }

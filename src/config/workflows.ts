@@ -1,10 +1,21 @@
 import type { WorkflowConfig } from '../types/workflow'
+import { ensureI18nInitialized, i18n } from '../i18n'
 
-export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
+// Pure business configuration without any i18n text
+export interface WorkflowConfigBase {
+  id: string
+  defaultSelected: boolean
+  order: number
+  commands: string[]
+  agents: Array<{ id: string, filename: string, required: boolean }>
+  autoInstallAgents: boolean
+  category: 'common' | 'plan' | 'sixStep' | 'bmad' | 'git'
+  outputDir: string
+}
+
+export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
   {
     id: 'commonTools',
-    nameKey: 'workflowOption.commonTools',
-    descriptionKey: 'workflowDescription.commonTools',
     defaultSelected: true,
     order: 1,
     commands: ['init-project.md'],
@@ -18,8 +29,6 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
   },
   {
     id: 'sixStepsWorkflow',
-    nameKey: 'workflowOption.sixStepsWorkflow',
-    descriptionKey: 'workflowDescription.sixStepsWorkflow',
     defaultSelected: true,
     order: 2,
     commands: ['workflow.md'],
@@ -30,8 +39,6 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
   },
   {
     id: 'featPlanUx',
-    nameKey: 'workflowOption.featPlanUx',
-    descriptionKey: 'workflowDescription.featPlanUx',
     defaultSelected: true,
     order: 3,
     commands: ['feat.md'],
@@ -45,8 +52,6 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
   },
   {
     id: 'gitWorkflow',
-    nameKey: 'workflowOption.gitWorkflow',
-    descriptionKey: 'workflowDescription.gitWorkflow',
     defaultSelected: true,
     order: 4,
     commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
@@ -57,8 +62,6 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
   },
   {
     id: 'bmadWorkflow',
-    nameKey: 'workflowOption.bmadWorkflow',
-    descriptionKey: 'workflowDescription.bmadWorkflow',
     defaultSelected: true,
     order: 5,
     commands: ['bmad-init.md'],
@@ -69,10 +72,56 @@ export const WORKFLOW_CONFIGS: WorkflowConfig[] = [
   },
 ]
 
+export function getWorkflowConfigs(): WorkflowConfig[] {
+  ensureI18nInitialized()
+
+  // Create static workflow option list for i18n-ally compatibility
+  const workflowTranslations = [
+    {
+      id: 'commonTools',
+      name: i18n.t('workflow:workflowOption.commonTools'),
+      description: i18n.t('workflow:workflowDescription.commonTools'),
+    },
+    {
+      id: 'sixStepsWorkflow',
+      name: i18n.t('workflow:workflowOption.sixStepsWorkflow'),
+      description: i18n.t('workflow:workflowDescription.sixStepsWorkflow'),
+    },
+    {
+      id: 'featPlanUx',
+      name: i18n.t('workflow:workflowOption.featPlanUx'),
+      description: i18n.t('workflow:workflowDescription.featPlanUx'),
+    },
+    {
+      id: 'gitWorkflow',
+      name: i18n.t('workflow:workflowOption.gitWorkflow'),
+      description: i18n.t('workflow:workflowDescription.gitWorkflow'),
+    },
+    {
+      id: 'bmadWorkflow',
+      name: i18n.t('workflow:workflowOption.bmadWorkflow'),
+      description: i18n.t('workflow:workflowDescription.bmadWorkflow'),
+    },
+  ]
+
+  // Merge base config with translations
+  return WORKFLOW_CONFIG_BASE.map((baseConfig) => {
+    const translation = workflowTranslations.find(t => t.id === baseConfig.id)
+    return {
+      ...baseConfig,
+      name: translation?.name || baseConfig.id,
+      description: translation?.description,
+    }
+  })
+}
+
 export function getWorkflowConfig(workflowId: string): WorkflowConfig | undefined {
-  return WORKFLOW_CONFIGS.find(config => config.id === workflowId)
+  return getWorkflowConfigs().find(config => config.id === workflowId)
 }
 
 export function getOrderedWorkflows(): WorkflowConfig[] {
-  return [...WORKFLOW_CONFIGS].sort((a, b) => a.order - b.order)
+  return getWorkflowConfigs().sort((a, b) => a.order - b.order)
 }
+
+// Note: WORKFLOW_CONFIGS should not be used directly in new code
+// Use getWorkflowConfigs() instead for proper i18n initialization

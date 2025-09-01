@@ -12,7 +12,7 @@ describe('executeCcusage', () => {
   const mockReadZcfConfigAsync = vi.mocked(zcfConfig.readZcfConfigAsync)
   const consoleLogSpy = vi.spyOn(console, 'log')
   const consoleErrorSpy = vi.spyOn(console, 'error')
-  const _processExitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {
+  vi.spyOn(process, 'exit').mockImplementation((() => {
     throw new Error('process.exit called')
   }) as any)
 

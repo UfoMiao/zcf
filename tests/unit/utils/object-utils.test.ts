@@ -60,7 +60,7 @@ describe('object-utils', () => {
     it('should merge simple objects', () => {
       const target = { a: 1, b: 2 }
       const source = { b: 3, c: 4 }
-      const result = deepMerge(target, source)
+      const result = deepMerge(target as any, source as any)
 
       expect(result).toEqual({ a: 1, b: 3, c: 4 })
     })
@@ -68,7 +68,7 @@ describe('object-utils', () => {
     it('should merge nested objects', () => {
       const target = { a: { b: 1, c: 2 }, d: 3 }
       const source = { a: { c: 3, e: 4 }, f: 5 }
-      const result = deepMerge(target, source)
+      const result = deepMerge(target as any, source as any)
 
       expect(result).toEqual({
         a: { b: 1, c: 3, e: 4 },
@@ -80,7 +80,7 @@ describe('object-utils', () => {
     it('should skip undefined values', () => {
       const target = { a: 1, b: 2 }
       const source = { b: undefined, c: 3 }
-      const result = deepMerge(target, source)
+      const result = deepMerge(target as any, source as any)
 
       expect(result).toEqual({ a: 1, b: 2, c: 3 })
     })
@@ -88,7 +88,7 @@ describe('object-utils', () => {
     it('should replace arrays by default', () => {
       const target = { arr: [1, 2] }
       const source = { arr: [3, 4] }
-      const result = deepMerge(target, source)
+      const result = deepMerge(target as any, source as any)
 
       expect(result).toEqual({ arr: [3, 4] })
     })
@@ -118,7 +118,7 @@ describe('object-utils', () => {
     it('should replace non-array with array', () => {
       const target = { value: 'string' }
       const source = { value: [1, 2, 3] }
-      const result = deepMerge(target, source)
+      const result = deepMerge(target as any, source as any)
 
       expect(result).toEqual({ value: [1, 2, 3] })
     })
@@ -126,7 +126,7 @@ describe('object-utils', () => {
     it('should handle null values', () => {
       const target = { a: { b: 1 } }
       const source = { a: null }
-      const result = deepMerge(target, source)
+      const result = deepMerge(target as any, source as any)
 
       expect(result).toEqual({ a: null })
     })

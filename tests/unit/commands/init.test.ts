@@ -30,7 +30,6 @@ vi.mock('../../../src/utils/config-operations', () => ({
 }))
 
 vi.mock('../../../src/utils/prompts', () => ({
-  selectScriptLanguage: vi.fn(),
   selectAiOutputLanguage: vi.fn(),
   resolveAiOutputLanguage: vi.fn(),
 }))
@@ -51,14 +50,24 @@ vi.mock('../../../src/utils/banner', () => ({
   displayBannerWithInfo: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/ai-personality', () => ({
-  configureAiPersonality: vi.fn(),
+vi.mock('../../../src/utils/output-style', () => ({
+  selectOutputStyles: vi.fn(),
+  configureOutputStyle: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(),
   updateZcfConfig: vi.fn(),
 }))
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 
 vi.mock('../../../src/utils/mcp-selector', () => ({
   selectMcpServices: vi.fn(),
@@ -93,17 +102,17 @@ vi.mock('node:fs', () => ({
 
 // Common test setup
 interface TestMocks {
-  selectScriptLanguage: any
   resolveAiOutputLanguage: any
   isClaudeCodeInstalled: any
   copyConfigFiles: any
   applyAiLanguageDirective: any
   selectMcpServices: any
   selectAndInstallWorkflows: any
-  configureAiPersonality: any
+  configureOutputStyle: any
   updateZcfConfig: any
   existsSync: any
   inquirerPrompt: any
+  readZcfConfig: any
 }
 
 let testMocks: TestMocks
@@ -116,25 +125,25 @@ describe('init command', () => {
     vi.spyOn(process, 'exit').mockImplementation((() => {}) as any)
 
     // Setup common mocks
-    const { selectScriptLanguage, resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
+    const { resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
     const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
     const { copyConfigFiles, applyAiLanguageDirective } = await import('../../../src/utils/config')
     const { selectMcpServices } = await import('../../../src/utils/mcp-selector')
     const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
-    const { configureAiPersonality } = await import('../../../src/utils/ai-personality')
-    const { updateZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { configureOutputStyle } = await import('../../../src/utils/output-style')
+    const { updateZcfConfig, readZcfConfig } = await import('../../../src/utils/zcf-config')
     const { existsSync } = await import('node:fs')
 
     testMocks = {
-      selectScriptLanguage: vi.mocked(selectScriptLanguage),
       resolveAiOutputLanguage: vi.mocked(resolveAiOutputLanguage),
       isClaudeCodeInstalled: vi.mocked(isClaudeCodeInstalled),
       copyConfigFiles: vi.mocked(copyConfigFiles),
       applyAiLanguageDirective: vi.mocked(applyAiLanguageDirective),
       selectMcpServices: vi.mocked(selectMcpServices),
       selectAndInstallWorkflows: vi.mocked(selectAndInstallWorkflows),
-      configureAiPersonality: vi.mocked(configureAiPersonality),
+      configureOutputStyle: vi.mocked(configureOutputStyle),
       updateZcfConfig: vi.mocked(updateZcfConfig),
+      readZcfConfig: vi.mocked(readZcfConfig),
       existsSync: vi.mocked(existsSync),
       inquirerPrompt: vi.mocked(inquirer.prompt),
     }
@@ -153,37 +162,39 @@ describe('init command', () => {
         const { init } = await import('../../../src/commands/init')
 
         // Setup mocks for minimal flow
-        testMocks.selectScriptLanguage.mockResolvedValue('zh-CN')
         testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
         testMocks.existsSync.mockReturnValue(false)
+        testMocks.readZcfConfig.mockReturnValue({})
         testMocks.inquirerPrompt.mockResolvedValueOnce({ lang: 'zh-CN' })
         testMocks.inquirerPrompt.mockResolvedValueOnce({ shouldConfigureMcp: false })
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
-        testMocks.configureAiPersonality.mockResolvedValue(undefined)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
 
         await init({ skipBanner: true })
 
-        expect(testMocks.selectScriptLanguage).toHaveBeenCalled()
+        // Language is now handled directly in init function via inquirer
+        expect(testMocks.inquirerPrompt).toHaveBeenCalled()
         expect(testMocks.resolveAiOutputLanguage).toHaveBeenCalled()
       })
 
       it('should handle options correctly', async () => {
         const { init } = await import('../../../src/commands/init')
 
-        testMocks.selectScriptLanguage.mockResolvedValue('en')
         testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
         testMocks.existsSync.mockReturnValue(false)
+        testMocks.readZcfConfig.mockReturnValue({})
         testMocks.resolveAiOutputLanguage.mockResolvedValue('english')
         testMocks.inquirerPrompt.mockResolvedValue({ shouldConfigureMcp: false })
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
-        testMocks.configureAiPersonality.mockResolvedValue(undefined)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
 
-        await init({ lang: 'en', configLang: 'en', force: true, skipBanner: true })
+        await init({ configLang: 'en', force: true, skipBanner: true })
 
-        expect(testMocks.selectScriptLanguage).toHaveBeenCalledWith('en')
+        // When configLang is specified, no prompt for language selection
+        expect(testMocks.resolveAiOutputLanguage).toHaveBeenCalled()
       })
     })
 
@@ -192,8 +203,8 @@ describe('init command', () => {
         const { init } = await import('../../../src/commands/init')
         const { installClaudeCode } = await import('../../../src/utils/installer')
 
-        testMocks.selectScriptLanguage.mockResolvedValue('zh-CN')
         testMocks.isClaudeCodeInstalled.mockResolvedValue(false)
+        testMocks.readZcfConfig.mockReturnValue({})
         testMocks.existsSync.mockReturnValue(false)
         testMocks.inquirerPrompt
           .mockResolvedValueOnce({ lang: 'zh-CN' })
@@ -201,7 +212,7 @@ describe('init command', () => {
           .mockResolvedValueOnce({ shouldConfigureMcp: false })
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
-        testMocks.configureAiPersonality.mockResolvedValue(undefined)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
         vi.mocked(installClaudeCode).mockResolvedValue(undefined)
 
@@ -216,8 +227,8 @@ describe('init command', () => {
       it('should handle existing config', async () => {
         const { init } = await import('../../../src/commands/init')
 
-        testMocks.selectScriptLanguage.mockResolvedValue('zh-CN')
         testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
+        testMocks.readZcfConfig.mockReturnValue({})
         testMocks.existsSync.mockReturnValue(true)
         testMocks.inquirerPrompt
           .mockResolvedValueOnce({ lang: 'zh-CN' })
@@ -226,7 +237,7 @@ describe('init command', () => {
 
         await init({ skipBanner: true })
 
-        expect(testMocks.selectScriptLanguage).toHaveBeenCalled()
+        expect(testMocks.inquirerPrompt).toHaveBeenCalled()
       })
     })
 
@@ -235,8 +246,8 @@ describe('init command', () => {
         const { init } = await import('../../../src/commands/init')
 
         // Setup all mocks for successful flow
-        testMocks.selectScriptLanguage.mockResolvedValue('zh-CN')
         testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
+        testMocks.readZcfConfig.mockReturnValue({})
         testMocks.existsSync.mockReturnValue(false)
         testMocks.inquirerPrompt
           .mockResolvedValueOnce({ lang: 'zh-CN' })
@@ -245,12 +256,12 @@ describe('init command', () => {
         testMocks.copyConfigFiles.mockResolvedValue(undefined)
         testMocks.applyAiLanguageDirective.mockResolvedValue(undefined)
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
-        testMocks.configureAiPersonality.mockResolvedValue(undefined)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
 
         await init({ skipBanner: true })
 
-        expect(testMocks.selectScriptLanguage).toHaveBeenCalled()
+        expect(testMocks.inquirerPrompt).toHaveBeenCalled()
         expect(testMocks.isClaudeCodeInstalled).toHaveBeenCalled()
         expect(testMocks.copyConfigFiles).toHaveBeenCalled()
         expect(testMocks.applyAiLanguageDirective).toHaveBeenCalled()
@@ -263,7 +274,9 @@ describe('init command', () => {
         const { init } = await import('../../../src/commands/init')
 
         const error = new Error('Test error')
-        testMocks.selectScriptLanguage.mockRejectedValue(error)
+        testMocks.readZcfConfig.mockImplementation(() => {
+          throw error
+        })
 
         await init({ skipBanner: true })
 

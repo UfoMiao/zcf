@@ -1,0 +1,12 @@
+{
+  "alreadyInstalled": "Claude Code is already installed",
+  "installFailed": "Failed to install Claude Code",
+  "installPrompt": "Claude Code not found. Install automatically?",
+  "installSuccess": "Claude Code installed successfully",
+  "installing": "Installing Claude Code...",
+  "termuxDetected": "Termux environment detected",
+  "termuxEnvironmentInfo": "Termux environment provides Node.js and npm through pkg manager",
+  "termuxInstallHint": "In Termux, please run first: pkg install nodejs or pkg install nodejs-lts",
+  "windowsDetected": "Windows detected, will configure compatible format",
+  "termuxPathInfo": "Termux environment path prefix: {path}"
+}

@@ -42,10 +42,10 @@ describe('ccr command', () => {
 
   describe('basic functionality', () => {
     it('should show CCR menu with provided language', async () => {
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(banner.displayBannerWithInfo).toHaveBeenCalled()
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
       expect(menu.showMainMenu).toHaveBeenCalled()
     })
 
@@ -56,7 +56,7 @@ describe('ccr command', () => {
 
       await ccr({})
 
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should prompt for language when not configured', async () => {
@@ -65,12 +65,12 @@ describe('ccr command', () => {
 
       await ccr({})
 
-      expect(prompts.selectScriptLanguage).toHaveBeenCalled()
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      // Language prompting is no longer part of ccr command since i18n is globally initialized
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should skip banner when skipBanner is true', async () => {
-      await ccr({ skipBanner: true, lang: 'en' })
+      await ccr({ skipBanner: true })
 
       expect(banner.displayBannerWithInfo).not.toHaveBeenCalled()
     })
@@ -78,7 +78,7 @@ describe('ccr command', () => {
     it('should not show main menu when continueInCcr is true', async () => {
       vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(true)
 
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(menu.showMainMenu).not.toHaveBeenCalled()
     })
@@ -86,7 +86,7 @@ describe('ccr command', () => {
     it('should not show main menu when skipBanner is true', async () => {
       vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false)
 
-      await ccr({ skipBanner: true, lang: 'en' })
+      await ccr({ skipBanner: true })
 
       expect(menu.showMainMenu).not.toHaveBeenCalled()
     })
@@ -100,7 +100,7 @@ describe('ccr command', () => {
       vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(exitError)
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(true)
 
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(exitError)
       expect(errorHandler.handleGeneralError).not.toHaveBeenCalled()
@@ -112,38 +112,36 @@ describe('ccr command', () => {
       vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(generalError)
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false)
 
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(generalError)
-      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(generalError, 'en')
+      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(generalError)
     })
 
-    it('should handle config read errors', async () => {
-      const configError = new Error('Config error')
-      vi.mocked(zcfConfig.readZcfConfigAsync).mockRejectedValue(configError)
+    it('should handle ccr menu errors', async () => {
+      const menuError = new Error('Menu error')
+      vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(menuError)
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false)
 
       await ccr({})
 
       // Should handle the error
-      expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(configError)
-      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(configError, undefined)
-      // Should not call menu since error occurred
-      expect(ccrMenu.showCcrMenu).not.toHaveBeenCalled()
+      expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(menuError)
+      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(menuError)
     })
   })
 
   describe('internationalization', () => {
     it('should use English language', async () => {
-      await ccr({ lang: 'en' })
+      await ccr()
 
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should use Chinese language', async () => {
-      await ccr({ lang: 'zh-CN' })
+      await ccr()
 
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should use default language when not specified', async () => {
@@ -152,7 +150,7 @@ describe('ccr command', () => {
 
       await ccr({})
 
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
   })
 })

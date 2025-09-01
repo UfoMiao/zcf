@@ -213,7 +213,7 @@ describe('simple-config utilities', () => {
       const { getPlatform } = await import('../../../src/utils/platform')
       vi.mocked(getPlatform).mockReturnValue('macos')
       vi.mocked(fs.existsSync).mockReturnValue(true)
-      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '' })
+      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
       await openSettingsJson()
 
@@ -224,7 +224,7 @@ describe('simple-config utilities', () => {
       const { getPlatform } = await import('../../../src/utils/platform')
       vi.mocked(getPlatform).mockReturnValue('windows')
       vi.mocked(fs.existsSync).mockReturnValue(true)
-      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '' })
+      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
       await openSettingsJson()
 
@@ -235,7 +235,7 @@ describe('simple-config utilities', () => {
       const { getPlatform } = await import('../../../src/utils/platform')
       vi.mocked(getPlatform).mockReturnValue('linux')
       vi.mocked(fs.existsSync).mockReturnValue(true)
-      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '' })
+      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
       await openSettingsJson()
 
@@ -244,7 +244,7 @@ describe('simple-config utilities', () => {
 
     it('should create settings file if it does not exist', async () => {
       vi.mocked(fs.existsSync).mockReturnValue(false)
-      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '' })
+      vi.mocked(exec).mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
       const writeSpy = vi.mocked(fs.writeFileSync)
 
       await openSettingsJson()
@@ -259,7 +259,7 @@ describe('simple-config utilities', () => {
       vi.mocked(fs.existsSync).mockReturnValue(true)
       vi.mocked(exec)
         .mockRejectedValueOnce(new Error('open failed'))
-        .mockResolvedValueOnce({ stdout: '', stderr: '' })
+        .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
 
       await openSettingsJson()
 
@@ -271,7 +271,7 @@ describe('simple-config utilities', () => {
       vi.mocked(exec)
         .mockRejectedValueOnce(new Error('open failed'))
         .mockRejectedValueOnce(new Error('code failed'))
-        .mockResolvedValueOnce({ stdout: '', stderr: '' })
+        .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
 
       await openSettingsJson()
 
@@ -284,7 +284,7 @@ describe('simple-config utilities', () => {
         .mockRejectedValueOnce(new Error('open failed'))
         .mockRejectedValueOnce(new Error('code failed'))
         .mockRejectedValueOnce(new Error('vim failed'))
-        .mockResolvedValueOnce({ stdout: '', stderr: '' })
+        .mockResolvedValueOnce({ stdout: '', stderr: '', exitCode: 0 })
 
       await openSettingsJson()
 

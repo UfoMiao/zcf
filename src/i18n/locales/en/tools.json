@@ -1,0 +1,15 @@
+{
+  "ccusageDescription": "CCUsage is a tool for Claude Code usage analytics",
+  "ccusageFailed": "CCUsage failed to run",
+  "ccusageModes.blocks": "Analyze code blocks",
+  "ccusageModes.custom": "Custom parameters",
+  "ccusageModes.daily": "Daily usage",
+  "ccusageModes.monthly": "Monthly usage",
+  "ccusageModes.session": "Session statistics",
+  "checkNetworkConnection": "Check network connection",
+  "enterCustomArgs": "Enter custom arguments",
+  "errorDetails": "Error details:",
+  "pressEnterToContinue": "Press Enter to continue...",
+  "runningCcusage": "Running Claude Code usage analysis tool...",
+  "selectAnalysisMode": "Select analysis mode:"
+}

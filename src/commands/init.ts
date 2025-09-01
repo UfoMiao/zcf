@@ -6,8 +6,9 @@ import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
-import { WORKFLOW_CONFIGS } from '../config/workflows'
-import { CLAUDE_DIR, I18N, LANG_LABELS, SETTINGS_FILE, SUPPORTED_LANGS } from '../constants'
+import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
+import { CLAUDE_DIR, LANG_LABELS, SETTINGS_FILE, SUPPORTED_LANGS } from '../constants'
+import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
 import { installCcr, isCcrInstalled } from '../utils/ccr/installer'
@@ -36,14 +37,13 @@ import { selectMcpServices } from '../utils/mcp-selector'
 import { configureOutputStyle } from '../utils/output-style'
 import { isTermux, isWindows } from '../utils/platform'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
-import { resolveAiOutputLanguage, selectScriptLanguage } from '../utils/prompts'
+import { resolveAiOutputLanguage } from '../utils/prompts'
 import { formatApiKeyDisplay } from '../utils/validator'
 import { checkClaudeCodeVersionAndPrompt } from '../utils/version-checker'
 import { selectAndInstallWorkflows } from '../utils/workflow-installer'
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config'
 
 export interface InitOptions {
-  lang?: SupportedLang
   configLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
   force?: boolean
@@ -66,14 +66,12 @@ function validateSkipPromptOptions(options: InitOptions) {
   // Apply --all-lang logic first
   if (options.allLang) {
     if (options.allLang === 'zh-CN' || options.allLang === 'en') {
-      // Use allLang for all three language parameters
-      options.lang = options.allLang as SupportedLang
+      // Use allLang for config and AI output language parameters
       options.configLang = options.allLang as SupportedLang
       options.aiOutputLang = options.allLang
     }
     else {
-      // Use en for lang/config-lang, allLang for ai-output-lang
-      options.lang = 'en'
+      // Use en for config-lang, allLang for ai-output-lang
       options.configLang = 'en'
       options.aiOutputLang = options.allLang
     }
@@ -82,9 +80,6 @@ function validateSkipPromptOptions(options: InitOptions) {
   // Set defaults
   if (!options.configAction) {
     options.configAction = 'backup'
-  }
-  if (!options.lang) {
-    options.lang = 'en'
   }
   if (!options.configLang) {
     options.configLang = 'en'
@@ -123,24 +118,24 @@ function validateSkipPromptOptions(options: InitOptions) {
   // Validate configAction
   if (options.configAction && !['new', 'backup', 'merge', 'docs-only', 'skip'].includes(options.configAction)) {
     throw new Error(
-      `Invalid configAction value: ${options.configAction}. Must be 'new', 'backup', 'merge', 'docs-only', or 'skip'`,
+      i18n.t('errors:invalidConfigAction', { value: options.configAction }),
     )
   }
 
   // Validate apiType
   if (options.apiType && !['auth_token', 'api_key', 'ccr_proxy', 'skip'].includes(options.apiType)) {
     throw new Error(
-      `Invalid apiType value: ${options.apiType}. Must be 'auth_token', 'api_key', 'ccr_proxy', or 'skip'`,
+      i18n.t('errors:invalidApiType', { value: options.apiType }),
     )
   }
 
   // Validate required API parameters (both use apiKey now)
   if (options.apiType === 'api_key' && !options.apiKey) {
-    throw new Error('API key is required when apiType is "api_key"')
+    throw new Error(i18n.t('errors:apiKeyRequiredForApiKey'))
   }
 
   if (options.apiType === 'auth_token' && !options.apiKey) {
-    throw new Error('API key is required when apiType is "auth_token"')
+    throw new Error(i18n.t('errors:apiKeyRequiredForAuthToken'))
   }
 
   // Parse and validate MCP services
@@ -159,7 +154,7 @@ function validateSkipPromptOptions(options: InitOptions) {
     const validServices = MCP_SERVICE_CONFIGS.map(s => s.id)
     for (const service of options.mcpServices) {
       if (!validServices.includes(service)) {
-        throw new Error(`Invalid MCP service: ${service}. Available services: ${validServices.join(', ')}`)
+        throw new Error(i18n.t('errors:invalidMcpService', { service, validServices: validServices.join(', ') }))
       }
     }
   }
@@ -169,7 +164,7 @@ function validateSkipPromptOptions(options: InitOptions) {
     const validStyles = ['engineer-professional', 'nekomata-engineer', 'laowang-engineer', 'default', 'explanatory', 'learning']
     for (const style of options.outputStyles) {
       if (!validStyles.includes(style)) {
-        throw new Error(`Invalid output style: ${style}. Available styles: ${validStyles.join(', ')}`)
+        throw new Error(i18n.t('errors:invalidOutputStyle', { style, validStyles: validStyles.join(', ') }))
       }
     }
   }
@@ -178,7 +173,7 @@ function validateSkipPromptOptions(options: InitOptions) {
   if (options.defaultOutputStyle) {
     const validStyles = ['engineer-professional', 'nekomata-engineer', 'laowang-engineer', 'default', 'explanatory', 'learning']
     if (!validStyles.includes(options.defaultOutputStyle)) {
-      throw new Error(`Invalid default output style: ${options.defaultOutputStyle}. Available styles: ${validStyles.join(', ')}`)
+      throw new Error(i18n.t('errors:invalidDefaultOutputStyle', { style: options.defaultOutputStyle, validStyles: validStyles.join(', ') }))
     }
   }
 
@@ -188,17 +183,17 @@ function validateSkipPromptOptions(options: InitOptions) {
       options.workflows = false
     }
     else if (options.workflows === 'all') {
-      options.workflows = WORKFLOW_CONFIGS.map((w: any) => w.id)
+      options.workflows = WORKFLOW_CONFIG_BASE.map(w => w.id)
     }
     else {
       options.workflows = options.workflows.split(',').map(s => s.trim())
     }
   }
   if (Array.isArray(options.workflows)) {
-    const validWorkflows = WORKFLOW_CONFIGS.map((w: any) => w.id)
+    const validWorkflows = WORKFLOW_CONFIG_BASE.map(w => w.id)
     for (const workflow of options.workflows) {
       if (!validWorkflows.includes(workflow)) {
-        throw new Error(`Invalid workflow: ${workflow}. Available workflows: ${validWorkflows.join(', ')}`)
+        throw new Error(i18n.t('errors:invalidWorkflow', { workflow, validWorkflows: validWorkflows.join(', ') }))
       }
     }
   }
@@ -214,7 +209,7 @@ function validateSkipPromptOptions(options: InitOptions) {
   if (options.workflows === undefined) {
     options.workflows = 'all'
     // Convert "all" to actual workflow array
-    options.workflows = WORKFLOW_CONFIGS.map((w: any) => w.id)
+    options.workflows = WORKFLOW_CONFIG_BASE.map(w => w.id)
   }
 }
 
@@ -230,34 +225,35 @@ export async function init(options: InitOptions = {}) {
       displayBannerWithInfo()
     }
 
-    // Step 1: Select ZCF display language
-    const scriptLang = options.skipPrompt ? options.lang || 'en' : await selectScriptLanguage(options.lang)
-
-    const i18n = I18N[scriptLang]
-
     // Show Termux environment info if detected
     if (isTermux()) {
-      console.log(ansis.yellow(`\nℹ ${i18n.installation.termuxDetected}`))
-      console.log(ansis.gray(i18n.installation.termuxEnvironmentInfo))
+      console.log(ansis.yellow(`\nℹ ${i18n.t('installation:termuxDetected')}`))
+      console.log(ansis.gray(i18n.t('installation:termuxEnvironmentInfo')))
     }
 
     // Step 2: Select config language
     let configLang = options.configLang
     if (!configLang && !options.skipPrompt) {
+      // Create static language hint keys for i18n-ally compatibility
+      const LANG_HINT_KEYS = {
+        'zh-CN': i18n.t('language:configLangHint.zh-CN'),
+        'en': i18n.t('language:configLangHint.en'),
+      } as const
+
       const { lang } = await inquirer.prompt<{ lang: SupportedLang }>({
         type: 'list',
         name: 'lang',
-        message: i18n.language.selectConfigLang,
+        message: i18n.t('language:selectConfigLang'),
         choices: addNumbersToChoices(
           SUPPORTED_LANGS.map(l => ({
-            name: `${LANG_LABELS[l]} - ${i18n.language.configLangHint[l]}`,
+            name: `${LANG_LABELS[l]} - ${LANG_HINT_KEYS[l]}`,
             value: l,
           })),
         ),
       })
 
       if (!lang) {
-        console.log(ansis.yellow(i18n.common.cancelled))
+        console.log(ansis.yellow(i18n.t('common:cancelled')))
         process.exit(0)
       }
 
@@ -271,42 +267,42 @@ export async function init(options: InitOptions = {}) {
     const zcfConfig = readZcfConfig()
     const aiOutputLang = options.skipPrompt
       ? options.aiOutputLang || 'en'
-      : await resolveAiOutputLanguage(scriptLang, options.aiOutputLang, zcfConfig)
+      : await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig)
 
     // Step 4: Check and install Claude Code (auto-install in skip-prompt mode)
     const installed = await isClaudeCodeInstalled()
     if (!installed) {
       if (options.skipPrompt) {
         // In skip-prompt mode, auto-install Claude Code
-        await installClaudeCode(scriptLang)
+        await installClaudeCode()
       }
       else {
         const { shouldInstall } = await inquirer.prompt<{ shouldInstall: boolean }>({
           type: 'confirm',
           name: 'shouldInstall',
-          message: i18n.installation.installPrompt,
+          message: i18n.t('installation:installPrompt'),
           default: true,
         })
 
         if (shouldInstall === undefined) {
-          console.log(ansis.yellow(i18n.common.cancelled))
+          console.log(ansis.yellow(i18n.t('common:cancelled')))
           process.exit(0)
         }
 
         if (shouldInstall) {
-          await installClaudeCode(scriptLang)
+          await installClaudeCode()
         }
         else {
-          console.log(ansis.yellow(i18n.common.skip))
+          console.log(ansis.yellow(i18n.t('common:skip')))
         }
       }
     }
     else {
-      console.log(ansis.green(`✔ ${i18n.installation.alreadyInstalled}`))
+      console.log(ansis.green(`✔ ${i18n.t('installation:alreadyInstalled')}`))
 
       // Step 4.5: Check for Claude Code updates (only if already installed)
       // Skip version check if Claude Code was just installed (it's already latest)
-      await checkClaudeCodeVersionAndPrompt(scriptLang, options.skipPrompt)
+      await checkClaudeCodeVersionAndPrompt(options.skipPrompt)
     }
 
     // Step 5: Handle existing config
@@ -318,7 +314,7 @@ export async function init(options: InitOptions = {}) {
         // In skip-prompt mode, use configAction option (default: backup)
         action = options.configAction || 'backup'
         if (action === 'skip') {
-          console.log(ansis.yellow(i18n.common.skip))
+          console.log(ansis.yellow(i18n.t('common:skip')))
           return
         }
       }
@@ -326,17 +322,17 @@ export async function init(options: InitOptions = {}) {
         const { action: userAction } = await inquirer.prompt<{ action: string }>({
           type: 'list',
           name: 'action',
-          message: i18n.configuration.existingConfig,
+          message: i18n.t('configuration:existingConfig'),
           choices: addNumbersToChoices([
-            { name: i18n.configuration.backupAndOverwrite, value: 'backup' },
-            { name: i18n.configuration.updateDocsOnly, value: 'docs-only' },
-            { name: i18n.configuration.mergeConfig, value: 'merge' },
-            { name: i18n.common.skip, value: 'skip' },
+            { name: i18n.t('configuration:backupAndOverwrite'), value: 'backup' },
+            { name: i18n.t('configuration:updateDocsOnly'), value: 'docs-only' },
+            { name: i18n.t('configuration:mergeConfig'), value: 'merge' },
+            { name: i18n.t('common:skip'), value: 'skip' },
           ]),
         })
 
         if (!userAction) {
-          console.log(ansis.yellow(i18n.common.cancelled))
+          console.log(ansis.yellow(i18n.t('common:cancelled')))
           process.exit(0)
         }
 
@@ -344,7 +340,7 @@ export async function init(options: InitOptions = {}) {
 
         // Handle special cases early
         if (action === 'skip') {
-          console.log(ansis.yellow(i18n.common.skip))
+          console.log(ansis.yellow(i18n.t('common:skip')))
           return
         }
       }
@@ -377,18 +373,18 @@ export async function init(options: InitOptions = {}) {
           // Handle CCR proxy configuration in skip-prompt mode
           const ccrStatus = await isCcrInstalled()
           if (!ccrStatus.hasCorrectPackage) {
-            await installCcr(scriptLang)
+            await installCcr()
           }
           else {
-            console.log(ansis.green(`✔ ${i18n.ccr?.ccrAlreadyInstalled || 'CCR already installed'}`))
+            console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
           }
 
           // Backup existing CCR config if exists
           const existingCcrConfig = readCcrConfig()
           if (existingCcrConfig) {
-            const backupPath = backupCcrConfig(scriptLang)
+            const backupPath = await backupCcrConfig()
             if (backupPath) {
-              console.log(ansis.gray(`✔ ${i18n.ccr?.ccrBackupSuccess?.replace('{path}', backupPath) || 'CCR configuration backed up'}`))
+              console.log(ansis.gray(`✔ ${i18n.t('ccr:ccrBackupSuccess')}: ${backupPath}`))
             }
           }
 
@@ -397,18 +393,18 @@ export async function init(options: InitOptions = {}) {
 
           // Write CCR config
           writeCcrConfig(defaultCcrConfig)
-          console.log(ansis.green(`✔ ${i18n.ccr?.ccrConfigSuccess || 'CCR configuration created'}`))
+          console.log(ansis.green(`✔ ${i18n.t('ccr:ccrConfigSuccess')}`))
 
           // Configure proxy in settings.json
           await configureCcrProxy(defaultCcrConfig)
-          console.log(ansis.green(`✔ ${i18n.ccr?.proxyConfigSuccess || 'Proxy settings configured'}`))
+          console.log(ansis.green(`✔ ${i18n.t('ccr:proxyConfigSuccess')}`))
 
           // Add onboarding flag
           try {
             addCompletedOnboarding()
           }
           catch (error) {
-            console.error(ansis.red(i18n.configuration?.failedToSetOnboarding || 'Failed to set onboarding flag'), error)
+            console.error(ansis.red(i18n.t('errors:failedToSetOnboarding')), error)
           }
 
           apiConfig = null // CCR sets up its own proxy config
@@ -420,35 +416,35 @@ export async function init(options: InitOptions = {}) {
 
         if (existingApiConfig) {
           // Display existing configuration
-          console.log(`\n${ansis.blue(`ℹ ${i18n.api.existingApiConfig}`)}`)
-          console.log(ansis.gray(`  ${i18n.api.apiConfigUrl}: ${existingApiConfig.url || i18n.common.notConfigured}`))
+          console.log(`\n${ansis.blue(`ℹ ${i18n.t('api:existingApiConfig')}`)}`)
+          console.log(ansis.gray(`  ${i18n.t('api:apiConfigUrl')}: ${existingApiConfig.url || i18n.t('common:notConfigured')}`))
           console.log(
             ansis.gray(
-              `  ${i18n.api.apiConfigKey}: ${
-                existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.common.notConfigured
+              `  ${i18n.t('api:apiConfigKey')}: ${
+                existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.t('common:notConfigured')
               }`,
             ),
           )
           console.log(
-            ansis.gray(`  ${i18n.api.apiConfigAuthType}: ${existingApiConfig.authType || i18n.common.notConfigured}\n`),
+            ansis.gray(`  ${i18n.t('api:apiConfigAuthType')}: ${existingApiConfig.authType || i18n.t('common:notConfigured')}\n`),
           )
 
           // Ask user what to do with existing config
           const { action: apiAction } = await inquirer.prompt<{ action: string }>({
             type: 'list',
             name: 'action',
-            message: i18n.api.selectApiAction,
+            message: i18n.t('api:selectApiAction'),
             choices: addNumbersToChoices([
-              { name: i18n.api.keepExistingConfig, value: 'keep' },
-              { name: i18n.api.modifyAllConfig, value: 'modify-all' },
-              { name: i18n.api.modifyPartialConfig, value: 'modify-partial' },
-              { name: i18n.api.useCcrProxy, value: 'use-ccr' },
-              { name: i18n.api.skipApi, value: 'skip' },
+              { name: i18n.t('api:keepExistingConfig'), value: 'keep' },
+              { name: i18n.t('api:modifyAllConfig'), value: 'modify-all' },
+              { name: i18n.t('api:modifyPartialConfig'), value: 'modify-partial' },
+              { name: i18n.t('api:useCcrProxy'), value: 'use-ccr' },
+              { name: i18n.t('api:skipApi'), value: 'skip' },
             ]),
           })
 
           if (!apiAction) {
-            console.log(ansis.yellow(i18n.common.cancelled))
+            console.log(ansis.yellow(i18n.t('common:cancelled')))
             process.exit(0)
           }
 
@@ -461,34 +457,34 @@ export async function init(options: InitOptions = {}) {
                 addCompletedOnboarding()
               }
               catch (error) {
-                console.error(ansis.red(i18n.configuration.failedToSetOnboarding), error)
+                console.error(ansis.red(i18n.t('errors:failedToSetOnboarding')), error)
               }
             }
           }
           else if (apiAction === 'modify-partial') {
             // Handle partial modification
-            await modifyApiConfigPartially(existingApiConfig, i18n, scriptLang)
+            await modifyApiConfigPartially(existingApiConfig)
             apiConfig = null // No need to configure again
             // addCompletedOnboarding is already called inside modifyApiConfigPartially
           }
           else if (apiAction === 'modify-all') {
             // Proceed with full configuration
-            apiConfig = await configureApiCompletely(i18n, scriptLang)
+            apiConfig = await configureApiCompletely()
           }
           else if (apiAction === 'use-ccr') {
             // Handle CCR proxy configuration
             const ccrStatus = await isCcrInstalled()
             if (!ccrStatus.hasCorrectPackage) {
-              await installCcr(scriptLang)
+              await installCcr()
             }
             else {
-              console.log(ansis.green(`✔ ${i18n.ccr.ccrAlreadyInstalled}`))
+              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
             }
 
             // Setup CCR configuration
-            const ccrConfigured = await setupCcrConfiguration(scriptLang)
+            const ccrConfigured = await setupCcrConfiguration()
             if (ccrConfigured) {
-              console.log(ansis.green(`✔ ${i18n.ccr.ccrSetupComplete}`))
+              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
               // CCR configuration already sets up the proxy in settings.json
               // addCompletedOnboarding is already called inside setupCcrConfiguration
               apiConfig = null // No need for traditional API config
@@ -500,32 +496,32 @@ export async function init(options: InitOptions = {}) {
           const { apiChoice } = await inquirer.prompt<{ apiChoice: string }>({
             type: 'list',
             name: 'apiChoice',
-            message: i18n.api.configureApi,
+            message: i18n.t('api:configureApi'),
             choices: [
               {
-                name: `${i18n.api.useAuthToken} - ${ansis.gray(i18n.api.authTokenDesc)}`,
+                name: `${i18n.t('api:useAuthToken')} - ${ansis.gray(i18n.t('api:authTokenDesc'))}`,
                 value: 'auth_token',
-                short: i18n.api.useAuthToken,
+                short: i18n.t('api:useAuthToken'),
               },
               {
-                name: `${i18n.api.useApiKey} - ${ansis.gray(i18n.api.apiKeyDesc)}`,
+                name: `${i18n.t('api:useApiKey')} - ${ansis.gray(i18n.t('api:apiKeyDesc'))}`,
                 value: 'api_key',
-                short: i18n.api.useApiKey,
+                short: i18n.t('api:useApiKey'),
               },
               {
-                name: `${i18n.api.useCcrProxy} - ${ansis.gray(i18n.api.ccrProxyDesc)}`,
+                name: `${i18n.t('api:useCcrProxy')} - ${ansis.gray(i18n.t('api:ccrProxyDesc'))}`,
                 value: 'ccr_proxy',
-                short: i18n.api.useCcrProxy,
+                short: i18n.t('api:useCcrProxy'),
               },
               {
-                name: i18n.api.skipApi,
+                name: i18n.t('api:skipApi'),
                 value: 'skip',
               },
             ],
           })
 
           if (!apiChoice) {
-            console.log(ansis.yellow(i18n.common.cancelled))
+            console.log(ansis.yellow(i18n.t('common:cancelled')))
             process.exit(0)
           }
 
@@ -533,23 +529,23 @@ export async function init(options: InitOptions = {}) {
             // Handle CCR proxy configuration
             const ccrStatus = await isCcrInstalled()
             if (!ccrStatus.hasCorrectPackage) {
-              await installCcr(scriptLang)
+              await installCcr()
             }
             else {
-              console.log(ansis.green(`✔ ${i18n.ccr.ccrAlreadyInstalled}`))
+              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
             }
 
             // Setup CCR configuration
-            const ccrConfigured = await setupCcrConfiguration(scriptLang)
+            const ccrConfigured = await setupCcrConfiguration()
             if (ccrConfigured) {
-              console.log(ansis.green(`✔ ${i18n.ccr.ccrSetupComplete}`))
+              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
               // CCR configuration already sets up the proxy in settings.json
               // addCompletedOnboarding is already called inside setupCcrConfiguration
               apiConfig = null // No need for traditional API config
             }
           }
           else if (apiChoice !== 'skip') {
-            apiConfig = await configureApiCompletely(i18n, scriptLang, apiChoice as 'auth_token' | 'api_key')
+            apiConfig = await configureApiCompletely(apiChoice as 'auth_token' | 'api_key')
           }
         }
       }
@@ -559,7 +555,7 @@ export async function init(options: InitOptions = {}) {
     if (['backup', 'docs-only', 'merge'].includes(action)) {
       const backupDir = backupExistingConfig()
       if (backupDir) {
-        console.log(ansis.gray(`✔ ${i18n.configuration.backupSuccess}: ${backupDir}`))
+        console.log(ansis.gray(`✔ ${i18n.t('configuration:backupSuccess')}: ${backupDir}`))
       }
     }
 
@@ -570,11 +566,11 @@ export async function init(options: InitOptions = {}) {
       if (options.skipPrompt) {
         // Use provided workflows or default to all workflows, skip if false
         if (options.workflows !== false) {
-          await selectAndInstallWorkflows(configLang!, scriptLang, options.workflows as string[])
+          await selectAndInstallWorkflows(configLang!, options.workflows as string[])
         }
       }
       else {
-        await selectAndInstallWorkflows(configLang!, scriptLang)
+        await selectAndInstallWorkflows(configLang!)
       }
     }
     else if (['backup', 'merge', 'new'].includes(action)) {
@@ -584,11 +580,11 @@ export async function init(options: InitOptions = {}) {
       if (options.skipPrompt) {
         // Use provided workflows or default to all workflows, skip if false
         if (options.workflows !== false) {
-          await selectAndInstallWorkflows(configLang!, scriptLang, options.workflows as string[])
+          await selectAndInstallWorkflows(configLang!, options.workflows as string[])
         }
       }
       else {
-        await selectAndInstallWorkflows(configLang!, scriptLang)
+        await selectAndInstallWorkflows(configLang!)
       }
     }
 
@@ -599,25 +595,20 @@ export async function init(options: InitOptions = {}) {
       // Use provided output styles and default
       if (options.outputStyles !== false) {
         await configureOutputStyle(
-          scriptLang, // Display language for UI
-          configLang!, // Config language for templates
           options.outputStyles as string[],
           options.defaultOutputStyle,
         )
       }
     }
     else {
-      await configureOutputStyle(
-        scriptLang, // Display language for UI
-        configLang!, // Config language for templates
-      )
+      await configureOutputStyle()
     }
 
     // Step 9: Apply API configuration (skip if only updating docs)
     if (apiConfig && action !== 'docs-only') {
       const configuredApi = configureApi(apiConfig as any)
       if (configuredApi) {
-        console.log(ansis.green(`✔ ${i18n.api.apiConfigSuccess}`))
+        console.log(ansis.green(`✔ ${i18n.t('api:apiConfigSuccess')}`))
         console.log(ansis.gray(`  URL: ${configuredApi.url}`))
         console.log(ansis.gray(`  Key: ${formatApiKeyDisplay(configuredApi.key)}`))
         // addCompletedOnboarding is now called inside configureApi
@@ -636,12 +627,12 @@ export async function init(options: InitOptions = {}) {
         const { shouldConfigureMcp: userChoice } = await inquirer.prompt<{ shouldConfigureMcp: boolean }>({
           type: 'confirm',
           name: 'shouldConfigureMcp',
-          message: i18n.mcp.configureMcp,
+          message: i18n.t('mcp:configureMcp'),
           default: true,
         })
 
         if (userChoice === undefined) {
-          console.log(ansis.yellow(i18n.common.cancelled))
+          console.log(ansis.yellow(i18n.t('common:cancelled')))
           process.exit(0)
         }
 
@@ -651,7 +642,7 @@ export async function init(options: InitOptions = {}) {
       if (shouldConfigureMcp) {
         // Show Windows-specific notice
         if (isWindows()) {
-          console.log(ansis.blue(`ℹ ${i18n.installation.windowsDetected}`))
+          console.log(ansis.blue(`ℹ ${i18n.t('installation:windowsDetected')}`))
         }
 
         // Use common MCP selector or skip-prompt services
@@ -661,7 +652,7 @@ export async function init(options: InitOptions = {}) {
           selectedServices = options.mcpServices as string[]
         }
         else {
-          selectedServices = await selectMcpServices(scriptLang)
+          selectedServices = await selectMcpServices()
           if (selectedServices === undefined) {
             process.exit(0)
           }
@@ -671,14 +662,15 @@ export async function init(options: InitOptions = {}) {
           // Backup existing MCP config if exists
           const mcpBackupPath = backupMcpConfig()
           if (mcpBackupPath) {
-            console.log(ansis.gray(`✔ ${i18n.mcp.mcpBackupSuccess}: ${mcpBackupPath}`))
+            console.log(ansis.gray(`✔ ${i18n.t('mcp:mcpBackupSuccess')}: ${mcpBackupPath}`))
           }
 
           // Build MCP server configs
           const newServers: Record<string, McpServerConfig> = {}
 
           for (const serviceId of selectedServices) {
-            const service = getMcpServices(scriptLang).find(s => s.id === serviceId)
+            const services = await getMcpServices()
+            const service = services.find(s => s.id === serviceId)
             if (!service)
               continue
 
@@ -688,7 +680,7 @@ export async function init(options: InitOptions = {}) {
             if (service.requiresApiKey) {
               if (options.skipPrompt) {
                 // In skip-prompt mode, skip services that require API keys
-                console.log(ansis.yellow(`${i18n.common.skip}: ${service.name} (requires API key)`))
+                console.log(ansis.yellow(`${i18n.t('common:skip')}: ${service.name} (requires API key)`))
                 continue
               }
               else {
@@ -696,11 +688,11 @@ export async function init(options: InitOptions = {}) {
                   type: 'input',
                   name: 'apiKey',
                   message: service.apiKeyPrompt!,
-                  validate: value => !!value || i18n.api.keyRequired,
+                  validate: value => !!value || i18n.t('api:keyRequired'),
                 })
 
                 if (!response.apiKey) {
-                  console.log(ansis.yellow(`${i18n.common.skip}: ${service.name}`))
+                  console.log(ansis.yellow(`${i18n.t('common:skip')}: ${service.name}`))
                   continue
                 }
 
@@ -721,10 +713,10 @@ export async function init(options: InitOptions = {}) {
           // Write the config with error handling
           try {
             writeMcpConfig(mergedConfig)
-            console.log(ansis.green(`✔ ${i18n.mcp.mcpConfigSuccess}`))
+            console.log(ansis.green(`✔ ${i18n.t('mcp:mcpConfigSuccess')}`))
           }
           catch (error) {
-            console.error(ansis.red(`${i18n.configuration.failedToWriteMcpConfig} ${error}`))
+            console.error(ansis.red(`${i18n.t('errors:failedToWriteMcpConfig')} ${error}`))
           }
         }
       }
@@ -743,12 +735,12 @@ export async function init(options: InitOptions = {}) {
         const { shouldInstallCometix: userChoice } = await inquirer.prompt<{ shouldInstallCometix: boolean }>({
           type: 'confirm',
           name: 'shouldInstallCometix',
-          message: i18n.cometix.installCometixPrompt,
+          message: i18n.t('cometix:installCometixPrompt'),
           default: true,
         })
 
         if (userChoice === undefined) {
-          console.log(ansis.yellow(i18n.common.cancelled))
+          console.log(ansis.yellow(i18n.t('common:cancelled')))
           process.exit(0)
         }
 
@@ -756,30 +748,30 @@ export async function init(options: InitOptions = {}) {
       }
 
       if (shouldInstallCometix) {
-        await installCometixLine(scriptLang)
+        await installCometixLine()
       }
       else {
-        console.log(ansis.yellow(i18n.cometix.cometixSkipped))
+        console.log(ansis.yellow(i18n.t('cometix:cometixSkipped')))
       }
     }
     else {
-      console.log(ansis.green(`✔ ${i18n.cometix.cometixAlreadyInstalled}`))
+      console.log(ansis.green(`✔ ${i18n.t('cometix:cometixAlreadyInstalled')}`))
     }
 
     // Step 12: Save zcf config
     updateZcfConfig({
       version,
-      preferredLang: scriptLang,
+      preferredLang: i18n.language as SupportedLang,
       aiOutputLang: aiOutputLang as AiOutputLanguage | string,
     })
 
     // Step 13: Success message
-    console.log(ansis.green(`✔ ${i18n.configuration.configSuccess} ${CLAUDE_DIR}`))
-    console.log(`\n${ansis.cyan(i18n.common.complete)}`)
+    console.log(ansis.green(`✔ ${i18n.t('configuration:configSuccess')} ${CLAUDE_DIR}`))
+    console.log(`\n${ansis.cyan(i18n.t('common:complete'))}`)
   }
   catch (error) {
     if (!handleExitPromptError(error)) {
-      handleGeneralError(error, options.lang)
+      handleGeneralError(error)
     }
   }
 }

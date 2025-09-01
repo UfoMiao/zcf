@@ -1,6 +1,5 @@
 import inquirer from 'inquirer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as i18n from '../../../src/i18n'
 import * as commands from '../../../src/utils/cometix/commands'
 import * as installer from '../../../src/utils/cometix/installer'
 import * as menuModule from '../../../src/utils/cometix/menu'
@@ -18,7 +17,15 @@ vi.mock('ansis', () => ({
     dim: vi.fn((text: string) => text),
   },
 }))
-vi.mock('../../../src/i18n')
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock ensureI18nInitialized to avoid initialization issues
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 vi.mock('../../../src/utils/cometix/commands')
 vi.mock('../../../src/utils/cometix/installer')
 vi.mock('../../../src/utils/error-handler', () => ({
@@ -32,28 +39,6 @@ describe('cCometixLine menu', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-
-    vi.mocked(i18n.getTranslation).mockReturnValue({
-      cometix: {
-        cometixMenuTitle: 'CCometixLine - High-performance Claude Code statusline tool',
-        cometixMenuOptions: {
-          installOrUpdate: 'Install or Update',
-          printConfig: 'Print Default Configuration',
-          customConfig: 'Custom Config',
-          back: 'Back to Main Menu',
-        },
-        cometixMenuDescriptions: {
-          installOrUpdate: 'Install or update CCometixLine using npm',
-          printConfig: 'Display current CCometixLine configuration',
-          customConfig: 'Enter TUI configuration mode for CCometixLine',
-        },
-      },
-      common: {
-        enterChoice: 'Enter your choice:',
-        invalidChoice: 'Invalid choice, please try again',
-        returnToMenu: 'Return to CCometixLine menu?',
-      },
-    })
   })
 
   afterEach(() => {
@@ -64,19 +49,19 @@ describe('cCometixLine menu', () => {
     it('should display CCometixLine menu options', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ choice: '0' })
 
-      await showCometixMenu('en')
+      await showCometixMenu()
 
       expect(consoleLogSpy).toHaveBeenCalledWith(
         expect.stringContaining('CCometixLine - High-performance Claude Code statusline tool'),
       )
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('1.'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Install or Update'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Install/update'))
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('2.'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Print Default Configuration'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Print config'))
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('3.'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Custom Config'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Custom config'))
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('0.'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Back to Main Menu'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Back to main menu'))
     })
 
     it('should handle install or update option (choice 1)', async () => {
@@ -86,9 +71,9 @@ describe('cCometixLine menu', () => {
 
       vi.mocked(installer.installCometixLine).mockResolvedValue()
 
-      const result = await showCometixMenu('en')
+      const result = await showCometixMenu()
 
-      expect(installer.installCometixLine).toHaveBeenCalledWith('en')
+      expect(installer.installCometixLine).toHaveBeenCalledWith()
       expect(result).toBe(false)
     })
 
@@ -99,9 +84,9 @@ describe('cCometixLine menu', () => {
 
       vi.mocked(commands.runCometixPrintConfig).mockResolvedValue()
 
-      const result = await showCometixMenu('en')
+      const result = await showCometixMenu()
 
-      expect(commands.runCometixPrintConfig).toHaveBeenCalledWith('en')
+      expect(commands.runCometixPrintConfig).toHaveBeenCalledWith()
       expect(result).toBe(false)
     })
 
@@ -112,16 +97,16 @@ describe('cCometixLine menu', () => {
 
       vi.mocked(commands.runCometixTuiConfig).mockResolvedValue()
 
-      const result = await showCometixMenu('en')
+      const result = await showCometixMenu()
 
-      expect(commands.runCometixTuiConfig).toHaveBeenCalledWith('en')
+      expect(commands.runCometixTuiConfig).toHaveBeenCalledWith()
       expect(result).toBe(false)
     })
 
     it('should handle back to main menu (choice 0)', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ choice: '0' })
 
-      const result = await showCometixMenu('en')
+      const result = await showCometixMenu()
 
       expect(result).toBe(false)
     })
@@ -130,12 +115,12 @@ describe('cCometixLine menu', () => {
       const mockPrompt = vi.mocked(inquirer.prompt)
       mockPrompt.mockResolvedValue({ choice: '0' })
 
-      await showCometixMenu('en')
+      await showCometixMenu()
 
       expect(mockPrompt).toHaveBeenCalledWith({
         type: 'input',
         name: 'choice',
-        message: 'Enter your choice:',
+        message: 'Enter your choice and press enter (case-insensitive)',
         validate: expect.any(Function),
       })
 
@@ -143,12 +128,12 @@ describe('cCometixLine menu', () => {
       const promptCall = mockPrompt.mock.calls[0][0] as any
       const validateFn = promptCall.validate
 
-      expect(validateFn('1')).toBe(true)
-      expect(validateFn('2')).toBe(true)
-      expect(validateFn('3')).toBe(true)
-      expect(validateFn('0')).toBe(true)
-      expect(validateFn('4')).toBe('Invalid choice, please try again')
-      expect(validateFn('invalid')).toBe('Invalid choice, please try again')
+      expect(await validateFn('1')).toBe(true)
+      expect(await validateFn('2')).toBe(true)
+      expect(await validateFn('3')).toBe(true)
+      expect(await validateFn('0')).toBe(true)
+      expect(await validateFn('4')).toBe('Invalid choice. Please enter a valid option.')
+      expect(await validateFn('invalid')).toBe('Invalid choice. Please enter a valid option.')
     })
 
     it('should handle continue in menu flow', async () => {
@@ -159,7 +144,7 @@ describe('cCometixLine menu', () => {
 
       vi.mocked(installer.installCometixLine).mockResolvedValue()
 
-      await showCometixMenu('en')
+      await showCometixMenu()
 
       expect(inquirer.prompt).toHaveBeenCalledTimes(3)
       expect(installer.installCometixLine).toHaveBeenCalledTimes(1)
@@ -169,7 +154,7 @@ describe('cCometixLine menu', () => {
       const error = new Error('Test error')
       vi.mocked(inquirer.prompt).mockRejectedValue(error)
 
-      const result = await showCometixMenu('en')
+      const result = await showCometixMenu()
 
       expect(result).toBe(false)
     })

@@ -1,19 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { getOrderedWorkflows, getWorkflowConfig, WORKFLOW_CONFIGS } from '../../../src/config/workflows'
+import { getOrderedWorkflows, getWorkflowConfig, getWorkflowConfigs } from '../../../src/config/workflows'
+import { ensureI18nInitialized } from '../../../src/i18n'
 
 describe('workflows configuration', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    ensureI18nInitialized()
   })
 
-  describe('wORKFLOW_CONFIGS', () => {
+  describe('getWorkflowConfigs', () => {
     it('should include gitWorkflow configuration', () => {
-      const gitWorkflow = WORKFLOW_CONFIGS.find(w => w.id === 'gitWorkflow')
+      const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
       expect(gitWorkflow).toBeDefined()
       expect(gitWorkflow).toMatchObject({
         id: 'gitWorkflow',
-        nameKey: 'workflowOption.gitWorkflow',
-        descriptionKey: 'workflowDescription.gitWorkflow',
+        name: expect.any(String),
+        description: expect.any(String),
         defaultSelected: true,
         order: 4,
         category: 'git',
@@ -23,24 +25,24 @@ describe('workflows configuration', () => {
     })
 
     it('should have correct commands for gitWorkflow', () => {
-      const gitWorkflow = WORKFLOW_CONFIGS.find(w => w.id === 'gitWorkflow')
+      const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
       expect(gitWorkflow?.commands).toEqual(['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'])
     })
 
     it('should have no agents for gitWorkflow', () => {
-      const gitWorkflow = WORKFLOW_CONFIGS.find(w => w.id === 'gitWorkflow')
+      const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
       expect(gitWorkflow?.agents).toEqual([])
     })
 
     it('should have unique workflow ids', () => {
-      const ids = WORKFLOW_CONFIGS.map(w => w.id)
+      const ids = getWorkflowConfigs().map(w => w.id)
       const uniqueIds = new Set(ids)
       expect(uniqueIds.size).toBe(ids.length)
     })
 
     it('should have valid categories', () => {
       const validCategories = ['common', 'plan', 'sixStep', 'bmad', 'git']
-      WORKFLOW_CONFIGS.forEach((config) => {
+      getWorkflowConfigs().forEach((config) => {
         expect(validCategories).toContain(config.category)
       })
     })
@@ -99,9 +101,9 @@ describe('workflows configuration', () => {
 
     it('should return all configured workflows', () => {
       const workflows = getOrderedWorkflows()
-      expect(workflows.length).toBe(WORKFLOW_CONFIGS.length)
+      expect(workflows.length).toBe(getWorkflowConfigs().length)
 
-      WORKFLOW_CONFIGS.forEach((config) => {
+      getWorkflowConfigs().forEach((config) => {
         const found = workflows.find(w => w.id === config.id)
         expect(found).toBeDefined()
       })
@@ -130,9 +132,9 @@ describe('workflows configuration', () => {
 
   describe('workflow configuration integrity', () => {
     it('should have valid structure for all workflows', () => {
-      WORKFLOW_CONFIGS.forEach((config) => {
+      getWorkflowConfigs().forEach((config) => {
         expect(config).toHaveProperty('id')
-        expect(config).toHaveProperty('nameKey')
+        expect(config).toHaveProperty('name')
         expect(config).toHaveProperty('defaultSelected')
         expect(config).toHaveProperty('order')
         expect(config).toHaveProperty('commands')
@@ -150,13 +152,13 @@ describe('workflows configuration', () => {
     })
 
     it('should have non-empty commands for all workflows', () => {
-      WORKFLOW_CONFIGS.forEach((config) => {
+      getWorkflowConfigs().forEach((config) => {
         expect(config.commands.length).toBeGreaterThan(0)
       })
     })
 
     it('should have valid order values', () => {
-      const orders = WORKFLOW_CONFIGS.map(w => w.order)
+      const orders = getWorkflowConfigs().map(w => w.order)
       orders.forEach((order) => {
         expect(order).toBeGreaterThanOrEqual(0)
         expect(Number.isInteger(order)).toBe(true)
@@ -164,7 +166,7 @@ describe('workflows configuration', () => {
     })
 
     it('should have matching outputDir and category for gitWorkflow', () => {
-      const gitWorkflow = WORKFLOW_CONFIGS.find(w => w.id === 'gitWorkflow')
+      const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
       expect(gitWorkflow?.category).toBe('git')
       expect(gitWorkflow?.outputDir).toBe('git')
     })

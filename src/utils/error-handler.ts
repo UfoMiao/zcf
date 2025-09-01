@@ -1,8 +1,6 @@
-import type { SupportedLang } from '../constants'
 import process from 'node:process'
 import ansis from 'ansis'
-import { getTranslation } from '../i18n'
-import { readZcfConfig } from './zcf-config'
+import { i18n } from '../i18n'
 
 /**
  * Handle ExitPromptError gracefully
@@ -10,10 +8,7 @@ import { readZcfConfig } from './zcf-config'
  */
 export function handleExitPromptError(error: unknown): boolean {
   if (error instanceof Error && error.name === 'ExitPromptError') {
-    const zcfConfig = readZcfConfig()
-    const defaultLang = zcfConfig?.preferredLang || 'zh-CN'
-    const i18n = getTranslation(defaultLang)
-    console.log(ansis.cyan(`\n${i18n.common.goodbye}\n`))
+    console.log(ansis.cyan(`\n${i18n.t('common:goodbye')}\n`))
     process.exit(0)
   }
   return false
@@ -22,12 +17,8 @@ export function handleExitPromptError(error: unknown): boolean {
 /**
  * Handle general errors with proper formatting
  */
-export function handleGeneralError(error: unknown, lang?: string): void {
-  const zcfConfig = readZcfConfig()
-  const defaultLang = (lang || zcfConfig?.preferredLang || 'en') as SupportedLang
-  const i18n = getTranslation(defaultLang)
-  const errorMsg = i18n.common.error || 'Error'
-  console.error(ansis.red(`${errorMsg}:`), error)
+export function handleGeneralError(error: unknown): void {
+  console.error(ansis.red('Error:'), error)
 
   // Log error details for debugging
   if (error instanceof Error) {

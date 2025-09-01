@@ -7,7 +7,6 @@ export interface ZcfConfig {
   version: string
   preferredLang: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
-  aiPersonality?: string
   outputStyles?: string[]
   defaultOutputStyle?: string
   lastUpdated: string
@@ -46,7 +45,6 @@ export function updateZcfConfig(updates: Partial<ZcfConfig>): void {
     version: updates.version || existingConfig?.version || '1.0.0',
     preferredLang: updates.preferredLang || existingConfig?.preferredLang || 'en',
     aiOutputLang: updates.aiOutputLang || existingConfig?.aiOutputLang,
-    aiPersonality: updates.aiPersonality !== undefined ? updates.aiPersonality : existingConfig?.aiPersonality,
     outputStyles: updates.outputStyles !== undefined ? updates.outputStyles : existingConfig?.outputStyles,
     defaultOutputStyle: updates.defaultOutputStyle !== undefined ? updates.defaultOutputStyle : existingConfig?.defaultOutputStyle,
     lastUpdated: new Date().toISOString(),

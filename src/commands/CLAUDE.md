@@ -38,7 +38,6 @@ export interface InitOptions {
   ccrPort?: number
   ccrConfig?: boolean
   cometixConfig?: boolean
-  aiPersonality?: string
 }
 
 // Update command options

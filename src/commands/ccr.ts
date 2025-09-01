@@ -1,13 +1,9 @@
-import type { SupportedLang } from '../constants'
 import { displayBannerWithInfo } from '../utils/banner'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
-import { selectScriptLanguage } from '../utils/prompts'
 import { showCcrMenu } from '../utils/tools/ccr-menu'
-import { readZcfConfigAsync } from '../utils/zcf-config'
 import { showMainMenu } from './menu'
 
 export interface CcrOptions {
-  lang?: SupportedLang
   skipBanner?: boolean
 }
 
@@ -18,12 +14,8 @@ export async function ccr(options: CcrOptions = {}) {
       displayBannerWithInfo()
     }
 
-    // Get script language from config or ask user
-    const zcfConfig = await readZcfConfigAsync()
-    const scriptLang = options.lang || zcfConfig?.preferredLang || (await selectScriptLanguage())
-
     // Show CCR menu
-    const continueInCcr = await showCcrMenu(scriptLang)
+    const continueInCcr = await showCcrMenu()
 
     // If user selected back (0) and not called from main menu, show main menu
     if (!continueInCcr && !options.skipBanner) {
@@ -32,7 +24,7 @@ export async function ccr(options: CcrOptions = {}) {
   }
   catch (error) {
     if (!handleExitPromptError(error)) {
-      handleGeneralError(error, options.lang)
+      handleGeneralError(error)
     }
   }
 }

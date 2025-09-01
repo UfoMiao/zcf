@@ -17,7 +17,7 @@ describe('final push for 90% branch coverage', () => {
       .mockReturnValueOnce(true) // recursive call: source/subdir exists
       .mockReturnValueOnce(false) // recursive call: dest/subdir doesn't exist
 
-    vi.mocked(fs.mkdirSync).mockImplementation(() => {})
+    vi.mocked(fs.mkdirSync).mockImplementation(() => undefined)
     vi.mocked(fs.readdirSync)
       .mockReturnValueOnce(['subdir'] as any)
       .mockReturnValueOnce([] as any) // subdir is empty
@@ -25,7 +25,7 @@ describe('final push for 90% branch coverage', () => {
       isDirectory: () => true,
       isFile: () => false,
     } as any)
-    vi.mocked(fs.copyFileSync).mockImplementation(() => {})
+    vi.mocked(fs.copyFileSync).mockImplementation(() => undefined)
 
     copyDir('/source', '/dest')
 
@@ -36,7 +36,7 @@ describe('final push for 90% branch coverage', () => {
 
   it('should handle directory with both files and subdirectories', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.mkdirSync).mockImplementation(() => {})
+    vi.mocked(fs.mkdirSync).mockImplementation(() => undefined)
     vi.mocked(fs.readdirSync)
       .mockReturnValueOnce(['file.txt', 'subdir'] as any)
       .mockReturnValueOnce([] as any) // subdir is empty
@@ -50,7 +50,7 @@ describe('final push for 90% branch coverage', () => {
       } as any
     })
 
-    vi.mocked(fs.copyFileSync).mockImplementation(() => {})
+    vi.mocked(fs.copyFileSync).mockImplementation(() => undefined)
 
     copyDir('/source', '/dest')
 

@@ -7,14 +7,34 @@ import { dirname, join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as workflowConfig from '../../../src/config/workflows'
 import { CLAUDE_DIR } from '../../../src/constants'
-import { getTranslation } from '../../../src/i18n'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
 vi.mock('node:url')
 vi.mock('inquirer')
-vi.mock('../../../src/config/workflows')
+vi.mock('../../../src/config/workflows', () => ({
+  getOrderedWorkflows: vi.fn(),
+  getWorkflowConfig: vi.fn(),
+  getWorkflowConfigs: vi.fn(),
+  WORKFLOW_CONFIG_BASE: [
+    { id: 'commonTools', defaultSelected: true, order: 1 },
+    { id: 'sixStepsWorkflow', defaultSelected: true, order: 2 },
+    { id: 'featPlanUx', defaultSelected: true, order: 3 },
+    { id: 'gitWorkflow', defaultSelected: true, order: 4 },
+    { id: 'bmadWorkflow', defaultSelected: true, order: 5 },
+  ],
+}))
+
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock ensureI18nInitialized to avoid initialization issues
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 
 describe('workflow-installer utilities', () => {
   beforeEach(() => {
@@ -47,28 +67,36 @@ describe('workflow-installer utilities', () => {
   describe('selectAndInstallWorkflows', () => {
     const mockWorkflows = [
       {
-        id: 'workflow' as WorkflowType,
-        category: 'general',
+        id: 'commonTools' as WorkflowType,
+        nameKey: 'workflowOption.commonTools',
+        descriptionKey: 'workflowDescription.commonTools',
+        category: 'common',
         defaultSelected: true,
+        order: 1,
         autoInstallAgents: false,
-        commands: ['workflow.md'],
+        commands: ['init-project.md'],
         agents: [],
+        outputDir: 'common',
       },
       {
         id: 'bmadWorkflow' as WorkflowType,
+        nameKey: 'workflowOption.bmadWorkflow',
+        descriptionKey: 'workflowDescription.bmadWorkflow',
         category: 'bmad',
         defaultSelected: false,
+        order: 2,
         autoInstallAgents: true,
         commands: ['bmad-init.md'],
         agents: [
-          { filename: 'analyst.md', required: true },
-          { filename: 'architect.md', required: true },
+          { id: 'analyst', filename: 'analyst.md', required: true },
+          { id: 'architect', filename: 'architect.md', required: true },
         ],
+        outputDir: 'bmad',
       },
       {
         id: 'gitWorkflow',
-        nameKey: 'workflowOption.gitWorkflow',
-        descriptionKey: 'workflowDescription.gitWorkflow',
+        name: 'Git Workflow',
+        description: 'Workflow for Git operations',
         category: 'git',
         defaultSelected: true,
         autoInstallAgents: false,
@@ -82,28 +110,28 @@ describe('workflow-installer utilities', () => {
     beforeEach(() => {
       vi.mocked(workflowConfig.getOrderedWorkflows).mockReturnValue(mockWorkflows)
       vi.mocked(workflowConfig.getWorkflowConfig).mockImplementation(id =>
-        mockWorkflows.find(w => w.id === id) || null,
+        mockWorkflows.find(w => w.id === id) || undefined,
       )
     })
 
     it('should display workflow choices and handle selection', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['workflow'],
+        selectedWorkflows: ['commonTools'],
       })
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('zh-CN', 'zh-CN')
+      await selectAndInstallWorkflows('zh-CN')
 
       expect(inquirer.prompt).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'checkbox',
           name: 'selectedWorkflows',
-          message: expect.stringContaining(getTranslation('zh-CN').workflow.selectWorkflowType),
+          message: expect.stringContaining('Select workflow type to install'),
           choices: expect.arrayContaining([
             expect.objectContaining({
-              value: 'workflow',
+              value: 'commonTools',
               checked: true,
             }),
           ]),
@@ -116,17 +144,17 @@ describe('workflow-installer utilities', () => {
         selectedWorkflows: [],
       })
 
-      await selectAndInstallWorkflows('en', 'en')
+      await selectAndInstallWorkflows('zh-CN')
 
       expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(getTranslation('en').common.cancelled),
+        expect.stringContaining('Operation cancelled'),
       )
       expect(copyFile).not.toHaveBeenCalled()
     })
 
     it('should clean up old files before installation', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['workflow'],
+        selectedWorkflows: ['commonTools'],
       })
       vi.mocked(existsSync)
         .mockReturnValueOnce(true) // Old command file exists
@@ -136,7 +164,7 @@ describe('workflow-installer utilities', () => {
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('en', 'en')
+      await selectAndInstallWorkflows('zh-CN')
 
       expect(rm).toHaveBeenCalledWith(
         join(CLAUDE_DIR, 'commands', 'workflow.md'),
@@ -150,22 +178,22 @@ describe('workflow-installer utilities', () => {
 
     it('should install multiple workflows with dependencies', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['workflow', 'bmadWorkflow'],
+        selectedWorkflows: ['commonTools', 'bmadWorkflow'],
       })
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('zh-CN', 'zh-CN')
+      await selectAndInstallWorkflows('zh-CN')
 
-      expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('workflow')
+      expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('commonTools')
       expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('bmadWorkflow')
       expect(copyFile).toHaveBeenCalled()
     })
 
     it('should handle cleanup errors gracefully', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['workflow'],
+        selectedWorkflows: ['commonTools'],
       })
       vi.mocked(existsSync)
         .mockReturnValueOnce(true) // Old file exists
@@ -174,7 +202,7 @@ describe('workflow-installer utilities', () => {
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('en', 'en')
+      await selectAndInstallWorkflows('en')
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('Failed to remove'),
@@ -191,7 +219,7 @@ describe('workflow-installer utilities', () => {
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('zh-CN', 'zh-CN')
+      await selectAndInstallWorkflows('zh-CN')
 
       expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('gitWorkflow')
       // Should copy all git command files (including git-worktree.md)
@@ -218,29 +246,29 @@ describe('workflow-installer utilities', () => {
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('en', 'en')
+      await selectAndInstallWorkflows('en')
 
       // Should copy command files but not create agents
       expect(copyFile).toHaveBeenCalled()
       // Verify no agent-related mkdir calls
       const mkdirCalls = vi.mocked(mkdir).mock.calls
       const hasAgentDir = mkdirCalls.some(call =>
-        call[0].includes('agents'),
+        String(call[0]).includes('agents'),
       )
       expect(hasAgentDir).toBe(false)
     })
 
     it('should install multiple workflows including gitWorkflow', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['workflow', 'gitWorkflow'],
+        selectedWorkflows: ['commonTools', 'gitWorkflow'],
       })
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('zh-CN', 'zh-CN')
+      await selectAndInstallWorkflows('zh-CN')
 
-      expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('workflow')
+      expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('commonTools')
       expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('gitWorkflow')
       // Should copy files for both workflows (1 + 4 = 5)
       expect(copyFile).toHaveBeenCalledTimes(5)
@@ -250,14 +278,17 @@ describe('workflow-installer utilities', () => {
   describe('installWorkflowWithDependencies', () => {
     const mockWorkflowConfig: WorkflowConfig = {
       id: 'bmadWorkflow' as WorkflowType,
+      name: 'BMAD Workflow',
       category: 'bmad',
       defaultSelected: false,
+      order: 1,
       autoInstallAgents: true,
       commands: ['bmad-init.md', 'bmad.md'],
       agents: [
-        { filename: 'analyst.md', required: true },
-        { filename: 'architect.md', required: false },
+        { id: 'analyst', filename: 'analyst.md', required: true },
+        { id: 'architect', filename: 'architect.md', required: false },
       ],
+      outputDir: '.claude',
     }
 
     it('should install workflow commands successfully', async () => {
@@ -272,7 +303,6 @@ describe('workflow-installer utilities', () => {
       if (installWorkflowWithDependencies) {
         const result = await installWorkflowWithDependencies(
           mockWorkflowConfig,
-          'zh-CN',
           'zh-CN',
         )
 
@@ -299,7 +329,6 @@ describe('workflow-installer utilities', () => {
         const result = await installWorkflowWithDependencies(
           mockWorkflowConfig,
           'en',
-          'en',
         )
 
         expect(result.installedAgents).toContain('analyst.md')
@@ -324,7 +353,6 @@ describe('workflow-installer utilities', () => {
         const result = await installWorkflowWithDependencies(
           mockWorkflowConfig,
           'en',
-          'en',
         )
 
         expect(result.success).toBe(false)
@@ -335,7 +363,7 @@ describe('workflow-installer utilities', () => {
     it('should handle required agent installation failure', async () => {
       const configWithRequiredAgent: WorkflowConfig = {
         ...mockWorkflowConfig,
-        agents: [{ filename: 'critical.md', required: true }],
+        agents: [{ id: 'critical', filename: 'critical.md', required: true }],
       }
 
       vi.mocked(existsSync).mockReturnValue(true)
@@ -353,7 +381,6 @@ describe('workflow-installer utilities', () => {
         const result = await installWorkflowWithDependencies(
           configWithRequiredAgent,
           'en',
-          'en',
         )
 
         expect(result.success).toBe(false)
@@ -364,7 +391,7 @@ describe('workflow-installer utilities', () => {
     it('should handle optional agent installation failure gracefully', async () => {
       const configWithOptionalAgent: WorkflowConfig = {
         ...mockWorkflowConfig,
-        agents: [{ filename: 'optional.md', required: false }],
+        agents: [{ id: 'optional', filename: 'optional.md', required: false }],
       }
 
       vi.mocked(existsSync).mockReturnValue(true)
@@ -381,7 +408,6 @@ describe('workflow-installer utilities', () => {
       if (installWorkflowWithDependencies) {
         const result = await installWorkflowWithDependencies(
           configWithOptionalAgent,
-          'en',
           'en',
         )
 
@@ -404,11 +430,10 @@ describe('workflow-installer utilities', () => {
         await installWorkflowWithDependencies(
           mockWorkflowConfig,
           'zh-CN',
-          'zh-CN',
         )
 
         expect(console.log).toHaveBeenCalledWith(
-          expect.stringContaining(getTranslation('zh-CN').workflow.bmadInitPrompt),
+          expect.stringContaining('请在项目中运行 /bmad-init 命令'),
         )
       }
     })
@@ -416,8 +441,8 @@ describe('workflow-installer utilities', () => {
     it('should install gitWorkflow commands correctly', async () => {
       const gitWorkflowConfig: WorkflowConfig = {
         id: 'gitWorkflow',
-        nameKey: 'workflowOption.gitWorkflow',
-        descriptionKey: 'workflowDescription.gitWorkflow',
+        name: 'Git Workflow',
+        description: 'Workflow for Git operations',
         category: 'git',
         defaultSelected: true,
         autoInstallAgents: false,
@@ -439,7 +464,6 @@ describe('workflow-installer utilities', () => {
         const result = await installWorkflowWithDependencies(
           gitWorkflowConfig,
           'zh-CN',
-          'zh-CN',
         )
 
         expect(result.success).toBe(true)
@@ -457,8 +481,8 @@ describe('workflow-installer utilities', () => {
     it('should handle gitWorkflow installation failure', async () => {
       const gitWorkflowConfig: WorkflowConfig = {
         id: 'gitWorkflow',
-        nameKey: 'workflowOption.gitWorkflow',
-        descriptionKey: 'workflowDescription.gitWorkflow',
+        name: 'Git Workflow',
+        description: 'Workflow for Git operations',
         category: 'git',
         defaultSelected: true,
         autoInstallAgents: false,
@@ -481,7 +505,6 @@ describe('workflow-installer utilities', () => {
       if (installWorkflowWithDependencies) {
         const result = await installWorkflowWithDependencies(
           gitWorkflowConfig,
-          'en',
           'en',
         )
 
@@ -509,7 +532,6 @@ describe('workflow-installer utilities', () => {
         const result = await installWorkflowWithDependencies(
           configNoAutoAgents,
           'en',
-          'en',
         )
 
         expect(result.installedAgents).toHaveLength(0)
@@ -531,10 +553,10 @@ describe('workflow-installer utilities', () => {
       const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles
 
       if (cleanupOldVersionFiles) {
-        await cleanupOldVersionFiles('en')
+        await cleanupOldVersionFiles()
 
         expect(rm).toHaveBeenCalledWith(
-          join(CLAUDE_DIR, 'commands', 'workflow.md'),
+          join(CLAUDE_DIR, 'commands', 'init-project.md'),
           { force: true },
         )
         expect(rm).toHaveBeenCalledWith(
@@ -552,7 +574,7 @@ describe('workflow-installer utilities', () => {
       const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles
 
       if (cleanupOldVersionFiles) {
-        await cleanupOldVersionFiles('zh-CN')
+        await cleanupOldVersionFiles()
 
         expect(rm).toHaveBeenCalledWith(
           join(CLAUDE_DIR, 'agents', 'planner.md'),
@@ -573,7 +595,7 @@ describe('workflow-installer utilities', () => {
       const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles
 
       if (cleanupOldVersionFiles) {
-        await cleanupOldVersionFiles('en')
+        await cleanupOldVersionFiles()
 
         expect(console.error).toHaveBeenCalledWith(
           expect.stringContaining('Failed to remove'),
@@ -588,7 +610,7 @@ describe('workflow-installer utilities', () => {
       const cleanupOldVersionFiles = (module as any).cleanupOldVersionFiles
 
       if (cleanupOldVersionFiles) {
-        await cleanupOldVersionFiles('en')
+        await cleanupOldVersionFiles()
 
         expect(rm).not.toHaveBeenCalled()
       }

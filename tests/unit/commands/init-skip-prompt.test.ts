@@ -1,7 +1,16 @@
 import type { InitOptions } from '../../../src/commands/init'
+import type { CcrRouter } from '../../../src/types/ccr'
 import { existsSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { init } from '../../../src/commands/init'
+import { backupCcrConfig, configureCcrProxy, readCcrConfig, writeCcrConfig } from '../../../src/utils/ccr/config'
+import { installCcr, isCcrInstalled } from '../../../src/utils/ccr/installer'
+import { installCometixLine, isCometixLineInstalled } from '../../../src/utils/cometix/installer'
+import { applyAiLanguageDirective, backupExistingConfig, configureApi, copyConfigFiles } from '../../../src/utils/config'
+import { installClaudeCode, isClaudeCodeInstalled } from '../../../src/utils/installer'
+import { readMcpConfig, writeMcpConfig } from '../../../src/utils/mcp'
+import { configureOutputStyle } from '../../../src/utils/output-style'
+import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
 // Mock all dependencies
 vi.mock('inquirer', () => ({
@@ -57,11 +66,12 @@ vi.mock('../../../src/utils/workflow-installer', () => ({
 }))
 
 vi.mock('../../../src/config/workflows', () => ({
-  WORKFLOW_CONFIGS: [
-    { id: 'sixStepsWorkflow', nameKey: 'workflowOption.sixStepsWorkflow', defaultSelected: true },
-    { id: 'featPlanUx', nameKey: 'workflowOption.featPlanUx', defaultSelected: true },
-    { id: 'gitWorkflow', nameKey: 'workflowOption.gitWorkflow', defaultSelected: true },
-    { id: 'bmadWorkflow', nameKey: 'workflowOption.bmadWorkflow', defaultSelected: true },
+  WORKFLOW_CONFIG_BASE: [
+    { id: 'commonTools', defaultSelected: true, order: 1 },
+    { id: 'sixStepsWorkflow', defaultSelected: true, order: 2 },
+    { id: 'featPlanUx', defaultSelected: true, order: 3 },
+    { id: 'gitWorkflow', defaultSelected: true, order: 4 },
+    { id: 'bmadWorkflow', defaultSelected: true, order: 5 },
   ],
 }))
 
@@ -71,11 +81,11 @@ vi.mock('../../../src/config/mcp-services', () => ({
     { id: 'mcp-deepwiki', requiresApiKey: false },
     { id: 'exa', requiresApiKey: true },
   ],
-  getMcpServices: vi.fn(() => [
-    { id: 'context7', name: 'Context7', requiresApiKey: false },
-    { id: 'mcp-deepwiki', name: 'DeepWiki', requiresApiKey: false },
-    { id: 'exa', name: 'Exa', requiresApiKey: true },
-  ]),
+  getMcpServices: vi.fn(() => Promise.resolve([
+    { id: 'context7', name: 'Context7', requiresApiKey: false, config: {}, description: '' },
+    { id: 'mcp-deepwiki', name: 'DeepWiki', requiresApiKey: false, config: {}, description: '' },
+    { id: 'exa', name: 'Exa', requiresApiKey: true, config: {}, description: '' },
+  ])),
 }))
 
 vi.mock('../../../src/constants', () => ({
@@ -127,7 +137,7 @@ vi.mock('../../../src/utils/ccr/config', () => ({
     PROXY_URL: '',
     transformers: [],
     Providers: [],
-    Router: {},
+    Router: {} as CcrRouter,
   })),
 }))
 
@@ -154,8 +164,6 @@ describe('init command with simplified parameters', () => {
 
   describe('simplified parameter structure', () => {
     it('should work with only --api-key (no --auth-token needed)', async () => {
-      const { configureApi } = await import('../../../src/utils/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -165,7 +173,6 @@ describe('init command with simplified parameters', () => {
         apiType: 'api_key',
         apiKey: 'sk-ant-test-key',
         skipBanner: true,
-        lang: 'en',
         configLang: 'en',
       }
 
@@ -179,8 +186,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should work with auth token using same --api-key parameter', async () => {
-      const { configureApi } = await import('../../../src/utils/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -202,8 +207,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should use default configAction=backup when not specified', async () => {
-      const { backupExistingConfig } = await import('../../../src/utils/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(true) // Existing config
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -220,7 +223,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should auto-install Claude Code by default (no --install-claude needed)', async () => {
-      const { installClaudeCode, isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(false) // Not installed
@@ -233,12 +235,10 @@ describe('init command with simplified parameters', () => {
 
       await init(options)
 
-      expect(installClaudeCode).toHaveBeenCalledWith('en') // Default lang
+      expect(installClaudeCode).toHaveBeenCalledWith() // No lang parameter needed with global i18n
     })
 
     it('should not install MCP services requiring API keys by default', async () => {
-      const { writeMcpConfig, readMcpConfig } = await import('../../../src/utils/mcp')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -257,8 +257,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should select all services and workflows by default when not specified', async () => {
-      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -273,14 +271,11 @@ describe('init command with simplified parameters', () => {
       // Should install all default workflows
       expect(selectAndInstallWorkflows).toHaveBeenCalledWith(
         'en',
-        'en',
-        ['sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'], // All workflows
+        ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'], // All workflows
       )
     })
 
     it('should use default output styles when not specified', async () => {
-      const { configureOutputStyle } = await import('../../../src/utils/output-style')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -293,8 +288,6 @@ describe('init command with simplified parameters', () => {
       await init(options)
 
       expect(configureOutputStyle).toHaveBeenCalledWith(
-        'en', // display language
-        'en', // config language
         ['engineer-professional', 'nekomata-engineer', 'laowang-engineer'], // default output styles
         'engineer-professional', // default output style
       )
@@ -303,8 +296,6 @@ describe('init command with simplified parameters', () => {
 
   describe('--all-lang parameter', () => {
     it('should use --all-lang for all three language parameters when en', async () => {
-      const { copyConfigFiles, applyAiLanguageDirective } = await import('../../../src/utils/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -322,8 +313,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should use en for lang/config-lang and custom value for ai-output-lang when not zh-CN/en', async () => {
-      const { copyConfigFiles, applyAiLanguageDirective } = await import('../../../src/utils/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -344,8 +333,6 @@ describe('init command with simplified parameters', () => {
 
   describe('install-CCometixLine parameter', () => {
     it('should install CCometixLine by default when install-CCometixLine is true', async () => {
-      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -359,12 +346,10 @@ describe('init command with simplified parameters', () => {
 
       await init(options)
 
-      expect(installCometixLine).toHaveBeenCalledWith('en')
+      expect(installCometixLine).toHaveBeenCalledWith()
     })
 
     it('should install CCometixLine by default when install-CCometixLine is not specified', async () => {
-      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -378,12 +363,10 @@ describe('init command with simplified parameters', () => {
 
       await init(options)
 
-      expect(installCometixLine).toHaveBeenCalledWith('en')
+      expect(installCometixLine).toHaveBeenCalledWith()
     })
 
     it('should not install CCometixLine when install-CCometixLine is false', async () => {
-      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -401,8 +384,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should handle string "false" for install-CCometixLine parameter', async () => {
-      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -420,8 +401,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should handle string "true" for install-CCometixLine parameter', async () => {
-      const { installCometixLine, isCometixLineInstalled } = await import('../../../src/utils/cometix/installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -435,14 +414,12 @@ describe('init command with simplified parameters', () => {
 
       await init(options)
 
-      expect(installCometixLine).toHaveBeenCalledWith('en')
+      expect(installCometixLine).toHaveBeenCalledWith()
     })
   })
 
   describe('mcp and workflow skip values', () => {
     it('should skip all MCP services when mcp-services is "skip"', async () => {
-      const { writeMcpConfig } = await import('../../../src/utils/mcp')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -459,8 +436,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should skip all MCP services when mcp-services is false boolean', async () => {
-      const { writeMcpConfig } = await import('../../../src/utils/mcp')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -477,8 +452,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should skip all workflows when workflows is "skip"', async () => {
-      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -495,8 +468,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should skip all workflows when workflows is false boolean', async () => {
-      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -567,8 +538,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should handle "all" value for mcp-services', async () => {
-      const { writeMcpConfig } = await import('../../../src/utils/mcp')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -586,8 +555,6 @@ describe('init command with simplified parameters', () => {
     })
 
     it('should handle "all" value for workflows', async () => {
-      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
@@ -603,52 +570,44 @@ describe('init command with simplified parameters', () => {
       // Should install all workflows
       expect(selectAndInstallWorkflows).toHaveBeenCalledWith(
         'en',
-        'en',
-        ['sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
+        ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
       )
     })
   })
 
   describe('ccr_proxy configuration in skip-prompt mode', () => {
     it('should handle ccr_proxy without prompting for user interaction', async () => {
-      const { isCcrInstalled, installCcr } = await import('../../../src/utils/ccr/installer')
-      const { backupCcrConfig, configureCcrProxy } = await import('../../../src/utils/ccr/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
-      vi.mocked(isCcrInstalled).mockResolvedValue({ hasCorrectPackage: false })
+      vi.mocked(isCcrInstalled).mockResolvedValue({ isInstalled: false, hasCorrectPackage: false })
       vi.mocked(installCcr).mockResolvedValue()
 
       // Mock the new functions we'll create
-      vi.mocked(backupCcrConfig).mockReturnValue('/backup/path')
+      vi.mocked(backupCcrConfig).mockResolvedValue('/backup/path')
       vi.mocked(configureCcrProxy).mockResolvedValue()
 
       const options: InitOptions = {
         skipPrompt: true,
         apiType: 'ccr_proxy',
         skipBanner: true,
-        lang: 'en',
         configLang: 'en',
       }
 
       await init(options)
 
       // Should install CCR if not present
-      expect(installCcr).toHaveBeenCalledWith('en')
+      expect(installCcr).toHaveBeenCalledWith()
 
       // Should NOT call setupCcrConfiguration (which has prompts)
       // Instead should call our new skip-prompt logic
     })
 
     it('should backup existing CCR config when using ccr_proxy in skip-prompt mode', async () => {
-      const { isCcrInstalled } = await import('../../../src/utils/ccr/installer')
-      const { backupCcrConfig, configureCcrProxy, readCcrConfig } = await import('../../../src/utils/ccr/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
-      vi.mocked(isCcrInstalled).mockResolvedValue({ hasCorrectPackage: true })
+      vi.mocked(isCcrInstalled).mockResolvedValue({ isInstalled: true, hasCorrectPackage: true })
 
       // Mock existing CCR config
       vi.mocked(readCcrConfig).mockReturnValue({
@@ -661,10 +620,10 @@ describe('init command with simplified parameters', () => {
         PROXY_URL: '',
         transformers: [],
         Providers: [],
-        Router: {},
+        Router: {} as CcrRouter,
       })
 
-      vi.mocked(backupCcrConfig).mockReturnValue('/backup/ccr-config')
+      vi.mocked(backupCcrConfig).mockResolvedValue('/backup/ccr-config')
       vi.mocked(configureCcrProxy).mockResolvedValue()
 
       const options: InitOptions = {
@@ -676,17 +635,14 @@ describe('init command with simplified parameters', () => {
       await init(options)
 
       // Should backup existing config
-      expect(backupCcrConfig).toHaveBeenCalledWith('en')
+      expect(backupCcrConfig).toHaveBeenCalledWith()
     })
 
     it('should create default skip configuration for ccr_proxy in skip-prompt mode', async () => {
-      const { isCcrInstalled } = await import('../../../src/utils/ccr/installer')
-      const { writeCcrConfig, configureCcrProxy, readCcrConfig } = await import('../../../src/utils/ccr/config')
-      const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
 
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
-      vi.mocked(isCcrInstalled).mockResolvedValue({ hasCorrectPackage: true })
+      vi.mocked(isCcrInstalled).mockResolvedValue({ isInstalled: true, hasCorrectPackage: true })
       vi.mocked(readCcrConfig).mockReturnValue(null) // No existing config
       vi.mocked(configureCcrProxy).mockResolvedValue()
 
@@ -709,7 +665,7 @@ describe('init command with simplified parameters', () => {
         PROXY_URL: '',
         transformers: [],
         Providers: [], // Empty providers - user configures in UI
-        Router: {}, // Empty router - user configures in UI
+        Router: {} as CcrRouter, // Empty router - user configures in UI
       })
 
       // Should configure proxy in settings.json

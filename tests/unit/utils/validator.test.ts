@@ -16,25 +16,25 @@ describe('validator utilities', () => {
 
   describe('validateApiKey', () => {
     it('should return invalid for empty string', () => {
-      const result = validateApiKey('', 'en')
+      const result = validateApiKey('')
       expect(result.isValid).toBe(false)
       expect(result.error).toBeDefined()
     })
 
     it('should return invalid for whitespace only', () => {
-      const result = validateApiKey('   ', 'zh-CN')
+      const result = validateApiKey('   ')
       expect(result.isValid).toBe(false)
       expect(result.error).toBeDefined()
     })
 
     it('should return valid for non-empty API key', () => {
-      const result = validateApiKey('sk-ant-api-key-123456', 'en')
+      const result = validateApiKey('sk-ant-api-key-123456')
       expect(result.isValid).toBe(true)
       expect(result.error).toBeUndefined()
     })
 
     it('should return valid for any non-empty string', () => {
-      const result = validateApiKey('any-api-key', 'zh-CN')
+      const result = validateApiKey('any-api-key')
       expect(result.isValid).toBe(true)
       expect(result.error).toBeUndefined()
     })
@@ -83,17 +83,17 @@ describe('validator utilities', () => {
   })
 
   describe('showApiKeyError', () => {
-    it('should log error message in red', () => {
+    it('should log error message in red', async () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      showApiKeyError('Invalid API key', 'en')
+      await showApiKeyError('Invalid API key')
 
       expect(consoleSpy).toHaveBeenCalledWith('✗ Invalid API key')
       expect(consoleSpy).toHaveBeenCalledTimes(2)
     })
 
-    it('should log example format in gray', () => {
+    it('should log example format in gray', async () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      showApiKeyError('Error message', 'zh-CN')
+      await showApiKeyError('Error message')
 
       expect(consoleSpy).toHaveBeenCalledTimes(2)
       // Second call should be the example

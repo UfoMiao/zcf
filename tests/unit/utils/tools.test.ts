@@ -7,6 +7,16 @@ import { runCcusageFeature } from '../../../src/utils/tools'
 vi.mock('inquirer')
 vi.mock('../../../src/commands/ccu')
 
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock ensureI18nInitialized to avoid initialization issues
+    ensureI18nInitialized: vi.fn(),
+  }
+})
+
 describe('runCcusageFeature', () => {
   const mockPrompt = vi.mocked(inquirer.prompt)
   const mockExecuteCcusage = vi.mocked(executeCcusage)
@@ -28,19 +38,19 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockPrompt).toHaveBeenCalledWith({
         type: 'list',
         name: 'mode',
-        message: '选择分析模式:',
+        message: 'Select analysis mode:',
         choices: [
-          { name: '1. 每日使用量', value: 'daily' },
-          { name: '2. 每月使用量', value: 'monthly' },
-          { name: '3. 会话统计', value: 'session' },
-          { name: '4. 区块统计', value: 'blocks' },
-          { name: '5. 自定义参数', value: 'custom' },
-          { name: '6. 返回', value: 'back' },
+          { name: '1. Daily usage', value: 'daily' },
+          { name: '2. Monthly usage', value: 'monthly' },
+          { name: '3. Session statistics', value: 'session' },
+          { name: '4. Analyze code blocks', value: 'blocks' },
+          { name: '5. Custom parameters', value: 'custom' },
+          { name: '6. Back', value: 'back' },
         ],
       })
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['daily'])
@@ -53,7 +63,7 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockPrompt).toHaveBeenCalledWith({
         type: 'list',
@@ -63,7 +73,7 @@ describe('runCcusageFeature', () => {
           { name: '1. Daily usage', value: 'daily' },
           { name: '2. Monthly usage', value: 'monthly' },
           { name: '3. Session statistics', value: 'session' },
-          { name: '4. Block statistics', value: 'blocks' },
+          { name: '4. Analyze code blocks', value: 'blocks' },
           { name: '5. Custom parameters', value: 'custom' },
           { name: '6. Back', value: 'back' },
         ],
@@ -78,7 +88,7 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['session'])
     })
@@ -89,7 +99,7 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['blocks'])
     })
@@ -99,7 +109,7 @@ describe('runCcusageFeature', () => {
     it('should return early when back is selected', async () => {
       mockPrompt.mockResolvedValueOnce({ mode: 'back' })
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).not.toHaveBeenCalled()
       expect(mockPrompt).toHaveBeenCalledTimes(1)
@@ -108,7 +118,7 @@ describe('runCcusageFeature', () => {
     it('should return early when back is selected in English', async () => {
       mockPrompt.mockResolvedValueOnce({ mode: 'back' })
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).not.toHaveBeenCalled()
       expect(mockPrompt).toHaveBeenCalledTimes(1)
@@ -123,12 +133,12 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockPrompt).toHaveBeenCalledWith({
         type: 'input',
         name: 'customArgs',
-        message: '输入自定义参数 (例如: daily --json):',
+        message: 'Enter custom arguments',
         default: '',
       })
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['daily', '--json', '--output', 'report.json'])
@@ -141,12 +151,12 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockPrompt).toHaveBeenCalledWith({
         type: 'input',
         name: 'customArgs',
-        message: 'Enter custom arguments (e.g., daily --json):',
+        message: 'Enter custom arguments',
         default: '',
       })
       expect(mockExecuteCcusage).toHaveBeenCalledWith([])
@@ -159,7 +169,7 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith([])
     })
@@ -171,7 +181,7 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['daily', '--json', '--verbose'])
     })
@@ -184,12 +194,12 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockPrompt).toHaveBeenNthCalledWith(2, {
         type: 'input',
         name: 'continue',
-        message: ansis.gray('按 Enter 键继续...'),
+        message: ansis.gray('Press Enter to continue...'),
       })
     })
 
@@ -199,7 +209,7 @@ describe('runCcusageFeature', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockPrompt).toHaveBeenNthCalledWith(2, {
         type: 'input',

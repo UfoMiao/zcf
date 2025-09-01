@@ -1,21 +1,19 @@
-import type { SupportedLang } from '../constants'
 import ansis from 'ansis'
-import { getTranslation } from '../i18n'
+import { ensureI18nInitialized, i18n } from '../i18n'
 
 /**
  * Validate API Key format
  * @param apiKey - API Key to validate
- * @param lang - Language for error messages
  * @returns Validation result
  */
-export function validateApiKey(apiKey: string, lang: SupportedLang = 'zh-CN'): { isValid: boolean, error?: string } {
-  const i18n = getTranslation(lang)
-
+export function validateApiKey(apiKey: string): { isValid: boolean, error?: string } {
   // Empty check
   if (!apiKey || apiKey.trim() === '') {
     return {
       isValid: false,
-      error: i18n.api.apiKeyValidation.empty,
+      // Note: This should use i18next, but due to sync constraint in inquirer validate,
+      // we temporarily use a generic message. This will be fixed when we refactor to async validation.
+      error: 'API key cannot be empty',
     }
   }
 
@@ -39,13 +37,12 @@ export function formatApiKeyDisplay(apiKey: string): string {
 /**
  * Display API Key validation error message
  * @param error - Error message
- * @param lang - Language for example format
  */
-export function showApiKeyError(error: string, lang: SupportedLang = 'zh-CN'): void {
-  const i18n = getTranslation(lang)
+export async function showApiKeyError(error: string): Promise<void> {
+  ensureI18nInitialized()
 
   console.log(ansis.red(`✗ ${error}`))
-  console.log(ansis.gray(i18n.api.apiKeyValidation.example))
+  console.log(ansis.gray(i18n.t('api:apiKeyValidation.example')))
 }
 
 /**

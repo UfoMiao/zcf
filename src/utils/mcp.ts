@@ -1,11 +1,10 @@
 import type { ClaudeConfiguration, McpServerConfig } from '../types'
 import { join } from 'pathe'
 import { ClAUDE_CONFIG_FILE, CLAUDE_DIR } from '../constants'
-import { getTranslation } from '../i18n'
+// No i18n needed in this file
 import { backupJsonConfig, readJsonConfig, writeJsonConfig } from './json-config'
 import { deepClone } from './object-utils'
 import { getMcpCommand, isWindows } from './platform'
-import { readZcfConfig } from './zcf-config'
 
 export function getMcpConfigPath(): string {
   return ClAUDE_CONFIG_FILE
@@ -119,9 +118,7 @@ export function addCompletedOnboarding(): void {
     writeMcpConfig(config)
   }
   catch (error) {
-    const lang = readZcfConfig()?.preferredLang || 'en'
-    const i18n = getTranslation(lang)
-    console.error(i18n.configuration?.failedToAddOnboardingFlag || 'Failed to add onboarding flag', error)
+    console.error('Failed to add onboarding flag', error)
     throw error
   }
 }

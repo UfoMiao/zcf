@@ -56,14 +56,25 @@ vi.mock('../../../src/utils/zcf-config', () => ({
 
 vi.mock('../../../src/utils/output-style', () => ({
   configureOutputStyle: vi.fn(),
+  selectOutputStyles: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/platform', () => ({
   isWindows: vi.fn(),
 }))
 
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
+  }
+})
+
 describe('features utilities', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -106,7 +117,7 @@ describe('features utilities', () => {
         .mockResolvedValueOnce({ key: 'test-key' })
       vi.mocked(configureApi).mockReturnValue({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
 
-      await configureApiFeature('zh-CN')
+      await configureApiFeature()
 
       expect(getExistingApiConfig).toHaveBeenCalled()
       expect(configureApi).toHaveBeenCalledWith({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
@@ -116,15 +127,15 @@ describe('features utilities', () => {
       const { configureApiFeature } = await import('../../../src/utils/features')
       const { getExistingApiConfig } = await import('../../../src/utils/config')
       const { modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
-      const { I18N } = await import('../../../src/constants')
+      await import('../../../src/constants')
 
       vi.mocked(getExistingApiConfig).mockReturnValue({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
       vi.mocked(inquirer.prompt).mockResolvedValue({ action: 'modify-partial' })
       vi.mocked(modifyApiConfigPartially).mockResolvedValue(undefined)
 
-      await configureApiFeature('zh-CN')
+      await configureApiFeature()
 
-      expect(modifyApiConfigPartially).toHaveBeenCalledWith({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' }, I18N['zh-CN'], 'zh-CN')
+      expect(modifyApiConfigPartially).toHaveBeenCalledWith({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
     })
   })
 
@@ -139,7 +150,7 @@ describe('features utilities', () => {
       vi.mocked(mergeMcpServers).mockReturnValue({ mcpServers: { fs: {} } } as any)
       vi.mocked(writeMcpConfig).mockResolvedValue(undefined)
 
-      await configureMcpFeature('zh-CN')
+      await configureMcpFeature()
 
       expect(selectMcpServices).toHaveBeenCalled()
       expect(writeMcpConfig).toHaveBeenCalled()
@@ -155,7 +166,7 @@ describe('features utilities', () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'opus' })
       vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
 
-      await configureDefaultModelFeature('zh-CN')
+      await configureDefaultModelFeature()
 
       expect(getExistingModelConfig).toHaveBeenCalled()
       expect(updateDefaultModel).toHaveBeenCalledWith('opus')
@@ -171,7 +182,7 @@ describe('features utilities', () => {
         .mockResolvedValueOnce({ model: 'opus' })
       vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
 
-      await configureDefaultModelFeature('zh-CN')
+      await configureDefaultModelFeature()
 
       expect(getExistingModelConfig).toHaveBeenCalled()
       expect(inquirer.prompt).toHaveBeenCalledTimes(2)
@@ -185,7 +196,7 @@ describe('features utilities', () => {
       vi.mocked(getExistingModelConfig).mockReturnValue('opus')
       vi.mocked(inquirer.prompt).mockResolvedValue({ modify: false })
 
-      await configureDefaultModelFeature('en')
+      await configureDefaultModelFeature()
 
       expect(getExistingModelConfig).toHaveBeenCalled()
       expect(inquirer.prompt).toHaveBeenCalledTimes(1)
@@ -200,7 +211,7 @@ describe('features utilities', () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'default' })
       vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
 
-      await configureDefaultModelFeature('zh-CN')
+      await configureDefaultModelFeature()
 
       expect(updateDefaultModel).toHaveBeenCalledWith('default')
     })
@@ -212,7 +223,7 @@ describe('features utilities', () => {
       vi.mocked(getExistingModelConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: undefined })
 
-      await configureDefaultModelFeature('zh-CN')
+      await configureDefaultModelFeature()
 
       expect(updateDefaultModel).not.toHaveBeenCalled()
     })
@@ -225,7 +236,7 @@ describe('features utilities', () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'opusplan' })
       vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
 
-      await configureDefaultModelFeature('zh-CN')
+      await configureDefaultModelFeature()
 
       expect(updateDefaultModel).toHaveBeenCalledWith('opusplan')
     })
@@ -239,7 +250,7 @@ describe('features utilities', () => {
         .mockResolvedValueOnce({ modify: true })
         .mockResolvedValueOnce({ model: 'sonnet' })
 
-      await configureDefaultModelFeature('zh-CN')
+      await configureDefaultModelFeature()
 
       const secondCall = vi.mocked(inquirer.prompt).mock.calls[1][0] as any
       expect(secondCall.default).toBe(1) // 'opus' is at index 1 in ['default', 'opus', 'opusplan']
@@ -252,7 +263,7 @@ describe('features utilities', () => {
       vi.mocked(getExistingModelConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'opusplan' })
 
-      await configureDefaultModelFeature('zh-CN')
+      await configureDefaultModelFeature()
 
       const promptCall = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
       const choices = promptCall.choices
@@ -266,7 +277,7 @@ describe('features utilities', () => {
     it('should configure AI language when no existing config', async () => {
       const { configureAiMemoryFeature } = await import('../../../src/utils/features')
       const { applyAiLanguageDirective } = await import('../../../src/utils/config')
-      const { configureAiPersonality: _configureAiPersonality } = await import('../../../src/utils/ai-personality')
+      await import('../../../src/utils/output-style')
       const { selectAiOutputLanguage } = await import('../../../src/utils/prompts')
       const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
 
@@ -278,9 +289,9 @@ describe('features utilities', () => {
       vi.mocked(applyAiLanguageDirective).mockResolvedValue(undefined)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
 
-      await configureAiMemoryFeature('zh-CN')
+      await configureAiMemoryFeature()
 
-      expect(selectAiOutputLanguage).toHaveBeenCalledWith('zh-CN', 'zh-CN')
+      expect(selectAiOutputLanguage).toHaveBeenCalledWith()
       expect(applyAiLanguageDirective).toHaveBeenCalledWith('chinese-simplified')
       expect(updateZcfConfig).toHaveBeenCalledWith({ aiOutputLang: 'chinese-simplified' })
     })
@@ -299,7 +310,7 @@ describe('features utilities', () => {
       vi.mocked(applyAiLanguageDirective).mockResolvedValue(undefined)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
 
-      await configureAiMemoryFeature('zh-CN')
+      await configureAiMemoryFeature()
 
       expect(inquirer.prompt).toHaveBeenCalledTimes(2)
       expect(selectAiOutputLanguage).toHaveBeenCalled()
@@ -317,7 +328,7 @@ describe('features utilities', () => {
         .mockResolvedValueOnce({ option: 'language' })
         .mockResolvedValueOnce({ modify: false })
 
-      await configureAiMemoryFeature('en')
+      await configureAiMemoryFeature()
 
       expect(selectAiOutputLanguage).not.toHaveBeenCalled()
       expect(applyAiLanguageDirective).not.toHaveBeenCalled()
@@ -331,9 +342,9 @@ describe('features utilities', () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ option: 'outputStyle' })
       vi.mocked(_configureOutputStyle).mockResolvedValue(undefined)
 
-      await configureAiMemoryFeature('zh-CN')
+      await configureAiMemoryFeature()
 
-      expect(_configureOutputStyle).toHaveBeenCalledWith('zh-CN', 'zh-CN')
+      expect(_configureOutputStyle).toHaveBeenCalledWith()
     })
 
     it('should handle user cancellation', async () => {
@@ -343,7 +354,7 @@ describe('features utilities', () => {
 
       vi.mocked(inquirer.prompt).mockResolvedValue({ option: undefined })
 
-      await configureAiMemoryFeature('zh-CN')
+      await configureAiMemoryFeature()
 
       expect(applyAiLanguageDirective).not.toHaveBeenCalled()
       expect(_configureOutputStyle).not.toHaveBeenCalled()
@@ -359,7 +370,7 @@ describe('features utilities', () => {
       vi.mocked(unlinkSync).mockImplementation(() => {})
       vi.mocked(inquirer.prompt).mockResolvedValue({ confirm: true })
 
-      await clearZcfCacheFeature('zh-CN')
+      await clearZcfCacheFeature()
 
       expect(unlinkSync).toHaveBeenCalled()
     })
@@ -390,7 +401,7 @@ describe('features utilities', () => {
       })
       vi.mocked(importRecommendedEnv).mockResolvedValue(undefined)
 
-      await configureEnvPermissionFeature('zh-CN')
+      await configureEnvPermissionFeature()
 
       expect(importRecommendedEnv).toHaveBeenCalled()
     })

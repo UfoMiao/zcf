@@ -5,7 +5,7 @@ import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
 import { CLAUDE_DIR, SETTINGS_FILE } from '../constants'
-import { getTranslation } from '../i18n'
+import { ensureI18nInitialized, i18n } from '../i18n'
 import { copyFile, ensureDir, exists, removeFile } from './fs-operations'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { addNumbersToChoices } from './prompt-helpers'
@@ -105,28 +105,61 @@ export function cleanupLegacyPersonalityFiles(): void {
 }
 
 export async function configureOutputStyle(
-  displayLang: SupportedLang,
-  configLang: SupportedLang,
   preselectedStyles?: string[],
   preselectedDefault?: string,
 ): Promise<void> {
-  const i18n = getTranslation(displayLang)
+  ensureI18nInitialized()
+
+  // Create static output style list for i18n-ally compatibility
+  const outputStyleList = [
+    {
+      id: 'default',
+      name: i18n.t('configuration:outputStyles.default.name'),
+      description: i18n.t('configuration:outputStyles.default.description'),
+    },
+    {
+      id: 'engineer-professional',
+      name: i18n.t('configuration:outputStyles.engineer-professional.name'),
+      description: i18n.t('configuration:outputStyles.engineer-professional.description'),
+    },
+    {
+      id: 'explanatory',
+      name: i18n.t('configuration:outputStyles.explanatory.name'),
+      description: i18n.t('configuration:outputStyles.explanatory.description'),
+    },
+    {
+      id: 'laowang-engineer',
+      name: i18n.t('configuration:outputStyles.laowang-engineer.name'),
+      description: i18n.t('configuration:outputStyles.laowang-engineer.description'),
+    },
+    {
+      id: 'learning',
+      name: i18n.t('configuration:outputStyles.learning.name'),
+      description: i18n.t('configuration:outputStyles.learning.description'),
+    },
+    {
+      id: 'nekomata-engineer',
+      name: i18n.t('configuration:outputStyles.nekomata-engineer.name'),
+      description: i18n.t('configuration:outputStyles.nekomata-engineer.description'),
+    },
+  ]
+
   const availableStyles = getAvailableOutputStyles()
 
   // Check for legacy files
   if (hasLegacyPersonalityFiles() && !preselectedStyles) {
-    console.log(ansis.yellow(`⚠️  ${i18n.configuration.legacyFilesDetected}`))
+    console.log(ansis.yellow(`⚠️  ${i18n.t('configuration:legacyFilesDetected')}`))
 
     const { cleanupLegacy } = await inquirer.prompt<{ cleanupLegacy: boolean }>({
       type: 'confirm',
       name: 'cleanupLegacy',
-      message: i18n.configuration.cleanupLegacyFiles,
+      message: i18n.t('configuration:cleanupLegacyFiles'),
       default: true,
     })
 
     if (cleanupLegacy) {
       cleanupLegacyPersonalityFiles()
-      console.log(ansis.green(`✔ ${i18n.configuration.legacyFilesRemoved}`))
+      console.log(ansis.green(`✔ ${i18n.t('configuration:legacyFilesRemoved')}`))
     }
   }
   else if (hasLegacyPersonalityFiles() && preselectedStyles) {
@@ -148,17 +181,20 @@ export async function configureOutputStyle(
     const { selectedStyles: promptedStyles } = await inquirer.prompt<{ selectedStyles: string[] }>({
       type: 'checkbox',
       name: 'selectedStyles',
-      message: `${i18n.configuration.selectOutputStyles}${i18n.common.multiSelectHint}`,
-      choices: addNumbersToChoices(customStyles.map(style => ({
-        name: `${i18n.configuration.outputStyles[style.id]?.name || style.id} - ${ansis.gray(i18n.configuration.outputStyles[style.id]?.description || '')}`,
-        value: style.id,
-        checked: true, // Default select all custom styles
-      }))),
-      validate: input => input.length > 0 || i18n.configuration.selectAtLeastOne,
+      message: `${i18n.t('configuration:selectOutputStyles')}${i18n.t('common:multiSelectHint')}`,
+      choices: addNumbersToChoices(customStyles.map((style) => {
+        const styleInfo = outputStyleList.find(s => s.id === style.id)
+        return {
+          name: `${styleInfo?.name || style.id} - ${ansis.gray(styleInfo?.description || '')}`,
+          value: style.id,
+          checked: true, // Default select all custom styles
+        }
+      })),
+      validate: async input => input.length > 0 || i18n.t('configuration:selectAtLeastOne'),
     })
 
     if (!promptedStyles || promptedStyles.length === 0) {
-      console.log(ansis.yellow(i18n.common.cancelled))
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
       return
     }
 
@@ -167,30 +203,34 @@ export async function configureOutputStyle(
     const { defaultStyle: promptedDefault } = await inquirer.prompt<{ defaultStyle: string }>({
       type: 'list',
       name: 'defaultStyle',
-      message: i18n.configuration.selectDefaultOutputStyle,
+      message: i18n.t('configuration:selectDefaultOutputStyle'),
       choices: addNumbersToChoices([
         // Show selected custom styles first (only what user actually installed)
         ...selectedStyles.map((styleId) => {
+          const styleInfo = outputStyleList.find(s => s.id === styleId)
           return {
-            name: `${i18n.configuration.outputStyles[styleId]?.name || styleId} - ${ansis.gray(i18n.configuration.outputStyles[styleId]?.description || '')}`,
+            name: `${styleInfo?.name || styleId} - ${ansis.gray(styleInfo?.description || '')}`,
             value: styleId,
-            short: i18n.configuration.outputStyles[styleId]?.name || styleId,
+            short: styleInfo?.name || styleId,
           }
         }),
         // Then show all built-in styles (always available)
         ...availableStyles
           .filter(style => !style.isCustom)
-          .map(style => ({
-            name: `${i18n.configuration.outputStyles[style.id]?.name || style.id} - ${ansis.gray(i18n.configuration.outputStyles[style.id]?.description || '')}`,
-            value: style.id,
-            short: i18n.configuration.outputStyles[style.id]?.name || style.id,
-          })),
+          .map((style) => {
+            const styleInfo = outputStyleList.find(s => s.id === style.id)
+            return {
+              name: `${styleInfo?.name || style.id} - ${ansis.gray(styleInfo?.description || '')}`,
+              value: style.id,
+              short: styleInfo?.name || style.id,
+            }
+          }),
       ]),
       default: selectedStyles.includes('engineer-professional') ? 'engineer-professional' : selectedStyles[0],
     })
 
     if (!promptedDefault) {
-      console.log(ansis.yellow(i18n.common.cancelled))
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
       return
     }
 
@@ -198,7 +238,7 @@ export async function configureOutputStyle(
   }
 
   // Copy selected output styles using configLang for template language
-  await copyOutputStyles(selectedStyles, configLang)
+  await copyOutputStyles(selectedStyles, 'zh-CN')
 
   // Set global default output style
   setGlobalDefaultOutputStyle(defaultStyle)
@@ -209,7 +249,7 @@ export async function configureOutputStyle(
     defaultOutputStyle: defaultStyle,
   })
 
-  console.log(ansis.green(`✔ ${i18n.configuration.outputStyleInstalled}`))
-  console.log(ansis.gray(`  ${i18n.configuration.selectedStyles}: ${selectedStyles.join(', ')}`))
-  console.log(ansis.gray(`  ${i18n.configuration.defaultStyle}: ${defaultStyle}`))
+  console.log(ansis.green(`✔ ${i18n.t('configuration:outputStyleInstalled')}`))
+  console.log(ansis.gray(`  ${i18n.t('configuration:selectedStyles')}: ${selectedStyles.join(', ')}`))
+  console.log(ansis.gray(`  ${i18n.t('configuration:defaultStyle')}: ${defaultStyle}`))
 }

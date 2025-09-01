@@ -6,6 +6,7 @@ export default antfu({
     '.bmad-core/**',
     '.claude/**',
     'templates/**',
+    '**/**.md',
   ],
   rules: {
     'no-console': 'off',

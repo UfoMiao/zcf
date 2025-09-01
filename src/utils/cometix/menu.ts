@@ -1,50 +1,49 @@
-import type { SupportedLang } from '../../constants'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
-import { getTranslation } from '../../i18n'
+import { ensureI18nInitialized, i18n } from '../../i18n'
 import { handleExitPromptError, handleGeneralError } from '../error-handler'
 import { runCometixPrintConfig, runCometixTuiConfig } from './commands'
 import { installCometixLine } from './installer'
 
-export async function showCometixMenu(scriptLang: SupportedLang): Promise<boolean> {
+export async function showCometixMenu(): Promise<boolean> {
   try {
-    const i18n = getTranslation(scriptLang)
+    ensureI18nInitialized()
 
     // Display CCometixLine menu title
     console.log(`\n${ansis.cyan('═'.repeat(50))}`)
-    console.log(ansis.bold.cyan(`  ${i18n.cometix.cometixMenuTitle}`))
+    console.log(ansis.bold.cyan(`  ${i18n.t('cometix:cometixMenuTitle')}`))
     console.log(`${ansis.cyan('═'.repeat(50))}\n`)
 
     // Display menu options
-    console.log(`  ${ansis.cyan('1.')} ${i18n.cometix.cometixMenuOptions.installOrUpdate} ${ansis.gray(`- ${i18n.cometix.cometixMenuDescriptions.installOrUpdate}`)}`)
-    console.log(`  ${ansis.cyan('2.')} ${i18n.cometix.cometixMenuOptions.printConfig} ${ansis.gray(`- ${i18n.cometix.cometixMenuDescriptions.printConfig}`)}`)
-    console.log(`  ${ansis.cyan('3.')} ${i18n.cometix.cometixMenuOptions.customConfig} ${ansis.gray(`- ${i18n.cometix.cometixMenuDescriptions.customConfig}`)}`)
-    console.log(`  ${ansis.yellow('0.')} ${i18n.cometix.cometixMenuOptions.back}`)
+    console.log(`  ${ansis.cyan('1.')} ${i18n.t('cometix:cometixMenuOptions.installOrUpdate')} ${ansis.gray(`- ${i18n.t('cometix:cometixMenuDescriptions.installOrUpdate')}`)}`)
+    console.log(`  ${ansis.cyan('2.')} ${i18n.t('cometix:cometixMenuOptions.printConfig')} ${ansis.gray(`- ${i18n.t('cometix:cometixMenuDescriptions.printConfig')}`)}`)
+    console.log(`  ${ansis.cyan('3.')} ${i18n.t('cometix:cometixMenuOptions.customConfig')} ${ansis.gray(`- ${i18n.t('cometix:cometixMenuDescriptions.customConfig')}`)}`)
+    console.log(`  ${ansis.yellow('0.')} ${i18n.t('cometix:cometixMenuOptions.back')}`)
     console.log('')
 
     // Get user choice
     const { choice } = await inquirer.prompt<{ choice: string }>({
       type: 'input',
       name: 'choice',
-      message: i18n.common.enterChoice,
-      validate: (value) => {
+      message: i18n.t('common:enterChoice'),
+      validate: async (value) => {
         const valid = ['1', '2', '3', '0']
-        return valid.includes(value) || i18n.common.invalidChoice
+        return valid.includes(value) || i18n.t('common:invalidChoice')
       },
     })
 
     // Handle menu selection
     switch (choice) {
       case '1':
-        await installCometixLine(scriptLang)
+        await installCometixLine()
         break
 
       case '2':
-        await runCometixPrintConfig(scriptLang)
+        await runCometixPrintConfig()
         break
 
       case '3':
-        await runCometixTuiConfig(scriptLang)
+        await runCometixTuiConfig()
         break
 
       case '0':
@@ -58,12 +57,12 @@ export async function showCometixMenu(scriptLang: SupportedLang): Promise<boolea
       const { continueInCometix } = await inquirer.prompt<{ continueInCometix: boolean }>({
         type: 'confirm',
         name: 'continueInCometix',
-        message: i18n.common.returnToMenu,
+        message: i18n.t('common:returnToMenu'),
         default: true,
       })
 
       if (continueInCometix) {
-        return await showCometixMenu(scriptLang)
+        return await showCometixMenu()
       }
     }
 
@@ -71,7 +70,7 @@ export async function showCometixMenu(scriptLang: SupportedLang): Promise<boolea
   }
   catch (error) {
     if (!handleExitPromptError(error)) {
-      handleGeneralError(error, scriptLang)
+      handleGeneralError(error)
     }
     return false
   }

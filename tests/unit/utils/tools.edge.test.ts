@@ -6,14 +6,30 @@ import { runCcusageFeature } from '../../../src/utils/tools'
 vi.mock('inquirer')
 vi.mock('../../../src/commands/ccu')
 
+// Mock i18n system
+vi.mock('../../../src/i18n', () => ({
+  initI18n: vi.fn().mockResolvedValue(undefined),
+  changeLanguage: vi.fn().mockResolvedValue(undefined),
+  i18n: {
+    t: vi.fn((key: string) => key),
+    isInitialized: true,
+    language: 'en',
+  },
+  ensureI18nInitialized: vi.fn(),
+}))
+
 describe('runCcusageFeature - edge cases', () => {
   const mockPrompt = vi.mocked(inquirer.prompt)
   const mockExecuteCcusage = vi.mocked(executeCcusage)
   const consoleLogSpy = vi.spyOn(console, 'log')
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     consoleLogSpy.mockImplementation(() => {})
+
+    // Initialize i18n for test environment
+    const { initI18n } = await import('../../../src/i18n')
+    await initI18n('zh-CN')
   })
 
   afterEach(() => {
@@ -24,7 +40,7 @@ describe('runCcusageFeature - edge cases', () => {
     it('should handle prompt rejection', async () => {
       mockPrompt.mockRejectedValueOnce(new Error('User cancelled'))
 
-      await expect(runCcusageFeature('zh-CN')).rejects.toThrow('User cancelled')
+      await expect(runCcusageFeature()).rejects.toThrow('User cancelled')
       expect(mockExecuteCcusage).not.toHaveBeenCalled()
     })
 
@@ -34,7 +50,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockRejectedValueOnce(new Error('Execution failed'))
 
-      await expect(runCcusageFeature('en')).rejects.toThrow('Execution failed')
+      await expect(runCcusageFeature()).rejects.toThrow('Execution failed')
     })
 
     it('should handle continue prompt error', async () => {
@@ -43,7 +59,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockRejectedValueOnce(new Error('Continue prompt failed'))
       mockExecuteCcusage.mockResolvedValue()
 
-      await expect(runCcusageFeature('zh-CN')).rejects.toThrow('Continue prompt failed')
+      await expect(runCcusageFeature()).rejects.toThrow('Continue prompt failed')
     })
   })
 
@@ -55,7 +71,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith([
         '--path="/Users/Claude',
@@ -71,7 +87,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['daily', '--json', '--verbose'])
     })
@@ -84,7 +100,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith([longArg])
     })
@@ -96,7 +112,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith([])
     })
@@ -108,7 +124,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith([])
     })
@@ -121,7 +137,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('fr' as any)
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['daily'])
     })
@@ -132,7 +148,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature(undefined as any)
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['monthly'])
     })
@@ -145,7 +161,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['invalid-mode'])
     })
@@ -156,7 +172,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith([undefined])
     })
@@ -168,7 +184,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('zh-CN')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['123'])
     })
@@ -180,7 +196,7 @@ describe('runCcusageFeature - edge cases', () => {
         .mockResolvedValueOnce({ continue: '' })
       mockExecuteCcusage.mockResolvedValue()
 
-      await runCcusageFeature('en')
+      await runCcusageFeature()
 
       expect(mockExecuteCcusage).toHaveBeenCalledWith(['[object', 'Object]'])
     })

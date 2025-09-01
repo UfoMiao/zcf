@@ -132,5 +132,15 @@
     "scss",
     "pcss",
     "postcss"
-  ]
+  ],
+  "i18n-ally.localesPaths": [
+    "src/i18n/locales"
+  ],
+  "i18n-ally.sourceLanguage": "en",
+  "i18n-ally.keystyle": "flat",
+  "i18n-ally.displayLanguage": "zh-CN",
+  "i18n-ally.namespace": true,
+  "i18n-ally.sortKeys": true,
+  "i18n-ally.keepFulfilled": true,
+  "i18n-ally.includeSubfolders": true
 }

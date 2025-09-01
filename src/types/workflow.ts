@@ -14,8 +14,8 @@ export interface WorkflowAgent {
 
 export interface WorkflowConfig {
   id: string
-  nameKey: string
-  descriptionKey?: string
+  name: string
+  description?: string
   defaultSelected: boolean
   order: number
   commands: string[]

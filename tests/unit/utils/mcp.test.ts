@@ -21,9 +21,30 @@ vi.mock('../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn().mockReturnValue({ preferredLang: 'en' }),
 }))
 
+// Mock i18n system
+vi.mock('../../../src/i18n', () => ({
+  initI18n: vi.fn().mockResolvedValue(undefined),
+  i18n: {
+    t: vi.fn((key: string) => key),
+    isInitialized: true,
+    language: 'en',
+  },
+  ensureI18nInitialized: vi.fn(),
+}))
+
+// Mock MCP services config
+vi.mock('../../../src/config/mcp-services', () => ({
+  getMcpServices: vi.fn().mockReturnValue([]),
+  getMcpService: vi.fn().mockReturnValue(undefined),
+}))
+
 describe('mcp utilities', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
+
+    // Initialize i18n for test environment
+    const { initI18n } = await import('../../../src/i18n')
+    await initI18n('en')
   })
 
   afterEach(() => {
@@ -262,10 +283,28 @@ describe('mcp utilities', () => {
     beforeEach(() => {
       // Mock deepClone to return a proper copy
       vi.mocked(objectUtils.deepClone).mockImplementation(obj => JSON.parse(JSON.stringify(obj)))
+
+      // Mock getMcpService to return exa service configuration
+      const mockExaService = {
+        id: 'exa',
+        name: 'Exa Search',
+        description: 'Web search and content crawling',
+        config: {
+          type: 'stdio' as const,
+          command: 'npx',
+          args: ['-y', 'exa-mcp-server'],
+          env: {
+            EXA_API_KEY: 'YOUR_EXA_API_KEY',
+          },
+        },
+        requiresApiKey: true,
+        apiKeyEnvVar: 'EXA_API_KEY',
+      }
+      vi.mocked(getMcpService).mockResolvedValue(mockExaService)
     })
 
-    it('should have exa service configured with environment variable', () => {
-      const exaService = getMcpService('exa', 'en')
+    it('should have exa service configured with environment variable', async () => {
+      const exaService = await getMcpService('exa')
 
       expect(exaService).toBeDefined()
       expect(exaService!.config.command).toBe('npx')
@@ -274,8 +313,8 @@ describe('mcp utilities', () => {
       expect(exaService!.apiKeyEnvVar).toBe('EXA_API_KEY')
     })
 
-    it('should build exa service config with API key in environment', () => {
-      const exaService = getMcpService('exa', 'en')
+    it('should build exa service config with API key in environment', async () => {
+      const exaService = await getMcpService('exa')
       vi.mocked(platform.isWindows).mockReturnValue(false)
 
       const config = buildMcpServerConfig(
@@ -289,8 +328,8 @@ describe('mcp utilities', () => {
       expect(config.args).toEqual(['-y', 'exa-mcp-server'])
     })
 
-    it('should handle exa service on Windows platform', () => {
-      const exaService = getMcpService('exa', 'en')
+    it('should handle exa service on Windows platform', async () => {
+      const exaService = await getMcpService('exa')
       vi.mocked(platform.isWindows).mockReturnValue(true)
       vi.mocked(platform.getMcpCommand).mockReturnValue(['cmd', '/c', 'npx'])
 

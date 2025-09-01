@@ -1,0 +1,13 @@
+{
+  "selectScriptLang": "选择ZCF显示语言",
+  "selectConfigLang": "选择 Claude Code 配置语言",
+  "selectAiOutputLang": "选择 AI 输出语言",
+  "aiOutputLangHint": "AI 将使用此语言回复你的问题",
+  "enterCustomLanguage": "请输入自定义语言（例如：Japanese, French 等）",
+  "languageChanged": "语言已更改",
+  "configLangHint.zh-CN": "便于中文用户自定义",
+  "configLangHint.en": "token 消耗更低",
+  "updateConfigLangPrompt": "选择配置语言",
+  "languageRequired": "语言为必填项",
+  "labels.custom": "自定义"
+}

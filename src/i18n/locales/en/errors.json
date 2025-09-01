@@ -1,0 +1,20 @@
+{
+  "failedToRemoveFile": "Failed to remove file:",
+  "failedToSetOnboarding": "Failed to set onboarding completion flag:",
+  "failedToWriteMcpConfig": "Failed to write MCP config:",
+  "invalidConfigAction": "Invalid configAction value: {{value}}. Must be 'new', 'backup', 'merge', 'docs-only', or 'skip'",
+  "invalidApiType": "Invalid apiType value: {{value}}. Must be 'auth_token', 'api_key', 'ccr_proxy', or 'skip'",
+  "apiKeyRequiredForApiKey": "API key is required when apiType is \"api_key\"",
+  "apiKeyRequiredForAuthToken": "API key is required when apiType is \"auth_token\"",
+  "invalidMcpService": "Invalid MCP service: {{service}}. Available services: {{validServices}}",
+  "invalidOutputStyle": "Invalid output style: {{style}}. Available styles: {{validStyles}}",
+  "invalidDefaultOutputStyle": "Invalid default output style: {{style}}. Available styles: {{validStyles}}",
+  "invalidWorkflow": "Invalid workflow: {{workflow}}. Available workflows: {{validWorkflows}}",
+  "invalidModel": "Invalid model: {{model}}. Expected 'opus', 'sonnet', or 'opusplan'",
+  "invalidEnvConfig": "Invalid env configuration: expected object",
+  "invalidBaseUrl": "Invalid ANTHROPIC_BASE_URL: expected string",
+  "invalidApiKeyConfig": "Invalid ANTHROPIC_API_KEY: expected string",
+  "invalidAuthTokenConfig": "Invalid ANTHROPIC_AUTH_TOKEN: expected string",
+  "invalidPermissionsConfig": "Invalid permissions configuration: expected object",
+  "invalidPermissionsAllow": "Invalid permissions.allow: expected array"
+}

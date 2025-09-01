@@ -4,7 +4,6 @@ import { homedir } from 'node:os'
 import inquirer from 'inquirer'
 import { join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as i18n from '../../../src/i18n'
 import {
   configureCcrFeature,
   configureCcrProxy,
@@ -25,7 +24,15 @@ vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/config')
 vi.mock('../../../src/utils/ccr/presets')
 vi.mock('../../../src/utils/mcp')
-vi.mock('../../../src/i18n')
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 
 describe('cCR config - edge cases', () => {
   const CCR_CONFIG_DIR = join(homedir(), '.claude-code-router')
@@ -33,37 +40,10 @@ describe('cCR config - edge cases', () => {
   let consoleLogSpy: any
   let consoleErrorSpy: any
 
-  const mockI18n = {
-    ccr: {
-      fetchingPresets: 'Fetching presets...',
-      noPresetsAvailable: 'No presets available',
-      selectCcrPreset: 'Select a CCR preset',
-      enterApiKeyForProvider: 'Enter API key for {provider}',
-      selectDefaultModelForProvider: 'Select default model for {provider}',
-      existingCcrConfig: 'Existing CCR config found',
-      overwriteCcrConfig: 'Overwrite existing config?',
-      keepingExistingConfig: 'Keeping existing config',
-      ccrConfigSuccess: 'CCR configured successfully',
-      proxyConfigSuccess: 'Proxy configured successfully',
-      ccrConfigFailed: 'CCR configuration failed',
-    },
-    common: {
-      cancelled: 'Cancelled',
-    },
-    api: {
-      keyRequired: 'API key is required',
-    },
-    configuration: {
-      backupSuccess: 'Backup created',
-      failedToSetOnboarding: 'Failed to set onboarding flag',
-    },
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.mocked(i18n.getTranslation).mockReturnValue(mockI18n as any)
   })
 
   afterEach(() => {
@@ -82,7 +62,6 @@ describe('cCR config - edge cases', () => {
     })
 
     it('should handle very long directory paths', () => {
-      const _longPath = 'a'.repeat(1000)
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(mkdirSync).mockImplementation(() => undefined as any)
 
@@ -151,12 +130,12 @@ describe('cCR config - edge cases', () => {
 
     it('should handle very large config objects', () => {
       const largeConfig: CcrConfig = {
-        Providers: Array.from({ length: 1000 }).fill({
+        Providers: Array.from({ length: 1000 }, () => ({
           name: 'provider',
           api_base_url: 'https://api.example.com',
           api_key: 'key',
-          models: Array.from({ length: 100 }).fill('model'),
-        }),
+          models: Array.from({ length: 100 }, () => 'model'),
+        })),
         Router: { default: 'test' },
       }
 
@@ -257,7 +236,7 @@ describe('cCR config - edge cases', () => {
         new Promise(resolve => setTimeout(() => resolve([]), 10000)),
       )
 
-      const promise = selectCcrPreset('en')
+      const promise = selectCcrPreset()
 
       // Should eventually return null or empty
       vi.advanceTimersByTime(10000)
@@ -280,7 +259,7 @@ describe('cCR config - edge cases', () => {
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue(malformedPresets)
       vi.mocked(inquirer.prompt).mockResolvedValue({ preset: malformedPresets[0] })
 
-      const result = await selectCcrPreset('en')
+      const result = await selectCcrPreset()
 
       expect(result).toEqual(malformedPresets[0])
     })
@@ -298,7 +277,7 @@ describe('cCR config - edge cases', () => {
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue(mockPresets)
       vi.mocked(inquirer.prompt).mockRejectedValue(new Error('Generic error'))
 
-      await expect(selectCcrPreset('en')).rejects.toThrow('Generic error')
+      await expect(selectCcrPreset()).rejects.toThrow('Generic error')
     })
   })
 
@@ -311,7 +290,7 @@ describe('cCR config - edge cases', () => {
         models: [],
       }
 
-      const result = await configureCcrWithPreset(mockPreset, 'en')
+      const result = await configureCcrWithPreset(mockPreset)
 
       expect(result.Router.default).toBe('EmptyProvider,undefined')
     })
@@ -326,7 +305,7 @@ describe('cCR config - edge cases', () => {
 
       vi.mocked(inquirer.prompt).mockResolvedValue({ apiKey: '' })
 
-      const result = await configureCcrWithPreset(mockPreset, 'en')
+      const result = await configureCcrWithPreset(mockPreset)
 
       expect(result.Providers[0].api_key).toBe('')
     })
@@ -343,7 +322,7 @@ describe('cCR config - edge cases', () => {
       error.name = 'ExitPromptError'
       vi.mocked(inquirer.prompt).mockRejectedValue(error)
 
-      await expect(configureCcrWithPreset(mockPreset, 'zh-CN')).rejects.toThrow(error)
+      await expect(configureCcrWithPreset(mockPreset)).rejects.toThrow(error)
     })
 
     it('should handle preset with very long model names', async () => {
@@ -355,7 +334,7 @@ describe('cCR config - edge cases', () => {
         models: [longModelName],
       }
 
-      const result = await configureCcrWithPreset(mockPreset, 'en')
+      const result = await configureCcrWithPreset(mockPreset)
 
       expect(result.Router.default).toBe(`LongProvider,${longModelName}`)
     })
@@ -370,7 +349,7 @@ describe('cCR config - edge cases', () => {
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(presets.fetchProviderPresets).mockRejectedValue(new Error('Network error'))
 
-      const result = await setupCcrConfiguration('zh-CN')
+      const result = await setupCcrConfiguration()
 
       expect(result).toBe(false)
       // Error is logged in catch block
@@ -390,7 +369,7 @@ describe('cCR config - edge cases', () => {
       error.name = 'ExitPromptError'
       vi.mocked(inquirer.prompt).mockRejectedValue(error)
 
-      const result = await setupCcrConfiguration('en')
+      const result = await setupCcrConfiguration()
 
       expect(result).toBe(false)
       // ExitPromptError is handled silently
@@ -404,9 +383,9 @@ describe('cCR config - edge cases', () => {
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue([])
 
       const promises = [
-        configureCcrFeature('en'),
-        configureCcrFeature('zh-CN'),
-        configureCcrFeature('en'),
+        configureCcrFeature(),
+        configureCcrFeature(),
+        configureCcrFeature(),
       ]
 
       await Promise.all(promises)
@@ -419,7 +398,7 @@ describe('cCR config - edge cases', () => {
         throw new Error('Backup failed')
       })
 
-      await expect(configureCcrFeature('en')).rejects.toThrow('Backup failed')
+      await expect(configureCcrFeature()).rejects.toThrow('Backup failed')
     })
   })
 

@@ -54,12 +54,28 @@ vi.mock('../../../src/utils/error-handler', () => ({
   handleGeneralError: vi.fn(),
 }))
 
+// Mock i18n system
+vi.mock('../../../src/i18n', () => ({
+  initI18n: vi.fn().mockResolvedValue(undefined),
+  changeLanguage: vi.fn().mockResolvedValue(undefined),
+  i18n: {
+    t: vi.fn((key: string) => key),
+    isInitialized: true,
+    language: 'en',
+  },
+  ensureI18nInitialized: vi.fn(),
+}))
+
 describe('menu command', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(process, 'exit').mockImplementation((() => {}) as any)
+
+    // Initialize i18n for test environment
+    const { initI18n } = await import('../../../src/i18n')
+    await initI18n('en')
   })
 
   it('should load menu module', async () => {
@@ -163,7 +179,7 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(runCcusageFeature).toHaveBeenCalledWith('zh-CN')
+      expect(runCcusageFeature).toHaveBeenCalledWith()
     })
 
     it('should handle CCU usage analysis option in English', async () => {
@@ -179,7 +195,7 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(runCcusageFeature).toHaveBeenCalledWith('en')
+      expect(runCcusageFeature).toHaveBeenCalledWith()
     })
 
     it('should handle check updates option', async () => {
@@ -195,7 +211,7 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(checkUpdates).toHaveBeenCalledWith({ lang: 'zh-CN' })
+      expect(checkUpdates).toHaveBeenCalledWith()
     })
 
     it('should handle check updates option in English', async () => {
@@ -211,7 +227,7 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(checkUpdates).toHaveBeenCalledWith({ lang: 'en' })
+      expect(checkUpdates).toHaveBeenCalledWith()
     })
 
     it('should handle errors gracefully', async () => {

@@ -5,7 +5,6 @@ import { fileURLToPath } from 'node:url'
 import dayjs from 'dayjs'
 import { dirname, join } from 'pathe'
 import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, SETTINGS_FILE } from '../constants'
-import { getTranslation } from '../i18n'
 import {
   copyDir,
   copyFile,
@@ -17,7 +16,6 @@ import { readJsonConfig, writeJsonConfig } from './json-config'
 import { addCompletedOnboarding } from './mcp'
 import { deepMerge } from './object-utils'
 import { mergeAndCleanPermissions } from './permission-cleaner'
-import { readZcfConfig } from './zcf-config'
 
 export type { ApiConfig } from '../types/config'
 
@@ -79,9 +77,7 @@ function getDefaultSettings(): ClaudeSettings {
     return readJsonConfig<ClaudeSettings>(templateSettingsPath) || {}
   }
   catch (error) {
-    const lang = readZcfConfig()?.preferredLang || 'en'
-    const i18n = getTranslation(lang)
-    console.error(i18n.configuration.failedToReadTemplateSettings || 'Failed to read template settings', error)
+    console.error('Failed to read template settings', error)
     return {}
   }
 }
@@ -130,9 +126,7 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
   }
   catch (error) {
     // Log error but don't fail the API configuration
-    const lang = readZcfConfig()?.preferredLang || 'en'
-    const i18n = getTranslation(lang)
-    console.error(i18n.configuration.failedToSetOnboarding || 'Failed to set onboarding flag', error)
+    console.error('Failed to set onboarding flag', error)
   }
 
   return apiConfig
@@ -171,8 +165,6 @@ export function updateDefaultModel(model: 'opus' | 'sonnet' | 'opusplan' | 'defa
   writeJsonConfig(SETTINGS_FILE, settings)
 }
 
-// Utility functions have been moved to object-utils.ts
-
 /**
  * Merge settings.json intelligently
  * Preserves user's environment variables and custom configurations
@@ -182,9 +174,7 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
     // Read template settings
     const templateSettings = readJsonConfig<ClaudeSettings>(templatePath)
     if (!templateSettings) {
-      const lang = readZcfConfig()?.preferredLang || 'en'
-      const i18n = getTranslation(lang)
-      console.error(i18n.configuration?.failedToReadTemplateSettings || 'Failed to read template settings')
+      console.error('Failed to read template settings')
       return
     }
 
@@ -224,14 +214,10 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
     writeJsonConfig(targetPath, mergedSettings)
   }
   catch (error) {
-    const lang = readZcfConfig()?.preferredLang || 'en'
-    const i18n = getTranslation(lang)
-    console.error(i18n.configuration.failedToMergeSettings || 'Failed to merge settings', error)
+    console.error('Failed to merge settings', error)
     // If merge fails, preserve existing file
     if (exists(targetPath)) {
-      const lang2 = readZcfConfig()?.preferredLang || 'en'
-      const i18n2 = getTranslation(lang2)
-      console.log(i18n2.configuration.preservingExistingSettings || 'Preserving existing settings')
+      console.log('Preserving existing settings')
     }
     else {
       // If no existing file and merge failed, copy template as fallback

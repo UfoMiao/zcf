@@ -1,7 +1,12 @@
-import { describe, expect, it } from 'vitest'
-import { getOrderedWorkflows, WORKFLOW_CONFIGS } from '../../src/config/workflows'
+import { beforeAll, describe, expect, it } from 'vitest'
+import { getOrderedWorkflows, WORKFLOW_CONFIG_BASE } from '../../src/config/workflows'
+import { ensureI18nInitialized } from '../../src/i18n'
 
 describe('workflow Configuration', () => {
+  beforeAll(() => {
+    ensureI18nInitialized()
+  })
+
   describe('common Tools Workflow', () => {
     it('should have common tools as the first workflow option', () => {
       const orderedWorkflows = getOrderedWorkflows()
@@ -12,13 +17,11 @@ describe('workflow Configuration', () => {
     })
 
     it('should have correct configuration for common tools workflow', () => {
-      const commonToolsWorkflow = WORKFLOW_CONFIGS.find(config => config.id === 'commonTools')
+      const commonToolsWorkflow = WORKFLOW_CONFIG_BASE.find(config => config.id === 'commonTools')
 
       expect(commonToolsWorkflow).toBeDefined()
       expect(commonToolsWorkflow).toMatchObject({
         id: 'commonTools',
-        nameKey: 'workflowOption.commonTools',
-        descriptionKey: 'workflowDescription.commonTools',
         defaultSelected: true,
         order: 1,
         category: 'common',
@@ -28,13 +31,13 @@ describe('workflow Configuration', () => {
     })
 
     it('should include correct commands for common tools workflow', () => {
-      const commonToolsWorkflow = WORKFLOW_CONFIGS.find(config => config.id === 'commonTools')
+      const commonToolsWorkflow = WORKFLOW_CONFIG_BASE.find(config => config.id === 'commonTools')
 
       expect(commonToolsWorkflow?.commands).toEqual(['init-project.md'])
     })
 
     it('should include correct agents for common tools workflow', () => {
-      const commonToolsWorkflow = WORKFLOW_CONFIGS.find(config => config.id === 'commonTools')
+      const commonToolsWorkflow = WORKFLOW_CONFIG_BASE.find(config => config.id === 'commonTools')
 
       expect(commonToolsWorkflow?.agents).toEqual([
         { id: 'init-architect', filename: 'init-architect.md', required: true },

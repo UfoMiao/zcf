@@ -1,12 +1,14 @@
+import type { ChildProcess } from 'node:child_process'
 import { exec } from 'node:child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as i18n from '../../../src/i18n'
 import * as installerModule from '../../../src/utils/ccr/installer'
 
 // Don't destructure to allow proper mocking
 const { getCcrVersion, startCcrService } = installerModule
 
-vi.mock('node:child_process')
+vi.mock('node:child_process', () => ({
+  exec: vi.fn(),
+}))
 vi.mock('node:util', () => ({
   promisify: vi.fn((fn) => {
     return (...args: any[]) => {
@@ -20,7 +22,15 @@ vi.mock('node:util', () => ({
     }
   }),
 }))
-vi.mock('../../../src/i18n')
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock ensureI18nInitialized to avoid initialization issues
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 
 describe('cCR installer', () => {
   let consoleLogSpy: any
@@ -30,29 +40,6 @@ describe('cCR installer', () => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.mocked(i18n.getTranslation).mockReturnValue({
-      ccr: {
-        ccrAlreadyInstalled: 'CCR is already installed',
-        installingCcr: 'Installing CCR...',
-        ccrInstallSuccess: 'CCR installed successfully',
-        ccrInstallFailed: 'Failed to install CCR',
-        failedToStartCcrService: 'Failed to start CCR service',
-        errorStartingCcrService: 'Error starting CCR service',
-        detectedIncorrectPackage: 'Detected incorrect package claude-code-router, uninstalling...',
-        uninstalledIncorrectPackage: 'Successfully uninstalled incorrect package',
-        failedToUninstallIncorrectPackage: 'Failed to uninstall incorrect package, continuing with installation',
-      },
-      updater: {
-        checkingVersion: 'Checking version...',
-        ccrNotInstalled: 'CCR is not installed',
-        ccrUpToDate: 'CCR is up to date (version: {version})',
-        ccrNeedsUpdate: 'CCR needs update',
-        updateConfirm: 'Do you want to update?',
-        updating: 'Updating...',
-        updateSuccess: 'Update successful',
-        updateFailed: 'Update failed',
-      },
-    } as any)
   })
 
   afterEach(() => {
@@ -62,9 +49,8 @@ describe('cCR installer', () => {
 
   describe('isCcrInstalled', () => {
     it('should detect correct package when installed', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version') {
             callback(null, 'CCR version 1.0.0', '')
@@ -76,6 +62,7 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
       const result = await installerModule.isCcrInstalled()
@@ -84,9 +71,8 @@ describe('cCR installer', () => {
     })
 
     it('should detect incorrect package when ccr exists but correct package not installed', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version') {
             callback(null, 'CCR version 2.1.1', '')
@@ -98,6 +84,7 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
       const result = await installerModule.isCcrInstalled()
@@ -106,12 +93,12 @@ describe('cCR installer', () => {
     })
 
     it('should return false for both when nothing is installed', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((_cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           callback(new Error('command not found'), '', '')
         }
+        return {} as ChildProcess
       })
 
       const result = await installerModule.isCcrInstalled()
@@ -122,9 +109,8 @@ describe('cCR installer', () => {
 
   describe('getCcrVersion', () => {
     it('should extract version from ccr version output', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version') {
             callback(null, 'CCR version 1.2.3', '')
@@ -133,6 +119,7 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
       const version = await getCcrVersion()
@@ -140,9 +127,8 @@ describe('cCR installer', () => {
     })
 
     it('should handle version with additional text', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version') {
             callback(null, 'claude-code-router version: 1.0.36', '')
@@ -151,6 +137,7 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
       const version = await getCcrVersion()
@@ -158,9 +145,8 @@ describe('cCR installer', () => {
     })
 
     it('should return null when version pattern not found', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version') {
             callback(null, 'No version info', '')
@@ -169,6 +155,7 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
       const version = await getCcrVersion()
@@ -176,12 +163,12 @@ describe('cCR installer', () => {
     })
 
     it('should return null when command fails', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((_cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           callback(new Error('command not found'), '', '')
         }
+        return {} as ChildProcess
       })
 
       const version = await getCcrVersion()
@@ -191,33 +178,37 @@ describe('cCR installer', () => {
 
   describe('installCcr', () => {
     it('should skip installation if already installed and no incorrect package', async () => {
-      // Mock isCcrInstalled to return correct package installed
-      vi.spyOn(installerModule, 'isCcrInstalled').mockResolvedValue({ isInstalled: true, hasCorrectPackage: true })
-
-      // Also need to mock exec for any potential checks
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      // Mock the internal functions to avoid complex execution paths
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
-          if (cmd === 'npm list -g claude-code-router') {
-            // No incorrect package
-            callback(new Error('not found'), '', '')
+          if (cmd.includes('claude-code-router')) {
+            // No incorrect package - don't throw error, just return empty stdout
+            callback(null, '', 'not found')
           }
-          else {
+          else if (cmd.includes('ccr --version')) {
+            // CCR is installed
             callback(null, 'CCR version 1.0.0', '')
           }
+          else if (cmd.includes('npm list -g @anthropic/ccr')) {
+            // Correct package is installed
+            callback(null, '@anthropic/ccr@1.0.0', '')
+          }
+          else {
+            callback(null, 'success', '')
+          }
         }
+        return {} as ChildProcess
       })
 
-      await installerModule.installCcr('en')
+      await installerModule.installCcr()
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCR is already installed'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('is already installed'))
     })
 
     it('should reinstall if incorrect package is detected even if ccr command exists', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version') {
             // CCR command exists
@@ -241,22 +232,22 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
-      await installerModule.installCcr('en')
+      await installerModule.installCcr()
 
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Detected incorrect package'))
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Successfully uninstalled'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing CCR'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCR installed successfully'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing Claude Code Router'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('installation successful'))
     })
 
     it('should install CCR when not installed', async () => {
       // Mock isCcrInstalled to return not installed
       vi.spyOn(installerModule, 'isCcrInstalled').mockResolvedValue({ isInstalled: false, hasCorrectPackage: false })
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version' || cmd === 'which ccr') {
             callback(new Error('not found'), '', '')
@@ -271,18 +262,18 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
-      await installerModule.installCcr('zh-CN')
+      await installerModule.installCcr()
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing CCR'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCR installed successfully'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing Claude Code Router'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('installation successful'))
     })
 
     it('should install correct package when neither is installed', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version' || cmd === 'which ccr') {
             // CCR command not found
@@ -303,18 +294,18 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
-      await installerModule.installCcr('en')
+      await installerModule.installCcr()
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing CCR'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCR installed successfully'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing Claude Code Router'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('installation successful'))
     })
 
     it('should continue installation even if uninstall fails', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version') {
             // CCR command exists (incorrect package installed)
@@ -339,22 +330,22 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
-      await installerModule.installCcr('en')
+      await installerModule.installCcr()
 
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Detected incorrect package'))
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to uninstall'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing CCR'))
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCR installed successfully'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing Claude Code Router'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('installation successful'))
     })
 
     it('should handle EEXIST error gracefully', async () => {
       // Mock isCcrInstalled to return not installed
       vi.spyOn(installerModule, 'isCcrInstalled').mockResolvedValue({ isInstalled: false, hasCorrectPackage: false })
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version' || cmd === 'which ccr') {
             callback(new Error('not found'), '', '')
@@ -370,19 +361,19 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
-      await installerModule.installCcr('en')
+      await installerModule.installCcr()
 
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCR is already installed'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('is already installed'))
     })
 
     it('should throw error for non-EEXIST installation failures', async () => {
       // Mock isCcrInstalled to return not installed
       vi.spyOn(installerModule, 'isCcrInstalled').mockResolvedValue({ isInstalled: false, hasCorrectPackage: false })
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (typeof callback === 'function') {
           if (cmd === 'ccr version' || cmd === 'which ccr') {
             callback(new Error('not found'), '', '')
@@ -397,41 +388,46 @@ describe('cCR installer', () => {
             callback(new Error('command not found'), '', '')
           }
         }
+        return {} as ChildProcess
       })
 
-      await expect(installerModule.installCcr('en')).rejects.toThrow('Permission denied')
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to install CCR'))
+      await expect(installerModule.installCcr()).rejects.toThrow('Permission denied')
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to install Claude Code Router'))
     })
   })
 
   describe('startCcrService', () => {
     it('should start CCR service successfully', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (cmd === 'ccr') {
           // Simulate successful start (no error)
-          setTimeout(() => callback(null, '', ''), 10)
+          if (typeof callback === 'function') {
+            setTimeout(() => callback(null, '', ''), 10)
+          }
         }
+        return {} as ChildProcess
       })
 
-      await startCcrService('en')
+      await startCcrService()
 
       // Service should be called
       expect(mockExec).toHaveBeenCalledWith('ccr', expect.any(Function))
     })
 
     it('should handle service start failure', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (cmd === 'ccr') {
           // Call the callback asynchronously to simulate real behavior
-          setTimeout(() => callback(new Error('Service failed'), '', ''), 0)
+          if (typeof callback === 'function') {
+            setTimeout(() => callback(new Error('Service failed'), '', ''), 0)
+          }
         }
+        return {} as ChildProcess
       })
 
-      await startCcrService('zh-CN')
+      await startCcrService()
 
       // Wait a bit for the async callback to be processed
       await new Promise(resolve => setTimeout(resolve, 10))
@@ -443,17 +439,18 @@ describe('cCR installer', () => {
     })
 
     it('should use default language when not specified', async () => {
-      const mockExec = vi.mocked(exec)
-      // @ts-expect-error - testing purpose
-      mockExec.mockImplementation((cmd, callback) => {
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
         if (cmd === 'ccr') {
-          setTimeout(() => callback(null, '', ''), 10)
+          if (typeof callback === 'function') {
+            setTimeout(() => callback(null, '', ''), 10)
+          }
         }
+        return {} as ChildProcess
       })
 
-      await startCcrService()
-
-      expect(i18n.getTranslation).toHaveBeenCalledWith('zh-CN')
+      // Just verify the function runs without error - i18n integration is handled globally
+      await expect(startCcrService()).resolves.not.toThrow()
     })
   })
 })

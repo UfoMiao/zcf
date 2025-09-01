@@ -1,4 +1,3 @@
-import type { SupportedLang } from '../../constants'
 import type { CcrConfig, CcrProvider, CcrRouter, ProviderPreset } from '../../types/ccr'
 import { exec } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs'
@@ -10,7 +9,7 @@ import dayjs from 'dayjs'
 import inquirer from 'inquirer'
 import { join } from 'pathe'
 import { SETTINGS_FILE } from '../../constants'
-import { getTranslation } from '../../i18n'
+import { ensureI18nInitialized, i18n } from '../../i18n'
 import { backupExistingConfig } from '../config'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { addCompletedOnboarding } from '../mcp'
@@ -28,8 +27,8 @@ export function ensureCcrConfigDir(): void {
   }
 }
 
-export function backupCcrConfig(scriptLang: SupportedLang): string | null {
-  const i18n = getTranslation(scriptLang)
+export async function backupCcrConfig(): Promise<string | null> {
+  ensureI18nInitialized()
 
   try {
     if (!existsSync(CCR_CONFIG_FILE)) {
@@ -46,14 +45,14 @@ export function backupCcrConfig(scriptLang: SupportedLang): string | null {
     const backupPath = join(CCR_BACKUP_DIR, backupFileName)
 
     // Copy the config file to backup
-    console.log(ansis.cyan(`${i18n.ccr.backupCcrConfig}`))
+    console.log(ansis.cyan(`${i18n.t('ccr:backupCcrConfig')}`))
     copyFileSync(CCR_CONFIG_FILE, backupPath)
-    console.log(ansis.green(`✔ ${i18n.ccr.ccrBackupSuccess.replace('{path}', backupPath)}`))
+    console.log(ansis.green(`✔ ${i18n.t('ccr:ccrBackupSuccess').replace('{path}', backupPath)}`))
 
     return backupPath
   }
   catch (error: any) {
-    console.error(ansis.red(`${i18n.ccr.ccrBackupFailed}:`), error.message)
+    console.error(ansis.red(`${i18n.t('ccr:ccrBackupFailed')}:`), error.message)
     return null
   }
 }
@@ -91,15 +90,15 @@ export async function configureCcrProxy(ccrConfig: CcrConfig): Promise<void> {
   writeJsonConfig(SETTINGS_FILE, settings)
 }
 
-export async function selectCcrPreset(scriptLang: SupportedLang): Promise<ProviderPreset | 'skip' | null> {
-  const i18n = getTranslation(scriptLang)
+export async function selectCcrPreset(): Promise<ProviderPreset | 'skip' | null> {
+  ensureI18nInitialized()
 
   // Try to fetch online presets first
-  console.log(ansis.cyan(`${i18n.ccr.fetchingPresets}`))
+  console.log(ansis.cyan(`${i18n.t('ccr:fetchingPresets')}`))
   const presets = await fetchProviderPresets()
 
   if (!presets || presets.length === 0) {
-    console.log(ansis.yellow(`${i18n.ccr.noPresetsAvailable}`))
+    console.log(ansis.yellow(`${i18n.t('ccr:noPresetsAvailable')}`))
     return null
   }
 
@@ -107,7 +106,7 @@ export async function selectCcrPreset(scriptLang: SupportedLang): Promise<Provid
   try {
     const choices = [
       {
-        name: `1. ${i18n.ccr.skipOption}`,
+        name: `1. ${i18n.t('ccr:skipOption')}`,
         value: 'skip' as const,
       },
       ...presets.map((p, index) => ({
@@ -119,7 +118,7 @@ export async function selectCcrPreset(scriptLang: SupportedLang): Promise<Provid
     const { preset } = await inquirer.prompt<{ preset: ProviderPreset | 'skip' }>({
       type: 'list',
       name: 'preset',
-      message: i18n.ccr.selectCcrPreset,
+      message: i18n.t('ccr:selectCcrPreset'),
       choices,
     })
 
@@ -127,15 +126,15 @@ export async function selectCcrPreset(scriptLang: SupportedLang): Promise<Provid
   }
   catch (error: any) {
     if (error.name === 'ExitPromptError') {
-      console.log(ansis.yellow(i18n.common.cancelled))
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
       return null
     }
     throw error
   }
 }
 
-export async function configureCcrWithPreset(preset: ProviderPreset, scriptLang: SupportedLang): Promise<CcrConfig> {
-  const i18n = getTranslation(scriptLang)
+export async function configureCcrWithPreset(preset: ProviderPreset): Promise<CcrConfig> {
+  ensureI18nInitialized()
 
   // Create provider configuration
   const provider: CcrProvider = {
@@ -156,8 +155,8 @@ export async function configureCcrWithPreset(preset: ProviderPreset, scriptLang:
       const { apiKey } = await inquirer.prompt<{ apiKey: string }>({
         type: 'input',
         name: 'apiKey',
-        message: i18n.ccr.enterApiKeyForProvider.replace('{provider}', preset.name),
-        validate: value => !!value || i18n.api.keyRequired,
+        message: i18n.t('ccr:enterApiKeyForProvider').replace('{provider}', preset.name),
+        validate: async value => !!value || i18n.t('api:keyRequired'),
       })
 
       provider.api_key = apiKey
@@ -180,7 +179,7 @@ export async function configureCcrWithPreset(preset: ProviderPreset, scriptLang:
       const { model } = await inquirer.prompt<{ model: string }>({
         type: 'list',
         name: 'model',
-        message: i18n.ccr.selectDefaultModelForProvider.replace('{provider}', preset.name),
+        message: i18n.t('ccr:selectDefaultModelForProvider').replace('{provider}', preset.name),
         choices: preset.models.map((m, index) => ({
           name: `${index + 1}. ${m}`,
           value: m,
@@ -223,22 +222,22 @@ export async function configureCcrWithPreset(preset: ProviderPreset, scriptLang:
   return config
 }
 
-export async function restartAndCheckCcrStatus(scriptLang: SupportedLang): Promise<void> {
-  const i18n = getTranslation(scriptLang)
+export async function restartAndCheckCcrStatus(): Promise<void> {
+  ensureI18nInitialized()
 
   try {
     // Restart CCR service
-    console.log(ansis.cyan(`${i18n.ccr.restartingCcr}`))
+    console.log(ansis.cyan(`${i18n.t('ccr:restartingCcr')}`))
     await execAsync('ccr restart')
-    console.log(ansis.green(`✔ ${i18n.ccr.ccrRestartSuccess}`))
+    console.log(ansis.green(`✔ ${i18n.t('ccr:ccrRestartSuccess')}`))
 
     // Check CCR status
-    console.log(ansis.cyan(`${i18n.ccr.checkingCcrStatus}`))
+    console.log(ansis.cyan(`${i18n.t('ccr:checkingCcrStatus')}`))
     const { stdout } = await execAsync('ccr status')
     console.log(ansis.gray(stdout))
   }
   catch (error: any) {
-    console.error(ansis.red(`${i18n.ccr.ccrRestartFailed}:`), error.message || error)
+    console.error(ansis.red(`${i18n.t('ccr:ccrRestartFailed')}:`), error.message || error)
     // Log full error details for debugging
     if (process.env.DEBUG) {
       console.error('Full error:', error)
@@ -246,18 +245,18 @@ export async function restartAndCheckCcrStatus(scriptLang: SupportedLang): Promi
   }
 }
 
-export function showConfigurationTips(scriptLang: SupportedLang, apiKey?: string): void {
-  const i18n = getTranslation(scriptLang)
+export async function showConfigurationTips(apiKey?: string): Promise<void> {
+  ensureI18nInitialized()
 
-  console.log(ansis.bold.cyan(`\n📌 ${i18n.ccr.configTips}:`))
-  console.log(ansis.blue(`  • ${i18n.ccr.advancedConfigTip}`))
-  console.log(ansis.blue(`  • ${i18n.ccr.manualConfigTip}`))
-  console.log(ansis.bold.yellow(`  • ${i18n.ccr.useClaudeCommand}`))
+  console.log(ansis.bold.cyan(`\n📌 ${i18n.t('ccr:configTips')}:`))
+  console.log(ansis.blue(`  • ${i18n.t('ccr:advancedConfigTip')}`))
+  console.log(ansis.blue(`  • ${i18n.t('ccr:manualConfigTip')}`))
+  console.log(ansis.bold.yellow(`  • ${i18n.t('ccr:useClaudeCommand')}`))
 
   // Show API key for UI login
   if (apiKey) {
-    console.log(ansis.bold.green(`  • ${i18n.ccr.ccrUiApiKey || 'CCR UI API Key'}: ${apiKey}`))
-    console.log(ansis.gray(`    ${i18n.ccr.ccrUiApiKeyHint || 'Use this API key to login to CCR UI'}`))
+    console.log(ansis.bold.green(`  • ${i18n.t('ccr:ccrUiApiKey') || 'CCR UI API Key'}: ${apiKey}`))
+    console.log(ansis.gray(`    ${i18n.t('ccr:ccrUiApiKeyHint') || 'Use this API key to login to CCR UI'}`))
   }
 
   console.log('') // Add empty line for better readability
@@ -278,45 +277,45 @@ export function createDefaultCcrConfig(): CcrConfig {
   }
 }
 
-export async function setupCcrConfiguration(scriptLang: SupportedLang): Promise<boolean> {
-  const i18n = getTranslation(scriptLang)
+export async function setupCcrConfiguration(): Promise<boolean> {
+  ensureI18nInitialized()
 
   try {
     // Check for existing config
     const existingConfig = readCcrConfig()
     if (existingConfig) {
-      console.log(ansis.blue(`ℹ ${i18n.ccr.existingCcrConfig}`))
+      console.log(ansis.blue(`ℹ ${i18n.t('ccr:existingCcrConfig')}`))
       let shouldBackupAndReconfigure = false
       try {
         const result = await inquirer.prompt<{ overwrite: boolean }>({
           type: 'confirm',
           name: 'overwrite',
-          message: i18n.ccr.overwriteCcrConfig,
+          message: i18n.t('ccr:overwriteCcrConfig'),
           default: false,
         })
         shouldBackupAndReconfigure = result.overwrite
       }
       catch (error: any) {
         if (error.name === 'ExitPromptError') {
-          console.log(ansis.yellow(i18n.common.cancelled))
+          console.log(ansis.yellow(i18n.t('common:cancelled')))
           return false
         }
         throw error
       }
 
       if (!shouldBackupAndReconfigure) {
-        console.log(ansis.yellow(`${i18n.ccr.keepingExistingConfig}`))
+        console.log(ansis.yellow(`${i18n.t('ccr:keepingExistingConfig')}`))
         // Still need to configure proxy in settings.json
         await configureCcrProxy(existingConfig)
         return true
       }
 
       // Backup existing CCR configuration
-      backupCcrConfig(scriptLang)
+      backupCcrConfig()
     }
 
     // Select preset
-    const preset = await selectCcrPreset(scriptLang)
+    const preset = await selectCcrPreset()
     if (!preset) {
       return false
     }
@@ -325,57 +324,57 @@ export async function setupCcrConfiguration(scriptLang: SupportedLang): Promise<
 
     if (preset === 'skip') {
       // User chose to skip, create empty configuration
-      console.log(ansis.yellow(`${i18n.ccr.skipConfiguring}`))
+      console.log(ansis.yellow(`${i18n.t('ccr:skipConfiguring')}`))
       config = createDefaultCcrConfig()
     }
     else {
       // Configure with preset
-      config = await configureCcrWithPreset(preset, scriptLang)
+      config = await configureCcrWithPreset(preset)
     }
 
     // Write CCR config
     writeCcrConfig(config)
-    console.log(ansis.green(`✔ ${i18n.ccr.ccrConfigSuccess}`))
+    console.log(ansis.green(`✔ ${i18n.t('ccr:ccrConfigSuccess')}`))
 
     // Configure proxy in settings.json (always needed)
     await configureCcrProxy(config)
-    console.log(ansis.green(`✔ ${i18n.ccr.proxyConfigSuccess}`))
+    console.log(ansis.green(`✔ ${i18n.t('ccr:proxyConfigSuccess')}`))
 
     // Restart CCR and check status
-    await restartAndCheckCcrStatus(scriptLang)
+    await restartAndCheckCcrStatus()
 
     // Show configuration tips with API key
-    showConfigurationTips(scriptLang, config.APIKEY)
+    await showConfigurationTips(config.APIKEY)
 
     // Add hasCompletedOnboarding flag after successful CCR configuration
     try {
       addCompletedOnboarding()
     }
     catch (error) {
-      console.error(ansis.red(i18n.configuration.failedToSetOnboarding), error)
+      console.error(ansis.red(i18n.t('errors:failedToSetOnboarding')), error)
     }
 
     return true
   }
   catch (error: any) {
     if (error.name === 'ExitPromptError') {
-      console.log(ansis.yellow(i18n.common.cancelled))
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
       return false
     }
-    console.error(ansis.red(`${i18n.ccr.ccrConfigFailed}:`), error)
+    console.error(ansis.red(`${i18n.t('ccr:ccrConfigFailed')}:`), error)
     return false
   }
 }
 
-export async function configureCcrFeature(scriptLang: SupportedLang): Promise<void> {
-  const i18n = getTranslation(scriptLang)
+export async function configureCcrFeature(): Promise<void> {
+  ensureI18nInitialized()
 
   // Backup existing settings.json
   const backupDir = backupExistingConfig()
   if (backupDir) {
-    console.log(ansis.gray(`✔ ${i18n.configuration.backupSuccess}: ${backupDir}`))
+    console.log(ansis.gray(`✔ ${i18n.t('configuration:backupSuccess')}: ${backupDir}`))
   }
 
   // Run CCR setup
-  await setupCcrConfiguration(scriptLang)
+  await setupCcrConfiguration()
 }

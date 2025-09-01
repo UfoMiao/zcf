@@ -4,7 +4,6 @@ import { homedir } from 'node:os'
 import inquirer from 'inquirer'
 import { join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as i18n from '../../../src/i18n'
 import {
   backupCcrConfig,
   configureCcrFeature,
@@ -27,7 +26,15 @@ vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/config')
 vi.mock('../../../src/utils/ccr/presets')
 vi.mock('../../../src/utils/mcp')
-vi.mock('../../../src/i18n')
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 
 describe('cCR config', () => {
   const CCR_CONFIG_DIR = join(homedir(), '.claude-code-router')
@@ -35,50 +42,10 @@ describe('cCR config', () => {
   let consoleLogSpy: any
   let consoleErrorSpy: any
 
-  const mockI18n = {
-    ccr: {
-      fetchingPresets: 'Fetching presets...',
-      noPresetsAvailable: 'No presets available',
-      selectCcrPreset: 'Select a CCR preset',
-      enterApiKeyForProvider: 'Enter API key for {provider}',
-      selectDefaultModelForProvider: 'Select default model for {provider}',
-      existingCcrConfig: 'Existing CCR config found',
-      overwriteCcrConfig: 'Backup existing CCR configuration and reconfigure?',
-      keepingExistingConfig: 'Keeping existing config',
-      backupCcrConfig: 'Backing up existing CCR configuration...',
-      ccrBackupSuccess: 'CCR configuration backed up to: {path}',
-      ccrBackupFailed: 'Failed to backup CCR configuration',
-      ccrConfigSuccess: 'CCR configured successfully',
-      proxyConfigSuccess: 'Proxy configured successfully',
-      ccrConfigFailed: 'CCR configuration failed',
-      skipOption: 'Skip, configure in CCR manually',
-      skipConfiguring: 'Skipping preset configuration',
-      restartingCcr: 'Restarting CCR service...',
-      checkingCcrStatus: 'Checking CCR status...',
-      ccrRestartSuccess: 'CCR service restarted',
-      ccrRestartFailed: 'Failed to restart CCR',
-      configTips: 'Configuration Tips',
-      advancedConfigTip: 'Use ccr ui for advanced configuration',
-      manualConfigTip: 'Run ccr restart after manual changes',
-      useClaudeCommand: 'Use claude command to start Claude Code',
-    },
-    common: {
-      cancelled: 'Cancelled',
-    },
-    api: {
-      keyRequired: 'API key is required',
-    },
-    configuration: {
-      backupSuccess: 'Backup created',
-      failedToSetOnboarding: 'Failed to set onboarding flag',
-    },
-  }
-
   beforeEach(() => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.mocked(i18n.getTranslation).mockReturnValue(mockI18n as any)
   })
 
   afterEach(() => {
@@ -222,14 +189,14 @@ describe('cCR config', () => {
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue(mockPresets)
       vi.mocked(inquirer.prompt).mockResolvedValue({ preset: mockPresets[0] })
 
-      const result = await selectCcrPreset('en')
+      const result = await selectCcrPreset()
 
       expect(result).toEqual(mockPresets[0])
       expect(inquirer.prompt).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'list',
           name: 'preset',
-          message: 'Select a CCR preset',
+          message: 'Select a provider preset:',
         }),
       )
     })
@@ -237,7 +204,7 @@ describe('cCR config', () => {
     it('should return null when no presets available', async () => {
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue([])
 
-      const result = await selectCcrPreset('zh-CN')
+      const result = await selectCcrPreset()
 
       expect(result).toBeNull()
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('No presets available'))
@@ -258,10 +225,10 @@ describe('cCR config', () => {
       error.name = 'ExitPromptError'
       vi.mocked(inquirer.prompt).mockRejectedValue(error)
 
-      const result = await selectCcrPreset('en')
+      const result = await selectCcrPreset()
 
       expect(result).toBeNull()
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Cancelled'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Operation cancelled'))
     })
 
     it('should return "skip" when user selects skip option', async () => {
@@ -279,14 +246,14 @@ describe('cCR config', () => {
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue(mockPresets)
       vi.mocked(inquirer.prompt).mockResolvedValue({ preset: 'skip' })
 
-      const result = await selectCcrPreset('en')
+      const result = await selectCcrPreset()
 
       expect(result).toBe('skip')
       expect(inquirer.prompt).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'list',
           name: 'preset',
-          message: 'Select a CCR preset',
+          message: 'Select a provider preset:',
           choices: expect.arrayContaining([expect.objectContaining({ value: 'skip' })]),
         }),
       )
@@ -307,7 +274,7 @@ describe('cCR config', () => {
         .mockResolvedValueOnce({ apiKey: 'test-api-key' })
         .mockResolvedValueOnce({ model: 'model2' })
 
-      const result = await configureCcrWithPreset(mockPreset, 'en')
+      const result = await configureCcrWithPreset(mockPreset)
 
       expect(result).toMatchObject({
         LOG: true,
@@ -340,7 +307,7 @@ describe('cCR config', () => {
         models: ['free-model'],
       }
 
-      const result = await configureCcrWithPreset(mockPreset, 'zh-CN')
+      const result = await configureCcrWithPreset(mockPreset)
 
       expect(result.Providers[0].api_key).toBe('sk-free')
       expect(inquirer.prompt).not.toHaveBeenCalled()
@@ -355,7 +322,7 @@ describe('cCR config', () => {
         transformer: { use: ['enhancetool'] },
       }
 
-      const result = await configureCcrWithPreset(mockPreset, 'en')
+      const result = await configureCcrWithPreset(mockPreset)
 
       expect(result.Providers[0].transformer).toEqual({ use: ['enhancetool'] })
     })
@@ -379,7 +346,7 @@ describe('cCR config', () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ overwrite: false })
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
 
-      const result = await setupCcrConfiguration('en')
+      const result = await setupCcrConfiguration()
 
       expect(result).toBe(true)
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Keeping existing config'))
@@ -389,12 +356,7 @@ describe('cCR config', () => {
   })
 
   describe('backupCcrConfig', () => {
-    it('should backup existing CCR config successfully', () => {
-      const _mockCcrConfig = {
-        Providers: ['test'],
-        Router: { default: 'test' },
-      }
-
+    it('should backup existing CCR config successfully', async () => {
       vi.mocked(existsSync).mockImplementation((path) => {
         const pathStr = path.toString()
         if (pathStr.includes('config.json'))
@@ -403,22 +365,22 @@ describe('cCR config', () => {
       })
       vi.mocked(copyFileSync).mockImplementation(() => undefined)
 
-      const result = backupCcrConfig('en')
+      const result = await backupCcrConfig()
 
       expect(result).toBeTruthy()
       // No need to create backup directory since it's the same as config directory
       expect(copyFileSync).toHaveBeenCalled()
     })
 
-    it('should return null when no existing config', () => {
+    it('should return null when no existing config', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
 
-      const result = backupCcrConfig('zh-CN')
+      const result = await backupCcrConfig()
 
       expect(result).toBeNull()
     })
 
-    it('should handle backup errors gracefully', () => {
+    it('should handle backup errors gracefully', async () => {
       vi.mocked(existsSync).mockImplementation((path) => {
         const pathStr = path.toString()
         if (pathStr.includes('config.json'))
@@ -429,7 +391,7 @@ describe('cCR config', () => {
         throw new Error('Permission denied')
       })
 
-      const result = backupCcrConfig('en')
+      const result = await backupCcrConfig()
 
       expect(result).toBeNull()
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to backup'), expect.any(String))
@@ -443,10 +405,10 @@ describe('cCR config', () => {
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue([])
 
-      await configureCcrFeature('en')
+      await configureCcrFeature()
 
       expect(config.backupExistingConfig).toHaveBeenCalled()
-      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Backup created'))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('All config files backed up to:'))
     })
 
     it('should handle backup failure gracefully', async () => {
@@ -454,11 +416,11 @@ describe('cCR config', () => {
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(presets.fetchProviderPresets).mockResolvedValue([])
 
-      await configureCcrFeature('zh-CN')
+      await configureCcrFeature()
 
       expect(config.backupExistingConfig).toHaveBeenCalled()
       // Should not log backup success
-      expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining('Backup created'))
+      expect(consoleLogSpy).not.toHaveBeenCalledWith(expect.stringContaining('All config files backed up to:'))
     })
   })
 })

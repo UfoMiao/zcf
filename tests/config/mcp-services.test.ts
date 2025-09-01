@@ -1,8 +1,11 @@
-import type { SupportedLang } from '../../src/i18n/types'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { getMcpService, getMcpServices, MCP_SERVICE_CONFIGS } from '../../src/config/mcp-services'
+import { initI18n } from '../../src/i18n'
 
 describe('mcp services configuration', () => {
+  beforeEach(async () => {
+    await initI18n('en')
+  })
   describe('mcp service configs', () => {
     it('should contain pure business configuration without any i18n texts', () => {
       expect(MCP_SERVICE_CONFIGS).toBeDefined()
@@ -38,9 +41,8 @@ describe('mcp services configuration', () => {
   })
 
   describe('getMcpServices', () => {
-    it('should return complete MCP service list with Chinese translations', () => {
-      const lang: SupportedLang = 'zh-CN'
-      const services = getMcpServices(lang)
+    it('should return complete MCP service list with Chinese translations', async () => {
+      const services = await getMcpServices()
 
       expect(Array.isArray(services)).toBe(true)
       expect(services.length).toBeGreaterThan(0)
@@ -60,9 +62,8 @@ describe('mcp services configuration', () => {
       })
     })
 
-    it('should return complete MCP service list with English translations', () => {
-      const lang: SupportedLang = 'en'
-      const services = getMcpServices(lang)
+    it('should return complete MCP service list with English translations', async () => {
+      const services = await getMcpServices()
 
       expect(Array.isArray(services)).toBe(true)
       expect(services.length).toBeGreaterThan(0)
@@ -80,9 +81,9 @@ describe('mcp services configuration', () => {
       })
     })
 
-    it('should have same number of services in Chinese and English', () => {
-      const zhServices = getMcpServices('zh-CN')
-      const enServices = getMcpServices('en')
+    it('should have same number of services in Chinese and English', async () => {
+      const zhServices = await getMcpServices()
+      const enServices = await getMcpServices()
 
       expect(zhServices.length).toBe(enServices.length)
 
@@ -94,18 +95,19 @@ describe('mcp services configuration', () => {
   })
 
   describe('getMcpService', () => {
-    it('should return specified MCP service by ID (Chinese)', () => {
-      const service = getMcpService('context7', 'zh-CN')
+    it('should return specified MCP service by ID (with global i18n)', async () => {
+      const service = await getMcpService('context7')
 
       expect(service).toBeDefined()
       expect(service!.id).toBe('context7')
       expect(service!.name).toContain('Context7')
-      expect(service!.description).toContain('文档')
+      // With global English i18n, descriptions are in English
+      expect(service!.description).toContain('documentation')
       expect(service!.requiresApiKey).toBe(false)
     })
 
-    it('should return specified MCP service by ID (English)', () => {
-      const service = getMcpService('context7', 'en')
+    it('should return specified MCP service by ID (English)', async () => {
+      const service = await getMcpService('context7')
 
       expect(service).toBeDefined()
       expect(service!.id).toBe('context7')
@@ -114,13 +116,13 @@ describe('mcp services configuration', () => {
       expect(service!.requiresApiKey).toBe(false)
     })
 
-    it('should return undefined for non-existent service ID', () => {
-      const service = getMcpService('non-existent-service', 'zh-CN')
+    it('should return undefined for non-existent service ID', async () => {
+      const service = await getMcpService('non-existent-service')
       expect(service).toBeUndefined()
     })
 
-    it('should correctly handle services that require API key', () => {
-      const exaService = getMcpService('exa', 'zh-CN')
+    it('should correctly handle services that require API key', async () => {
+      const exaService = await getMcpService('exa')
 
       expect(exaService).toBeDefined()
       expect(exaService!.requiresApiKey).toBe(true)
@@ -130,9 +132,9 @@ describe('mcp services configuration', () => {
   })
 
   describe('aPI key related functionality', () => {
-    it('services requiring API key should contain prompt information', () => {
-      const zhServices = getMcpServices('zh-CN')
-      const enServices = getMcpServices('en')
+    it('services requiring API key should contain prompt information', async () => {
+      const zhServices = await getMcpServices()
+      const enServices = await getMcpServices()
 
       const zhExaService = zhServices.find(s => s.id === 'exa')
       const enExaService = enServices.find(s => s.id === 'exa')
@@ -140,16 +142,16 @@ describe('mcp services configuration', () => {
       expect(zhExaService?.apiKeyPrompt).toContain('API Key')
       expect(enExaService?.apiKeyPrompt).toContain('API Key')
 
-      // Chinese prompt should contain Chinese content
-      expect(zhExaService?.apiKeyPrompt).toMatch(/[\u4E00-\u9FA5]/)
-      // English prompt should be English (no Chinese characters)
+      // With global English i18n, all prompts are in English
+      expect(zhExaService?.apiKeyPrompt).toContain('API Key')
+      expect(enExaService?.apiKeyPrompt).toContain('API Key')
       expect(/[\u4E00-\u9FA5]/.test(enExaService?.apiKeyPrompt || '')).toBe(false)
     })
   })
 
   describe('type safety', () => {
-    it('returned services should conform to McpService interface', () => {
-      const services = getMcpServices('zh-CN')
+    it('returned services should conform to McpService interface', async () => {
+      const services = await getMcpServices()
 
       services.forEach((service) => {
         // Basic property checks

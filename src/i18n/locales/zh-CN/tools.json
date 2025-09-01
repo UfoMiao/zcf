@@ -1,0 +1,15 @@
+{
+  "ccusageDescription": "CCUsage 是 Claude Code 使用情况分析工具",
+  "ccusageFailed": "CCUsage 运行失败",
+  "ccusageModes.blocks": "分析代码块",
+  "ccusageModes.custom": "自定义模式",
+  "ccusageModes.daily": "日统计",
+  "ccusageModes.monthly": "月统计",
+  "ccusageModes.session": "会话统计",
+  "checkNetworkConnection": "检查网络连接",
+  "enterCustomArgs": "输入自定义参数",
+  "errorDetails": "错误详情：",
+  "pressEnterToContinue": "按 Enter 继续...",
+  "runningCcusage": "正在运行 Claude Code 用量分析工具...",
+  "selectAnalysisMode": "选择分析模式:"
+}

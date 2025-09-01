@@ -9,8 +9,18 @@ import * as platform from '../../../src/utils/platform'
 vi.mock('tinyexec')
 vi.mock('../../../src/utils/platform')
 
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
+  }
+})
+
 describe('installer utilities', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -49,7 +59,7 @@ describe('installer utilities', () => {
         stderr: '',
       } as any)
 
-      await installClaudeCode('en')
+      await installClaudeCode()
 
       expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@anthropic-ai/claude-code'])
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✔'))
@@ -64,9 +74,9 @@ describe('installer utilities', () => {
         stderr: '',
       } as any)
 
-      await installClaudeCode('en')
+      await installClaudeCode()
 
-      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Termux'))
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Termux environment detected'))
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('/data/data/com.termux/files/usr'))
     })
 
@@ -74,7 +84,7 @@ describe('installer utilities', () => {
       vi.mocked(platform.isTermux).mockReturnValue(false)
       vi.mocked(exec).mockRejectedValue(new Error('Installation failed'))
 
-      await expect(installClaudeCode('en')).rejects.toThrow('Installation failed')
+      await expect(installClaudeCode()).rejects.toThrow('Installation failed')
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('✖'))
     })
@@ -83,7 +93,7 @@ describe('installer utilities', () => {
       vi.mocked(platform.isTermux).mockReturnValue(true)
       vi.mocked(exec).mockRejectedValue(new Error('Installation failed'))
 
-      await expect(installClaudeCode('en')).rejects.toThrow('Installation failed')
+      await expect(installClaudeCode()).rejects.toThrow('Installation failed')
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('✖'))
       expect(console.error).toHaveBeenCalledTimes(2) // Error message + Termux hint
@@ -97,7 +107,7 @@ describe('installer utilities', () => {
         stderr: '',
       } as any)
 
-      await installClaudeCode('zh-CN')
+      await installClaudeCode()
 
       expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@anthropic-ai/claude-code'])
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✔'))

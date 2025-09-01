@@ -1,0 +1,17 @@
+{
+  "configureMcp": "Configure MCP services?",
+  "mcpBackupSuccess": "Original MCP config backed up",
+  "mcpConfigSuccess": "MCP services configured",
+  "selectMcpServices": "Select MCP services to install",
+  "services.Playwright.description": "Direct browser control for automation",
+  "services.Playwright.name": "Playwright Browser Control",
+  "services.context7.description": "Query latest library documentation and code examples",
+  "services.context7.name": "Context7 Docs",
+  "services.exa.apiKeyPrompt": "Enter Exa API Key",
+  "services.exa.description": "Web search using Exa AI",
+  "services.exa.name": "Exa AI Search",
+  "services.mcp-deepwiki.description": "Query GitHub repository documentation and examples",
+  "services.mcp-deepwiki.name": "DeepWiki",
+  "services.spec-workflow.description": "Structured feature development workflow, systematic approach from requirements to implementation",
+  "services.spec-workflow.name": "Spec Workflow"
+}

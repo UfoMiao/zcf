@@ -1,4 +1,3 @@
-import type { SupportedLang } from '../constants'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import semver from 'semver'
@@ -122,7 +121,6 @@ export async function checkCometixLineVersion(): Promise<{
 /**
  * Check Claude Code version and prompt for update if needed
  *
- * @param scriptLang - Display language for UI messages ('zh-CN' | 'en')
  * @param skipPrompt - Whether to auto-update without user prompt (default: false)
  *
  * Behavior:
@@ -131,7 +129,6 @@ export async function checkCometixLineVersion(): Promise<{
  * - Gracefully handles errors without interrupting main flow
  */
 export async function checkClaudeCodeVersionAndPrompt(
-  scriptLang: SupportedLang,
   skipPrompt: boolean = false,
 ): Promise<void> {
   try {
@@ -148,7 +145,7 @@ export async function checkClaudeCodeVersionAndPrompt(
 
     // Choose update strategy based on mode
     const forceUpdate = skipPrompt // skip-prompt mode forces update without confirmation
-    await updateClaudeCode(scriptLang, forceUpdate)
+    await updateClaudeCode(forceUpdate)
   }
   catch (error) {
     // Graceful error handling - log warning but don't interrupt main flow

@@ -1,7 +1,6 @@
-import type { SupportedLang } from '../constants'
 import ansis from 'ansis'
 import { exec } from 'tinyexec'
-import { getTranslation } from '../i18n'
+import { ensureI18nInitialized, i18n } from '../i18n'
 import { updateClaudeCode } from './auto-updater'
 import { commandExists, getTermuxPrefix, isTermux } from './platform'
 
@@ -9,34 +8,34 @@ export async function isClaudeCodeInstalled(): Promise<boolean> {
   return await commandExists('claude')
 }
 
-export async function installClaudeCode(lang: SupportedLang): Promise<void> {
-  const i18n = getTranslation(lang)
+export async function installClaudeCode(): Promise<void> {
+  ensureI18nInitialized()
 
   // Check if already installed
   const installed = await isClaudeCodeInstalled()
   if (installed) {
-    console.log(ansis.green(`✔ ${i18n.installation.alreadyInstalled}`))
+    console.log(ansis.green(`✔ ${i18n.t('installation:alreadyInstalled')}`))
     // Check for updates after confirming installation
-    await updateClaudeCode(lang)
+    await updateClaudeCode()
     return
   }
 
   // Check if running in Termux
   if (isTermux()) {
-    console.log(ansis.yellow(`ℹ ${i18n.installation.termuxDetected}`))
+    console.log(ansis.yellow(`ℹ ${i18n.t('installation:termuxDetected')}`))
     const termuxPrefix = getTermuxPrefix()
-    console.log(ansis.gray(i18n.installation.termuxPathInfo.replace('{path}', termuxPrefix)))
+    console.log(ansis.gray(i18n.t('installation:termuxPathInfo', { path: termuxPrefix })))
     console.log(ansis.gray(`Node.js: ${termuxPrefix}/bin/node`))
     console.log(ansis.gray(`npm: ${termuxPrefix}/bin/npm`))
   }
 
-  console.log(i18n.installation.installing)
+  console.log(i18n.t('installation:installing'))
 
   try {
     // Always use npm for installation to ensure automatic updates work
     // Note: If the user can run 'npx zcf', npm is already available
     await exec('npm', ['install', '-g', '@anthropic-ai/claude-code'])
-    console.log(`✔ ${i18n.installation.installSuccess}`)
+    console.log(`✔ ${i18n.t('installation:installSuccess')}`)
 
     // Additional hint for Termux users
     if (isTermux()) {
@@ -44,9 +43,9 @@ export async function installClaudeCode(lang: SupportedLang): Promise<void> {
     }
   }
   catch (error) {
-    console.error(`✖ ${i18n.installation.installFailed}`)
+    console.error(`✖ ${i18n.t('installation:installFailed')}`)
     if (isTermux()) {
-      console.error(ansis.yellow(`\n${i18n.installation.termuxInstallHint}\n`))
+      console.error(ansis.yellow(`\n${i18n.t('installation:termuxInstallHint')}\n`))
     }
     throw error
   }

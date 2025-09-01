@@ -72,8 +72,8 @@ describe('config utilities', () => {
       const copyDirCall = vi.mocked(fsOps.copyDir).mock.calls[0]
       const filter = copyDirCall[2]?.filter
 
-      expect(filter?.('/some/path/backup')).toBe(false)
-      expect(filter?.('/some/path/other')).toBe(true)
+      expect(filter?.('/some/path/backup', {} as any)).toBe(false)
+      expect(filter?.('/some/path/other', {} as any)).toBe(true)
     })
   })
 
@@ -81,11 +81,11 @@ describe('config utilities', () => {
     it('should not throw error when called', () => {
       vi.mocked(fsOps.exists).mockReturnValue(false)
 
-      expect(() => copyConfigFiles('en')).not.toThrow()
+      expect(() => copyConfigFiles(false)).not.toThrow()
     })
 
     it('should do nothing when onlyMd is true (memory files no longer copied)', () => {
-      copyConfigFiles('en', true)
+      copyConfigFiles(true)
 
       // Should not copy any files when onlyMd=true since memory files are no longer copied
       expect(fsOps.copyFile).not.toHaveBeenCalled()

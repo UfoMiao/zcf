@@ -26,15 +26,32 @@ vi.mock('../../../package.json', () => ({
   version: '2.3.0',
 }))
 
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
+    i18n: {
+      t: vi.fn((key: string) => key), // Return key as default translation
+    },
+  }
+})
+
 describe('prompts utilities', () => {
   let exitSpy: any
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
       throw new Error('process.exit called')
     })
+
+    // Initialize i18n in test environment
+    const { initI18n } = await import('../../../src/i18n')
+    await initI18n('en')
   })
 
   afterEach(() => {
@@ -63,7 +80,7 @@ describe('prompts utilities', () => {
     it('should use provided default language', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ lang: 'fr' })
 
-      await selectAiOutputLanguage('en', 'fr')
+      await selectAiOutputLanguage('fr')
 
       const call = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
       expect(call.default).toBe('fr')
@@ -105,8 +122,8 @@ describe('prompts utilities', () => {
 
       const secondCall = vi.mocked(inquirer.prompt).mock.calls[1][0] as any
       expect(secondCall.validate).toBeDefined()
-      expect(secondCall.validate('')).not.toBe(true)
-      expect(secondCall.validate('value')).toBe(true)
+      await expect(secondCall.validate('')).resolves.not.toBe(true)
+      await expect(secondCall.validate('value')).resolves.toBe(true)
     })
   })
 
@@ -116,6 +133,7 @@ describe('prompts utilities', () => {
       vi.mocked(readZcfConfig).mockReturnValue({
         version: '2.3.0',
         preferredLang: 'en',
+        lastUpdated: '2024-01-01',
       })
 
       const result = await selectScriptLanguage()
@@ -176,6 +194,7 @@ describe('prompts utilities', () => {
         version: '2.3.0',
         preferredLang: 'zh-CN',
         aiOutputLang: 'en',
+        lastUpdated: '2024-01-01',
       })
 
       expect(result).toBe('fr')
@@ -188,6 +207,7 @@ describe('prompts utilities', () => {
         version: '2.3.0',
         preferredLang: 'zh-CN',
         aiOutputLang: 'en',
+        lastUpdated: '2024-01-01',
       })
 
       expect(result).toBe('en')
@@ -210,6 +230,7 @@ describe('prompts utilities', () => {
       const result = await resolveAiOutputLanguage('en', undefined, {
         version: '2.3.0',
         preferredLang: 'en',
+        lastUpdated: '2024-01-01',
       })
 
       expect(result).toBe('en')
@@ -257,7 +278,7 @@ describe('prompts utilities', () => {
       const { selectAiOutputLanguage } = await import('../../../src/utils/prompts')
       vi.mocked(inquirer.prompt).mockResolvedValue({ lang: 'es' })
 
-      const result = await selectAiOutputLanguage('en', 'es')
+      const result = await selectAiOutputLanguage('es')
 
       expect(result).toBe('es')
       const call = vi.mocked(inquirer.prompt).mock.calls[0][0] as any

@@ -16,10 +16,58 @@ vi.mock('ansis', () => ({
   },
 }))
 
+// Mock i18n system
+vi.mock('../../../src/i18n', () => ({
+  initI18n: vi.fn().mockResolvedValue(undefined),
+  i18n: {
+    t: vi.fn((key: string) => key),
+    isInitialized: true,
+    language: 'en',
+  },
+  ensureI18nInitialized: vi.fn(),
+}))
+
+// Mock MCP services
+vi.mock('../../../src/config/mcp-services', () => ({
+  getMcpServices: vi.fn().mockResolvedValue([
+    {
+      id: 'context7',
+      name: 'Context7 MCP',
+      description: 'Context7 documentation server',
+      requiresApiKey: false,
+      config: { type: 'stdio', command: 'npx', args: ['-y', '@upstash/context7-mcp'] },
+    },
+    {
+      id: 'exa',
+      name: 'Exa Search',
+      description: 'Web search and content crawling',
+      requiresApiKey: true,
+      config: { type: 'stdio', command: 'npx', args: ['-y', 'exa-mcp-server'] },
+    },
+  ]),
+  MCP_SERVICE_CONFIGS: [
+    {
+      id: 'context7',
+      requiresApiKey: false,
+      config: { type: 'stdio', command: 'npx', args: ['-y', '@upstash/context7-mcp'] },
+    },
+    {
+      id: 'exa',
+      requiresApiKey: true,
+      apiKeyEnvVar: 'EXA_API_KEY',
+      config: { type: 'stdio', command: 'npx', args: ['-y', 'exa-mcp-server'] },
+    },
+  ],
+}))
+
 describe('mcp-selector utilities', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
+
+    // Initialize i18n for test environment
+    const { initI18n } = await import('../../../src/i18n')
+    await initI18n('en')
   })
 
   describe('mcp service configuration and functions', () => {
@@ -46,9 +94,9 @@ describe('mcp-selector utilities', () => {
       expect(MCP_SERVICE_CONFIGS.length).toBeGreaterThan(0)
     })
 
-    it('should provide services with both zh-CN and en translations', () => {
-      const zhServices = getMcpServices('zh-CN')
-      const enServices = getMcpServices('en')
+    it('should provide services with both zh-CN and en translations', async () => {
+      const zhServices = await getMcpServices()
+      const enServices = await getMcpServices()
 
       expect(zhServices.length).toBeGreaterThan(0)
       expect(enServices.length).toBeGreaterThan(0)
@@ -96,7 +144,7 @@ describe('mcp-selector utilities', () => {
       const selectedIds = ['filesystem', 'brave-search']
       vi.mocked(inquirer.prompt).mockResolvedValue({ services: selectedIds })
 
-      const result = await selectMcpServices('zh-CN')
+      const result = await selectMcpServices()
 
       expect(result).toEqual(selectedIds)
       expect(inquirer.prompt).toHaveBeenCalledWith({
@@ -110,7 +158,7 @@ describe('mcp-selector utilities', () => {
     it('should return empty array when no services selected', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ services: [] })
 
-      const result = await selectMcpServices('en')
+      const result = await selectMcpServices()
 
       expect(result).toEqual([])
     })
@@ -119,7 +167,7 @@ describe('mcp-selector utilities', () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ services: undefined })
       const consoleSpy = vi.spyOn(console, 'log')
 
-      const result = await selectMcpServices('zh-CN')
+      const result = await selectMcpServices()
 
       expect(result).toBeUndefined()
       expect(consoleSpy).toHaveBeenCalled()
@@ -127,9 +175,9 @@ describe('mcp-selector utilities', () => {
 
     it('should build choices with correct language', async () => {
       const promptSpy = vi.mocked(inquirer.prompt).mockResolvedValue({ services: [] })
-      const enServices = getMcpServices('en')
+      const enServices = await getMcpServices()
 
-      await selectMcpServices('en')
+      await selectMcpServices()
 
       const call = promptSpy.mock.calls[0][0] as any
       expect(call.choices).toBeDefined()
@@ -145,9 +193,9 @@ describe('mcp-selector utilities', () => {
 
     it('should build choices with Chinese language', async () => {
       const promptSpy = vi.mocked(inquirer.prompt).mockResolvedValue({ services: [] })
-      const zhServices = getMcpServices('zh-CN')
+      const zhServices = await getMcpServices()
 
-      await selectMcpServices('zh-CN')
+      await selectMcpServices()
 
       const call = promptSpy.mock.calls[0][0] as any
       expect(call.choices).toBeDefined()
@@ -164,7 +212,7 @@ describe('mcp-selector utilities', () => {
       const allServiceIds = MCP_SERVICE_CONFIGS.map(s => s.id)
       vi.mocked(inquirer.prompt).mockResolvedValue({ services: allServiceIds })
 
-      const result = await selectMcpServices('zh-CN')
+      const result = await selectMcpServices()
 
       expect(result).toEqual(allServiceIds)
       expect(result?.length).toBe(MCP_SERVICE_CONFIGS.length)

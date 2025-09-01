@@ -55,6 +55,26 @@ npx zcf → select 2  # Execute workflow update via menu
 > - You can choose operations through the menu or use commands directly for quick execution
 > - `zcf i` = full initialization, `zcf u` = update workflows only
 
+#### 🌐 Language Support
+
+ZCF supports bilingual operation with automatic language switching for all commands:
+
+```bash
+# Use Chinese for all operations
+npx zcf --lang zh-CN          # Interactive menu in Chinese
+npx zcf init --lang zh-CN      # Initialize with Chinese interface  
+npx zcf ccr --allLang zh-CN    # Configure CCR in Chinese
+
+# Language parameter priority (highest to lowest):
+# --all-lang > --lang > saved user preference > interactive prompt
+```
+
+**Language Parameters:**
+- `--lang, -l`: ZCF interface language (applies to all commands)
+- `--all-lang, -g`: Set all language parameters at once (most convenient)
+- `--config-lang, -c`: Template files language (init/update commands only)
+- `--ai-output-lang, -a`: AI assistant output language (init command only)
+
 #### 🤖 Non-interactive Mode
 
 For CI/CD and automated setups, use `--skip-prompt` with parameters:
@@ -74,10 +94,10 @@ When using `--skip-prompt`, the following parameters are available:
 | Parameter                    | Description                                              | Values                                                                                             | Required                               | Default                                                                                                                          |
 | ---------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `--skip-prompt, -s`          | Skip all interactive prompts                             | -                                                                                                  | Yes (for non-interactive mode)         | -                                                                                                                                |
-| `--lang, -l`                 | ZCF display language                                     | `zh-CN`, `en`                                                                                      | No                                     | `en`                                                                                                                             |
-| `--config-lang, -c`          | Configuration language                                   | `zh-CN`, `en`                                                                                      | No                                     | `en`                                                                                                                             |
+| `--lang, -l`                 | ZCF display language (applies to all commands)           | `zh-CN`, `en`                                                                                      | No                                     | `en` or user's saved preference                                                                                                  |
+| `--config-lang, -c`          | Configuration language (template files language)         | `zh-CN`, `en`                                                                                      | No                                     | `en`                                                                                                                             |
 | `--ai-output-lang, -a`       | AI output language                                       | `zh-CN`, `en`, custom string                                                                       | No                                     | `en`                                                                                                                             |
-| `--all-lang, -g`             | Set all language parameters to this value                | `zh-CN`, `en`, custom string                                                                       | No                                     | - (overrides above 3 params. Custom string sets AI output language to custom while interaction and config languages remain 'en') |
+| `--all-lang, -g`             | Set all language parameters (applies to all commands)    | `zh-CN`, `en`, custom string                                                                       | No                                     | - (Priority: allLang > lang > user preference > prompt. Custom string sets AI output language to custom while interaction and config languages remain 'en') |
 | `--config-action, -r`        | Config handling                                          | `new`, `backup`, `merge`, `docs-only`, `skip`                                                      | No                                     | `backup`                                                                                                                         |
 | `--api-type, -t`             | API configuration type                                   | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                       | No                                     | `skip`                                                                                                                           |
 | `--api-key, -k`              | API key (for both API key and auth token types)          | string                                                                                             | Required when `api-type` is not `skip` | -                                                                                                                                |

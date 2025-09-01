@@ -104,8 +104,9 @@ describe('cCU Command', () => {
 
       await executeCcusage()
 
+      // With global i18n, messages are in the test environment language (English)
       expect(consoleLogSpy).toHaveBeenCalledWith(
-        ansis.cyan('正在运行 Claude Code 用量分析工具...'),
+        ansis.cyan('Running Claude Code usage analysis tool...'),
       )
     })
 
@@ -116,10 +117,10 @@ describe('cCU Command', () => {
       await expect(executeCcusage()).rejects.toThrow('Network error')
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        ansis.red('Failed to run ccusage'),
+        ansis.red('CCUsage failed to run'),
       )
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        ansis.yellow('Please check your network connection and try again'),
+        ansis.yellow('Check network connection'),
       )
     })
 

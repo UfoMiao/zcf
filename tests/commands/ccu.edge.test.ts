@@ -73,14 +73,17 @@ describe('cCU Command - Edge Cases', () => {
 
     it('should handle concurrent executions', async () => {
       let callCount = 0
-      vi.mocked(x).mockImplementation(async () => {
+      vi.mocked(x).mockImplementation(() => {
         callCount++
-        await new Promise(resolve => setTimeout(resolve, 50))
         return {
           stdout: `Execution ${callCount}`,
           stderr: '',
           exitCode: 0,
-        }
+          pipe: vi.fn(),
+          process: { pid: 123 } as any,
+          kill: vi.fn(),
+          pid: 123,
+        } as any
       })
 
       const results = await Promise.all([
@@ -136,7 +139,7 @@ describe('cCU Command - Edge Cases', () => {
       await expect(executeCcusage()).rejects.toEqual('String error')
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Failed to run'),
+        expect.stringContaining('CCUsage failed to run'),
       )
     })
 
@@ -210,8 +213,8 @@ describe('cCU Command - Edge Cases', () => {
 
       await expect(executeCcusage()).rejects.toThrow('Execution error')
 
-      // Config should be read twice (once at start, once in error handler)
-      expect(configCallCount).toBe(2)
+      // Config is no longer read by CCU command with global i18n
+      expect(configCallCount).toBe(0)
     })
 
     it('should handle null arguments', async () => {
@@ -252,11 +255,15 @@ describe('cCU Command - Edge Cases', () => {
       let executionCount = 0
       vi.mocked(x).mockImplementation(() => {
         executionCount++
-        return Promise.resolve({
+        return {
           stdout: '',
           stderr: '',
           exitCode: 0,
-        })
+          pipe: vi.fn(),
+          process: { pid: 123 } as any,
+          kill: vi.fn(),
+          pid: 123,
+        } as any
       })
 
       const promises = []

@@ -5,7 +5,7 @@ import { setupCommands } from './cli-setup'
 async function main() {
   // Setup and run CLI
   const cli = cac('zcf')
-  setupCommands(cli)
+  await setupCommands(cli)
   cli.parse()
 }
 

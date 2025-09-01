@@ -1,8 +1,7 @@
 import dayjs from 'dayjs'
 import { join } from 'pathe'
-import { getTranslation } from '../i18n'
+// JSON utilities use English messages
 import { copyFile, ensureDir, exists, readFile, writeFile } from './fs-operations'
-import { readZcfConfig } from './zcf-config'
 
 export interface JsonConfigOptions<T> {
   defaultValue?: T
@@ -29,8 +28,7 @@ export function readJsonConfig<T>(path: string, options: JsonConfigOptions<T> = 
 
     // Validate if validator provided
     if (validate && !validate(data)) {
-      const i18n = getTranslation(readZcfConfig()?.preferredLang || 'en')
-      console.log(`${i18n.configuration.invalidConfiguration} (${path})`)
+      console.log(`Invalid configuration: ${path}`)
       return defaultValue
     }
 
@@ -42,8 +40,7 @@ export function readJsonConfig<T>(path: string, options: JsonConfigOptions<T> = 
     return data as T
   }
   catch (error) {
-    const i18n = getTranslation(readZcfConfig()?.preferredLang || 'en')
-    console.error(`${i18n.configuration.failedToParseJson} ${path}`, error)
+    console.error(`Failed to parse JSON: ${path}`, error)
     return defaultValue
   }
 }
@@ -96,8 +93,7 @@ export function backupJsonConfig(path: string, backupDir?: string): string | nul
     return backupPath
   }
   catch (error) {
-    const i18n = getTranslation(readZcfConfig()?.preferredLang || 'en')
-    console.error(i18n.configuration.failedToBackupConfig, error)
+    console.error('Failed to backup config', error)
     return null
   }
 }

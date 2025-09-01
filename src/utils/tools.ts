@@ -1,8 +1,7 @@
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { executeCcusage } from '../commands/ccu'
-import { I18N } from '../constants'
-import { getTranslation } from '../i18n'
+import { ensureI18nInitialized, i18n } from '../i18n'
 import { showCometixMenu } from './cometix/menu'
 import { addNumbersToChoices } from './prompt-helpers'
 import { showCcrMenu } from './tools/ccr-menu'
@@ -13,32 +12,30 @@ import { showCcrMenu } from './tools/ccr-menu'
  * @returns Valid language code ('zh-CN' or 'en'), defaults to 'en'
  */
 export function getValidLanguage(lang: any): 'zh-CN' | 'en' {
-  return (lang && lang in I18N) ? lang : 'en'
+  return (lang === 'zh-CN' || lang === 'en') ? lang : 'en'
 }
 
-export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<void> {
-  // Validate language and provide fallback to English
-  const validLang = getValidLanguage(scriptLang)
-  const i18n = getTranslation(validLang)
+export async function runCcusageFeature(): Promise<void> {
+  ensureI18nInitialized()
 
   console.log('')
-  console.log(ansis.cyan(i18n.menu.menuOptions.ccusage))
-  console.log(ansis.gray(`${i18n.tools.ccusageDescription}`))
+  console.log(ansis.cyan(i18n.t('menu:menuOptions.ccusage')))
+  console.log(ansis.gray(`${i18n.t('tools:ccusageDescription')}`))
   console.log('')
 
   const choices = [
-    { name: i18n.tools.ccusageModes.daily, value: 'daily' },
-    { name: i18n.tools.ccusageModes.monthly, value: 'monthly' },
-    { name: i18n.tools.ccusageModes.session, value: 'session' },
-    { name: i18n.tools.ccusageModes.blocks, value: 'blocks' },
-    { name: i18n.tools.ccusageModes.custom, value: 'custom' },
-    { name: i18n.common.back, value: 'back' },
+    { name: i18n.t('tools:ccusageModes.daily'), value: 'daily' },
+    { name: i18n.t('tools:ccusageModes.monthly'), value: 'monthly' },
+    { name: i18n.t('tools:ccusageModes.session'), value: 'session' },
+    { name: i18n.t('tools:ccusageModes.blocks'), value: 'blocks' },
+    { name: i18n.t('tools:ccusageModes.custom'), value: 'custom' },
+    { name: i18n.t('common:back'), value: 'back' },
   ]
 
   const { mode } = await inquirer.prompt<{ mode: string }>({
     type: 'list',
     name: 'mode',
-    message: i18n.tools.selectAnalysisMode,
+    message: i18n.t('tools:selectAnalysisMode'),
     choices: addNumbersToChoices(choices),
   })
 
@@ -52,7 +49,7 @@ export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<voi
     const { customArgs } = await inquirer.prompt<{ customArgs: string }>({
       type: 'input',
       name: 'customArgs',
-      message: i18n.tools.enterCustomArgs,
+      message: i18n.t('tools:enterCustomArgs'),
       default: '',
     })
 
@@ -99,16 +96,14 @@ export async function runCcusageFeature(scriptLang: 'zh-CN' | 'en'): Promise<voi
   await inquirer.prompt({
     type: 'input',
     name: 'continue',
-    message: ansis.gray(i18n.tools.pressEnterToContinue),
+    message: ansis.gray(i18n.t('tools:pressEnterToContinue')),
   })
 }
 
-export async function runCcrMenuFeature(scriptLang: 'zh-CN' | 'en'): Promise<void> {
-  const validLang = getValidLanguage(scriptLang)
-  await showCcrMenu(validLang)
+export async function runCcrMenuFeature(): Promise<void> {
+  await showCcrMenu()
 }
 
-export async function runCometixMenuFeature(scriptLang: 'zh-CN' | 'en'): Promise<void> {
-  const validLang = getValidLanguage(scriptLang)
-  await showCometixMenu(validLang)
+export async function runCometixMenuFeature(): Promise<void> {
+  await showCometixMenu()
 }

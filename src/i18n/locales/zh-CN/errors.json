@@ -1,0 +1,20 @@
+{
+  "failedToRemoveFile": "删除文件失败：",
+  "failedToSetOnboarding": "设置入门完成标志失败：",
+  "failedToWriteMcpConfig": "写入 MCP 配置失败：",
+  "invalidConfigAction": "无效的配置操作值：{{value}}。必须是 'new', 'backup', 'merge', 'docs-only', 或 'skip'",
+  "invalidApiType": "无效的 API 类型值：{{value}}。必须是 'auth_token', 'api_key', 'ccr_proxy', 或 'skip'",
+  "apiKeyRequiredForApiKey": "当 apiType 为 \"api_key\" 时需要 API key",
+  "apiKeyRequiredForAuthToken": "当 apiType 为 \"auth_token\" 时需要 API key",
+  "invalidMcpService": "无效的 MCP 服务：{{service}}。可用的服务：{{validServices}}",
+  "invalidOutputStyle": "无效的输出样式：{{style}}。可用的样式：{{validStyles}}",
+  "invalidDefaultOutputStyle": "无效的默认输出样式：{{style}}。可用的样式：{{validStyles}}",
+  "invalidWorkflow": "无效的工作流：{{workflow}}。可用的工作流：{{validWorkflows}}",
+  "invalidModel": "无效的模型：{{model}}。期望的值：'opus', 'sonnet', 或 'opusplan'",
+  "invalidEnvConfig": "无效的环境配置：期望对象类型",
+  "invalidBaseUrl": "无效的 ANTHROPIC_BASE_URL：期望字符串类型",
+  "invalidApiKeyConfig": "无效的 ANTHROPIC_API_KEY：期望字符串类型",
+  "invalidAuthTokenConfig": "无效的 ANTHROPIC_AUTH_TOKEN：期望字符串类型",
+  "invalidPermissionsConfig": "无效的权限配置：期望对象类型",
+  "invalidPermissionsAllow": "无效的 permissions.allow：期望数组类型"
+}

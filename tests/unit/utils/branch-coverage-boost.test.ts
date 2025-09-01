@@ -12,7 +12,7 @@ describe('branch coverage boost tests', () => {
 
   it('should apply filter function when provided', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true)
-    vi.mocked(fs.mkdirSync).mockImplementation(() => {})
+    vi.mocked(fs.mkdirSync).mockImplementation(() => undefined)
     vi.mocked(fs.readdirSync).mockReturnValue(['file1.txt', 'file2.js'] as any)
     vi.mocked(fs.statSync).mockReturnValue({
       isDirectory: () => false,

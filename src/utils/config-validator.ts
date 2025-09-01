@@ -1,31 +1,26 @@
-import type { SupportedLang } from '../constants'
 import type { ClaudeSettings } from '../types/config'
-import { getTranslation } from '../i18n'
-import { readZcfConfig } from './zcf-config'
+import { ensureI18nInitialized, i18n } from '../i18n'
 
 /**
  * Validate Claude settings configuration
  */
 export function validateClaudeSettings(settings: any): settings is ClaudeSettings {
+  ensureI18nInitialized()
+
   if (!settings || typeof settings !== 'object') {
     return false
   }
 
-  // Get i18n based on user's preferred language
-  const zcfConfig = readZcfConfig()
-  const lang: SupportedLang = zcfConfig?.preferredLang || 'en'
-  const i18n = getTranslation(lang)
-
   // Validate model if present
   if (settings.model && !['opus', 'sonnet', 'opusplan'].includes(settings.model)) {
-    console.log(`Invalid model: ${settings.model}. Expected 'opus', 'sonnet', or 'opusplan'`)
+    console.log(i18n.t('errors:invalidModel', { model: settings.model }))
     return false
   }
 
   // Validate env object if present
   if (settings.env) {
     if (typeof settings.env !== 'object') {
-      console.log(i18n.errors.invalidEnvConfig || 'Invalid env configuration: expected object')
+      console.log(i18n.t('errors:invalidEnvConfig'))
       return false
     }
 
@@ -33,17 +28,17 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
     const { ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_BASE_URL } = settings.env
 
     if (ANTHROPIC_BASE_URL && typeof ANTHROPIC_BASE_URL !== 'string') {
-      console.log(i18n.errors.invalidApiUrl || 'Invalid ANTHROPIC_BASE_URL: expected string')
+      console.log(i18n.t('errors:invalidBaseUrl'))
       return false
     }
 
     if (ANTHROPIC_API_KEY && typeof ANTHROPIC_API_KEY !== 'string') {
-      console.log(i18n.errors.invalidApiKey || 'Invalid ANTHROPIC_API_KEY: expected string')
+      console.log(i18n.t('errors:invalidApiKeyConfig'))
       return false
     }
 
     if (ANTHROPIC_AUTH_TOKEN && typeof ANTHROPIC_AUTH_TOKEN !== 'string') {
-      console.log(i18n.errors.invalidAuthToken || 'Invalid ANTHROPIC_AUTH_TOKEN: expected string')
+      console.log(i18n.t('errors:invalidAuthTokenConfig'))
       return false
     }
   }
@@ -51,12 +46,12 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
   // Validate permissions if present
   if (settings.permissions) {
     if (typeof settings.permissions !== 'object') {
-      console.log(i18n.errors.invalidPermissionsConfig || 'Invalid permissions configuration: expected object')
+      console.log(i18n.t('errors:invalidPermissionsConfig'))
       return false
     }
 
     if (settings.permissions.allow && !Array.isArray(settings.permissions.allow)) {
-      console.log(i18n.errors.invalidPermissionsAllow || 'Invalid permissions.allow: expected array')
+      console.log(i18n.t('errors:invalidPermissionsAllow'))
       return false
     }
   }
@@ -85,7 +80,7 @@ export function sanitizeClaudeSettings(settings: any): ClaudeSettings {
     sanitized.env = {}
     for (const [key, value] of Object.entries(settings.env)) {
       if (typeof value === 'string' || value === undefined) {
-        sanitized.env[key] = value
+        sanitized.env[key] = value as string
       }
     }
   }

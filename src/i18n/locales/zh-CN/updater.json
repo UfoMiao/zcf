@@ -1,0 +1,20 @@
+{
+  "cannotCheckVersion": "无法检查最新版本",
+  "ccrNotInstalled": "CCR 未安装",
+  "ccrUpToDate": "CCR 已是最新版本 (v{{version}})",
+  "checkFailed": "版本检查失败",
+  "checkingTools": "检查工具版本",
+  "checkingVersion": "检查版本中...",
+  "claudeCodeNotInstalled": "Claude Code 未安装",
+  "claudeCodeUpToDate": "Claude Code 已是最新版本 (v{{version}})",
+  "cometixLineNotInstalled": "CCometixLine 未安装",
+  "cometixLineUpToDate": "CCometixLine 已是最新版本 (v{{version}})",
+  "confirmUpdate": "将 {{tool}} 更新到最新版本？",
+  "currentVersion": "当前版本: v{{version}}",
+  "errorCheckingUpdates": "检查更新时出错：",
+  "latestVersion": "最新版本: v{{version}}",
+  "updateFailed": "{{tool}} 更新失败",
+  "updateSkipped": "跳过更新",
+  "updateSuccess": "{{tool}} 更新成功！",
+  "updating": "正在更新 {{tool}}..."
+}

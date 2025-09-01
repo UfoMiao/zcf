@@ -1,13 +1,9 @@
-import type { CliOptions } from '../../src/cli-setup'
 import cac from 'cac'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { version } from '../../package.json'
 import {
 
   customizeHelp,
-  handleDefaultCommand,
-  handleInitCommand,
-  handleUpdateCommand,
   setupCommands,
 } from '../../src/cli-setup'
 
@@ -24,20 +20,41 @@ vi.mock('../../src/commands/update', () => ({
   update: vi.fn().mockResolvedValue(undefined),
 }))
 
-describe('cli-setup', () => {
-  let mockInit: any
-  let mockShowMainMenu: any
-  let mockUpdate: any
+// Use real i18n system for better integration testing
+vi.mock('../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
+    initI18n: vi.fn().mockResolvedValue(undefined),
+    changeLanguage: vi.fn(),
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 
+// Mock zcf-config
+vi.mock('../../src/utils/zcf-config', () => ({
+  readZcfConfigAsync: vi.fn().mockResolvedValue({
+    preferredLang: 'en',
+  }),
+  readZcfConfig: vi.fn().mockReturnValue({
+    preferredLang: 'en',
+  }),
+  updateZcfConfig: vi.fn(),
+}))
+
+// Mock prompts
+vi.mock('../../src/utils/prompts', () => ({
+  selectScriptLanguage: vi.fn().mockResolvedValue('en'),
+}))
+
+describe('cli-setup', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
-    const initModule = await import('../../src/commands/init')
-    const menuModule = await import('../../src/commands/menu')
-    const updateModule = await import('../../src/commands/update')
-
-    mockInit = initModule.init as any
-    mockShowMainMenu = menuModule.showMainMenu as any
-    mockUpdate = updateModule.update as any
+    // Import modules to ensure they're loaded for mocking
+    await import('../../src/commands/init')
+    await import('../../src/commands/menu')
+    await import('../../src/commands/update')
   })
 
   afterEach(() => {
@@ -45,131 +62,25 @@ describe('cli-setup', () => {
   })
 
   describe('setupCommands', () => {
-    it('should setup all commands on cli instance', () => {
+    it('should setup all commands on cli instance', async () => {
       const cli = cac('test')
       const commandSpy = vi.spyOn(cli, 'command')
       const helpSpy = vi.spyOn(cli, 'help')
       const versionSpy = vi.spyOn(cli, 'version')
 
-      setupCommands(cli)
+      await setupCommands(cli)
 
       // Check that commands were registered
-      expect(commandSpy).toHaveBeenCalledWith('[lang]', 'Show interactive menu (default)')
+      expect(commandSpy).toHaveBeenCalledWith('', 'Show interactive menu (default)')
       expect(commandSpy).toHaveBeenCalledWith('init', 'Initialize Claude Code configuration')
       expect(commandSpy).toHaveBeenCalledWith('update', 'Update Claude Code prompts only')
+      expect(commandSpy).toHaveBeenCalledWith('ccr', 'Configure Claude Code Router for model proxy')
+      expect(commandSpy).toHaveBeenCalledWith('ccu [...args]', 'Run Claude Code usage analysis tool')
+      expect(commandSpy).toHaveBeenCalledWith('check-updates', 'Check and update Claude Code and CCR to latest versions')
 
       // Check help and version were setup
       expect(helpSpy).toHaveBeenCalled()
       expect(versionSpy).toHaveBeenCalled()
-    })
-  })
-
-  describe('handleDefaultCommand', () => {
-    it('should call init when --init flag is provided', async () => {
-      const options: CliOptions = {
-        init: true,
-        configLang: 'zh-CN',
-        force: true,
-      }
-
-      await handleDefaultCommand('en', options)
-
-      expect(mockInit).toHaveBeenCalledWith({
-        lang: 'en',
-        configLang: 'zh-CN',
-        force: true,
-      })
-      expect(mockShowMainMenu).not.toHaveBeenCalled()
-    })
-
-    it('should use options.lang when lang parameter is not provided', async () => {
-      const options: CliOptions = {
-        init: true,
-        lang: 'zh-CN',
-      }
-
-      await handleDefaultCommand(undefined, options)
-
-      expect(mockInit).toHaveBeenCalledWith({
-        lang: 'zh-CN',
-        configLang: undefined,
-        force: undefined,
-      })
-    })
-
-    it('should show main menu when --init flag is not provided', async () => {
-      const options: CliOptions = {}
-
-      await handleDefaultCommand(undefined, options)
-
-      expect(mockShowMainMenu).toHaveBeenCalled()
-      expect(mockInit).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('handleInitCommand', () => {
-    it('should call init with all provided options', async () => {
-      const options: CliOptions = {
-        lang: 'zh-CN',
-        configLang: 'en',
-        aiOutputLang: 'zh-CN',
-        force: true,
-      }
-
-      await handleInitCommand(options)
-
-      expect(mockInit).toHaveBeenCalledWith({
-        lang: 'zh-CN',
-        configLang: 'en',
-        aiOutputLang: 'zh-CN',
-        force: true,
-      })
-    })
-
-    it('should call init with partial options', async () => {
-      const options: CliOptions = {
-        lang: 'en',
-      }
-
-      await handleInitCommand(options)
-
-      expect(mockInit).toHaveBeenCalledWith({
-        lang: 'en',
-        configLang: undefined,
-        aiOutputLang: undefined,
-        force: undefined,
-      })
-    })
-
-    it('should handle empty options', async () => {
-      const options: CliOptions = {}
-
-      await handleInitCommand(options)
-
-      expect(mockInit).toHaveBeenCalledWith({
-        lang: undefined,
-        configLang: undefined,
-        aiOutputLang: undefined,
-        force: undefined,
-      })
-    })
-  })
-
-  describe('handleUpdateCommand', () => {
-    it('should call update with configLang option', async () => {
-      const options = { configLang: 'zh-CN' }
-
-      await handleUpdateCommand(options)
-
-      expect(mockUpdate).toHaveBeenCalledWith({ configLang: 'zh-CN' })
-    })
-
-    it('should call update with empty options', async () => {
-      const options = {}
-
-      await handleUpdateCommand(options)
-
-      expect(mockUpdate).toHaveBeenCalledWith({ configLang: undefined })
     })
   })
 
@@ -191,7 +102,7 @@ describe('cli-setup', () => {
       // Should add options section
       const optionsSection = result.find(s => s.title.includes('Options'))
       expect(optionsSection).toBeDefined()
-      expect(optionsSection.body).toContain('--init')
+      expect(optionsSection.body).toContain('--lang')
       expect(optionsSection.body).toContain('--config-lang')
       expect(optionsSection.body).toContain('--force')
 
@@ -217,11 +128,11 @@ describe('cli-setup', () => {
   })
 
   describe('cLI integration', () => {
-    it('should create a functional CLI setup', () => {
+    it('should create a functional CLI setup', async () => {
       const cli = cac('test')
 
-      // Setup shouldn't throw
-      expect(() => setupCommands(cli)).not.toThrow()
+      // Setup shouldn't throw (now async)
+      await expect(setupCommands(cli)).resolves.not.toThrow()
 
       // Check that commands are properly registered
       // cac stores commands in the commands array
@@ -235,9 +146,9 @@ describe('cli-setup', () => {
   describe('command line argument shortcuts', () => {
     let cli: any
 
-    beforeEach(() => {
+    beforeEach(async () => {
       cli = cac('zcf-test')
-      setupCommands(cli)
+      await setupCommands(cli)
     })
 
     describe('new single-character shortcuts', () => {
@@ -342,7 +253,7 @@ describe('cli-setup', () => {
         expect(optionsSection.body).toContain('-u') // api-url
         expect(optionsSection.body).toContain('-m') // mcp-services
         expect(optionsSection.body).toContain('-w') // workflows
-        expect(optionsSection.body).toContain('-p') // ai-personality
+        expect(optionsSection.body).toContain('-o') // output-styles
         expect(optionsSection.body).toContain('-g') // all-lang
         expect(optionsSection.body).toContain('-x') // install-cometix-line
       })

@@ -5,8 +5,9 @@ import inquirer from 'inquirer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   getWorkflowConfig,
-  WORKFLOW_CONFIGS,
+  getWorkflowConfigs,
 } from '../../../src/config/workflows'
+import { ensureI18nInitialized } from '../../../src/i18n'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
 vi.mock('node:fs')
@@ -15,6 +16,7 @@ vi.mock('inquirer')
 
 describe('workflows edge cases and error handling', () => {
   beforeEach(() => {
+    ensureI18nInitialized()
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -59,14 +61,13 @@ describe('workflows edge cases and error handling', () => {
 
   describe('file system edge cases', () => {
     it('should handle ENOSPC disk space error', async () => {
-      vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['gitWorkflow'],
-      })
+      // Mock the workflow installation with ENOSPC error
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(mkdir).mockResolvedValue(undefined)
       vi.mocked(copyFile).mockRejectedValue(new Error('ENOSPC: no space left on device'))
 
-      await selectAndInstallWorkflows('en', 'en')
+      // Test with preselected workflow to avoid inquirer prompt
+      await selectAndInstallWorkflows('en', ['gitWorkflow'])
 
       expect(console.error).toHaveBeenCalledWith(
         expect.stringContaining('ENOSPC'),
@@ -85,7 +86,7 @@ describe('workflows edge cases and error handling', () => {
         vi.mocked(copyFile).mockResolvedValue(undefined)
         vi.mocked(mkdir).mockResolvedValue(undefined)
 
-        promises.push(selectAndInstallWorkflows('en', 'en'))
+        promises.push(selectAndInstallWorkflows('en', ['gitWorkflow']))
       }
 
       // All should complete without errors
@@ -102,7 +103,7 @@ describe('workflows edge cases and error handling', () => {
 
       // Test that the system handles corrupted config gracefully
       const result = getWorkflowConfig(corruptedConfig.id)
-      // Should still return valid config from WORKFLOW_CONFIGS
+      // Should still return valid config from getWorkflowConfigs()
       expect(result?.commands).toBeDefined()
       expect(Array.isArray(result?.commands)).toBe(true)
     })
@@ -110,38 +111,51 @@ describe('workflows edge cases and error handling', () => {
 
   describe('cleanup edge cases', () => {
     it('should handle partial cleanup failures', async () => {
-      vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['gitWorkflow'],
-      })
+      // Mock existsSync to return true for old files and workflow files
       vi.mocked(existsSync)
-        .mockReturnValueOnce(true) // First old file exists
-        .mockReturnValueOnce(true) // Second old file exists
-        .mockReturnValue(true)
+        .mockReturnValueOnce(true) // Old command file 1 exists
+        .mockReturnValueOnce(true) // Old command file 2 exists
+        .mockReturnValueOnce(true) // Old agent file 1 exists
+        .mockReturnValueOnce(true) // Old agent file 2 exists
+        .mockReturnValue(true) // Workflow template files exist
+
+      // Mock rm to succeed first time, fail second time
       vi.mocked(rm)
         .mockResolvedValueOnce(undefined) // First removal succeeds
         .mockRejectedValueOnce(new Error('Permission denied')) // Second fails
+        .mockResolvedValueOnce(undefined) // Third succeeds
+        .mockRejectedValueOnce(new Error('Permission denied')) // Fourth fails
+
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('en', 'en')
+      // Test with preselected workflow
+      await selectAndInstallWorkflows('en', ['gitWorkflow'])
 
       // Should continue despite partial cleanup failure
       expect(copyFile).toHaveBeenCalled()
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to remove file:'),
+      )
     })
 
     it('should handle cleanup with symlinks', async () => {
-      vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['gitWorkflow'],
-      })
+      // Mock existsSync to return true for old files and workflow files
       vi.mocked(existsSync).mockReturnValue(true)
+
+      // Mock rm to fail with EISDIR error (symlink issue)
       vi.mocked(rm).mockRejectedValue(new Error('EISDIR: illegal operation on a directory'))
+
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
-      await selectAndInstallWorkflows('en', 'en')
+      // Test with preselected workflow
+      await selectAndInstallWorkflows('en', ['gitWorkflow'])
 
       // Should handle symlink errors gracefully
-      expect(console.error).toHaveBeenCalled()
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to remove file:'),
+      )
       expect(copyFile).toHaveBeenCalled()
     })
   })
@@ -156,27 +170,27 @@ describe('workflows edge cases and error handling', () => {
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
       // Should not throw even with missing translations
-      await expect(selectAndInstallWorkflows('en', 'en')).resolves.not.toThrow()
+      await expect(selectAndInstallWorkflows('en', ['gitWorkflow'])).resolves.not.toThrow()
     })
   })
 
   describe('workflow validation edge cases', () => {
     it('should validate workflow has at least one command', () => {
-      const gitWorkflow = WORKFLOW_CONFIGS.find(w => w.id === 'gitWorkflow')
+      const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
       expect(gitWorkflow?.commands.length).toBeGreaterThan(0)
     })
 
     it('should validate workflow category matches known categories', () => {
       const validCategories = ['plan', 'sixStep', 'bmad', 'git']
-      const gitWorkflow = WORKFLOW_CONFIGS.find(w => w.id === 'gitWorkflow')
+      const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
       expect(validCategories).toContain(gitWorkflow?.category)
     })
 
     it('should handle workflow with empty commands array', () => {
       const emptyCommandsConfig: WorkflowConfig = {
         id: 'emptyWorkflow',
-        nameKey: 'empty',
-        descriptionKey: 'empty',
+        name: 'Empty Workflow',
+        description: 'Empty workflow for testing',
         category: 'git',
         defaultSelected: false,
         autoInstallAgents: false,
@@ -192,7 +206,7 @@ describe('workflows edge cases and error handling', () => {
     })
 
     it('should validate git workflow specific properties', () => {
-      const gitWorkflow = WORKFLOW_CONFIGS.find(w => w.id === 'gitWorkflow')
+      const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
 
       // Git workflow should not auto-install agents
       expect(gitWorkflow?.autoInstallAgents).toBe(false)
@@ -214,8 +228,8 @@ describe('workflows edge cases and error handling', () => {
     it('should validate installation result structure', async () => {
       const gitWorkflowConfig: WorkflowConfig = {
         id: 'gitWorkflow',
-        nameKey: 'workflowOption.gitWorkflow',
-        descriptionKey: 'workflowDescription.gitWorkflow',
+        name: 'Git Workflow',
+        description: 'Workflow for Git operations',
         category: 'git',
         defaultSelected: true,
         autoInstallAgents: false,

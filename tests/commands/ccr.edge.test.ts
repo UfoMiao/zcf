@@ -15,8 +15,8 @@ vi.mock('../../src/utils/banner')
 vi.mock('../../src/commands/menu')
 
 describe('ccr command - edge cases', () => {
-  const _consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
-  const _consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+  vi.spyOn(console, 'log').mockImplementation(() => {})
+  vi.spyOn(console, 'error').mockImplementation(() => {})
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -39,29 +39,22 @@ describe('ccr command - edge cases', () => {
 
   describe('boundary conditions', () => {
     it('should handle empty options object', async () => {
-      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null)
-      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN')
-
       await ccr({})
 
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should handle undefined options', async () => {
-      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null)
-      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN')
-
       await ccr(undefined)
 
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should handle invalid language in options', async () => {
-      // @ts-expect-error - testing invalid input
-      await ccr({ lang: 'invalid-lang' })
+      await ccr()
 
-      // Should still call showCcrMenu with the provided value
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('invalid-lang')
+      // Should still call showCcrMenu (language is handled globally now)
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should handle concurrent executions', async () => {
@@ -73,9 +66,9 @@ describe('ccr command - edge cases', () => {
       })
 
       const promises = [
-        ccr({ lang: 'en' }),
-        ccr({ lang: 'zh-CN' }),
-        ccr({ lang: 'en' }),
+        ccr(),
+        ccr(),
+        ccr(),
       ]
 
       await Promise.all(promises)
@@ -90,11 +83,10 @@ describe('ccr command - edge cases', () => {
       vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(new Error('Menu error'))
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false)
 
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(
         expect.any(Error),
-        'en',
       )
     })
 
@@ -105,32 +97,24 @@ describe('ccr command - edge cases', () => {
       vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(customError)
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(false)
 
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(customError)
-      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(customError, 'en')
+      expect(errorHandler.handleGeneralError).toHaveBeenCalledWith(customError)
     })
 
     it('should handle null config gracefully', async () => {
-      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue(null)
-      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('en')
-
       await ccr({ skipBanner: true })
 
-      expect(prompts.selectScriptLanguage).toHaveBeenCalled()
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en')
+      // Config reading is no longer part of ccr command with global i18n
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
 
     it('should handle undefined preferredLang in config', async () => {
-      vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
-        // preferredLang is undefined
-      } as any)
-      vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('zh-CN')
-
       await ccr({})
 
-      expect(prompts.selectScriptLanguage).toHaveBeenCalled()
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      // Language handling is now global, no config reading in ccr
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
   })
 
@@ -139,19 +123,18 @@ describe('ccr command - edge cases', () => {
       vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(true)
 
       await ccr({
-        lang: 'zh-CN',
         skipBanner: false,
       })
 
       expect(banner.displayBannerWithInfo).toHaveBeenCalled()
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('zh-CN')
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
       expect(menu.showMainMenu).not.toHaveBeenCalled()
     })
 
     it('should handle menu navigation back', async () => {
       vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false)
 
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(menu.showMainMenu).toHaveBeenCalled()
     })
@@ -163,7 +146,7 @@ describe('ccr command - edge cases', () => {
       vi.mocked(ccrMenu.showCcrMenu).mockRejectedValue(exitError)
       vi.mocked(errorHandler.handleExitPromptError).mockReturnValue(true)
 
-      await ccr({ lang: 'en' })
+      await ccr()
 
       expect(errorHandler.handleExitPromptError).toHaveBeenCalledWith(exitError)
       expect(menu.showMainMenu).not.toHaveBeenCalled()
@@ -180,7 +163,7 @@ describe('ccr command - edge cases', () => {
 
       const promises = []
       for (let i = 0; i < 10; i++) {
-        promises.push(ccr({ lang: i % 2 === 0 ? 'en' : 'zh-CN' }))
+        promises.push(ccr())
       }
 
       await Promise.all(promises)
@@ -195,12 +178,9 @@ describe('ccr command - edge cases', () => {
         ),
       )
 
-      const startTime = Date.now()
       await ccr({})
-      const _duration = Date.now() - startTime
-
-      // Duration assertion removed - flaky in CI environments
-      expect(ccrMenu.showCcrMenu).toHaveBeenCalledWith('en')
+      // Note: Duration tracking was removed due to flaky behavior in CI environments
+      expect(ccrMenu.showCcrMenu).toHaveBeenCalled()
     })
   })
 })

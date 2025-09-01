@@ -24,22 +24,24 @@ vi.mock('../../../src/utils/zcf-config', () => ({
   updateZcfConfig: vi.fn(),
 }))
 vi.mock('../../../src/constants', async (importOriginal) => {
-  const actual = await importOriginal()
+  const actual = await importOriginal<typeof import('../../../src/constants')>()
   return {
     ...actual,
     CLAUDE_DIR: '/test/claude',
     SETTINGS_FILE: '/test/claude/settings.json',
   }
 })
+// Use real i18n system for better integration testing
 vi.mock('../../../src/i18n', async (importOriginal) => {
-  const actual = await importOriginal()
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
   return {
     ...actual,
-    getTranslation: vi.fn(),
+    // Only mock initialization functions to avoid setup issues in tests
+    ensureI18nInitialized: vi.fn(),
   }
 })
 vi.mock('inquirer', async (importOriginal) => {
-  const actual = await importOriginal()
+  const actual = await importOriginal<typeof import('inquirer')>()
   return {
     ...actual,
     default: {
@@ -48,59 +50,25 @@ vi.mock('inquirer', async (importOriginal) => {
   }
 })
 
-const mockFsOperations = vi.mocked(await import('../../../src/utils/fs-operations'))
-const mockJsonConfig = vi.mocked(await import('../../../src/utils/json-config'))
-const mockZcfConfig = vi.mocked(await import('../../../src/utils/zcf-config'))
-const mockI18n = vi.mocked(await import('../../../src/i18n'))
-const mockInquirer = vi.mocked(await import('inquirer'))
+// Declare mock types
+let mockFsOperations: any
+let mockJsonConfig: any
+let mockZcfConfig: any
+let mockInquirer: any
 
 describe('output-style', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
-    // Set up common mocks
-    mockI18n.getTranslation.mockReturnValue({
-      configuration: {
-        selectOutputStyles: 'Select output styles to install',
-        selectDefaultOutputStyle: 'Select default output style',
-        outputStyleInstalled: 'Output styles installed successfully',
-        selectedStyles: 'Selected styles',
-        defaultStyle: 'Default style',
-        selectAtLeastOne: 'Please select at least one output style',
-        legacyFilesDetected: 'Legacy personality files detected',
-        cleanupLegacyFiles: 'Clean up legacy files?',
-        legacyFilesRemoved: 'Legacy files removed successfully',
-        outputStyles: {
-          'engineer-professional': {
-            name: 'Engineer Professional',
-            description: 'Professional software engineer following SOLID, KISS, DRY, YAGNI principles',
-          },
-          'nekomata-engineer': {
-            name: 'Nekomata Engineer',
-            description: 'Professional catgirl engineer UFO Nya, combining rigorous engineering with cute catgirl traits',
-          },
-          'laowang-engineer': {
-            name: 'Laowang Grumpy Tech',
-            description: 'Laowang grumpy tech style, never tolerates code errors and non-standard code',
-          },
-          'default': {
-            name: 'Default',
-            description: 'Claude completes coding tasks efficiently and provides concise responses (Claude Code built-in)',
-          },
-          'explanatory': {
-            name: 'Explanatory',
-            description: 'Claude explains its implementation choices and codebase patterns (Claude Code built-in)',
-          },
-          'learning': {
-            name: 'Learning',
-            description: 'Learn-by-doing mode where Claude pauses and asks you to write small pieces of code for hands-on practice (Claude Code built-in)',
-          },
-        },
-      },
-      common: {
-        cancelled: 'Operation cancelled',
-        multiSelectHint: ' (multiple selection)',
-      },
-    })
+
+    // Initialize mocked modules
+    mockFsOperations = vi.mocked(await import('../../../src/utils/fs-operations'))
+    mockJsonConfig = vi.mocked(await import('../../../src/utils/json-config'))
+    mockZcfConfig = vi.mocked(await import('../../../src/utils/zcf-config'))
+    mockInquirer = vi.mocked(await import('inquirer'))
+
+    // Initialize real i18n for test environment
+    const { initI18n } = await import('../../../src/i18n')
+    await initI18n('zh-CN')
   })
 
   describe('getAvailableOutputStyles', () => {
@@ -145,9 +113,9 @@ describe('output-style', () => {
       const selectedStyles = ['engineer-professional', 'nekomata-engineer']
       const lang: SupportedLang = 'zh-CN'
 
-      mockFsOperations.ensureDir = vi.fn()
-      mockFsOperations.copyFile = vi.fn()
-      mockFsOperations.exists = vi.fn(() => true)
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      mockFsOperations.copyFile.mockImplementation(() => {})
+      mockFsOperations.exists.mockImplementation(() => true)
 
       await copyOutputStyles(selectedStyles, lang)
 
@@ -161,9 +129,9 @@ describe('output-style', () => {
       const selectedStyles = ['engineer-professional']
       const lang: SupportedLang = 'zh-CN'
 
-      mockFsOperations.ensureDir = vi.fn()
-      mockFsOperations.copyFile = vi.fn()
-      mockFsOperations.exists = vi.fn(() => false) // Template doesn't exist
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      mockFsOperations.copyFile.mockImplementation(() => {})
+      mockFsOperations.exists.mockImplementation(() => false) // Template doesn't exist
 
       await copyOutputStyles(selectedStyles, lang)
 
@@ -174,9 +142,9 @@ describe('output-style', () => {
       const selectedStyles = ['engineer-professional', 'default', 'explanatory']
       const lang: SupportedLang = 'zh-CN'
 
-      mockFsOperations.ensureDir = vi.fn()
-      mockFsOperations.copyFile = vi.fn()
-      mockFsOperations.exists = vi.fn(() => true)
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      mockFsOperations.copyFile.mockImplementation(() => {})
+      mockFsOperations.exists.mockImplementation(() => true)
 
       await copyOutputStyles(selectedStyles, lang)
 
@@ -188,8 +156,8 @@ describe('output-style', () => {
   describe('setGlobalDefaultOutputStyle', () => {
     it('should set default output style in settings.json', () => {
       const existingSettings = { env: {} }
-      mockJsonConfig.readJsonConfig = vi.fn(() => existingSettings)
-      mockJsonConfig.writeJsonConfig = vi.fn()
+      mockJsonConfig.readJsonConfig.mockImplementation(() => existingSettings)
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
 
       setGlobalDefaultOutputStyle('engineer-professional')
 
@@ -206,8 +174,8 @@ describe('output-style', () => {
         env: { ANTHROPIC_API_KEY: 'test-key' },
         model: 'opus',
       }
-      mockJsonConfig.readJsonConfig = vi.fn(() => existingSettings)
-      mockJsonConfig.writeJsonConfig = vi.fn()
+      mockJsonConfig.readJsonConfig.mockImplementation(() => existingSettings)
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
 
       setGlobalDefaultOutputStyle('nekomata-engineer')
 
@@ -237,7 +205,7 @@ describe('output-style', () => {
     })
 
     it('should return false when no legacy files exist', () => {
-      mockFsOperations.exists = vi.fn(() => false)
+      mockFsOperations.exists.mockImplementation(() => false)
 
       const hasLegacy = hasLegacyPersonalityFiles()
       expect(hasLegacy).toBe(false)
@@ -246,8 +214,8 @@ describe('output-style', () => {
 
   describe('cleanupLegacyPersonalityFiles', () => {
     it('should remove legacy personality files', () => {
-      mockFsOperations.exists = vi.fn(() => true)
-      mockFsOperations.removeFile = vi.fn()
+      mockFsOperations.exists.mockImplementation(() => true)
+      mockFsOperations.removeFile.mockImplementation(() => {})
 
       cleanupLegacyPersonalityFiles()
 
@@ -292,6 +260,12 @@ describe('output-style', () => {
       mockInquirer.default.prompt = vi.fn()
         .mockResolvedValueOnce({ selectedStyles: ['engineer-professional', 'nekomata-engineer'] })
         .mockResolvedValueOnce({ defaultStyle: 'engineer-professional' })
+      Object.assign(mockInquirer.default, {
+        prompt: mockInquirer.default.prompt,
+        prompts: {},
+        registerPrompt: vi.fn(),
+        restoreDefaultPrompts: vi.fn(),
+      })
 
       mockFsOperations.ensureDir.mockImplementation(() => {})
       mockFsOperations.copyFile.mockImplementation(() => {})
@@ -299,7 +273,7 @@ describe('output-style', () => {
       mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
       mockZcfConfig.updateZcfConfig.mockImplementation(() => {})
 
-      await configureOutputStyle('zh-CN', 'zh-CN')
+      await configureOutputStyle()
 
       expect(mockInquirer.default.prompt).toHaveBeenCalledTimes(2)
       expect(mockFsOperations.copyFile).toHaveBeenCalledTimes(2)
@@ -308,18 +282,16 @@ describe('output-style', () => {
     })
 
     it('should handle non-interactive mode with preselected styles', async () => {
-      mockFsOperations.ensureDir = vi.fn()
-      mockFsOperations.copyFile = vi.fn()
-      mockFsOperations.exists = vi.fn(() => true)
-      mockJsonConfig.readJsonConfig = vi.fn(() => ({}))
-      mockJsonConfig.writeJsonConfig = vi.fn()
-      mockZcfConfig.updateZcfConfig = vi.fn()
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      mockFsOperations.copyFile.mockImplementation(() => {})
+      mockFsOperations.exists.mockImplementation(() => true)
+      mockJsonConfig.readJsonConfig.mockImplementation(() => ({}))
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
+      mockZcfConfig.updateZcfConfig.mockImplementation(() => {})
 
       await configureOutputStyle(
-        'zh-CN', // displayLang
-        'zh-CN', // configLang
-        ['engineer-professional', 'default'],
-        'engineer-professional',
+        ['engineer-professional', 'default'], // preselectedStyles
+        'engineer-professional', // preselectedDefault
       )
 
       expect(mockInquirer.default.prompt).not.toHaveBeenCalled()
@@ -334,19 +306,25 @@ describe('output-style', () => {
           return true
         return path.includes('output-styles')
       })
-      mockFsOperations.removeFile = vi.fn()
+      mockFsOperations.removeFile.mockImplementation(() => {})
       mockInquirer.default.prompt = vi.fn()
         .mockResolvedValueOnce({ cleanupLegacy: true })
         .mockResolvedValueOnce({ selectedStyles: ['engineer-professional'] })
         .mockResolvedValueOnce({ defaultStyle: 'engineer-professional' })
+      Object.assign(mockInquirer.default, {
+        prompt: mockInquirer.default.prompt,
+        prompts: {},
+        registerPrompt: vi.fn(),
+        restoreDefaultPrompts: vi.fn(),
+      })
 
-      mockFsOperations.ensureDir = vi.fn()
-      mockFsOperations.copyFile = vi.fn()
-      mockJsonConfig.readJsonConfig = vi.fn(() => ({}))
-      mockJsonConfig.writeJsonConfig = vi.fn()
-      mockZcfConfig.updateZcfConfig = vi.fn()
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      mockFsOperations.copyFile.mockImplementation(() => {})
+      mockJsonConfig.readJsonConfig.mockImplementation(() => ({}))
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
+      mockZcfConfig.updateZcfConfig.mockImplementation(() => {})
 
-      await configureOutputStyle('zh-CN', 'zh-CN')
+      await configureOutputStyle()
 
       expect(mockFsOperations.removeFile).toHaveBeenCalled()
       expect(mockInquirer.default.prompt).toHaveBeenCalledWith(
@@ -363,19 +341,25 @@ describe('output-style', () => {
           return true
         return path.includes('output-styles')
       })
-      mockFsOperations.removeFile = vi.fn()
+      mockFsOperations.removeFile.mockImplementation(() => {})
       mockInquirer.default.prompt = vi.fn()
         .mockResolvedValueOnce({ cleanupLegacy: false })
         .mockResolvedValueOnce({ selectedStyles: ['engineer-professional'] })
         .mockResolvedValueOnce({ defaultStyle: 'engineer-professional' })
+      Object.assign(mockInquirer.default, {
+        prompt: mockInquirer.default.prompt,
+        prompts: {},
+        registerPrompt: vi.fn(),
+        restoreDefaultPrompts: vi.fn(),
+      })
 
-      mockFsOperations.ensureDir = vi.fn()
-      mockFsOperations.copyFile = vi.fn()
-      mockJsonConfig.readJsonConfig = vi.fn(() => ({}))
-      mockJsonConfig.writeJsonConfig = vi.fn()
-      mockZcfConfig.updateZcfConfig = vi.fn()
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      mockFsOperations.copyFile.mockImplementation(() => {})
+      mockJsonConfig.readJsonConfig.mockImplementation(() => ({}))
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
+      mockZcfConfig.updateZcfConfig.mockImplementation(() => {})
 
-      await configureOutputStyle('zh-CN', 'zh-CN')
+      await configureOutputStyle()
 
       expect(mockFsOperations.removeFile).not.toHaveBeenCalled()
     })

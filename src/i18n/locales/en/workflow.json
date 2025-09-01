@@ -1,0 +1,23 @@
+{
+  "bmadInitPrompt": "✨ Please run /bmad-init command in your project to initialize or update BMAD-Method extension",
+  "cleaningOldFiles": "Cleaning up old version files",
+  "failedToInstallAgent": "Failed to install agent",
+  "failedToInstallCommand": "Failed to install command",
+  "installedAgent": "Installed agent",
+  "installedCommand": "Installed command",
+  "installingWorkflow": "Installing workflow",
+  "removedOldFile": "Removed old file",
+  "selectWorkflowType": "Select workflow type to install",
+  "workflowDescription.bmadWorkflow": "BMAD-Method enterprise-grade agile development workflow extension",
+  "workflowDescription.commonTools": "Provides project initialization and architecture analysis tools, including hierarchical directory initialization commands and intelligent architecture analysis agents",
+  "workflowDescription.featPlanUx": "Feature planning and user experience design workflow with planning and UX design agents",
+  "workflowDescription.gitWorkflow": "Git version control related commands collection",
+  "workflowDescription.sixStepsWorkflow": "Professional development assistant structured six-step workflow",
+  "workflowInstallError": "workflow installation had errors",
+  "workflowInstallSuccess": "workflow installed successfully",
+  "workflowOption.bmadWorkflow": "BMAD-Method Extension Installer (Agile Development Workflow)",
+  "workflowOption.commonTools": "Common Tools (Hierarchical Directory Initialization + General-purpose agents)",
+  "workflowOption.featPlanUx": "Feature Planning and UX Design (feat + planner + ui-ux-designer)",
+  "workflowOption.gitWorkflow": "Git Commands (commit + rollback + cleanBranches + worktree)",
+  "workflowOption.sixStepsWorkflow": "Six Steps Workflow (workflow)"
+}

@@ -1,6 +1,5 @@
 import { exec } from 'node:child_process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import * as i18n from '../../../src/i18n'
 import * as installerModule from '../../../src/utils/cometix/installer'
 
 // Don't destructure to allow proper mocking
@@ -20,7 +19,15 @@ vi.mock('node:util', () => ({
     }
   }),
 }))
-vi.mock('../../../src/i18n')
+// Use real i18n system for better integration testing
+vi.mock('../../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/i18n')>()
+  return {
+    ...actual,
+    // Only mock ensureI18nInitialized to avoid initialization issues
+    ensureI18nInitialized: vi.fn(),
+  }
+})
 
 describe('cCometixLine installer', () => {
   let consoleLogSpy: any
@@ -30,14 +37,6 @@ describe('cCometixLine installer', () => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    vi.mocked(i18n.getTranslation).mockReturnValue({
-      cometix: {
-        installingCometix: 'Installing CCometixLine...',
-        cometixInstallSuccess: 'CCometixLine installed successfully',
-        cometixInstallFailed: 'Failed to install CCometixLine',
-        cometixAlreadyInstalled: 'CCometixLine is already installed',
-      },
-    })
   })
 
   afterEach(() => {
@@ -48,8 +47,9 @@ describe('cCometixLine installer', () => {
   describe('isCometixLineInstalled', () => {
     it('should return true when CCometixLine is installed', async () => {
       const mockExec = vi.mocked(exec)
-      mockExec.mockImplementation((command, callback: any) => {
+      mockExec.mockImplementation((_command, callback: any) => {
         callback(null, 'ccline@1.0.0', '')
+        return {} as any // Mock ChildProcess return
       })
 
       const result = await isCometixLineInstalled()
@@ -59,9 +59,10 @@ describe('cCometixLine installer', () => {
 
     it('should return false when CCometixLine is not installed', async () => {
       const mockExec = vi.mocked(exec)
-      mockExec.mockImplementation((command, callback: any) => {
+      mockExec.mockImplementation((_command, callback: any) => {
         const error = new Error('Package not found')
         callback(error, '', 'npm ERR! 404 Not Found')
+        return {} as any // Mock ChildProcess return
       })
 
       const result = await isCometixLineInstalled()
@@ -70,9 +71,10 @@ describe('cCometixLine installer', () => {
 
     it('should handle npm command errors gracefully', async () => {
       const mockExec = vi.mocked(exec)
-      mockExec.mockImplementation((command, callback: any) => {
+      mockExec.mockImplementation((_command, callback: any) => {
         const error = new Error('npm command not found')
         callback(error, '', 'command not found: npm')
+        return {} as any // Mock ChildProcess return
       })
 
       const result = await isCometixLineInstalled()
@@ -84,17 +86,19 @@ describe('cCometixLine installer', () => {
     it('should install CCometixLine successfully', async () => {
       const mockExec = vi.mocked(exec)
       mockExec
-        .mockImplementationOnce((command, callback: any) => {
+        .mockImplementationOnce((_command, callback: any) => {
           // First call to check if installed - return error (not installed)
           const error = new Error('Package not found')
           callback(error, '', 'npm ERR! 404 Not Found')
+          return {} as any // Mock ChildProcess return
         })
-        .mockImplementationOnce((command, callback: any) => {
+        .mockImplementationOnce((_command, callback: any) => {
           // Second call to install
           callback(null, 'added 1 package', '')
+          return {} as any // Mock ChildProcess return
         })
 
-      await installCometixLine('en')
+      await installCometixLine()
 
       expect(mockExec).toHaveBeenCalledTimes(2)
       expect(mockExec).toHaveBeenNthCalledWith(1, 'npm list -g @cometix/ccline', expect.any(Function))
@@ -105,28 +109,31 @@ describe('cCometixLine installer', () => {
 
     it('should handle installation failure', async () => {
       const mockExec = vi.mocked(exec)
-      mockExec.mockImplementation((command, callback: any) => {
+      mockExec.mockImplementation((_command, callback: any) => {
         const error = new Error('Installation failed')
         callback(error, '', 'npm ERR! Failed to install')
+        return {} as any // Mock ChildProcess return
       })
 
-      await expect(installCometixLine('en')).rejects.toThrow('Installation failed')
+      await expect(installCometixLine()).rejects.toThrow('Installation failed')
       expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to install CCometixLine'))
     })
 
     it('should skip installation if already installed', async () => {
       const mockExec = vi.mocked(exec)
       mockExec
-        .mockImplementationOnce((command, callback: any) => {
+        .mockImplementationOnce((_command, callback: any) => {
           // First call to check if installed - return success (installed)
           callback(null, 'ccline@1.0.0', '')
+          return {} as any // Mock ChildProcess return
         })
-        .mockImplementationOnce((command, callback: any) => {
+        .mockImplementationOnce((_command, callback: any) => {
           // Second call to update
           callback(null, 'updated 1 package', '')
+          return {} as any // Mock ChildProcess return
         })
 
-      await installCometixLine('en')
+      await installCometixLine()
 
       expect(mockExec).toHaveBeenCalledTimes(2)
       expect(mockExec).toHaveBeenNthCalledWith(1, 'npm list -g @cometix/ccline', expect.any(Function))

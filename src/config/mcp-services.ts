@@ -1,8 +1,7 @@
-import type { SupportedLang } from '../i18n/types'
 import type { McpServerConfig, McpService } from '../types'
-import { getMcpServiceTranslation } from '../i18n'
+import { ensureI18nInitialized, i18n } from '../i18n'
 
-// 纯业务配置，不包含任何i18n文本
+// Pure business configuration without any i18n text
 export interface McpServiceConfig {
   id: string
   requiresApiKey: boolean
@@ -27,7 +26,7 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
     config: {
       type: 'stdio',
       command: 'npx',
-      args: ['-y', '@pimzino/spec-workflow-mcp@latest', '--AutoStartDashboard'],
+      args: ['-y', '@pimzino/spec-workflow-mcp@latest'],
       env: {},
     },
   },
@@ -67,29 +66,56 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
 ]
 
 /**
- * 获取带翻译的完整MCP服务列表
+ * Get complete MCP service list with translations
  */
-export function getMcpServices(lang: SupportedLang): McpService[] {
-  const translations = getMcpServiceTranslation(lang)
+export async function getMcpServices(): Promise<McpService[]> {
+  ensureI18nInitialized()
+
+  // Create static MCP service list for i18n-ally compatibility
+  const mcpServiceList = [
+    {
+      id: 'Playwright',
+      name: i18n.t('mcp:services.Playwright.name'),
+      description: i18n.t('mcp:services.Playwright.description'),
+    },
+    {
+      id: 'context7',
+      name: i18n.t('mcp:services.context7.name'),
+      description: i18n.t('mcp:services.context7.description'),
+    },
+    {
+      id: 'exa',
+      name: i18n.t('mcp:services.exa.name'),
+      description: i18n.t('mcp:services.exa.description'),
+      apiKeyPrompt: i18n.t('mcp:services.exa.apiKeyPrompt'),
+    },
+    {
+      id: 'mcp-deepwiki',
+      name: i18n.t('mcp:services.mcp-deepwiki.name'),
+      description: i18n.t('mcp:services.mcp-deepwiki.description'),
+    },
+    {
+      id: 'spec-workflow',
+      name: i18n.t('mcp:services.spec-workflow.name'),
+      description: i18n.t('mcp:services.spec-workflow.description'),
+    },
+  ]
 
   return MCP_SERVICE_CONFIGS.map((config) => {
-    const translation = translations[config.id]
-
-    if (!translation) {
-      throw new Error(`Missing translation for MCP service: ${config.id}`)
-    }
-
+    const serviceInfo = mcpServiceList.find(s => s.id === config.id)
     const service: McpService = {
       id: config.id,
-      name: translation.name,
-      description: translation.description,
+      name: serviceInfo?.name || config.id,
+      description: serviceInfo?.description || '',
       requiresApiKey: config.requiresApiKey,
       config: config.config,
     }
 
-    // 添加API密钥相关字段
-    if (config.requiresApiKey && translation.apiKeyPrompt) {
-      service.apiKeyPrompt = translation.apiKeyPrompt
+    // Add API key related fields
+    if (config.requiresApiKey && serviceInfo?.apiKeyPrompt) {
+      if (serviceInfo.apiKeyPrompt !== `mcp.services.${config.id}.apiKeyPrompt`) {
+        service.apiKeyPrompt = serviceInfo.apiKeyPrompt
+      }
     }
 
     if (config.apiKeyEnvVar) {
@@ -101,9 +127,9 @@ export function getMcpServices(lang: SupportedLang): McpService[] {
 }
 
 /**
- * 根据ID获取指定的MCP服务
+ * Get specified MCP service by ID
  */
-export function getMcpService(id: string, lang: SupportedLang): McpService | undefined {
-  const services = getMcpServices(lang)
+export async function getMcpService(id: string): Promise<McpService | undefined> {
+  const services = await getMcpServices()
   return services.find(service => service.id === id)
 }
