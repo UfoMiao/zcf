@@ -23,8 +23,7 @@ function isCcrConfigured(): boolean {
   }
 
   const config = readCcrConfig()
-  // Check if config has actual providers configured (not empty)
-  return config !== null && config.Providers && config.Providers.length > 0
+  return config !== null
 }
 
 export async function showCcrMenu(): Promise<boolean> {
