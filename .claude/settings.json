@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "jq -r '.tool_input.file_path' | { read file_path; if echo \"$file_path\" | grep -q '\\.ts$'; then PROJECT_ROOT=$(git rev-parse --show-toplevel) && cd \"$PROJECT_ROOT\" && pnpm eslint --config .claude/eslint.hook.config.ts --fix \"$file_path\" || true; fi; }"
+            "command": "pnpm tsx .claude/hooks/eslint-hook.ts"
           }
         ]
       }
