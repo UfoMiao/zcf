@@ -137,9 +137,11 @@ describe('nPM Package Integration Tests', () => {
       // Test Chinese menu
       const testScript = `
         const { spawn } = require('child_process');
-        const child = spawn('npx', ['zcf', '--lang', 'zh-CN'], { 
+        const isWindows = process.platform === 'win32';
+        const child = spawn(isWindows ? 'npx.cmd' : 'npx', ['zcf', '--lang', 'zh-CN'], { 
           stdio: ['pipe', 'pipe', 'pipe'],
-          cwd: process.cwd()
+          cwd: process.cwd(),
+          shell: isWindows
         });
         let output = '';
         child.stdout.on('data', (data) => { output += data; });
@@ -164,9 +166,11 @@ describe('nPM Package Integration Tests', () => {
       // Test English menu
       const testScriptEn = `
         const { spawn } = require('child_process');
-        const child = spawn('npx', ['zcf', '--lang', 'en'], { 
+        const isWindows = process.platform === 'win32';
+        const child = spawn(isWindows ? 'npx.cmd' : 'npx', ['zcf', '--lang', 'en'], { 
           stdio: ['pipe', 'pipe', 'pipe'],
-          cwd: process.cwd()
+          cwd: process.cwd(),
+          shell: isWindows
         });
         let output = '';
         child.stdout.on('data', (data) => { output += data; });
