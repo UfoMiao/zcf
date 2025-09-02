@@ -10,16 +10,32 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const projectRoot = join(__dirname, '../..')
 const testTmpDir = join(projectRoot, 'tmp-npm-test')
 
-describe('nPM Package Integration Tests', () => {
-  // Clean up before and after tests
-  const cleanup = () => {
-    if (existsSync(testTmpDir)) {
-      rmSync(testTmpDir, { recursive: true, force: true })
+describe('npm Package Integration Tests', () => {
+  // Clean up before and after tests with retry logic for Windows
+  const cleanup = async (retries = 3) => {
+    if (!existsSync(testTmpDir)) {
+      return
+    }
+
+    for (let i = 0; i < retries; i++) {
+      try {
+        rmSync(testTmpDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
+        return
+      }
+      catch (error: any) {
+        if (error.code === 'EBUSY' && i < retries - 1) {
+          // Wait a bit and retry
+          await new Promise(resolve => setTimeout(resolve, 500))
+          continue
+        }
+        // On final retry or non-EBUSY errors, log but don't throw
+        console.warn(`Warning: Could not clean up ${testTmpDir}:`, error.message)
+      }
     }
   }
 
-  beforeAll(() => cleanup())
-  afterAll(() => cleanup())
+  beforeAll(async () => await cleanup())
+  afterAll(async () => await cleanup())
 
   it('should pack successfully with all i18n files included', async () => {
     // Check if critical i18n files exist in dist, if not build the project
@@ -141,13 +157,35 @@ describe('nPM Package Integration Tests', () => {
         const child = spawn(isWindows ? 'npx.cmd' : 'npx', ['zcf', '--lang', 'zh-CN'], { 
           stdio: ['pipe', 'pipe', 'pipe'],
           cwd: process.cwd(),
-          shell: isWindows
+          shell: isWindows,
+          detached: false
         });
         let output = '';
+        let killed = false;
+        
         child.stdout.on('data', (data) => { output += data; });
         child.stderr.on('data', (data) => { output += data; });
+        
+        const cleanup = () => {
+          if (!killed) {
+            killed = true;
+            try {
+              if (isWindows) {
+                // Force kill on Windows
+                require('child_process').execSync(\`taskkill /F /T /PID \${child.pid}\`, { stdio: 'ignore' });
+              } else {
+                child.kill('SIGTERM');
+              }
+            } catch (e) {
+              // Ignore errors during cleanup
+            }
+          }
+        };
+        
+        process.on('exit', cleanup);
+        
         setTimeout(() => {
-          child.kill();
+          cleanup();
           // Check for proper Chinese translation
           if (output.includes('请选择功能') && output.includes('完整初始化') && !output.includes('menuOptions.')) {
             console.log('SUCCESS: Chinese i18n working');
@@ -170,13 +208,35 @@ describe('nPM Package Integration Tests', () => {
         const child = spawn(isWindows ? 'npx.cmd' : 'npx', ['zcf', '--lang', 'en'], { 
           stdio: ['pipe', 'pipe', 'pipe'],
           cwd: process.cwd(),
-          shell: isWindows
+          shell: isWindows,
+          detached: false
         });
         let output = '';
+        let killed = false;
+        
         child.stdout.on('data', (data) => { output += data; });
         child.stderr.on('data', (data) => { output += data; });
+        
+        const cleanup = () => {
+          if (!killed) {
+            killed = true;
+            try {
+              if (isWindows) {
+                // Force kill on Windows
+                require('child_process').execSync(\`taskkill /F /T /PID \${child.pid}\`, { stdio: 'ignore' });
+              } else {
+                child.kill('SIGTERM');
+              }
+            } catch (e) {
+              // Ignore errors during cleanup
+            }
+          }
+        };
+        
+        process.on('exit', cleanup);
+        
         setTimeout(() => {
-          child.kill();
+          cleanup();
           // Check for proper English translation
           if (output.includes('Select function') && output.includes('Full initialization') && !output.includes('menuOptions.')) {
             console.log('SUCCESS: English i18n working');
