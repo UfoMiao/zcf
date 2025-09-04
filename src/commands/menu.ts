@@ -18,7 +18,7 @@ import { checkUpdates } from './check-updates'
 import { init } from './init'
 import { update } from './update'
 
-export async function showMainMenu() {
+export async function showMainMenu(): Promise<void> {
   try {
     // Display banner
     displayBannerWithInfo()

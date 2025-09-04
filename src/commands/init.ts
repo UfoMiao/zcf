@@ -62,7 +62,7 @@ export interface InitOptions {
   installCometixLine?: string | boolean // New: CCometixLine installation control
 }
 
-function validateSkipPromptOptions(options: InitOptions) {
+function validateSkipPromptOptions(options: InitOptions): void {
   // Apply --all-lang logic first
   if (options.allLang) {
     if (options.allLang === 'zh-CN' || options.allLang === 'en') {
@@ -213,7 +213,7 @@ function validateSkipPromptOptions(options: InitOptions) {
   }
 }
 
-export async function init(options: InitOptions = {}) {
+export async function init(options: InitOptions = {}): Promise<void> {
   // Validate options if in skip-prompt mode (outside try-catch to allow errors to propagate in tests)
   if (options.skipPrompt) {
     validateSkipPromptOptions(options)

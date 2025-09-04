@@ -3,7 +3,7 @@ import { platform } from 'node:os'
 import process from 'node:process'
 import { exec } from 'tinyexec'
 
-export function getPlatform() {
+export function getPlatform(): 'windows' | 'macos' | 'linux' {
   const p = platform()
   if (p === 'win32')
     return 'windows'

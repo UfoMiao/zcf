@@ -240,7 +240,7 @@ export async function modifyApiConfigPartially(
  */
 export async function updatePromptOnly(
   aiOutputLang?: AiOutputLanguage | string,
-) {
+): Promise<void> {
   ensureI18nInitialized()
 
   // Backup existing config

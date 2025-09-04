@@ -96,7 +96,7 @@ function extractLanguageOptions(options: unknown): LanguageOptions {
 }
 
 //  Internationalized help system using i18n translations
-export function customizeHelp(sections: any[]) {
+export function customizeHelp(sections: any[]): any[] {
   // Add custom header
   sections.unshift({
     title: '',
@@ -185,7 +185,7 @@ export function customizeHelp(sections: any[]) {
   return sections
 }
 
-export async function setupCommands(cli: CAC) {
+export async function setupCommands(cli: CAC): Promise<void> {
   // Use async initialization to ensure help text displays correctly
   try {
     // Try to get language from existing config for help system

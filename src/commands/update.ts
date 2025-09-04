@@ -20,7 +20,7 @@ export interface UpdateOptions {
   skipBanner?: boolean
 }
 
-export async function update(options: UpdateOptions = {}) {
+export async function update(options: UpdateOptions = {}): Promise<void> {
   try {
     // Display banner
     if (!options.skipBanner) {

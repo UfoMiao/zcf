@@ -1,5 +1,6 @@
 import { homedir } from 'node:os'
 import { join } from 'pathe'
+import { i18n } from './i18n'
 
 export const CLAUDE_DIR = join(homedir(), '.claude')
 export const SETTINGS_FILE = join(CLAUDE_DIR, 'settings.json')
@@ -29,33 +30,12 @@ export const AI_OUTPUT_LANGUAGES = {
 
 export type AiOutputLanguage = keyof typeof AI_OUTPUT_LANGUAGES
 
-// Helper functions to get dynamic language labels using i18n
-// Import will be resolved at runtime when i18n is available
-let _i18n: any = null
-
-function getI18nInstance() {
-  if (!_i18n) {
-    try {
-      // Dynamic import to avoid circular dependency
-      // eslint-disable-next-line no-eval
-      const i18nModule = eval('require("./i18n")')
-      _i18n = i18nModule.i18n
-    }
-    catch {
-      // Fallback when i18n is not available
-    }
-  }
-  return _i18n
-}
-
 export function getAiOutputLanguageLabel(lang: AiOutputLanguage): string {
   // For built-in languages, use LANG_LABELS
   if (lang in LANG_LABELS) {
     return LANG_LABELS[lang as SupportedLang]
   }
 
-  // For 'custom', use i18n if available
-  const i18n = getI18nInstance()
   if (lang === 'custom' && i18n?.isInitialized) {
     try {
       return i18n.t('language:labels.custom')

@@ -2,7 +2,7 @@
 import cac from 'cac'
 import { setupCommands } from './cli-setup'
 
-async function main() {
+async function main(): Promise<void> {
   // Setup and run CLI
   const cli = cac('zcf')
   await setupCommands(cli)

@@ -7,7 +7,7 @@ export interface CcrOptions {
   skipBanner?: boolean
 }
 
-export async function ccr(options: CcrOptions = {}) {
+export async function ccr(options: CcrOptions = {}): Promise<void> {
   try {
     // Display banner if not skipped
     if (!options.skipBanner) {

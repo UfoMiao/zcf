@@ -40,7 +40,7 @@ async function handleCancellation(): Promise<void> {
 }
 
 // Configure API
-export async function configureApiFeature() {
+export async function configureApiFeature(): Promise<void> {
   ensureI18nInitialized()
 
   // Check for existing API configuration
@@ -223,7 +223,7 @@ export async function configureApiFeature() {
 }
 
 // Configure MCP
-export async function configureMcpFeature() {
+export async function configureMcpFeature(): Promise<void> {
   ensureI18nInitialized()
 
   // Check if Windows needs fix
@@ -294,7 +294,7 @@ export async function configureMcpFeature() {
 }
 
 // Configure default model
-export async function configureDefaultModelFeature() {
+export async function configureDefaultModelFeature(): Promise<void> {
   ensureI18nInitialized()
 
   // Check for existing model configuration
@@ -356,7 +356,7 @@ export async function configureDefaultModelFeature() {
 }
 
 // Configure AI memory
-export async function configureAiMemoryFeature() {
+export async function configureAiMemoryFeature(): Promise<void> {
   ensureI18nInitialized()
 
   const { option } = await inquirer.prompt<{ option: string }>({
@@ -418,7 +418,7 @@ export async function configureAiMemoryFeature() {
 }
 
 // Clear ZCF cache
-export async function clearZcfCacheFeature() {
+export async function clearZcfCacheFeature(): Promise<void> {
   ensureI18nInitialized()
 
   const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
@@ -473,7 +473,7 @@ export async function changeScriptLanguageFeature(currentLang: SupportedLang): P
 }
 
 // Configure environment variables and permissions
-export async function configureEnvPermissionFeature() {
+export async function configureEnvPermissionFeature(): Promise<void> {
   ensureI18nInitialized()
 
   const { choice } = await inquirer.prompt<{ choice: string }>({

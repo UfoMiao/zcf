@@ -22,7 +22,7 @@ function padToDisplayWidth(str: string, targetWidth: number): string {
   return str + ' '.repeat(paddingNeeded)
 }
 
-export function displayBanner(subtitle?: string) {
+export function displayBanner(subtitle?: string): void {
   ensureI18nInitialized()
   const defaultSubtitle = i18n.t('cli:banner.subtitle')
   const subtitleText = subtitle || defaultSubtitle
@@ -47,7 +47,7 @@ export function displayBanner(subtitle?: string) {
   )
 }
 
-export function displayBannerWithInfo(subtitle?: string) {
+export function displayBannerWithInfo(subtitle?: string): void {
   displayBanner(subtitle)
   console.log(ansis.gray(`  Version: ${ansis.cyan(version)}  |  ${ansis.cyan(homepage)}\n`))
 }

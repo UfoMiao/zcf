@@ -2,7 +2,7 @@
 
 echo "🔧 Preparing commit: install + lint + typecheck..."
 
-pnpm install --prefer-offline
+pnpm i --frozen-lockfile --ignore-scripts --offline
 if [ $? -ne 0 ]; then
     echo "❌ Install failed!"
     exit 1

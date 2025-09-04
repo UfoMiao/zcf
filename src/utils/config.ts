@@ -19,11 +19,11 @@ import { mergeAndCleanPermissions } from './permission-cleaner'
 
 export type { ApiConfig } from '../types/config'
 
-export function ensureClaudeDir() {
+export function ensureClaudeDir(): void {
   ensureDir(CLAUDE_DIR)
 }
 
-export function backupExistingConfig() {
+export function backupExistingConfig(): string | null {
   if (!exists(CLAUDE_DIR)) {
     return null
   }
@@ -45,7 +45,7 @@ export function backupExistingConfig() {
   return backupDir
 }
 
-export function copyConfigFiles(onlyMd: boolean = false) {
+export function copyConfigFiles(onlyMd: boolean = false): void {
   // Get the root directory of the package
   const currentFilePath = fileURLToPath(import.meta.url)
   // Navigate from dist/shared/xxx.mjs to package root
@@ -132,7 +132,7 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
   return apiConfig
 }
 
-export function mergeConfigs(sourceFile: string, targetFile: string) {
+export function mergeConfigs(sourceFile: string, targetFile: string): void {
   if (!exists(sourceFile))
     return
 
@@ -145,7 +145,7 @@ export function mergeConfigs(sourceFile: string, targetFile: string) {
   writeJsonConfig(targetFile, merged)
 }
 
-export function updateDefaultModel(model: 'opus' | 'sonnet' | 'opusplan' | 'default') {
+export function updateDefaultModel(model: 'opus' | 'sonnet' | 'opusplan' | 'default'): void {
   let settings = getDefaultSettings()
 
   const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
@@ -281,7 +281,7 @@ export function getExistingApiConfig(): ApiConfig | null {
   }
 }
 
-export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string) {
+export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string): void {
   // Write language directive directly to CLAUDE.md file
   const claudeFile = join(CLAUDE_DIR, 'CLAUDE.md')
 
