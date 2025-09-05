@@ -1,6 +1,7 @@
 {
   "multiSelectHint": "（空格选择，a全选，i反选，回车确认）",
   "skip": "跳过",
+  "emptyToSkip": "（空内容回车则跳过）",
   "cancelled": "操作已取消",
   "error": "错误",
   "complete": "🎉 配置完成！使用 'claude' 命令开始体验。",

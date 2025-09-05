@@ -44,7 +44,13 @@ export default defineBuildConfig({
         // Try both glob and manual search for maximum Windows compatibility
         let jsonFiles: string[] = []
         try {
-          jsonFiles = await glob('src/i18n/locales/**/*.json', { windowsPathsNoEscape: true })
+          // Use forward slashes in glob pattern and normalize results
+          jsonFiles = await glob('src/i18n/locales/**/*.json', {
+            windowsPathsNoEscape: true,
+            posix: false, // Allow platform-specific paths
+          })
+          // Normalize paths for cross-platform compatibility
+          jsonFiles = jsonFiles.map(file => file.replace(/\\/g, '/'))
         }
         catch (globError) {
           console.warn('Glob failed, using manual file search:', globError)
@@ -65,7 +71,9 @@ export default defineBuildConfig({
         console.log(`Found ${jsonFiles.length} i18n files to copy`)
 
         for (const file of jsonFiles) {
-          const destFile = file.replace(/^src[/\\]/, 'dist/')
+          // Use pathe.join for proper cross-platform path handling
+          const relativePath = file.replace(/^src[/\\]i18n[/\\]/, '')
+          const destFile = join('dist', 'i18n', relativePath)
           const destDir = dirname(destFile)
 
           await mkdir(destDir, { recursive: true })

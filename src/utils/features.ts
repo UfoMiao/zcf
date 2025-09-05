@@ -13,6 +13,7 @@ import {
   configureApi,
   getExistingApiConfig,
   getExistingModelConfig,
+  updateCustomModel,
   updateDefaultModel,
 } from './config'
 import { modifyApiConfigPartially } from './config-operations'
@@ -168,10 +169,12 @@ export async function configureApiFeature(): Promise<void> {
   const { url } = await inquirer.prompt<{ url: string }>({
     type: 'input',
     name: 'url',
-    message: i18n.t('api:enterApiUrl'),
-    validate: async (value) => {
-      if (!value)
-        return i18n.t('api:urlRequired')
+    message: `${i18n.t('api:enterApiUrl')}${i18n.t('common:emptyToSkip')}`,
+    validate: (value) => {
+      if (!value) {
+        // Allow skipping - this will be handled in the next check
+        return true
+      }
       try {
         void new URL(value)
         return true
@@ -182,22 +185,25 @@ export async function configureApiFeature(): Promise<void> {
     },
   })
 
-  if (!url) {
+  if (url === undefined || !url) {
     await handleCancellation()
     return
   }
 
-  const keyMessage = apiChoice === 'auth_token' ? i18n.t('api:enterAuthToken') : i18n.t('api:enterApiKey')
+  const keyMessage = apiChoice === 'auth_token'
+    ? `${i18n.t('api:enterAuthToken')}${i18n.t('common:emptyToSkip')}`
+    : `${i18n.t('api:enterApiKey')}${i18n.t('common:emptyToSkip')}`
   const { key } = await inquirer.prompt<{ key: string }>({
     type: 'input',
     name: 'key',
     message: keyMessage,
-    validate: async (value) => {
+    validate: (value) => {
       if (!value) {
-        return i18n.t('api:keyRequired')
+        // Allow skipping - this will be handled in the next check
+        return true
       }
 
-      const validation = await validateApiKey(value)
+      const validation = validateApiKey(value)
       if (!validation.isValid) {
         return validation.error || i18n.t('api:invalidKeyFormat')
       }
@@ -206,7 +212,7 @@ export async function configureApiFeature(): Promise<void> {
     },
   })
 
-  if (!key) {
+  if (key === undefined || !key) {
     await handleCancellation()
     return
   }
@@ -323,7 +329,7 @@ export async function configureDefaultModelFeature(): Promise<void> {
     }
   }
 
-  const { model } = await inquirer.prompt<{ model: 'opus' | 'sonnet' | 'opusplan' | 'default' }>({
+  const { model } = await inquirer.prompt<{ model: 'opus' | 'sonnet' | 'opusplan' | 'default' | 'custom' }>({
     type: 'list',
     name: 'model',
     message: i18n.t('configuration:selectDefaultModel') || 'Select default model',
@@ -342,8 +348,12 @@ export async function configureDefaultModelFeature(): Promise<void> {
           || 'OpusPlan - Use Opus for planning, write code with sonnet, recommended',
         value: 'opusplan' as const,
       },
+      {
+        name: i18n.t('configuration:customModelOption') || 'Custom - Specify custom model names',
+        value: 'custom' as const,
+      },
     ]),
-    default: existingModel ? ['default', 'opus', 'opusplan'].indexOf(existingModel) : 0,
+    default: existingModel ? ['default', 'opus', 'opusplan', 'custom'].indexOf(existingModel) : 0,
   })
 
   if (!model) {
@@ -351,8 +361,46 @@ export async function configureDefaultModelFeature(): Promise<void> {
     return
   }
 
+  if (model === 'custom') {
+    // Handle custom model input
+    const { primaryModel, fastModel } = await promptCustomModels()
+
+    // Check if both inputs are skipped
+    if (!primaryModel.trim() && !fastModel.trim()) {
+      console.log(ansis.yellow(`⚠ ${i18n.t('configuration:customModelSkipped') || 'Custom model configuration skipped'}`))
+      return
+    }
+
+    // Use the new updateCustomModel function to handle environment variables
+    updateCustomModel(primaryModel, fastModel)
+    console.log(ansis.green(`✔ ${i18n.t('configuration:customModelConfigured') || 'Custom model configuration completed'}`))
+    return
+  }
+
   updateDefaultModel(model)
   console.log(ansis.green(`✔ ${i18n.t('configuration:modelConfigured') || 'Default model configured'}`))
+}
+
+/**
+ * Prompt user for custom model names
+ * @returns Object containing primaryModel and fastModel strings (may be empty for skip)
+ */
+async function promptCustomModels(): Promise<{ primaryModel: string, fastModel: string }> {
+  const { primaryModel } = await inquirer.prompt<{ primaryModel: string }>({
+    type: 'input',
+    name: 'primaryModel',
+    message: `${i18n.t('configuration:enterPrimaryModel')}${i18n.t('common:emptyToSkip')}`,
+    default: '',
+  })
+
+  const { fastModel } = await inquirer.prompt<{ fastModel: string }>({
+    type: 'input',
+    name: 'fastModel',
+    message: `${i18n.t('configuration:enterFastModel')}${i18n.t('common:emptyToSkip')}`,
+    default: '',
+  })
+
+  return { primaryModel, fastModel }
 }
 
 // Configure AI memory

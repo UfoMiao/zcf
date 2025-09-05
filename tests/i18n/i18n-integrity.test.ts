@@ -85,7 +85,7 @@ describe('i18n Integrity Tests', () => {
 
   describe('built i18n Files', () => {
     it('should copy all i18n files to dist after build', async () => {
-      const distLocalesPath = join(projectRoot, 'dist/i18n/locales')
+      const distLocalesPath = join(projectRoot, 'dist', 'i18n', 'locales')
 
       if (!existsSync(distLocalesPath)) {
         // If dist doesn't exist, skip this test (might be in CI without build)
@@ -112,9 +112,16 @@ describe('i18n Integrity Tests', () => {
       ]
 
       for (const lang of requiredLanguages) {
+        // Create language directory path using pathe.join for cross-platform compatibility
+        const langDir = join(distLocalesPath, lang)
+
+        if (!existsSync(langDir)) {
+          expect.fail(`Language directory ${lang} should exist at ${langDir}`)
+        }
+
         for (const ns of requiredNamespaces) {
-          const filePath = join(distLocalesPath, lang, `${ns}.json`)
-          expect(existsSync(filePath), `dist: ${lang}/${ns}.json should exist`).toBe(true)
+          const filePath = join(langDir, `${ns}.json`)
+          expect(existsSync(filePath), `dist: ${lang}/${ns}.json should exist at ${filePath}`).toBe(true)
         }
       }
     })

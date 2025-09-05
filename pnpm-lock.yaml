@@ -3390,7 +3390,7 @@ packages:
     engines: {node: '>=18'}
 
   zcf@file:zcf-2.12.7.tgz:
-    resolution: {integrity: sha512-qM/yBdkQvdZx7GGmD+AbcneX0c4XQ8frjQMuCtlsEZLjjR9byEJQ5GLn73FJz5Kvufva/lYZHm8DAex1RJuU0g==, tarball: file:zcf-2.12.7.tgz}
+    resolution: {integrity: sha512-EH8Xzd0fv+D1jX140VpJwwaHZpwMrkbFWTG7jlpVjuQPSTLWZ19Rz6bxzVPAk254dikOi7LT8ayI7N8ws8kRpA==, tarball: file:zcf-2.12.7.tgz}
     version: 2.12.7
     hasBin: true
 

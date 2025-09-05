@@ -145,7 +145,17 @@ export function mergeConfigs(sourceFile: string, targetFile: string): void {
   writeJsonConfig(targetFile, merged)
 }
 
-export function updateDefaultModel(model: 'opus' | 'sonnet' | 'opusplan' | 'default'): void {
+/**
+ * Update custom model configuration using environment variables
+ * @param primaryModel - Primary model name for general tasks
+ * @param fastModel - Fast model name for background tasks (optional)
+ */
+export function updateCustomModel(primaryModel?: string, fastModel?: string): void {
+  // Skip if both models are empty
+  if (!primaryModel?.trim() && !fastModel?.trim()) {
+    return
+  }
+
   let settings = getDefaultSettings()
 
   const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
@@ -153,9 +163,54 @@ export function updateDefaultModel(model: 'opus' | 'sonnet' | 'opusplan' | 'defa
     settings = existingSettings
   }
 
+  // Delete model field for custom configuration
+  delete settings.model
+
+  // Initialize env object if it doesn't exist
+  settings.env = settings.env || {}
+
+  // Set environment variables only if values are provided
+  if (primaryModel?.trim()) {
+    settings.env.ANTHROPIC_MODEL = primaryModel.trim()
+  }
+  if (fastModel?.trim()) {
+    settings.env.ANTHROPIC_SMALL_FAST_MODEL = fastModel.trim()
+  }
+
+  writeJsonConfig(SETTINGS_FILE, settings)
+}
+
+/**
+ * Update the default model configuration in settings.json
+ * @param model - The model type to set: opus, sonnet, opusplan, default, or custom
+ * Note: 'custom' model type is handled differently - it should use environment variables instead
+ */
+export function updateDefaultModel(model: 'opus' | 'sonnet' | 'opusplan' | 'default' | 'custom'): void {
+  let settings = getDefaultSettings()
+
+  const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
+  if (existingSettings) {
+    settings = existingSettings
+  }
+
+  // Ensure env object exists
+  if (!settings.env) {
+    settings.env = {}
+  }
+
+  // Clean custom model environment variables when switching away from custom
+  if (model !== 'custom' && settings.env) {
+    delete settings.env.ANTHROPIC_MODEL
+    delete settings.env.ANTHROPIC_SMALL_FAST_MODEL
+  }
+
   // Update model in settings
   if (model === 'default') {
     // Remove model field to let Claude Code auto-select
+    delete settings.model
+  }
+  else if (model === 'custom') {
+    // For custom model, remove model field (environment variables should be set via updateCustomModel)
     delete settings.model
   }
   else {
@@ -229,11 +284,16 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
 /**
  * Get existing model configuration from settings.json
  */
-export function getExistingModelConfig(): 'opus' | 'sonnet' | 'opusplan' | 'default' | null {
+export function getExistingModelConfig(): 'opus' | 'sonnet' | 'opusplan' | 'default' | 'custom' | null {
   const settings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
 
   if (!settings) {
     return null
+  }
+
+  // Check if using custom model configuration via environment variables
+  if (settings.env && (settings.env.ANTHROPIC_MODEL || settings.env.ANTHROPIC_SMALL_FAST_MODEL)) {
+    return 'custom'
   }
 
   // If model field doesn't exist, it means using default

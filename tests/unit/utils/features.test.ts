@@ -16,6 +16,7 @@ vi.mock('../../../src/utils/config', () => ({
   applyAiLanguageDirective: vi.fn(),
   configureApi: vi.fn(),
   updateDefaultModel: vi.fn(),
+  updateCustomModel: vi.fn(),
   getExistingApiConfig: vi.fn(),
   getExistingModelConfig: vi.fn(),
 }))
@@ -270,6 +271,57 @@ describe('features utilities', () => {
 
       // Should include opusplan option
       expect(choices.some((choice: any) => choice.value === 'opusplan')).toBe(true)
+    })
+
+    it('should show custom model option in choices', async () => {
+      const { configureDefaultModelFeature } = await import('../../../src/utils/features')
+      const { getExistingModelConfig } = await import('../../../src/utils/config')
+
+      vi.mocked(getExistingModelConfig).mockReturnValue(null)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'default' })
+
+      await configureDefaultModelFeature()
+
+      const firstCall = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
+      const choices = firstCall.choices
+
+      // Should include custom option
+      expect(choices.some((choice: any) => choice.value === 'custom')).toBe(true)
+    })
+
+    it('should handle custom model selection with input prompts', async () => {
+      const { configureDefaultModelFeature } = await import('../../../src/utils/features')
+      const { getExistingModelConfig, updateCustomModel } = await import('../../../src/utils/config')
+
+      vi.mocked(getExistingModelConfig).mockReturnValue(null)
+      // First prompt: choose custom, then two input prompts for model names
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ model: 'custom' })
+        .mockResolvedValueOnce({ primaryModel: 'claude-3-5-sonnet-20241022' })
+        .mockResolvedValueOnce({ fastModel: 'claude-3-haiku-20240307' })
+
+      await configureDefaultModelFeature()
+
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
+      expect(updateCustomModel).toHaveBeenCalledWith('claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307')
+    })
+
+    it('should handle custom model with empty inputs (skip both)', async () => {
+      const { configureDefaultModelFeature } = await import('../../../src/utils/features')
+      const { getExistingModelConfig } = await import('../../../src/utils/config')
+
+      vi.mocked(getExistingModelConfig).mockReturnValue(null)
+      // Choose custom, then skip both inputs
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ model: 'custom' })
+        .mockResolvedValueOnce({ primaryModel: '' })
+        .mockResolvedValueOnce({ fastModel: '' })
+
+      // This should not modify configuration when both are skipped
+      await configureDefaultModelFeature()
+
+      // Should show skip message but not call updateDefaultModel
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
     })
   })
 

@@ -72,11 +72,52 @@ describe('npm Package Integration Tests', () => {
     const { stdout: packOutput } = await execAsync('npm pack --json', { cwd: projectRoot })
     let packData: Array<{ files?: Array<{ path: string }>, filename?: string }>
     try {
-      packData = JSON.parse(packOutput)
+      // Clean the output by extracting only JSON content
+      // Filter out any error messages or non-JSON lines
+      const lines = packOutput.trim().split('\n')
+      let jsonContent = ''
+      let jsonStarted = false
+
+      for (const line of lines) {
+        const trimmedLine = line.trim()
+        // Skip error lines (like git config errors)
+        if (trimmedLine.startsWith('error:')
+          || trimmedLine.startsWith('warning:')
+          || trimmedLine.includes('could not lock config file')) {
+          continue
+        }
+
+        // Look for JSON content (starts with [ or {)
+        if ((trimmedLine.startsWith('[') || trimmedLine.startsWith('{')) && !jsonStarted) {
+          jsonStarted = true
+          jsonContent = trimmedLine
+        }
+        else if (jsonStarted) {
+          // Continue building JSON content
+          jsonContent += `\n${trimmedLine}`
+        }
+      }
+
+      // If no clear JSON structure found, try to extract it differently
+      if (!jsonContent) {
+        // Look for the largest JSON-like content
+        const potentialJson = lines
+          .filter(line =>
+            !line.includes('error:')
+            && !line.includes('warning:')
+            && !line.includes('could not lock config file'),
+          )
+          .join('\n')
+          .trim()
+
+        jsonContent = potentialJson || packOutput
+      }
+
+      packData = JSON.parse(jsonContent)
     }
     catch (error) {
       console.error('Failed to parse npm pack output:', packOutput)
-      throw error
+      throw new Error(`JSON parsing failed: ${(error as Error).message}. Raw output: ${packOutput.substring(0, 200)}...`)
     }
 
     // Extract file list from npm pack JSON output

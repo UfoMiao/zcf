@@ -11,6 +11,7 @@ import {
   getExistingApiConfig,
   getExistingModelConfig,
   mergeSettingsFile,
+  updateCustomModel,
   updateDefaultModel,
 } from '../../../src/utils/config'
 import * as fsOps from '../../../src/utils/fs-operations'
@@ -195,6 +196,195 @@ describe('config utilities', () => {
         SETTINGS_FILE,
         expect.objectContaining({
           model: 'opusplan',
+        }),
+      )
+    })
+
+    it('should handle custom model type by not setting model field', () => {
+      const mockSettings = { model: 'opus' }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('custom')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.not.objectContaining({
+          model: expect.anything(),
+        }),
+      )
+    })
+
+    it('should clean environment variables when switching from custom to default', () => {
+      const mockSettings = {
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
+          ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+          ANTHROPIC_API_KEY: 'keep-this-key',
+        },
+      }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('default')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          env: expect.objectContaining({
+            ANTHROPIC_API_KEY: 'keep-this-key',
+          }),
+        }),
+      )
+
+      const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
+      expect(writtenConfig).not.toHaveProperty('model')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
+    })
+
+    it('should clean environment variables when switching from custom to opus', () => {
+      const mockSettings = {
+        env: {
+          ANTHROPIC_MODEL: 'custom-model',
+          ANTHROPIC_SMALL_FAST_MODEL: 'custom-fast-model',
+          ANTHROPIC_API_KEY: 'keep-this',
+        },
+      }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('opus')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          model: 'opus',
+          env: expect.objectContaining({
+            ANTHROPIC_API_KEY: 'keep-this',
+          }),
+        }),
+      )
+
+      const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
+    })
+
+    it('should clean environment variables when switching from custom to opusplan', () => {
+      const mockSettings = {
+        env: {
+          ANTHROPIC_MODEL: 'custom-model',
+          ANTHROPIC_SMALL_FAST_MODEL: 'custom-fast-model',
+        },
+      }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('opusplan')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          model: 'opusplan',
+        }),
+      )
+
+      const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
+    })
+
+    it('should not modify configuration when no custom environment variables exist', () => {
+      const mockSettings = {
+        model: 'opus',
+        env: {
+          ANTHROPIC_API_KEY: 'keep-this',
+        },
+      }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('sonnet')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          model: 'sonnet',
+          env: expect.objectContaining({
+            ANTHROPIC_API_KEY: 'keep-this',
+          }),
+        }),
+      )
+    })
+  })
+
+  describe('updateCustomModel', () => {
+    it('should delete model field and set environment variables for custom model', () => {
+      const mockSettings = { model: 'opus' }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      // This test should fail initially (Red phase) - function doesn't exist yet
+      updateCustomModel('claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          env: expect.objectContaining({
+            ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
+            ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+          }),
+        }),
+      )
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.not.objectContaining({
+          model: expect.anything(),
+        }),
+      )
+    })
+
+    it('should set only ANTHROPIC_MODEL when fastModel is skipped', () => {
+      const mockSettings = { model: 'opus' }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateCustomModel('claude-3-5-sonnet-20241022', '')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          env: expect.objectContaining({
+            ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
+          }),
+        }),
+      )
+    })
+
+    it('should not modify configuration when both models are skipped', () => {
+      const mockSettings = { model: 'opus' }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateCustomModel('', '')
+
+      expect(jsonConfig.writeJsonConfig).not.toHaveBeenCalled()
+    })
+
+    it('should preserve existing environment variables', () => {
+      const mockSettings = {
+        model: 'opus',
+        env: {
+          ANTHROPIC_API_KEY: 'existing-key',
+          CUSTOM_VAR: 'keep-this',
+        },
+      }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateCustomModel('new-model', 'new-fast-model')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          env: expect.objectContaining({
+            ANTHROPIC_API_KEY: 'existing-key',
+            CUSTOM_VAR: 'keep-this',
+            ANTHROPIC_MODEL: 'new-model',
+            ANTHROPIC_SMALL_FAST_MODEL: 'new-fast-model',
+          }),
         }),
       )
     })
@@ -390,6 +580,44 @@ describe('config utilities', () => {
       const result = getExistingModelConfig()
 
       expect(result).toBe('default')
+    })
+
+    it('should return "custom" when environment variables are set for custom models', () => {
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
+          ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+        },
+      })
+
+      const result = getExistingModelConfig()
+
+      expect(result).toBe('custom')
+    })
+
+    it('should return "custom" when only ANTHROPIC_MODEL environment variable is set', () => {
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
+        },
+      })
+
+      const result = getExistingModelConfig()
+
+      expect(result).toBe('custom')
+    })
+
+    it('should prioritize environment variables over model field for custom detection', () => {
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({
+        model: 'opus',
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
+        },
+      })
+
+      const result = getExistingModelConfig()
+
+      expect(result).toBe('custom')
     })
   })
 })
