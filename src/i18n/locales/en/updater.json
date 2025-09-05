@@ -1,4 +1,5 @@
 {
+  "autoUpdating": "Auto-updating {tool}...",
   "cannotCheckVersion": "Cannot check latest version",
   "ccrNotInstalled": "CCR is not installed",
   "ccrUpToDate": "CCR is up to date (v{version})",
@@ -12,9 +13,12 @@
   "confirmUpdate": "Update {tool} to the latest version?",
   "currentVersion": "Current version: v{version}",
   "errorCheckingUpdates": "Error checking updates:",
+  "failed": "failed",
   "latestVersion": "Latest version: v{version}",
+  "success": "success",
   "updateFailed": "{tool} update failed",
   "updateSkipped": "Update skipped",
   "updateSuccess": "{tool} updated successfully!",
+  "updateSummary": "Update Summary",
   "updating": "Updating {tool}..."
 }

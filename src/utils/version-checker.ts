@@ -144,8 +144,8 @@ export async function checkClaudeCodeVersionAndPrompt(
     const { updateClaudeCode } = await import('./auto-updater')
 
     // Choose update strategy based on mode
-    const forceUpdate = skipPrompt // skip-prompt mode forces update without confirmation
-    await updateClaudeCode(forceUpdate)
+    // In skip-prompt mode, don't force update, just skip user confirmation
+    await updateClaudeCode(false, skipPrompt)
   }
   catch (error) {
     // Graceful error handling - log warning but don't interrupt main flow

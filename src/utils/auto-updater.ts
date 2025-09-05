@@ -8,7 +8,7 @@ import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion } from
 
 const execAsync = promisify(exec)
 
-export async function updateCcr(force = false): Promise<boolean> {
+export async function updateCcr(force = false, skipPrompt = false): Promise<boolean> {
   ensureI18nInitialized()
   const spinner = ora(i18n.t('updater:checkingVersion')).start()
 
@@ -35,17 +35,24 @@ export async function updateCcr(force = false): Promise<boolean> {
     console.log(ansis.cyan(format(i18n.t('updater:currentVersion'), { version: currentVersion || '' })))
     console.log(ansis.cyan(format(i18n.t('updater:latestVersion'), { version: latestVersion })))
 
-    // Ask for confirmation
-    const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-      type: 'confirm',
-      name: 'confirm',
-      message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCR' }),
-      default: true,
-    })
+    // Handle confirmation based on skipPrompt mode
+    if (!skipPrompt) {
+      // Interactive mode: Ask for confirmation
+      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
+        type: 'confirm',
+        name: 'confirm',
+        message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCR' }),
+        default: true,
+      })
 
-    if (!confirm) {
-      console.log(ansis.gray(i18n.t('updater:updateSkipped')))
-      return true
+      if (!confirm) {
+        console.log(ansis.gray(i18n.t('updater:updateSkipped')))
+        return true
+      }
+    }
+    else {
+      // Skip-prompt mode: Auto-update with notification
+      console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'CCR' })))
     }
 
     // Perform update
@@ -70,7 +77,7 @@ export async function updateCcr(force = false): Promise<boolean> {
   }
 }
 
-export async function updateClaudeCode(force = false): Promise<boolean> {
+export async function updateClaudeCode(force = false, skipPrompt = false): Promise<boolean> {
   ensureI18nInitialized()
   const spinner = ora(i18n.t('updater:checkingVersion')).start()
 
@@ -97,17 +104,24 @@ export async function updateClaudeCode(force = false): Promise<boolean> {
     console.log(ansis.cyan(format(i18n.t('updater:currentVersion'), { version: currentVersion || '' })))
     console.log(ansis.cyan(format(i18n.t('updater:latestVersion'), { version: latestVersion })))
 
-    // Ask for confirmation
-    const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-      type: 'confirm',
-      name: 'confirm',
-      message: format(i18n.t('updater:confirmUpdate'), { tool: 'Claude Code' }),
-      default: true,
-    })
+    // Handle confirmation based on skipPrompt mode
+    if (!skipPrompt) {
+      // Interactive mode: Ask for confirmation
+      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
+        type: 'confirm',
+        name: 'confirm',
+        message: format(i18n.t('updater:confirmUpdate'), { tool: 'Claude Code' }),
+        default: true,
+      })
 
-    if (!confirm) {
-      console.log(ansis.gray(i18n.t('updater:updateSkipped')))
-      return true
+      if (!confirm) {
+        console.log(ansis.gray(i18n.t('updater:updateSkipped')))
+        return true
+      }
+    }
+    else {
+      // Skip-prompt mode: Auto-update with notification
+      console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'Claude Code' })))
     }
 
     // Perform update
@@ -131,7 +145,7 @@ export async function updateClaudeCode(force = false): Promise<boolean> {
   }
 }
 
-export async function updateCometixLine(force = false): Promise<boolean> {
+export async function updateCometixLine(force = false, skipPrompt = false): Promise<boolean> {
   ensureI18nInitialized()
   const spinner = ora(i18n.t('updater:checkingVersion')).start()
 
@@ -158,17 +172,24 @@ export async function updateCometixLine(force = false): Promise<boolean> {
     console.log(ansis.cyan(format(i18n.t('updater:currentVersion'), { version: currentVersion || '' })))
     console.log(ansis.cyan(format(i18n.t('updater:latestVersion'), { version: latestVersion })))
 
-    // Ask for confirmation
-    const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-      type: 'confirm',
-      name: 'confirm',
-      message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCometixLine' }),
-      default: true,
-    })
+    // Handle confirmation based on skipPrompt mode
+    if (!skipPrompt) {
+      // Interactive mode: Ask for confirmation
+      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
+        type: 'confirm',
+        name: 'confirm',
+        message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCometixLine' }),
+        default: true,
+      })
 
-    if (!confirm) {
-      console.log(ansis.gray(i18n.t('updater:updateSkipped')))
-      return true
+      if (!confirm) {
+        console.log(ansis.gray(i18n.t('updater:updateSkipped')))
+        return true
+      }
+    }
+    else {
+      // Skip-prompt mode: Auto-update with notification
+      console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'CCometixLine' })))
     }
 
     // Perform update
@@ -193,20 +214,59 @@ export async function updateCometixLine(force = false): Promise<boolean> {
   }
 }
 
-export async function checkAndUpdateTools(): Promise<void> {
+export async function checkAndUpdateTools(skipPrompt = false): Promise<void> {
   ensureI18nInitialized()
   console.log(ansis.bold.cyan(`\n🔍 ${i18n.t('updater:checkingTools')}\n`))
 
-  // Check and update CCR
-  await updateCcr()
+  const results: Array<{ tool: string, success: boolean, error?: string }> = []
+
+  // Check and update CCR with error handling
+  try {
+    const success = await updateCcr(false, skipPrompt)
+    results.push({ tool: 'CCR', success })
+  }
+  catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(ansis.red(`❌ ${format(i18n.t('updater:updateFailed'), { tool: 'CCR' })}: ${errorMessage}`))
+    results.push({ tool: 'CCR', success: false, error: errorMessage })
+  }
 
   console.log() // Empty line
 
-  // Check and update Claude Code
-  await updateClaudeCode()
+  // Check and update Claude Code with error handling
+  try {
+    const success = await updateClaudeCode(false, skipPrompt)
+    results.push({ tool: 'Claude Code', success })
+  }
+  catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(ansis.red(`❌ ${format(i18n.t('updater:updateFailed'), { tool: 'Claude Code' })}: ${errorMessage}`))
+    results.push({ tool: 'Claude Code', success: false, error: errorMessage })
+  }
 
   console.log() // Empty line
 
-  // Check and update CCometixLine
-  await updateCometixLine()
+  // Check and update CCometixLine with error handling
+  try {
+    const success = await updateCometixLine(false, skipPrompt)
+    results.push({ tool: 'CCometixLine', success })
+  }
+  catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(ansis.red(`❌ ${format(i18n.t('updater:updateFailed'), { tool: 'CCometixLine' })}: ${errorMessage}`))
+    results.push({ tool: 'CCometixLine', success: false, error: errorMessage })
+  }
+
+  // Summary report
+  if (skipPrompt) {
+    console.log(ansis.bold.cyan(`\n📋 ${i18n.t('updater:updateSummary')}`))
+    for (const result of results) {
+      if (result.success) {
+        console.log(ansis.green(`✔ ${result.tool}: ${i18n.t('updater:success')}`))
+      }
+      else {
+        console.log(ansis.red(`❌ ${result.tool}: ${i18n.t('updater:failed')} ${result.error ? `(${result.error})` : ''}`))
+      }
+    }
+  }
 }

@@ -2,7 +2,7 @@ import { promisify } from 'node:util'
 import inquirer from 'inquirer'
 import ora from 'ora'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { updateCcr, updateClaudeCode, updateCometixLine } from '../../../src/utils/auto-updater'
+import { checkAndUpdateTools, updateCcr, updateClaudeCode, updateCometixLine } from '../../../src/utils/auto-updater'
 import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion } from '../../../src/utils/version-checker'
 
 // Mock modules
@@ -21,6 +21,9 @@ vi.mock('ansis', () => ({
     cyan: vi.fn((text: string) => text),
     gray: vi.fn((text: string) => text),
     red: vi.fn((text: string) => text),
+    bold: {
+      cyan: vi.fn((text: string) => text),
+    },
   },
 }))
 
@@ -254,6 +257,32 @@ describe('auto-updater', () => {
       // Should prompt for confirmation
       expect(testMocks.inquirerPrompt).toHaveBeenCalled()
     })
+
+    it('should skip prompt when skipPrompt is true', async () => {
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+
+      // Skip prompt should bypass user confirmation
+      try {
+        await updateCcr(false, true)
+        // Should proceed to update flow without prompt
+      }
+      catch (error) {
+        // Expected execution error, but flow is tested
+        expect(error).toBeDefined()
+      }
+
+      // Should NOT prompt for confirmation
+      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:autoUpdating'),
+      )
+    })
   })
 
   describe('updateClaudeCode', () => {
@@ -323,6 +352,29 @@ describe('auto-updater', () => {
       // Should handle errors without crashing
       expect(typeof result).toBe('boolean')
     })
+
+    it('should skip prompt in skip-prompt mode for Claude Code', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+
+      try {
+        await updateClaudeCode(false, true)
+      }
+      catch (error) {
+        expect(error).toBeDefined()
+      }
+
+      // Should NOT prompt for confirmation in skip mode
+      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:autoUpdating'),
+      )
+    })
   })
 
   describe('updateCometixLine', () => {
@@ -376,6 +428,124 @@ describe('auto-updater', () => {
       }
 
       expect(testMocks.inquirerPrompt).toHaveBeenCalled()
+    })
+
+    it('should skip prompt in skip-prompt mode for CometixLine', async () => {
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+
+      try {
+        await updateCometixLine(false, true)
+      }
+      catch (error) {
+        expect(error).toBeDefined()
+      }
+
+      // Should NOT prompt for confirmation in skip mode
+      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:autoUpdating'),
+      )
+    })
+  })
+
+  describe('checkAndUpdateTools', () => {
+    it('should check and update all tools in interactive mode', async () => {
+      // Mock all tools to have updates
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      testMocks.execAsync.mockRejectedValue(new Error('Execution mock error'))
+
+      // Should not throw error and handle all tools
+      await checkAndUpdateTools(false)
+
+      // Should call all three version check functions
+      expect(testMocks.checkCcrVersion).toHaveBeenCalled()
+      expect(testMocks.checkClaudeCodeVersion).toHaveBeenCalled()
+      expect(testMocks.checkCometixLineVersion).toHaveBeenCalled()
+    })
+
+    it('should check and update all tools in skip-prompt mode', async () => {
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.execAsync.mockRejectedValue(new Error('Execution mock error'))
+
+      await checkAndUpdateTools(true)
+
+      // Should NOT prompt for any confirmations in skip mode
+      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      // Should show checking tools header
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:checkingTools'),
+      )
+    })
+
+    it('should handle individual tool failures and continue with others', async () => {
+      // Mock first tool to fail, others to succeed
+      testMocks.checkCcrVersion.mockRejectedValue(new Error('CCR check failed'))
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+
+      // Should not throw, should handle errors gracefully
+      await checkAndUpdateTools(true)
+
+      // Should have called all version checks despite CCR failure
+      expect(testMocks.checkCcrVersion).toHaveBeenCalled()
+      expect(testMocks.checkClaudeCodeVersion).toHaveBeenCalled()
+      expect(testMocks.checkCometixLineVersion).toHaveBeenCalled()
+
+      // Should show error for failed tool
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        expect.stringContaining('CCR check failed'),
+      )
     })
   })
 
