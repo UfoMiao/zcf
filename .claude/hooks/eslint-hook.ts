@@ -1,12 +1,13 @@
 #!/usr/bin/env tsx
 
+import type { Buffer } from 'node:buffer'
+import { execSync } from 'node:child_process'
+import { existsSync } from 'node:fs'
+import process from 'node:process'
 /**
  * Cross-platform ESLint hook for Claude Code
  * Reads tool input from stdin and runs ESLint fix on the edited file
  */
-
-import { execSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
 
 // TypeScript interfaces for type safety
 interface ToolInput {
@@ -22,7 +23,7 @@ interface HookData {
 
 // Debug mode - set DEBUG_ESLINT_HOOK=1 to enable logging
 const DEBUG = process.env.DEBUG_ESLINT_HOOK === '1'
-const log = (msg: string): void => {
+function log(msg: string): void {
   if (DEBUG) {
     console.error(`[eslint-hook] ${msg}`)
   }
@@ -32,14 +33,14 @@ const log = (msg: string): void => {
 let inputData = ''
 let processCompleted = false
 
-const cleanup = (): void => {
+function cleanup(): void {
   if (!processCompleted) {
     processCompleted = true
     process.exit(0)
   }
 }
 
-const processInput = (): void => {
+function processInput(): void {
   if (processCompleted)
     return
 
@@ -77,7 +78,7 @@ const processInput = (): void => {
     // The eslint.hook.config.ts will handle which files to process/ignore
     try {
       execSync(
-        `pnpm eslint --config .claude/eslint.hook.config.ts --fix "${filePath}"`,
+        `pnpm eslint --rule "unused-imports/no-unused-imports: off" --rule "unused-imports/no-unused-vars: warn" --fix "${filePath}"`,
         {
           cwd: projectRoot,
           stdio: DEBUG ? 'inherit' : 'ignore',
