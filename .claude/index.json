@@ -1,6 +1,6 @@
 {
-  "timestamp": "2025-09-02T12:48:08+08:00",
-  "version": "1.5.0",
+  "timestamp": "2025-09-06T15:05:09+08:00",
+  "version": "1.6.0",
   "project": {
     "name": "zcf",
     "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
@@ -10,14 +10,14 @@
     "architecture": "ESM-only modular CLI with advanced i18next internationalization, comprehensive cross-platform support, and sophisticated tool integration"
   },
   "scanning": {
-    "strategy": "Adaptive three-stage comprehensive architecture analysis with enhanced tool integration assessment",
-    "stages_completed": ["Repository Census", "Module Priority Scanning", "Deep Architecture Analysis", "Tool Integration Analysis"],
-    "total_files_estimated": 235,
-    "files_scanned": 210,
-    "coverage_percentage": 89.4,
+    "strategy": "Adaptive three-stage comprehensive architecture analysis with enhanced tool integration assessment and updated coverage metrics",
+    "stages_completed": ["Repository Census", "Module Priority Scanning", "Deep Architecture Analysis", "Tool Integration Analysis", "Coverage Update"],
+    "total_files_estimated": 280,
+    "files_scanned": 225,
+    "coverage_percentage": 80.4,
     "truncated": false,
     "truncation_reason": null,
-    "update_focus": "Complete adaptive architecture analysis for ZCF v2.12.7 with enhanced documentation navigation and advanced tool integration assessment"
+    "update_focus": "Complete adaptive architecture analysis for ZCF v2.12.7 with enhanced documentation navigation, advanced tool integration assessment, and current coverage metrics"
   },
   "modules": [
     {
@@ -26,7 +26,7 @@
       "description": "Main CLI application with comprehensive configuration, advanced build system, and sophisticated ESLint integration",
       "entryPoints": ["bin/zcf.mjs", "src/cli.ts", "src/index.ts", "src/cli-setup.ts"],
       "keyInterfaces": ["CliOptions", "InitOptions", "setupCommands", "LanguageOptions"],
-      "claudeMdStatus": "updated",
+      "claudeMdStatus": "current",
       "scanned": true,
       "coverage": 98,
       "gaps": []
@@ -169,15 +169,16 @@
     ]
   },
   "coverage_analysis": {
-    "total_files": 235,
-    "scanned_files": 210,
+    "total_files": 280,
+    "scanned_files": 225,
     "coverage_by_type": {
-      "source_files": "94% (105/112)",
-      "test_files": "90% (75/83)",
-      "config_files": "100% (20/20)",
-      "template_files": "85% (17/20)"
+      "source_files": "90% (53/59)",
+      "test_files": "85% (71/83)",
+      "config_files": "100% (25/25)",
+      "template_files": "82% (73/89)",
+      "json_locales": "100% (28/28)"
     },
-    "critical_paths_coverage": "98%",
+    "critical_paths_coverage": "95%",
     "documentation_coverage": "100%"
   },
   "navigation_enhancements": {

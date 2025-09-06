@@ -1,5 +1,65 @@
 # Changelog
 
+## 2.12.8
+
+### Patch Changes
+
+- ## 新功能
+  - 添加自定义模型选择功能
+  - 集成Husky和commitlint实现提交规范验证
+  - 实现跨平台TypeScript ESLint钩子
+  - 增强自动更新器，支持跳过提示功能
+  - 新增mcp\_\_ide到允许列表配置
+
+  ## New Features
+  - Add custom model selection functionality
+  - Integrate Husky and commitlint for conventional commit validation
+  - Implement cross-platform TypeScript ESLint hook
+  - Enhance auto-updater with skip prompt support
+  - Add mcp\_\_ide to allowed list in settings configuration
+
+  ## 重构与优化
+  - 移除独立Claude配置文件，内联规则到Claude钩子中
+  - 修复所有ESLint错误并增强类型安全性
+  - 优化Husky钩子时机策略
+  - 改进Windows CI兼容性和测试稳定性
+  - 升级BMad到4.42.1版本
+
+  ## Refactoring & Optimization
+  - Remove separate Claude config file and inline rules in hooks
+  - Fix all ESLint errors and enhance type safety
+  - Optimize Husky hooks with better timing strategy
+  - Improve Windows CI compatibility and test robustness
+  - Upgrade BMad to version 4.42.1
+
+  ## 依赖更新
+  - 更新pnpm和主要依赖包
+  - 移除模板文件的ESLint忽略配置
+  - 修复settings.json格式问题
+
+  ## Dependency Updates
+  - Update pnpm and major dependencies
+  - Remove templates from ESLint ignore configuration
+  - Fix settings.json formatting issues
+
+  ## 测试改进
+  - 改进npm包集成测试的稳定性和诊断功能
+  - 增强Windows CI兼容性测试
+  - 添加国际化完整性验证测试
+
+  ## Testing Improvements
+  - Improve npm package integration test robustness and diagnostics
+  - Enhance Windows CI compatibility testing
+  - Add i18n integrity validation tests
+
+  ## 文档更新
+  - 添加pnpm 10升级修复执行计划
+  - 更新项目文档和国际化翻译
+
+  ## Documentation Updates
+  - Add pnpm 10 upgrade fix execution plan
+  - Update project documentation and i18n translations
+
 ## 2.12.7
 
 ### Patch Changes

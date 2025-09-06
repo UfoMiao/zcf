@@ -9,7 +9,7 @@
   "menuDescriptions.configureApiOrCcr": "配置 API URL、认证信息或 CCR 代理",
   "menuDescriptions.configureEnvPermission": "导入隐私保护环境变量和系统权限配置",
   "menuDescriptions.configureMcp": "配置 MCP 服务（含 Windows 修复）",
-  "menuDescriptions.configureModel": "设置默认模型（opus/sonnet）",
+  "menuDescriptions.configureModel": "设置默认模型（opus/sonnet/opusplan/自定义）",
   "menuDescriptions.fullInit": "安装 Claude Code + 导入工作流 + 配置 API 或 CCR 代理 + 配置 MCP 服务",
   "menuDescriptions.importWorkflow": "仅导入/更新工作流相关文件",
   "menuOptions.ccrManagement": "CCR",
