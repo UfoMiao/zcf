@@ -27,6 +27,7 @@ describe('mcp services configuration', () => {
     it('should contain all existing MCP services', () => {
       const expectedServiceIds = [
         'context7',
+        'open-websearch',
         'spec-workflow',
         'mcp-deepwiki',
         'Playwright',
@@ -36,6 +37,28 @@ describe('mcp services configuration', () => {
       const actualIds = MCP_SERVICE_CONFIGS.map(config => config.id)
       expectedServiceIds.forEach((id) => {
         expect(actualIds).toContain(id)
+      })
+    })
+
+    it('should have open-websearch service in second position', () => {
+      const actualIds = MCP_SERVICE_CONFIGS.map(config => config.id)
+      expect(actualIds[1]).toBe('open-websearch')
+    })
+
+    it('should have open-websearch service with correct configuration', () => {
+      const openWebSearchConfig = MCP_SERVICE_CONFIGS.find(config => config.id === 'open-websearch')
+
+      expect(openWebSearchConfig).toBeDefined()
+      expect(openWebSearchConfig!.requiresApiKey).toBe(false)
+      expect(openWebSearchConfig!.config).toEqual({
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', 'open-websearch@latest'],
+        env: {
+          MODE: 'stdio',
+          DEFAULT_SEARCH_ENGINE: 'duckduckgo',
+          ALLOWED_SEARCH_ENGINES: 'duckduckgo,bing,brave',
+        },
       })
     })
   })
@@ -114,6 +137,24 @@ describe('mcp services configuration', () => {
       expect(service!.name).toContain('Context7')
       expect(service!.description).toContain('documentation')
       expect(service!.requiresApiKey).toBe(false)
+    })
+
+    it('should return open-websearch service by ID with correct properties', async () => {
+      const service = await getMcpService('open-websearch')
+
+      expect(service).toBeDefined()
+      expect(service!.id).toBe('open-websearch')
+      expect(service!.name).toBeDefined()
+      expect(service!.description).toBeDefined()
+      expect(service!.requiresApiKey).toBe(false)
+      expect(service!.config.type).toBe('stdio')
+      expect(service!.config.command).toBe('npx')
+      expect(service!.config.args).toEqual(['-y', 'open-websearch@latest'])
+      expect(service!.config.env).toEqual({
+        MODE: 'stdio',
+        DEFAULT_SEARCH_ENGINE: 'duckduckgo',
+        ALLOWED_SEARCH_ENGINES: 'duckduckgo,bing,brave',
+      })
     })
 
     it('should return undefined for non-existent service ID', async () => {

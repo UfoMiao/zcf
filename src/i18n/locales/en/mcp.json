@@ -7,6 +7,8 @@
   "services.Playwright.name": "Playwright Browser Control",
   "services.context7.description": "Query latest library documentation and code examples",
   "services.context7.name": "Context7 Docs",
+  "services.open-websearch.description": "Web search using DuckDuckGo, Bing, and Brave search engines",
+  "services.open-websearch.name": "Open Web Search",
   "services.exa.apiKeyPrompt": "Enter Exa API Key",
   "services.exa.description": "Web search using Exa AI",
   "services.exa.name": "Exa AI Search",

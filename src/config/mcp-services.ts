@@ -21,6 +21,20 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
     },
   },
   {
+    id: 'open-websearch',
+    requiresApiKey: false,
+    config: {
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', 'open-websearch@latest'],
+      env: {
+        MODE: 'stdio',
+        DEFAULT_SEARCH_ENGINE: 'duckduckgo',
+        ALLOWED_SEARCH_ENGINES: 'duckduckgo,bing,brave',
+      },
+    },
+  },
+  {
     id: 'spec-workflow',
     requiresApiKey: false,
     config: {
@@ -74,20 +88,19 @@ export async function getMcpServices(): Promise<McpService[]> {
   // Create static MCP service list for i18n-ally compatibility
   const mcpServiceList = [
     {
-      id: 'Playwright',
-      name: i18n.t('mcp:services.Playwright.name'),
-      description: i18n.t('mcp:services.Playwright.description'),
-    },
-    {
       id: 'context7',
       name: i18n.t('mcp:services.context7.name'),
       description: i18n.t('mcp:services.context7.description'),
     },
     {
-      id: 'exa',
-      name: i18n.t('mcp:services.exa.name'),
-      description: i18n.t('mcp:services.exa.description'),
-      apiKeyPrompt: i18n.t('mcp:services.exa.apiKeyPrompt'),
+      id: 'open-websearch',
+      name: i18n.t('mcp:services.open-websearch.name'),
+      description: i18n.t('mcp:services.open-websearch.description'),
+    },
+    {
+      id: 'spec-workflow',
+      name: i18n.t('mcp:services.spec-workflow.name'),
+      description: i18n.t('mcp:services.spec-workflow.description'),
     },
     {
       id: 'mcp-deepwiki',
@@ -95,9 +108,15 @@ export async function getMcpServices(): Promise<McpService[]> {
       description: i18n.t('mcp:services.mcp-deepwiki.description'),
     },
     {
-      id: 'spec-workflow',
-      name: i18n.t('mcp:services.spec-workflow.name'),
-      description: i18n.t('mcp:services.spec-workflow.description'),
+      id: 'Playwright',
+      name: i18n.t('mcp:services.Playwright.name'),
+      description: i18n.t('mcp:services.Playwright.description'),
+    },
+    {
+      id: 'exa',
+      name: i18n.t('mcp:services.exa.name'),
+      description: i18n.t('mcp:services.exa.description'),
+      apiKeyPrompt: i18n.t('mcp:services.exa.apiKeyPrompt'),
     },
   ]
 

@@ -7,6 +7,8 @@
   "services.Playwright.name": "Playwright 浏览器控制",
   "services.context7.description": "查询最新的库文档和代码示例",
   "services.context7.name": "Context7 文档查询",
+  "services.open-websearch.description": "使用 DuckDuckGo、Bing 和 Brave 搜索引擎进行网页搜索",
+  "services.open-websearch.name": "open-websearch",
   "services.exa.apiKeyPrompt": "请输入 Exa API Key",
   "services.exa.description": "使用 Exa AI 进行网页搜索",
   "services.exa.name": "Exa AI 搜索",
