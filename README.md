@@ -179,6 +179,10 @@ The Spec Workflow MCP provides an optional dashboard for workflow visualization.
 npx -y @pimzino/spec-workflow-mcp@latest --dashboard
 ```
 
+Alternatively, you can install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Pimzino.spec-workflow-mcp) for integrated workflow management.
+
+**Usage Guide**: For detailed usage instructions and best practices, see the [official Spec Workflow documentation](https://github.com/Pimzino/spec-workflow-mcp/blob/main/README.md#quick-start).
+
 #### 🔍 Open Web Search (v2.12.9+ New Feature)
 
 [Open Web Search](https://github.com/Aas-ee/open-webSearch) is a versatile web search MCP service that provides access to multiple search engines:
@@ -188,10 +192,6 @@ npx -y @pimzino/spec-workflow-mcp@latest --dashboard
 - **Flexible Configuration**: Customizable search engine preferences
 - **No API Key Required**: Ready to use without additional authentication
 - **Search Aggregation**: Ability to combine results from multiple engines
-
-Alternatively, you can install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Pimzino.spec-workflow-mcp) for integrated workflow management.
-
-**Usage Guide**: For detailed usage instructions and best practices, see the [official Spec Workflow documentation](https://github.com/Pimzino/spec-workflow-mcp/blob/main/README.md#quick-start).
 
 #### 🚀 CCR (Claude Code Router) Support (v2.8+ Enhanced)
 

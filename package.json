@@ -1,7 +1,7 @@
 {
   "name": "zcf",
   "type": "module",
-  "version": "2.12.8",
+  "version": "2.12.9",
   "packageManager": "pnpm@10.15.1",
   "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
   "author": {

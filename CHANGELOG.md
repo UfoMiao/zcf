@@ -1,5 +1,35 @@
 # Changelog
 
+## 2.12.9
+
+### Patch Changes
+
+- ## 新功能
+  - 添加开放网页搜索 MCP 服务，支持多搜索引擎
+  - 实现受保护分支工作流，支持 PR 创建功能
+  - 优化提交规则配置，允许灵活的主题大小写
+
+  ## New Features
+  - Add Open Web Search MCP service with multi-engine support
+  - Implement protected branch workflow with PR creation support
+  - Optimize commit lint rules with flexible subject case handling
+
+  ## 文档
+  - 更新 README 文件，添加开放网页搜索服务说明
+  - 完善 ZCF 发版命令文档，增强自动化发版指南
+
+  ## Documentation
+  - Update README files to include Open Web Search service documentation
+  - Enhance ZCF release command documentation with automation guidelines
+
+  ## 修复
+  - 修复 Spec Workflow 文档内容位置错误
+  - 改进 MCP 服务配置结构和测试覆盖
+
+  ## Fixes
+  - Fix Spec Workflow documentation content positioning
+  - Improve MCP service configuration structure and test coverage
+
 ## 2.12.8
 
 ### Patch Changes
