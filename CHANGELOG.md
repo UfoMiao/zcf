@@ -1,5 +1,17 @@
 # Changelog
 
+## 2.12.10
+
+### Patch Changes
+
+- ## 配置完善
+  - 补充遗漏的 mcp\_\_open-websearch 服务配置
+  - 完善Claude Code默认配置模板
+
+  ## Configuration Enhancement
+  - Add missing mcp\_\_open-websearch service configuration
+  - Complete Claude Code default configuration template
+
 ## 2.12.9
 
 ### Patch Changes
