@@ -27,7 +27,8 @@
       "mcp__context7",
       "mcp__mcp-deepwiki",
       "mcp__Playwright",
-      "mcp__spec-workflow"
+      "mcp__spec-workflow",
+      "mcp__open-websearch"
     ],
     "deny": []
   },
