@@ -8,7 +8,7 @@ import { RuleConfigSeverity } from '@commitlint/types'
  * Features:
  * - Standard Conventional Commits types (feat, fix, docs, etc.)
  * - Optional scope (scope is not required but allowed)
- * - Subject validation (lowercase, no trailing period)
+ * - Subject validation (no trailing period, flexible case)
  * - Header length limit (100 characters)
  * - TypeScript type safety with @commitlint/types
  */
@@ -22,7 +22,7 @@ const config: UserConfig = {
     // Subject validation rules
     'subject-empty': [RuleConfigSeverity.Error, 'never'],
     'subject-full-stop': [RuleConfigSeverity.Error, 'never', '.'],
-    'subject-case': [RuleConfigSeverity.Error, 'always', 'lower-case'],
+    'subject-case': [RuleConfigSeverity.Disabled], // Allow flexible subject case
 
     // Header length constraints
     'header-max-length': [RuleConfigSeverity.Error, 'always', 100],
