@@ -118,7 +118,7 @@ npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" -
 | `--api-type, -t`             | API 配置类型                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | 否                            | `skip`                                                                                 |
 | `--api-key, -k`              | API 密钥（用于 API 密钥和认证令牌类型） | 字符串                                                                                                 | `api-type` 不为 `skip` 时必需 | -                                                                                      |
 | `--api-url, -u`              | 自定义 API URL                          | URL 字符串                                                                                             | 否                            | 官方 API                                                                               |
-| `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `mcp-deepwiki`, `Playwright`, `exa`, 或 `skip` 表示跳过全部                                | 否                            | `all`                                                                                  |
+| `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--workflows, -w`            | 要安装的工作流（多选，逗号分隔）        | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--output-styles, -o`        | 要安装的输出风格（多选，逗号分隔）      | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`，或 `skip` 表示不安装                 | 否                            | `all`                                                                                  |
 | `--default-output-style, -d` | 默认输出风格                            | 同输出风格选项，还包括内置风格：`default`, `explanatory`, `learning`                                   | 否                            | `engineer-professional`                                                                |
@@ -182,6 +182,16 @@ npx -y @pimzino/spec-workflow-mcp@latest --dashboard
 或者安装 [VS Code 扩展](https://marketplace.visualstudio.com/items?itemName=Pimzino.spec-workflow-mcp) 以获得集成的工作流管理功能。
 
 **使用指南**：详细使用说明和最佳实践，请参阅 [Spec 工作流官方文档](https://github.com/Pimzino/spec-workflow-mcp/blob/main/README.md#quick-start)。
+
+#### 🔍 开放网页搜索（v2.12.9+ 新功能）
+
+[开放网页搜索](https://github.com/Aas-ee/open-webSearch) 是一个多功能的网页搜索 MCP 服务，提供多种搜索引擎访问：
+
+- **多引擎支持**：支持 DuckDuckGo、Bing 和 Brave 搜索引擎
+- **隐私保护**：默认使用注重隐私的搜索引擎
+- **灵活配置**：可自定义搜索引擎偏好设置
+- **无需 API 密钥**：开箱即用，无需额外认证
+- **搜索聚合**：支持合并多个引擎的搜索结果
 
 #### 🚀 CCR (Claude Code Router) 支持（v2.8+ 增强版）
 
@@ -438,6 +448,8 @@ $ npx zcf
 ? 选择要安装的 MCP 服务（空格选择，回车确认）
 ❯ ◯ 全部安装
 ◯ Context7 文档查询 - 查询最新的库文档和代码示例
+◯ open-websearch - 使用 DuckDuckGo、Bing 和 Brave 搜索引擎进行网页搜索
+◯ Spec 工作流 - 规范化特性开发工作流程，从需求到实现的系统化方法
 ◯ DeepWiki - 查询 GitHub 仓库文档和示例
 ◯ Playwright 浏览器控制 - 直接控制浏览器进行自动化操作
 ◯ Exa AI 搜索 - 使用 Exa AI 进行网页搜索

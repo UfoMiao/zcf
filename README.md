@@ -118,7 +118,7 @@ When using `--skip-prompt`, the following parameters are available:
 | `--api-type, -t`             | API configuration type                                   | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                       | No                                     | `skip`                                                                                                                           |
 | `--api-key, -k`              | API key (for both API key and auth token types)          | string                                                                                             | Required when `api-type` is not `skip` | -                                                                                                                                |
 | `--api-url, -u`              | Custom API URL                                           | URL string                                                                                         | No                                     | official API                                                                                                                     |
-| `--mcp-services, -m`         | MCP services to install (multi-select, comma-separated)  | `context7`, `mcp-deepwiki`, `Playwright`, `exa`, or `skip` for none                                | No                                     | `all`                                                                                                                            |
+| `--mcp-services, -m`         | MCP services to install (multi-select, comma-separated)  | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--workflows, -w`            | Workflows to install (multi-select, comma-separated)     | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--output-styles, -o`        | Output styles to install (multi-select, comma-separated) | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, or `skip` for none               | No                                     | `all`                                                                                                                            |
 | `--default-output-style, -d` | Default output style                                     | Same as output styles plus built-in: `default`, `explanatory`, `learning`                          | No                                     | `engineer-professional`                                                                                                          |
@@ -178,6 +178,16 @@ The Spec Workflow MCP provides an optional dashboard for workflow visualization.
 ```bash
 npx -y @pimzino/spec-workflow-mcp@latest --dashboard
 ```
+
+#### 🔍 Open Web Search (v2.12.9+ New Feature)
+
+[Open Web Search](https://github.com/Aas-ee/open-webSearch) is a versatile web search MCP service that provides access to multiple search engines:
+
+- **Multi-Engine Support**: Search across DuckDuckGo, Bing, and Brave search engines
+- **Privacy-Focused**: Uses privacy-respecting search engines as defaults
+- **Flexible Configuration**: Customizable search engine preferences
+- **No API Key Required**: Ready to use without additional authentication
+- **Search Aggregation**: Ability to combine results from multiple engines
 
 Alternatively, you can install the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=Pimzino.spec-workflow-mcp) for integrated workflow management.
 
