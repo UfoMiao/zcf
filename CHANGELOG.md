@@ -1,5 +1,75 @@
 # Changelog
 
+## 2.12.11
+
+### Patch Changes
+
+- ## 新功能
+  - 实现CCR API密钥自动审批管理，支持长度限制和智能存储
+  - 添加智能安装管理系统，支持全局/本地Claude Code安装检测和用户选择
+  - 重构Claude配置管理模块，将 mcp.ts 重命名为更清晰的 claude-config.ts
+  - 扩展配置接口支持 customApiKeyResponses 字段和API密钥状态管理
+
+  ## New Features
+  - Implement CCR API key auto-approval management with length limits and intelligent storage
+  - Add intelligent installation management system with global/local Claude Code detection and user choice
+  - Refactor Claude configuration management module, rename mcp.ts to clearer claude-config.ts
+  - Extend configuration interface to support customApiKeyResponses field and API key status management
+
+  ## 优化
+  - 优化猫娘工程师输出样式模板，使用全角波浪号提升显示效果
+  - 增强错误处理机制，提供更友好的i18n错误提示信息
+  - 改进文件系统操作工具，添加可执行文件检测和递归删除功能
+  - 扩展ZCF配置持久化，支持安装方式偏好设置
+
+  ## Optimization
+  - Optimize nekomata engineer output style template with full-width tilde for better display
+  - Enhance error handling with more user-friendly i18n error messages
+  - Improve file system operation tools with executable detection and recursive removal
+  - Extend ZCF configuration persistence to support installation method preferences
+
+  ## 修复
+  - 修复ESLint hook路径解析问题，确保项目级代码规范一致性
+  - 完善Windows平台MCP配置路径处理和特殊字符转义
+  - 优化CCR代理配置工作流中的错误容错和恢复机制
+
+  ## Fixes
+  - Fix ESLint hook path resolution for consistent project-wide code standards
+  - Improve Windows platform MCP configuration path handling and special character escaping
+  - Optimize error tolerance and recovery in CCR proxy configuration workflow
+
+  ## 文档
+  - 更新README徽章链接，添加JSDoc API参考文档
+  - 添加双语API密钥审批功能使用说明
+  - 完善安装管理系统的中英文文档说明
+
+  ## Documentation
+  - Update README badge links and add JSDoc API reference documentation
+  - Add bilingual API key approval feature usage instructions
+  - Complete Chinese and English documentation for installation management system
+
+  ## 测试
+  - 添加19个全面的TDD测试用例覆盖API密钥审批功能
+  - 新增573个安装管理器测试用例，包含边界条件和错误场景
+  - 增强CCR配置测试，添加现有配置保护场景验证
+  - 扩展文件系统操作测试，确保跨平台兼容性
+
+  ## Testing
+  - Add 19 comprehensive TDD test cases covering API key approval functionality
+  - Add 573 installation manager test cases including boundary conditions and error scenarios
+  - Enhance CCR configuration tests with existing configuration protection scenario verification
+  - Extend file system operation tests to ensure cross-platform compatibility
+
+  ## 重大变更
+  - 安装工作流现在需要用户在检测到多个Claude Code安装时进行选择
+  - 用户可以在全局安装（推荐）和本地安装方法之间选择
+  - API密钥管理现在自动处理已拒绝密钥向已批准列表的迁移
+
+  ## Breaking Changes
+  - Installation workflow now requires user choice when multiple Claude Code installations are detected
+  - Users can select between global (recommended) or local installation methods
+  - API key management now automatically handles rejected key migration to approved list
+
 ## 2.12.10
 
 ### Patch Changes
