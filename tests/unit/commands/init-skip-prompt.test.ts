@@ -7,7 +7,7 @@ import { backupCcrConfig, configureCcrProxy, readCcrConfig, writeCcrConfig } fro
 import { installCcr, isCcrInstalled } from '../../../src/utils/ccr/installer'
 import { installCometixLine, isCometixLineInstalled } from '../../../src/utils/cometix/installer'
 import { applyAiLanguageDirective, backupExistingConfig, configureApi, copyConfigFiles } from '../../../src/utils/config'
-import { installClaudeCode, isClaudeCodeInstalled } from '../../../src/utils/installer'
+import { getInstallationStatus, installClaudeCode } from '../../../src/utils/installer'
 import { readMcpConfig, writeMcpConfig } from '../../../src/utils/mcp'
 import { configureOutputStyle } from '../../../src/utils/output-style'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
@@ -22,6 +22,7 @@ vi.mock('inquirer', () => ({
 vi.mock('../../../src/utils/installer', () => ({
   isClaudeCodeInstalled: vi.fn(),
   installClaudeCode: vi.fn(),
+  getInstallationStatus: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/config', () => ({
@@ -190,7 +191,11 @@ describe('init command with simplified parameters', () => {
   describe('simplified parameter structure', () => {
     it('should work with only --api-key (no --auth-token needed)', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -211,7 +216,11 @@ describe('init command with simplified parameters', () => {
 
     it('should work with auth token using same --api-key parameter', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -231,7 +240,11 @@ describe('init command with simplified parameters', () => {
 
     it('should use default configAction=backup when not specified', async () => {
       vi.mocked(existsSync).mockReturnValue(true) // Existing config
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -246,7 +259,11 @@ describe('init command with simplified parameters', () => {
 
     it('should auto-install Claude Code by default (no --install-claude needed)', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(false) // Not installed
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: false,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      }) // Not installed
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -261,7 +278,11 @@ describe('init command with simplified parameters', () => {
 
     it('should not install MCP services requiring API keys by default', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(readMcpConfig).mockReturnValue({ mcpServers: {} })
 
       const options: InitOptions = {
@@ -278,7 +299,11 @@ describe('init command with simplified parameters', () => {
 
     it('should select all services and workflows by default when not specified', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -296,7 +321,11 @@ describe('init command with simplified parameters', () => {
 
     it('should use default output styles when not specified', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -315,7 +344,11 @@ describe('init command with simplified parameters', () => {
   describe('--all-lang parameter', () => {
     it('should use --all-lang for all three language parameters when en', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -331,7 +364,11 @@ describe('init command with simplified parameters', () => {
 
     it('should use en for lang/config-lang and custom value for ai-output-lang when not zh-CN/en', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -350,7 +387,11 @@ describe('init command with simplified parameters', () => {
   describe('install-CCometixLine parameter', () => {
     it('should install CCometixLine by default when install-CCometixLine is true', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCometixLineInstalled).mockResolvedValue(false)
 
       const options: InitOptions = {
@@ -366,7 +407,11 @@ describe('init command with simplified parameters', () => {
 
     it('should install CCometixLine by default when install-CCometixLine is not specified', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCometixLineInstalled).mockResolvedValue(false)
 
       const options: InitOptions = {
@@ -382,7 +427,11 @@ describe('init command with simplified parameters', () => {
 
     it('should not install CCometixLine when install-CCometixLine is false', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCometixLineInstalled).mockResolvedValue(false)
 
       const options: InitOptions = {
@@ -398,7 +447,11 @@ describe('init command with simplified parameters', () => {
 
     it('should handle string "false" for install-CCometixLine parameter', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCometixLineInstalled).mockResolvedValue(false)
 
       const options: InitOptions = {
@@ -414,7 +467,11 @@ describe('init command with simplified parameters', () => {
 
     it('should handle string "true" for install-CCometixLine parameter', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCometixLineInstalled).mockResolvedValue(false)
 
       const options: InitOptions = {
@@ -432,7 +489,11 @@ describe('init command with simplified parameters', () => {
   describe('mcp and workflow skip values', () => {
     it('should skip all MCP services when mcp-services is "skip"', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -447,7 +508,11 @@ describe('init command with simplified parameters', () => {
 
     it('should skip all MCP services when mcp-services is false boolean', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -462,7 +527,11 @@ describe('init command with simplified parameters', () => {
 
     it('should skip all workflows when workflows is "skip"', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -477,7 +546,11 @@ describe('init command with simplified parameters', () => {
 
     it('should skip all workflows when workflows is false boolean', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -546,7 +619,11 @@ describe('init command with simplified parameters', () => {
 
     it('should handle "all" value for mcp-services', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -562,7 +639,11 @@ describe('init command with simplified parameters', () => {
 
     it('should handle "all" value for workflows', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       const options: InitOptions = {
         skipPrompt: true,
@@ -583,7 +664,11 @@ describe('init command with simplified parameters', () => {
   describe('ccr_proxy configuration in skip-prompt mode', () => {
     it('should handle ccr_proxy without prompting for user interaction', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCcrInstalled).mockResolvedValue({ isInstalled: false, hasCorrectPackage: false })
       vi.mocked(installCcr).mockResolvedValue()
 
@@ -609,7 +694,11 @@ describe('init command with simplified parameters', () => {
 
     it('should backup existing CCR config when using ccr_proxy in skip-prompt mode', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCcrInstalled).mockResolvedValue({ isInstalled: true, hasCorrectPackage: true })
 
       // Mock existing CCR config
@@ -643,7 +732,11 @@ describe('init command with simplified parameters', () => {
 
     it('should create default skip configuration for ccr_proxy in skip-prompt mode', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(isClaudeCodeInstalled).mockResolvedValue(true)
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       vi.mocked(isCcrInstalled).mockResolvedValue({ isInstalled: true, hasCorrectPackage: true })
       vi.mocked(readCcrConfig).mockReturnValue(null) // No existing config
       vi.mocked(configureCcrProxy).mockResolvedValue()

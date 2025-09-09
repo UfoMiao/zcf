@@ -5,10 +5,13 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmdirSync,
+  rmSync,
   statSync,
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
+import process from 'node:process'
 import { dirname } from 'pathe'
 
 /**
@@ -207,5 +210,85 @@ export function copyDir(src: string, dest: string, options: CopyDirOptions = {})
       }
       copyFile(srcPath, destPath)
     }
+  }
+}
+
+/**
+ * Check if a file is executable
+ */
+export async function isExecutable(path: string): Promise<boolean> {
+  try {
+    if (!exists(path)) {
+      return false
+    }
+
+    const stats = getStats(path)
+    if (!stats.isFile()) {
+      return false
+    }
+
+    // On Unix-like systems (macOS/Linux), check execute permission
+    if (process.platform !== 'win32') {
+      // Check if file has execute permission (owner, group, or other)
+      const mode = stats.mode
+      const executePermission = 0o111 // Execute permission bits
+      return (mode & executePermission) !== 0
+    }
+
+    // On Windows, consider .exe files and files without extension as potentially executable
+    const isWinExecutable = path.endsWith('.exe') || path.endsWith('.cmd') || path.endsWith('.bat')
+    return isWinExecutable || !path.includes('.')
+  }
+  catch {
+    return false
+  }
+}
+
+/**
+ * Remove a file or directory recursively
+ */
+export async function remove(path: string): Promise<void> {
+  try {
+    if (!exists(path)) {
+      return
+    }
+
+    const stats = getStats(path)
+
+    if (stats.isDirectory()) {
+      // Remove directory contents recursively
+      const entries = readDir(path)
+      for (const entry of entries) {
+        await remove(`${path}/${entry}`)
+      }
+
+      // Remove the empty directory
+      try {
+        if (rmSync) {
+          rmSync(path, { recursive: true, force: true })
+        }
+        else if (rmdirSync) {
+          rmdirSync(path)
+        }
+      }
+      catch (error) {
+        throw new FileSystemError(
+          `Failed to remove directory: ${path}`,
+          path,
+          error as Error,
+        )
+      }
+    }
+    else {
+      // Remove file
+      removeFile(path)
+    }
+  }
+  catch (error) {
+    throw new FileSystemError(
+      `Failed to remove: ${path}`,
+      path,
+      error as Error,
+    )
   }
 }

@@ -1,13 +1,18 @@
 import { exec } from 'tinyexec'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as fsOps from '../../../src/utils/fs-operations'
 import {
+  getInstallationStatus,
   installClaudeCode,
   isClaudeCodeInstalled,
+  isLocalClaudeCodeInstalled,
+  removeLocalClaudeCode,
 } from '../../../src/utils/installer'
 import * as platform from '../../../src/utils/platform'
 
 vi.mock('tinyexec')
 vi.mock('../../../src/utils/platform')
+vi.mock('../../../src/utils/fs-operations')
 
 // Use real i18n system for better integration testing
 vi.mock('../../../src/i18n', async (importOriginal) => {
@@ -47,6 +52,121 @@ describe('installer utilities', () => {
 
       expect(result).toBe(false)
       expect(platform.commandExists).toHaveBeenCalledWith('claude')
+    })
+  })
+
+  describe('isLocalClaudeCodeInstalled', () => {
+    it('should return true when local claude installation exists', async () => {
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.isExecutable).mockResolvedValue(true)
+
+      const result = await isLocalClaudeCodeInstalled()
+
+      expect(result).toBe(true)
+      expect(fsOps.exists).toHaveBeenCalledWith(expect.stringContaining('/.claude/local/claude'))
+      expect(fsOps.isExecutable).toHaveBeenCalledWith(expect.stringContaining('/.claude/local/claude'))
+    })
+
+    it('should return false when local claude installation does not exist', async () => {
+      vi.mocked(fsOps.exists).mockReturnValue(false)
+
+      const result = await isLocalClaudeCodeInstalled()
+
+      expect(result).toBe(false)
+      expect(fsOps.exists).toHaveBeenCalledWith(expect.stringContaining('/.claude/local/claude'))
+      expect(fsOps.isExecutable).not.toHaveBeenCalled()
+    })
+
+    it('should return false when local claude file exists but is not executable', async () => {
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.isExecutable).mockResolvedValue(false)
+
+      const result = await isLocalClaudeCodeInstalled()
+
+      expect(result).toBe(false)
+      expect(fsOps.isExecutable).toHaveBeenCalledWith(expect.stringContaining('/.claude/local/claude'))
+    })
+  })
+
+  describe('getInstallationStatus', () => {
+    it('should return both global and local when both installations exist', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.isExecutable).mockResolvedValue(true)
+
+      const result = await getInstallationStatus()
+
+      expect(result).toEqual({
+        hasGlobal: true,
+        hasLocal: true,
+        localPath: expect.stringContaining('/.claude/local/claude'),
+      })
+    })
+
+    it('should return only global when only global installation exists', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+      vi.mocked(fsOps.exists).mockReturnValue(false)
+
+      const result = await getInstallationStatus()
+
+      expect(result).toEqual({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: expect.stringContaining('/.claude/local/claude'),
+      })
+    })
+
+    it('should return only local when only local installation exists', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(false)
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.isExecutable).mockResolvedValue(true)
+
+      const result = await getInstallationStatus()
+
+      expect(result).toEqual({
+        hasGlobal: false,
+        hasLocal: true,
+        localPath: expect.stringContaining('/.claude/local/claude'),
+      })
+    })
+
+    it('should return neither when no installations exist', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(false)
+      vi.mocked(fsOps.exists).mockReturnValue(false)
+
+      const result = await getInstallationStatus()
+
+      expect(result).toEqual({
+        hasGlobal: false,
+        hasLocal: false,
+        localPath: expect.stringContaining('/.claude/local/claude'),
+      })
+    })
+  })
+
+  describe('removeLocalClaudeCode', () => {
+    it('should remove local claude installation directory successfully', async () => {
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.remove).mockResolvedValue(undefined)
+
+      await removeLocalClaudeCode()
+
+      expect(fsOps.remove).toHaveBeenCalledWith(expect.stringContaining('/.claude/local'))
+    })
+
+    it('should handle removal when directory does not exist', async () => {
+      vi.mocked(fsOps.exists).mockReturnValue(false)
+
+      await removeLocalClaudeCode()
+
+      expect(fsOps.remove).not.toHaveBeenCalled()
+    })
+
+    it('should throw error when removal fails', async () => {
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.remove).mockRejectedValue(new Error('Permission denied'))
+
+      await expect(removeLocalClaudeCode()).rejects.toThrow('Permission denied')
     })
   })
 

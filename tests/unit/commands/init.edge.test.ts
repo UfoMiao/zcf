@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { init } from '../../../src/commands/init'
 import { i18n } from '../../../src/i18n'
 import { configureApiCompletely } from '../../../src/utils/config-operations'
-import { installClaudeCode, isClaudeCodeInstalled } from '../../../src/utils/installer'
+import { getInstallationStatus, installClaudeCode, isClaudeCodeInstalled } from '../../../src/utils/installer'
 import { buildMcpServerConfig } from '../../../src/utils/mcp'
 import { isTermux, isWindows } from '../../../src/utils/platform'
 import { resolveAiOutputLanguage } from '../../../src/utils/prompts'
@@ -23,6 +23,7 @@ vi.mock('inquirer', () => ({
 vi.mock('../../../src/utils/installer', () => ({
   isClaudeCodeInstalled: vi.fn(),
   installClaudeCode: vi.fn(),
+  getInstallationStatus: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/config', () => ({
@@ -118,6 +119,7 @@ const mockProcessExit = vi.spyOn(process, 'exit').mockImplementation(() => undef
 
 interface TestMocks {
   isClaudeCodeInstalled: any
+  getInstallationStatus: any
   installClaudeCode: any
   readZcfConfig: any
   resolveAiOutputLanguage: any
@@ -140,6 +142,7 @@ describe('init - Edge Cases', () => {
     // Setup mocks using top-level imports
     testMocks = {
       isClaudeCodeInstalled: isClaudeCodeInstalled as any,
+      getInstallationStatus: getInstallationStatus as any,
       installClaudeCode: installClaudeCode as any,
       readZcfConfig: readZcfConfig as any,
       resolveAiOutputLanguage: resolveAiOutputLanguage as any,
@@ -152,7 +155,11 @@ describe('init - Edge Cases', () => {
     }
 
     // Set default mock values
-    testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
+    testMocks.getInstallationStatus.mockResolvedValue({
+      hasGlobal: true,
+      hasLocal: false,
+      localPath: '/Users/test/.claude/local/claude',
+    })
     testMocks.readZcfConfig.mockReturnValue({})
     testMocks.resolveAiOutputLanguage.mockResolvedValue('en')
     testMocks.isTermux.mockReturnValue(false)
@@ -212,7 +219,11 @@ describe('init - Edge Cases', () => {
     })
 
     it('should handle user declining Claude Code installation', async () => {
-      testMocks.isClaudeCodeInstalled.mockResolvedValue(false)
+      testMocks.getInstallationStatus.mockResolvedValue({
+        hasGlobal: false,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       testMocks.inquirerPrompt
         .mockResolvedValueOnce({ lang: 'en' }) // language selection
         .mockResolvedValueOnce({ shouldInstall: false }) // decline installation
@@ -242,7 +253,11 @@ describe('init - Edge Cases', () => {
 
   describe('error handling edge cases', () => {
     it('should handle Claude Code installation failure gracefully', async () => {
-      testMocks.isClaudeCodeInstalled.mockResolvedValue(false)
+      testMocks.getInstallationStatus.mockResolvedValue({
+        hasGlobal: false,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
       testMocks.installClaudeCode.mockRejectedValue(
         new Error('Installation failed'),
       )
@@ -286,7 +301,11 @@ describe('init - Edge Cases', () => {
     })
 
     it('should auto-install Claude Code in skip-prompt mode when not installed', async () => {
-      testMocks.isClaudeCodeInstalled.mockResolvedValue(false)
+      testMocks.getInstallationStatus.mockResolvedValue({
+        hasGlobal: false,
+        hasLocal: false,
+        localPath: '/Users/test/.claude/local/claude',
+      })
 
       await init({
         skipPrompt: true,

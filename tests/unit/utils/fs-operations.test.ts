@@ -4,9 +4,12 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs'
+import process from 'node:process'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   copyDir,
@@ -15,7 +18,14 @@ import {
   ensureFileDir,
   exists,
   FileSystemError,
+  getStats,
+  isDirectory,
+  isExecutable,
+  isFile,
+  readDir,
   readFile,
+  remove,
+  removeFile,
   writeFile,
 } from '../../../src/utils/fs-operations'
 
@@ -255,6 +265,340 @@ describe('fs-operations utilities', () => {
 
       expect(() => copyDir('/source', '/dest')).toThrow(FileSystemError)
       expect(() => copyDir('/source', '/dest')).toThrow('Failed to read directory')
+    })
+
+    it('should throw FileSystemError when source does not exist', () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+
+      expect(() => copyDir('/source', '/dest')).toThrow(FileSystemError)
+      expect(() => copyDir('/source', '/dest')).toThrow('Source directory does not exist')
+    })
+
+    it('should skip files when overwrite is false and destination exists', () => {
+      const mockStats = { isDirectory: () => false, isFile: () => true }
+      vi.mocked(existsSync)
+        .mockReturnValueOnce(true) // source exists
+        .mockReturnValueOnce(false) // dest doesn't exist initially
+        .mockReturnValueOnce(true) // dest file exists during copy
+      vi.mocked(readdirSync).mockReturnValue(['file1.txt'] as any)
+      vi.mocked(statSync).mockReturnValue(mockStats as any)
+
+      copyDir('/source', '/dest', { overwrite: false })
+
+      expect(copyFileSync).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('readDir', () => {
+    it('should read directory contents', () => {
+      vi.mocked(readdirSync).mockReturnValue(['file1.txt', 'file2.txt'] as any)
+
+      const result = readDir('/test/dir')
+
+      expect(result).toEqual(['file1.txt', 'file2.txt'])
+      expect(readdirSync).toHaveBeenCalledWith('/test/dir')
+    })
+
+    it('should throw FileSystemError on read failure', () => {
+      vi.mocked(readdirSync).mockImplementation(() => {
+        throw new Error('Permission denied')
+      })
+
+      expect(() => readDir('/test/dir')).toThrow(FileSystemError)
+      expect(() => readDir('/test/dir')).toThrow('Failed to read directory')
+    })
+  })
+
+  describe('getStats', () => {
+    it('should return file stats', () => {
+      const mockStats = { isDirectory: () => false, isFile: () => true }
+      vi.mocked(statSync).mockReturnValue(mockStats as any)
+
+      const result = getStats('/test/file.txt')
+
+      expect(result).toBe(mockStats)
+      expect(statSync).toHaveBeenCalledWith('/test/file.txt')
+    })
+
+    it('should throw FileSystemError on stats failure', () => {
+      vi.mocked(statSync).mockImplementation(() => {
+        throw new Error('File not found')
+      })
+
+      expect(() => getStats('/test/file.txt')).toThrow(FileSystemError)
+      expect(() => getStats('/test/file.txt')).toThrow('Failed to get stats for')
+    })
+  })
+
+  describe('isDirectory', () => {
+    it('should return true for directory', () => {
+      const mockStats = { isDirectory: () => true }
+      vi.mocked(statSync).mockReturnValue(mockStats as any)
+
+      const result = isDirectory('/test/dir')
+
+      expect(result).toBe(true)
+    })
+
+    it('should return false for file', () => {
+      const mockStats = { isDirectory: () => false }
+      vi.mocked(statSync).mockReturnValue(mockStats as any)
+
+      const result = isDirectory('/test/file.txt')
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false on stats failure', () => {
+      vi.mocked(statSync).mockImplementation(() => {
+        throw new Error('File not found')
+      })
+
+      const result = isDirectory('/test/notfound')
+
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('isFile', () => {
+    it('should return true for file', () => {
+      const mockStats = { isFile: () => true }
+      vi.mocked(statSync).mockReturnValue(mockStats as any)
+
+      const result = isFile('/test/file.txt')
+
+      expect(result).toBe(true)
+    })
+
+    it('should return false for directory', () => {
+      const mockStats = { isFile: () => false }
+      vi.mocked(statSync).mockReturnValue(mockStats as any)
+
+      const result = isFile('/test/dir')
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false on stats failure', () => {
+      vi.mocked(statSync).mockImplementation(() => {
+        throw new Error('File not found')
+      })
+
+      const result = isFile('/test/notfound')
+
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('removeFile', () => {
+    it('should remove existing file', () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+
+      removeFile('/test/file.txt')
+
+      expect(unlinkSync).toHaveBeenCalledWith('/test/file.txt')
+    })
+
+    it('should not attempt to remove non-existent file', () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+
+      removeFile('/test/nonexistent.txt')
+
+      expect(unlinkSync).not.toHaveBeenCalled()
+    })
+
+    it('should throw FileSystemError on removal failure', () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(unlinkSync).mockImplementation(() => {
+        throw new Error('Permission denied')
+      })
+
+      expect(() => removeFile('/test/file.txt')).toThrow(FileSystemError)
+      expect(() => removeFile('/test/file.txt')).toThrow('Failed to remove file')
+    })
+  })
+
+  describe('isExecutable', () => {
+    beforeEach(() => {
+      // Reset process.platform mock for each test
+      vi.clearAllMocks()
+    })
+
+    it('should return false for non-existent file', async () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+
+      const result = await isExecutable('/test/nonexistent')
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false for directory', async () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({ isFile: () => false } as any)
+
+      const result = await isExecutable('/test/dir')
+
+      expect(result).toBe(false)
+    })
+
+    it('should check execute permission on Unix-like systems', async () => {
+      Object.defineProperty(process, 'platform', { value: 'linux', writable: true })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isFile: () => true,
+        mode: 0o755, // Execute permission set
+      } as any)
+
+      const result = await isExecutable('/test/executable')
+
+      expect(result).toBe(true)
+    })
+
+    it('should return false when no execute permission on Unix-like systems', async () => {
+      Object.defineProperty(process, 'platform', { value: 'darwin', writable: true })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isFile: () => true,
+        mode: 0o644, // No execute permission
+      } as any)
+
+      const result = await isExecutable('/test/notexecutable')
+
+      expect(result).toBe(false)
+    })
+
+    it('should check file extension on Windows', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', writable: true })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isFile: () => true,
+        mode: 0o644,
+      } as any)
+
+      const result = await isExecutable('/test/program.exe')
+
+      expect(result).toBe(true)
+    })
+
+    it('should return true for files without extension on Windows', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', writable: true })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isFile: () => true,
+        mode: 0o644,
+      } as any)
+
+      const result = await isExecutable('/test/program')
+
+      expect(result).toBe(true)
+    })
+
+    it('should return false for non-executable extensions on Windows', async () => {
+      Object.defineProperty(process, 'platform', { value: 'win32', writable: true })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isFile: () => true,
+        mode: 0o644,
+      } as any)
+
+      const result = await isExecutable('/test/document.txt')
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false on stats error', async () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockImplementation(() => {
+        throw new Error('Permission denied')
+      })
+
+      const result = await isExecutable('/test/file')
+
+      expect(result).toBe(false)
+    })
+  })
+
+  describe('remove', () => {
+    it('should do nothing for non-existent path', async () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+
+      await remove('/test/nonexistent')
+
+      expect(statSync).not.toHaveBeenCalled()
+    })
+
+    it('should remove file', async () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isDirectory: () => false,
+        isFile: () => true,
+      } as any)
+
+      await remove('/test/file.txt')
+
+      expect(unlinkSync).toHaveBeenCalledWith('/test/file.txt')
+    })
+
+    it('should remove empty directory', async () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isDirectory: () => true,
+        isFile: () => false,
+      } as any)
+      vi.mocked(readdirSync).mockReturnValue([])
+      vi.mocked(rmSync).mockImplementation(() => {})
+
+      await remove('/test/empty-dir')
+
+      expect(rmSync).toHaveBeenCalledWith('/test/empty-dir', { recursive: true, force: true })
+    })
+
+    it('should remove directory with contents recursively', async () => {
+      // Mock directory structure: /test/dir -> /test/dir/subdir -> /test/dir/file.txt
+      vi.mocked(existsSync)
+        .mockReturnValueOnce(true) // initial check
+        .mockReturnValueOnce(true) // subdir exists
+        .mockReturnValueOnce(true) // file exists
+
+      vi.mocked(statSync)
+        .mockReturnValueOnce({ isDirectory: () => true } as any) // /test/dir is directory
+        .mockReturnValueOnce({ isDirectory: () => true } as any) // subdir is directory
+        .mockReturnValueOnce({ isDirectory: () => false } as any) // file is not directory
+
+      vi.mocked(readdirSync)
+        .mockReturnValueOnce(['subdir', 'file.txt'] as any) // /test/dir contents
+        .mockReturnValueOnce([]) // subdir is empty
+
+      vi.mocked(rmSync).mockImplementation(() => {})
+
+      await remove('/test/dir')
+
+      expect(rmSync).toHaveBeenCalledTimes(2) // Once for subdir, once for main dir
+    })
+
+    it('should throw FileSystemError on directory removal failure', async () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockReturnValue({
+        isDirectory: () => true,
+        isFile: () => false,
+      } as any)
+      vi.mocked(readdirSync).mockReturnValue([])
+      vi.mocked(rmSync).mockImplementation(() => {
+        throw new Error('Permission denied')
+      })
+
+      await expect(remove('/test/dir')).rejects.toThrow(FileSystemError)
+      await expect(remove('/test/dir')).rejects.toThrow('Failed to remove')
+    })
+
+    it('should throw FileSystemError on general removal failure', async () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(statSync).mockImplementation(() => {
+        throw new Error('General error')
+      })
+
+      await expect(remove('/test/path')).rejects.toThrow(FileSystemError)
+      await expect(remove('/test/path')).rejects.toThrow('Failed to remove')
     })
   })
 })

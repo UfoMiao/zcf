@@ -3,12 +3,19 @@ import { existsSync } from 'node:fs'
 import { LEGACY_ZCF_CONFIG_FILE, ZCF_CONFIG_FILE } from '../constants'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 
+export interface ClaudeCodeInstallation {
+  type: 'global' | 'local'
+  path: string
+  configDir: string
+}
+
 export interface ZcfConfig {
   version: string
   preferredLang: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
   outputStyles?: string[]
   defaultOutputStyle?: string
+  claudeCodeInstallation?: ClaudeCodeInstallation
   lastUpdated: string
 }
 
@@ -47,12 +54,22 @@ export function updateZcfConfig(updates: Partial<ZcfConfig>): void {
     aiOutputLang: updates.aiOutputLang || existingConfig?.aiOutputLang,
     outputStyles: updates.outputStyles !== undefined ? updates.outputStyles : existingConfig?.outputStyles,
     defaultOutputStyle: updates.defaultOutputStyle !== undefined ? updates.defaultOutputStyle : existingConfig?.defaultOutputStyle,
+    claudeCodeInstallation: updates.claudeCodeInstallation !== undefined ? updates.claudeCodeInstallation : existingConfig?.claudeCodeInstallation,
     lastUpdated: new Date().toISOString(),
   }
   writeZcfConfig(newConfig)
 }
 
-export async function getZcfConfig(): Promise<ZcfConfig> {
+export function getZcfConfig(): ZcfConfig {
+  const config = readZcfConfig()
+  return config || {
+    version: '1.0.0',
+    preferredLang: 'en',
+    lastUpdated: new Date().toISOString(),
+  }
+}
+
+export async function getZcfConfigAsync(): Promise<ZcfConfig> {
   const config = await readZcfConfigAsync()
   return config || {
     version: '1.0.0',

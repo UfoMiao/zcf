@@ -12,6 +12,16 @@ vi.mock('../../../src/utils/installer', () => ({
   checkClaudeInstalled: vi.fn(),
   installClaudeCode: vi.fn(),
   isClaudeCodeInstalled: vi.fn(),
+  getInstallationStatus: vi.fn(),
+  removeLocalClaudeCode: vi.fn(),
+}))
+
+vi.mock('../../../src/utils/installation-manager', () => ({
+  handleMultipleInstallations: vi.fn(),
+}))
+
+vi.mock('../../../src/utils/version-checker', () => ({
+  checkClaudeCodeVersionAndPrompt: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/config', () => ({
@@ -104,6 +114,10 @@ vi.mock('node:fs', () => ({
 interface TestMocks {
   resolveAiOutputLanguage: any
   isClaudeCodeInstalled: any
+  installClaudeCode: any
+  getInstallationStatus: any
+  handleMultipleInstallations: any
+  checkClaudeCodeVersionAndPrompt: any
   copyConfigFiles: any
   applyAiLanguageDirective: any
   selectMcpServices: any
@@ -126,7 +140,9 @@ describe('init command', () => {
 
     // Setup common mocks
     const { resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
-    const { isClaudeCodeInstalled } = await import('../../../src/utils/installer')
+    const { isClaudeCodeInstalled, getInstallationStatus, installClaudeCode } = await import('../../../src/utils/installer')
+    const { handleMultipleInstallations } = await import('../../../src/utils/installation-manager')
+    const { checkClaudeCodeVersionAndPrompt } = await import('../../../src/utils/version-checker')
     const { copyConfigFiles, applyAiLanguageDirective } = await import('../../../src/utils/config')
     const { selectMcpServices } = await import('../../../src/utils/mcp-selector')
     const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
@@ -137,6 +153,10 @@ describe('init command', () => {
     testMocks = {
       resolveAiOutputLanguage: vi.mocked(resolveAiOutputLanguage),
       isClaudeCodeInstalled: vi.mocked(isClaudeCodeInstalled),
+      installClaudeCode: vi.mocked(installClaudeCode),
+      getInstallationStatus: vi.mocked(getInstallationStatus),
+      handleMultipleInstallations: vi.mocked(handleMultipleInstallations),
+      checkClaudeCodeVersionAndPrompt: vi.mocked(checkClaudeCodeVersionAndPrompt),
       copyConfigFiles: vi.mocked(copyConfigFiles),
       applyAiLanguageDirective: vi.mocked(applyAiLanguageDirective),
       selectMcpServices: vi.mocked(selectMcpServices),
@@ -162,7 +182,11 @@ describe('init command', () => {
         const { init } = await import('../../../src/commands/init')
 
         // Setup mocks for minimal flow
-        testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
         testMocks.existsSync.mockReturnValue(false)
         testMocks.readZcfConfig.mockReturnValue({})
         testMocks.inquirerPrompt.mockResolvedValueOnce({ lang: 'zh-CN' })
@@ -182,7 +206,11 @@ describe('init command', () => {
       it('should handle options correctly', async () => {
         const { init } = await import('../../../src/commands/init')
 
-        testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
         testMocks.existsSync.mockReturnValue(false)
         testMocks.readZcfConfig.mockReturnValue({})
         testMocks.resolveAiOutputLanguage.mockResolvedValue('english')
@@ -201,9 +229,12 @@ describe('init command', () => {
     describe('claude Code installation', () => {
       it('should handle Claude Code not installed', async () => {
         const { init } = await import('../../../src/commands/init')
-        const { installClaudeCode } = await import('../../../src/utils/installer')
 
-        testMocks.isClaudeCodeInstalled.mockResolvedValue(false)
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: false,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
         testMocks.readZcfConfig.mockReturnValue({})
         testMocks.existsSync.mockReturnValue(false)
         testMocks.inquirerPrompt
@@ -214,12 +245,14 @@ describe('init command', () => {
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
         testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
-        vi.mocked(installClaudeCode).mockResolvedValue(undefined)
+        testMocks.installClaudeCode.mockResolvedValue(undefined)
+        testMocks.handleMultipleInstallations.mockResolvedValue('none')
+        testMocks.checkClaudeCodeVersionAndPrompt.mockResolvedValue(undefined)
 
         await init({ skipBanner: true })
 
-        expect(testMocks.isClaudeCodeInstalled).toHaveBeenCalled()
-        expect(installClaudeCode).toHaveBeenCalled()
+        expect(testMocks.getInstallationStatus).toHaveBeenCalled()
+        expect(testMocks.installClaudeCode).toHaveBeenCalled()
       })
     })
 
@@ -227,7 +260,11 @@ describe('init command', () => {
       it('should handle existing config', async () => {
         const { init } = await import('../../../src/commands/init')
 
-        testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
         testMocks.readZcfConfig.mockReturnValue({})
         testMocks.existsSync.mockReturnValue(true)
         testMocks.inquirerPrompt
@@ -246,23 +283,37 @@ describe('init command', () => {
         const { init } = await import('../../../src/commands/init')
 
         // Setup all mocks for successful flow
-        testMocks.isClaudeCodeInstalled.mockResolvedValue(true)
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
         testMocks.readZcfConfig.mockReturnValue({})
-        testMocks.existsSync.mockReturnValue(false)
+        testMocks.existsSync.mockReturnValue(false) // No existing config, so action will be 'new'
+        // Mock SETTINGS_FILE path specifically
+        testMocks.existsSync.mockImplementation((path: string) => {
+          // If it's checking for SETTINGS_FILE, return false to trigger new install flow
+          if (path.includes('settings.json')) {
+            return false
+          }
+          return false
+        })
         testMocks.inquirerPrompt
           .mockResolvedValueOnce({ lang: 'zh-CN' })
           .mockResolvedValueOnce({ shouldConfigureMcp: false })
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
-        testMocks.copyConfigFiles.mockResolvedValue(undefined)
-        testMocks.applyAiLanguageDirective.mockResolvedValue(undefined)
+        testMocks.copyConfigFiles.mockReturnValue(undefined)
+        testMocks.applyAiLanguageDirective.mockReturnValue(undefined)
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
         testMocks.configureOutputStyle.mockResolvedValue(undefined)
-        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockReturnValue(undefined)
+        testMocks.handleMultipleInstallations.mockResolvedValue('global')
+        testMocks.checkClaudeCodeVersionAndPrompt.mockResolvedValue(undefined)
 
         await init({ skipBanner: true })
 
         expect(testMocks.inquirerPrompt).toHaveBeenCalled()
-        expect(testMocks.isClaudeCodeInstalled).toHaveBeenCalled()
+        expect(testMocks.getInstallationStatus).toHaveBeenCalled()
         expect(testMocks.copyConfigFiles).toHaveBeenCalled()
         expect(testMocks.applyAiLanguageDirective).toHaveBeenCalled()
         expect(testMocks.updateZcfConfig).toHaveBeenCalled()

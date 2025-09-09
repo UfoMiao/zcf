@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "pnpm tsx .claude/hooks/eslint-hook.ts"
+            "command": "cd $(git rev-parse --show-toplevel) && pnpm tsx .claude/hooks/eslint-hook.ts"
           }
         ]
       }

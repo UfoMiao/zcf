@@ -8,5 +8,21 @@
   "termuxEnvironmentInfo": "Termux environment provides Node.js and npm through pkg manager",
   "termuxInstallHint": "In Termux, please run first: pkg install nodejs or pkg install nodejs-lts",
   "windowsDetected": "Windows detected, will configure compatible format",
-  "termuxPathInfo": "Termux environment path prefix: {path}"
+  "termuxPathInfo": "Termux environment path prefix: {path}",
+  "multipleInstallationsDetected": "Multiple Claude Code installations detected",
+  "chooseInstallationMethod": "Please choose the installation method to use:",
+  "chooseGlobal": "Use Global Installation (Recommended)",
+  "chooseLocal": "Use Local Installation (Project-specific)",
+  "globalInstallation": "Global Installation",
+  "localInstallation": "Local Installation",
+  "available": "available",
+  "removingLocalInstallation": "Removing local installation",
+  "localInstallationRemoved": "Local installation removed",
+  "usingLocalInstallation": "Using local installation",
+  "failedToRemoveLocalInstallation": "Failed to remove local installation",
+  "failedToSaveInstallationConfig": "Failed to save installation config",
+  "onlyLocalInstallationDetected": "Only local installation detected",
+  "notInstalled": "not installed",
+  "installingGlobalClaudeCode": "Installing global Claude Code",
+  "globalInstallationCompleted": "Global installation completed"
 }
