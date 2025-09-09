@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import dayjs from 'dayjs'
 import { dirname, join } from 'pathe'
 import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, SETTINGS_FILE } from '../constants'
+import { addCompletedOnboarding } from './claude-config'
 import {
   copyDir,
   copyFile,
@@ -13,7 +14,6 @@ import {
   writeFile,
 } from './fs-operations'
 import { readJsonConfig, writeJsonConfig } from './json-config'
-import { addCompletedOnboarding } from './mcp'
 import { deepMerge } from './object-utils'
 import { mergeAndCleanPermissions } from './permission-cleaner'
 

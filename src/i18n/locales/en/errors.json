@@ -16,5 +16,7 @@
   "invalidApiKeyConfig": "Invalid ANTHROPIC_API_KEY: expected string",
   "invalidAuthTokenConfig": "Invalid ANTHROPIC_AUTH_TOKEN: expected string",
   "invalidPermissionsConfig": "Invalid permissions configuration: expected object",
-  "invalidPermissionsAllow": "Invalid permissions.allow: expected array"
+  "invalidPermissionsAllow": "Invalid permissions.allow: expected array",
+  "generalError": "Error",
+  "stackTrace": "Stack"
 }

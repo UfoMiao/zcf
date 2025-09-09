@@ -26,7 +26,7 @@ vi.mock('../../../src/utils/config-operations', () => ({
   modifyApiConfigPartially: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/mcp', () => ({
+vi.mock('../../../src/utils/claude-config', () => ({
   backupMcpConfig: vi.fn(),
   buildMcpServerConfig: vi.fn(),
   fixWindowsMcpConfig: vi.fn(),
@@ -144,7 +144,7 @@ describe('features utilities', () => {
     it('should configure MCP servers', async () => {
       const { configureMcpFeature } = await import('../../../src/utils/features')
       const { selectMcpServices } = await import('../../../src/utils/mcp-selector')
-      const { readMcpConfig, writeMcpConfig, mergeMcpServers } = await import('../../../src/utils/mcp')
+      const { readMcpConfig, writeMcpConfig, mergeMcpServers } = await import('../../../src/utils/claude-config')
 
       vi.mocked(selectMcpServices).mockResolvedValue(['fs'])
       vi.mocked(readMcpConfig).mockReturnValue({ mcpServers: {} })

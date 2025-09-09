@@ -9,6 +9,15 @@ import { changeLanguage, ensureI18nInitialized, i18n } from '../i18n'
 import { setupCcrConfiguration } from './ccr/config'
 import { installCcr, isCcrInstalled } from './ccr/installer'
 import {
+  addCompletedOnboarding,
+  backupMcpConfig,
+  buildMcpServerConfig,
+  fixWindowsMcpConfig,
+  mergeMcpServers,
+  readMcpConfig,
+  writeMcpConfig,
+} from './claude-config'
+import {
   applyAiLanguageDirective,
   configureApi,
   getExistingApiConfig,
@@ -17,15 +26,6 @@ import {
   updateDefaultModel,
 } from './config'
 import { modifyApiConfigPartially } from './config-operations'
-import {
-  addCompletedOnboarding,
-  backupMcpConfig,
-  buildMcpServerConfig,
-  fixWindowsMcpConfig,
-  mergeMcpServers,
-  readMcpConfig,
-  writeMcpConfig,
-} from './mcp'
 import { selectMcpServices } from './mcp-selector'
 import { configureOutputStyle } from './output-style'
 import { isWindows } from './platform'

@@ -1,6 +1,6 @@
 import process from 'node:process'
 import ansis from 'ansis'
-import { i18n } from '../i18n'
+import { ensureI18nInitialized, i18n } from '../i18n'
 
 /**
  * Handle ExitPromptError gracefully
@@ -18,11 +18,12 @@ export function handleExitPromptError(error: unknown): boolean {
  * Handle general errors with proper formatting
  */
 export function handleGeneralError(error: unknown): void {
-  console.error(ansis.red('Error:'), error)
+  ensureI18nInitialized()
+  console.error(ansis.red(`${i18n.t('errors:generalError')}:`), error)
 
   // Log error details for debugging
   if (error instanceof Error) {
-    console.error(ansis.gray(`Stack: ${error.stack}`))
+    console.error(ansis.gray(`${i18n.t('errors:stackTrace')}: ${error.stack}`))
   }
 
   process.exit(1)

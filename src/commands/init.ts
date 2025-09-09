@@ -12,6 +12,15 @@ import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
 import { installCcr, isCcrInstalled } from '../utils/ccr/installer'
+import {
+  addCompletedOnboarding,
+  backupMcpConfig,
+  buildMcpServerConfig,
+  fixWindowsMcpConfig,
+  mergeMcpServers,
+  readMcpConfig,
+  writeMcpConfig,
+} from '../utils/claude-config'
 import { installCometixLine, isCometixLineInstalled } from '../utils/cometix/installer'
 import {
   applyAiLanguageDirective,
@@ -25,15 +34,6 @@ import { configureApiCompletely, modifyApiConfigPartially } from '../utils/confi
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import { handleMultipleInstallations } from '../utils/installation-manager'
 import { getInstallationStatus, installClaudeCode } from '../utils/installer'
-import {
-  addCompletedOnboarding,
-  backupMcpConfig,
-  buildMcpServerConfig,
-  fixWindowsMcpConfig,
-  mergeMcpServers,
-  readMcpConfig,
-  writeMcpConfig,
-} from '../utils/mcp'
 import { selectMcpServices } from '../utils/mcp-selector'
 import { configureOutputStyle } from '../utils/output-style'
 import { isTermux, isWindows } from '../utils/platform'

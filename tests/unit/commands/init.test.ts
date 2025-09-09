@@ -44,7 +44,7 @@ vi.mock('../../../src/utils/prompts', () => ({
   resolveAiOutputLanguage: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/mcp', () => ({
+vi.mock('../../../src/utils/claude-config', () => ({
   configureMcpServers: vi.fn(),
   addCompletedOnboarding: vi.fn(),
   backupMcpConfig: vi.fn(),

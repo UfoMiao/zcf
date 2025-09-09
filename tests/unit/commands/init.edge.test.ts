@@ -5,9 +5,9 @@ import inquirer from 'inquirer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { init } from '../../../src/commands/init'
 import { i18n } from '../../../src/i18n'
+import { buildMcpServerConfig } from '../../../src/utils/claude-config'
 import { configureApiCompletely } from '../../../src/utils/config-operations'
 import { getInstallationStatus, installClaudeCode, isClaudeCodeInstalled } from '../../../src/utils/installer'
-import { buildMcpServerConfig } from '../../../src/utils/mcp'
 import { isTermux, isWindows } from '../../../src/utils/platform'
 import { resolveAiOutputLanguage } from '../../../src/utils/prompts'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
@@ -44,7 +44,7 @@ vi.mock('../../../src/utils/prompts', () => ({
   resolveAiOutputLanguage: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/mcp', () => ({
+vi.mock('../../../src/utils/claude-config', () => ({
   readMcpConfig: vi.fn(),
   writeMcpConfig: vi.fn(),
   mergeMcpServers: vi.fn(),

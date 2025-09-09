@@ -25,7 +25,7 @@ vi.mock('inquirer')
 vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/config')
 vi.mock('../../../src/utils/ccr/presets')
-vi.mock('../../../src/utils/mcp')
+vi.mock('../../../src/utils/claude-config')
 // Use real i18n system for better integration testing
 vi.mock('../../../src/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/i18n')>()

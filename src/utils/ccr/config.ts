@@ -10,9 +10,9 @@ import inquirer from 'inquirer'
 import { join } from 'pathe'
 import { SETTINGS_FILE } from '../../constants'
 import { ensureI18nInitialized, i18n } from '../../i18n'
+import { addCompletedOnboarding } from '../claude-config'
 import { backupExistingConfig } from '../config'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
-import { addCompletedOnboarding } from '../mcp'
 import { fetchProviderPresets } from './presets'
 
 const execAsync = promisify(exec)
@@ -307,6 +307,19 @@ export async function setupCcrConfiguration(): Promise<boolean> {
         console.log(ansis.yellow(`${i18n.t('ccr:keepingExistingConfig')}`))
         // Still need to configure proxy in settings.json
         await configureCcrProxy(existingConfig)
+
+        // Manage API key approval status for existing CCR configuration
+        try {
+          const { manageApiKeyApproval } = await import('../claude-config')
+          const apiKey = existingConfig.APIKEY || 'sk-zcf-x-ccr'
+          manageApiKeyApproval(apiKey)
+          console.log(ansis.green(`✔ ${i18n.t('ccr:apiKeyApprovalSuccess')}`))
+        }
+        catch (error) {
+          console.error(ansis.red(`${i18n.t('ccr:apiKeyApprovalFailed')}:`), error)
+          // Don't fail the entire process for this
+        }
+
         return true
       }
 
@@ -352,6 +365,18 @@ export async function setupCcrConfiguration(): Promise<boolean> {
     }
     catch (error) {
       console.error(ansis.red(i18n.t('errors:failedToSetOnboarding')), error)
+    }
+
+    // Manage API key approval status for CCR API key
+    try {
+      const { manageApiKeyApproval } = await import('../claude-config')
+      const apiKey = config.APIKEY || 'sk-zcf-x-ccr'
+      manageApiKeyApproval(apiKey)
+      console.log(ansis.green(`✔ ${i18n.t('ccr:apiKeyApprovalSuccess')}`))
+    }
+    catch (error) {
+      console.error(ansis.red(`${i18n.t('ccr:apiKeyApprovalFailed')}:`), error)
+      // Don't fail the entire process for this
     }
 
     return true

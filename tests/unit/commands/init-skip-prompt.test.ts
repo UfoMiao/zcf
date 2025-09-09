@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { init } from '../../../src/commands/init'
 import { backupCcrConfig, configureCcrProxy, readCcrConfig, writeCcrConfig } from '../../../src/utils/ccr/config'
 import { installCcr, isCcrInstalled } from '../../../src/utils/ccr/installer'
+import { readMcpConfig, writeMcpConfig } from '../../../src/utils/claude-config'
 import { installCometixLine, isCometixLineInstalled } from '../../../src/utils/cometix/installer'
 import { applyAiLanguageDirective, backupExistingConfig, configureApi, copyConfigFiles } from '../../../src/utils/config'
 import { getInstallationStatus, installClaudeCode } from '../../../src/utils/installer'
-import { readMcpConfig, writeMcpConfig } from '../../../src/utils/mcp'
 import { configureOutputStyle } from '../../../src/utils/output-style'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
@@ -48,7 +48,7 @@ vi.mock('../../../src/utils/output-style', () => ({
   configureOutputStyle: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/mcp', () => ({
+vi.mock('../../../src/utils/claude-config', () => ({
   addCompletedOnboarding: vi.fn(),
   backupMcpConfig: vi.fn(),
   buildMcpServerConfig: vi.fn(),

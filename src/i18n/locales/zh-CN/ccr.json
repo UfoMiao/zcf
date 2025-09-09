@@ -59,5 +59,7 @@
   "startingCcrUi": "正在启动 CCR UI...",
   "stoppingCcr": "正在停止 CCR...",
   "uninstalledIncorrectPackage": "成功卸载错误的包",
-  "useClaudeCommand": "请使用 claude 命令启动 Claude Code（而非 ccr code）"
+  "useClaudeCommand": "请使用 claude 命令启动 Claude Code（而非 ccr code）",
+  "apiKeyApprovalSuccess": "CCR API密钥批准状态管理成功",
+  "apiKeyApprovalFailed": "CCR API密钥批准状态管理失败"
 }

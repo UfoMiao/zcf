@@ -15,5 +15,6 @@
   "services.mcp-deepwiki.description": "Query GitHub repository documentation and examples",
   "services.mcp-deepwiki.name": "DeepWiki",
   "services.spec-workflow.description": "Structured feature development workflow, systematic approach from requirements to implementation",
-  "services.spec-workflow.name": "Spec Workflow"
+  "services.spec-workflow.name": "Spec Workflow",
+  "apiKeyApprovalFailed": "Failed to manage API key approval status"
 }

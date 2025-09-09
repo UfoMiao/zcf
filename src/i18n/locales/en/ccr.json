@@ -59,5 +59,7 @@
   "startingCcrUi": "Starting CCR UI...",
   "stoppingCcr": "Stopping CCR...",
   "uninstalledIncorrectPackage": "Successfully uninstalled incorrect package",
-  "useClaudeCommand": "Please use the claude command to start Claude Code (not ccr code)"
+  "useClaudeCommand": "Please use the claude command to start Claude Code (not ccr code)",
+  "apiKeyApprovalSuccess": "CCR API key approval status managed successfully",
+  "apiKeyApprovalFailed": "Failed to manage CCR API key approval status"
 }

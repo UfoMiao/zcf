@@ -116,7 +116,7 @@ Based on file changes, determine which documentation sections need updates:
    - Environment variables
    - Settings options
 
-6. **MCP Services** (`src/constants.ts`, `src/utils/mcp.ts`)
+6. **MCP Services** (`src/constants.ts`, `src/utils/claude-config.ts`)
    - Available MCP services
    - Service descriptions
    - Configuration requirements

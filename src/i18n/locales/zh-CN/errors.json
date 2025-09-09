@@ -16,5 +16,7 @@
   "invalidApiKeyConfig": "无效的 ANTHROPIC_API_KEY：期望字符串类型",
   "invalidAuthTokenConfig": "无效的 ANTHROPIC_AUTH_TOKEN：期望字符串类型",
   "invalidPermissionsConfig": "无效的权限配置：期望对象类型",
-  "invalidPermissionsAllow": "无效的 permissions.allow：期望数组类型"
+  "invalidPermissionsAllow": "无效的 permissions.allow：期望数组类型",
+  "generalError": "错误",
+  "stackTrace": "堆栈跟踪"
 }

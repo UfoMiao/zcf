@@ -20,4 +20,8 @@ export interface McpServerConfig {
 export interface ClaudeConfiguration {
   mcpServers: Record<string, McpServerConfig>
   hasCompletedOnboarding?: boolean
+  customApiKeyResponses?: {
+    approved: string[]
+    rejected: string[]
+  }
 }

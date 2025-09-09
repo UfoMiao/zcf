@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getMcpService } from '../../../src/config/mcp-services'
 import { ClAUDE_CONFIG_FILE } from '../../../src/constants'
-import * as jsonConfig from '../../../src/utils/json-config'
 import {
   backupMcpConfig,
   buildMcpServerConfig,
@@ -10,7 +9,8 @@ import {
   mergeMcpServers,
   readMcpConfig,
   writeMcpConfig,
-} from '../../../src/utils/mcp'
+} from '../../../src/utils/claude-config'
+import * as jsonConfig from '../../../src/utils/json-config'
 import * as objectUtils from '../../../src/utils/object-utils'
 import * as platform from '../../../src/utils/platform'
 
