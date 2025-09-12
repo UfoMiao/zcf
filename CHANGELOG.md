@@ -1,5 +1,43 @@
 # Changelog
 
+## 2.12.12
+
+### Patch Changes
+
+- ## New Features
+  - Add comprehensive WSL environment support with detection and configuration
+  - Support for WSL (Windows Subsystem for Linux) installation and setup
+  - Enhanced platform detection for improved cross-platform compatibility
+
+  ## 新功能
+  - 添加全面的 WSL 环境支持，包含检测和配置功能
+  - 支持 WSL (Windows 子系统 Linux) 安装和设置
+  - 增强平台检测，提升跨平台兼容性
+
+  ## Documentation
+  - Update WSL support documentation and platform compatibility guide
+  - Add comprehensive Japanese README translation
+  - Update automated release command documentation with detailed examples
+  - Improve WSL environment setup instructions
+
+  ## 文档更新
+  - 更新 WSL 支持文档和平台兼容性指南
+  - 添加完整的日语 README 翻译
+  - 更新自动化发版命令文档，提供详细示例
+  - 改进 WSL 环境设置说明
+
+  ## Optimization
+  - Improve platform.ts with enhanced WSL detection logic
+  - Add comprehensive test coverage for platform detection
+  - Optimize installation process for WSL environments
+  - Enhance internationalization support for installation messages
+
+  ## 优化
+  - 改进 platform.ts，增强 WSL 检测逻辑
+  - 为平台检测添加全面测试覆盖
+  - 优化 WSL 环境的安装流程
+  - 增强安装消息的国际化支持
+
 ## 2.12.11
 
 ### Patch Changes
