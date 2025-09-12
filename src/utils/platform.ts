@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { platform } from 'node:os'
 import process from 'node:process'
 import { exec } from 'tinyexec'
@@ -24,6 +24,84 @@ export function getTermuxPrefix(): string {
 
 export function isWindows(): boolean {
   return getPlatform() === 'windows'
+}
+
+export interface WSLInfo {
+  isWSL: true
+  distro: string | null
+  version: string | null
+}
+
+export function isWSL(): boolean {
+  // Check WSL_DISTRO_NAME environment variable (most reliable method)
+  if (process.env.WSL_DISTRO_NAME) {
+    return true
+  }
+
+  // Check /proc/version for Microsoft or WSL indicators
+  if (existsSync('/proc/version')) {
+    try {
+      const version = readFileSync('/proc/version', 'utf8')
+      if (version.includes('Microsoft') || version.includes('WSL')) {
+        return true
+      }
+    }
+    catch {
+      // Ignore read errors
+    }
+  }
+
+  // Check for Windows mount points as fallback
+  if (existsSync('/mnt/c')) {
+    return true
+  }
+
+  return false
+}
+
+export function getWSLDistro(): string | null {
+  // Priority 1: WSL_DISTRO_NAME environment variable
+  if (process.env.WSL_DISTRO_NAME) {
+    return process.env.WSL_DISTRO_NAME
+  }
+
+  // Priority 2: Read from /etc/os-release
+  if (existsSync('/etc/os-release')) {
+    try {
+      const osRelease = readFileSync('/etc/os-release', 'utf8')
+      const nameMatch = osRelease.match(/^PRETTY_NAME="(.+)"$/m)
+      if (nameMatch) {
+        return nameMatch[1]
+      }
+    }
+    catch {
+      // Ignore read errors
+    }
+  }
+
+  return null
+}
+
+export function getWSLInfo(): WSLInfo | null {
+  if (!isWSL()) {
+    return null
+  }
+
+  let version: string | null = null
+  if (existsSync('/proc/version')) {
+    try {
+      version = readFileSync('/proc/version', 'utf8').trim()
+    }
+    catch {
+      // Ignore read errors
+    }
+  }
+
+  return {
+    isWSL: true,
+    distro: getWSLDistro(),
+    version,
+  }
 }
 
 export function getMcpCommand(): string[] {

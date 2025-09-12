@@ -103,8 +103,8 @@ importers:
   tmp-npm-test:
     dependencies:
       zcf:
-        specifier: file:/Users/miaoda/Documents/code/zcf/zcf-2.12.10.tgz
-        version: file:zcf-2.12.10.tgz(@types/node@22.18.0)(typescript@5.9.2)
+        specifier: file:/Users/miaoda/Documents/code/zcf/zcf-2.12.11.tgz
+        version: file:zcf-2.12.11.tgz(@types/node@22.18.0)(typescript@5.9.2)
 
 packages:
 
@@ -3389,9 +3389,9 @@ packages:
     resolution: {integrity: sha512-cYVsTjKl8b+FrnidjibDWskAv7UKOfcwaVZdp/it9n1s9fU3IkgDbhdIRKCW4JDsAlECJY0ytoVPT3sK6kideA==}
     engines: {node: '>=18'}
 
-  zcf@file:zcf-2.12.10.tgz:
-    resolution: {integrity: sha512-utRnz3FGeVhBkr5trfvJ1ZevL7NMdnLNUHmAkK9htoQl+EmRj1oTA/6EkQzBR2MW7fAbVBkRX1rCilmPgCcqMQ==, tarball: file:zcf-2.12.10.tgz}
-    version: 2.12.10
+  zcf@file:zcf-2.12.11.tgz:
+    resolution: {integrity: sha512-hZJpmbGjwbLLkv3knd3Gb3EN7olLid8SThTnscwubz4wz6CWFO1rdMxsKDfKUkb889aTUCDnbwf+lKJV74kSBw==, tarball: file:zcf-2.12.11.tgz}
+    version: 2.12.11
     hasBin: true
 
   zwitch@2.0.4:
@@ -6959,7 +6959,7 @@ snapshots:
 
   yoctocolors-cjs@2.1.2: {}
 
-  zcf@file:zcf-2.12.10.tgz(@types/node@22.18.0)(typescript@5.9.2):
+  zcf@file:zcf-2.12.11.tgz(@types/node@22.18.0)(typescript@5.9.2):
     dependencies:
       '@types/semver': 7.7.0
       ansis: 4.1.0

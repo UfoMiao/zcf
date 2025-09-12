@@ -24,5 +24,9 @@
   "onlyLocalInstallationDetected": "检测到仅有本地安装",
   "notInstalled": "未安装",
   "installingGlobalClaudeCode": "正在安装全局 Claude Code",
-  "globalInstallationCompleted": "全局安装完成"
+  "globalInstallationCompleted": "全局安装完成",
+  "wslDetected": "检测到 WSL 环境 ({distro})",
+  "wslDetectedGeneric": "检测到 WSL 环境",
+  "wslPathInfo": "配置文件位置：{path}",
+  "wslInstallSuccess": "Claude Code 已成功安装在 WSL 环境中"
 }

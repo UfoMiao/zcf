@@ -5,7 +5,7 @@ import { exec } from 'tinyexec'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { updateClaudeCode } from './auto-updater'
 import { exists, isExecutable, remove } from './fs-operations'
-import { commandExists, getTermuxPrefix, isTermux } from './platform'
+import { commandExists, getTermuxPrefix, getWSLInfo, isTermux, isWSL } from './platform'
 
 export async function isClaudeCodeInstalled(): Promise<boolean> {
   return await commandExists('claude')
@@ -32,6 +32,18 @@ export async function installClaudeCode(): Promise<void> {
     console.log(ansis.gray(`npm: ${termuxPrefix}/bin/npm`))
   }
 
+  // Check if running in WSL
+  if (isWSL()) {
+    const wslInfo = getWSLInfo()
+    if (wslInfo?.distro) {
+      console.log(ansis.yellow(`ℹ ${i18n.t('installation:wslDetected', { distro: wslInfo.distro })}`))
+    }
+    else {
+      console.log(ansis.yellow(`ℹ ${i18n.t('installation:wslDetectedGeneric')}`))
+    }
+    console.log(ansis.gray(i18n.t('installation:wslPathInfo', { path: `${homedir()}/.claude/` })))
+  }
+
   console.log(i18n.t('installation:installing'))
 
   try {
@@ -43,6 +55,11 @@ export async function installClaudeCode(): Promise<void> {
     // Additional hint for Termux users
     if (isTermux()) {
       console.log(ansis.gray(`\nClaude Code installed to: ${getTermuxPrefix()}/bin/claude`))
+    }
+
+    // Additional hint for WSL users
+    if (isWSL()) {
+      console.log(ansis.gray(`\n${i18n.t('installation:wslInstallSuccess')}`))
     }
   }
   catch (error) {

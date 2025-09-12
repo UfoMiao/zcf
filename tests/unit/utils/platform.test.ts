@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { platform } from 'node:os'
 import { exec } from 'tinyexec'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,8 +7,11 @@ import {
   getMcpCommand,
   getPlatform,
   getTermuxPrefix,
+  getWSLDistro,
+  getWSLInfo,
   isTermux,
   isWindows,
+  isWSL,
 } from '../../../src/utils/platform'
 
 vi.mock('node:os')
@@ -20,6 +23,7 @@ describe('platform utilities', () => {
     vi.clearAllMocks()
     delete process.env.PREFIX
     delete process.env.TERMUX_VERSION
+    delete process.env.WSL_DISTRO_NAME
   })
 
   afterEach(() => {
@@ -103,6 +107,112 @@ describe('platform utilities', () => {
     it('should return npx command on non-Windows', () => {
       vi.mocked(platform).mockReturnValue('darwin')
       expect(getMcpCommand()).toEqual(['npx'])
+    })
+  })
+
+  describe('isWSL', () => {
+    it('should return true when WSL_DISTRO_NAME environment variable is set', () => {
+      process.env.WSL_DISTRO_NAME = 'Ubuntu'
+      expect(isWSL()).toBe(true)
+    })
+
+    it('should return true when /proc/version contains Microsoft', () => {
+      vi.mocked(existsSync).mockImplementation(path => path === '/proc/version')
+      vi.mocked(readFileSync).mockReturnValue('Linux version 5.4.0-Microsoft-standard #1 SMP Wed Nov 23 01:01:46 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux')
+      expect(isWSL()).toBe(true)
+    })
+
+    it('should return true when /proc/version contains WSL', () => {
+      vi.mocked(existsSync).mockImplementation(path => path === '/proc/version')
+      vi.mocked(readFileSync).mockReturnValue('Linux version 5.15.90.1-WSL2-standard #1 SMP Fri Jan 27 02:56:13 UTC 2023 x86_64 x86_64 x86_64 GNU/Linux')
+      expect(isWSL()).toBe(true)
+    })
+
+    it('should return true when /mnt/c exists (Windows mount)', () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        if (path === '/proc/version')
+          return false
+        if (path === '/mnt/c')
+          return true
+        return false
+      })
+      expect(isWSL()).toBe(true)
+    })
+
+    it('should return false when not in WSL environment', () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+      vi.mocked(readFileSync).mockReturnValue('Linux version 5.15.0-generic #72-Ubuntu SMP Fri Aug 5 10:38:12 UTC 2022 x86_64 x86_64 x86_64 GNU/Linux')
+      expect(isWSL()).toBe(false)
+    })
+
+    it('should handle /proc/version read errors gracefully', () => {
+      vi.mocked(existsSync).mockImplementation(path => path === '/proc/version')
+      vi.mocked(readFileSync).mockImplementation(() => {
+        throw new Error('Permission denied')
+      })
+      expect(isWSL()).toBe(false)
+    })
+  })
+
+  describe('getWSLDistro', () => {
+    it('should return distro name from WSL_DISTRO_NAME environment variable', () => {
+      process.env.WSL_DISTRO_NAME = 'Ubuntu-22.04'
+      expect(getWSLDistro()).toBe('Ubuntu-22.04')
+    })
+
+    it('should return distro name from /etc/os-release when WSL_DISTRO_NAME not set', () => {
+      vi.mocked(existsSync).mockImplementation(path => path === '/etc/os-release')
+      vi.mocked(readFileSync).mockReturnValue(`PRETTY_NAME="Ubuntu 22.04.3 LTS"
+NAME="Ubuntu"
+VERSION_ID="22.04"
+VERSION="22.04.3 LTS (Jammy Jellyfish)"
+ID=ubuntu`)
+      expect(getWSLDistro()).toBe('Ubuntu 22.04.3 LTS')
+    })
+
+    it('should return null when no distro information available', () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+      expect(getWSLDistro()).toBe(null)
+    })
+
+    it('should handle /etc/os-release read errors gracefully', () => {
+      vi.mocked(existsSync).mockImplementation(path => path === '/etc/os-release')
+      vi.mocked(readFileSync).mockImplementation(() => {
+        throw new Error('File not found')
+      })
+      expect(getWSLDistro()).toBe(null)
+    })
+  })
+
+  describe('getWSLInfo', () => {
+    it('should return complete WSL info when in WSL environment', () => {
+      process.env.WSL_DISTRO_NAME = 'Ubuntu-22.04'
+      vi.mocked(existsSync).mockImplementation((path) => {
+        if (path === '/proc/version')
+          return true
+        if (path === '/etc/os-release')
+          return true
+        return false
+      })
+      vi.mocked(readFileSync).mockImplementation((path) => {
+        if (path === '/proc/version')
+          return 'Linux version 5.4.0-Microsoft-standard'
+        if (path === '/etc/os-release')
+          return 'PRETTY_NAME="Ubuntu 22.04.3 LTS"'
+        return ''
+      })
+
+      const info = getWSLInfo()
+      expect(info).toEqual({
+        isWSL: true,
+        distro: 'Ubuntu-22.04',
+        version: 'Linux version 5.4.0-Microsoft-standard',
+      })
+    })
+
+    it('should return null when not in WSL environment', () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+      expect(getWSLInfo()).toBe(null)
     })
   })
 
