@@ -288,7 +288,7 @@ After configuration:
 
 - Auto-detects Claude Code installation status
 - Uses npm for automatic installation (ensures compatibility)
-- Cross-platform support (Windows/macOS/Linux/Termux)
+- Cross-platform support (Windows/macOS/Linux/WSL/Termux)
 - Automatic MCP service configuration
 - Smart configuration merging and partial modification support (v2.0 new)
 - Enhanced command detection mechanism (v2.1 new)
@@ -646,6 +646,17 @@ ZCF fully supports Windows platform:
 - **Zero-config**: Windows users don't need any extra steps, same experience as macOS/Linux
 
 If you encounter MCP connection issues on Windows, running `npx zcf` will automatically fix the configuration format.
+
+#### WSL Support (v2.12.12+ new)
+
+ZCF now provides comprehensive support for Windows Subsystem for Linux (WSL):
+
+- **Smart Detection**: Multi-layered WSL environment detection using environment variables, system files, and mount points
+- **Distribution Recognition**: Automatically identifies WSL distribution (Ubuntu, Debian, etc.) for optimized configuration
+- **Seamless Installation**: Native Linux-style installation experience within WSL environment
+- **Path Management**: Intelligent handling of WSL-specific configuration paths and file locations
+
+If running in WSL, ZCF will automatically detect the environment and display appropriate installation messages.
 
 #### Termux Support (v2.1 new)
 

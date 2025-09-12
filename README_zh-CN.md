@@ -288,7 +288,7 @@ npx zcf → 选择 +
 
 - 自动检测 Claude Code 安装状态
 - 使用 npm 进行自动安装（确保兼容性）
-- 跨平台支持（Windows/macOS/Linux/Termux）
+- 跨平台支持（Windows/macOS/Linux/WSL/Termux）
 - 自动配置 MCP 服务
 - 智能配置合并和部分修改支持（v2.0 新增）
 - 增强的命令检测机制（v2.1 新增）
@@ -648,6 +648,17 @@ ZCF 已完全支持 Windows 平台：
 - **零配置**：Windows 用户无需任何额外操作，与 macOS/Linux 体验一致
 
 如果在 Windows 上遇到 MCP 连接问题，运行 `npx zcf` 会自动修复配置格式。
+
+#### WSL 支持（v2.12.12+ 新增）
+
+ZCF 现已全面支持 Windows 子系统 Linux (WSL)：
+
+- **智能检测**：通过环境变量、系统文件和挂载点进行多层次 WSL 环境检测
+- **发行版识别**：自动识别 WSL 发行版（Ubuntu、Debian 等）以优化配置
+- **无缝安装**：在 WSL 环境中提供原生 Linux 风格的安装体验
+- **路径管理**：智能处理 WSL 特有的配置路径和文件位置
+
+在 WSL 环境中运行时，ZCF 会自动检测环境并显示相应的安装提示。
 
 #### Termux 支持（v2.1 新增）
 

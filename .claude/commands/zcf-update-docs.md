@@ -1,5 +1,5 @@
 ---
-description: Automatically check code changes since last tag and update documentation (README.md, README_zh-CN.md, CLAUDE.md) to ensure consistency with actual code implementation
+description: Automatically check code changes since last tag and update documentation (README.md, README_zh-CN.md, README_ja.md, CLAUDE.md) to ensure consistency with actual code implementation
 allowed-tools: Read(**), Exec(git, cat, grep, diff)
 argument-hint: [--check-only]
 # examples:
@@ -9,7 +9,7 @@ argument-hint: [--check-only]
 
 # ZCF Update Docs - Documentation Synchronization
 
-Automatically check code changes since last tag and update documentation (README.md, README_zh-CN.md, CLAUDE.md) to ensure consistency with actual code implementation.
+Automatically check code changes since last tag and update documentation (README.md, README_zh-CN.md, README_ja.md, CLAUDE.md) to ensure consistency with actual code implementation.
 
 ## Usage
 
@@ -26,7 +26,7 @@ Automatically check code changes since last tag and update documentation (README
 - Analyze all code changes since the last Git tag
 - Check if documentation needs updates for each module
 - Ensure menu and initialization flow descriptions match actual code
-- Maintain bilingual documentation consistency
+- Maintain multilingual documentation consistency
 
 ## Your Role
 
@@ -35,7 +35,7 @@ You are a professional documentation maintainer responsible for:
 1. Analyzing code changes and their impact on documentation
 2. Identifying documentation sections that need updates
 3. Ensuring documentation accuracy and consistency
-4. Maintaining bilingual synchronization
+4. Maintaining multilingual synchronization
 
 ## Execution Flow
 
@@ -130,6 +130,7 @@ Read and analyze current documentation files:
 DOCS_TO_CHECK=(
   "README.md"
   "README_zh-CN.md"
+  "README_ja.md"
   "CLAUDE.md"
 )
 
@@ -200,6 +201,12 @@ Create a detailed report of findings:
 - [ ] 命令使用
 - [ ] 配置选项
 
+#### README_ja.md
+- [ ] メニュー構造
+- [ ] インストール手順
+- [ ] コマンド使用方法
+- [ ] 設定オプション
+
 #### CLAUDE.md
 - [ ] Development commands
 - [ ] Architecture updates
@@ -229,6 +236,11 @@ if [ "$CHECK_ONLY" = false ]; then
   # - Use proper Chinese translations from i18n files
   # - Maintain the same structure as English version
   
+  # Update README_ja.md
+  # - Ensure consistency with README.md content
+  # - Use proper Japanese translations from i18n files  
+  # - Maintain the same structure as English version
+  
   # Update CLAUDE.md
   # - Update development commands if package.json scripts changed
   # - Update architecture section if new modules added
@@ -255,7 +267,7 @@ echo "Checking internal links..."
 echo "Verifying code examples..."
 
 # Ensure translations are synchronized
-echo "Checking translation consistency..."
+echo "Checking multilingual translation consistency..."
 
 # Validate markdown formatting
 echo "Validating markdown format..."
@@ -287,7 +299,7 @@ fi
 
 ## Documentation Structure Reference
 
-### README.md / README_zh-CN.md Structure
+### README.md / README_zh-CN.md / README_ja.md Structure
 
 1. **Project Description**
 2. **Features**
@@ -315,12 +327,12 @@ fi
 ⚠️ **Critical Requirements:**
 - **ALWAYS** ensure menu descriptions match actual menu implementation
 - **ALWAYS** verify initialization flow steps are in correct order
-- **ALWAYS** maintain bilingual consistency between README files
+- **ALWAYS** maintain multilingual consistency between README files
 - **NEVER** remove existing content without verification
 - **NEVER** break markdown formatting or links
 
 📌 **Best Practices:**
-- Use actual i18n translations from the codebase
+- Use actual i18n translations from the codebase (zh-CN, ja, en)
 - Preserve existing formatting and style
 - Update examples to reflect current implementation
 - Include new features and commands added since last tag
@@ -332,7 +344,7 @@ fi
 - [ ] Commands match files in `src/commands/`
 - [ ] Workflows match `src/config/workflows.ts`
 - [ ] MCP services match `src/constants.ts`
-- [ ] Translations are consistent between languages
+- [ ] Translations are consistent between all languages (zh-CN, ja, en)
 - [ ] All code examples are executable
 - [ ] No broken internal links
 - [ ] Markdown formatting is valid
