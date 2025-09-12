@@ -152,7 +152,7 @@ Based on code change analysis, I will generate CHANGELOG following these standar
 
 **Format Requirements**:
 
-1. Chinese description first, English description second
+1. English description first, Chinese description second
 2. No mixing Chinese and English on the same line
 3. Organize by category: New Features, Optimization, Fixes, Documentation, etc.
 4. Each entry should be concise and clear
@@ -160,35 +160,35 @@ Based on code change analysis, I will generate CHANGELOG following these standar
 **Example Format**:
 
 ```markdown
-## 新功能
-
-- 添加技术执行指南文档，提供命令执行最佳实践
-- 支持自动化发版命令 /zcf-release
-- Windows 路径自动加引号处理
-
 ## New Features
 
 - Add technical execution guidelines with command best practices
 - Support automated release command /zcf-release
 - Automatic quote handling for Windows paths
 
-## 优化
+## 新功能
 
-- 优先使用 ripgrep 提升搜索性能
-- 改进模板文件组织结构
+- 添加技术执行指南文档，提供命令执行最佳实践
+- 支持自动化发版命令 /zcf-release
+- Windows 路径自动加引号处理
 
 ## Optimization
 
 - Prioritize ripgrep for better search performance
 - Improve template file organization
 
-## 修复
+## 优化
 
-- 修复 Windows 路径反斜杠丢失问题
+- 优先使用 ripgrep 提升搜索性能
+- 改进模板文件组织结构
 
 ## Fixes
 
 - Fix Windows path backslash escaping issue
+
+## 修复
+
+- 修复 Windows 路径反斜杠丢失问题
 ```
 
 ### 5. Create Changeset
