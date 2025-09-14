@@ -537,7 +537,7 @@ ZCFはAndroid Termux環境での実行をサポート：
 
 ## 📄 ライセンス
 
-MITライセンス
+[MITライセンス](LICENSE)
 
 ---
 

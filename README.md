@@ -716,7 +716,7 @@ A huge thank you to all our sponsors for their generous support!
 
 ## 📄 License
 
-MIT License
+[MIT License](LICENSE)
 
 ---
 

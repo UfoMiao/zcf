@@ -718,7 +718,7 @@ ZCF 现已支持在 Android Termux 环境中运行：
 
 ## 📄 许可证
 
-MIT 许可证
+[MIT License](LICENSE)
 
 ---
 
