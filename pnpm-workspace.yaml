@@ -3,8 +3,8 @@ packages:
 
 catalogs:
   build:
-    '@antfu/eslint-config': ^5.2.1
-    eslint: ^9.34.0
+    '@antfu/eslint-config': ^5.3.0
+    eslint: ^9.35.0
     eslint-plugin-format: ^1.0.1
     tsx: ^4.20.5
     typescript: ^5.9.2
@@ -17,26 +17,29 @@ catalogs:
   runtime:
     dayjs: ^1.11.18
     find-up-simple: ^1.0.1
-    i18next: ^25.4.2
+    fs-extra: ^11.3.1
+    i18next: ^25.5.2
     i18next-fs-backend: ^2.6.0
     pathe: ^2.0.3
     semver: ^7.7.2
     tinyexec: ^1.0.1
+    trash: ^10.0.0
   testing:
     '@vitest/coverage-v8': ^3.2.4
     '@vitest/ui': ^3.2.4
     glob: ^11.0.3
     vitest: ^3.2.4
   tooling:
-    '@changesets/cli': ^2.29.6
+    '@changesets/cli': ^2.29.7
     '@commitlint/cli': ^19.8.1
     '@commitlint/config-conventional': ^19.8.1
     '@commitlint/types': ^19.8.1
     husky: ^9.1.7
     lint-staged: ^16.1.6
   types:
+    '@types/fs-extra': ^11.0.4
     '@types/inquirer': ^9.0.9
-    '@types/node': ^22.18.0
-    '@types/semver': ^7.7.0
+    '@types/node': ^22.18.3
+    '@types/semver': ^7.7.1
 onlyBuiltDependencies:
   - esbuild

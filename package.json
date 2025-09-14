@@ -2,7 +2,7 @@
   "name": "zcf",
   "type": "module",
   "version": "2.12.12",
-  "packageManager": "pnpm@10.15.1",
+  "packageManager": "pnpm@10.16.1",
   "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
   "author": {
     "name": "Miao Da",
@@ -67,13 +67,15 @@
     "cac": "catalog:cli",
     "dayjs": "catalog:runtime",
     "find-up-simple": "catalog:runtime",
+    "fs-extra": "catalog:runtime",
     "i18next": "catalog:runtime",
     "i18next-fs-backend": "catalog:runtime",
     "inquirer": "catalog:cli",
     "ora": "catalog:cli",
     "pathe": "catalog:runtime",
     "semver": "catalog:runtime",
-    "tinyexec": "catalog:runtime"
+    "tinyexec": "catalog:runtime",
+    "trash": "catalog:runtime"
   },
   "devDependencies": {
     "@antfu/eslint-config": "catalog:build",
@@ -81,6 +83,7 @@
     "@commitlint/cli": "catalog:tooling",
     "@commitlint/config-conventional": "catalog:tooling",
     "@commitlint/types": "catalog:tooling",
+    "@types/fs-extra": "catalog:types",
     "@types/inquirer": "catalog:types",
     "@types/node": "catalog:types",
     "@vitest/coverage-v8": "catalog:testing",
