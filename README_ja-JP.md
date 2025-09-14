@@ -12,7 +12,7 @@
 
 > ゼロ設定、ワンクリックでClaude Code環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
 
-![スクリーンショット](./src/assets/screenshot.webp)
+![スクリーンショット](./src/assets/screenshot-en.webp)
 
 ## 🚀 クイックスタート
 
