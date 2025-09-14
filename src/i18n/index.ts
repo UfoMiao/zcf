@@ -24,6 +24,7 @@ const NAMESPACES = [
   'mcp',
   'menu',
   'tools',
+  'uninstall',
   'updater',
   'workflow',
 ] as const

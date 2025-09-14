@@ -196,15 +196,27 @@ describe('aPI Key Approval Management', () => {
     })
 
     it('should handle file read errors gracefully', () => {
+      // Mock console.error to suppress stderr output during testing
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       vi.mocked(readJsonConfig).mockImplementation(() => {
         throw new Error('File read error')
       })
 
       // Should not throw error, should handle gracefully
       expect(() => manageApiKeyApproval(CCR_API_KEY)).not.toThrow()
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalled()
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore()
     })
 
     it('should handle file write errors gracefully', () => {
+      // Mock console.error to suppress stderr output during testing
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       const mockConfig: ClaudeConfiguration = {
         mcpServers: {},
         hasCompletedOnboarding: true,
@@ -217,6 +229,12 @@ describe('aPI Key Approval Management', () => {
 
       // Should not throw error, should handle gracefully
       expect(() => manageApiKeyApproval(CCR_API_KEY)).not.toThrow()
+
+      // Verify error was logged
+      expect(consoleErrorSpy).toHaveBeenCalled()
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore()
     })
   })
 

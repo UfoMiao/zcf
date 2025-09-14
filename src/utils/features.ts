@@ -1,10 +1,9 @@
 import type { SupportedLang } from '../constants'
 import type { McpServerConfig } from '../types'
-import { existsSync, unlinkSync } from 'node:fs'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { getMcpServices } from '../config/mcp-services'
-import { LANG_LABELS, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../constants'
+import { LANG_LABELS, SUPPORTED_LANGS } from '../constants'
 import { changeLanguage, ensureI18nInitialized, i18n } from '../i18n'
 import { setupCcrConfiguration } from './ccr/config'
 import { installCcr, isCcrInstalled } from './ccr/installer'
@@ -462,31 +461,6 @@ export async function configureAiMemoryFeature(): Promise<void> {
   }
   else if (option === 'outputStyle') {
     await configureOutputStyle()
-  }
-}
-
-// Clear ZCF cache
-export async function clearZcfCacheFeature(): Promise<void> {
-  ensureI18nInitialized()
-
-  const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-    type: 'confirm',
-    name: 'confirm',
-    message: i18n.t('configuration:confirmClearCache') || 'Clear all ZCF preferences cache?',
-    default: false,
-  })
-
-  if (!confirm) {
-    await handleCancellation()
-    return
-  }
-
-  if (existsSync(ZCF_CONFIG_FILE)) {
-    unlinkSync(ZCF_CONFIG_FILE)
-    console.log(ansis.green(`✔ ${i18n.t('configuration:cacheCleared') || 'ZCF cache cleared'}`))
-  }
-  else {
-    console.log(ansis.yellow('No cache found'))
   }
 }
 

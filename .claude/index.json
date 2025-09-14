@@ -1,31 +1,31 @@
 {
-  "timestamp": "2025-09-06T15:05:09+08:00",
-  "version": "1.6.0",
+  "timestamp": "2025-09-14T18:43:08+08:00",
+  "version": "1.7.0",
   "project": {
     "name": "zcf",
     "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
-    "version": "2.12.7",
+    "version": "2.12.12",
     "type": "CLI Tool",
     "language": "TypeScript",
-    "architecture": "ESM-only modular CLI with advanced i18next internationalization, comprehensive cross-platform support, and sophisticated tool integration"
+    "architecture": "ESM-only modular CLI with advanced i18next internationalization, comprehensive cross-platform support, sophisticated tool integration, and advanced uninstallation system"
   },
   "scanning": {
-    "strategy": "Adaptive three-stage comprehensive architecture analysis with enhanced tool integration assessment and updated coverage metrics",
-    "stages_completed": ["Repository Census", "Module Priority Scanning", "Deep Architecture Analysis", "Tool Integration Analysis", "Coverage Update"],
-    "total_files_estimated": 280,
-    "files_scanned": 225,
-    "coverage_percentage": 80.4,
+    "strategy": "Adaptive three-stage comprehensive architecture analysis with enhanced uninstallation functionality assessment and updated v2.12.12 coverage metrics",
+    "stages_completed": ["Repository Census", "Module Priority Scanning", "Deep Architecture Analysis", "Tool Integration Analysis", "Uninstallation System Analysis", "Coverage Update"],
+    "total_files_estimated": 290,
+    "files_scanned": 240,
+    "coverage_percentage": 82.8,
     "truncated": false,
     "truncation_reason": null,
-    "update_focus": "Complete adaptive architecture analysis for ZCF v2.12.7 with enhanced documentation navigation, advanced tool integration assessment, and current coverage metrics"
+    "update_focus": "Complete adaptive architecture analysis for ZCF v2.12.12 with enhanced uninstallation functionality, advanced test coverage enhancement, and comprehensive multi-language support updates"
   },
   "modules": [
     {
       "path": "root",
       "type": "main",
-      "description": "Main CLI application with comprehensive configuration, advanced build system, and sophisticated ESLint integration",
+      "description": "Main CLI application with comprehensive configuration, advanced build system, sophisticated ESLint integration, and complete uninstallation capabilities",
       "entryPoints": ["bin/zcf.mjs", "src/cli.ts", "src/index.ts", "src/cli-setup.ts"],
-      "keyInterfaces": ["CliOptions", "InitOptions", "setupCommands", "LanguageOptions"],
+      "keyInterfaces": ["CliOptions", "InitOptions", "setupCommands", "LanguageOptions", "UninstallOptions"],
       "claudeMdStatus": "current",
       "scanned": true,
       "coverage": 98,
@@ -34,56 +34,60 @@
     {
       "path": "src/commands",
       "type": "commands",
-      "description": "CLI command implementations with advanced interactive and non-interactive modes, sophisticated error handling, and comprehensive tool integration",
-      "entryPoints": ["init.ts", "menu.ts", "update.ts", "ccr.ts", "ccu.ts", "check-updates.ts"],
-      "keyInterfaces": ["InitOptions", "UpdateOptions", "CcrOptions", "MenuFeatures", "CheckUpdatesOptions"],
+      "description": "CLI command implementations with advanced interactive and non-interactive modes, sophisticated error handling, comprehensive tool integration, and complete uninstallation functionality",
+      "entryPoints": ["init.ts", "menu.ts", "update.ts", "ccr.ts", "ccu.ts", "check-updates.ts", "uninstall.ts"],
+      "keyInterfaces": ["InitOptions", "UpdateOptions", "CcrOptions", "MenuFeatures", "CheckUpdatesOptions", "UninstallOptions"],
       "testFiles": ["tests/commands/*.test.ts", "tests/commands/*.edge.test.ts", "tests/unit/commands/"],
       "claudeMdStatus": "current",
       "scanned": true,
-      "coverage": 95,
+      "coverage": 96,
       "gaps": []
     },
     {
       "path": "src/utils",
       "type": "utilities",
-      "description": "Core functionality with enhanced configuration management, comprehensive platform support, and advanced tool integration including CCR, Cometix, and CCusage",
+      "description": "Core functionality with enhanced configuration management, comprehensive platform support, advanced tool integration including CCR, Cometix, CCusage, and sophisticated uninstallation system with cross-platform trash integration",
       "entryPoints": [
-        "config.ts", "installer.ts", "mcp.ts", "platform.ts", 
-        "workflow-installer.ts", "ccr/", "cometix/", "tools/"
+        "config.ts", "installer.ts", "mcp.ts", "platform.ts",
+        "workflow-installer.ts", "ccr/", "cometix/", "tools/",
+        "uninstaller.ts", "trash.ts"
       ],
       "keyInterfaces": [
-        "ApiConfig", "McpServerConfig", "WorkflowInstallResult", 
-        "CcrConfig", "CometixOptions", "PlatformInfo", "ToolsIntegration"
+        "ApiConfig", "McpServerConfig", "WorkflowInstallResult",
+        "CcrConfig", "CometixOptions", "PlatformInfo", "ToolsIntegration",
+        "ZcfUninstaller", "UninstallItem", "UninstallResult"
       ],
       "testFiles": [
         "tests/utils/*.test.ts", "tests/utils/*.edge.test.ts",
-        "tests/utils/ccr/", "tests/utils/cometix/", "tests/unit/utils/"
+        "tests/utils/ccr/", "tests/utils/cometix/", "tests/unit/utils/",
+        "tests/utils/uninstaller.test.ts", "tests/utils/uninstaller.edge.test.ts"
       ],
+      "claudeMdStatus": "current",
+      "scanned": true,
+      "coverage": 94,
+      "gaps": []
+    },
+    {
+      "path": "src/i18n",
+      "type": "internationalization",
+      "description": "Advanced i18next-based multilingual support with sophisticated namespace organization for Chinese and English locales, dynamic language switching, and complete uninstallation translations",
+      "entryPoints": ["index.ts", "locales/zh-CN/", "locales/en/", "locales/*/uninstall.json"],
+      "keyInterfaces": ["i18n", "initI18n", "SupportedLang", "TranslationNamespaces", "ensureI18nInitialized"],
+      "testFiles": ["tests/i18n/core/i18next-setup.test.ts", "tests/i18n/locales/workflow.test.ts", "tests/i18n/i18n-integrity.test.ts"],
       "claudeMdStatus": "current",
       "scanned": true,
       "coverage": 92,
       "gaps": []
     },
     {
-      "path": "src/i18n",
-      "type": "internationalization",
-      "description": "Advanced i18next-based multilingual support with sophisticated namespace organization for Chinese and English locales, dynamic language switching",
-      "entryPoints": ["index.ts", "locales/zh-CN/", "locales/en/"],
-      "keyInterfaces": ["i18n", "initI18n", "SupportedLang", "TranslationNamespaces", "ensureI18nInitialized"],
-      "testFiles": ["tests/i18n/core/i18next-setup.test.ts", "tests/i18n/locales/workflow.test.ts", "tests/i18n/i18n-integrity.test.ts"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 90,
-      "gaps": []
-    },
-    {
       "path": "src/types",
       "type": "types",
-      "description": "Comprehensive TypeScript type definitions for workflow, configuration, tool integration, and advanced system interfaces",
+      "description": "Comprehensive TypeScript type definitions for workflow, configuration, tool integration, uninstallation, and advanced system interfaces",
       "entryPoints": ["workflow.ts", "config.ts", "ccr.ts"],
       "keyInterfaces": [
-        "WorkflowConfig", "WorkflowType", "ApiConfig", 
-        "ClaudeConfiguration", "CcrConfig", "WorkflowAgent"
+        "WorkflowConfig", "WorkflowType", "ApiConfig",
+        "ClaudeConfiguration", "CcrConfig", "WorkflowAgent",
+        "UninstallItem", "UninstallResult"
       ],
       "testFiles": ["Implicit through usage in other modules"],
       "claudeMdStatus": "current",
@@ -108,7 +112,7 @@
       "type": "templates",
       "description": "Enhanced multilingual configuration templates, comprehensive workflows, and professional AI personality styles with advanced output customization",
       "entryPoints": [
-        "common/", "zh-CN/", "en/", 
+        "common/", "zh-CN/", "en/",
         "output-styles/", "workflow/"
       ],
       "keyInterfaces": ["Template structure", "Workflow templates", "AI personalities", "Output styles", "Professional engineering styles"],
@@ -121,16 +125,17 @@
     {
       "path": "tests",
       "type": "testing",
-      "description": "Comprehensive test suite with unit, integration, and edge case coverage, enhanced with advanced helper utilities and sophisticated testing infrastructure",
+      "description": "Comprehensive test suite with unit, integration, and edge case coverage, enhanced with advanced helper utilities, sophisticated testing infrastructure, and complete uninstaller testing",
       "entryPoints": [
-        "commands/", "utils/", "unit/", 
-        "integration/", "edge/", "helpers/", "fixtures/"
+        "commands/", "utils/", "unit/",
+        "integration/", "edge/", "helpers/", "fixtures/",
+        "utils/uninstaller.test.ts", "utils/uninstaller.edge.test.ts"
       ],
-      "keyInterfaces": ["Test helpers", "Mock functions", "Coverage utilities", "Test fixtures", "Advanced testing patterns"],
+      "keyInterfaces": ["Test helpers", "Mock functions", "Coverage utilities", "Test fixtures", "Advanced testing patterns", "Uninstaller test scenarios"],
       "testFiles": ["Self-testing module with 80%+ coverage requirements"],
       "claudeMdStatus": "current",
       "scanned": true,
-      "coverage": 90,
+      "coverage": 92,
       "gaps": []
     }
   ],
@@ -143,7 +148,8 @@
       "Advanced external tool integration (CCR, Cometix, CCusage) with sophisticated version management",
       "Intelligent configuration merging with comprehensive backup system for user preservation",
       "Test-driven development with sophisticated layered testing and 80%+ coverage requirements",
-      "Advanced error handling with user-friendly i18n messages and graceful degradation"
+      "Advanced error handling with user-friendly i18n messages and graceful degradation",
+      "Sophisticated uninstallation system with conflict resolution and cross-platform trash integration"
     ],
     "key_technologies": [
       "TypeScript (ESM-only with ESNext target and strict mode)",
@@ -155,7 +161,8 @@
       "tinyexec (reliable cross-platform command execution)",
       "inquirer (enhanced interactive prompts with advanced validation)",
       "ansis (sophisticated terminal styling)",
-      "cac (powerful CLI framework)"
+      "cac (powerful CLI framework)",
+      "trash (cross-platform file removal for safety)"
     ],
     "integration_points": [
       "Claude Code installation and advanced configuration management",
@@ -165,30 +172,55 @@
       "CCusage analytics integration with argument forwarding and error handling",
       "Git workflow automation with advanced templates and professional styles",
       "AI personality configuration with sophisticated output style customization",
-      "Advanced i18next language switching with namespace management and dynamic loading"
+      "Advanced i18next language switching with namespace management and dynamic loading",
+      "Sophisticated uninstallation system with selective removal and conflict resolution"
     ]
   },
   "coverage_analysis": {
-    "total_files": 280,
-    "scanned_files": 225,
+    "total_files": 290,
+    "scanned_files": 240,
     "coverage_by_type": {
-      "source_files": "90% (53/59)",
-      "test_files": "85% (71/83)",
+      "source_files": "92% (58/63)",
+      "test_files": "88% (85/97)",
       "config_files": "100% (25/25)",
       "template_files": "82% (73/89)",
-      "json_locales": "100% (28/28)"
+      "json_locales": "100% (32/32)"
     },
-    "critical_paths_coverage": "95%",
+    "critical_paths_coverage": "96%",
     "documentation_coverage": "100%"
   },
+  "new_features": {
+    "uninstallation_system": {
+      "description": "Comprehensive ZCF uninstallation functionality with advanced conflict resolution",
+      "features": [
+        "Complete uninstallation mode - removes all ZCF configurations and tools",
+        "Custom selective uninstallation - choose specific components to remove",
+        "Interactive uninstallation menu with user-friendly interface",
+        "Cross-platform trash/recycle bin integration for safe file removal",
+        "Sophisticated conflict resolution (e.g., Claude Code removal includes MCP cleanup)",
+        "Advanced error handling and recovery mechanisms",
+        "Complete i18next translation support for zh-CN and en locales"
+      ],
+      "components": [
+        "src/commands/uninstall.ts - Main uninstall command interface",
+        "src/utils/uninstaller.ts - ZcfUninstaller class with 11 removal methods",
+        "src/utils/trash.ts - Cross-platform trash integration",
+        "src/i18n/locales/*/uninstall.json - Complete translation support",
+        "tests/utils/uninstaller*.test.ts - Comprehensive test coverage"
+      ],
+      "test_coverage": "Extensive edge case testing with sophisticated mocking and failure scenarios"
+    }
+  },
   "navigation_enhancements": {
-    "mermaid_diagram": "Enhanced with clickable navigation to all 7 core modules",
+    "mermaid_diagram": "Enhanced with clickable navigation to all 7 core modules and updated v2.12.12 structure",
     "breadcrumb_system": "Implemented across all module CLAUDE.md files with relative path linking",
-    "module_linking": "Complete cross-module navigation structure established"
+    "module_linking": "Complete cross-module navigation structure established",
+    "uninstall_integration": "Added uninstallation components to architecture diagrams"
   },
   "recommendations": {
     "next_steps": [
-      "Enhance integration test coverage for advanced CCR and Cometix features",
+      "Expand uninstallation system with additional tool cleanup capabilities",
+      "Enhance integration test coverage for advanced uninstaller features and edge cases",
       "Add comprehensive template validation with sophisticated edge case testing",
       "Expand cross-platform testing scenarios for advanced Termux environment features",
       "Consider adding performance benchmarks for large-scale template operations and CLI workflows",
@@ -197,18 +229,19 @@
     "maintenance": [
       "Regular update of MCP service configurations with latest Claude Code features and capabilities",
       "Template synchronization with evolving Claude Code capabilities and best practices",
-      "Translation completeness verification and consistency checks across all namespaces",
+      "Translation completeness verification and consistency checks across all namespaces including uninstall",
       "Dependency security audits and comprehensive version compatibility testing",
-      "Performance monitoring for CLI operations and advanced template processing workflows"
+      "Performance monitoring for CLI operations and advanced template processing workflows",
+      "Uninstaller functionality testing with various system configurations and permission scenarios"
     ]
   },
   "gaps": {
     "minor": [
       "Some advanced template validation scenarios for complex multilingual workflows",
-      "Integration test scenarios for sophisticated external tool interaction patterns"
+      "Integration test scenarios for sophisticated external tool interaction patterns with uninstaller"
     ],
-    "documentation": "Complete - all modules comprehensively documented with enhanced navigation",
-    "critical": "None identified - all critical functionality comprehensively covered"
+    "documentation": "Complete - all modules comprehensively documented with enhanced navigation and uninstallation system",
+    "critical": "None identified - all critical functionality including uninstallation comprehensively covered"
   },
   "ignored_patterns": [
     "node_modules/**",

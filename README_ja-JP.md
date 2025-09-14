@@ -351,7 +351,7 @@ $ npx zcf
 
   ------------ ZCF ------------
   0. 表示言語の変更 / Select display language - ZCFインターフェース言語の変更
-  -. 設定キャッシュのクリア - 優先言語などのキャッシュをクリア
+  -. アンインストール - システムからClaude Code設定とツールを削除
   +. アップデートチェック - Claude Code、CCR、CCometixLineのバージョンをチェックして更新
   Q. 終了
 

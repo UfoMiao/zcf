@@ -9,6 +9,7 @@
   "help.commandDescriptions.updateWorkflowFiles": "仅更新工作流相关md",
   "help.commandDescriptions.configureCcrProxy": "配置模型路由代理",
   "help.commandDescriptions.claudeCodeUsageAnalysis": "Claude Code 用量统计分析",
+  "help.commandDescriptions.uninstallConfigurations": "删除 Claude Code 配置和工具",
   "help.commandDescriptions.checkUpdateVersions": "检查并更新到最新版本",
   "help.shortcutDescriptions.quickInit": "快速初始化",
   "help.shortcutDescriptions.quickUpdate": "快速更新",
@@ -35,11 +36,13 @@
   "help.exampleDescriptions.updateWorkflowFilesOnly": "仅更新工作流相关md文件",
   "help.exampleDescriptions.configureClaudeCodeRouter": "配置 Claude Code Router",
   "help.exampleDescriptions.runClaudeCodeUsageAnalysis": "运行 Claude Code 用量分析",
+  "help.exampleDescriptions.uninstallConfigurations": "卸载配置和工具",
   "help.exampleDescriptions.checkAndUpdateTools": "检查并更新工具",
   "help.exampleDescriptions.nonInteractiveModeCicd": "非交互模式（CI/CD）",
   "banner.subtitle": "Claude Code 一键配置工具",
   "banner.updateSubtitle": "更新 Claude Code 配置",
   "help.defaults.dailyUsage": "每日用量（默认）",
+  "help.defaults.interactiveUninstall": "交互式卸载菜单",
   "help.defaults.updateTools": "更新 Claude Code、CCR 和 CCometixLine",
   "help.defaults.prefix": "默认:"
 }

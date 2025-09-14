@@ -6,7 +6,6 @@ import { displayBannerWithInfo } from '../utils/banner'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import {
   changeScriptLanguageFeature,
-  clearZcfCacheFeature,
   configureAiMemoryFeature,
   configureApiFeature,
   configureDefaultModelFeature,
@@ -16,6 +15,7 @@ import {
 import { runCcrMenuFeature, runCcusageFeature, runCometixMenuFeature } from '../utils/tools'
 import { checkUpdates } from './check-updates'
 import { init } from './init'
+import { uninstall } from './uninstall'
 import { update } from './update'
 
 export async function showMainMenu(): Promise<void> {
@@ -81,7 +81,7 @@ export async function showMainMenu(): Promise<void> {
         )}`,
       )
       console.log(
-        `  ${ansis.cyan('-.')} ${i18n.t('menu:menuOptions.clearCache')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.clearCache')}`)}`,
+        `  ${ansis.cyan('-.')} ${i18n.t('menu:menuOptions.uninstall')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.uninstall')}`)}`,
       )
       console.log(
         `  ${ansis.cyan('+.')} ${i18n.t('menu:menuOptions.checkUpdates')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.checkUpdates')}`)}`,
@@ -147,7 +147,7 @@ export async function showMainMenu(): Promise<void> {
           break
         }
         case '-':
-          await clearZcfCacheFeature()
+          await uninstall()
           break
         case '+':
           await checkUpdates()

@@ -7,6 +7,7 @@ import { executeCcusage } from './commands/ccu'
 import { checkUpdates } from './commands/check-updates'
 import { init } from './commands/init'
 import { showMainMenu } from './commands/menu'
+import { uninstall } from './commands/uninstall'
 import { update } from './commands/update'
 import { changeLanguage, i18n, initI18n } from './i18n'
 import { selectScriptLanguage } from './utils/prompts'
@@ -114,6 +115,7 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.cyan('zcf update')} | ${ansis.cyan('u')}   ${i18n.t('cli:help.commandDescriptions.updateWorkflowFiles')}`,
       `  ${ansis.cyan('zcf ccr')}          ${i18n.t('cli:help.commandDescriptions.configureCcrProxy')}`,
       `  ${ansis.cyan('zcf ccu')} [args]   ${i18n.t('cli:help.commandDescriptions.claudeCodeUsageAnalysis')}`,
+      `  ${ansis.cyan('zcf uninstall')}     ${i18n.t('cli:help.commandDescriptions.uninstallConfigurations')}`,
       `  ${ansis.cyan('zcf check-updates')} ${i18n.t('cli:help.commandDescriptions.checkUpdateVersions')}`,
       '',
       ansis.gray(`  ${i18n.t('cli:help.shortcuts')}`),
@@ -169,6 +171,9 @@ export function customizeHelp(sections: any[]): any[] {
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.runClaudeCodeUsageAnalysis')}`),
       `  ${ansis.cyan('npx zcf ccu')}               ${ansis.gray(`# ${i18n.t('cli:help.defaults.dailyUsage')}`)}`,
       `  ${ansis.cyan('npx zcf ccu monthly --json')}`,
+      '',
+      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.uninstallConfigurations')}`),
+      `  ${ansis.cyan('npx zcf uninstall')}         ${ansis.gray(`# ${i18n.t('cli:help.defaults.interactiveUninstall')}`)}`,
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkAndUpdateTools')}`),
       `  ${ansis.cyan('npx zcf check-updates')}     ${ansis.gray(`# ${i18n.t('cli:help.defaults.updateTools')}`)}`,
@@ -260,6 +265,17 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .allowUnknownOptions()
     .action(await withLanguageResolution(async (args) => {
       await executeCcusage(args)
+    }))
+
+  // Uninstall command - Remove ZCF configurations and tools
+  cli
+    .command('uninstall', 'Remove ZCF configurations and tools')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
+    .option('--mode, -m <mode>', 'Uninstall mode (complete/custom/interactive), default: interactive')
+    .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
+    .action(await withLanguageResolution(async (options) => {
+      await uninstall(options)
     }))
 
   // Check updates command

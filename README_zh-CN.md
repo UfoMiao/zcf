@@ -350,7 +350,7 @@ $ npx zcf
 
   ------------ ZCF ------------
   0. 更改显示语言 / Select display language - 更改 ZCF 界面语言
-  -. 清除偏好缓存 - 清除偏好语言等缓存
+  -. 卸载 - 从系统中删除 Claude Code 配置和工具
   +. 检查更新 - 检查并更新 Claude Code、CCR 和 CCometixLine 的版本
   Q. 退出
 
@@ -475,6 +475,7 @@ $ npx zcf
 | `zcf update`        | `zcf u` | 更新 Prompt 文档并备份旧配置                                                    |
 | `zcf ccu`           | -       | 运行 Claude Code 用量分析工具 - [ccusage](https://github.com/ryoppippi/ccusage) |
 | `zcf ccr`           | -       | 打开 CCR (Claude Code Router) 管理菜单                                          |
+| `zcf uninstall`     | -       | 交互式 Claude Code 配置和工具卸载程序                                            |
 | `zcf check-updates` | -       | 检查并更新 Claude Code、CCR 和 CCometixLine 的版本                              |
 
 #### 常用选项

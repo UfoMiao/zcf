@@ -4,6 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Change Log (Changelog)
 
+### 2025-09-14
+
+- **Version Update to v2.12.12**: Advanced ZCF uninstallation functionality and comprehensive test coverage enhancement
+- **New Uninstall System**: Introduced complete ZCF uninstallation functionality with comprehensive CLI command and sophisticated conflict resolution
+- **Enhanced Testing Infrastructure**: Significantly expanded edge case testing with advanced uninstaller test coverage and comprehensive test scenarios
+- **Advanced Multi-language Support**: Enhanced i18next integration with complete uninstall command translation support for zh-CN and en locales
+- **Improved File Management**: Advanced trash/recycle bin integration with cross-platform support and sophisticated error handling
+- **Coverage Enhancement**: Achieved improved test coverage with focus on edge case scenarios and sophisticated error recovery mechanisms
+- **Tool Integration Refinement**: Enhanced CCR, Cometix, and CCusage integration with improved uninstallation and management capabilities
+
 ### 2025-09-06
 
 - **Architecture Context Refresh**: Updated AI context initialization with current v2.12.7 architecture analysis
@@ -27,7 +37,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 2025-09-01
 
 - **Architecture Refresh & i18n Enhancement**: Comprehensive project analysis and documentation update
-- **Project Version**: Current v2.12.4 with advanced i18next internationalization and enhanced CLI features  
+- **Project Version**: Current v2.12.4 with advanced i18next internationalization and enhanced CLI features
 - **Internationalization Upgrade**: Implemented comprehensive i18next system replacing previous language detection approach
 - **Module Analysis**: Complete analysis of 7 core modules with enhanced TypeScript architecture and testing coverage
 - **Coverage Analysis**: Achieved 88%+ file coverage (200/225 source files) with focus on critical path optimization
@@ -63,17 +73,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ZCF (Zero-Config Claude-Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v2.12.7 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, and comprehensive multi-platform support including Termux compatibility.
+ZCF (Zero-Config Claude-Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v2.12.12 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, and sophisticated uninstallation capabilities with advanced conflict resolution.
 
 ## Architecture Overview
 
-ZCF follows a modular CLI architecture with strict TypeScript typing, comprehensive i18next-based internationalization, and cross-platform support. The project is built using modern tooling including unbuild, Vitest, ESM-only configuration, and @antfu/eslint-config for code quality. The architecture emphasizes robust error handling, user-friendly interfaces, and extensive testing coverage with advanced tool integration including CCR proxy, Cometix status line, and CCusage analytics.
+ZCF follows a modular CLI architecture with strict TypeScript typing, comprehensive i18next-based internationalization, and cross-platform support. The project is built using modern tooling including unbuild, Vitest, ESM-only configuration, and @antfu/eslint-config for code quality. The architecture emphasizes robust error handling, user-friendly interfaces, and extensive testing coverage with advanced tool integration including CCR proxy, Cometix status line, and CCusage analytics. The latest version introduces comprehensive uninstallation functionality with sophisticated conflict resolution and advanced trash/recycle bin integration.
 
 ### Module Structure Diagram
 
 ```mermaid
 graph TD
-    A["🚀 ZCF Root (v2.12.7)"] --> B["src/commands"];
+    A["🚀 ZCF Root (v2.12.12)"] --> B["src/commands"];
     A --> C["src/utils"];
     A --> D["src/i18n"];
     A --> E["src/types"];
@@ -87,6 +97,7 @@ graph TD
     B --> B4["ccr.ts - Router management"];
     B --> B5["ccu.ts - Usage analysis"];
     B --> B6["check-updates.ts - Tool updates"];
+    B --> B7["uninstall.ts - ZCF uninstallation"];
 
     C --> C1["config.ts - Configuration management"];
     C --> C2["installer.ts - Claude Code installation"];
@@ -96,11 +107,14 @@ graph TD
     C --> C6["ccr/ - CCR integration"];
     C --> C7["cometix/ - Status line tools"];
     C --> C8["tools/ - Tool integration"];
+    C --> C9["uninstaller.ts - Advanced uninstaller"];
+    C --> C10["trash.ts - Cross-platform trash"];
 
     D --> D1["locales/zh-CN/ - Chinese translations"];
     D --> D2["locales/en/ - English translations"];
     D --> D3["index.ts - i18next system"];
     D --> D4["Advanced namespace organization"];
+    D --> D5["uninstall.json - Uninstall translations"];
 
     E --> E1["workflow.ts - Workflow types"];
     E --> E2["config.ts - Configuration types"];
@@ -119,6 +133,7 @@ graph TD
     H --> H3["unit/ - Unit test suites"];
     H --> H4["integration/ - Integration tests"];
     H --> H5["edge/ - Edge case tests"];
+    H --> H6["uninstaller/ - Uninstaller tests"];
 
     click B "./src/commands/CLAUDE.md" "View commands module"
     click C "./src/utils/CLAUDE.md" "View utils module"
@@ -133,17 +148,17 @@ graph TD
 
 | Module                   | Path            | Description                             | Entry Points                                                        | Test Coverage                   |
 | ------------------------ | --------------- | --------------------------------------- | ------------------------------------------------------------------- | ------------------------------- |
-| **Commands**             | `src/commands/` | CLI command implementations with advanced interactive and non-interactive modes | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts, check-updates.ts       | High - comprehensive test suites |
-| **Utilities**            | `src/utils/`    | Core functionality with enhanced configuration management and platform support | config.ts, installer.ts, mcp.ts, platform.ts, workflow-installer.ts, ccr/, cometix/ | High - extensive unit tests     |
-| **Internationalization** | `src/i18n/`     | Advanced i18next multilingual support with namespace organization | index.ts, locales/zh-CN/, locales/en/                              | High - translation validation   |
+| **Commands**             | `src/commands/` | CLI command implementations with advanced interactive and non-interactive modes including comprehensive uninstallation | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts, check-updates.ts, uninstall.ts | High - comprehensive test suites |
+| **Utilities**            | `src/utils/`    | Core functionality with enhanced configuration management, platform support, and advanced uninstallation capabilities | config.ts, installer.ts, mcp.ts, platform.ts, workflow-installer.ts, ccr/, cometix/, uninstaller.ts, trash.ts | High - extensive unit tests     |
+| **Internationalization** | `src/i18n/`     | Advanced i18next multilingual support with namespace organization and complete uninstall translations | index.ts, locales/zh-CN/, locales/en/                              | High - translation validation   |
 | **Types**                | `src/types/`    | Comprehensive TypeScript type definitions | workflow.ts, config.ts, ccr.ts                                      | Implicit through usage          |
 | **Configuration**        | `src/config/`   | Centralized workflow and system configurations | workflows.ts, mcp-services.ts                                       | High - config validation tests  |
 | **Templates**            | `templates/`    | Enhanced multilingual configuration templates and AI personality styles | common/, zh-CN/, en/, output-styles/, workflow/                    | Medium - template validation tests |
-| **Testing**              | `tests/`        | Comprehensive test suites with layered coverage architecture | commands/, utils/, unit/, integration/, edge/                      | Self-testing with 80% target   |
+| **Testing**              | `tests/`        | Comprehensive test suites with layered coverage architecture and advanced uninstaller testing | commands/, utils/, unit/, integration/, edge/                      | Self-testing with 80% target   |
 
 ## CLI Usage
 
-ZCF provides both direct commands and an interactive menu system with advanced internationalization:
+ZCF provides both direct commands and an interactive menu system with advanced internationalization and comprehensive uninstallation:
 
 ```bash
 # Interactive menu (recommended)
@@ -155,6 +170,12 @@ npx zcf u                  # Update workflows only
 npx zcf ccr [--lang <en|zh-CN>]  # Claude Code Router management
 npx zcf ccu [args...]      # Run ccusage with arguments
 npx zcf check-updates [--lang <en|zh-CN>]  # Check tool updates
+npx zcf uninstall [--mode <complete|custom|interactive>] [--items <items>] [--lang <en|zh-CN>]  # ZCF uninstallation
+
+# Uninstall examples
+npx zcf uninstall                                    # Interactive uninstall menu
+npx zcf uninstall --mode complete                    # Complete uninstallation
+npx zcf uninstall --mode custom --items ccr,backups # Custom uninstallation
 ```
 
 ## Running and Development
@@ -205,12 +226,15 @@ pnpm vitest utils/config.test.ts
 
 # Run tests matching pattern
 pnpm vitest --grep "should handle"
+
+# Run uninstaller tests specifically
+pnpm vitest uninstaller
 ```
 
 The project uses Vitest with a comprehensive layered testing approach:
 
 1. **Core Tests** (`*.test.ts`) - Basic functionality and main flows
-2. **Edge Tests** (`*.edge.test.ts`) - Boundary conditions and error scenarios  
+2. **Edge Tests** (`*.edge.test.ts`) - Boundary conditions and error scenarios
 3. **Unit Tests** (`tests/unit/`) - Isolated function testing
 4. **Integration Tests** (`tests/integration/`) - Cross-module interaction testing
 5. **Coverage Goals**: 80% minimum across lines, functions, branches, and statements
@@ -238,7 +262,7 @@ The project uses Vitest with a comprehensive layered testing approach:
   - Implement translations consistently across the entire project using namespace-based organization
   - Support both zh-CN and en locales with complete feature parity
   - Use `i18n.t()` function for all translatable strings with proper namespace prefixes
-  - Organize translations in logical namespaces (common, cli, menu, errors, api, tools, etc.)
+  - Organize translations in logical namespaces (common, cli, menu, errors, api, tools, uninstall, etc.)
 
 ## Coding Standards
 
@@ -250,6 +274,7 @@ The project uses Vitest with a comprehensive layered testing approach:
 - **Cross-Platform Support**: Special handling for Windows paths, macOS, Linux, and Termux environment
 - **Code Formatting**: Uses @antfu/eslint-config for consistent code style with strict rules
 - **Testing Organization**: Tests organized with comprehensive unit/integration/edge structure and 80% coverage requirement
+- **Trash/Recycle Bin Integration**: Advanced cross-platform file removal using `trash` package for safety
 
 ## AI Usage Guidelines
 
@@ -263,6 +288,7 @@ The project uses Vitest with a comprehensive layered testing approach:
 6. **Intelligent IDE Integration**: Advanced IDE detection and auto-open functionality for git-worktree environments
 7. **Professional AI Personality System**: Multiple output styles including engineer-professional, laowang-engineer, and nekomata-engineer
 8. **Advanced Tool Integration**: Comprehensive integration with CCR proxy, CCusage analytics, and Cometix status line tools
+9. **Sophisticated Uninstallation System**: Advanced uninstaller with conflict resolution, selective removal, and cross-platform trash integration
 
 ### Important Implementation Details
 
@@ -276,6 +302,7 @@ The project uses Vitest with a comprehensive layered testing approach:
 8. **Professional Template System**: Multi-language templates with professional output styles and comprehensive workflow coverage
 9. **Advanced i18next Integration**: Sophisticated internationalization with namespace-based translation management and dynamic language switching
 10. **Comprehensive Tool Integration**: Advanced CCR, Cometix, and CCusage integration with version management and configuration validation
+11. **Sophisticated Uninstaller**: Advanced ZCF uninstaller with selective removal, conflict resolution, and cross-platform trash integration
 
 ### Testing Philosophy
 
@@ -285,6 +312,7 @@ The project uses Vitest with a comprehensive layered testing approach:
 - **Quality-Focused Coverage**: 80% minimum coverage across all metrics with emphasis on quality over quantity
 - **Advanced Test Organization**: Tests organized in dedicated structure with clear categorization, helper functions, and test fixtures
 - **Advanced Integration Testing**: Complete workflow scenarios and comprehensive external tool interaction testing
+- **Uninstaller Edge Case Testing**: Comprehensive testing of uninstallation scenarios including failure recovery and conflict resolution
 
 ## Release & Publishing
 

@@ -93,7 +93,7 @@ describe('features utilities', () => {
     expect(module.configureMcpFeature).toBeDefined()
     expect(module.configureDefaultModelFeature).toBeDefined()
     expect(module.configureAiMemoryFeature).toBeDefined()
-    expect(module.clearZcfCacheFeature).toBeDefined()
+    // clearZcfCacheFeature was replaced with uninstall functionality
     expect(module.changeScriptLanguageFeature).toBeDefined()
     expect(module.configureEnvPermissionFeature).toBeDefined()
 
@@ -101,7 +101,7 @@ describe('features utilities', () => {
     expect(typeof module.configureMcpFeature).toBe('function')
     expect(typeof module.configureDefaultModelFeature).toBe('function')
     expect(typeof module.configureAiMemoryFeature).toBe('function')
-    expect(typeof module.clearZcfCacheFeature).toBe('function')
+    // clearZcfCacheFeature was replaced with uninstall functionality
     expect(typeof module.changeScriptLanguageFeature).toBe('function')
     expect(typeof module.configureEnvPermissionFeature).toBe('function')
   })
@@ -413,20 +413,7 @@ describe('features utilities', () => {
     })
   })
 
-  describe('clearZcfCacheFeature', () => {
-    it('should clear ZCF cache', async () => {
-      const { clearZcfCacheFeature } = await import('../../../src/utils/features')
-      const { existsSync, unlinkSync } = await import('node:fs')
-
-      vi.mocked(existsSync).mockReturnValue(true)
-      vi.mocked(unlinkSync).mockImplementation(() => {})
-      vi.mocked(inquirer.prompt).mockResolvedValue({ confirm: true })
-
-      await clearZcfCacheFeature()
-
-      expect(unlinkSync).toHaveBeenCalled()
-    })
-  })
+  // clearZcfCacheFeature tests removed - functionality replaced with uninstall command
 
   describe('changeScriptLanguageFeature', () => {
     it('should change script language', async () => {

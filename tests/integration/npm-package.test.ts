@@ -201,6 +201,14 @@ describe('npm Package Integration Tests', () => {
     // Create test directory
     mkdirSync(testTmpDir, { recursive: true })
 
+    // Create independent pnpm-workspace.yaml to isolate from main project
+    const workspaceConfig = `packages:
+  - .
+
+# Independent workspace to avoid affecting main project's pnpm-lock.yaml
+`
+    writeFileSync(join(testTmpDir, 'pnpm-workspace.yaml'), workspaceConfig)
+
     // Create a minimal package.json
     const packageJson = {
       name: 'test-zcf-install',
@@ -219,25 +227,31 @@ describe('npm Package Integration Tests', () => {
       }
       const tarballPath = join(projectRoot, tarballName)
 
-      // Install the packed version using pnpm instead of npm for catalog support
+      // Use npm instead of pnpm to avoid workspace conflicts with catalog dependencies
+      // This ensures the test doesn't affect the main project's pnpm-lock.yaml
       try {
-        await execAsync(`pnpm add ${tarballPath}`, { cwd: testTmpDir })
+        await execAsync(`npm install ${tarballPath}`, { cwd: testTmpDir })
       }
       catch (installError: any) {
-        // If pnpm fails with catalog error, skip test gracefully
-        if (installError.message.includes('catalog:') || installError.message.includes('EUNSUPPORTEDPROTOCOL')) {
-          console.log('Catalog dependency detected and pnpm installation failed - skipping test')
-          return
+        // If installation fails, try with pnpm as fallback
+        try {
+          await execAsync(`pnpm add ${tarballPath} --ignore-workspace`, { cwd: testTmpDir })
         }
-        throw installError
+        catch (pnpmError: any) {
+          if (installError.message.includes('catalog:') || pnpmError.message.includes('EUNSUPPORTEDPROTOCOL')) {
+            console.log('Package installation failed due to catalog dependencies - skipping test')
+            return
+          }
+          throw installError
+        }
       }
 
-      // Check if pnpx is available in test directory
+      // Check if npx is available in test directory (since we use npm install)
       try {
-        await execAsync('pnpx --version', { cwd: testTmpDir })
+        await execAsync('npx --version', { cwd: testTmpDir })
       }
       catch {
-        console.log('pnpx not available in test directory - skipping npm package test')
+        console.log('npx not available in test directory - skipping npm package test')
         return
       }
 
@@ -245,7 +259,7 @@ describe('npm Package Integration Tests', () => {
       const testScript = `
         const { spawn } = require('child_process');
         const isWindows = process.platform === 'win32';
-        const child = spawn(isWindows ? 'pnpx.cmd' : 'pnpx', ['zcf', '--lang', 'zh-CN'], { 
+        const child = spawn(isWindows ? 'npx.cmd' : 'npx', ['zcf', '--lang', 'zh-CN'], { 
           stdio: ['pipe', 'pipe', 'pipe'],
           cwd: process.cwd(),
           shell: isWindows,
@@ -296,7 +310,7 @@ describe('npm Package Integration Tests', () => {
       const testScriptEn = `
         const { spawn } = require('child_process');
         const isWindows = process.platform === 'win32';
-        const child = spawn(isWindows ? 'pnpx.cmd' : 'pnpx', ['zcf', '--lang', 'en'], { 
+        const child = spawn(isWindows ? 'npx.cmd' : 'npx', ['zcf', '--lang', 'en'], { 
           stdio: ['pipe', 'pipe', 'pipe'],
           cwd: process.cwd(),
           shell: isWindows,

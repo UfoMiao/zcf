@@ -9,6 +9,7 @@
   "help.commandDescriptions.updateWorkflowFiles": "Update workflow-related md files",
   "help.commandDescriptions.configureCcrProxy": "Configure Claude Code Router for model proxy",
   "help.commandDescriptions.claudeCodeUsageAnalysis": "Claude Code usage statistics analysis",
+  "help.commandDescriptions.uninstallConfigurations": "Remove Claude Code configurations and tools",
   "help.commandDescriptions.checkUpdateVersions": "Check and update to latest versions",
   "help.shortcutDescriptions.quickInit": "Quick init",
   "help.shortcutDescriptions.quickUpdate": "Quick update",
@@ -35,11 +36,13 @@
   "help.exampleDescriptions.updateWorkflowFilesOnly": "Update workflow-related md files only",
   "help.exampleDescriptions.configureClaudeCodeRouter": "Configure Claude Code Router",
   "help.exampleDescriptions.runClaudeCodeUsageAnalysis": "Run Claude Code usage analysis",
+  "help.exampleDescriptions.uninstallConfigurations": "Uninstall configurations and tools",
   "help.exampleDescriptions.checkAndUpdateTools": "Check and update tools",
   "help.exampleDescriptions.nonInteractiveModeCicd": "Non-interactive mode (CI/CD)",
   "banner.subtitle": "One-click configuration tool for Claude Code",
   "banner.updateSubtitle": "Update configuration for Claude Code",
   "help.defaults.dailyUsage": "Daily usage (default)",
+  "help.defaults.interactiveUninstall": "Interactive uninstall menu",
   "help.defaults.updateTools": "Update Claude Code, CCR and CCometixLine",
   "help.defaults.prefix": "default:"
 }
