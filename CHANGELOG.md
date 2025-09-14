@@ -1,5 +1,59 @@
 # Changelog
 
+## 2.12.13
+
+### Patch Changes
+
+- ## New Features
+  - Add comprehensive ZCF uninstallation functionality with interactive confirmation system
+  - Support safe trash-based removal with cross-platform compatibility (Windows/macOS/Linux/Termux)
+  - Implement selective uninstallation options: configs only or complete removal
+  - Add feature detection system for installed components validation
+  - Enhance zcf-release command with automatic commit handling and conventional commit message generation
+  - Support automatic detection and commit of uncommitted changes during release process
+  - Improve release branch workflow to prevent main branch pollution
+
+  ## 新功能
+  - 添加完整的 ZCF 卸载功能，支持交互式确认系统
+  - 支持基于回收站的安全移除，兼容多平台（Windows/macOS/Linux/Termux）
+  - 实现选择性卸载选项：仅配置文件或完全移除
+  - 添加已安装组件的功能检测系统
+  - 增强 zcf-release 命令，支持自动提交处理和规范化提交信息生成
+  - 支持发版过程中自动检测和提交未提交的更改
+  - 改进发版分支工作流，避免污染主分支
+
+  ## Optimization
+  - Optimize GitHub Actions workflows for better performance and reliability
+  - Simplify CI configuration by reducing Node.js version matrix from [18, 20] to lts/\*
+  - Split lint and test jobs for better parallelization and faster feedback
+  - Upgrade pnpm/action-setup from v2 to v4 for enhanced stability
+  - Use @antfu/ni toolchain for consistent package management across workflows
+  - Remove complex cache configuration in favor of built-in caching mechanisms
+  - Streamline release workflow by removing redundant steps and verbose logging
+
+  ## 优化
+  - 优化 GitHub Actions 工作流，提升性能和可靠性
+  - 简化 CI 配置，将 Node.js 版本矩阵从 [18, 20] 减少为 lts/\*
+  - 分离 lint 和 test 任务，实现更好的并行化和更快的反馈
+  - 升级 pnpm/action-setup 从 v2 到 v4，增强稳定性
+  - 使用 @antfu/ni 工具链，确保跨工作流的一致性包管理
+  - 移除复杂的缓存配置，改用内置缓存机制
+  - 精简发布工作流，移除冗余步骤和详细日志
+
+  ## Core Modules
+  - Add `src/commands/uninstall.ts` - Main uninstall command logic with comprehensive option handling
+  - Add `src/utils/uninstaller.ts` - Core uninstallation utilities with advanced conflict resolution
+  - Add `src/utils/trash.ts` - Cross-platform trash functionality using system commands
+  - Add comprehensive i18n translations for uninstall process (zh-CN/en locales)
+  - Add extensive test coverage for all uninstall functionality with edge case scenarios
+
+  ## 核心模块
+  - 新增 `src/commands/uninstall.ts` - 主要卸载命令逻辑，支持全面的选项处理
+  - 新增 `src/utils/uninstaller.ts` - 核心卸载工具，具备高级冲突解决能力
+  - 新增 `src/utils/trash.ts` - 跨平台回收站功能，使用系统命令
+  - 添加卸载流程的完整 i18n 翻译（zh-CN/en 语言环境）
+  - 为所有卸载功能添加全面的测试覆盖，包含边界情况场景
+
 ## 2.12.12
 
 ### Patch Changes

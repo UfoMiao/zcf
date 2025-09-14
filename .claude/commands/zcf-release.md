@@ -373,10 +373,10 @@ This release includes important changes, please review CHANGELOG.md for details.
 
 ## Testing Status
 
-✅ All tests passing
-✅ ESLint checks passed  
-✅ TypeScript type checks passed
-✅ Build successful
+- [x] All tests passing
+- [x] ESLint checks passed
+- [x] TypeScript type checks passed
+- [x] Build successful
 
 ## Release Notes
 
