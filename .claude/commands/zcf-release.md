@@ -365,18 +365,33 @@ git branch --set-upstream-to=origin/$RELEASE_BRANCH $RELEASE_BRANCH
 ```bash
 echo "📋 Creating pull request..."
 
-# Create pull request using gh CLI (English only)
+# Create pull request using gh CLI following the project's PR template
 gh pr create --title "🚀 Release v$NEW_VERSION" --body "$(cat <<'EOF'
-## Release Summary
+## Description
+
+Release version v$NEW_VERSION with automated version bump and CHANGELOG update.
 
 This release includes important changes, please review CHANGELOG.md for details.
 
-## Testing Status
+## Type of Change
 
-- [x] All tests passing
-- [x] ESLint checks passed
-- [x] TypeScript type checks passed
-- [x] Build successful
+- [x] New feature
+- [ ] Bug fix
+- [ ] Breaking change
+- [x] Documentation update
+
+## Testing
+
+- [x] Tests added/updated
+- [x] All tests pass
+- [x] Coverage maintained
+
+## Checklist
+
+- [x] Code follows style guidelines
+- [x] Self-review completed
+- [x] Documentation updated
+- [x] No new warnings introduced
 
 ## Release Notes
 
