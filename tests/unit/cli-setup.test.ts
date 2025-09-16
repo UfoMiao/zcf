@@ -36,9 +36,11 @@ vi.mock('../../src/i18n', async (importOriginal) => {
 vi.mock('../../src/utils/zcf-config', () => ({
   readZcfConfigAsync: vi.fn().mockResolvedValue({
     preferredLang: 'en',
+    codeToolType: 'claude-code',
   }),
   readZcfConfig: vi.fn().mockReturnValue({
     preferredLang: 'en',
+    codeToolType: 'claude-code',
   }),
   updateZcfConfig: vi.fn(),
 }))
@@ -91,7 +93,7 @@ describe('cli-setup', () => {
       const result = customizeHelp(sections)
 
       // Should add header
-      expect(result[0].body).toContain('ZCF - Zero-Config Claude-Code Flow')
+      expect(result[0].body).toContain('ZCF - Zero-Config Code Flow')
 
       // Should add commands section
       const commandsSection = result.find(s => s.title.includes('Commands'))
@@ -217,6 +219,16 @@ describe('cli-setup', () => {
         expect(parsed.options.installCometixLine).toBe('false')
       })
 
+      it('should recognize -T as shortcut for --code-type', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-T', 'codex'], { run: false })
+        expect(parsed.options.codeType).toBe('codex')
+      })
+
+      it('should default code-type to claude-code when not provided', () => {
+        const parsed = cli.parse(['node', 'test', 'init'], { run: false })
+        expect(parsed.options.codeType).toBe('claude-code')
+      })
+
       it('should work with multiple new shortcuts together', () => {
         const parsed = cli.parse(['node', 'test', 'init', '-s', '-c', 'zh-CN', '-a', 'en', '-t', 'api_key'], { run: false })
         expect(parsed.options.skipPrompt).toBe(true)
@@ -256,6 +268,7 @@ describe('cli-setup', () => {
         expect(optionsSection.body).toContain('-o') // output-styles
         expect(optionsSection.body).toContain('-g') // all-lang
         expect(optionsSection.body).toContain('-x') // install-cometix-line
+        expect(optionsSection.body).toContain('-T') // code-type
       })
 
       it('should have proper formatting in help text', () => {
@@ -266,6 +279,7 @@ describe('cli-setup', () => {
         expect(optionsSection.body).toContain('--skip-prompt, -s')
         expect(optionsSection.body).toContain('--config-lang, -c')
         expect(optionsSection.body).toContain('--ai-output-lang, -a')
+        expect(optionsSection.body).toContain('--code-type, -T')
       })
     })
   })

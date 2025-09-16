@@ -153,9 +153,9 @@ export async function configureCcrWithPreset(preset: ProviderPreset): Promise<Cc
   if (preset.requiresApiKey) {
     try {
       const { apiKey } = await inquirer.prompt<{ apiKey: string }>({
-        type: 'input',
+        type: 'password',
         name: 'apiKey',
-        message: i18n.t('ccr:enterApiKeyForProvider').replace('{provider}', preset.name),
+        message: i18n.t('ccr:enterApiKeyForProvider').replace('{provider}', preset.name) + i18n.t('common:inputHidden'),
         validate: async value => !!value || i18n.t('api:keyRequired'),
       })
 

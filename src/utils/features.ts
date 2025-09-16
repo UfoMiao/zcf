@@ -272,9 +272,9 @@ export async function configureMcpFeature(): Promise<void> {
 
       if (service.requiresApiKey) {
         const { apiKey } = await inquirer.prompt<{ apiKey: string }>({
-          type: 'input',
+          type: 'password',
           name: 'apiKey',
-          message: service.apiKeyPrompt!,
+          message: service.apiKeyPrompt! + i18n.t('common:inputHidden'),
           validate: async value => !!value || i18n.t('api:keyRequired'),
         })
 

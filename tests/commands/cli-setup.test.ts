@@ -46,7 +46,7 @@ describe('withLanguageResolution', () => {
   describe('language parameter extraction', () => {
     it('should extract lang and allLang from options', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction)
       const options = { lang: 'zh-CN', allLang: 'zh-CN', skipPrompt: true }
 
@@ -60,7 +60,7 @@ describe('withLanguageResolution', () => {
 
     it('should handle empty options gracefully', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction, true)
 
       // Act
@@ -73,7 +73,7 @@ describe('withLanguageResolution', () => {
 
     it('should handle undefined options', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction, true)
 
       // Act
@@ -88,7 +88,7 @@ describe('withLanguageResolution', () => {
   describe('language priority logic', () => {
     it('should prioritize allLang over lang', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction)
       const options = { lang: 'en', allLang: 'zh-CN', skipPrompt: true }
 
@@ -101,7 +101,7 @@ describe('withLanguageResolution', () => {
 
     it('should prioritize lang over preferredLang', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction)
       const options = { lang: 'zh-CN', skipPrompt: true }
 
@@ -114,7 +114,7 @@ describe('withLanguageResolution', () => {
 
     it('should use preferredLang when no command line params provided', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction)
       const options = { skipPrompt: true }
 
@@ -173,7 +173,7 @@ describe('withLanguageResolution', () => {
   describe('action execution', () => {
     it('should call the original action with correct arguments', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction)
       const arg1 = { lang: 'zh-CN' }
       const arg2 = 'test'
@@ -188,7 +188,7 @@ describe('withLanguageResolution', () => {
 
     it('should preserve action return value', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const wrappedAction = await withLanguageResolution(mockAction)
 
       // Act & Assert
@@ -198,7 +198,7 @@ describe('withLanguageResolution', () => {
 
     it('should handle action errors properly', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       const error = new Error('Action failed')
       mockAction.mockRejectedValue(error)
       const wrappedAction = await withLanguageResolution(mockAction)
@@ -220,7 +220,7 @@ describe('withLanguageResolution', () => {
 
     it('should handle language change errors', async () => {
       // Arrange
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN' })
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       mockChangeLanguage.mockRejectedValue(new Error('Language change failed'))
       const wrappedAction = await withLanguageResolution(mockAction)
 

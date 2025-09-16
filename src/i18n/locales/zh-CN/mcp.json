@@ -3,8 +3,8 @@
   "mcpBackupSuccess": "已备份原有 MCP 配置",
   "mcpConfigSuccess": "MCP 服务已配置",
   "selectMcpServices": "选择要安装的 MCP 服务",
-  "services.Playwright.description": "直接控制浏览器进行自动化操作",
-  "services.Playwright.name": "Playwright 浏览器控制",
+  "services.playwright.description": "直接控制浏览器进行自动化操作",
+  "services.playwright.name": "Playwright 浏览器控制",
   "services.context7.description": "查询最新的库文档和代码示例",
   "services.context7.name": "Context7 文档查询",
   "services.open-websearch.description": "使用 DuckDuckGo、Bing 和 Brave 搜索引擎进行网页搜索",
@@ -16,5 +16,6 @@
   "services.mcp-deepwiki.name": "DeepWiki",
   "services.spec-workflow.description": "规范化特性开发工作流程，从需求到实现的系统化方法",
   "services.spec-workflow.name": "Spec 工作流",
-  "apiKeyApprovalFailed": "API密钥批准状态管理失败"
+  "apiKeyApprovalFailed": "API密钥批准状态管理失败",
+  "apiKeyPrompt": "请输入 API Key"
 }

@@ -65,6 +65,7 @@ describe('installation manager utilities', () => {
     vi.mocked(zcfConfig.getZcfConfig).mockReturnValue({
       version: '1.0.0',
       preferredLang: 'en',
+      codeToolType: 'claude-code',
       lastUpdated: '2025-01-01T00:00:00.000Z',
     })
   })
@@ -155,13 +156,13 @@ describe('installation manager utilities', () => {
 
       await handleMultipleInstallations(installStatus)
 
-      expect(zcfConfig.updateZcfConfig).toHaveBeenCalledWith({
+      expect(zcfConfig.updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({
         claudeCodeInstallation: {
           type: 'local',
           path: '/Users/test/.claude/local/claude',
           configDir: '/Users/test/.claude',
         },
-      })
+      }))
     })
 
     it('should save global installation info to ZCF config when user chooses global', async () => {
@@ -177,13 +178,13 @@ describe('installation manager utilities', () => {
 
       await handleMultipleInstallations(installStatus)
 
-      expect(zcfConfig.updateZcfConfig).toHaveBeenCalledWith({
+      expect(zcfConfig.updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({
         claudeCodeInstallation: {
           type: 'global',
           path: 'claude',
           configDir: expect.stringContaining('/.claude'),
         },
-      })
+      }))
     })
 
     it('should handle only global installation', async () => {
@@ -254,6 +255,7 @@ describe('installation manager utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
+        codeToolType: 'claude-code',
         claudeCodeInstallation: {
           type: 'local',
           path: '/Users/test/.claude/local/claude',
@@ -279,6 +281,7 @@ describe('installation manager utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
+        codeToolType: 'claude-code',
         claudeCodeInstallation: {
           type: 'local',
           path: '/Users/test/.claude/local/claude',
@@ -362,6 +365,7 @@ describe('installation manager utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
+        codeToolType: 'claude-code',
         claudeCodeInstallation: {
           type: 'local',
           path: '/Users/test/.claude/local/claude',
@@ -379,6 +383,7 @@ describe('installation manager utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
+        codeToolType: 'claude-code',
         claudeCodeInstallation: {
           type: 'global',
           path: 'claude',
@@ -396,6 +401,7 @@ describe('installation manager utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
+        codeToolType: 'claude-code',
       })
 
       const result = getClaudeCodeConfigDir()
@@ -418,6 +424,7 @@ describe('installation manager utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
+        codeToolType: 'claude-code',
         claudeCodeInstallation: {
           type: 'global',
           path: 'claude',
@@ -482,6 +489,7 @@ describe('installation manager utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
+        codeToolType: 'claude-code',
         claudeCodeInstallation: {
           type: 'global',
           path: 'claude',

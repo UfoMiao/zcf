@@ -72,9 +72,11 @@ export async function configureApiCompletely(
     return null
   }
 
-  const keyMessage = authType === 'auth_token' ? i18n.t('api:enterAuthToken') : i18n.t('api:enterApiKey')
+  const keyMessage = authType === 'auth_token'
+    ? i18n.t('api:enterAuthToken') + i18n.t('common:inputHidden')
+    : i18n.t('api:enterApiKey') + i18n.t('common:inputHidden')
   const { key } = await inquirer.prompt<{ key: string }>({
-    type: 'input',
+    type: 'password',
     name: 'key',
     message: keyMessage,
     validate: async (value) => {
@@ -170,11 +172,11 @@ export async function modifyApiConfigPartially(
     const authType = currentConfig.authType || 'auth_token'
     const keyMessage
       = authType === 'auth_token'
-        ? i18n.t('api:enterNewApiKey').replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.t('common:none'))
-        : i18n.t('api:enterNewApiKey').replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.t('common:none'))
+        ? i18n.t('api:enterNewApiKey').replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.t('common:none')) + i18n.t('common:inputHidden')
+        : i18n.t('api:enterNewApiKey').replace('{key}', currentConfig.key ? formatApiKeyDisplay(currentConfig.key) : i18n.t('common:none')) + i18n.t('common:inputHidden')
 
     const { key } = await inquirer.prompt<{ key: string }>({
-      type: 'input',
+      type: 'password',
       name: 'key',
       message: keyMessage,
       validate: async (value) => {

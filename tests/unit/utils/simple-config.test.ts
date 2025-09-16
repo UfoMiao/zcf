@@ -49,7 +49,7 @@ describe('simple-config utilities', () => {
 
       vi.mocked(fs.existsSync).mockReturnValue(true)
       vi.mocked(fs.readFileSync).mockImplementation((path) => {
-        if (path.toString().includes('templates/common/settings.json')) {
+        if (path.toString().includes('templates/claude-code/common/settings.json')) {
           return JSON.stringify(templateSettings)
         }
         return JSON.stringify(currentSettings)
@@ -77,7 +77,7 @@ describe('simple-config utilities', () => {
 
       vi.mocked(fs.existsSync).mockReturnValue(false)
       vi.mocked(fs.readFileSync).mockImplementation((path) => {
-        if (path.toString().includes('templates/common/settings.json')) {
+        if (path.toString().includes('templates/claude-code/common/settings.json')) {
           return JSON.stringify(templateSettings)
         }
         throw new Error('File not found')
@@ -103,7 +103,7 @@ describe('simple-config utilities', () => {
 
       vi.mocked(fs.existsSync).mockReturnValue(true)
       vi.mocked(fs.readFileSync).mockImplementation((path) => {
-        if (path.toString().includes('templates/common/settings.json')) {
+        if (path.toString().includes('templates/claude-code/common/settings.json')) {
           return JSON.stringify(templateSettings)
         }
         return 'invalid json'
@@ -137,7 +137,7 @@ describe('simple-config utilities', () => {
 
       vi.mocked(fs.existsSync).mockReturnValue(true)
       vi.mocked(fs.readFileSync).mockImplementation((path) => {
-        if (path.toString().includes('templates/common/settings.json')) {
+        if (path.toString().includes('templates/claude-code/common/settings.json')) {
           return JSON.stringify(templateSettings)
         }
         return JSON.stringify(currentSettings)
@@ -164,7 +164,7 @@ describe('simple-config utilities', () => {
 
       vi.mocked(fs.existsSync).mockReturnValue(true)
       vi.mocked(fs.readFileSync).mockImplementation((path) => {
-        if (path.toString().includes('templates/common/settings.json')) {
+        if (path.toString().includes('templates/claude-code/common/settings.json')) {
           return JSON.stringify(templateSettings)
         }
         return JSON.stringify(currentSettings)
@@ -190,7 +190,7 @@ describe('simple-config utilities', () => {
 
       vi.mocked(fs.existsSync).mockReturnValue(true)
       vi.mocked(fs.readFileSync).mockImplementation((path) => {
-        if (path.toString().includes('templates/common/settings.json')) {
+        if (path.toString().includes('templates/claude-code/common/settings.json')) {
           return JSON.stringify(templateSettings)
         }
         return JSON.stringify(currentSettings)

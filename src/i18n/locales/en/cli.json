@@ -31,6 +31,7 @@
   "help.optionDescriptions.outputStyles": "Output styles",
   "help.optionDescriptions.defaultOutputStyle": "Default output style",
   "help.optionDescriptions.installStatuslineTool": "Install statusline tool",
+  "help.optionDescriptions.codeToolType": "Code tool type",
   "help.exampleDescriptions.showInteractiveMenu": "Show interactive menu",
   "help.exampleDescriptions.runFullInitialization": "Run full initialization",
   "help.exampleDescriptions.updateWorkflowFilesOnly": "Update workflow-related md files only",
