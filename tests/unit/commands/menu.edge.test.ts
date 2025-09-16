@@ -50,6 +50,15 @@ vi.mock('../../../src/utils/tools', () => ({
   runCometixMenuFeature: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/code-tools/codex', () => ({
+  runCodexFullInit: vi.fn(),
+  runCodexWorkflowImport: vi.fn(),
+  configureCodexApi: vi.fn(),
+  configureCodexMcp: vi.fn(),
+  runCodexUpdate: vi.fn(),
+  runCodexUninstall: vi.fn(),
+}))
+
 vi.mock('../../../src/commands/check-updates', () => ({
   checkUpdates: vi.fn(),
 }))
@@ -91,6 +100,7 @@ describe('menu command - Edge Cases', () => {
       vi.mocked(readZcfConfigAsync).mockResolvedValue({
         version: '1.0.0',
         preferredLang: 'en',
+        codeToolType: 'claude-code',
         lastUpdated: '2025-09-14T00:00:00.000Z',
       })
 
@@ -118,6 +128,7 @@ describe('menu command - Edge Cases', () => {
       vi.mocked(readZcfConfigAsync).mockResolvedValue({
         version: '1.0.0',
         preferredLang: 'en',
+        codeToolType: 'claude-code',
         lastUpdated: '2025-09-14T00:00:00.000Z',
       })
 

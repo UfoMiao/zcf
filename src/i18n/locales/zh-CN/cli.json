@@ -31,6 +31,7 @@
   "help.optionDescriptions.outputStyles": "输出样式",
   "help.optionDescriptions.defaultOutputStyle": "默认输出样式",
   "help.optionDescriptions.installStatuslineTool": "安装状态栏工具",
+  "help.optionDescriptions.codeToolType": "代码工具类型",
   "help.exampleDescriptions.showInteractiveMenu": "显示交互式菜单",
   "help.exampleDescriptions.runFullInitialization": "运行完整初始化",
   "help.exampleDescriptions.updateWorkflowFilesOnly": "仅更新工作流相关md文件",

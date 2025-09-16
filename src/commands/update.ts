@@ -1,11 +1,12 @@
-import type { AiOutputLanguage, SupportedLang } from '../constants'
+import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 import process from 'node:process'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { version } from '../../package.json'
-import { LANG_LABELS, SUPPORTED_LANGS } from '../constants'
+import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, LANG_LABELS, SUPPORTED_LANGS } from '../constants'
 import { i18n } from '../i18n'
 import { displayBanner } from '../utils/banner'
+import { runCodexUpdate } from '../utils/code-tools/codex'
 import { updatePromptOnly } from '../utils/config-operations'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
@@ -18,6 +19,19 @@ export interface UpdateOptions {
   configLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
   skipBanner?: boolean
+  codeType?: CodeToolType
+}
+
+function resolveCodeToolType(optionValue: unknown, savedValue?: CodeToolType | null): CodeToolType {
+  if (isCodeToolType(optionValue)) {
+    return optionValue
+  }
+
+  if (savedValue && isCodeToolType(savedValue)) {
+    return savedValue
+  }
+
+  return DEFAULT_CODE_TOOL_TYPE
 }
 
 export async function update(options: UpdateOptions = {}): Promise<void> {
@@ -29,6 +43,28 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
     // Get configuration
     const zcfConfig = readZcfConfig()
+    const codeToolType = resolveCodeToolType(options.codeType, zcfConfig?.codeToolType)
+    options.codeType = codeToolType
+
+    if (codeToolType === 'codex') {
+      await runCodexUpdate()
+
+      const newPreferredLang = options.configLang || zcfConfig?.preferredLang
+      if (newPreferredLang) {
+        updateZcfConfig({
+          version,
+          preferredLang: newPreferredLang,
+          codeToolType,
+        })
+      }
+      else {
+        updateZcfConfig({
+          version,
+          codeToolType,
+        })
+      }
+      return
+    }
 
     // Select config language if not provided
     let configLang = options.configLang as SupportedLang
@@ -75,6 +111,7 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
     updateZcfConfig({
       version,
       aiOutputLang,
+      codeToolType,
     })
   }
   catch (error) {

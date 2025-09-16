@@ -3,7 +3,7 @@
   "version": "1.7.0",
   "project": {
     "name": "zcf",
-    "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
+    "description": "Zero-Config Code Flow - One-click configuration tool for Claude Code",
     "version": "2.12.12",
     "type": "CLI Tool",
     "language": "TypeScript",

@@ -16,7 +16,7 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
     config: {
       type: 'stdio',
       command: 'npx',
-      args: ['-y', '@upstash/context7-mcp'],
+      args: ['-y', '@upstash/context7-mcp@latest'],
       env: {},
     },
   },
@@ -71,7 +71,7 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
     config: {
       type: 'stdio',
       command: 'npx',
-      args: ['-y', 'exa-mcp-server'],
+      args: ['-y', 'exa-mcp-server@latest'],
       env: {
         EXA_API_KEY: 'YOUR_EXA_API_KEY',
       },
@@ -109,8 +109,8 @@ export async function getMcpServices(): Promise<McpService[]> {
     },
     {
       id: 'Playwright',
-      name: i18n.t('mcp:services.Playwright.name'),
-      description: i18n.t('mcp:services.Playwright.description'),
+      name: i18n.t('mcp:services.playwright.name'),
+      description: i18n.t('mcp:services.playwright.description'),
     },
     {
       id: 'exa',

@@ -313,6 +313,20 @@ describe('workflow-installer utilities', () => {
           join(CLAUDE_DIR, 'commands', 'zcf'),
           { recursive: true },
         )
+
+        expect(copyFile).toHaveBeenCalledWith(
+          join(
+            '/project',
+            'templates',
+            'claude-code',
+            'zh-CN',
+            'workflow',
+            'bmad',
+            'commands',
+            'bmad-init.md',
+          ),
+          expect.any(String),
+        )
       }
     })
 
@@ -336,6 +350,20 @@ describe('workflow-installer utilities', () => {
         expect(mkdir).toHaveBeenCalledWith(
           join(CLAUDE_DIR, 'agents', 'zcf', 'bmad'),
           { recursive: true },
+        )
+
+        expect(copyFile).toHaveBeenCalledWith(
+          join(
+            '/project',
+            'templates',
+            'claude-code',
+            'en',
+            'workflow',
+            'bmad',
+            'agents',
+            'analyst.md',
+          ),
+          expect.any(String),
         )
       }
     })

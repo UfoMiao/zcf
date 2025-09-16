@@ -26,7 +26,8 @@ export function displayBanner(subtitle?: string): void {
   ensureI18nInitialized()
   const defaultSubtitle = i18n.t('cli:banner.subtitle')
   const subtitleText = subtitle || defaultSubtitle
-  const paddedSubtitle = padToDisplayWidth(subtitleText, 60)
+  const paddedSubtitle = padToDisplayWidth(subtitleText, 30)
+  const paddedTitle = padToDisplayWidth('Zero-Config Code Flow', 60)
 
   console.log(
     ansis.cyan.bold(`
@@ -37,10 +38,10 @@ export function displayBanner(subtitle?: string): void {
 ║      ██╔╝   ██║      █████╗                                    ║
 ║    ██╔╝     ██║      ██╔══╝                                    ║
 ║   ███████╗  ╚██████╗ ██║                                       ║
-║   ╚══════╝   ╚═════╝ ╚═╝                                       ║
+║   ╚══════╝   ╚═════╝ ╚═╝        ${ansis.gray(paddedSubtitle)} ║
 ║                                                                ║
-║   ${ansis.white.bold('Zero-Config Claude-Code Flow')}                                 ║
-║   ${ansis.gray(paddedSubtitle)} ║
+║   ${ansis.white.bold(paddedTitle)} ║
+║                                                                ║
 ║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
 `),

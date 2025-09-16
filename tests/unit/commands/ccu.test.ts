@@ -49,7 +49,7 @@ describe('executeCcusage', () => {
     })
 
     it('should execute ccusage with English language', async () => {
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' } as any)
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       mockX.mockResolvedValue({
         stdout: '',
         stderr: '',
@@ -66,7 +66,7 @@ describe('executeCcusage', () => {
     })
 
     it('should execute ccusage without arguments (defaults to daily)', async () => {
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN' } as any)
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       mockX.mockResolvedValue({
         stdout: '',
         stderr: '',
@@ -83,7 +83,7 @@ describe('executeCcusage', () => {
     })
 
     it('should execute ccusage with multiple arguments', async () => {
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' } as any)
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       mockX.mockResolvedValue({
         stdout: '',
         stderr: '',

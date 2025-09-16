@@ -1,4 +1,4 @@
-# ZCF - Zero-Config Claude-Code Flow
+# ZCF - Zero-Config Code Flow
 
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
@@ -327,7 +327,7 @@ npx zcf → +を選択
 ```bash
 $ npx zcf
 
- ZCF - Zero-Config Claude-Code Flow
+ ZCF - Zero-Config Code Flow
 
 ? Select ZCF display language / 选择ZCF显示语言 / ZCF表示言語を選択:
   ❯ 日本語

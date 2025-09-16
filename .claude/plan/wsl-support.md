@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-为 ZCF (Zero-Config Claude-Code Flow) 添加 Windows Subsystem for Linux (WSL) 环境检测和支持，确保用户在 WSL 中能够顺畅使用 ZCF 配置 Claude Code。
+为 ZCF (Zero-Config Code Flow) 添加 Windows Subsystem for Linux (WSL) 环境检测和支持，确保用户在 WSL 中能够顺畅使用 ZCF 配置 Claude Code。
 
 ## 背景调研
 

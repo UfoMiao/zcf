@@ -98,7 +98,7 @@ describe('update command', () => {
       const { updatePromptOnly: _updatePromptOnly } = await import('../../../src/utils/config-operations')
       const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
 
-      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN' } as any)
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt).mockResolvedValue({ lang: 'zh-CN' })
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
       vi.mocked(_updatePromptOnly).mockResolvedValue(undefined)
@@ -132,7 +132,7 @@ describe('update command', () => {
       const { update } = await import('../../../src/commands/update')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')
 
-      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN' } as any)
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt).mockResolvedValue({})
 
       await update({ skipBanner: true })
@@ -146,7 +146,7 @@ describe('update command', () => {
       const { resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
       const { updatePromptOnly: _updatePromptOnly } = await import('../../../src/utils/config-operations')
 
-      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN' } as any)
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
       vi.mocked(_updatePromptOnly).mockResolvedValue(undefined)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
@@ -158,6 +158,26 @@ describe('update command', () => {
 
       expect(selectAndInstallWorkflows).toHaveBeenCalled()
       expect(_updatePromptOnly).toHaveBeenCalledWith('chinese-simplified')
+    })
+
+    it('should persist code tool type selection', async () => {
+      const { update } = await import('../../../src/commands/update')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const codexModule = await import('../../../src/utils/code-tools/codex')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+      vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
+      const codexUpdateSpy = vi.spyOn(codexModule, 'runCodexUpdate').mockResolvedValue(undefined)
+
+      await update({ codeType: 'codex', configLang: 'en', aiOutputLang: 'english', skipBanner: true })
+
+      expect(updateZcfConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          codeToolType: 'codex',
+        }),
+      )
+      expect(codexUpdateSpy).toHaveBeenCalled()
+      codexUpdateSpy.mockRestore()
     })
 
     it('should handle errors gracefully', async () => {

@@ -27,6 +27,7 @@ describe('ccr command', () => {
     vi.mocked(banner.displayBannerWithInfo).mockImplementation(() => {})
     vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
       preferredLang: 'en',
+      codeToolType: 'claude-code',
     } as any)
     vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('en')
     vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false)
@@ -52,6 +53,7 @@ describe('ccr command', () => {
     it('should show CCR menu with config language', async () => {
       vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
         preferredLang: 'zh-CN',
+        codeToolType: 'claude-code',
       } as any)
 
       await ccr({})

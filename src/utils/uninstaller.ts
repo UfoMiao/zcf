@@ -3,6 +3,7 @@ import { homedir } from 'node:os'
 import { pathExists } from 'fs-extra'
 import { join } from 'pathe'
 import { exec } from 'tinyexec'
+import { ZCF_CONFIG_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { moveToTrash } from './trash'
@@ -460,14 +461,15 @@ export class ZcfUninstaller {
     }
 
     try {
-      const zcfConfigPath = join(homedir(), '.zcf-config.json')
+      const zcfConfigPath = ZCF_CONFIG_FILE
+      const relativeName = zcfConfigPath.replace(homedir(), '~')
 
       if (await pathExists(zcfConfigPath)) {
         const trashResult = await moveToTrash(zcfConfigPath)
         if (!trashResult[0]?.success) {
           result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
         }
-        result.removed.push('.zcf-config.json')
+        result.removed.push(relativeName)
         result.success = true
       }
       else {

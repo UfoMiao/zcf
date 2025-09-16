@@ -13,6 +13,10 @@ import { configureOutputStyle } from '../../../src/utils/output-style'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
 // Mock all dependencies
+vi.mock('node:fs', () => ({
+  existsSync: vi.fn(),
+}))
+
 vi.mock('inquirer', () => ({
   default: {
     prompt: vi.fn(),
@@ -120,6 +124,15 @@ vi.mock('../../../src/utils/platform', () => ({
 vi.mock('../../../src/utils/ccr/installer', () => ({
   isCcrInstalled: vi.fn(),
   installCcr: vi.fn(),
+}))
+
+vi.mock('../../../src/constants', () => ({
+  CLAUDE_DIR: '/home/user/.claude',
+  SETTINGS_FILE: '/home/user/.claude/settings.json',
+  DEFAULT_CODE_TOOL_TYPE: 'claude-code',
+  LANG_LABELS: { 'zh-CN': '中文', 'en': 'English' },
+  SUPPORTED_LANGS: ['zh-CN', 'en'],
+  isCodeToolType: vi.fn().mockReturnValue(true),
 }))
 
 vi.mock('../../../src/utils/ccr/config', () => ({

@@ -16,6 +16,8 @@ function getRootDir(): string {
   return dirname(distDir)
 }
 
+const DEFAULT_CODE_TOOL_TEMPLATE = 'claude-code'
+
 export async function selectAndInstallWorkflows(
   configLang: SupportedLang,
   preselectedWorkflows?: string[],
@@ -98,7 +100,16 @@ async function installWorkflowWithDependencies(
   }
 
   for (const commandFile of config.commands) {
-    const commandSource = join(rootDir, 'templates', configLang, 'workflow', config.category, 'commands', commandFile)
+    const commandSource = join(
+      rootDir,
+      'templates',
+      DEFAULT_CODE_TOOL_TEMPLATE,
+      configLang,
+      'workflow',
+      config.category,
+      'commands',
+      commandFile,
+    )
     // Keep original file names for all commands
     const destFileName = commandFile
     const commandDest = join(commandsDir, destFileName)
@@ -126,7 +137,16 @@ async function installWorkflowWithDependencies(
     }
 
     for (const agent of config.agents) {
-      const agentSource = join(rootDir, 'templates', configLang, 'workflow', config.category, 'agents', agent.filename)
+      const agentSource = join(
+        rootDir,
+        'templates',
+        DEFAULT_CODE_TOOL_TEMPLATE,
+        configLang,
+        'workflow',
+        config.category,
+        'agents',
+        agent.filename,
+      )
       const agentDest = join(agentsCategoryDir, agent.filename)
 
       if (existsSync(agentSource)) {

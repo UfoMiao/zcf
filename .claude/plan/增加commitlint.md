@@ -1,7 +1,7 @@
 # commitlint 集成执行计划
 
 ## 项目上下文
-- **项目**: ZCF (Zero-Config Claude-Code Flow) v2.12.7
+- **项目**: ZCF (Zero-Config Code Flow) v2.12.7
 - **技术栈**: TypeScript + ESM + pnpm + Husky + Vitest
 - **目标**: 集成 commitlint 进行标准 Conventional Commits 验证
 

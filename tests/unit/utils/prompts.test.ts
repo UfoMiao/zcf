@@ -134,6 +134,7 @@ describe('prompts utilities', () => {
         version: '2.3.0',
         preferredLang: 'en',
         lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
       })
 
       const result = await selectScriptLanguage()
@@ -161,10 +162,10 @@ describe('prompts utilities', () => {
 
       expect(result).toBe('en')
       expect(inquirer.prompt).toHaveBeenCalled()
-      expect(updateZcfConfig).toHaveBeenCalledWith({
+      expect(updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({
         version: '2.3.0',
         preferredLang: 'en',
-      })
+      }))
     })
 
     it('should exit when cancelled', async () => {
@@ -195,6 +196,7 @@ describe('prompts utilities', () => {
         preferredLang: 'zh-CN',
         aiOutputLang: 'en',
         lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
       })
 
       expect(result).toBe('fr')
@@ -208,6 +210,7 @@ describe('prompts utilities', () => {
         preferredLang: 'zh-CN',
         aiOutputLang: 'en',
         lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
       })
 
       expect(result).toBe('en')
@@ -231,6 +234,7 @@ describe('prompts utilities', () => {
         version: '2.3.0',
         preferredLang: 'en',
         lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
       })
 
       expect(result).toBe('en')

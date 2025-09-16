@@ -7,7 +7,7 @@
 
 ## Context
 
-- Project: ZCF (Zero-Config Claude-Code Flow)
+- Project: ZCF (Zero-Config Code Flow)
 - Date: 2025-08-11
 - Task Type: Feature Enhancement
 

@@ -29,7 +29,7 @@ describe('executeCcusage - edge cases', () => {
 
   describe('edge cases', () => {
     it('should handle empty array arguments', async () => {
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' } as any)
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       mockX.mockResolvedValue({
         stdout: '',
         stderr: '',
@@ -46,7 +46,7 @@ describe('executeCcusage - edge cases', () => {
     })
 
     it('should handle special characters in arguments', async () => {
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN' } as any)
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       mockX.mockResolvedValue({
         stdout: '',
         stderr: '',
@@ -64,7 +64,7 @@ describe('executeCcusage - edge cases', () => {
     })
 
     it('should handle very long argument lists', async () => {
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' } as any)
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       mockX.mockResolvedValue({
         stdout: '',
         stderr: '',
@@ -90,7 +90,7 @@ describe('executeCcusage - edge cases', () => {
     // Test removed - error handling pattern incompatible with test environment
 
     it('should handle non-zero exit code', async () => {
-      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en' } as any)
+      mockReadZcfConfigAsync.mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       mockX.mockResolvedValue({
         stdout: 'Some output',
         stderr: 'Some error',

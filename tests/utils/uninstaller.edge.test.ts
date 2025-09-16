@@ -60,12 +60,28 @@ vi.mocked(await import('pathe')).join = vi.fn().mockImplementation((...parts) =>
 vi.mocked(await import('../../src/i18n')).i18n = mockI18n.i18n
 vi.mocked(await import('../../src/utils/trash')).moveToTrash = mockTrash.moveToTrash
 
+// Mock constants
+vi.mock('../../src/constants', () => ({
+  ZCF_CONFIG_FILE: '/home/user/.ufomiao/zcf/config.json',
+  ZCF_CONFIG_DIR: '/home/user/.ufomiao/zcf',
+  CLAUDE_DIR: '/home/user/.claude',
+  SETTINGS_FILE: '/home/user/.claude/settings.json',
+  ClAUDE_CONFIG_FILE: '/home/user/.claude.json',
+  CLAUDE_MD_FILE: '/home/user/.claude/CLAUDE.md',
+}))
+
 describe('zcfUninstaller - Edge Cases', () => {
   let uninstaller: ZcfUninstaller
 
   beforeEach(() => {
     uninstaller = new ZcfUninstaller()
     vi.clearAllMocks()
+    // Reset all mocks to default resolved states
+    mockFsExtra.pathExists.mockResolvedValue(false)
+    mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
+    mockJsonConfig.readJsonConfig.mockReturnValue({})
+    mockJsonConfig.writeJsonConfig.mockReturnValue(undefined)
+    mockExec.exec.mockResolvedValue({ stdout: '', stderr: '' })
   })
 
   describe('constructor edge cases', () => {
