@@ -1,6 +1,6 @@
 # Contributing to ZCF
 
-Thank you for your interest in contributing to ZCF (Zero-Config Claude-Code Flow)! We welcome contributions from the community and are pleased to have you join us.
+Thank you for your interest in contributing to ZCF (Zero-Config Code Flow)! We welcome contributions from the community and are pleased to have you join us.
 
 ## 📋 Table of Contents
 

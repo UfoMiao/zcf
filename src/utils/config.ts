@@ -51,7 +51,7 @@ export function copyConfigFiles(onlyMd: boolean = false): void {
   // Navigate from dist/shared/xxx.mjs to package root
   const distDir = dirname(dirname(currentFilePath))
   const rootDir = dirname(distDir)
-  const baseTemplateDir = join(rootDir, 'templates')
+  const baseTemplateDir = join(rootDir, 'templates', 'claude-code')
 
   if (!onlyMd) {
     // Intelligently merge settings.json instead of copying
@@ -72,7 +72,7 @@ function getDefaultSettings(): ClaudeSettings {
     const currentFilePath = fileURLToPath(import.meta.url)
     const distDir = dirname(dirname(currentFilePath))
     const rootDir = dirname(distDir)
-    const templateSettingsPath = join(rootDir, 'templates', 'common', 'settings.json')
+    const templateSettingsPath = join(rootDir, 'templates', 'claude-code', 'common', 'settings.json')
 
     return readJsonConfig<ClaudeSettings>(templateSettingsPath) || {}
   }

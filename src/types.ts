@@ -15,6 +15,7 @@ export interface McpServerConfig {
   args?: string[]
   url?: string
   env?: Record<string, string>
+  startup_timeout_ms?: number
 }
 
 export interface ClaudeConfiguration {
@@ -24,4 +25,5 @@ export interface ClaudeConfiguration {
     approved: string[]
     rejected: string[]
   }
+  env?: Record<string, string>
 }

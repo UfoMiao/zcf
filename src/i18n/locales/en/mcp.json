@@ -3,8 +3,8 @@
   "mcpBackupSuccess": "Original MCP config backed up",
   "mcpConfigSuccess": "MCP services configured",
   "selectMcpServices": "Select MCP services to install",
-  "services.Playwright.description": "Direct browser control for automation",
-  "services.Playwright.name": "Playwright Browser Control",
+  "services.playwright.description": "Direct browser control for automation",
+  "services.playwright.name": "Playwright Browser Control",
   "services.context7.description": "Query latest library documentation and code examples",
   "services.context7.name": "Context7 Docs",
   "services.open-websearch.description": "Web search using DuckDuckGo, Bing, and Brave search engines",
@@ -16,5 +16,6 @@
   "services.mcp-deepwiki.name": "DeepWiki",
   "services.spec-workflow.description": "Structured feature development workflow, systematic approach from requirements to implementation",
   "services.spec-workflow.name": "Spec Workflow",
-  "apiKeyApprovalFailed": "Failed to manage API key approval status"
+  "apiKeyApprovalFailed": "Failed to manage API key approval status",
+  "apiKeyPrompt": "Enter API Key"
 }

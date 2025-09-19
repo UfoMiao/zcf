@@ -23,6 +23,7 @@ describe('zcf-config utilities', () => {
         version: '1.0.0',
         preferredLang: 'en',
         aiOutputLang: 'en',
+        codeToolType: 'codex' as const,
         lastUpdated: '2024-01-01',
       }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockConfig)
@@ -49,6 +50,7 @@ describe('zcf-config utilities', () => {
         preferredLang: 'zh-CN' as const,
         aiOutputLang: 'zh-CN',
         lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code' as const,
       }
 
       writeZcfConfig(config)
@@ -66,17 +68,19 @@ describe('zcf-config utilities', () => {
         version: '1.0.0',
         preferredLang: 'en' as const,
         aiOutputLang: 'en',
+        codeToolType: 'claude-code',
         lastUpdated: '2024-01-01',
       }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(existingConfig)
 
-      updateZcfConfig({ preferredLang: 'zh-CN' })
+      updateZcfConfig({ preferredLang: 'zh-CN', codeToolType: 'codex' })
 
       expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           preferredLang: 'zh-CN',
           version: '1.0.0',
+          codeToolType: 'codex' as const,
         }),
       )
     })
@@ -91,6 +95,7 @@ describe('zcf-config utilities', () => {
         expect.objectContaining({
           preferredLang: 'zh-CN',
           version: '1.0.0',
+          codeToolType: 'claude-code',
         }),
       )
     })
@@ -126,6 +131,7 @@ describe('zcf-config utilities', () => {
         version: '1.0.0',
         preferredLang: 'en' as const,
         lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code' as const,
       }
 
       // Should not throw
@@ -144,7 +150,17 @@ describe('zcf-config utilities', () => {
 
       const result = await readZcfConfigAsync()
 
-      expect(result).toEqual(mockConfig)
+      // Expect result to be a normalized config containing all required fields
+      expect(result).toEqual({
+        version: '1.0.0',
+        preferredLang: 'en',
+        lastUpdated: '2024-01-01',
+        aiOutputLang: undefined,
+        outputStyles: undefined,
+        defaultOutputStyle: undefined,
+        claudeCodeInstallation: undefined,
+        codeToolType: 'claude-code',
+      })
     })
 
     it('should readZcfConfigAsync return null when no config', async () => {
@@ -162,6 +178,7 @@ describe('zcf-config utilities', () => {
 
       expect(result.version).toBe('1.0.0')
       expect(result.preferredLang).toBe('en')
+      expect(result.codeToolType).toBe('claude-code')
       expect(result.lastUpdated).toBeTruthy()
     })
 
@@ -169,6 +186,7 @@ describe('zcf-config utilities', () => {
       const mockConfig = {
         version: '2.0.0',
         preferredLang: 'zh-CN' as const,
+        codeToolType: 'codex' as const,
         lastUpdated: '2024-06-01',
       }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockConfig)
@@ -183,6 +201,7 @@ describe('zcf-config utilities', () => {
         version: '1.0.0',
         preferredLang: 'en' as const,
         lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code' as const,
       }
 
       await saveZcfConfig(config)
@@ -203,6 +222,7 @@ describe('zcf-config utilities', () => {
       expect(result).toEqual({
         version: '1.0.0',
         preferredLang: 'en',
+        codeToolType: 'claude-code',
         lastUpdated: expect.any(String),
       })
     })
@@ -212,6 +232,7 @@ describe('zcf-config utilities', () => {
         version: '2.0.0',
         preferredLang: 'zh-CN' as const,
         aiOutputLang: 'zh-CN',
+        codeToolType: 'codex' as const,
         lastUpdated: '2024-06-01',
       }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockConfig)
@@ -231,6 +252,7 @@ describe('zcf-config utilities', () => {
         outputStyles: ['style1'],
         defaultOutputStyle: 'style1',
         claudeCodeInstallation: { type: 'global' as const, path: 'test', configDir: 'test' },
+        codeToolType: 'codex' as const,
         lastUpdated: '2024-01-01',
       }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(existingConfig)
@@ -247,6 +269,7 @@ describe('zcf-config utilities', () => {
           outputStyles: ['style1'], // preserved
           defaultOutputStyle: 'style1', // preserved
           claudeCodeInstallation: { type: 'global', path: 'test', configDir: 'test' }, // preserved
+          codeToolType: 'codex' as const,
           lastUpdated: expect.any(String), // updated
         }),
       )
@@ -262,6 +285,7 @@ describe('zcf-config utilities', () => {
         outputStyles: ['nekomata-engineer'],
         defaultOutputStyle: 'nekomata-engineer',
         claudeCodeInstallation: { type: 'local' as const, path: '/local/path', configDir: '/local/.claude' },
+        codeToolType: 'codex' as const,
       }
 
       updateZcfConfig(updates)
@@ -270,6 +294,7 @@ describe('zcf-config utilities', () => {
         expect.any(String),
         expect.objectContaining({
           ...updates,
+          codeToolType: 'codex' as const,
           lastUpdated: expect.any(String),
         }),
       )

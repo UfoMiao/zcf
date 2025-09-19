@@ -40,7 +40,10 @@ vi.mock('../../src/i18n', () => ({
 }))
 
 vi.mock('../../src/utils/zcf-config', () => ({
-  readZcfConfigAsync: vi.fn(),
+  readZcfConfigAsync: vi.fn().mockResolvedValue({
+    preferredLang: 'en',
+    codeToolType: 'claude-code',
+  }),
 }))
 
 vi.mock('../../src/utils/prompts', () => ({
@@ -75,6 +78,7 @@ describe('cli-setup - Edge Cases', () => {
       vi.mocked(readZcfConfigAsync).mockResolvedValue({
         version: '1.0.0',
         preferredLang: 'en',
+        codeToolType: 'claude-code',
         lastUpdated: '2025-09-14T00:00:00.000Z',
       })
       vi.mocked(initI18n).mockRejectedValue(new Error('i18n initialization failed'))
@@ -137,6 +141,7 @@ describe('cli-setup - Edge Cases', () => {
         version: '1.0.0',
         preferredLang: 'zh-CN',
         lastUpdated: '2025-09-14T00:00:00.000Z',
+        codeToolType: 'claude-code',
       })
 
       const cli = cac('test')
@@ -153,6 +158,7 @@ describe('cli-setup - Edge Cases', () => {
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-09-14T00:00:00.000Z',
+        codeToolType: 'claude-code',
       })
 
       const cli = cac('test')

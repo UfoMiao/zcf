@@ -3,7 +3,7 @@ import { join } from 'pathe'
 import { describe, expect, it } from 'vitest'
 
 describe('chinese Template Files', () => {
-  const templateDir = join(process.cwd(), 'templates')
+  const templateDir = join(process.cwd(), 'templates', 'claude-code')
 
   describe('common workflow templates', () => {
     it('should have Chinese templates directory structure', async () => {

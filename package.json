@@ -3,7 +3,7 @@
   "type": "module",
   "version": "2.12.13",
   "packageManager": "pnpm@10.16.1",
-  "description": "Zero-Config Claude-Code Flow - One-click configuration tool for Claude Code",
+  "description": "Zero-Config Code Flow - One-click configuration tool for Claude Code",
   "author": {
     "name": "Miao Da",
     "email": "ufo025174@gmail.com",
