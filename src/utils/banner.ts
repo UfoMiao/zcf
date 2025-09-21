@@ -42,7 +42,6 @@ export function displayBanner(subtitle?: string): void {
 ║                                                                ║
 ║   ${ansis.white.bold(paddedTitle)} ║
 ║                                                                ║
-║                                                                ║
 ╚════════════════════════════════════════════════════════════════╝
 `),
   )

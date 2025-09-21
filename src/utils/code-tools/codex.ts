@@ -1,20 +1,25 @@
+import type { SupportedLang } from '../../constants'
 import type { CodexUninstallItem, CodexUninstallResult } from './codex-uninstaller'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
 import dayjs from 'dayjs'
 import inquirer from 'inquirer'
+import { load } from 'js-toml'
 import { dirname, join } from 'pathe'
 import semver from 'semver'
 import { x } from 'tinyexec'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../../config/mcp-services'
 import { ensureI18nInitialized, i18n } from '../../i18n'
+import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { selectMcpServices } from '../mcp-selector'
 import { isWindows } from '../platform'
 import { addNumbersToChoices } from '../prompt-helpers'
+import { resolveAiOutputLanguage } from '../prompts'
 import { readZcfConfig, updateZcfConfig } from '../zcf-config'
+import { detectConfigManagementMode } from './codex-config-detector'
 
 const CODEX_DIR = join(homedir(), '.codex')
 const CODEX_CONFIG_FILE = join(CODEX_DIR, 'config.toml')
@@ -22,15 +27,16 @@ const CODEX_AUTH_FILE = join(CODEX_DIR, 'auth.json')
 const CODEX_AGENTS_FILE = join(CODEX_DIR, 'AGENTS.md')
 const CODEX_PROMPTS_DIR = join(CODEX_DIR, 'prompts')
 
-interface CodexProvider {
+export interface CodexProvider {
   id: string
   name: string
   baseUrl: string
   wireApi: string
   envKey: string
+  requiresOpenaiAuth: boolean
 }
 
-interface CodexMcpService {
+export interface CodexMcpService {
   id: string
   command: string
   args: string[]
@@ -38,12 +44,13 @@ interface CodexMcpService {
   startup_timeout_ms?: number
 }
 
-interface CodexConfigData {
+export interface CodexConfigData {
   modelProvider: string | null
   providers: CodexProvider[]
   mcpServices: CodexMcpService[]
   managed: boolean
   otherConfig?: string[] // Lines that are not managed by ZCF
+  modelProviderCommented?: boolean // Whether model_provider line should be commented out
 }
 
 function getRootDir(): string {
@@ -195,127 +202,172 @@ function sanitizeProviderName(input: string): string {
   return cleaned.replace(/[^\w.-]/g, '')
 }
 
-function parseCodexConfig(content: string): CodexConfigData {
-  const managed = content.includes('model_provider') || content.includes('[model_providers.') || content.includes('[mcp_servers.')
-  const providers: CodexProvider[] = []
-  const mcpServices: CodexMcpService[] = []
-  const otherConfig: string[] = []
-
-  const modelProviderMatch = content.match(/model_provider\s*=\s*"([^"]+)"/)
-  const modelProvider = modelProviderMatch ? modelProviderMatch[1] : null
-
-  const lines = content.split('\n')
-  let inProviderSection = false
-  let inMcpSection = false
-
-  for (const line of lines) {
-    const trimmedLine = line.trim()
-
-    // Skip ZCF managed header comment (legacy support)
-    if (trimmedLine.includes('Managed by ZCF')) {
-      continue
+export function parseCodexConfig(content: string): CodexConfigData {
+  // Handle empty content
+  if (!content.trim()) {
+    return {
+      modelProvider: null,
+      providers: [],
+      mcpServices: [],
+      managed: false,
+      otherConfig: [],
+      modelProviderCommented: undefined,
     }
-
-    // Check if entering a [model_providers.xxx] section
-    if (trimmedLine.match(/^\[model_providers\./)) {
-      inProviderSection = true
-      continue
-    }
-
-    // Check if entering a [mcp_servers.xxx] section
-    if (trimmedLine.match(/^\[mcp_servers\./)) {
-      inMcpSection = true
-      continue
-    }
-
-    // Check if leaving current section (next section starts)
-    if ((inProviderSection || inMcpSection) && trimmedLine.startsWith('[')
-      && !trimmedLine.match(/^\[model_providers\./)
-      && !trimmedLine.match(/^\[mcp_servers\./)) {
-      inProviderSection = false
-      inMcpSection = false
-    }
-
-    // Skip lines inside managed sections
-    if (inProviderSection || inMcpSection) {
-      continue
-    }
-
-    // Skip model_provider line (managed by ZCF)
-    if (trimmedLine.startsWith('model_provider')) {
-      continue
-    }
-
-    // Skip empty lines and ZCF managed comments
-    if (!trimmedLine
-      || trimmedLine.startsWith('# --- MCP servers added by ZCF ---')
-      || trimmedLine.startsWith('# --- model provider added by ZCF ---')) {
-      continue
-    }
-
-    // Collect other configuration lines that are not managed by ZCF
-    otherConfig.push(line)
   }
 
-  const providerRegex = /\[model_providers\.([^\]]+)\]([\s\S]*?)(?=\n\[|$)/g
-  let providerMatch: RegExpExecArray | null
-  providerMatch = providerRegex.exec(content)
-  while (providerMatch !== null) {
-    const id = providerMatch[1]
-    const block = providerMatch[2]
-    const name = block.match(/name\s*=\s*"([^"]*)"/)?.[1] || id
-    const baseUrl = block.match(/base_url\s*=\s*"([^"]*)"/)?.[1] || ''
-    const wireApi = block.match(/wire_api\s*=\s*"([^"]*)"/)?.[1] || 'responses'
-    const envKey = block.match(/env_key\s*=\s*"([^"]*)"/)?.[1] || 'OPENAI_API_KEY'
+  try {
+    // Parse TOML using js-toml
+    const tomlData = load(content) as any
 
-    providers.push({ id, name, baseUrl, wireApi, envKey })
-    providerMatch = providerRegex.exec(content)
-  }
-
-  const mcpRegex = /\[mcp_servers\.([^\]]+)\]([\s\S]*?)(?=\n\[|$)/g
-  let mcpMatch: RegExpExecArray | null
-  mcpMatch = mcpRegex.exec(content)
-  while (mcpMatch !== null) {
-    const id = mcpMatch[1]
-    const block = mcpMatch[2]
-    const command = block.match(/command\s*=\s*"([^"]*)"/)?.[1] || id
-    const argsRaw = block.match(/args\s*=\s*\[([^\]]*)\]/)?.[1]
-    const args = argsRaw
-      ? argsRaw.split(',').map(item => item.trim()).filter(Boolean).map(item => item.replace(/^"|"$/g, ''))
-      : []
-
-    // Parse environment variables from env = {KEY = "value", KEY2 = "value2"} format
-    const envMatch = block.match(/env\s*=\s*\{([^}]*)\}/)
-    const env: Record<string, string> = {}
-    if (envMatch) {
-      const envContent = envMatch[1]
-      const envPairs = envContent.split(',')
-      for (const pair of envPairs) {
-        const envVarMatch = pair.trim().match(/(\w+)\s*=\s*"([^"]*)"/)
-        if (envVarMatch) {
-          env[envVarMatch[1]] = envVarMatch[2]
-        }
+    // Extract providers from [model_providers.*] sections
+    const providers: CodexProvider[] = []
+    if (tomlData.model_providers) {
+      for (const [id, providerData] of Object.entries(tomlData.model_providers)) {
+        const provider = providerData as any
+        providers.push({
+          id,
+          name: provider.name || id,
+          baseUrl: provider.base_url || '',
+          wireApi: provider.wire_api || 'responses',
+          envKey: provider.env_key || 'OPENAI_API_KEY',
+          requiresOpenaiAuth: provider.requires_openai_auth !== false,
+        })
       }
     }
 
-    // Parse startup timeout
-    const timeoutMatch = block.match(/startup_timeout_ms\s*=\s*(\d+)/)
-    const startup_timeout_ms = timeoutMatch ? Number.parseInt(timeoutMatch[1], 10) : undefined
+    // Extract MCP services from [mcp_servers.*] sections
+    const mcpServices: CodexMcpService[] = []
+    if (tomlData.mcp_servers) {
+      for (const [id, mcpData] of Object.entries(tomlData.mcp_servers)) {
+        const mcp = mcpData as any
+        mcpServices.push({
+          id,
+          command: mcp.command || id,
+          args: mcp.args || [],
+          env: Object.keys(mcp.env || {}).length > 0 ? mcp.env : undefined,
+          startup_timeout_ms: mcp.startup_timeout_ms,
+        })
+      }
+    }
 
-    mcpServices.push({ id, command, args, env, startup_timeout_ms })
-    mcpMatch = mcpRegex.exec(content)
+    // Check for model_provider (both commented and uncommented) from original content
+    // We need to detect global model_provider from text because TOML parser might
+    // incorrectly assign it to a section if it appears after a section header
+    let modelProvider: string | null = null
+    let modelProviderCommented: boolean | undefined
+
+    // First check for commented model_provider
+    const commentedMatch = content.match(/^(\s*)#\s*model_provider\s*=\s*"([^"]+)"/m)
+    if (commentedMatch) {
+      modelProvider = commentedMatch[2]
+      modelProviderCommented = true
+    }
+    else {
+      // Check for uncommented global model_provider
+      // Look for model_provider that's not inside a section
+      const lines = content.split('\n')
+      let inSection = false
+
+      for (const line of lines) {
+        const trimmedLine = line.trim()
+
+        // Skip empty lines
+        if (!trimmedLine) {
+          continue
+        }
+
+        // Check if we're entering a section
+        if (trimmedLine.startsWith('[')) {
+          inSection = true
+          continue
+        }
+
+        // Skip comments (but reset inSection flag for non-section content)
+        if (trimmedLine.startsWith('#')) {
+          // Comments break section context - this allows for global config after comments
+          if (trimmedLine.includes('--- model provider added by ZCF ---')) {
+            inSection = false // ZCF comments mark global config area
+          }
+          continue
+        }
+
+        // If we find model_provider outside a section, it's global
+        if (!inSection && trimmedLine.startsWith('model_provider')) {
+          const match = trimmedLine.match(/model_provider\s*=\s*"([^"]+)"/)
+          if (match) {
+            modelProvider = match[1]
+            modelProviderCommented = false
+            break
+          }
+        }
+
+        // If we encounter any key-value pair in section context, stay in section
+        // If we encounter any key-value pair outside section context, keep outside
+      }
+    }
+
+    // Preserve other configuration sections (not managed by ZCF)
+    const otherConfig: string[] = []
+    const lines = content.split('\n')
+    let skipCurrentSection = false
+    let currentSection = ''
+
+    for (const line of lines) {
+      const trimmedLine = line.trim()
+
+      // Skip ZCF managed comments
+      if (trimmedLine.includes('--- model provider added by ZCF ---')
+        || trimmedLine.includes('--- MCP servers added by ZCF ---')
+        || trimmedLine.includes('Managed by ZCF')) {
+        continue
+      }
+
+      // Detect section headers
+      const sectionMatch = trimmedLine.match(/^\[([^\]]+)\]/)
+      if (sectionMatch) {
+        currentSection = sectionMatch[1]
+        // Skip ZCF managed sections
+        skipCurrentSection = currentSection.startsWith('model_providers.')
+          || currentSection.startsWith('mcp_servers.')
+      }
+
+      // Skip model_provider line (managed by ZCF) only if we're not in a section
+      if (!skipCurrentSection && (trimmedLine.startsWith('model_provider') || trimmedLine.startsWith('# model_provider'))) {
+        continue
+      }
+
+      // Collect lines that are not in ZCF managed sections
+      if (!skipCurrentSection && trimmedLine) {
+        otherConfig.push(line)
+      }
+    }
+
+    const managed = providers.length > 0 || mcpServices.length > 0 || modelProvider !== null
+
+    return {
+      modelProvider,
+      providers,
+      mcpServices,
+      managed,
+      otherConfig,
+      modelProviderCommented,
+    }
   }
-
-  return {
-    modelProvider,
-    providers,
-    mcpServices,
-    managed,
-    otherConfig,
+  catch (error) {
+    // Fallback to basic parsing if TOML parsing fails
+    console.warn('TOML parsing failed, falling back to basic parsing:', error)
+    return {
+      modelProvider: null,
+      providers: [],
+      mcpServices: [],
+      managed: false,
+      otherConfig: content.split('\n'),
+      modelProviderCommented: undefined,
+    }
   }
 }
 
-function readCodexConfig(): CodexConfigData | null {
+export function readCodexConfig(): CodexConfigData | null {
   if (!exists(CODEX_CONFIG_FILE))
     return null
 
@@ -328,23 +380,34 @@ function readCodexConfig(): CodexConfigData | null {
   }
 }
 
-function renderCodexConfig(data: CodexConfigData): string {
+export function renderCodexConfig(data: CodexConfigData): string {
   const lines: string[] = []
 
-  // Add preserved non-ZCF configuration first
-  if (data.otherConfig && data.otherConfig.length > 0) {
-    lines.push(...data.otherConfig)
+  // CRITICAL: Add ZCF global configuration FIRST to ensure it's truly global
+  // This prevents TOML parser from incorrectly assigning global keys to sections
+  if (data.modelProvider || data.providers.length > 0 || data.modelProviderCommented) {
+    lines.push('# --- model provider added by ZCF ---')
+
+    if (data.modelProvider) {
+      const commentPrefix = data.modelProviderCommented ? '# ' : ''
+      lines.push(`${commentPrefix}model_provider = "${data.modelProvider}"`)
+    }
+
+    // Add blank line after global config
     lines.push('')
   }
 
-  if (data.modelProvider || data.providers.length) {
-    lines.push('# --- model provider added by ZCF ---')
-
-    if (data.modelProvider)
-      lines.push(`model_provider = "${data.modelProvider}"`)
+  // Add preserved non-ZCF configuration after global config
+  if (data.otherConfig && data.otherConfig.length > 0) {
+    lines.push(...data.otherConfig)
+    // Add blank line only if we have sections to add
+    if (data.providers.length > 0 || data.mcpServices.length > 0) {
+      lines.push('')
+    }
   }
 
-  if (data.providers.length) {
+  // Add model providers sections
+  if (data.providers.length > 0) {
     for (const provider of data.providers) {
       lines.push('')
       lines.push(`[model_providers.${provider.id}]`)
@@ -352,16 +415,20 @@ function renderCodexConfig(data: CodexConfigData): string {
       lines.push(`base_url = "${provider.baseUrl}"`)
       lines.push(`wire_api = "${provider.wireApi}"`)
       lines.push(`env_key = "${provider.envKey}"`)
+      lines.push(`requires_openai_auth = ${provider.requiresOpenaiAuth}`)
     }
   }
 
-  if (data.mcpServices.length) {
+  // Add MCP servers sections
+  if (data.mcpServices.length > 0) {
     lines.push('')
     lines.push('# --- MCP servers added by ZCF ---')
     for (const service of data.mcpServices) {
       lines.push(`[mcp_servers.${service.id}]`)
       lines.push(`command = "${service.command}"`)
-      const argsString = service.args.length
+
+      // Format args array
+      const argsString = service.args.length > 0
         ? service.args.map(arg => `"${arg}"`).join(', ')
         : ''
       lines.push(`args = [${argsString}]`)
@@ -382,20 +449,26 @@ function renderCodexConfig(data: CodexConfigData): string {
       lines.push('')
     }
     // Remove trailing blank line added by loop
-    if (lines[lines.length - 1] === '')
+    if (lines[lines.length - 1] === '') {
       lines.pop()
+    }
   }
 
-  lines.push('')
-  return `${lines.join('\n')}\n`
+  // Ensure file ends with a newline but not multiple blank lines
+  let result = lines.join('\n')
+  if (result && !result.endsWith('\n')) {
+    result += '\n'
+  }
+
+  return result
 }
 
-function writeCodexConfig(data: CodexConfigData): void {
+export function writeCodexConfig(data: CodexConfigData): void {
   ensureDir(CODEX_DIR)
   writeFile(CODEX_CONFIG_FILE, renderCodexConfig(data))
 }
 
-function writeAuthFile(newEntries: Record<string, string>): void {
+export function writeAuthFile(newEntries: Record<string, string>): void {
   ensureDir(CODEX_DIR)
   const existing = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
   const merged = { ...existing, ...newEntries }
@@ -486,6 +559,31 @@ export async function runCodexWorkflowImport(): Promise<void> {
   console.log(ansis.green(i18n.t('codex:workflowInstall')))
 }
 
+/**
+ * Run Codex workflow import with language selection (AI output language + system prompt + workflow)
+ * Reuses Claude Code's language selection functionality
+ */
+export async function runCodexWorkflowImportWithLanguageSelection(): Promise<void> {
+  ensureI18nInitialized()
+
+  // Step 1: Select AI output language (uses global config memory)
+  const zcfConfig = readZcfConfig()
+  const aiOutputLang = await resolveAiOutputLanguage(
+    i18n.language as SupportedLang,
+    undefined, // No command line option
+    zcfConfig,
+  )
+
+  // Step 2: Save AI output language to global config
+  updateZcfConfig({ aiOutputLang })
+  applyAiLanguageDirective(aiOutputLang)
+
+  // Step 3: Continue with original workflow (system prompt + workflow selection)
+  await runCodexSystemPromptSelection()
+  await runCodexWorkflowSelection()
+  console.log(ansis.green(i18n.t('codex:workflowInstall')))
+}
+
 export async function runCodexSystemPromptSelection(): Promise<void> {
   ensureI18nInitialized()
   const rootDir = getRootDir()
@@ -554,6 +652,22 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
 
   // Write to AGENTS.md
   writeFile(CODEX_AGENTS_FILE, content)
+
+  // Update ZCF configuration to save the selected system prompt style
+  try {
+    const { updateTomlConfig } = await import('../toml-config')
+    const { ZCF_CONFIG_FILE } = await import('../../constants')
+
+    updateTomlConfig(ZCF_CONFIG_FILE, {
+      codex: {
+        systemPromptStyle: systemPrompt,
+      },
+    } as any) // Use any to bypass type checking temporarily
+  }
+  catch (error) {
+    // Silently handle config update failure - the main functionality (writing AGENTS.md) has succeeded
+    console.error('Failed to update ZCF config:', error)
+  }
 }
 
 export async function runCodexWorkflowSelection(): Promise<void> {
@@ -634,20 +748,62 @@ function toProvidersList(providers: CodexProvider[]): Array<{ name: string, valu
   return providers.map(provider => ({ name: provider.name || provider.id, value: provider.id }))
 }
 
+/**
+ * Create API configuration choices for inquirer (official login + providers)
+ * @param providers - List of providers
+ * @param currentProvider - Currently active provider ID
+ * @param isCommented - Whether the current provider is commented out
+ * @returns Array of formatted choices for inquirer
+ */
+
+function createApiConfigChoices(providers: CodexProvider[], currentProvider?: string | null, isCommented?: boolean): Array<{ name: string, value: string }> {
+  const choices: Array<{ name: string, value: string }> = []
+
+  // Add official login option first
+  const isOfficialMode = !currentProvider || isCommented
+  choices.push({
+    name: isOfficialMode
+      ? `${ansis.green('● ')}${i18n.t('codex:useOfficialLogin')} ${ansis.yellow('(当前)')}`
+      : `  ${i18n.t('codex:useOfficialLogin')}`,
+    value: 'official',
+  })
+
+  // Add provider options
+  providers.forEach((provider) => {
+    const isCurrent = currentProvider === provider.id && !isCommented
+    choices.push({
+      name: isCurrent
+        ? `${ansis.green('● ')}${provider.name} - ${ansis.gray(provider.id)} ${ansis.yellow('(当前)')}`
+        : `  ${provider.name} - ${ansis.gray(provider.id)}`,
+      value: provider.id,
+    })
+  })
+
+  return choices
+}
+
 export async function configureCodexApi(): Promise<void> {
   ensureI18nInitialized()
   const existingConfig = readCodexConfig()
 
-  const modeChoices = addNumbersToChoices([
+  // Check if there are existing providers for switch option
+  const hasProviders = existingConfig?.providers && existingConfig.providers.length > 0
+
+  const modeChoices = [
     { name: i18n.t('codex:apiModeOfficial'), value: 'official' },
     { name: i18n.t('codex:apiModeCustom'), value: 'custom' },
-  ])
+  ]
 
-  const { mode } = await inquirer.prompt<{ mode: 'official' | 'custom' }>([{
+  // Add switch option if providers exist
+  if (hasProviders) {
+    modeChoices.push({ name: i18n.t('codex:configSwitchMode'), value: 'switch' })
+  }
+
+  const { mode } = await inquirer.prompt<{ mode: 'official' | 'custom' | 'switch' }>([{
     type: 'list',
     name: 'mode',
     message: i18n.t('codex:apiModePrompt'),
-    choices: modeChoices,
+    choices: addNumbersToChoices(modeChoices),
     default: 'custom',
   }])
 
@@ -657,28 +813,58 @@ export async function configureCodexApi(): Promise<void> {
   }
 
   if (mode === 'official') {
-    const backupPath = backupCodexConfig()
-    if (backupPath) {
-      console.log(ansis.gray(getBackupMessage(backupPath)))
+    // Use new official login logic - preserve providers but comment model_provider
+    const success = await switchToOfficialLogin()
+    if (success) {
+      updateZcfConfig({ codeToolType: 'codex' })
+    }
+    return
+  }
+
+  if (mode === 'switch') {
+    // Switch API config mode - includes official login and providers
+    if (!hasProviders) {
+      console.log(ansis.yellow(i18n.t('codex:noProvidersAvailable')))
+      return
     }
 
-    const configData: CodexConfigData = {
-      modelProvider: null,
-      providers: [],
-      mcpServices: existingConfig?.mcpServices || [],
-      managed: true,
-      otherConfig: existingConfig?.otherConfig || [],
-    }
-    writeCodexConfig(configData)
+    const currentProvider = existingConfig?.modelProvider
+    const isCommented = existingConfig?.modelProviderCommented
+    const choices = createApiConfigChoices(existingConfig!.providers, currentProvider, isCommented)
 
-    const auth = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
-    if ('OPENAI_API_KEY' in auth) {
-      delete auth.OPENAI_API_KEY
-      writeJsonConfig(CODEX_AUTH_FILE, auth, { pretty: true })
+    const { selectedConfig } = await inquirer.prompt<{ selectedConfig: string }>([{
+      type: 'list',
+      name: 'selectedConfig',
+      message: i18n.t('codex:apiConfigSwitchPrompt'),
+      choices: addNumbersToChoices(choices),
+    }])
+
+    if (!selectedConfig) {
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
+      return
     }
 
-    updateZcfConfig({ codeToolType: 'codex' })
-    console.log(ansis.green(i18n.t('codex:officialConfigured')))
+    let success = false
+    if (selectedConfig === 'official') {
+      success = await switchToOfficialLogin()
+    }
+    else {
+      success = await switchToProvider(selectedConfig)
+    }
+
+    if (success) {
+      updateZcfConfig({ codeToolType: 'codex' })
+    }
+    return
+  }
+
+  // Custom API configuration mode - check if we should use incremental management
+  const managementMode = detectConfigManagementMode()
+
+  if (managementMode.mode === 'management' && managementMode.hasProviders) {
+    // Use incremental management for existing configurations
+    const { default: { configureIncrementalManagement } } = await import('./codex-config-switch')
+    await configureIncrementalManagement()
     return
   }
 
@@ -780,6 +966,7 @@ export async function configureCodexApi(): Promise<void> {
       baseUrl: answers.baseUrl,
       wireApi: answers.wireApi || 'responses',
       envKey,
+      requiresOpenaiAuth: true,
     }
 
     providers.push(newProvider)
@@ -1026,5 +1213,160 @@ function displayUninstallResults(results: CodexUninstallResult[]): void {
     for (const error of result.errors) {
       console.log(ansis.red(`❌ ${error}`))
     }
+  }
+}
+
+/**
+ * Get current active Codex provider
+ * @returns Current provider ID or null if not set
+ */
+export async function getCurrentCodexProvider(): Promise<string | null> {
+  const config = readCodexConfig()
+  return config?.modelProvider || null
+}
+
+/**
+ * List all available Codex providers
+ * @returns Array of available providers
+ */
+export async function listCodexProviders(): Promise<CodexProvider[]> {
+  const config = readCodexConfig()
+  return config?.providers || []
+}
+
+/**
+ * Switch to a different Codex provider
+ * @param providerId - ID of the provider to switch to
+ * @returns True if switch was successful, false otherwise
+ */
+export async function switchCodexProvider(providerId: string): Promise<boolean> {
+  ensureI18nInitialized()
+
+  const existingConfig = readCodexConfig()
+  if (!existingConfig) {
+    console.log(ansis.red(i18n.t('codex:configNotFound')))
+    return false
+  }
+
+  // Check if provider exists
+  const providerExists = existingConfig.providers.some(provider => provider.id === providerId)
+  if (!providerExists) {
+    console.log(ansis.red(i18n.t('codex:providerNotFound', { provider: providerId })))
+    return false
+  }
+
+  // Create backup before modification
+  const backupPath = backupCodexConfig()
+  if (backupPath) {
+    console.log(ansis.gray(getBackupMessage(backupPath)))
+  }
+
+  // Update model provider
+  const updatedConfig: CodexConfigData = {
+    ...existingConfig,
+    modelProvider: providerId,
+  }
+
+  try {
+    writeCodexConfig(updatedConfig)
+    console.log(ansis.green(i18n.t('codex:providerSwitchSuccess', { provider: providerId })))
+    return true
+  }
+  catch (error) {
+    console.error(ansis.red(`Error switching provider: ${(error as Error).message}`))
+    return false
+  }
+}
+
+/**
+ * Switch to official login mode (comment out model_provider, set OPENAI_API_KEY to null)
+ * @returns True if switch was successful, false otherwise
+ */
+export async function switchToOfficialLogin(): Promise<boolean> {
+  ensureI18nInitialized()
+
+  const existingConfig = readCodexConfig()
+  if (!existingConfig) {
+    console.log(ansis.red(i18n.t('codex:configNotFound')))
+    return false
+  }
+
+  // Create backup before modification
+  const backupPath = backupCodexConfig()
+  if (backupPath) {
+    console.log(ansis.gray(getBackupMessage(backupPath)))
+  }
+
+  try {
+    // Comment out model_provider but keep providers configuration
+    const updatedConfig: CodexConfigData = {
+      ...existingConfig,
+      modelProvider: existingConfig.modelProvider, // Keep the current provider value
+      modelProviderCommented: true, // Mark as commented
+    }
+
+    writeCodexConfig(updatedConfig)
+
+    // Clear auth.json for official mode - VSCode will handle authentication
+    writeJsonConfig(CODEX_AUTH_FILE, {}, { pretty: true })
+
+    console.log(ansis.green(i18n.t('codex:officialConfigured')))
+    return true
+  }
+  catch (error) {
+    console.error(ansis.red(`Error switching to official login: ${(error as Error).message}`))
+    return false
+  }
+}
+
+/**
+ * Switch to a specific provider (uncomment model_provider, set environment variable in auth.json)
+ * @param providerId - ID of the provider to switch to
+ * @returns True if switch was successful, false otherwise
+ */
+export async function switchToProvider(providerId: string): Promise<boolean> {
+  ensureI18nInitialized()
+
+  const existingConfig = readCodexConfig()
+  if (!existingConfig) {
+    console.log(ansis.red(i18n.t('codex:configNotFound')))
+    return false
+  }
+
+  // Check if provider exists
+  const provider = existingConfig.providers.find(p => p.id === providerId)
+  if (!provider) {
+    console.log(ansis.red(i18n.t('codex:providerNotFound', { provider: providerId })))
+    return false
+  }
+
+  // Create backup before modification
+  const backupPath = backupCodexConfig()
+  if (backupPath) {
+    console.log(ansis.gray(getBackupMessage(backupPath)))
+  }
+
+  try {
+    // Uncomment model_provider and set to specified provider
+    const updatedConfig: CodexConfigData = {
+      ...existingConfig,
+      modelProvider: providerId,
+      modelProviderCommented: false, // Ensure it's not commented
+    }
+
+    writeCodexConfig(updatedConfig)
+
+    // Set OPENAI_API_KEY to the provider's environment variable value for VSCode
+    const auth = readJsonConfig<Record<string, string | null>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
+    const envValue = auth[provider.envKey] || null
+    auth.OPENAI_API_KEY = envValue
+    writeJsonConfig(CODEX_AUTH_FILE, auth, { pretty: true })
+
+    console.log(ansis.green(i18n.t('codex:providerSwitchSuccess', { provider: providerId })))
+    return true
+  }
+  catch (error) {
+    console.error(ansis.red(`Error switching to provider: ${(error as Error).message}`))
+    return false
   }
 }

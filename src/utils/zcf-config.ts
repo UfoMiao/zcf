@@ -1,8 +1,11 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
+import type { ZcfTomlConfig } from '../types/toml-config'
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, LEGACY_ZCF_CONFIG_FILES, SUPPORTED_LANGS, ZCF_CONFIG_DIR, ZCF_CONFIG_FILE } from '../constants'
-import { readJsonConfig, writeJsonConfig } from './json-config'
+import { readJsonConfig } from './json-config'
+import { migrateFromJsonConfig, readTomlConfig, writeTomlConfig } from './toml-config'
 
+// Legacy interfaces for backward compatibility
 export interface ClaudeCodeInstallation {
   type: 'global' | 'local'
   path: string
@@ -37,6 +40,29 @@ function sanitizePreferredLang(lang: any): SupportedLang {
 
 function sanitizeCodeToolType(codeTool: any): CodeToolType {
   return isCodeToolType(codeTool) ? codeTool : DEFAULT_CODE_TOOL_TYPE
+}
+
+/**
+ * Convert TOML config to legacy ZcfConfig format for backward compatibility
+ */
+function convertTomlToLegacyConfig(tomlConfig: ZcfTomlConfig): ZcfConfig {
+  return {
+    version: tomlConfig.version,
+    preferredLang: tomlConfig.general.preferredLang,
+    aiOutputLang: tomlConfig.general.aiOutputLang,
+    outputStyles: tomlConfig.claudeCode.outputStyles,
+    defaultOutputStyle: tomlConfig.claudeCode.defaultOutputStyle,
+    claudeCodeInstallation: tomlConfig.claudeCode.installation,
+    codeToolType: tomlConfig.general.currentTool,
+    lastUpdated: tomlConfig.lastUpdated,
+  }
+}
+
+/**
+ * Convert legacy ZcfConfig to TOML format
+ */
+function convertLegacyToTomlConfig(legacyConfig: ZcfConfig): ZcfTomlConfig {
+  return migrateFromJsonConfig(legacyConfig)
 }
 
 function normalizeZcfConfig(config: Partial<ZcfConfig> | null): ZcfConfig | null {
@@ -102,7 +128,14 @@ export function migrateZcfConfigIfNeeded(): ZcfConfigMigrationResult {
 export function readZcfConfig(): ZcfConfig | null {
   migrateZcfConfigIfNeeded()
 
-  const raw = readJsonConfig<Partial<ZcfConfig>>(ZCF_CONFIG_FILE)
+  // First, try to read TOML config
+  const tomlConfig = readTomlConfig(ZCF_CONFIG_FILE)
+  if (tomlConfig) {
+    return convertTomlToLegacyConfig(tomlConfig)
+  }
+
+  // Fallback to legacy JSON config reading for backward compatibility
+  const raw = readJsonConfig<Partial<ZcfConfig>>(ZCF_CONFIG_FILE.replace('.toml', '.json'))
   const normalized = normalizeZcfConfig(raw || null)
   if (normalized) {
     return normalized
@@ -127,11 +160,13 @@ export async function readZcfConfigAsync(): Promise<ZcfConfig | null> {
 
 export function writeZcfConfig(config: ZcfConfig): void {
   try {
-    // Always write to new location
-    writeJsonConfig(ZCF_CONFIG_FILE, {
+    // Convert legacy config to TOML format and write
+    const sanitizedConfig = {
       ...config,
       codeToolType: sanitizeCodeToolType(config.codeToolType),
-    })
+    }
+    const tomlConfig = convertLegacyToTomlConfig(sanitizedConfig)
+    writeTomlConfig(ZCF_CONFIG_FILE, tomlConfig)
   }
   catch {
     // Silently fail if cannot write config - user's system may have permission issues

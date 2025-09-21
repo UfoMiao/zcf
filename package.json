@@ -71,9 +71,11 @@
     "i18next": "catalog:runtime",
     "i18next-fs-backend": "catalog:runtime",
     "inquirer": "catalog:cli",
+    "js-toml": "catalog:runtime",
     "ora": "catalog:cli",
     "pathe": "catalog:runtime",
     "semver": "catalog:runtime",
+    "smol-toml": "catalog:runtime",
     "tinyexec": "catalog:runtime",
     "trash": "catalog:runtime"
   },

@@ -22,7 +22,7 @@ vi.mock('../../../src/utils/json-config', () => ({
 describe('zcf-config migration', () => {
   const home = homedir()
   const newDir = join(home, '.ufomiao', 'zcf')
-  const newPath = join(newDir, 'config.json')
+  const newPath = join(newDir, 'config.toml')
   const claudeLegacy = join(home, '.claude', '.zcf-config.json')
   const legacyJson = join(home, '.zcf.json')
 
@@ -45,7 +45,7 @@ describe('zcf-config migration', () => {
     })
 
     const { migrateZcfConfigIfNeeded } = await import('../../../src/utils/zcf-config')
-    const result = await migrateZcfConfigIfNeeded()
+    const result = migrateZcfConfigIfNeeded()
 
     expect(mkdirSync).toHaveBeenCalledWith(newDir, { recursive: true })
     expect(renameSync).toHaveBeenCalledWith(claudeLegacy, newPath)
@@ -65,7 +65,7 @@ describe('zcf-config migration', () => {
     })
 
     const { migrateZcfConfigIfNeeded } = await import('../../../src/utils/zcf-config')
-    const result = await migrateZcfConfigIfNeeded()
+    const result = migrateZcfConfigIfNeeded()
 
     expect(renameSync).not.toHaveBeenCalled()
     expect(rmSync).toHaveBeenCalledWith(claudeLegacy, { force: true })
@@ -86,7 +86,7 @@ describe('zcf-config migration', () => {
     })
 
     const { migrateZcfConfigIfNeeded } = await import('../../../src/utils/zcf-config')
-    const result = await migrateZcfConfigIfNeeded()
+    const result = migrateZcfConfigIfNeeded()
 
     expect(renameSync).toHaveBeenCalledWith(legacyJson, newPath)
     expect(result).toEqual({ migrated: true, source: legacyJson, target: newPath, removed: [] })

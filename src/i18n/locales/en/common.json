@@ -12,5 +12,6 @@
   "goodbye": "👋 Thanks for using ZCF! Goodbye!",
   "returnToMenu": "Return to main menu?",
   "back": "Back",
-  "inputHidden": " (input will be hidden)"
+  "inputHidden": " (input will be hidden)",
+  "operationFailed": "Operation failed"
 }

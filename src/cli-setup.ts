@@ -5,6 +5,7 @@ import { version } from '../package.json'
 import { ccr } from './commands/ccr'
 import { executeCcusage } from './commands/ccu'
 import { checkUpdates } from './commands/check-updates'
+import { configSwitchCommand } from './commands/config-switch'
 import { init } from './commands/init'
 import { showMainMenu } from './commands/menu'
 import { uninstall } from './commands/uninstall'
@@ -270,6 +271,20 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .allowUnknownOptions()
     .action(await withLanguageResolution(async (args) => {
       await executeCcusage(args)
+    }))
+
+  // Config switch command - Switch Codex provider
+  cli
+    .command('config-switch [provider]', 'Switch Codex provider or list available providers')
+    .alias('cs')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
+    .option('--list', 'List available providers')
+    .action(await withLanguageResolution(async (provider, options) => {
+      await configSwitchCommand({
+        provider,
+        list: options.list,
+      })
     }))
 
   // Uninstall command - Remove ZCF configurations and tools

@@ -20,8 +20,10 @@ catalogs:
     fs-extra: ^11.3.1
     i18next: ^25.5.2
     i18next-fs-backend: ^2.6.0
+    js-toml: ^1.0.2
     pathe: ^2.0.3
     semver: ^7.7.2
+    smol-toml: ^1.4.2
     tinyexec: ^1.0.1
     trash: ^10.0.0
   testing:
