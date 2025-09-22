@@ -300,9 +300,6 @@ export function parseCodexConfig(content: string): CodexConfigData {
             break
           }
         }
-
-        // If we encounter any key-value pair in section context, stay in section
-        // If we encounter any key-value pair outside section context, keep outside
       }
     }
 
@@ -655,7 +652,7 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
 
   // Update ZCF configuration to save the selected system prompt style
   try {
-    const { updateTomlConfig } = await import('../toml-config')
+    const { updateTomlConfig } = await import('../zcf-config')
     const { ZCF_CONFIG_FILE } = await import('../../constants')
 
     updateTomlConfig(ZCF_CONFIG_FILE, {
@@ -1075,7 +1072,7 @@ export async function configureCodexMcp(): Promise<void> {
     }
 
     selection.push({
-      id,
+      id: id.toLowerCase(), // Convert to lowercase for Codex compatibility
       command,
       args,
       env: Object.keys(env).length > 0 ? env : undefined,

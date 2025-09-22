@@ -1,24 +1,6 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 
 /**
- * Claude Code installation information
- */
-export interface ClaudeCodeInstallation {
-  type: 'global' | 'local'
-  path: string
-  configDir: string
-}
-
-/**
- * Codex installation information
- */
-export interface CodexInstallation {
-  type: 'global' | 'local'
-  path: string
-  configDir: string
-}
-
-/**
  * Claude Code specific configuration
  * Features: Multiple output styles selection
  */
@@ -26,17 +8,17 @@ export interface ClaudeCodeConfig {
   enabled: boolean
   outputStyles: string[]
   defaultOutputStyle?: string
-  installation: ClaudeCodeInstallation
+  installType: 'global' | 'local'
 }
 
 /**
  * Codex specific configuration
  * Features: Single system prompt style selection
+ * Note: Codex only supports global installation, so no installType field
  */
 export interface CodexConfig {
   enabled: boolean
   systemPromptStyle: string
-  installation: CodexInstallation
 }
 
 /**

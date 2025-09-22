@@ -1,24 +1,22 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
-import type { ZcfTomlConfig } from '../types/toml-config'
+import type {
+  PartialZcfTomlConfig,
+  ZcfTomlConfig,
+} from '../types/toml-config'
 import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { dirname } from 'pathe'
+import { parse, stringify } from 'smol-toml'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, LEGACY_ZCF_CONFIG_FILES, SUPPORTED_LANGS, ZCF_CONFIG_DIR, ZCF_CONFIG_FILE } from '../constants'
+import { ensureDir, exists, readFile, writeFile } from './fs-operations'
 import { readJsonConfig } from './json-config'
-import { migrateFromJsonConfig, readTomlConfig, writeTomlConfig } from './toml-config'
 
 // Legacy interfaces for backward compatibility
-export interface ClaudeCodeInstallation {
-  type: 'global' | 'local'
-  path: string
-  configDir: string
-}
-
 export interface ZcfConfig {
   version: string
   preferredLang: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
   outputStyles?: string[]
   defaultOutputStyle?: string
-  claudeCodeInstallation?: ClaudeCodeInstallation
   codeToolType: CodeToolType
   lastUpdated: string
 }
@@ -43,6 +41,141 @@ function sanitizeCodeToolType(codeTool: any): CodeToolType {
 }
 
 /**
+ * Read TOML configuration from file
+ * @param configPath - Path to the TOML configuration file
+ * @returns Parsed TOML configuration or null if not found/invalid
+ */
+function readTomlConfig(configPath: string): ZcfTomlConfig | null {
+  try {
+    if (!exists(configPath)) {
+      return null
+    }
+
+    const content = readFile(configPath)
+    const parsed = parse(content) as unknown as ZcfTomlConfig
+    return parsed
+  }
+  catch {
+    // Handle parsing errors gracefully
+    return null
+  }
+}
+
+/**
+ * Write TOML configuration to file
+ * @param configPath - Path to the TOML configuration file
+ * @param config - Configuration object to write
+ */
+function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
+  try {
+    // Ensure parent directory exists
+    const configDir = dirname(configPath)
+    ensureDir(configDir)
+
+    // Serialize to TOML and write to file
+    const tomlContent = stringify(config)
+    writeFile(configPath, tomlContent)
+  }
+  catch {
+    // Silently fail if cannot write config - user's system may have permission issues
+    // The app should still work without saved preferences
+  }
+}
+
+/**
+ * Create default TOML configuration
+ * @param preferredLang - Preferred language for the configuration
+ * @param claudeCodeInstallType - Claude Code installation type (global or local)
+ * @returns Default configuration structure
+ */
+function createDefaultTomlConfig(preferredLang: SupportedLang = 'en', claudeCodeInstallType: 'global' | 'local' = 'global'): ZcfTomlConfig {
+  return {
+    version: '1.0.0',
+    lastUpdated: new Date().toISOString(),
+    general: {
+      preferredLang,
+      aiOutputLang: preferredLang === 'zh-CN' ? 'zh-CN' : undefined,
+      currentTool: DEFAULT_CODE_TOOL_TYPE,
+    },
+    claudeCode: {
+      enabled: true,
+      outputStyles: ['engineer-professional'],
+      defaultOutputStyle: 'engineer-professional',
+      installType: claudeCodeInstallType,
+    },
+    codex: {
+      enabled: false,
+      systemPromptStyle: 'engineer-professional',
+    },
+  }
+}
+
+/**
+ * Migrate from legacy JSON config to TOML format
+ * @param jsonConfig - Legacy JSON configuration
+ * @returns Migrated TOML configuration
+ */
+function migrateFromJsonConfig(jsonConfig: any): ZcfTomlConfig {
+  // Extract install type from old installation config
+  const claudeCodeInstallType = jsonConfig.claudeCodeInstallation?.type || 'global'
+  const defaultConfig = createDefaultTomlConfig('en', claudeCodeInstallType)
+
+  // Map JSON fields to TOML structure
+  const tomlConfig: ZcfTomlConfig = {
+    version: jsonConfig.version || defaultConfig.version,
+    lastUpdated: jsonConfig.lastUpdated || new Date().toISOString(),
+    general: {
+      preferredLang: jsonConfig.preferredLang || defaultConfig.general.preferredLang,
+      aiOutputLang: jsonConfig.aiOutputLang || defaultConfig.general.aiOutputLang,
+      currentTool: jsonConfig.codeToolType || defaultConfig.general.currentTool,
+    },
+    claudeCode: {
+      enabled: jsonConfig.codeToolType === 'claude-code',
+      outputStyles: jsonConfig.outputStyles || defaultConfig.claudeCode.outputStyles,
+      defaultOutputStyle: jsonConfig.defaultOutputStyle || defaultConfig.claudeCode.defaultOutputStyle,
+      installType: claudeCodeInstallType,
+    },
+    codex: {
+      enabled: jsonConfig.codeToolType === 'codex',
+      systemPromptStyle: jsonConfig.systemPromptStyle || defaultConfig.codex.systemPromptStyle,
+    },
+  }
+
+  return tomlConfig
+}
+
+/**
+ * Update partial TOML configuration
+ * @param configPath - Path to the configuration file
+ * @param updates - Partial updates to apply
+ * @returns Updated configuration
+ */
+function updateTomlConfig(configPath: string, updates: PartialZcfTomlConfig): ZcfTomlConfig {
+  const existingConfig = readTomlConfig(configPath) || createDefaultTomlConfig()
+
+  // Deep merge updates with existing configuration
+  const updatedConfig: ZcfTomlConfig = {
+    version: updates.version || existingConfig.version,
+    lastUpdated: new Date().toISOString(),
+    general: {
+      ...existingConfig.general,
+      ...updates.general,
+    },
+    claudeCode: {
+      ...existingConfig.claudeCode,
+      ...updates.claudeCode,
+    },
+    codex: {
+      ...existingConfig.codex,
+      ...updates.codex,
+    },
+  }
+
+  writeTomlConfig(configPath, updatedConfig)
+  return updatedConfig
+}
+
+/**
  * Convert TOML config to legacy ZcfConfig format for backward compatibility
  */
 function convertTomlToLegacyConfig(tomlConfig: ZcfTomlConfig): ZcfConfig {
@@ -52,7 +185,6 @@ function convertTomlToLegacyConfig(tomlConfig: ZcfTomlConfig): ZcfConfig {
     aiOutputLang: tomlConfig.general.aiOutputLang,
     outputStyles: tomlConfig.claudeCode.outputStyles,
     defaultOutputStyle: tomlConfig.claudeCode.defaultOutputStyle,
-    claudeCodeInstallation: tomlConfig.claudeCode.installation,
     codeToolType: tomlConfig.general.currentTool,
     lastUpdated: tomlConfig.lastUpdated,
   }
@@ -76,7 +208,6 @@ function normalizeZcfConfig(config: Partial<ZcfConfig> | null): ZcfConfig | null
     aiOutputLang: config.aiOutputLang,
     outputStyles: Array.isArray(config.outputStyles) ? config.outputStyles : undefined,
     defaultOutputStyle: typeof config.defaultOutputStyle === 'string' ? config.defaultOutputStyle : undefined,
-    claudeCodeInstallation: config.claudeCodeInstallation,
     codeToolType: sanitizeCodeToolType(config.codeToolType),
     lastUpdated: typeof config.lastUpdated === 'string' ? config.lastUpdated : new Date().toISOString(),
   }
@@ -182,7 +313,6 @@ export function updateZcfConfig(updates: Partial<ZcfConfig>): void {
     aiOutputLang: updates.aiOutputLang || existingConfig?.aiOutputLang,
     outputStyles: updates.outputStyles !== undefined ? updates.outputStyles : existingConfig?.outputStyles,
     defaultOutputStyle: updates.defaultOutputStyle !== undefined ? updates.defaultOutputStyle : existingConfig?.defaultOutputStyle,
-    claudeCodeInstallation: updates.claudeCodeInstallation !== undefined ? updates.claudeCodeInstallation : existingConfig?.claudeCodeInstallation,
     codeToolType: updates.codeToolType || existingConfig?.codeToolType || DEFAULT_CODE_TOOL_TYPE,
     lastUpdated: new Date().toISOString(),
   }
@@ -212,3 +342,6 @@ export async function getZcfConfigAsync(): Promise<ZcfConfig> {
 export async function saveZcfConfig(config: ZcfConfig): Promise<void> {
   writeZcfConfig(config)
 }
+
+// Export TOML functions for direct usage (migration path)
+export { createDefaultTomlConfig, migrateFromJsonConfig, readTomlConfig, updateTomlConfig, writeTomlConfig }

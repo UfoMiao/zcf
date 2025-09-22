@@ -10,7 +10,12 @@ import * as zcfConfig from '../../../src/utils/zcf-config'
 
 vi.mock('../../../src/utils/fs-operations')
 vi.mock('../../../src/utils/installer')
-vi.mock('../../../src/utils/zcf-config')
+vi.mock('../../../src/utils/zcf-config', () => ({
+  readTomlConfig: vi.fn(),
+  updateTomlConfig: vi.fn(),
+  getZcfConfig: vi.fn(),
+  updateZcfConfig: vi.fn(),
+}))
 
 // Mock homedir to return consistent test path
 vi.mock('node:os', () => ({
@@ -152,17 +157,14 @@ describe('installation manager utilities', () => {
       }
 
       vi.mocked(inquirer.prompt).mockResolvedValue({ installMethod: 'local' })
-      vi.mocked(zcfConfig.updateZcfConfig).mockResolvedValue(undefined)
 
       await handleMultipleInstallations(installStatus)
 
-      expect(zcfConfig.updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({
-        claudeCodeInstallation: {
-          type: 'local',
-          path: '/Users/test/.claude/local/claude',
-          configDir: '/Users/test/.claude',
+      expect(zcfConfig.updateTomlConfig).toHaveBeenCalledWith('/Users/test/.ufomiao/zcf/config.toml', {
+        claudeCode: {
+          installType: 'local',
         },
-      }))
+      })
     })
 
     it('should save global installation info to ZCF config when user chooses global', async () => {
@@ -174,17 +176,14 @@ describe('installation manager utilities', () => {
 
       vi.mocked(inquirer.prompt).mockResolvedValue({ installMethod: 'global' })
       vi.mocked(installer.removeLocalClaudeCode).mockResolvedValue(undefined)
-      vi.mocked(zcfConfig.updateZcfConfig).mockResolvedValue(undefined)
 
       await handleMultipleInstallations(installStatus)
 
-      expect(zcfConfig.updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({
-        claudeCodeInstallation: {
-          type: 'global',
-          path: 'claude',
-          configDir: expect.stringContaining('/.claude'),
+      expect(zcfConfig.updateTomlConfig).toHaveBeenCalledWith('/Users/test/.ufomiao/zcf/config.toml', {
+        claudeCode: {
+          installType: 'global',
         },
-      }))
+      })
     })
 
     it('should handle only global installation', async () => {
@@ -251,15 +250,22 @@ describe('installation manager utilities', () => {
       }
 
       // Mock that user previously chose local installation
-      vi.mocked(zcfConfig.getZcfConfig).mockReturnValue({
+      vi.mocked(zcfConfig.readTomlConfig).mockReturnValue({
         version: '1.0.0',
-        preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
-        codeToolType: 'claude-code',
-        claudeCodeInstallation: {
-          type: 'local',
-          path: '/Users/test/.claude/local/claude',
-          configDir: '/Users/test/.claude',
+        general: {
+          preferredLang: 'en',
+          currentTool: 'claude-code',
+        },
+        claudeCode: {
+          enabled: true,
+          outputStyles: ['engineer-professional'],
+          defaultOutputStyle: 'engineer-professional',
+          installType: 'local',
+        },
+        codex: {
+          enabled: false,
+          systemPromptStyle: 'engineer-professional',
         },
       })
 
@@ -282,11 +288,6 @@ describe('installation manager utilities', () => {
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
         codeToolType: 'claude-code',
-        claudeCodeInstallation: {
-          type: 'local',
-          path: '/Users/test/.claude/local/claude',
-          configDir: '/Users/test/.claude',
-        },
       })
 
       const result = await handleMultipleInstallations(installStatus)
@@ -347,14 +348,16 @@ describe('installation manager utilities', () => {
       }
 
       vi.mocked(inquirer.prompt).mockResolvedValue({ installMethod: 'local' })
-      vi.mocked(zcfConfig.updateZcfConfig).mockRejectedValue(new Error('Config update failed'))
+      vi.mocked(zcfConfig.updateTomlConfig).mockImplementation(() => {
+        throw new Error('Config update failed')
+      })
 
       // Should not throw but should gracefully handle the error
       const result = await handleMultipleInstallations(installStatus)
 
       expect(result).toBe('local')
-      // Verify that updateZcfConfig was called - this is the main test requirement
-      expect(zcfConfig.updateZcfConfig).toHaveBeenCalled()
+      // Verify that updateTomlConfig was called - this is the main test requirement
+      expect(zcfConfig.updateTomlConfig).toHaveBeenCalled()
       // The function should complete without throwing (graceful error handling)
     })
   })
@@ -366,11 +369,6 @@ describe('installation manager utilities', () => {
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
         codeToolType: 'claude-code',
-        claudeCodeInstallation: {
-          type: 'local',
-          path: '/Users/test/.claude/local/claude',
-          configDir: '/Users/test/.claude',
-        },
       })
 
       const result = getClaudeCodeConfigDir()
@@ -384,11 +382,6 @@ describe('installation manager utilities', () => {
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
         codeToolType: 'claude-code',
-        claudeCodeInstallation: {
-          type: 'global',
-          path: 'claude',
-          configDir: '/Users/test/.claude',
-        },
       })
 
       const result = getClaudeCodeConfigDir()
@@ -419,17 +412,12 @@ describe('installation manager utilities', () => {
       expect(result).toMatch(/\.claude$/)
     })
 
-    it('should return default when claudeCodeInstallation.configDir is undefined', () => {
+    it('should return default when config is missing installation info', () => {
       vi.mocked(zcfConfig.getZcfConfig).mockReturnValue({
         version: '1.0.0',
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
         codeToolType: 'claude-code',
-        claudeCodeInstallation: {
-          type: 'global',
-          path: 'claude',
-          configDir: undefined as any,
-        },
       })
 
       const result = getClaudeCodeConfigDir()
@@ -447,7 +435,7 @@ describe('installation manager utilities', () => {
       }
 
       vi.mocked(inquirer.prompt).mockResolvedValue({ installMethod: 'local' })
-      vi.mocked(zcfConfig.updateZcfConfig).mockImplementation(() => {
+      vi.mocked(zcfConfig.updateTomlConfig).mockImplementation(() => {
         throw new Error('Config save failed')
       })
 
@@ -490,11 +478,6 @@ describe('installation manager utilities', () => {
         preferredLang: 'en',
         lastUpdated: '2025-01-01T00:00:00.000Z',
         codeToolType: 'claude-code',
-        claudeCodeInstallation: {
-          type: 'global',
-          path: 'claude',
-          configDir: '/Users/test/.claude',
-        },
       })
 
       const result = await handleMultipleInstallations(installStatus)
@@ -512,18 +495,17 @@ describe('installation manager utilities', () => {
 
       vi.mocked(inquirer.prompt).mockResolvedValue({ installMethod: 'global' })
       vi.mocked(installer.removeLocalClaudeCode).mockResolvedValue(undefined)
-      vi.mocked(zcfConfig.updateZcfConfig).mockImplementation(() => {
+      vi.mocked(zcfConfig.updateTomlConfig).mockImplementation(() => {
         throw new Error('Config save error')
       })
 
-      // Should return the choice even if config save fails
-      const result = await handleMultipleInstallations(installStatus)
+      // Should throw error when global installation config save fails
+      await expect(handleMultipleInstallations(installStatus)).rejects.toThrow('Config save error')
 
-      expect(result).toBe('global')
-      expect(console.error).toHaveBeenCalledWith('✖ Failed to save installation config: Error: Config save error')
+      expect(console.error).toHaveBeenCalledWith('✖ installation:failedToRemoveLocalInstallation: Error: Config save error')
     })
 
-    it('should not call updateZcfConfig on error scenarios', async () => {
+    it('should not call updateTomlConfig on error scenarios', async () => {
       const installStatus = {
         hasGlobal: true,
         hasLocal: true,
@@ -535,8 +517,8 @@ describe('installation manager utilities', () => {
 
       await expect(handleMultipleInstallations(installStatus)).rejects.toThrow('Remove failed')
 
-      // updateZcfConfig should not have been called due to error
-      expect(zcfConfig.updateZcfConfig).not.toHaveBeenCalled()
+      // updateTomlConfig should not have been called due to error
+      expect(zcfConfig.updateTomlConfig).not.toHaveBeenCalled()
     })
   })
 

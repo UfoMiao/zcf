@@ -48,6 +48,7 @@ vi.mock('../../../../src/utils/prompts', () => ({
 vi.mock('../../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(),
   updateZcfConfig: vi.fn(),
+  updateTomlConfig: vi.fn(),
 }))
 
 // Mock config operations

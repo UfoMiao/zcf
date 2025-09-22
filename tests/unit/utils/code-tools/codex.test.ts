@@ -57,6 +57,7 @@ vi.mock('node:fs/promises', () => ({
 vi.mock('../../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(),
   updateZcfConfig: vi.fn(),
+  updateTomlConfig: vi.fn(),
 }))
 vi.mock('../../../../src/utils/mcp-selector', () => ({
   selectMcpServices: vi.fn(),

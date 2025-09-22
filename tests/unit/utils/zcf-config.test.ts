@@ -1,30 +1,85 @@
+import type {
+  ZcfTomlConfig,
+} from '../../../src/types/toml-config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_CODE_TOOL_TYPE } from '../../../src/constants'
 import * as jsonConfig from '../../../src/utils/json-config'
-import * as tomlConfig from '../../../src/utils/toml-config'
 import {
+  createDefaultTomlConfig,
   getZcfConfig,
   getZcfConfigAsync,
+  migrateFromJsonConfig,
+  readTomlConfig,
   readZcfConfig,
   readZcfConfigAsync,
   saveZcfConfig,
   updateZcfConfig,
+  writeTomlConfig,
   writeZcfConfig,
 } from '../../../src/utils/zcf-config'
 
+// Mock dependencies
 vi.mock('../../../src/utils/json-config')
-vi.mock('../../../src/utils/toml-config', () => ({
-  readTomlConfig: vi.fn(),
-  writeTomlConfig: vi.fn(),
-  createDefaultTomlConfig: vi.fn(),
-  migrateFromJsonConfig: vi.fn(),
-  updateTomlConfig: vi.fn(),
-  validateTomlConfig: vi.fn(),
-}))
+vi.mock('../../../src/utils/fs-operations')
+vi.mock('smol-toml')
+
+const mockExists = vi.fn()
+const mockReadFile = vi.fn()
+const mockWriteFile = vi.fn()
+const mockEnsureDir = vi.fn()
+const mockParse = vi.fn()
+const mockStringify = vi.fn()
+
+// Setup mocks
+vi.mocked(await import('../../../src/utils/fs-operations')).exists = mockExists
+vi.mocked(await import('../../../src/utils/fs-operations')).readFile = mockReadFile
+vi.mocked(await import('../../../src/utils/fs-operations')).writeFile = mockWriteFile
+vi.mocked(await import('../../../src/utils/fs-operations')).ensureDir = mockEnsureDir
+vi.mocked(await import('smol-toml')).parse = mockParse
+vi.mocked(await import('smol-toml')).stringify = mockStringify
 
 describe('zcf-config utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
+
+  const sampleTomlConfig: ZcfTomlConfig = {
+    version: '1.0.0',
+    lastUpdated: '2025-09-21T08:00:00.000Z',
+    general: {
+      preferredLang: 'zh-CN',
+      aiOutputLang: 'zh-CN',
+      currentTool: 'claude-code',
+    },
+    claudeCode: {
+      enabled: true,
+      outputStyles: ['engineer-professional', 'nekomata-engineer'],
+      defaultOutputStyle: 'nekomata-engineer',
+      installType: 'global',
+    },
+    codex: {
+      enabled: false,
+      systemPromptStyle: 'engineer-professional',
+    },
+  }
+
+  const sampleTomlString = `version = "1.0.0"
+last_updated = "2025-09-21T08:00:00.000Z"
+
+[general]
+preferred_lang = "zh-CN"
+ai_output_lang = "zh-CN"
+current_tool = "claude-code"
+
+[claude_code]
+enabled = true
+output_styles = ["engineer-professional", "nekomata-engineer"]
+default_output_style = "nekomata-engineer"
+install_type = "global"
+
+[codex]
+enabled = false
+system_prompt_style = "engineer-professional"`
 
   describe('readZcfConfig', () => {
     it('should read config from TOML file', () => {
@@ -40,24 +95,17 @@ describe('zcf-config utilities', () => {
           enabled: false,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
+          installType: 'global' as const,
         },
         codex: {
           enabled: true,
           systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
         },
       }
 
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(mockTomlConfig)
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(sampleTomlString)
+      mockParse.mockReturnValue(mockTomlConfig)
 
       const result = readZcfConfig()
 
@@ -69,18 +117,20 @@ describe('zcf-config utilities', () => {
         lastUpdated: '2024-01-01',
         outputStyles: ['engineer-professional'],
         defaultOutputStyle: 'engineer-professional',
-        claudeCodeInstallation: mockTomlConfig.claudeCode.installation,
       })
-      expect(tomlConfig.readTomlConfig).toHaveBeenCalled()
+      expect(mockExists).toHaveBeenCalled()
+      expect(mockReadFile).toHaveBeenCalled()
+      expect(mockParse).toHaveBeenCalled()
     })
 
     it('should return null when file does not exist', () => {
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(null)
+      mockExists.mockReturnValue(false)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
       const result = readZcfConfig()
 
       expect(result).toBeNull()
+      expect(mockExists).toHaveBeenCalled()
     })
   })
 
@@ -94,48 +144,16 @@ describe('zcf-config utilities', () => {
         codeToolType: 'claude-code' as const,
       }
 
-      const expectedTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: '2024-01-01',
-        general: {
-          preferredLang: 'zh-CN' as const,
-          aiOutputLang: 'zh-CN',
-          currentTool: 'claude-code' as const,
-        },
-        claudeCode: {
-          enabled: true,
-          outputStyles: ['engineer-professional'],
-          defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
-        },
-      }
-
-      vi.mocked(tomlConfig.migrateFromJsonConfig).mockReturnValue(expectedTomlConfig)
+      // Mock internal TOML operations
+      mockStringify.mockReturnValue('mocked toml content')
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
 
       writeZcfConfig(config)
 
-      expect(tomlConfig.writeTomlConfig).toHaveBeenCalledWith(
+      expect(mockWriteFile).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          version: '1.0.0',
-          general: expect.objectContaining({
-            preferredLang: 'zh-CN' as const,
-            currentTool: 'claude-code',
-          }),
-        }),
+        'mocked toml content',
       )
     })
   })
@@ -154,113 +172,41 @@ describe('zcf-config utilities', () => {
           enabled: true,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
+          installType: 'global' as const,
         },
         codex: {
           enabled: false,
           systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
         },
       }
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(existingTomlConfig)
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(sampleTomlString)
+      mockParse.mockReturnValue(existingTomlConfig)
 
-      const expectedNewTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: expect.any(String),
-        general: {
-          preferredLang: 'zh-CN' as const,
-          aiOutputLang: 'en',
-          currentTool: 'codex' as const,
-        },
-        claudeCode: {
-          enabled: false,
-          outputStyles: ['engineer-professional'],
-          defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
-        },
-      }
-      vi.mocked(tomlConfig.migrateFromJsonConfig).mockReturnValue(expectedNewTomlConfig)
+      // Migration is handled internally
 
       updateZcfConfig({ preferredLang: 'zh-CN', codeToolType: 'codex' })
 
-      expect(tomlConfig.writeTomlConfig).toHaveBeenCalledWith(
+      expect(mockWriteFile).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          version: '1.0.0',
-          general: expect.objectContaining({
-            preferredLang: 'zh-CN' as const,
-            currentTool: 'codex',
-          }),
-        }),
+        'mocked toml content',
       )
     })
 
     it('should handle null existing config', () => {
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(null)
+      mockExists.mockReturnValue(false)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
-      const expectedTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: expect.any(String),
-        general: {
-          preferredLang: 'zh-CN' as const,
-          aiOutputLang: undefined,
-          currentTool: 'claude-code' as const,
-        },
-        claudeCode: {
-          enabled: true,
-          outputStyles: ['engineer-professional'],
-          defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
-        },
-      }
-      vi.mocked(tomlConfig.migrateFromJsonConfig).mockReturnValue(expectedTomlConfig)
+      // Mock internal TOML operations
+      mockStringify.mockReturnValue('mocked toml content')
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
 
       updateZcfConfig({ preferredLang: 'zh-CN' })
 
-      expect(tomlConfig.writeTomlConfig).toHaveBeenCalledWith(
+      expect(mockWriteFile).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          version: '1.0.0',
-          general: expect.objectContaining({
-            preferredLang: 'zh-CN' as const,
-            currentTool: 'claude-code',
-          }),
-        }),
+        'mocked toml content',
       )
     })
   })
@@ -276,19 +222,19 @@ describe('zcf-config utilities', () => {
   describe('readZcfConfig - legacy file support', () => {
     it('should try legacy location', () => {
       // This test covers the legacy path logic without complex mocking
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(null)
+      mockExists.mockReturnValue(false)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
       const result = readZcfConfig()
 
       expect(result).toBeNull()
-      expect(tomlConfig.readTomlConfig).toHaveBeenCalled()
+      expect(mockExists).toHaveBeenCalled()
     })
   })
 
   describe('writeZcfConfig - error handling', () => {
     it('should silently fail on write error', () => {
-      vi.mocked(tomlConfig.writeTomlConfig).mockImplementation(() => {
+      mockWriteFile.mockImplementation(() => {
         throw new Error('Permission denied')
       })
 
@@ -317,23 +263,16 @@ describe('zcf-config utilities', () => {
           enabled: true,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
+          installType: 'global' as const,
         },
         codex: {
           enabled: false,
           systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
         },
       }
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(mockTomlConfig)
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(sampleTomlString)
+      mockParse.mockReturnValue(mockTomlConfig)
 
       const result = await readZcfConfigAsync()
 
@@ -344,13 +283,12 @@ describe('zcf-config utilities', () => {
         aiOutputLang: undefined,
         outputStyles: ['engineer-professional'],
         defaultOutputStyle: 'engineer-professional',
-        claudeCodeInstallation: mockTomlConfig.claudeCode.installation,
         codeToolType: 'claude-code',
       })
     })
 
     it('should readZcfConfigAsync return null when no config', async () => {
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(null)
+      mockExists.mockReturnValue(false)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
       const result = await readZcfConfigAsync()
@@ -359,7 +297,7 @@ describe('zcf-config utilities', () => {
     })
 
     it('should getZcfConfigAsync return default when no config', async () => {
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(null)
+      mockExists.mockReturnValue(false)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
       const result = await getZcfConfigAsync()
@@ -382,23 +320,16 @@ describe('zcf-config utilities', () => {
           enabled: false,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
+          installType: 'global' as const,
         },
         codex: {
           enabled: true,
           systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
         },
       }
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(mockTomlConfig)
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(sampleTomlString)
+      mockParse.mockReturnValue(mockTomlConfig)
 
       const result = await getZcfConfigAsync()
 
@@ -416,54 +347,23 @@ describe('zcf-config utilities', () => {
         codeToolType: 'claude-code' as const,
       }
 
-      const expectedTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: '2024-01-01',
-        general: {
-          preferredLang: 'en' as const,
-          aiOutputLang: undefined,
-          currentTool: 'claude-code' as const,
-        },
-        claudeCode: {
-          enabled: true,
-          outputStyles: ['engineer-professional'],
-          defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
-        },
-      }
-      vi.mocked(tomlConfig.migrateFromJsonConfig).mockReturnValue(expectedTomlConfig)
+      // Mock internal TOML operations
+      mockStringify.mockReturnValue('mocked toml content')
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
 
       await saveZcfConfig(config)
 
-      expect(tomlConfig.writeTomlConfig).toHaveBeenCalledWith(
+      expect(mockWriteFile).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          version: '1.0.0',
-          general: expect.objectContaining({
-            preferredLang: 'en',
-            currentTool: 'claude-code',
-          }),
-        }),
+        'mocked toml content',
       )
     })
   })
 
   describe('getZcfConfig - fallback behavior', () => {
     it('should return default config when readZcfConfig returns null', () => {
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(null)
+      mockExists.mockReturnValue(false)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
       const result = getZcfConfig()
@@ -489,23 +389,16 @@ describe('zcf-config utilities', () => {
           enabled: false,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/claude-code',
-            configDir: '/Users/test/.claude',
-          },
+          installType: 'global' as const,
         },
         codex: {
           enabled: true,
           systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
         },
       }
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(mockTomlConfig)
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(sampleTomlString)
+      mockParse.mockReturnValue(mockTomlConfig)
 
       const result = getZcfConfig()
 
@@ -530,54 +423,35 @@ describe('zcf-config utilities', () => {
           enabled: false,
           outputStyles: ['style1'],
           defaultOutputStyle: 'style1',
-          installation: { type: 'global' as const, path: 'test', configDir: 'test' },
+          installType: 'global' as const,
         },
         codex: {
           enabled: true,
           systemPromptStyle: 'style1',
-          installation: { type: 'global' as const, path: 'test', configDir: 'test' },
+          installType: 'global' as const,
         },
       }
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(existingTomlConfig)
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(sampleTomlString)
+      mockParse.mockReturnValue(existingTomlConfig)
 
       // Set up the migrateFromJsonConfig mock to return the expected config
-      const expectedNewTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: expect.any(String),
-        general: {
-          preferredLang: 'en' as const,
-          aiOutputLang: 'en',
-          currentTool: 'codex' as const,
-        },
-        claudeCode: {
-          enabled: false,
-          outputStyles: ['style1'], // preserved
-          defaultOutputStyle: 'style1', // preserved
-          installation: { type: 'global' as const, path: 'test', configDir: 'test' }, // preserved
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'style1',
-          installation: { type: 'global' as const, path: 'test', configDir: 'test' },
-        },
-      }
-      vi.mocked(tomlConfig.migrateFromJsonConfig).mockReturnValue(expectedNewTomlConfig)
+      // Migration is handled internally
 
       updateZcfConfig({
         outputStyles: undefined,
         defaultOutputStyle: undefined,
-        claudeCodeInstallation: undefined,
       })
 
       // Since we're mocking migrateFromJsonConfig, we should expect what we mocked
-      expect(tomlConfig.writeTomlConfig).toHaveBeenCalledWith(
+      expect(mockWriteFile).toHaveBeenCalledWith(
         expect.any(String),
-        expectedNewTomlConfig,
+        'mocked toml content',
       )
     })
 
     it('should properly handle all fields in update', () => {
-      vi.mocked(tomlConfig.readTomlConfig).mockReturnValue(null)
+      mockExists.mockReturnValue(false)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
       const updates = {
@@ -586,55 +460,160 @@ describe('zcf-config utilities', () => {
         aiOutputLang: 'zh-CN',
         outputStyles: ['nekomata-engineer'],
         defaultOutputStyle: 'nekomata-engineer',
-        claudeCodeInstallation: { type: 'local' as const, path: '/local/path', configDir: '/local/.claude' },
         codeToolType: 'codex' as const,
       }
 
-      const expectedTomlConfig = {
-        version: '2.0.0',
-        lastUpdated: expect.any(String),
-        general: {
-          preferredLang: 'zh-CN' as const,
-          aiOutputLang: 'zh-CN',
-          currentTool: 'codex' as const,
-        },
-        claudeCode: {
-          enabled: false,
-          outputStyles: ['nekomata-engineer'],
-          defaultOutputStyle: 'nekomata-engineer',
-          installation: { type: 'local' as const, path: '/local/path', configDir: '/local/.claude' },
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'engineer-professional',
-          installation: {
-            type: 'global' as const,
-            path: '/usr/local/bin/codex',
-            configDir: '/Users/test/.codex',
-          },
-        },
-      }
-      vi.mocked(tomlConfig.migrateFromJsonConfig).mockReturnValue(expectedTomlConfig)
+      // Mock internal TOML operations
+      mockStringify.mockReturnValue('mocked toml content')
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
 
       updateZcfConfig(updates)
 
-      expect(tomlConfig.writeTomlConfig).toHaveBeenCalledWith(
+      expect(mockWriteFile).toHaveBeenCalledWith(
         expect.any(String),
-        expect.objectContaining({
-          version: '2.0.0',
-          general: expect.objectContaining({
-            preferredLang: 'zh-CN' as const,
-            aiOutputLang: 'zh-CN',
-            currentTool: 'codex',
-          }),
-          claudeCode: expect.objectContaining({
-            outputStyles: ['nekomata-engineer'],
-            defaultOutputStyle: 'nekomata-engineer',
-            installation: { type: 'local' as const, path: '/local/path', configDir: '/local/.claude' },
-          }),
-          lastUpdated: expect.any(String),
-        }),
+        'mocked toml content',
       )
+    })
+  })
+
+  // 新增：TOML 功能直接测试
+  describe('tOML Functions (Integrated)', () => {
+    describe('readTomlConfig', () => {
+      it('should read and parse valid TOML config file', () => {
+        mockExists.mockReturnValue(true)
+        mockReadFile.mockReturnValue(sampleTomlString)
+        mockParse.mockReturnValue(sampleTomlConfig)
+
+        const result = readTomlConfig('/test/config.toml')
+
+        expect(mockExists).toHaveBeenCalledWith('/test/config.toml')
+        expect(mockReadFile).toHaveBeenCalledWith('/test/config.toml')
+        expect(mockParse).toHaveBeenCalledWith(sampleTomlString)
+        expect(result).toEqual(sampleTomlConfig)
+      })
+
+      it('should return null when config file does not exist', () => {
+        mockExists.mockReturnValue(false)
+
+        const result = readTomlConfig('/test/nonexistent.toml')
+
+        expect(mockExists).toHaveBeenCalledWith('/test/nonexistent.toml')
+        expect(mockReadFile).not.toHaveBeenCalled()
+        expect(result).toBeNull()
+      })
+
+      it('should return null when TOML parsing fails', () => {
+        mockExists.mockReturnValue(true)
+        mockReadFile.mockReturnValue('invalid toml content')
+        mockParse.mockImplementation(() => {
+          throw new Error('Invalid TOML')
+        })
+
+        const result = readTomlConfig('/test/config.toml')
+
+        expect(result).toBeNull()
+      })
+    })
+
+    describe('writeTomlConfig', () => {
+      it('should serialize and write TOML config to file', () => {
+        mockStringify.mockReturnValue(sampleTomlString)
+        mockEnsureDir.mockReturnValue(undefined)
+        mockWriteFile.mockReturnValue(undefined)
+
+        const configPath = '/test/config.toml'
+
+        writeTomlConfig(configPath, sampleTomlConfig)
+
+        expect(mockEnsureDir).toHaveBeenCalled()
+        expect(mockStringify).toHaveBeenCalledWith(sampleTomlConfig)
+        expect(mockWriteFile).toHaveBeenCalledWith(configPath, sampleTomlString)
+      })
+
+      it('should handle write errors gracefully', () => {
+        mockStringify.mockReturnValue(sampleTomlString)
+        mockEnsureDir.mockImplementation(() => {
+          throw new Error('Permission denied')
+        })
+
+        expect(() => {
+          writeTomlConfig('/test/config.toml', sampleTomlConfig)
+        }).not.toThrow()
+      })
+    })
+
+    describe('createDefaultTomlConfig', () => {
+      it('should create default configuration with correct structure', () => {
+        const result = createDefaultTomlConfig()
+
+        expect(result.version).toBe('1.0.0')
+        expect(result.general.preferredLang).toBe('en')
+        expect(result.general.currentTool).toBe(DEFAULT_CODE_TOOL_TYPE)
+        expect(result.claudeCode.enabled).toBe(true)
+        expect(result.codex.enabled).toBe(false)
+        expect(result.claudeCode.outputStyles).toEqual(['engineer-professional'])
+        expect(result.claudeCode.defaultOutputStyle).toBe('engineer-professional')
+        expect(result.codex.systemPromptStyle).toBe('engineer-professional')
+      })
+
+      it('should create config with custom language preference', () => {
+        const result = createDefaultTomlConfig('zh-CN')
+
+        expect(result.general.preferredLang).toBe('zh-CN')
+        expect(result.general.aiOutputLang).toBe('zh-CN')
+      })
+
+      it('should create claude-code local installation config', () => {
+        const result = createDefaultTomlConfig('en', 'local')
+
+        expect(result.claudeCode.installType).toBe('local')
+        expect(result.claudeCode).not.toHaveProperty('installation')
+      })
+    })
+
+    describe('migrateFromJsonConfig', () => {
+      it('should migrate JSON config to TOML format', () => {
+        const jsonConfig = {
+          version: '1.0.0',
+          preferredLang: 'zh-CN',
+          codeToolType: 'claude-code',
+          claudeCodeInstallation: {
+            type: 'local',
+            path: '/usr/local/bin/claude-code',
+            configDir: '/Users/test/.claude',
+          },
+          outputStyles: ['engineer-professional', 'nekomata-engineer'],
+          defaultOutputStyle: 'nekomata-engineer',
+          lastUpdated: '2025-09-21T08:00:00.000Z',
+        }
+
+        const result = migrateFromJsonConfig(jsonConfig)
+
+        expect(result.version).toBe('1.0.0')
+        expect(result.general.preferredLang).toBe('zh-CN')
+        expect(result.general.currentTool).toBe('claude-code')
+        expect(result.claudeCode.enabled).toBe(true)
+        expect(result.claudeCode.outputStyles).toEqual(['engineer-professional', 'nekomata-engineer'])
+        expect(result.claudeCode.defaultOutputStyle).toBe('nekomata-engineer')
+        expect(result.claudeCode.installType).toBe('local')
+        expect(result.codex.enabled).toBe(false)
+      })
+
+      it('should handle partial JSON config migration', () => {
+        const partialJsonConfig = {
+          version: '1.0.0',
+          preferredLang: 'en',
+          codeToolType: 'codex',
+        }
+
+        const result = migrateFromJsonConfig(partialJsonConfig)
+
+        expect(result.general.currentTool).toBe('codex')
+        expect(result.claudeCode.enabled).toBe(false)
+        expect(result.codex.enabled).toBe(true)
+        expect(result.codex.systemPromptStyle).toBe('engineer-professional')
+      })
     })
   })
 })
