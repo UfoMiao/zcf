@@ -9,5 +9,12 @@
   "configLangHint.en": "lower token consumption",
   "updateConfigLangPrompt": "Select configuration language",
   "languageRequired": "Language is required",
-  "labels.custom": "Custom"
+  "labels.custom": "Custom",
+  "currentConfigFound": "Current AI output language configuration",
+  "modifyConfigPrompt": "Would you like to modify the AI output language configuration?",
+  "currentTemplateLanguageFound": "Current template language configuration",
+  "modifyTemplateLanguagePrompt": "Would you like to modify the template language configuration?",
+  "usingFallbackTemplate": "Using interface language as template language?",
+  "currentSystemPromptFound": "Current system prompt style configuration",
+  "modifySystemPromptPrompt": "Would you like to modify the system prompt style configuration?"
 }

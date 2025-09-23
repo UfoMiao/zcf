@@ -26,6 +26,7 @@ export interface CodexConfig {
  */
 export interface GeneralConfig {
   preferredLang: SupportedLang
+  templateLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
   currentTool: CodeToolType
 }

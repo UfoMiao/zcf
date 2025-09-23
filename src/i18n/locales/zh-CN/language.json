@@ -9,5 +9,12 @@
   "configLangHint.en": "token 消耗更低",
   "updateConfigLangPrompt": "选择配置语言",
   "languageRequired": "语言为必填项",
-  "labels.custom": "自定义"
+  "labels.custom": "自定义",
+  "currentConfigFound": "当前AI输出语言配置",
+  "modifyConfigPrompt": "是否修改AI输出语言配置?",
+  "currentTemplateLanguageFound": "当前模板语言配置",
+  "modifyTemplateLanguagePrompt": "是否修改模板语言配置?",
+  "usingFallbackTemplate": "使用界面语言作为模板语言?",
+  "currentSystemPromptFound": "当前系统提示样式配置",
+  "modifySystemPromptPrompt": "是否修改系统提示样式配置?"
 }

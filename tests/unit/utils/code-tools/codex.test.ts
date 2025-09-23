@@ -58,6 +58,7 @@ vi.mock('../../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(),
   updateZcfConfig: vi.fn(),
   updateTomlConfig: vi.fn(),
+  readDefaultTomlConfig: vi.fn(),
 }))
 vi.mock('../../../../src/utils/mcp-selector', () => ({
   selectMcpServices: vi.fn(),
@@ -122,6 +123,15 @@ vi.mock('../../../../src/utils/trash', () => ({
   moveToTrash: vi.fn(),
 }))
 
+vi.mock('../../../../src/utils/prompts', () => ({
+  selectTemplateLanguage: vi.fn(() => Promise.resolve('zh-CN')),
+  resolveTemplateLanguage: vi.fn(() => Promise.resolve('zh-CN')),
+  selectAiOutputLanguage: vi.fn(() => Promise.resolve('zh-CN')),
+  resolveAiOutputLanguage: vi.fn(() => Promise.resolve('zh-CN')),
+  selectScriptLanguage: vi.fn(() => Promise.resolve('zh-CN')),
+  resolveSystemPromptStyle: vi.fn(() => Promise.resolve('engineer-professional')),
+}))
+
 describe('codex code tool utilities', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -134,6 +144,29 @@ describe('codex code tool utilities', () => {
       systemPrompt: 'engineer-professional',
       workflows: [],
       action: 'trash',
+    })
+
+    // Setup default zcf-config mocks
+    const zcfConfig = await import('../../../../src/utils/zcf-config')
+    vi.mocked(zcfConfig.readDefaultTomlConfig).mockReturnValue({
+      version: '1.0.0',
+      lastUpdated: new Date().toISOString(),
+      general: {
+        preferredLang: 'zh-CN',
+        templateLang: 'zh-CN',
+        aiOutputLang: 'zh-CN',
+        currentTool: 'codex',
+      },
+      claudeCode: {
+        enabled: false,
+        outputStyles: ['engineer-professional'],
+        defaultOutputStyle: 'engineer-professional',
+        installType: 'global',
+      },
+      codex: {
+        enabled: true,
+        systemPromptStyle: 'engineer-professional',
+      },
     })
   })
 

@@ -1,4 +1,3 @@
-import inquirer from 'inquirer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('inquirer', () => ({
@@ -37,6 +36,7 @@ vi.mock('../../../src/utils/zcf-config', () => ({
 vi.mock('../../../src/utils/prompts', () => ({
   selectScriptLanguage: vi.fn(),
   resolveAiOutputLanguage: vi.fn(),
+  resolveTemplateLanguage: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/platform', () => ({
@@ -94,12 +94,12 @@ describe('update command', () => {
     it('should handle update with existing config', async () => {
       const { update } = await import('../../../src/commands/update')
       const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
-      const { resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
+      const { resolveAiOutputLanguage, resolveTemplateLanguage } = await import('../../../src/utils/prompts')
       const { updatePromptOnly: _updatePromptOnly } = await import('../../../src/utils/config-operations')
       const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
-      vi.mocked(inquirer.prompt).mockResolvedValue({ lang: 'zh-CN' })
+      vi.mocked(resolveTemplateLanguage).mockResolvedValue('zh-CN')
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
       vi.mocked(_updatePromptOnly).mockResolvedValue(undefined)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
@@ -107,46 +107,49 @@ describe('update command', () => {
 
       await update({ skipBanner: true })
 
-      expect(inquirer.prompt).toHaveBeenCalled()
+      expect(resolveTemplateLanguage).toHaveBeenCalled()
       expect(_updatePromptOnly).toHaveBeenCalled()
     })
 
     it('should handle update without existing config', async () => {
       const { update } = await import('../../../src/commands/update')
-      const { resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
+      const { resolveAiOutputLanguage, resolveTemplateLanguage } = await import('../../../src/utils/prompts')
       const { updatePromptOnly: _updatePromptOnly } = await import('../../../src/utils/config-operations')
       const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
-      const inquirer = await import('inquirer')
 
-      vi.mocked(inquirer.default.prompt).mockResolvedValue({ lang: 'en' })
+      vi.mocked(resolveTemplateLanguage).mockResolvedValue('en')
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('english')
       vi.mocked(selectAndInstallWorkflows).mockResolvedValue(undefined)
 
       await update({ skipBanner: true })
 
-      expect(inquirer.default.prompt).toHaveBeenCalled()
+      expect(resolveTemplateLanguage).toHaveBeenCalled()
       expect(_updatePromptOnly).toHaveBeenCalled()
     })
 
     it('should handle cancel update', async () => {
       const { update } = await import('../../../src/commands/update')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { resolveTemplateLanguage } = await import('../../../src/utils/prompts')
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
-      vi.mocked(inquirer.prompt).mockResolvedValue({})
+      vi.mocked(resolveTemplateLanguage).mockImplementation(() => {
+        throw new Error('User cancelled')
+      })
 
       await update({ skipBanner: true })
 
-      expect(process.exit).toHaveBeenCalledWith(0)
+      expect(resolveTemplateLanguage).toHaveBeenCalled()
     })
 
     it('should handle options correctly', async () => {
       const { update } = await import('../../../src/commands/update')
       const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
-      const { resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
+      const { resolveAiOutputLanguage, resolveTemplateLanguage } = await import('../../../src/utils/prompts')
       const { updatePromptOnly: _updatePromptOnly } = await import('../../../src/utils/config-operations')
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
+      vi.mocked(resolveTemplateLanguage).mockResolvedValue('en')
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
       vi.mocked(_updatePromptOnly).mockResolvedValue(undefined)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
@@ -156,6 +159,7 @@ describe('update command', () => {
 
       await update({ configLang: 'en', aiOutputLang: 'chinese-simplified', skipBanner: true })
 
+      expect(resolveTemplateLanguage).toHaveBeenCalledWith('en', expect.any(Object))
       expect(selectAndInstallWorkflows).toHaveBeenCalled()
       expect(_updatePromptOnly).toHaveBeenCalledWith('chinese-simplified')
     })

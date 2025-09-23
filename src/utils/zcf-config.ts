@@ -14,6 +14,7 @@ import { readJsonConfig } from './json-config'
 export interface ZcfConfig {
   version: string
   preferredLang: SupportedLang
+  templateLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
   outputStyles?: string[]
   defaultOutputStyle?: string
@@ -94,6 +95,7 @@ function createDefaultTomlConfig(preferredLang: SupportedLang = 'en', claudeCode
     lastUpdated: new Date().toISOString(),
     general: {
       preferredLang,
+      templateLang: preferredLang, // Default templateLang to preferredLang for new installations
       aiOutputLang: preferredLang === 'zh-CN' ? 'zh-CN' : undefined,
       currentTool: DEFAULT_CODE_TOOL_TYPE,
     },
@@ -126,6 +128,7 @@ function migrateFromJsonConfig(jsonConfig: any): ZcfTomlConfig {
     lastUpdated: jsonConfig.lastUpdated || new Date().toISOString(),
     general: {
       preferredLang: jsonConfig.preferredLang || defaultConfig.general.preferredLang,
+      templateLang: jsonConfig.templateLang || jsonConfig.preferredLang || defaultConfig.general.preferredLang, // Backward compatibility: use preferredLang as default
       aiOutputLang: jsonConfig.aiOutputLang || defaultConfig.general.aiOutputLang,
       currentTool: jsonConfig.codeToolType || defaultConfig.general.currentTool,
     },
@@ -182,6 +185,7 @@ function convertTomlToLegacyConfig(tomlConfig: ZcfTomlConfig): ZcfConfig {
   return {
     version: tomlConfig.version,
     preferredLang: tomlConfig.general.preferredLang,
+    templateLang: tomlConfig.general.templateLang,
     aiOutputLang: tomlConfig.general.aiOutputLang,
     outputStyles: tomlConfig.claudeCode.outputStyles,
     defaultOutputStyle: tomlConfig.claudeCode.defaultOutputStyle,
@@ -205,6 +209,7 @@ function normalizeZcfConfig(config: Partial<ZcfConfig> | null): ZcfConfig | null
   return {
     version: typeof config.version === 'string' ? config.version : '1.0.0',
     preferredLang: sanitizePreferredLang(config.preferredLang),
+    templateLang: config.templateLang ? sanitizePreferredLang(config.templateLang) : undefined,
     aiOutputLang: config.aiOutputLang,
     outputStyles: Array.isArray(config.outputStyles) ? config.outputStyles : undefined,
     defaultOutputStyle: typeof config.defaultOutputStyle === 'string' ? config.defaultOutputStyle : undefined,
@@ -310,6 +315,7 @@ export function updateZcfConfig(updates: Partial<ZcfConfig>): void {
   const newConfig: ZcfConfig = {
     version: updates.version || existingConfig?.version || '1.0.0',
     preferredLang: updates.preferredLang || existingConfig?.preferredLang || 'en',
+    templateLang: updates.templateLang !== undefined ? updates.templateLang : existingConfig?.templateLang,
     aiOutputLang: updates.aiOutputLang || existingConfig?.aiOutputLang,
     outputStyles: updates.outputStyles !== undefined ? updates.outputStyles : existingConfig?.outputStyles,
     defaultOutputStyle: updates.defaultOutputStyle !== undefined ? updates.defaultOutputStyle : existingConfig?.defaultOutputStyle,
@@ -341,6 +347,14 @@ export async function getZcfConfigAsync(): Promise<ZcfConfig> {
 
 export async function saveZcfConfig(config: ZcfConfig): Promise<void> {
   writeZcfConfig(config)
+}
+
+/**
+ * Read TOML configuration from default location
+ * @returns Parsed TOML configuration or null if not found/invalid
+ */
+export function readDefaultTomlConfig(): ZcfTomlConfig | null {
+  return readTomlConfig(ZCF_CONFIG_FILE)
 }
 
 // Export TOML functions for direct usage (migration path)

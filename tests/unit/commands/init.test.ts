@@ -42,6 +42,7 @@ vi.mock('../../../src/utils/config-operations', () => ({
 vi.mock('../../../src/utils/prompts', () => ({
   selectAiOutputLanguage: vi.fn(),
   resolveAiOutputLanguage: vi.fn(),
+  resolveTemplateLanguage: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/claude-config', () => ({
@@ -113,6 +114,7 @@ vi.mock('node:fs', () => ({
 // Common test setup
 interface TestMocks {
   resolveAiOutputLanguage: any
+  resolveTemplateLanguage: any
   isClaudeCodeInstalled: any
   installClaudeCode: any
   getInstallationStatus: any
@@ -139,7 +141,7 @@ describe('init command', () => {
     vi.spyOn(process, 'exit').mockImplementation((() => {}) as any)
 
     // Setup common mocks
-    const { resolveAiOutputLanguage } = await import('../../../src/utils/prompts')
+    const { resolveAiOutputLanguage, resolveTemplateLanguage } = await import('../../../src/utils/prompts')
     const { isClaudeCodeInstalled, getInstallationStatus, installClaudeCode } = await import('../../../src/utils/installer')
     const { handleMultipleInstallations } = await import('../../../src/utils/installation-manager')
     const { checkClaudeCodeVersionAndPrompt } = await import('../../../src/utils/version-checker')
@@ -152,6 +154,7 @@ describe('init command', () => {
 
     testMocks = {
       resolveAiOutputLanguage: vi.mocked(resolveAiOutputLanguage),
+      resolveTemplateLanguage: vi.mocked(resolveTemplateLanguage),
       isClaudeCodeInstalled: vi.mocked(isClaudeCodeInstalled),
       installClaudeCode: vi.mocked(installClaudeCode),
       getInstallationStatus: vi.mocked(getInstallationStatus),
@@ -189,7 +192,7 @@ describe('init command', () => {
         })
         testMocks.existsSync.mockReturnValue(false)
         testMocks.readZcfConfig.mockReturnValue({ codeToolType: 'claude-code' } as any)
-        testMocks.inquirerPrompt.mockResolvedValueOnce({ lang: 'zh-CN' })
+        testMocks.resolveTemplateLanguage.mockResolvedValue('zh-CN')
         testMocks.inquirerPrompt.mockResolvedValueOnce({ shouldConfigureMcp: false })
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
@@ -198,8 +201,8 @@ describe('init command', () => {
 
         await init({ skipBanner: true })
 
-        // Language is now handled directly in init function via inquirer
-        expect(testMocks.inquirerPrompt).toHaveBeenCalled()
+        // Language is now handled via resolveTemplateLanguage
+        expect(testMocks.resolveTemplateLanguage).toHaveBeenCalled()
         expect(testMocks.resolveAiOutputLanguage).toHaveBeenCalled()
       })
 
@@ -273,8 +276,8 @@ describe('init command', () => {
         })
         testMocks.readZcfConfig.mockReturnValue({})
         testMocks.existsSync.mockReturnValue(false)
+        testMocks.resolveTemplateLanguage.mockResolvedValue('zh-CN')
         testMocks.inquirerPrompt
-          .mockResolvedValueOnce({ lang: 'zh-CN' })
           .mockResolvedValueOnce({ shouldInstall: true })
           .mockResolvedValueOnce({ shouldConfigureMcp: false })
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
@@ -303,8 +306,8 @@ describe('init command', () => {
         })
         testMocks.readZcfConfig.mockReturnValue({})
         testMocks.existsSync.mockReturnValue(true)
+        testMocks.resolveTemplateLanguage.mockResolvedValue('zh-CN')
         testMocks.inquirerPrompt
-          .mockResolvedValueOnce({ lang: 'zh-CN' })
           .mockResolvedValueOnce({ action: 'skip' })
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
 
@@ -334,8 +337,8 @@ describe('init command', () => {
           }
           return false
         })
+        testMocks.resolveTemplateLanguage.mockResolvedValue('zh-CN')
         testMocks.inquirerPrompt
-          .mockResolvedValueOnce({ lang: 'zh-CN' })
           .mockResolvedValueOnce({ shouldConfigureMcp: false })
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
         testMocks.copyConfigFiles.mockReturnValue(undefined)

@@ -42,6 +42,8 @@ vi.mock('inquirer', () => ({
 vi.mock('../../../../src/utils/prompts', () => ({
   resolveAiOutputLanguage: vi.fn(),
   selectConfigLanguage: vi.fn(),
+  resolveTemplateLanguage: vi.fn(),
+  resolveSystemPromptStyle: vi.fn(),
 }))
 
 // Mock zcf-config
@@ -49,6 +51,7 @@ vi.mock('../../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(),
   updateZcfConfig: vi.fn(),
   updateTomlConfig: vi.fn(),
+  readDefaultTomlConfig: vi.fn(),
 }))
 
 // Mock config operations

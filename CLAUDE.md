@@ -276,6 +276,70 @@ The project uses Vitest with a comprehensive layered testing approach:
 - **Testing Organization**: Tests organized with comprehensive unit/integration/edge structure and 80% coverage requirement
 - **Trash/Recycle Bin Integration**: Advanced cross-platform file removal using `trash` package for safety
 
+## 🤖 ZCF AI Team Configuration
+
+The ZCF project employs a specialized AI agent team optimized for CLI development, i18n systems, and tool integration. Each agent is designed with specific domain expertise and strict boundaries to ensure efficient collaboration.
+
+### Project-Specific AI Agents
+
+| Agent | Model | Domain | Primary Responsibilities |
+|-------|-------|--------|-------------------------|
+| **typescript-cli-architect** | sonnet | CLI Architecture | TypeScript CLI design, CAC integration, ESM modules, developer experience |
+| **zcf-i18n-specialist** | opus | Internationalization | i18next configuration, translation management, namespace organization |
+| **zcf-tools-integration-specialist** | sonnet | Tool Integration | CCR/Cometix/CCusage integration, version management, cross-platform compatibility |
+| **zcf-template-engine** | haiku | Template System | Template design, workflow configurations, output styles, multilingual templates |
+| **zcf-config-architect** | opus | Configuration Management | Config merging, MCP services, TOML/JSON validation, backup systems |
+| **zcf-testing-specialist** | sonnet | Testing Infrastructure | Vitest configuration, test coverage, mock systems, quality assurance |
+| **zcf-devops-engineer** | inherit | DevOps & Deployment | Build optimization, release management, CI/CD, cross-platform deployment |
+
+### Agent Collaboration Matrix
+
+```mermaid
+graph TD
+    A[typescript-cli-architect] --> B[zcf-i18n-specialist]
+    A --> C[zcf-tools-integration-specialist]
+    A --> D[zcf-template-engine]
+
+    E[zcf-config-architect] --> A
+    E --> C
+    E --> D
+
+    F[zcf-testing-specialist] --> A
+    F --> B
+    F --> C
+    F --> D
+    F --> E
+
+    G[zcf-devops-engineer] --> A
+    G --> F
+    G --> E
+
+    style A fill:#e1f5fe
+    style B fill:#f3e5f5
+    style C fill:#e8f5e8
+    style D fill:#fff3e0
+    style E fill:#fce4ec
+    style F fill:#f1f8e9
+    style G fill:#e0f2f1
+```
+
+### Agent Boundaries & Delegation Rules
+
+- **CLI Architecture**: typescript-cli-architect handles all CLI structure, command parsing, and TypeScript configuration
+- **Internationalization**: zcf-i18n-specialist manages all i18next systems, translations, and language detection
+- **Tool Integration**: zcf-tools-integration-specialist handles CCR, Cometix, CCusage integration and version management
+- **Templates**: zcf-template-engine manages all template systems, workflow configurations, and output styles
+- **Configuration**: zcf-config-architect handles complex config merging, MCP services, and backup systems
+- **Testing**: zcf-testing-specialist maintains Vitest infrastructure, coverage, and quality assurance
+- **DevOps**: zcf-devops-engineer manages builds, releases, and deployment processes
+
+### Model Selection Rationale
+
+- **Opus**: Complex reasoning for i18n logic and configuration architecture
+- **Sonnet**: Balanced performance for CLI architecture, tool integration, and testing
+- **Haiku**: Fast response for template processing and simple operations
+- **Inherit**: Cost-effective for DevOps tasks that don't require specialized models
+
 ## AI Usage Guidelines
 
 ### Key Architecture Patterns

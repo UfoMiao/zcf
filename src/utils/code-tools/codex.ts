@@ -586,8 +586,18 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
   const rootDir = getRootDir()
   const templateRoot = join(rootDir, 'templates', 'codex')
 
+  // Read both legacy and new config formats
   const zcfConfig = readZcfConfig()
-  const preferredLang = zcfConfig?.preferredLang === 'en' ? 'en' : 'zh-CN'
+  const { readDefaultTomlConfig } = await import('../zcf-config')
+  const tomlConfig = readDefaultTomlConfig()
+
+  // Use intelligent template language selection
+  const { resolveTemplateLanguage } = await import('../prompts')
+  const preferredLang = await resolveTemplateLanguage(
+    undefined, // No command line option for this function
+    zcfConfig,
+  )
+
   let langDir = join(templateRoot, preferredLang)
 
   if (!exists(langDir))
@@ -619,17 +629,13 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
   if (availablePrompts.length === 0)
     return
 
-  // Prompt user to select system prompt style (single selection)
-  const { systemPrompt } = await inquirer.prompt<{ systemPrompt: string }>([{
-    type: 'list',
-    name: 'systemPrompt',
-    message: i18n.t('codex:systemPromptPrompt'),
-    choices: addNumbersToChoices(availablePrompts.map(style => ({
-      name: `${style.name} - ${ansis.gray(style.description)}`,
-      value: style.id,
-    }))),
-    default: 'engineer-professional', // Default to engineer-professional
-  }])
+  // Use the new intelligent detection function
+  const { resolveSystemPromptStyle } = await import('../prompts')
+  const systemPrompt = await resolveSystemPromptStyle(
+    availablePrompts,
+    undefined, // No command line option for this function
+    tomlConfig,
+  )
 
   if (!systemPrompt)
     return
@@ -673,7 +679,9 @@ export async function runCodexWorkflowSelection(): Promise<void> {
   const templateRoot = join(rootDir, 'templates', 'codex')
 
   const zcfConfig = readZcfConfig()
-  const preferredLang = zcfConfig?.preferredLang === 'en' ? 'en' : 'zh-CN'
+  // Use templateLang with fallback to preferredLang for backward compatibility
+  const templateLang = zcfConfig?.templateLang || zcfConfig?.preferredLang || 'en'
+  const preferredLang = templateLang === 'en' ? 'en' : 'zh-CN'
   let langDir = join(templateRoot, preferredLang)
 
   if (!exists(langDir))

@@ -1,4 +1,5 @@
 import type { AiOutputLanguage, SupportedLang } from '../constants'
+import type { ZcfTomlConfig } from '../types/toml-config'
 import type { ZcfConfig } from './zcf-config'
 import process from 'node:process'
 import ansis from 'ansis'
@@ -130,12 +131,197 @@ export async function resolveAiOutputLanguage(
     return commandLineOption
   }
 
-  // Priority 2: Saved config
+  // Priority 2: Check saved config and ask for modification
   if (savedConfig?.aiOutputLang) {
-    console.log(ansis.gray(`✔ ${i18n.t('language:aiOutputLangHint')}: ${savedConfig.aiOutputLang}`))
-    return savedConfig.aiOutputLang
+    const currentLanguageLabel = getAiOutputLanguageLabel(savedConfig.aiOutputLang as AiOutputLanguage) || savedConfig.aiOutputLang
+    console.log(ansis.blue(`${i18n.t('language:currentConfigFound')}: ${currentLanguageLabel}`))
+
+    const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
+      type: 'confirm',
+      name: 'shouldModify',
+      message: i18n.t('language:modifyConfigPrompt'),
+      default: false,
+    })
+
+    if (shouldModify === undefined) {
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
+      process.exit(0)
+    }
+
+    if (!shouldModify) {
+      console.log(ansis.gray(`✔ ${i18n.t('language:aiOutputLangHint')}: ${currentLanguageLabel}`))
+      return savedConfig.aiOutputLang
+    }
+
+    // User wants to modify, proceed to language selection
+    return await selectAiOutputLanguage(scriptLang)
   }
 
-  // Priority 3: Ask user
+  // Priority 3: No saved config, ask user to select
   return await selectAiOutputLanguage(scriptLang)
+}
+
+/**
+ * Prompt user to select template language
+ */
+export async function selectTemplateLanguage(): Promise<SupportedLang> {
+  ensureI18nInitialized()
+
+  // Create static language hint keys for i18n-ally compatibility
+  const LANG_HINT_KEYS = {
+    'zh-CN': i18n.t('language:configLangHint.zh-CN'),
+    'en': i18n.t('language:configLangHint.en'),
+  } as const
+
+  const { lang } = await inquirer.prompt<{ lang: SupportedLang }>({
+    type: 'list',
+    name: 'lang',
+    message: i18n.t('language:selectConfigLang'),
+    choices: addNumbersToChoices(
+      SUPPORTED_LANGS.map(l => ({
+        name: `${LANG_LABELS[l]} - ${LANG_HINT_KEYS[l]}`,
+        value: l,
+      })),
+    ),
+  })
+
+  if (!lang) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    process.exit(0)
+  }
+
+  return lang
+}
+
+/**
+ * Resolve template language with priority order
+ * Priority: 1. Command line option, 2. Saved template language config, 3. Backward compatibility (preferredLang), 4. Ask user
+ */
+export async function resolveTemplateLanguage(
+  commandLineOption?: SupportedLang,
+  savedConfig?: ZcfConfig | null,
+): Promise<SupportedLang> {
+  ensureI18nInitialized()
+
+  // Priority 1: Command line option
+  if (commandLineOption) {
+    return commandLineOption
+  }
+
+  // Priority 2: Check saved template language config and ask for modification
+  if (savedConfig?.templateLang) {
+    const currentLanguageLabel = LANG_LABELS[savedConfig.templateLang]
+    console.log(ansis.blue(`${i18n.t('language:currentTemplateLanguageFound')}: ${currentLanguageLabel}`))
+
+    const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
+      type: 'confirm',
+      name: 'shouldModify',
+      message: i18n.t('language:modifyTemplateLanguagePrompt'),
+      default: false,
+    })
+
+    if (shouldModify === undefined) {
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
+      process.exit(0)
+    }
+
+    if (!shouldModify) {
+      console.log(ansis.gray(`✔ ${i18n.t('language:selectConfigLang')}: ${currentLanguageLabel}`))
+      return savedConfig.templateLang
+    }
+
+    // User wants to modify, proceed to language selection
+    return await selectTemplateLanguage()
+  }
+
+  // Priority 3: Backward compatibility - use preferredLang if templateLang is not set
+  if (savedConfig?.preferredLang && !savedConfig?.templateLang) {
+    console.log(ansis.yellow(`${i18n.t('language:usingFallbackTemplate')}: ${LANG_LABELS[savedConfig.preferredLang]}`))
+
+    const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
+      type: 'confirm',
+      name: 'shouldModify',
+      message: i18n.t('language:modifyTemplateLanguagePrompt'),
+      default: false,
+    })
+
+    if (shouldModify === undefined) {
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
+      process.exit(0)
+    }
+
+    if (!shouldModify) {
+      // First time migration - save the preferred language as template language
+      return savedConfig.preferredLang
+    }
+
+    // User wants to modify, proceed to language selection
+    return await selectTemplateLanguage()
+  }
+
+  // Priority 4: No saved config, ask user to select
+  return await selectTemplateLanguage()
+}
+
+/**
+ * Resolve system prompt style with priority order
+ * Priority: 1. Command line option, 2. Saved config, 3. Ask user
+ */
+export async function resolveSystemPromptStyle(
+  availablePrompts: Array<{ id: string, name: string, description: string }>,
+  commandLineOption?: string,
+  savedConfig?: ZcfTomlConfig | null,
+): Promise<string> {
+  ensureI18nInitialized()
+
+  // Priority 1: Command line option
+  if (commandLineOption && availablePrompts.some(p => p.id === commandLineOption)) {
+    return commandLineOption
+  }
+
+  // Priority 2: Check saved config and ask for modification
+  if (savedConfig?.codex?.systemPromptStyle) {
+    const currentStyleId = savedConfig.codex.systemPromptStyle
+    const currentStyle = availablePrompts.find(p => p.id === currentStyleId)
+
+    if (currentStyle) {
+      console.log(ansis.blue(`${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))
+
+      const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
+        type: 'confirm',
+        name: 'shouldModify',
+        message: i18n.t('language:modifySystemPromptPrompt'),
+        default: false,
+      })
+
+      if (shouldModify === undefined) {
+        console.log(ansis.yellow(i18n.t('common:cancelled')))
+        process.exit(0)
+      }
+
+      if (!shouldModify) {
+        console.log(ansis.gray(`✔ ${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))
+        return currentStyleId
+      }
+    }
+  }
+
+  // Priority 3: No saved config or user wants to modify, ask user to select
+  const { systemPrompt } = await inquirer.prompt<{ systemPrompt: string }>([{
+    type: 'list',
+    name: 'systemPrompt',
+    message: i18n.t('codex:systemPromptPrompt'),
+    choices: addNumbersToChoices(availablePrompts.map(style => ({
+      name: `${style.name} - ${ansis.gray(style.description)}`,
+      value: style.id,
+    }))),
+    default: 'engineer-professional', // Default to engineer-professional
+  }])
+
+  if (!systemPrompt) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    process.exit(0)
+  }
+
+  return systemPrompt
 }
