@@ -3,21 +3,21 @@ packages:
 
 catalogs:
   build:
-    '@antfu/eslint-config': ^5.3.0
-    eslint: ^9.35.0
-    eslint-plugin-format: ^1.0.1
+    '@antfu/eslint-config': ^5.4.1
+    eslint: ^9.36.0
+    eslint-plugin-format: ^1.0.2
     tsx: ^4.20.5
     typescript: ^5.9.2
     unbuild: ^3.6.1
   cli:
     ansis: ^4.1.0
     cac: ^6.7.14
-    inquirer: ^12.9.4
-    ora: ^8.2.0
+    inquirer: ^12.9.6
+    ora: ^9.0.0
   runtime:
     dayjs: ^1.11.18
     find-up-simple: ^1.0.1
-    fs-extra: ^11.3.1
+    fs-extra: ^11.3.2
     i18next: ^25.5.2
     i18next-fs-backend: ^2.6.0
     js-toml: ^1.0.2
@@ -37,11 +37,11 @@ catalogs:
     '@commitlint/config-conventional': ^19.8.1
     '@commitlint/types': ^19.8.1
     husky: ^9.1.7
-    lint-staged: ^16.1.6
+    lint-staged: ^16.2.0
   types:
     '@types/fs-extra': ^11.0.4
     '@types/inquirer': ^9.0.9
-    '@types/node': ^22.18.3
+    '@types/node': ^22.18.6
     '@types/semver': ^7.7.1
 onlyBuiltDependencies:
   - esbuild
