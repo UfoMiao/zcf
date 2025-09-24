@@ -181,7 +181,12 @@ describe('codex installation checks', () => {
       const result = await checkCodexUpdate()
 
       // Assert
-      expect(result).toBe(true)
+      expect(result).toEqual({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.1.0',
+        needsUpdate: true,
+      })
       expect(mockExec).toHaveBeenCalledWith('npm', ['list', '-g', '--depth=0'])
       expect(mockExec).toHaveBeenCalledWith('npm', ['view', '@openai/codex', '--json'])
     })
@@ -213,7 +218,12 @@ describe('codex installation checks', () => {
       const result = await checkCodexUpdate()
 
       // Assert
-      expect(result).toBe(false)
+      expect(result).toEqual({
+        installed: true,
+        currentVersion: '1.1.0',
+        latestVersion: '1.1.0',
+        needsUpdate: false,
+      })
     })
 
     it('should return false when codex is not installed', async () => {
@@ -232,7 +242,12 @@ describe('codex installation checks', () => {
       const result = await checkCodexUpdate()
 
       // Assert
-      expect(result).toBe(false)
+      expect(result).toEqual({
+        installed: false,
+        currentVersion: null,
+        latestVersion: null,
+        needsUpdate: false,
+      })
       expect(mockExec).toHaveBeenCalledTimes(1) // Should not check npm view if not installed
     })
 
@@ -255,7 +270,12 @@ describe('codex installation checks', () => {
       const result = await checkCodexUpdate()
 
       // Assert
-      expect(result).toBe(false)
+      expect(result).toEqual({
+        installed: false,
+        currentVersion: null,
+        latestVersion: null,
+        needsUpdate: false,
+      })
     })
 
     it('should handle version comparison edge cases', async () => {
@@ -285,7 +305,12 @@ describe('codex installation checks', () => {
       const result = await checkCodexUpdate()
 
       // Assert
-      expect(result).toBe(true) // Beta should be considered older than stable
+      expect(result).toEqual({
+        installed: true,
+        currentVersion: '1.0.0-beta.1',
+        latestVersion: '1.0.0',
+        needsUpdate: true, // Beta should be considered older than stable
+      })
     })
   })
 

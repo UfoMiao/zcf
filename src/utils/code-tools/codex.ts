@@ -5,12 +5,13 @@ import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
 import dayjs from 'dayjs'
 import inquirer from 'inquirer'
+import ora from 'ora'
 import { dirname, join } from 'pathe'
 import semver from 'semver'
 import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../../config/mcp-services'
-import { ensureI18nInitialized, i18n } from '../../i18n'
+import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
@@ -21,7 +22,7 @@ import { resolveAiOutputLanguage } from '../prompts'
 import { readZcfConfig, updateZcfConfig } from '../zcf-config'
 import { detectConfigManagementMode } from './codex-config-detector'
 
-const CODEX_DIR = join(homedir(), '.codex')
+export const CODEX_DIR = join(homedir(), '.codex')
 const CODEX_CONFIG_FILE = join(CODEX_DIR, 'config.toml')
 const CODEX_AUTH_FILE = join(CODEX_DIR, 'auth.json')
 const CODEX_AGENTS_FILE = join(CODEX_DIR, 'AGENTS.md')
@@ -52,6 +53,13 @@ export interface CodexConfigData {
   managed: boolean
   otherConfig?: string[] // Lines that are not managed by ZCF
   modelProviderCommented?: boolean // Whether model_provider line should be commented out
+}
+
+export interface CodexVersionInfo {
+  installed: boolean
+  currentVersion: string | null
+  latestVersion: string | null
+  needsUpdate: boolean
 }
 
 function getRootDir(): string {
@@ -138,6 +146,17 @@ export function backupCodexFiles(): string | null {
 
   copyDir(CODEX_DIR, backupDir, { filter })
   return backupDir
+}
+
+/**
+ * Backup complete Codex directory with all configuration files
+ * This provides the same comprehensive backup functionality as Claude Code
+ *
+ * Note: This is an alias for backupCodexFiles() to maintain API consistency
+ * while following DRY principles (Don't Repeat Yourself)
+ */
+export function backupCodexComplete(): string | null {
+  return backupCodexFiles()
 }
 
 export function backupCodexConfig(): string | null {
@@ -517,29 +536,56 @@ export async function getCodexVersion(): Promise<string | null> {
   }
 }
 
-export async function checkCodexUpdate(): Promise<boolean> {
+export async function checkCodexUpdate(): Promise<CodexVersionInfo> {
   try {
     const currentVersion = await getCodexVersion()
     if (!currentVersion) {
-      return false
+      return {
+        installed: false,
+        currentVersion: null,
+        latestVersion: null,
+        needsUpdate: false,
+      }
     }
 
     const result = await x('npm', ['view', '@openai/codex', '--json'])
     if (result.exitCode !== 0) {
-      return false
+      return {
+        installed: true,
+        currentVersion,
+        latestVersion: null,
+        needsUpdate: false,
+      }
     }
 
     const packageInfo = JSON.parse(result.stdout)
     const latestVersion = packageInfo['dist-tags']?.latest
 
     if (!latestVersion) {
-      return false
+      return {
+        installed: true,
+        currentVersion,
+        latestVersion: null,
+        needsUpdate: false,
+      }
     }
 
-    return semver.gt(latestVersion, currentVersion)
+    const needsUpdate = semver.gt(latestVersion, currentVersion)
+
+    return {
+      installed: true,
+      currentVersion,
+      latestVersion,
+      needsUpdate,
+    }
   }
   catch {
-    return false
+    return {
+      installed: false,
+      currentVersion: null,
+      latestVersion: null,
+      needsUpdate: false,
+    }
   }
 }
 
@@ -549,8 +595,8 @@ export async function installCodexCli(): Promise<void> {
   // Check if already installed
   if (await isCodexInstalled()) {
     // Check for updates if already installed
-    const hasUpdate = await checkCodexUpdate()
-    if (hasUpdate) {
+    const { needsUpdate } = await checkCodexUpdate()
+    if (needsUpdate) {
       // Update available - install new version
       await executeCodexInstallation(true)
       return
@@ -891,7 +937,7 @@ export async function configureCodexApi(): Promise<void> {
   }
 
   // Always backup existing config before modification
-  const backupPath = backupCodexConfig()
+  const backupPath = backupCodexComplete()
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -1037,7 +1083,7 @@ export async function configureCodexMcp(): Promise<void> {
   const existingConfig = readCodexConfig()
 
   // Always backup existing config before modification
-  const backupPath = backupCodexConfig()
+  const backupPath = backupCodexComplete()
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -1133,16 +1179,71 @@ export async function runCodexFullInit(): Promise<void> {
   await configureCodexMcp()
 }
 
-export async function runCodexUpdate(): Promise<void> {
+export async function runCodexUpdate(force = false, skipPrompt = false): Promise<boolean> {
   ensureI18nInitialized()
+  const spinner = ora(i18n.t('codex:checkingVersion')).start()
 
-  // Check for Codex CLI updates
-  const hasUpdate = await checkCodexUpdate()
-  if (hasUpdate) {
-    await executeCodexInstallation(true)
+  try {
+    const { installed, currentVersion, latestVersion, needsUpdate } = await checkCodexUpdate()
+    spinner.stop()
+
+    if (!installed) {
+      console.log(ansis.yellow(i18n.t('codex:notInstalled')))
+      return false
+    }
+
+    if (!needsUpdate && !force) {
+      console.log(ansis.green(format(i18n.t('codex:upToDate'), { version: currentVersion || '' })))
+      return true
+    }
+
+    if (!latestVersion) {
+      console.log(ansis.yellow(i18n.t('codex:cannotCheckVersion')))
+      return false
+    }
+
+    // Show version info
+    console.log(ansis.cyan(format(i18n.t('codex:currentVersion'), { version: currentVersion || '' })))
+    console.log(ansis.cyan(format(i18n.t('codex:latestVersion'), { version: latestVersion })))
+
+    // Handle confirmation based on skipPrompt mode
+    if (!skipPrompt) {
+      // Interactive mode: Ask for confirmation
+      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
+        type: 'confirm',
+        name: 'confirm',
+        message: i18n.t('codex:confirmUpdate'),
+        default: true,
+      })
+
+      if (!confirm) {
+        console.log(ansis.gray(i18n.t('codex:updateSkipped')))
+        return true
+      }
+    }
+    else {
+      // Skip-prompt mode: Auto-update with notification
+      console.log(ansis.cyan(i18n.t('codex:autoUpdating')))
+    }
+
+    // Perform update
+    const updateSpinner = ora(i18n.t('codex:updating')).start()
+
+    try {
+      await executeCodexInstallation(true)
+      updateSpinner.succeed(i18n.t('codex:updateSuccess'))
+      return true
+    }
+    catch (error) {
+      updateSpinner.fail(i18n.t('codex:updateFailed'))
+      console.error(ansis.red(error instanceof Error ? error.message : String(error)))
+      return false
+    }
   }
-  else {
-    console.log(ansis.yellow(i18n.t('codex:alreadyInstalled')))
+  catch (error) {
+    spinner.fail(i18n.t('codex:checkFailed'))
+    console.error(ansis.red(error instanceof Error ? error.message : String(error)))
+    return false
   }
 }
 
@@ -1281,7 +1382,7 @@ export async function switchCodexProvider(providerId: string): Promise<boolean> 
   }
 
   // Create backup before modification
-  const backupPath = backupCodexConfig()
+  const backupPath = backupCodexComplete()
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -1317,7 +1418,7 @@ export async function switchToOfficialLogin(): Promise<boolean> {
   }
 
   // Create backup before modification
-  const backupPath = backupCodexConfig()
+  const backupPath = backupCodexComplete()
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -1332,8 +1433,10 @@ export async function switchToOfficialLogin(): Promise<boolean> {
 
     writeCodexConfig(updatedConfig)
 
-    // Clear auth.json for official mode - VSCode will handle authentication
-    writeJsonConfig(CODEX_AUTH_FILE, {}, { pretty: true })
+    // Set OPENAI_API_KEY to null for official mode - preserve other auth settings
+    const auth = readJsonConfig<Record<string, string | null>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
+    auth.OPENAI_API_KEY = null
+    writeJsonConfig(CODEX_AUTH_FILE, auth, { pretty: true })
 
     console.log(ansis.green(i18n.t('codex:officialConfigured')))
     return true
@@ -1366,7 +1469,7 @@ export async function switchToProvider(providerId: string): Promise<boolean> {
   }
 
   // Create backup before modification
-  const backupPath = backupCodexConfig()
+  const backupPath = backupCodexComplete()
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }

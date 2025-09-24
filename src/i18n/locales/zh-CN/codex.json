@@ -86,5 +86,17 @@
   "noExistingProviders": "⚠️ 没有现有的供应商配置",
   "useOfficialLogin": "使用官方登录",
   "apiConfigSwitchPrompt": "选择要切换的API配置",
-  "agentsFileNotFound": "AGENTS.md 文件未找到，请先配置系统提示词"
+  "agentsFileNotFound": "AGENTS.md 文件未找到，请先配置系统提示词",
+  "checkingVersion": "检查版本中...",
+  "currentVersion": "当前版本: v{version}",
+  "latestVersion": "最新版本: v{version}",
+  "confirmUpdate": "将 Codex 更新到最新版本？",
+  "updateSkipped": "跳过更新",
+  "updating": "正在更新 Codex...",
+  "updateFailed": "Codex 更新失败",
+  "autoUpdating": "正在自动更新 Codex...",
+  "upToDate": "Codex 已是最新版本 (v{version})",
+  "notInstalled": "Codex 未安装",
+  "cannotCheckVersion": "无法检查最新版本",
+  "checkFailed": "版本检查失败"
 }

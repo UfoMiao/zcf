@@ -16,6 +16,18 @@ vi.mock('../../../../src/i18n', () => ({
         'codex:workflowInstall': '✔ 已安装 Codex 工作流模板',
         'codex:updatingWorkflows': '🔄 正在更新 Codex 工作流...',
         'codex:updateSuccess': '✔ Codex 工作流已更新',
+        'codex:checkingVersion': '检查版本中...',
+        'codex:currentVersion': '当前版本: v{version}',
+        'codex:latestVersion': '最新版本: v{version}',
+        'codex:confirmUpdate': '将 Codex 更新到最新版本？',
+        'codex:updateSkipped': '跳过更新',
+        'codex:updating': '正在更新 Codex...',
+        'codex:updateFailed': 'Codex 更新失败',
+        'codex:autoUpdating': '正在自动更新 Codex...',
+        'codex:upToDate': 'Codex 已是最新版本 (v{version})',
+        'codex:notInstalled': 'Codex 未安装',
+        'codex:cannotCheckVersion': '无法检查最新版本',
+        'codex:checkFailed': '版本检查失败',
       }
       return translations[key] || key
     },
@@ -23,6 +35,13 @@ vi.mock('../../../../src/i18n', () => ({
     language: 'en',
   },
   ensureI18nInitialized: vi.fn(),
+  format: (template: string, values: Record<string, any>) => {
+    let result = template
+    for (const [key, value] of Object.entries(values)) {
+      result = result.replace(`{${key}}`, String(value))
+    }
+    return result
+  },
 }))
 
 vi.mock('inquirer', () => ({
@@ -248,7 +267,7 @@ describe('codex code tool utilities', () => {
     expect(updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({ codeToolType: 'codex' }))
   })
 
-  it('configureCodexApi should handle official mode by clearing providers', async () => {
+  it('configureCodexApi should handle official mode by setting OPENAI_API_KEY to null', async () => {
     const inquirer = await import('inquirer')
     vi.mocked(inquirer.default.prompt)
       .mockResolvedValueOnce({ mode: 'official' })
@@ -257,14 +276,16 @@ describe('codex code tool utilities', () => {
     vi.mocked(fsOps.exists).mockImplementation((path) => {
       if (path === '/home/test/.codex/config.toml')
         return true
+      if (path === '/home/test/.codex') // Also mock the directory exists
+        return true
       if (path === '/project/templates')
         return true
       return false
     })
-    vi.mocked(fsOps.readFile).mockReturnValue('model_provider = "packycode"\n[mcp.services.context7]\ncommand = "npx"\n')
+    vi.mocked(fsOps.readFile).mockReturnValue('model_provider = "packycode"\n[model_providers.packycode]\nname = "PackyCode"\nbase_url = "https://api.packycode.com/v1"\n[mcp.services.context7]\ncommand = "npx"\n')
 
     const jsonModule = await import('../../../../src/utils/json-config')
-    vi.mocked(jsonModule.readJsonConfig).mockReturnValue({ OPENAI_API_KEY: 'old' })
+    vi.mocked(jsonModule.readJsonConfig).mockReturnValue({ OPENAI_API_KEY: 'old', PACKYCODE_API_KEY: 'existing-key' })
 
     const module = await import('../../../../src/utils/code-tools/codex')
     const writeFileMock = vi.mocked(fsOps.writeFile)
@@ -272,16 +293,17 @@ describe('codex code tool utilities', () => {
 
     await module.configureCodexApi()
 
-    expect(fsOps.copyFile).toHaveBeenCalledWith(
-      '/home/test/.codex/config.toml',
-      expect.stringContaining('/home/test/.codex/backup/backup_'),
-    )
+    // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
+    // This test validates the core functionality but backup verification is handled by dedicated backup tests
+    expect(fsOps.copyDir).toHaveBeenCalled() // Verify backup functionality is called
     const configContent = writeFileMock.mock.calls[0][1] as string
-    expect(configContent).not.toContain('[model_providers')
+    // In official mode, model_provider should be commented but providers should be preserved
+    expect(configContent).toContain('# model_provider = "packycode"')
+    expect(configContent).toContain('[model_providers.packycode]')
     expect(configContent).toContain('[mcp.services.context7]')
     expect(jsonModule.writeJsonConfig).toHaveBeenCalledWith(
       '/home/test/.codex/auth.json',
-      {},
+      { OPENAI_API_KEY: null, PACKYCODE_API_KEY: 'existing-key' },
       { pretty: true },
     )
   })
@@ -300,6 +322,8 @@ describe('codex code tool utilities', () => {
     vi.mocked(fsOps.exists).mockImplementation((path) => {
       if (path === '/home/test/.codex/config.toml')
         return true
+      if (path === '/home/test/.codex') // Also mock the directory exists
+        return true
       if (path === '/project/templates')
         return true
       return false
@@ -312,7 +336,9 @@ describe('codex code tool utilities', () => {
 
     await module.configureCodexMcp()
 
-    expect(fsOps.copyFile).toHaveBeenCalled()
+    // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
+    // This test validates the core functionality but backup verification is handled by dedicated backup tests
+    expect(fsOps.copyDir).toHaveBeenCalled() // Verify backup functionality is called
     expect(writeFileMock).toHaveBeenCalledTimes(1)
     const updated = writeFileMock.mock.calls[0][1] as string
     expect(updated).toContain('[mcp_servers.context7]')
@@ -441,6 +467,253 @@ describe('codex code tool utilities', () => {
 
       // Test that runCodexUpdate executes without throwing errors
       await expect(module.runCodexUpdate()).resolves.not.toThrow()
+    })
+  })
+
+  // TDD Tests for enhanced checkCodexUpdate function
+  describe('checkCodexUpdate enhanced functionality', () => {
+    it('should return detailed version information object', async () => {
+      const { x } = await import('tinyexec')
+      const mockedX = vi.mocked(x)
+
+      // Mock getCodexVersion call - first call returns version info with full npm output
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '@openai/codex@1.0.0 /usr/local/lib/node_modules/@openai/codex',
+        stderr: '',
+      })
+
+      // Mock npm view command - second call
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          'dist-tags': { latest: '2.0.0' },
+        }),
+        stderr: '',
+      })
+
+      const { checkCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
+      const result = await checkCodexUpdate()
+
+      expect(result).toEqual({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+    })
+
+    it('should return false values when codex is not installed', async () => {
+      const { x } = await import('tinyexec')
+      const mockedX = vi.mocked(x)
+
+      // Mock codex not installed (getCodexVersion returns null)
+      mockedX.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: '',
+      })
+
+      const { checkCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
+      const result = await checkCodexUpdate()
+
+      expect(result).toEqual({
+        installed: false,
+        currentVersion: null,
+        latestVersion: null,
+        needsUpdate: false,
+      })
+    })
+
+    it('should handle npm view command failures gracefully', async () => {
+      const { x } = await import('tinyexec')
+      const mockedX = vi.mocked(x)
+
+      // Mock codex installed - getCodexVersion call
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '@openai/codex@1.0.0 /usr/local/lib/node_modules/@openai/codex',
+        stderr: '',
+      })
+
+      // Mock npm view command failure
+      mockedX.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Network error',
+      })
+
+      const { checkCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
+      const result = await checkCodexUpdate()
+
+      expect(result).toEqual({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: null,
+        needsUpdate: false,
+      })
+    })
+  })
+
+  // TDD Tests for enhanced runCodexUpdate function
+  describe('runCodexUpdate interactive functionality', () => {
+    it('should display version information and prompt for confirmation', async () => {
+      const inquirer = await import('inquirer')
+      const mockedInquirer = vi.mocked(inquirer.default)
+      const { x } = await import('tinyexec')
+      const mockedX = vi.mocked(x)
+
+      // Mock getCodexVersion call - returns version with need for update
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '@openai/codex@1.0.0 /usr/local/lib/node_modules/@openai/codex',
+        stderr: '',
+      })
+
+      // Mock npm view command - returns newer version
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          'dist-tags': { latest: '2.0.0' },
+        }),
+        stderr: '',
+      })
+
+      // Mock user confirmation
+      mockedInquirer.prompt.mockResolvedValueOnce({ confirm: true })
+
+      // Mock successful npm install
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: 'updated successfully',
+        stderr: '',
+      })
+
+      const { runCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
+      await runCodexUpdate()
+
+      // Verify that inquirer was called with correct default
+      expect(mockedInquirer.prompt).toHaveBeenCalledWith({
+        type: 'confirm',
+        name: 'confirm',
+        message: expect.stringContaining('Codex'),
+        default: true,
+      })
+    })
+
+    it('should skip update when user declines confirmation', async () => {
+      const inquirer = await import('inquirer')
+      const mockedInquirer = vi.mocked(inquirer.default)
+      const { x } = await import('tinyexec')
+      const mockedX = vi.mocked(x)
+
+      // Reset mock call count and implementation
+      mockedX.mockClear()
+      mockedX.mockReset()
+      mockedInquirer.prompt.mockReset()
+
+      // Mock getCodexVersion call
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '@openai/codex@1.0.0 /usr/local/lib/node_modules/@openai/codex',
+        stderr: '',
+      })
+
+      // Mock npm view command
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          'dist-tags': { latest: '2.0.0' },
+        }),
+        stderr: '',
+      })
+
+      // Mock user declining update
+      mockedInquirer.prompt.mockResolvedValueOnce({ confirm: false })
+
+      const { runCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
+      const result = await runCodexUpdate()
+
+      // Should return true (completed successfully) but not call install
+      expect(result).toBe(true)
+      // Should not attempt npm install after user declined
+      expect(mockedX).toHaveBeenCalledTimes(2) // Only version checks, no install
+    })
+
+    it('should support skipPrompt parameter for automatic updates', async () => {
+      const { x } = await import('tinyexec')
+      const mockedX = vi.mocked(x)
+
+      // Mock getCodexVersion call
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '@openai/codex@1.0.0 /usr/local/lib/node_modules/@openai/codex',
+        stderr: '',
+      })
+
+      // Mock npm view command
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          'dist-tags': { latest: '2.0.0' },
+        }),
+        stderr: '',
+      })
+
+      // Mock successful npm install
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: 'updated successfully',
+        stderr: '',
+      })
+
+      const inquirer = await import('inquirer')
+      const mockedInquirer = vi.mocked(inquirer.default)
+
+      const { runCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
+      await runCodexUpdate(false, true) // force=false, skipPrompt=true
+
+      // Should not prompt user when skipPrompt is true
+      expect(mockedInquirer.prompt).not.toHaveBeenCalled()
+      // Should proceed with install automatically
+      expect(mockedX).toHaveBeenCalledTimes(3) // version checks + install
+    })
+
+    it('should show up-to-date message when no update is needed', async () => {
+      const { x } = await import('tinyexec')
+      const mockedX = vi.mocked(x)
+
+      // Reset mock call count and implementation
+      mockedX.mockClear()
+      mockedX.mockReset()
+
+      // Mock getCodexVersion call - same version as latest
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '@openai/codex@2.0.0 /usr/local/lib/node_modules/@openai/codex',
+        stderr: '',
+      })
+
+      // Mock npm view command - same version
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          'dist-tags': { latest: '2.0.0' },
+        }),
+        stderr: '',
+      })
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      const { runCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
+      const result = await runCodexUpdate()
+
+      expect(result).toBe(true)
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('已是最新版本'),
+      )
+
+      consoleSpy.mockRestore()
     })
   })
 })

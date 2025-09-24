@@ -10,7 +10,7 @@ import {
 vi.mock('../../../../src/utils/code-tools/codex', () => ({
   readCodexConfig: vi.fn(),
   writeCodexConfig: vi.fn(),
-  backupCodexConfig: vi.fn(),
+  backupCodexComplete: vi.fn(),
   writeAuthFile: vi.fn(),
 }))
 
@@ -59,18 +59,18 @@ describe('codex-provider-manager', () => {
       const {
         readCodexConfig,
         writeCodexConfig,
-        backupCodexConfig,
+        backupCodexComplete,
         writeAuthFile,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       readCodexConfig.mockReturnValue(mockExistingConfig)
-      backupCodexConfig.mockReturnValue('/backup/path/config.toml')
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
 
       // Act
       const result = await addProviderToExisting(mockNewProvider, 'new-api-key-value')
 
       // Assert
-      expect(backupCodexConfig).toHaveBeenCalledOnce()
+      expect(backupCodexComplete).toHaveBeenCalledOnce()
       expect(writeCodexConfig).toHaveBeenCalledWith({
         ...mockExistingConfig,
         providers: [mockExistingConfig.providers[0], mockNewProvider],
@@ -127,11 +127,11 @@ describe('codex-provider-manager', () => {
       // Arrange
       const {
         readCodexConfig,
-        backupCodexConfig,
+        backupCodexComplete,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       readCodexConfig.mockReturnValue(mockExistingConfig)
-      backupCodexConfig.mockReturnValue(null) // Backup failed
+      backupCodexComplete.mockReturnValue(null) // Backup failed
 
       // Act
       const result = await addProviderToExisting(mockNewProvider, 'api-key')
@@ -150,12 +150,12 @@ describe('codex-provider-manager', () => {
       const {
         readCodexConfig,
         writeCodexConfig,
-        backupCodexConfig,
+        backupCodexComplete,
         writeAuthFile,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       readCodexConfig.mockReturnValue(mockExistingConfig)
-      backupCodexConfig.mockReturnValue('/backup/path/config.toml')
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
 
       const updates = {
         name: 'Updated Provider Name',
@@ -168,7 +168,7 @@ describe('codex-provider-manager', () => {
       const result = await editExistingProvider('existing-provider', updates)
 
       // Assert
-      expect(backupCodexConfig).toHaveBeenCalledOnce()
+      expect(backupCodexComplete).toHaveBeenCalledOnce()
       expect(writeCodexConfig).toHaveBeenCalledWith({
         ...mockExistingConfig,
         providers: [
@@ -217,11 +217,11 @@ describe('codex-provider-manager', () => {
       const {
         readCodexConfig,
         writeCodexConfig,
-        backupCodexConfig,
+        backupCodexComplete,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       readCodexConfig.mockReturnValue(mockExistingConfig)
-      backupCodexConfig.mockReturnValue('/backup/path/config.toml')
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
 
       const partialUpdates = {
         name: 'Partially Updated Name',
@@ -284,17 +284,17 @@ describe('codex-provider-manager', () => {
       const {
         readCodexConfig,
         writeCodexConfig,
-        backupCodexConfig,
+        backupCodexComplete,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       readCodexConfig.mockReturnValue(multiProviderConfig)
-      backupCodexConfig.mockReturnValue('/backup/path/config.toml')
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
 
       // Act
       const result = await deleteProviders(['provider-2', 'provider-3'])
 
       // Assert
-      expect(backupCodexConfig).toHaveBeenCalledOnce()
+      expect(backupCodexComplete).toHaveBeenCalledOnce()
       expect(writeCodexConfig).toHaveBeenCalledWith({
         ...multiProviderConfig,
         providers: [multiProviderConfig.providers[0]], // Only provider-1 remains
@@ -312,11 +312,11 @@ describe('codex-provider-manager', () => {
       const {
         readCodexConfig,
         writeCodexConfig,
-        backupCodexConfig,
+        backupCodexComplete,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       readCodexConfig.mockReturnValue(multiProviderConfig)
-      backupCodexConfig.mockReturnValue('/backup/path/config.toml')
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
 
       // Act - Delete the current default provider (provider-1)
       const result = await deleteProviders(['provider-1'])

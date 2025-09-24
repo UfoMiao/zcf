@@ -171,7 +171,7 @@ describe('update command', () => {
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
-      const codexUpdateSpy = vi.spyOn(codexModule, 'runCodexUpdate').mockResolvedValue(undefined)
+      const codexUpdateSpy = vi.spyOn(codexModule, 'runCodexUpdate').mockResolvedValue(true)
 
       await update({ codeType: 'codex', configLang: 'en', aiOutputLang: 'english', skipBanner: true })
 

@@ -1,5 +1,5 @@
 import type { CodexConfigData, CodexProvider } from './codex'
-import { backupCodexConfig, readCodexConfig, writeAuthFile, writeCodexConfig } from './codex'
+import { backupCodexComplete, readCodexConfig, writeAuthFile, writeCodexConfig } from './codex'
 
 // Constants for error messages
 const ERROR_MESSAGES = {
@@ -60,7 +60,7 @@ export async function addProviderToExisting(
     }
 
     // Create backup
-    const backupPath = backupCodexConfig()
+    const backupPath = backupCodexComplete()
     if (!backupPath) {
       return {
         success: false,
@@ -126,7 +126,7 @@ export async function editExistingProvider(
     }
 
     // Create backup
-    const backupPath = backupCodexConfig()
+    const backupPath = backupCodexComplete()
     if (!backupPath) {
       return {
         success: false,
@@ -224,7 +224,7 @@ export async function deleteProviders(
     }
 
     // Create backup
-    const backupPath = backupCodexConfig()
+    const backupPath = backupCodexComplete()
     if (!backupPath) {
       return {
         success: false,

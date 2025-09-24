@@ -86,5 +86,17 @@
   "noExistingProviders": "⚠️ No existing provider configurations",
   "useOfficialLogin": "Use Official Login",
   "apiConfigSwitchPrompt": "Select API configuration to switch to",
-  "agentsFileNotFound": "AGENTS.md file not found, please configure system prompt first"
+  "agentsFileNotFound": "AGENTS.md file not found, please configure system prompt first",
+  "checkingVersion": "Checking version...",
+  "currentVersion": "Current version: v{version}",
+  "latestVersion": "Latest version: v{version}",
+  "confirmUpdate": "Update Codex to the latest version?",
+  "updateSkipped": "Update skipped",
+  "updating": "Updating Codex...",
+  "updateFailed": "Codex update failed",
+  "autoUpdating": "Auto-updating Codex...",
+  "upToDate": "Codex is up to date (v{version})",
+  "notInstalled": "Codex is not installed",
+  "cannotCheckVersion": "Cannot check latest version",
+  "checkFailed": "Version check failed"
 }
