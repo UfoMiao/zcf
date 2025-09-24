@@ -27,6 +27,7 @@ describe('codex-provider-manager', () => {
   })
 
   const mockExistingConfig: CodexConfigData = {
+    model: null,
     modelProvider: 'existing-provider',
     providers: [
       {
@@ -245,6 +246,7 @@ describe('codex-provider-manager', () => {
 
   describe('deleteProviders', () => {
     const multiProviderConfig: CodexConfigData = {
+      model: null,
       modelProvider: 'provider-1',
       providers: [
         {

@@ -7,7 +7,6 @@
   "languageChanged": "语言已更改",
   "configLangHint.zh-CN": "便于中文用户自定义",
   "configLangHint.en": "token 消耗更低",
-  "updateConfigLangPrompt": "选择配置语言",
   "languageRequired": "语言为必填项",
   "labels.custom": "自定义",
   "currentConfigFound": "当前AI输出语言配置",

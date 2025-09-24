@@ -13,5 +13,6 @@
   "returnToMenu": "Return to main menu?",
   "back": "Back",
   "inputHidden": " (input will be hidden)",
-  "operationFailed": "Operation failed"
+  "operationFailed": "Operation failed",
+  "backupCreated": "📁 Configuration backup created: {{path}}"
 }

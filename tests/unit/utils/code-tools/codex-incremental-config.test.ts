@@ -28,6 +28,7 @@ describe('codex-incremental-config integration', () => {
   })
 
   const initialConfig: CodexConfigData = {
+    model: null,
     modelProvider: 'provider-1',
     providers: [
       {
@@ -161,6 +162,7 @@ describe('codex-incremental-config integration', () => {
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       const complexConfig: CodexConfigData = {
+        model: null,
         modelProvider: 'provider-1',
         providers: [
           {
@@ -275,6 +277,7 @@ describe('codex-incremental-config integration', () => {
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
       const multiProviderConfig: CodexConfigData = {
+        model: null,
         modelProvider: 'provider-1', // This will be deleted
         providers: [
           {

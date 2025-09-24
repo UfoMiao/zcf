@@ -10,6 +10,8 @@ import {
   changeScriptLanguageFeature,
   configureAiMemoryFeature,
   configureApiFeature,
+  configureCodexAiMemoryFeature,
+  configureCodexDefaultModelFeature,
   configureDefaultModelFeature,
   configureEnvPermissionFeature,
   configureMcpFeature,
@@ -266,6 +268,12 @@ async function showCodexMenu(): Promise<MenuResult> {
   console.log(
     `  ${ansis.cyan('4.')} ${i18n.t('menu:menuOptions.codexConfigureMcp')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.codexConfigureMcp')}`)}`,
   )
+  console.log(
+    `  ${ansis.cyan('5.')} ${i18n.t('menu:menuOptions.codexConfigureModel')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.codexConfigureModel')}`)}`,
+  )
+  console.log(
+    `  ${ansis.cyan('6.')} ${i18n.t('menu:menuOptions.codexConfigureAiMemory')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.codexConfigureAiMemory')}`)}`,
+  )
   console.log('')
   printZcfSection({
     uninstallOption: i18n.t('menu:menuOptions.codexUninstall'),
@@ -279,7 +287,7 @@ async function showCodexMenu(): Promise<MenuResult> {
     name: 'choice',
     message: i18n.t('common:enterChoice'),
     validate: (value) => {
-      const valid = ['1', '2', '3', '4', '0', '-', '+', 's', 'S', 'q', 'Q']
+      const valid = ['1', '2', '3', '4', '5', '6', '0', '-', '+', 's', 'S', 'q', 'Q']
       return valid.includes(value) || i18n.t('common:invalidChoice')
     },
   })
@@ -303,6 +311,12 @@ async function showCodexMenu(): Promise<MenuResult> {
       break
     case '4':
       await configureCodexMcp()
+      break
+    case '5':
+      await configureCodexDefaultModelFeature()
+      break
+    case '6':
+      await configureCodexAiMemoryFeature()
       break
     case '0': {
       const currentLang = i18n.language as SupportedLang

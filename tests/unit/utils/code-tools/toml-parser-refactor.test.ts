@@ -23,7 +23,7 @@ describe('tOML Parser Refactor', () => {
     vi.clearAllMocks()
   })
 
-  describe('parseCodexConfig with js-toml', () => {
+  describe('parseCodexConfig with smol-toml', () => {
     it('should parse empty TOML correctly', async () => {
       const { parseCodexConfig } = await import('../../../../src/utils/code-tools/codex')
 
@@ -31,6 +31,7 @@ describe('tOML Parser Refactor', () => {
       const result = parseCodexConfig(emptyToml)
 
       expect(result).toEqual({
+        model: null,
         modelProvider: null,
         providers: [],
         mcpServices: [],
@@ -137,11 +138,12 @@ base_url = "https://api.anthropic.com"
     })
   })
 
-  describe('renderCodexConfig with js-toml', () => {
+  describe('renderCodexConfig with smol-toml', () => {
     it('should render simple config correctly', async () => {
       const { renderCodexConfig } = await import('../../../../src/utils/code-tools/codex')
 
       const configData = {
+        model: null,
         modelProvider: 'gpt-4',
         providers: [{
           id: 'gpt-4',
@@ -168,6 +170,7 @@ base_url = "https://api.anthropic.com"
       const { renderCodexConfig } = await import('../../../../src/utils/code-tools/codex')
 
       const configData = {
+        model: null,
         modelProvider: 'claude',
         providers: [],
         mcpServices: [],
@@ -189,6 +192,7 @@ base_url = "https://api.anthropic.com"
       const { renderCodexConfig } = await import('../../../../src/utils/code-tools/codex')
 
       const configData = {
+        model: null,
         modelProvider: 'wenwen',
         providers: [],
         mcpServices: [],
@@ -222,6 +226,7 @@ base_url = "https://api.anthropic.com"
       const { renderCodexConfig } = await import('../../../../src/utils/code-tools/codex')
 
       const configData = {
+        model: null,
         modelProvider: 'claude',
         providers: [],
         mcpServices: [],

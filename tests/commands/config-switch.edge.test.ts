@@ -65,6 +65,7 @@ describe('config-switch command - Edge Cases', () => {
 
     // Set up default mock behaviors
     mockReadCodexConfig.mockReturnValue({
+      model: null,
       modelProvider: 'test-provider',
       providers: [
         {
@@ -78,6 +79,7 @@ describe('config-switch command - Edge Cases', () => {
       ],
       mcpServices: [],
       managed: true,
+      otherConfig: [],
       modelProviderCommented: false,
     })
     mockSwitchToOfficialLogin.mockResolvedValue(true)

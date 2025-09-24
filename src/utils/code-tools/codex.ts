@@ -5,9 +5,9 @@ import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
 import dayjs from 'dayjs'
 import inquirer from 'inquirer'
-import { load } from 'js-toml'
 import { dirname, join } from 'pathe'
 import semver from 'semver'
+import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../../config/mcp-services'
 import { ensureI18nInitialized, i18n } from '../../i18n'
@@ -45,7 +45,8 @@ export interface CodexMcpService {
 }
 
 export interface CodexConfigData {
-  modelProvider: string | null
+  model: string | null // Default model to use (gpt-5, gpt-5-codex, etc.)
+  modelProvider: string | null // API provider for model_provider field
   providers: CodexProvider[]
   mcpServices: CodexMcpService[]
   managed: boolean
@@ -206,6 +207,7 @@ export function parseCodexConfig(content: string): CodexConfigData {
   // Handle empty content
   if (!content.trim()) {
     return {
+      model: null,
       modelProvider: null,
       providers: [],
       mcpServices: [],
@@ -216,8 +218,8 @@ export function parseCodexConfig(content: string): CodexConfigData {
   }
 
   try {
-    // Parse TOML using js-toml
-    const tomlData = load(content) as any
+    // Parse TOML using smol-toml
+    const tomlData = parseToml(content) as any
 
     // Extract providers from [model_providers.*] sections
     const providers: CodexProvider[] = []
@@ -250,31 +252,30 @@ export function parseCodexConfig(content: string): CodexConfigData {
       }
     }
 
-    // Check for model_provider (both commented and uncommented) from original content
-    // We need to detect global model_provider from text because TOML parser might
-    // incorrectly assign it to a section if it appears after a section header
+    // Extract model (default model) and model_provider (API provider)
+    // We need to detect these from text because TOML parser might incorrectly assign
+    // global keys to sections if they appear after section headers
+    const model: string | null = tomlData.model || null
     let modelProvider: string | null = null
     let modelProviderCommented: boolean | undefined
 
-    // First check for commented model_provider
+    // First check for commented model_provider in raw text
     const commentedMatch = content.match(/^(\s*)#\s*model_provider\s*=\s*"([^"]+)"/m)
     if (commentedMatch) {
       modelProvider = commentedMatch[2]
       modelProviderCommented = true
     }
     else {
-      // Check for uncommented global model_provider
-      // Look for model_provider that's not inside a section
+      // Check for global model_provider (not inside sections) using text parsing
+      // as TOML parser may incorrectly assign it to a section
       const lines = content.split('\n')
       let inSection = false
 
       for (const line of lines) {
         const trimmedLine = line.trim()
 
-        // Skip empty lines
-        if (!trimmedLine) {
+        if (!trimmedLine)
           continue
-        }
 
         // Check if we're entering a section
         if (trimmedLine.startsWith('[')) {
@@ -282,9 +283,8 @@ export function parseCodexConfig(content: string): CodexConfigData {
           continue
         }
 
-        // Skip comments (but reset inSection flag for non-section content)
+        // Skip comments (but reset inSection flag for ZCF comments)
         if (trimmedLine.startsWith('#')) {
-          // Comments break section context - this allows for global config after comments
           if (trimmedLine.includes('--- model provider added by ZCF ---')) {
             inSection = false // ZCF comments mark global config area
           }
@@ -300,6 +300,12 @@ export function parseCodexConfig(content: string): CodexConfigData {
             break
           }
         }
+      }
+
+      // Fallback to parsed TOML data if not found in text parsing
+      if (!modelProvider) {
+        modelProvider = tomlData.model_provider || null
+        modelProviderCommented = false
       }
     }
 
@@ -328,8 +334,12 @@ export function parseCodexConfig(content: string): CodexConfigData {
           || currentSection.startsWith('mcp_servers.')
       }
 
-      // Skip model_provider line (managed by ZCF) only if we're not in a section
-      if (!skipCurrentSection && (trimmedLine.startsWith('model_provider') || trimmedLine.startsWith('# model_provider'))) {
+      // Skip ZCF managed global fields
+      if (!skipCurrentSection && (
+        trimmedLine.startsWith('model_provider')
+        || trimmedLine.startsWith('# model_provider')
+        || /^model\s*=/.test(trimmedLine)
+      )) {
         continue
       }
 
@@ -339,9 +349,10 @@ export function parseCodexConfig(content: string): CodexConfigData {
       }
     }
 
-    const managed = providers.length > 0 || mcpServices.length > 0 || modelProvider !== null
+    const managed = providers.length > 0 || mcpServices.length > 0 || modelProvider !== null || model !== null
 
     return {
+      model,
       modelProvider,
       providers,
       mcpServices,
@@ -354,6 +365,7 @@ export function parseCodexConfig(content: string): CodexConfigData {
     // Fallback to basic parsing if TOML parsing fails
     console.warn('TOML parsing failed, falling back to basic parsing:', error)
     return {
+      model: null,
       modelProvider: null,
       providers: [],
       mcpServices: [],
@@ -382,8 +394,13 @@ export function renderCodexConfig(data: CodexConfigData): string {
 
   // CRITICAL: Add ZCF global configuration FIRST to ensure it's truly global
   // This prevents TOML parser from incorrectly assigning global keys to sections
-  if (data.modelProvider || data.providers.length > 0 || data.modelProviderCommented) {
+  if (data.model || data.modelProvider || data.providers.length > 0 || data.modelProviderCommented) {
     lines.push('# --- model provider added by ZCF ---')
+
+    // Add model field if present
+    if (data.model) {
+      lines.push(`model = "${data.model}"`)
+    }
 
     if (data.modelProvider) {
       const commentPrefix = data.modelProviderCommented ? '# ' : ''
@@ -1002,6 +1019,7 @@ export async function configureCodexApi(): Promise<void> {
   }])
 
   writeCodexConfig({
+    model: existingConfig?.model || null,
     modelProvider: defaultProvider,
     providers,
     mcpServices: existingConfig?.mcpServices || [],
@@ -1037,6 +1055,7 @@ export async function configureCodexMcp(): Promise<void> {
   if (selectedIds.length === 0) {
     console.log(ansis.yellow(i18n.t('codex:noMcpConfigured')))
     writeCodexConfig({
+      model: existingConfig?.model || null,
       modelProvider: existingConfig?.modelProvider || null,
       providers: baseProviders,
       mcpServices: Array.from(existingMap.values()),
@@ -1094,6 +1113,7 @@ export async function configureCodexMcp(): Promise<void> {
     mergedMap.set(service.id, service)
 
   writeCodexConfig({
+    model: existingConfig?.model || null,
     modelProvider: existingConfig?.modelProvider || null,
     providers: baseProviders,
     mcpServices: Array.from(mergedMap.values()),

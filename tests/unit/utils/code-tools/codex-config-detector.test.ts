@@ -29,6 +29,7 @@ describe('codex-config-detector', () => {
       // Arrange
       const { readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const mockConfig: CodexConfigData = {
+        model: null,
         modelProvider: 'test-provider',
         providers: [
           {
@@ -71,6 +72,7 @@ describe('codex-config-detector', () => {
       // Arrange
       const { readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const mockConfig: CodexConfigData = {
+        model: null,
         modelProvider: null,
         providers: [],
         mcpServices: [],
@@ -94,6 +96,7 @@ describe('codex-config-detector', () => {
       // Arrange
       const { readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const mockConfig: CodexConfigData = {
+        model: null,
         modelProvider: 'external-provider',
         providers: [
           {

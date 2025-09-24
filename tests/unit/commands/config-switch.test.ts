@@ -98,6 +98,7 @@ describe('config-switch command', () => {
     ])
     mockGetCurrentCodexProvider.mockResolvedValue('openai-custom')
     mockReadCodexConfig.mockReturnValue({
+      model: null,
       modelProvider: 'openai-custom',
       providers: [
         {
@@ -119,6 +120,7 @@ describe('config-switch command', () => {
       ],
       mcpServices: [],
       managed: true,
+      otherConfig: [],
       modelProviderCommented: false,
     })
     mockSwitchToOfficialLogin.mockResolvedValue(true)

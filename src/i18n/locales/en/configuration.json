@@ -1,4 +1,5 @@
 {
+  "addedLanguageDirective": "Added language directive",
   "aiLanguageConfigured": "AI output language configured",
   "backupAndOverwrite": "Backup and overwrite all",
   "backupSuccess": "All config files backed up to",
@@ -6,6 +7,7 @@
   "configSuccess": "Config files copied to",
   "configureAiLanguage": "Configure AI output language",
   "configureOutputStyle": "Configure global AI output style",
+  "configureSystemPromptStyle": "Configure global AI system prompt style",
   "customModelConfigured": "Custom model configuration completed",
   "customModelOption": "Custom - Specify custom model names",
   "customModelSkipped": "Custom model configuration skipped",
@@ -59,5 +61,11 @@
   "selectOutputStyles": "Select output styles to install",
   "selectedStyles": "Selected styles",
   "updateDocsOnly": "Update workflow-related md files only with backup",
-  "updatingPrompts": "Updating Claude Code memory documents..."
+  "updatingPrompts": "Updating Claude Code memory documents...",
+  "enterCustomModel": "Enter custom model name",
+  "systemPromptConfigured": "System prompt style configured",
+  "codexModelOptions.gpt5": "GPT-5 - General powerful model, suitable for complex tasks",
+  "codexModelOptions.gpt5Codex": "GPT-5-Codex - Code-optimized model, recommended for programming tasks",
+  "codexModelOptions.custom": "Custom - Specify custom model names",
+  "windowsMcpConfigFixed": "Windows MCP configuration fixed"
 }

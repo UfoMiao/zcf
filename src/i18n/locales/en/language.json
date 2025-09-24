@@ -7,7 +7,6 @@
   "languageChanged": "Language changed",
   "configLangHint.zh-CN": "easier for Chinese users to customize",
   "configLangHint.en": "lower token consumption",
-  "updateConfigLangPrompt": "Select configuration language",
   "languageRequired": "Language is required",
   "labels.custom": "Custom",
   "currentConfigFound": "Current AI output language configuration",
