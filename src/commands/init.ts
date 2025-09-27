@@ -1,4 +1,4 @@
-import type { AiOutputLanguage, SupportedLang } from '../constants'
+import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 import type { McpServerConfig } from '../types'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
@@ -7,7 +7,7 @@ import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
 import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
-import { CLAUDE_DIR, LANG_LABELS, SETTINGS_FILE, SUPPORTED_LANGS } from '../constants'
+import { CLAUDE_DIR, DEFAULT_CODE_TOOL_TYPE, isCodeToolType, SETTINGS_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
@@ -21,6 +21,7 @@ import {
   readMcpConfig,
   writeMcpConfig,
 } from '../utils/claude-config'
+import { runCodexFullInit } from '../utils/code-tools/codex'
 import { installCometixLine, isCometixLineInstalled } from '../utils/cometix/installer'
 import {
   applyAiLanguageDirective,
@@ -50,6 +51,7 @@ export interface InitOptions {
   force?: boolean
   skipBanner?: boolean
   skipPrompt?: boolean
+  codeType?: CodeToolType
   // Non-interactive parameters
   configAction?: 'new' | 'backup' | 'merge' | 'docs-only' | 'skip'
   apiType?: 'auth_token' | 'api_key' | 'ccr_proxy' | 'skip'
@@ -214,6 +216,18 @@ function validateSkipPromptOptions(options: InitOptions): void {
   }
 }
 
+function resolveCodeToolType(optionValue: unknown, savedValue?: CodeToolType | null): CodeToolType {
+  if (isCodeToolType(optionValue)) {
+    return optionValue
+  }
+
+  if (savedValue && isCodeToolType(savedValue)) {
+    return savedValue
+  }
+
+  return DEFAULT_CODE_TOOL_TYPE
+}
+
 export async function init(options: InitOptions = {}): Promise<void> {
   // Validate options if in skip-prompt mode (outside try-catch to allow errors to propagate in tests)
   if (options.skipPrompt) {
@@ -232,40 +246,41 @@ export async function init(options: InitOptions = {}): Promise<void> {
       console.log(ansis.gray(i18n.t('installation:termuxEnvironmentInfo')))
     }
 
-    // Step 2: Select config language
+    // Step 2: Read ZCF config once for multiple uses
+    const zcfConfig = readZcfConfig()
+
+    // Step 2.1: Select config language with intelligent detection
     let configLang = options.configLang
     if (!configLang && !options.skipPrompt) {
-      // Create static language hint keys for i18n-ally compatibility
-      const LANG_HINT_KEYS = {
-        'zh-CN': i18n.t('language:configLangHint.zh-CN'),
-        'en': i18n.t('language:configLangHint.en'),
-      } as const
-
-      const { lang } = await inquirer.prompt<{ lang: SupportedLang }>({
-        type: 'list',
-        name: 'lang',
-        message: i18n.t('language:selectConfigLang'),
-        choices: addNumbersToChoices(
-          SUPPORTED_LANGS.map(l => ({
-            name: `${LANG_LABELS[l]} - ${LANG_HINT_KEYS[l]}`,
-            value: l,
-          })),
-        ),
-      })
-
-      if (!lang) {
-        console.log(ansis.yellow(i18n.t('common:cancelled')))
-        process.exit(0)
-      }
-
-      configLang = lang
+      // Use intelligent template language selection
+      const { resolveTemplateLanguage } = await import('../utils/prompts')
+      configLang = await resolveTemplateLanguage(
+        options.configLang, // Command line option
+        zcfConfig,
+      )
     }
     else if (!configLang && options.skipPrompt) {
       configLang = 'en' // Default to English in skip-prompt mode
     }
 
-    // Step 3: Select AI output language
-    const zcfConfig = readZcfConfig()
+    // Step 3: Select code tool
+    const codeToolType = resolveCodeToolType(options.codeType, zcfConfig?.codeToolType)
+    options.codeType = codeToolType
+
+    if (codeToolType === 'codex') {
+      await runCodexFullInit()
+      updateZcfConfig({
+        version,
+        preferredLang: i18n.language as SupportedLang, // ZCF界面语言
+        templateLang: configLang, // 模板语言
+        aiOutputLang: options.aiOutputLang || 'en',
+        codeToolType,
+      })
+      console.log(ansis.green(i18n.t('codex:setupComplete')))
+      return
+    }
+
+    // Step 4: Select AI output language
     const aiOutputLang = options.skipPrompt
       ? options.aiOutputLang || 'en'
       : await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig)
@@ -715,9 +730,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
               }
               else {
                 const response = await inquirer.prompt<{ apiKey: string }>({
-                  type: 'input',
+                  type: 'password',
                   name: 'apiKey',
-                  message: service.apiKeyPrompt!,
+                  message: service.apiKeyPrompt! + i18n.t('common:inputHidden'),
                   validate: value => !!value || i18n.t('api:keyRequired'),
                 })
 
@@ -791,8 +806,10 @@ export async function init(options: InitOptions = {}): Promise<void> {
     // Step 12: Save zcf config
     updateZcfConfig({
       version,
-      preferredLang: i18n.language as SupportedLang,
+      preferredLang: i18n.language as SupportedLang, // ZCF界面语言
+      templateLang: configLang, // 模板语言
       aiOutputLang: aiOutputLang as AiOutputLanguage | string,
+      codeToolType,
     })
 
     // Step 13: Success message

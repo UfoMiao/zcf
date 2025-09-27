@@ -25,6 +25,7 @@ describe('ccr command - edge cases', () => {
     vi.mocked(banner.displayBannerWithInfo).mockImplementation(() => {})
     vi.mocked(zcfConfig.readZcfConfigAsync).mockResolvedValue({
       preferredLang: 'en',
+      codeToolType: 'claude-code',
     } as any)
     vi.mocked(prompts.selectScriptLanguage).mockResolvedValue('en')
     vi.mocked(ccrMenu.showCcrMenu).mockResolvedValue(false)

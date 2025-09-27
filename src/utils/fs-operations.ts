@@ -11,8 +11,8 @@ import {
   unlinkSync,
   writeFileSync,
 } from 'node:fs'
-import process from 'node:process'
 import { dirname } from 'pathe'
+import { isWindows } from './platform'
 
 /**
  * Unified file system operations with error handling
@@ -228,7 +228,7 @@ export async function isExecutable(path: string): Promise<boolean> {
     }
 
     // On Unix-like systems (macOS/Linux), check execute permission
-    if (process.platform !== 'win32') {
+    if (!isWindows()) {
       // Check if file has execute permission (owner, group, or other)
       const mode = stats.mode
       const executePermission = 0o111 // Execute permission bits

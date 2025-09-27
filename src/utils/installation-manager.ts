@@ -1,13 +1,10 @@
 import type { InstallationStatus } from './installer'
-import type { ClaudeCodeInstallation } from './zcf-config'
-import { homedir } from 'node:os'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
-import { join } from 'pathe'
-import { CLAUDE_DIR } from '../constants'
+import { CLAUDE_DIR, ZCF_CONFIG_FILE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { removeLocalClaudeCode } from './installer'
-import { getZcfConfig, updateZcfConfig } from './zcf-config'
+import { readTomlConfig, updateTomlConfig } from './zcf-config'
 
 /**
  * Installation method type
@@ -51,19 +48,21 @@ export async function handleMultipleInstallations(
 ): Promise<InstallationMethod> {
   ensureI18nInitialized()
 
-  // Check if user has already made a choice previously
-  const existingConfig = getZcfConfig()
-  const previousChoice = existingConfig.claudeCodeInstallation
+  // Check if user has already made a choice previously in TOML config
+  const tomlConfig = readTomlConfig(ZCF_CONFIG_FILE)
+  if (tomlConfig && tomlConfig.general?.currentTool === 'claude-code') {
+    const previousChoice = tomlConfig.claudeCode?.installType
 
-  // If user has already chosen and the chosen installation still exists, respect their choice
-  if (previousChoice) {
-    if (previousChoice.type === 'global' && status.hasGlobal) {
-      return 'global'
+    // If user has already chosen and the chosen installation still exists, respect their choice
+    if (previousChoice) {
+      if (previousChoice === 'global' && status.hasGlobal) {
+        return 'global'
+      }
+      if (previousChoice === 'local' && status.hasLocal) {
+        return 'local'
+      }
+      // If previously chosen installation no longer exists, continue to ask user
     }
-    if (previousChoice.type === 'local' && status.hasLocal) {
-      return 'local'
-    }
-    // If previously chosen installation no longer exists, continue to ask user
   }
 
   // No installation found
@@ -113,22 +112,22 @@ export async function handleMultipleInstallations(
         console.log(ansis.green(`✔ ${i18n.t('installation:localInstallationRemoved')}`))
       }
 
-      // Save global installation config
-      await saveInstallationConfig({
-        type: 'global',
-        path: 'claude',
-        configDir: CLAUDE_DIR,
-      })
+      // Save user choice to TOML config (partial update)
+      updateTomlConfig(ZCF_CONFIG_FILE, {
+        claudeCode: {
+          installType: 'global',
+        },
+      } as any) // Type assertion for partial update
     }
     else {
       console.log(ansis.green(`✔ ${i18n.t('installation:usingLocalInstallation')}`))
 
-      // Save local installation config
-      await saveInstallationConfig({
-        type: 'local',
-        path: status.localPath,
-        configDir: join(homedir(), '.claude'),
-      })
+      // Save user choice to TOML config (partial update)
+      updateTomlConfig(ZCF_CONFIG_FILE, {
+        claudeCode: {
+          installType: 'local',
+        },
+      } as any) // Type assertion for partial update
     }
 
     return choice
@@ -147,29 +146,14 @@ export async function handleMultipleInstallations(
 }
 
 /**
- * Save installation configuration to ZCF config
+ * Note: Installation configuration is now managed through TOML config installType field
+ * This function is no longer needed as we simplified the configuration structure
  */
-async function saveInstallationConfig(installation: ClaudeCodeInstallation): Promise<void> {
-  try {
-    updateZcfConfig({
-      claudeCodeInstallation: installation,
-    })
-  }
-  catch (error) {
-    console.error(ansis.red(`✖ ${i18n.t('installation:failedToSaveInstallationConfig')}: ${error}`))
-    // Don't throw - config save failure shouldn't break the main flow
-  }
-}
 
 /**
  * Get Claude Code configuration directory based on saved preference
  */
 export function getClaudeCodeConfigDir(): string {
-  try {
-    const config = getZcfConfig()
-    return config.claudeCodeInstallation?.configDir || CLAUDE_DIR
-  }
-  catch {
-    return CLAUDE_DIR
-  }
+  // Always use standard Claude directory since we simplified the config structure
+  return CLAUDE_DIR
 }
