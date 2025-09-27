@@ -650,4 +650,42 @@ describe('features utilities', () => {
       await expect(configureCodexAiMemoryFeature()).rejects.toThrow('Prompt failed')
     })
   })
+
+  // Edge case tests for successful operations
+  describe('additional successful operation cases', () => {
+    it('should handle MCP service selection cancellation gracefully', async () => {
+      const { configureMcpFeature } = await import('../../../src/utils/features')
+      const { selectMcpServices } = await import('../../../src/utils/mcp-selector')
+
+      vi.mocked(selectMcpServices).mockResolvedValue([])
+
+      // Should handle empty service selection gracefully
+      await expect(configureMcpFeature()).resolves.not.toThrow()
+    })
+
+    it('should handle backup creation failures and continue', async () => {
+      const { configureMcpFeature } = await import('../../../src/utils/features')
+      const { selectMcpServices } = await import('../../../src/utils/mcp-selector')
+      const { backupMcpConfig } = await import('../../../src/utils/claude-config')
+
+      vi.mocked(selectMcpServices).mockResolvedValue(['context7'])
+      vi.mocked(backupMcpConfig).mockReturnValue(null)
+
+      // Should proceed even if backup fails
+      await expect(configureMcpFeature()).resolves.not.toThrow()
+    })
+
+    it('should handle successful API configuration with complete setup', async () => {
+      const { configureApiFeature } = await import('../../../src/utils/features')
+      const { getExistingApiConfig } = await import('../../../src/utils/config')
+      const { configureApiCompletely } = await import('../../../src/utils/config-operations')
+
+      vi.mocked(getExistingApiConfig).mockReturnValue(null)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ action: 'complete' })
+      vi.mocked(configureApiCompletely).mockResolvedValue({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
+
+      // Should complete successfully
+      await expect(configureApiFeature()).resolves.not.toThrow()
+    })
+  })
 })

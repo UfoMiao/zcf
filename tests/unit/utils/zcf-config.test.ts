@@ -614,6 +614,66 @@ system_prompt_style = "engineer-professional"`
         expect(result.codex.enabled).toBe(true)
         expect(result.codex.systemPromptStyle).toBe('engineer-professional')
       })
+
+      it('should handle corrupted JSON config gracefully', () => {
+        const corruptedConfig = {
+          version: null,
+          preferredLang: undefined,
+          codeToolType: 'invalid-tool',
+          unknownField: 'should-be-ignored',
+        }
+
+        const result = migrateFromJsonConfig(corruptedConfig as any)
+
+        // Should use defaults for invalid/missing fields
+        expect(result.version).toBe('1.0.0')
+        expect(result.general.preferredLang).toBe('en')
+        expect(result.general.currentTool).toBe('invalid-tool') // Function preserves original value, even if invalid
+      })
+
+      it('should handle empty JSON config object', () => {
+        const emptyConfig = {}
+
+        const result = migrateFromJsonConfig(emptyConfig as any)
+
+        // Should use all defaults
+        expect(result.version).toBe('1.0.0')
+        expect(result.general.preferredLang).toBe('en')
+        expect(result.general.currentTool).toBe('claude-code')
+        expect(result.claudeCode.enabled).toBe(false)
+        expect(result.codex.enabled).toBe(false)
+      })
+    })
+  })
+
+  // Additional edge case tests for configuration handling
+  describe('configuration edge cases', () => {
+    it('should handle missing configuration directory creation failure', () => {
+      mockEnsureDir.mockImplementation(() => {
+        throw new Error('Cannot create directory')
+      })
+
+      const config = {
+        version: '1.0.0',
+        preferredLang: 'en' as const,
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code' as const,
+      }
+
+      // Should not throw when directory creation fails
+      expect(() => updateZcfConfig(config)).not.toThrow()
+    })
+
+    it('should handle configuration validation errors', () => {
+      const invalidConfig = {
+        version: '', // Invalid version
+        preferredLang: 'invalid-lang' as any, // Invalid language
+        lastUpdated: 'not-a-date', // Invalid date
+        codeToolType: 'unknown-tool' as any, // Invalid tool type
+      }
+
+      // Should handle validation errors gracefully
+      expect(() => updateZcfConfig(invalidConfig)).not.toThrow()
     })
   })
 })

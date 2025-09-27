@@ -716,4 +716,127 @@ describe('codex code tool utilities', () => {
       consoleSpy.mockRestore()
     })
   })
+
+  // Tests for backup functions
+  describe('backup functions', () => {
+    it('backupCodexAgents should create backup of AGENTS.md file', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockImplementation((path) => {
+        if (path.includes('AGENTS.md'))
+          return true
+        return false
+      })
+      vi.mocked(fsOps.copyFile).mockImplementation(() => {})
+      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.backupCodexAgents()
+
+      expect(result).toMatch(/backup.*AGENTS\.md$/)
+      expect(fsOps.copyFile).toHaveBeenCalled()
+    })
+
+    it('backupCodexAgents should handle missing AGENTS.md file', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(false)
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.backupCodexAgents()
+
+      expect(result).toBeNull()
+      expect(fsOps.copyFile).not.toHaveBeenCalled()
+    })
+
+    it('backupCodexAgents should handle backup creation failure', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.copyFile).mockImplementation(() => {
+        throw new Error('Copy failed')
+      })
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.backupCodexAgents()
+
+      expect(result).toBeNull()
+    })
+
+    it('backupCodexComplete should create full configuration backup', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.backupCodexComplete()
+
+      expect(result).toMatch(/backup.*backup_20\d{2}-/)
+      expect(fsOps.copyDir).toHaveBeenCalled()
+    })
+
+    it('backupCodexPrompts should backup prompts directory', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.backupCodexPrompts()
+
+      expect(result).toMatch(/backup.*prompts$/)
+      expect(fsOps.copyDir).toHaveBeenCalled()
+    })
+  })
+
+  // Tests for public API functions only - internal functions are not tested directly
+
+  // Tests for additional configuration functions
+  describe('configuration reading and writing', () => {
+    it('readCodexConfig should handle missing config file', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(false)
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.readCodexConfig()
+
+      expect(result).toBeNull()
+    })
+
+    it('writeCodexConfig should write configuration to file', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      const writeFileMock = vi.mocked(fsOps.writeFile)
+      writeFileMock.mockClear()
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const mockData = {
+        model: null,
+        modelProvider: 'test',
+        providers: [],
+        mcpServices: [],
+        managed: true,
+        otherConfig: [],
+      }
+
+      module.writeCodexConfig(mockData)
+
+      expect(writeFileMock).toHaveBeenCalled()
+      const writtenContent = writeFileMock.mock.calls[0][1] as string
+      expect(writtenContent).toContain('model_provider = "test"')
+    })
+
+    it('writeAuthFile should write authentication data', async () => {
+      const jsonConfig = await import('../../../../src/utils/json-config')
+      vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const authData = { TEST_API_KEY: 'secret-key' }
+
+      module.writeAuthFile(authData)
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        expect.stringContaining('auth.json'),
+        expect.objectContaining({ TEST_API_KEY: 'secret-key' }),
+        { pretty: true },
+      )
+    })
+  })
 })
