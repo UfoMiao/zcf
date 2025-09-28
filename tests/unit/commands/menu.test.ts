@@ -365,4 +365,154 @@ describe('menu command', () => {
       expect(true).toBe(true)
     })
   })
+
+  // Enhanced edge case tests for menu functions through public interface
+  describe('menu edge cases through public API', () => {
+    it('should handle code tool switching through main menu', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      // Setup: current tool is claude-code, user selects to switch
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: 's' }) // User chooses switch tool option
+        .mockResolvedValueOnce({ tool: 'codex' }) // User selects codex
+        .mockResolvedValueOnce({ choice: 'q' }) // User exits
+
+      await showMainMenu()
+
+      // Should update config with new tool type
+      expect(updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({ codeToolType: 'codex' }))
+    })
+
+    it('should handle cancelled tool selection', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: 's' }) // User chooses switch tool option
+        .mockResolvedValueOnce({ tool: '' }) // User cancels selection
+        .mockResolvedValueOnce({ choice: 'q' }) // User exits
+
+      await showMainMenu()
+
+      // Should not update config when selection is cancelled
+      expect(updateZcfConfig).not.toHaveBeenCalledWith(expect.objectContaining({ codeToolType: expect.anything() }))
+    })
+
+    it('should handle same tool selection', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: 's' }) // User chooses switch tool option
+        .mockResolvedValueOnce({ tool: 'claude-code' }) // User selects same tool
+        .mockResolvedValueOnce({ choice: 'q' }) // User exits
+
+      await showMainMenu()
+
+      // Should not update config when same tool is selected
+      expect(updateZcfConfig).not.toHaveBeenCalledWith(expect.objectContaining({ codeToolType: 'claude-code' }))
+    })
+
+    it('should handle menu display for different code tools', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { displayBannerWithInfo } = await import('../../../src/utils/banner')
+
+      // Test with codex tool
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+      await showMainMenu()
+
+      expect(displayBannerWithInfo).toHaveBeenCalledWith(expect.stringContaining('Codex'))
+    })
+
+    it('should handle console output sections', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      await showMainMenu()
+
+      // Menu should log section separators and headers
+      expect(consoleSpy).toHaveBeenCalled()
+      // Should include empty line separators
+      expect(consoleSpy.mock.calls.some(call => call[0] === '')).toBe(true)
+
+      consoleSpy.mockRestore()
+    })
+
+    it('should handle claude-code menu navigation', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { init } = await import('../../../src/commands/init')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: '1' }) // Full initialization
+        .mockResolvedValueOnce({ continue: false }) // Don't continue after init
+
+      await showMainMenu()
+
+      expect(init).toHaveBeenCalled()
+    })
+
+    it('should handle codex menu navigation', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { runCodexFullInit } = await import('../../../src/utils/code-tools/codex')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: '1' }) // Full initialization
+        .mockResolvedValueOnce({ continue: false }) // Don't continue after init
+
+      await showMainMenu()
+
+      expect(runCodexFullInit).toHaveBeenCalled()
+    })
+
+    it('should handle unknown menu actions gracefully', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+      } as any)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ action: 'unknown-action' })
+
+      // Should not throw error for unknown actions
+      await expect(showMainMenu()).resolves.not.toThrow()
+    })
+
+    it('should handle menu with different language settings', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { selectScriptLanguage } = await import('../../../src/utils/prompts')
+
+      // Test with different language setting
+      vi.mocked(selectScriptLanguage).mockResolvedValue('en')
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+        preferredLang: 'en',
+      } as any)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' }) // Use 'q' for quit instead of 'exit'
+
+      // Test should complete without throwing
+      await expect(showMainMenu()).resolves.not.toThrow()
+    })
+  })
 })

@@ -55,6 +55,16 @@ vi.mock('tinyexec', () => ({
   x: vi.fn(),
 }))
 
+vi.mock('ora', () => ({
+  default: vi.fn(() => ({
+    start: vi.fn().mockReturnThis(),
+    stop: vi.fn().mockReturnThis(),
+    succeed: vi.fn().mockReturnThis(),
+    fail: vi.fn().mockReturnThis(),
+    text: '',
+  })),
+}))
+
 vi.mock('../../../../src/utils/fs-operations', () => ({
   ensureDir: vi.fn(),
   copyDir: vi.fn(),
@@ -837,6 +847,435 @@ describe('codex code tool utilities', () => {
         expect.objectContaining({ TEST_API_KEY: 'secret-key' }),
         { pretty: true },
       )
+    })
+  })
+
+  // Additional tests to improve coverage for missing branches
+  describe('utility functions with missing coverage', () => {
+    it('createBackupDirectory should create timestamped backup directory', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const timestamp = '2024-01-01_12-00-00'
+      const result = module.createBackupDirectory(timestamp)
+
+      expect(result).toContain('backup_2024-01-01_12-00-00')
+      expect(fsOps.ensureDir).toHaveBeenCalledWith(result)
+    })
+
+    it('getBackupMessage should generate backup success message', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.getBackupMessage('/test/backup/path')
+
+      // Should return i18n key with path
+      expect(typeof result).toBe('string')
+      expect(result.length).toBeGreaterThan(0)
+    })
+
+    it('getBackupMessage should handle null path', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.getBackupMessage(null)
+
+      expect(result).toBe('')
+    })
+
+    it('switchCodexProvider should handle missing configuration', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+
+      // Mock console methods to avoid output
+      const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      // Mock readCodexConfig to return null (no config found)
+      const mockSpy = vi.spyOn(module, 'readCodexConfig').mockReturnValue(null)
+
+      const result = await module.switchCodexProvider('test-provider')
+
+      expect(result).toBe(false)
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.anything()) // Should log an error message
+
+      // Cleanup
+      mockSpy.mockRestore()
+      consoleLogSpy.mockRestore()
+    })
+  })
+
+  // Tests for error handling and edge cases
+  describe('error handling and edge cases', () => {
+    it('parseCodexConfig should handle malformed TOML content and fallback gracefully', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+
+      // Test with invalid TOML - should not throw but fallback
+      const invalidToml = 'invalid toml content ['
+      const result = module.parseCodexConfig(invalidToml)
+
+      // Should fallback to basic parsing
+      expect(result).toBeDefined()
+      expect(result.managed).toBe(false)
+      expect(Array.isArray(result.otherConfig)).toBe(true)
+    })
+
+    it('getCurrentCodexProvider should handle missing config file', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const mockSpy = vi.spyOn(module, 'readCodexConfig')
+      mockSpy.mockReturnValue(null)
+
+      const result = await module.getCurrentCodexProvider()
+
+      expect(result).toBeNull()
+      mockSpy.mockRestore()
+    })
+
+    it('isCodexInstalled should handle command execution failure', async () => {
+      const { x } = await import('tinyexec')
+      vi.mocked(x).mockRejectedValue(new Error('Command not found'))
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = await module.isCodexInstalled()
+
+      expect(result).toBe(false)
+    })
+
+    it('getCodexVersion should handle command execution failure', async () => {
+      const { x } = await import('tinyexec')
+      vi.mocked(x).mockResolvedValue({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Command failed',
+      })
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = await module.getCodexVersion()
+
+      expect(result).toBeNull()
+    })
+
+    it('listCodexProviders should handle missing config', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const mockSpy = vi.spyOn(module, 'readCodexConfig')
+      mockSpy.mockReturnValue(null)
+
+      const result = await module.listCodexProviders()
+
+      expect(Array.isArray(result)).toBe(true)
+      expect(result.length).toBe(0)
+      mockSpy.mockRestore()
+    })
+
+    it('switchToOfficialLogin should update auth file correctly', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.readFile).mockReturnValue('model_provider = "custom"')
+      vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+      vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+      const jsonConfig = await import('../../../../src/utils/json-config')
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ CUSTOM_API_KEY: 'test' })
+      vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
+
+      const module = await import('../../../../src/utils/code-tools/codex')
+      vi.spyOn(module, 'readCodexConfig').mockReturnValue({
+        model: null,
+        modelProvider: 'custom',
+        providers: [],
+        mcpServices: [],
+        managed: true,
+        otherConfig: [],
+      })
+
+      const result = await module.switchToOfficialLogin()
+
+      expect(result).toBe(true)
+      // Should write null for OPENAI_API_KEY
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        expect.stringContaining('auth.json'),
+        expect.objectContaining({ OPENAI_API_KEY: null }),
+        { pretty: true },
+      )
+    })
+
+    it('parseCodexConfig should handle empty content', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const result = module.parseCodexConfig('')
+
+      expect(result.model).toBeNull()
+      expect(result.modelProvider).toBeNull()
+      expect(result.providers).toEqual([])
+      expect(result.mcpServices).toEqual([])
+      expect(result.managed).toBe(false)
+    })
+
+    it('renderCodexConfig should generate proper TOML format', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const testData = {
+        model: 'gpt-4',
+        modelProvider: 'test-provider',
+        providers: [{
+          id: 'test',
+          name: 'Test Provider',
+          baseUrl: 'https://api.test.com',
+          wireApi: 'responses',
+          envKey: 'TEST_API_KEY',
+          requiresOpenaiAuth: true,
+        }],
+        mcpServices: [],
+        managed: true,
+        otherConfig: [],
+      }
+
+      const result = module.renderCodexConfig(testData)
+
+      expect(result).toContain('model = "gpt-4"')
+      expect(result).toContain('model_provider = "test-provider"')
+      expect(result).toContain('[model_providers.test]')
+    })
+  })
+
+  // Enhanced tests for parseCodexConfig edge cases - increasing coverage
+  describe('enhanced parseCodexConfig edge cases', () => {
+    it('parseCodexConfig should handle commented model_provider', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const tomlWithCommentedProvider = `
+# --- model provider added by ZCF ---
+model = "gpt-4"
+# model_provider = "claude-api"
+
+[model_providers.claude-api]
+name = "Claude API"
+base_url = "https://api.anthropic.com"
+wire_api = "responses"
+env_key = "ANTHROPIC_API_KEY"
+requires_openai_auth = true
+`
+      const result = module.parseCodexConfig(tomlWithCommentedProvider)
+      expect(result.model).toBe('gpt-4')
+      expect(result.modelProvider).toBe('claude-api')
+      expect(result.modelProviderCommented).toBe(true)
+      expect(result.providers).toHaveLength(1)
+      expect(result.providers[0].id).toBe('claude-api')
+    })
+
+    it('parseCodexConfig should handle complex TOML with multiple providers and MCP services', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const complexToml = `
+# --- model provider added by ZCF ---
+model = "gpt-4"
+model_provider = "claude-api"
+
+[model_providers.claude-api]
+name = "Claude API"
+base_url = "https://api.anthropic.com"
+wire_api = "responses"
+env_key = "ANTHROPIC_API_KEY"
+requires_openai_auth = true
+
+[model_providers.openai]
+name = "OpenAI API"
+base_url = "https://api.openai.com/v1"
+wire_api = "chat"
+env_key = "OPENAI_API_KEY"
+requires_openai_auth = false
+
+# --- MCP servers added by ZCF ---
+[mcp_servers.context7]
+command = "npx"
+args = ["-y", "context7"]
+env = {}
+
+[mcp_servers.exa]
+command = "npx"
+args = ["-y", "exa-mcp-server"]
+env = {EXA_API_KEY = "test-key"}
+startup_timeout_ms = 30000
+`
+      const result = module.parseCodexConfig(complexToml)
+      expect(result.model).toBe('gpt-4')
+      expect(result.modelProvider).toBe('claude-api')
+      expect(result.modelProviderCommented).toBe(false)
+      expect(result.providers).toHaveLength(2)
+      expect(result.mcpServices).toHaveLength(2)
+      expect(result.managed).toBe(true)
+
+      // Check providers
+      const claudeProvider = result.providers.find(p => p.id === 'claude-api')
+      expect(claudeProvider).toBeDefined()
+      expect(claudeProvider!.name).toBe('Claude API')
+      expect(claudeProvider!.wireApi).toBe('responses')
+
+      // Check MCP services
+      const exaService = result.mcpServices.find(s => s.id === 'exa')
+      expect(exaService).toBeDefined()
+      expect(exaService!.env).toEqual({ EXA_API_KEY: 'test-key' })
+      expect(exaService!.startup_timeout_ms).toBe(30000)
+    })
+
+    it('parseCodexConfig should preserve otherConfig sections', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const tomlWithCustomConfig = `
+# Custom user configuration
+debug = true
+log_level = "info"
+
+# --- model provider added by ZCF ---
+model = "gpt-4"
+model_provider = "test"
+
+[custom_section]
+custom_key = "custom_value"
+
+[model_providers.test]
+name = "Test"
+base_url = "https://test.com"
+wire_api = "responses"
+env_key = "TEST_KEY"
+requires_openai_auth = true
+`
+      const result = module.parseCodexConfig(tomlWithCustomConfig)
+      expect(result.otherConfig).toBeDefined()
+      expect(result.otherConfig!).toContain('debug = true')
+      expect(result.otherConfig!).toContain('log_level = "info"')
+      expect(result.otherConfig!).toContain('[custom_section]')
+      expect(result.otherConfig!).toContain('custom_key = "custom_value"')
+      // Should not contain ZCF managed sections
+      expect(result.otherConfig!.join('\n')).not.toContain('model_provider = "test"')
+      expect(result.otherConfig!.join('\n')).not.toContain('[model_providers.test]')
+    })
+
+    it('parseCodexConfig should handle model_provider detection with ZCF comments', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const tomlWithZcfComments = `
+[some_section]
+key = "value"
+
+# --- model provider added by ZCF ---
+model_provider = "claude"
+
+[model_providers.claude]
+name = "Claude"
+base_url = "https://api.anthropic.com"
+wire_api = "responses"
+env_key = "ANTHROPIC_API_KEY"
+requires_openai_auth = true
+`
+      const result = module.parseCodexConfig(tomlWithZcfComments)
+      expect(result.modelProvider).toBe('claude')
+      expect(result.modelProviderCommented).toBe(false)
+      // ZCF comment should reset inSection flag, so model_provider is treated as global
+      expect(result.managed).toBe(true)
+    })
+
+    it('parseCodexConfig should handle MCP services with minimal configuration', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const minimalMcpToml = `
+[mcp_servers.simple]
+command = "simple-cmd"
+args = []
+
+[mcp_servers.complex]
+command = "complex-cmd"
+args = ["arg1", "arg2"]
+env = {}
+`
+      const result = module.parseCodexConfig(minimalMcpToml)
+      expect(result.mcpServices).toHaveLength(2)
+
+      const simpleService = result.mcpServices.find(s => s.id === 'simple')
+      expect(simpleService).toBeDefined()
+      expect(simpleService!.command).toBe('simple-cmd')
+      expect(simpleService!.args).toEqual([])
+      expect(simpleService!.env).toBeUndefined()
+
+      const complexService = result.mcpServices.find(s => s.id === 'complex')
+      expect(complexService).toBeDefined()
+      expect(complexService!.args).toEqual(['arg1', 'arg2'])
+    })
+
+    it('parseCodexConfig should handle whitespace-only content', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const whitespaceContent = '   \n\t\n   \n'
+      const result = module.parseCodexConfig(whitespaceContent)
+      expect(result.model).toBeNull()
+      expect(result.modelProvider).toBeNull()
+      expect(result.providers).toEqual([])
+      expect(result.mcpServices).toEqual([])
+      expect(result.managed).toBe(false)
+      expect(result.otherConfig).toEqual([])
+    })
+  })
+
+  // Enhanced tests for renderCodexConfig edge cases
+  describe('enhanced renderCodexConfig edge cases', () => {
+    it('renderCodexConfig should handle commented model_provider', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const testData = {
+        model: 'gpt-4',
+        modelProvider: 'claude-api',
+        modelProviderCommented: true,
+        providers: [{
+          id: 'claude-api',
+          name: 'Claude API',
+          baseUrl: 'https://api.anthropic.com',
+          wireApi: 'responses',
+          envKey: 'ANTHROPIC_API_KEY',
+          requiresOpenaiAuth: true,
+        }],
+        mcpServices: [],
+        managed: true,
+        otherConfig: [],
+      }
+      const result = module.renderCodexConfig(testData)
+      expect(result).toContain('# model_provider = "claude-api"')
+      expect(result).not.toMatch(/^model_provider = "claude-api"$/m)
+      expect(result).toContain('model = "gpt-4"')
+    })
+
+    it('renderCodexConfig should handle MCP services with environment variables', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const testData = {
+        model: null,
+        modelProvider: null,
+        providers: [],
+        mcpServices: [{
+          id: 'exa',
+          command: 'npx',
+          args: ['-y', 'exa-mcp-server'],
+          env: { EXA_API_KEY: 'test-key', DEBUG: 'true' },
+          startup_timeout_ms: 30000,
+        }],
+        managed: true,
+        otherConfig: [],
+      }
+      const result = module.renderCodexConfig(testData)
+      expect(result).toContain('[mcp_servers.exa]')
+      expect(result).toContain('command = "npx"')
+      expect(result).toContain('args = ["-y", "exa-mcp-server"]')
+      expect(result).toContain('env = {EXA_API_KEY = "test-key", DEBUG = "true"}')
+      expect(result).toContain('startup_timeout_ms = 30000')
+    })
+
+    it('renderCodexConfig should preserve otherConfig and add proper spacing', async () => {
+      const module = await import('../../../../src/utils/code-tools/codex')
+      const testData = {
+        model: 'gpt-4',
+        modelProvider: 'test',
+        providers: [{
+          id: 'test',
+          name: 'Test',
+          baseUrl: 'https://test.com',
+          wireApi: 'responses',
+          envKey: 'TEST_KEY',
+          requiresOpenaiAuth: true,
+        }],
+        mcpServices: [],
+        managed: true,
+        otherConfig: ['# Custom config', 'debug = true', '[custom_section]', 'key = "value"'],
+      }
+      const result = module.renderCodexConfig(testData)
+      expect(result).toContain('# Custom config')
+      expect(result).toContain('debug = true')
+      expect(result).toContain('[custom_section]')
+      expect(result).toContain('key = "value"')
+      expect(result).toContain('[model_providers.test]')
     })
   })
 })

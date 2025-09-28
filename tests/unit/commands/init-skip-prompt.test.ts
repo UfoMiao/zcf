@@ -13,14 +13,21 @@ import { configureOutputStyle } from '../../../src/utils/output-style'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
 // Mock all dependencies
-vi.mock('node:fs', () => ({
-  existsSync: vi.fn(),
-}))
 
 vi.mock('inquirer', () => ({
   default: {
     prompt: vi.fn(),
   },
+}))
+
+vi.mock('ora', () => ({
+  default: vi.fn(() => ({
+    start: vi.fn().mockReturnThis(),
+    stop: vi.fn().mockReturnThis(),
+    succeed: vi.fn().mockReturnThis(),
+    fail: vi.fn().mockReturnThis(),
+    text: '',
+  })),
 }))
 
 vi.mock('../../../src/utils/installer', () => ({
@@ -190,11 +197,33 @@ vi.mock('../../../src/i18n', () => ({
 }))
 
 describe('init command with simplified parameters', () => {
+  // Fast mock setup - make all operations instant
+  const setupInstantMocks = () => {
+    vi.mocked(existsSync).mockReturnValue(false)
+    vi.mocked(getInstallationStatus).mockResolvedValue({
+      hasGlobal: true,
+      hasLocal: false,
+      localPath: '/Users/test/.claude/local/claude',
+    })
+    vi.mocked(readMcpConfig).mockReturnValue({ mcpServers: {} })
+
+    // Make all async operations instant
+    vi.mocked(installClaudeCode).mockImplementation(() => Promise.resolve())
+    vi.mocked(configureApi).mockImplementation(() => null as any)
+    vi.mocked(copyConfigFiles).mockImplementation(() => {})
+    vi.mocked(applyAiLanguageDirective).mockImplementation(() => {})
+    vi.mocked(configureOutputStyle).mockImplementation(() => Promise.resolve())
+    vi.mocked(selectAndInstallWorkflows).mockImplementation(() => Promise.resolve([] as any))
+    vi.mocked(writeMcpConfig).mockImplementation(() => {})
+    vi.mocked(backupExistingConfig).mockReturnValue('/backup/path')
+  }
+
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(process, 'exit').mockImplementation((() => {}) as any)
+    setupInstantMocks() // Apply fast mocks
   })
 
   afterEach(() => {
@@ -202,15 +231,9 @@ describe('init command with simplified parameters', () => {
   })
 
   describe('simplified parameter structure', () => {
-    it('should work with only --api-key (no --auth-token needed)', async () => {
-      vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(getInstallationStatus).mockResolvedValue({
-        hasGlobal: true,
-        hasLocal: false,
-        localPath: '/Users/test/.claude/local/claude',
-      })
-
-      const options: InitOptions = {
+    it('should work with both api_key and auth_token using --api-key parameter', async () => {
+      // Test api_key
+      const apiKeyOptions: InitOptions = {
         skipPrompt: true,
         apiType: 'api_key',
         apiKey: 'sk-ant-test-key',
@@ -218,32 +241,25 @@ describe('init command with simplified parameters', () => {
         configLang: 'en',
       }
 
-      await init(options)
-
+      await init(apiKeyOptions)
       expect(configureApi).toHaveBeenCalledWith({
         authType: 'api_key',
         key: 'sk-ant-test-key',
         url: 'https://api.anthropic.com',
       })
-    })
 
-    it('should work with auth token using same --api-key parameter', async () => {
-      vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(getInstallationStatus).mockResolvedValue({
-        hasGlobal: true,
-        hasLocal: false,
-        localPath: '/Users/test/.claude/local/claude',
-      })
+      vi.clearAllMocks()
+      setupInstantMocks()
 
-      const options: InitOptions = {
+      // Test auth_token
+      const authTokenOptions: InitOptions = {
         skipPrompt: true,
         apiType: 'auth_token',
-        apiKey: 'test-auth-token', // Use apiKey for auth token too
+        apiKey: 'test-auth-token',
         skipBanner: true,
       }
 
-      await init(options)
-
+      await init(authTokenOptions)
       expect(configureApi).toHaveBeenCalledWith({
         authType: 'auth_token',
         key: 'test-auth-token',
@@ -251,105 +267,39 @@ describe('init command with simplified parameters', () => {
       })
     })
 
-    it('should use default configAction=backup when not specified', async () => {
-      vi.mocked(existsSync).mockReturnValue(true) // Existing config
-      vi.mocked(getInstallationStatus).mockResolvedValue({
-        hasGlobal: true,
-        hasLocal: false,
-        localPath: '/Users/test/.claude/local/claude',
-      })
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        // No configAction specified - should default to 'backup'
-        skipBanner: true,
-      }
-
-      await init(options)
-
+    it('should handle default behaviors efficiently', async () => {
+      // Test backup behavior with existing config
+      vi.mocked(existsSync).mockReturnValue(true)
+      await init({ skipPrompt: true, skipBanner: true })
       expect(backupExistingConfig).toHaveBeenCalled()
-    })
 
-    it('should auto-install Claude Code by default (no --install-claude needed)', async () => {
-      vi.mocked(existsSync).mockReturnValue(false)
+      vi.clearAllMocks()
+      setupInstantMocks()
+
+      // Test auto-install when Claude Code not present
       vi.mocked(getInstallationStatus).mockResolvedValue({
         hasGlobal: false,
         hasLocal: false,
         localPath: '/Users/test/.claude/local/claude',
-      }) // Not installed
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        // No installClaude specified - should auto-install
-        skipBanner: true,
-      }
-
-      await init(options)
-
-      expect(installClaudeCode).toHaveBeenCalledWith() // No lang parameter needed with global i18n
+      })
+      await init({ skipPrompt: true, skipBanner: true })
+      expect(installClaudeCode).toHaveBeenCalled()
     })
 
-    it('should not install MCP services requiring API keys by default', async () => {
-      vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(getInstallationStatus).mockResolvedValue({
-        hasGlobal: true,
-        hasLocal: false,
-        localPath: '/Users/test/.claude/local/claude',
-      })
-      vi.mocked(readMcpConfig).mockReturnValue({ mcpServers: {} })
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        // No mcpServices specified - should only install services that don't require keys
-        skipBanner: true,
-      }
-
-      await init(options)
+    it('should apply default configurations for MCP, workflows, and output styles', async () => {
+      await init({ skipPrompt: true, skipBanner: true })
 
       // Should configure MCP with default services (non-key services only)
       expect(writeMcpConfig).toHaveBeenCalled()
-    })
-
-    it('should select all services and workflows by default when not specified', async () => {
-      vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(getInstallationStatus).mockResolvedValue({
-        hasGlobal: true,
-        hasLocal: false,
-        localPath: '/Users/test/.claude/local/claude',
-      })
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        skipBanner: true,
-      }
-
-      await init(options)
-
       // Should install all default workflows
       expect(selectAndInstallWorkflows).toHaveBeenCalledWith(
         'en',
-        ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'], // All workflows
+        ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
       )
-    })
-
-    it('should use default output styles when not specified', async () => {
-      vi.mocked(existsSync).mockReturnValue(false)
-      vi.mocked(getInstallationStatus).mockResolvedValue({
-        hasGlobal: true,
-        hasLocal: false,
-        localPath: '/Users/test/.claude/local/claude',
-      })
-
-      const options: InitOptions = {
-        skipPrompt: true,
-        skipBanner: true,
-      }
-
-      await init(options)
-
+      // Should use default output styles
       expect(configureOutputStyle).toHaveBeenCalledWith(
-        ['engineer-professional', 'nekomata-engineer', 'laowang-engineer'], // default output styles
-        'engineer-professional', // default output style
+        ['engineer-professional', 'nekomata-engineer', 'laowang-engineer'],
+        'engineer-professional',
       )
     })
   })

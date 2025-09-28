@@ -4,6 +4,7 @@ import {
   addProviderToExisting,
   deleteProviders,
   editExistingProvider,
+  validateProviderData,
 } from '../../../../src/utils/code-tools/codex-provider-manager'
 
 // Mock the codex module functions
@@ -385,6 +386,104 @@ describe('codex-provider-manager', () => {
         success: false,
         error: 'No providers specified for deletion',
       })
+    })
+  })
+
+  describe('validateProviderData', () => {
+    it('should return valid for complete provider data', () => {
+      const validProvider: CodexProvider = {
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'https://api.test.com/v1',
+        wireApi: 'responses',
+        envKey: 'TEST_API_KEY',
+        requiresOpenaiAuth: true,
+      }
+
+      const result = validateProviderData(validProvider)
+
+      expect(result).toEqual({
+        valid: true,
+        errors: [],
+      })
+    })
+
+    it('should return errors for missing required fields', () => {
+      const incompleteProvider = {}
+
+      const result = validateProviderData(incompleteProvider)
+
+      expect(result.valid).toBe(false)
+      expect(result.errors).toEqual([
+        'Provider ID is required',
+        'Provider name is required',
+        'Base URL is required',
+      ])
+    })
+
+    it('should return error for empty string fields', () => {
+      const emptyFieldsProvider = {
+        id: '',
+        name: '   ',
+        baseUrl: '',
+      }
+
+      const result = validateProviderData(emptyFieldsProvider)
+
+      expect(result.valid).toBe(false)
+      expect(result.errors).toEqual([
+        'Provider ID is required',
+        'Provider name is required',
+        'Base URL is required',
+      ])
+    })
+
+    it('should return error for invalid wireApi value', () => {
+      const invalidWireApiProvider = {
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'https://api.test.com/v1',
+        wireApi: 'invalid-protocol',
+      }
+
+      const result = validateProviderData(invalidWireApiProvider)
+
+      expect(result.valid).toBe(false)
+      expect(result.errors).toEqual([
+        'Wire API must be either "responses" or "chat"',
+      ])
+    })
+
+    it('should accept valid wireApi values', () => {
+      const chatProvider = {
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'https://api.test.com/v1',
+        wireApi: 'chat',
+      }
+
+      const responsesProvider = {
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'https://api.test.com/v1',
+        wireApi: 'responses',
+      }
+
+      expect(validateProviderData(chatProvider).valid).toBe(true)
+      expect(validateProviderData(responsesProvider).valid).toBe(true)
+    })
+
+    it('should handle partial provider data correctly', () => {
+      const partialProvider = {
+        id: 'test-provider',
+        baseUrl: 'https://api.test.com/v1',
+        // Missing name
+      }
+
+      const result = validateProviderData(partialProvider)
+
+      expect(result.valid).toBe(false)
+      expect(result.errors).toEqual(['Provider name is required'])
     })
   })
 })
