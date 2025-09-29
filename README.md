@@ -802,6 +802,7 @@ A huge thank you to all our sponsors for their generous support!
 - Argolinhas (first ko-fi sponsor ٩(•̤̀ᵕ•̤́๑))
 - r\*r (first anonymous sponsor🤣)
 - \*\*康 (first KFC sponsor🍗)
+- \*东 (first coffee sponsor☕️)
 - 16°C coffee (My best friend🤪, offered Claude Code max $200 package)
 
 ## 📄 License
