@@ -1,5 +1,49 @@
 # Changelog
 
+## 3.0.2
+
+### Patch Changes
+
+- ## New Features
+  - Enhanced ZCF configuration migration with cross-device rename failure handling
+  - Improved Codex integration and configuration management
+  - Advanced error handling for cross-platform file operations
+
+  ## 新功能
+  - 增强ZCF配置迁移，支持跨设备重命名失败处理
+  - 改进Codex集成和配置管理功能
+  - 高级跨平台文件操作错误处理
+
+  ## Optimization
+  - Enhanced Codex configuration switching mechanism
+  - Improved CLI initialization and menu system robustness
+  - Strengthened cross-platform compatibility for configuration operations
+
+  ## 优化
+  - 增强Codex配置切换机制
+  - 改进CLI初始化和菜单系统稳定性
+  - 加强配置操作的跨平台兼容性
+
+  ## Documentation
+  - Add first coffee sponsor recognition to README files
+  - Update project documentation with sponsor information
+
+  ## 文档
+  - 添加首位咖啡赞助者信息到README文件
+  - 更新项目文档和赞助者信息
+
+  ## Testing
+  - Significantly expanded test coverage for initialization commands
+  - Enhanced Codex integration test scenarios
+  - Improved configuration migration testing
+  - Added comprehensive edge case testing
+
+  ## 测试
+  - 大幅扩展初始化命令测试覆盖率
+  - 增强Codex集成测试场景
+  - 改进配置迁移测试
+  - 添加全面的边界情况测试
+
 ## 3.0.1
 
 ### Patch Changes
