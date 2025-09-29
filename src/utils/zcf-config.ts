@@ -3,7 +3,7 @@ import type {
   PartialZcfTomlConfig,
   ZcfTomlConfig,
 } from '../types/toml-config'
-import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { dirname } from 'pathe'
 import { parse, stringify } from 'smol-toml'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, LEGACY_ZCF_CONFIG_FILES, SUPPORTED_LANGS, ZCF_CONFIG_DIR, ZCF_CONFIG_FILE } from '../constants'
@@ -230,7 +230,18 @@ export function migrateZcfConfigIfNeeded(): ZcfConfigMigrationResult {
       mkdirSync(ZCF_CONFIG_DIR, { recursive: true })
     }
 
-    renameSync(source, target)
+    try {
+      renameSync(source, target)
+    }
+    catch (error) {
+      if ((error as NodeJS.ErrnoException)?.code !== 'EXDEV') {
+        throw error
+      }
+
+      // Fallback for Windows when rename cannot cross devices
+      copyFileSync(source, target)
+      rmSync(source, { force: true })
+    }
 
     for (const leftover of legacySources.slice(1)) {
       try {

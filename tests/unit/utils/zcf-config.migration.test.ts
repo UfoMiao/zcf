@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -7,6 +7,7 @@ vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>()
   return {
     ...actual,
+    copyFileSync: vi.fn(),
     existsSync: vi.fn(),
     mkdirSync: vi.fn(),
     renameSync: vi.fn(),
@@ -29,6 +30,8 @@ describe('zcf-config migration', () => {
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    vi.mocked(renameSync).mockImplementation(() => undefined)
+    vi.mocked(copyFileSync).mockImplementation(() => undefined)
   })
 
   it('migrates config from claude directory to new location', async () => {
@@ -51,6 +54,35 @@ describe('zcf-config migration', () => {
     expect(renameSync).toHaveBeenCalledWith(claudeLegacy, newPath)
     expect(result).toEqual({ migrated: true, source: claudeLegacy, target: newPath, removed: [] })
     expect(rmSync).not.toHaveBeenCalled()
+  })
+
+  it('falls back to copy when rename fails with EXDEV', async () => {
+    vi.mocked(existsSync).mockImplementation((path) => {
+      if (path === newPath)
+        return false
+      if (path === claudeLegacy)
+        return true
+      if (path === legacyJson)
+        return false
+      if (path === newDir)
+        return false
+      return false
+    })
+
+    vi.mocked(renameSync).mockImplementation(() => {
+      const error = new Error('exdev') as NodeJS.ErrnoException
+      error.code = 'EXDEV'
+      throw error
+    })
+
+    const { migrateZcfConfigIfNeeded } = await import('../../../src/utils/zcf-config')
+    const result = migrateZcfConfigIfNeeded()
+
+    expect(mkdirSync).toHaveBeenCalledWith(newDir, { recursive: true })
+    expect(renameSync).toHaveBeenCalledWith(claudeLegacy, newPath)
+    expect(copyFileSync).toHaveBeenCalledWith(claudeLegacy, newPath)
+    expect(rmSync).toHaveBeenCalledWith(claudeLegacy, { force: true })
+    expect(result).toEqual({ migrated: true, source: claudeLegacy, target: newPath, removed: [] })
   })
 
   it('removes legacy file when new config already exists', async () => {
