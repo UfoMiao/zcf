@@ -1,5 +1,77 @@
 # Changelog
 
+## 3.0.0
+
+### Major Changes
+
+- ## Major Features
+  - Add comprehensive Codex integration and configuration management system
+  - Implement AI agent team configuration with specialized domain expertise
+  - Add enhanced configuration switching command with intelligent detection
+  - Introduce dual template system supporting both Claude Code and Codex workflows
+  - Add complete backup mechanism with incremental configuration management
+
+  ## 主要功能
+  - 添加完整的 Codex 集成和配置管理系统
+  - 实现 AI 代理团队配置，提供专业领域专长
+  - 添加增强的配置切换命令，支持智能检测
+  - 引入双模板系统，支持 Claude Code 和 Codex 工作流
+  - 添加完整的备份机制和增量配置管理
+
+  ## Architecture & Development
+  - Refactor template system with modular structure for better maintainability
+  - Add comprehensive TOML configuration parser and validator
+  - Implement advanced provider management system for different AI tools
+  - Add intelligent configuration detection and switching capabilities
+  - Introduce Serena project integration for enhanced development workflow
+
+  ## 架构与开发
+  - 重构模板系统，采用模块化结构提升可维护性
+  - 添加全面的 TOML 配置解析器和验证器
+  - 实现高级提供商管理系统，支持不同 AI 工具
+  - 添加智能配置检测和切换功能
+  - 引入 Serena 项目集成，增强开发工作流
+
+  ## Testing & Quality
+  - Add 50+ comprehensive test files with TDD approach
+  - Enhance test coverage for backup and configuration handling
+  - Add validation tests for codex provider data and configurations
+  - Implement edge case testing for uninstaller and configuration management
+  - Add comprehensive integration testing for npm package functionality
+
+  ## 测试与质量
+  - 新增 50+ 全面测试文件，采用 TDD 方法
+  - 增强备份和配置处理的测试覆盖
+  - 添加 Codex 提供商数据和配置的验证测试
+  - 实现卸载器和配置管理的边界案例测试
+  - 添加 npm 包功能的全面集成测试
+
+  ## Documentation & Internationalization
+  - Add Codex support documentation with multilingual README sections
+  - Implement AI agent team documentation with role specifications
+  - Add comprehensive Codex workflow and system prompt templates
+  - Update project documentation with latest architecture and features
+  - Enhance internationalization support with new translation namespaces
+
+  ## 文档与国际化
+  - 添加 Codex 支持文档和多语言 README 部分
+  - 实现 AI 代理团队文档和角色规范
+  - 添加全面的 Codex 工作流和系统提示模板
+  - 更新项目文档，包含最新架构和功能
+  - 增强国际化支持，新增翻译命名空间
+
+  ## Breaking Changes
+  - Template structure moved from root to `claude-code/` and `codex/` subdirectories
+  - Configuration format enhanced with TOML support alongside JSON
+  - Command structure updated with new config-switch functionality
+  - AI workflow templates reorganized with provider-specific configurations
+
+  ## 破坏性变更
+  - 模板结构从根目录移动到 `claude-code/` 和 `codex/` 子目录
+  - 配置格式增强，支持 TOML 和 JSON 格式
+  - 命令结构更新，新增配置切换功能
+  - AI 工作流模板重组，提供特定于提供商的配置
+
 ## 2.12.13
 
 ### Patch Changes
