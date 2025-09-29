@@ -10,7 +10,6 @@ import { init } from './commands/init'
 import { showMainMenu } from './commands/menu'
 import { uninstall } from './commands/uninstall'
 import { update } from './commands/update'
-import { DEFAULT_CODE_TOOL_TYPE } from './constants'
 import { changeLanguage, i18n, initI18n } from './i18n'
 import { selectScriptLanguage } from './utils/prompts'
 import { readZcfConfigAsync } from './utils/zcf-config'
@@ -214,7 +213,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
     .option('--force, -f', 'Force overwrite existing configuration')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex)', { default: DEFAULT_CODE_TOOL_TYPE })
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex)')
     .action(await withLanguageResolution(async () => {
       await showMainMenu()
     }))
@@ -237,7 +236,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--output-styles, -o <styles>', `Comma-separated output styles (engineer-professional,nekomata-engineer,laowang-engineer,default,explanatory,learning), "skip" to skip all, "all" for all custom styles, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--default-output-style, -d <style>', `Default output style, ${i18n.t('cli:help.defaults.prefix')} engineer-professional`)
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex)', { default: DEFAULT_CODE_TOOL_TYPE })
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex)')
     .option('--install-cometix-line, -x <value>', `Install CCometixLine statusline tool (true/false), ${i18n.t('cli:help.defaults.prefix')} true`)
     .action(await withLanguageResolution(async (options) => {
       await init(options)

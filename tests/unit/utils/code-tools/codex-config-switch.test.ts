@@ -121,14 +121,14 @@ describe('codex-config-switch', () => {
         currentProvider: 'Provider 1',
       })
 
-      vi.mocked(inquirer.prompt).mockResolvedValue({ action: 'back' })
+      vi.mocked(inquirer.prompt).mockResolvedValue({ action: 'skip' })
 
       await configureIncrementalManagement()
 
       expect(console.log).toHaveBeenCalledWith('codex:incrementalManagementTitle')
       expect(console.log).toHaveBeenCalledWith('codex:currentProviderCount:{"count":2}')
       expect(console.log).toHaveBeenCalledWith('codex:currentDefaultProvider:{"provider":"Provider 1"}')
-      expect(console.log).toHaveBeenCalledWith('common:cancelled')
+      expect(console.log).toHaveBeenCalledWith('common:skip')
     })
 
     it('should handle add provider action', async () => {
@@ -269,7 +269,7 @@ describe('codex-config-switch', () => {
 
       await configureIncrementalManagement()
 
-      expect(console.log).toHaveBeenCalledWith('common:cancelled')
+      expect(console.log).toHaveBeenCalledWith('common:skip')
     })
   })
 

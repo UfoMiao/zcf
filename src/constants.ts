@@ -17,6 +17,11 @@ export const CODE_TOOL_TYPES = ['claude-code', 'codex'] as const
 export type CodeToolType = (typeof CODE_TOOL_TYPES)[number]
 export const DEFAULT_CODE_TOOL_TYPE: CodeToolType = 'claude-code'
 
+export const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
+  'claude-code': 'for Claude Code',
+  'codex': 'for Codex',
+}
+
 export function isCodeToolType(value: any): value is CodeToolType {
   return CODE_TOOL_TYPES.includes(value as CodeToolType)
 }

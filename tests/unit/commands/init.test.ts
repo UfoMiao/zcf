@@ -246,7 +246,7 @@ describe('init command', () => {
       testMocks.updateZcfConfig.mockResolvedValue(undefined)
 
       const codexModule = await import('../../../src/utils/code-tools/codex')
-      const codexInitSpy = vi.spyOn(codexModule, 'runCodexFullInit').mockResolvedValue(undefined)
+      const codexInitSpy = vi.spyOn(codexModule, 'runCodexFullInit').mockResolvedValue('en')
 
       await init({
         skipBanner: true,

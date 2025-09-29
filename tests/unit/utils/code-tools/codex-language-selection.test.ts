@@ -3,8 +3,8 @@ import inquirer from 'inquirer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { runCodexWorkflowImportWithLanguageSelection } from '../../../../src/utils/code-tools/codex'
 import { applyAiLanguageDirective } from '../../../../src/utils/config'
-import { exists, readFile } from '../../../../src/utils/fs-operations'
-import { resolveAiOutputLanguage } from '../../../../src/utils/prompts'
+import { exists, readFile, writeFile } from '../../../../src/utils/fs-operations'
+import { resolveAiOutputLanguage, resolveTemplateLanguage } from '../../../../src/utils/prompts'
 import { readZcfConfig, updateZcfConfig } from '../../../../src/utils/zcf-config'
 
 // Mock i18n
@@ -82,6 +82,7 @@ vi.mock('../../../../src/utils/prompt-helpers', () => ({
 describe('codex Language Selection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    vi.mocked(resolveTemplateLanguage).mockResolvedValue('zh-CN')
   })
 
   describe('runCodexWorkflowImportWithLanguageSelection', () => {
@@ -111,7 +112,11 @@ describe('codex Language Selection', () => {
         mockZcfConfig,
       )
       expect(updateZcfConfig).toHaveBeenCalledWith({ aiOutputLang: mockAiOutputLang })
+      expect(updateZcfConfig).toHaveBeenCalledWith({ templateLang: 'zh-CN' })
       expect(applyAiLanguageDirective).toHaveBeenCalledWith(mockAiOutputLang)
+
+      const agentsWriteCall = vi.mocked(writeFile).mock.calls.find(call => call[0]?.includes('AGENTS.md'))
+      expect(agentsWriteCall?.[1]).toContain('**Most Important:Always respond in Chinese-simplified**')
     })
 
     it('should use saved AI output language from config if available', async () => {
@@ -139,6 +144,7 @@ describe('codex Language Selection', () => {
         undefined,
         mockZcfConfig,
       )
+      expect(updateZcfConfig).toHaveBeenCalledWith({ templateLang: 'zh-CN' })
       // Should not prompt for AI language again since it's saved
     })
 

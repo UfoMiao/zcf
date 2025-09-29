@@ -1,7 +1,7 @@
 import type { CodeToolType, SupportedLang } from '../constants'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
-import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
+import { CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { configureCodexApi, configureCodexMcp, runCodexFullInit, runCodexUninstall, runCodexUpdate, runCodexWorkflowImport } from '../utils/code-tools/codex'
@@ -29,11 +29,6 @@ type MenuResult = 'exit' | 'switch' | undefined
 const CODE_TOOL_LABELS: Record<CodeToolType, string> = {
   'claude-code': 'Claude Code',
   'codex': 'Codex',
-}
-
-const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
-  'claude-code': 'for Claude Code',
-  'codex': 'for Codex',
 }
 
 function getCurrentCodeTool(): CodeToolType {

@@ -209,6 +209,47 @@ system_prompt_style = "engineer-professional"`
         'mocked toml content',
       )
     })
+
+    it('should preserve codex system prompt style when updating unrelated fields', () => {
+      const existingTomlConfig: ZcfTomlConfig = {
+        version: '1.0.0',
+        lastUpdated: '2025-09-21T08:00:00.000Z',
+        general: {
+          preferredLang: 'zh-CN',
+          templateLang: 'zh-CN',
+          aiOutputLang: 'zh-CN',
+          currentTool: 'codex',
+        },
+        claudeCode: {
+          enabled: false,
+          outputStyles: ['engineer-professional'],
+          defaultOutputStyle: 'engineer-professional',
+          installType: 'global',
+        },
+        codex: {
+          enabled: true,
+          systemPromptStyle: 'nekomata-engineer',
+        },
+      }
+
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(sampleTomlString)
+      mockParse.mockReturnValue(existingTomlConfig)
+
+      mockStringify.mockImplementation(() => 'mocked toml content')
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
+
+      updateZcfConfig({ codeToolType: 'codex' })
+
+      const lastCall = mockStringify.mock.calls.at(-1)
+      expect(lastCall).toBeTruthy()
+      const serializedConfig = lastCall?.[0] as ZcfTomlConfig | undefined
+      if (!serializedConfig) {
+        throw new Error('mockStringify should be called with config')
+      }
+      expect(serializedConfig.codex.systemPromptStyle).toBe('nekomata-engineer')
+    })
   })
 
   // Extended Tests from zcf-config.extended.test.ts

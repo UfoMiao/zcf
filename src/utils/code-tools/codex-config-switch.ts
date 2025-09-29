@@ -30,18 +30,18 @@ export async function configureIncrementalManagement(): Promise<void> {
     { name: i18n.t('codex:addProvider'), value: 'add' },
     { name: i18n.t('codex:editProvider'), value: 'edit' },
     { name: i18n.t('codex:deleteProvider'), value: 'delete' },
-    { name: i18n.t('common:back'), value: 'back' },
+    { name: i18n.t('common:skip'), value: 'skip' },
   ]
 
-  const { action } = await inquirer.prompt<{ action: 'add' | 'edit' | 'delete' | 'back' }>([{
+  const { action } = await inquirer.prompt<{ action: 'add' | 'edit' | 'delete' | 'skip' }>([{
     type: 'list',
     name: 'action',
     message: i18n.t('codex:selectAction'),
     choices: addNumbersToChoices(choices),
   }])
 
-  if (!action || action === 'back') {
-    console.log(ansis.yellow(i18n.t('common:cancelled')))
+  if (!action || action === 'skip') {
+    console.log(ansis.yellow(i18n.t('common:skip')))
     return
   }
 

@@ -7,7 +7,7 @@ import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
 import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
-import { CLAUDE_DIR, DEFAULT_CODE_TOOL_TYPE, isCodeToolType, SETTINGS_FILE } from '../constants'
+import { CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, isCodeToolType, SETTINGS_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
@@ -235,9 +235,16 @@ export async function init(options: InitOptions = {}): Promise<void> {
   }
 
   try {
-    // Display banner
+    // Step 2: Read ZCF config once for multiple uses
+    const zcfConfig = readZcfConfig()
+
+    // Step 3: Select code tool
+    const codeToolType = resolveCodeToolType(options.codeType, zcfConfig?.codeToolType)
+    options.codeType = codeToolType
+
+    // Display banner based on selected code tool
     if (!options.skipBanner) {
-      displayBannerWithInfo()
+      displayBannerWithInfo(CODE_TOOL_BANNERS[codeToolType] || 'ZCF')
     }
 
     // Show Termux environment info if detected
@@ -246,34 +253,48 @@ export async function init(options: InitOptions = {}): Promise<void> {
       console.log(ansis.gray(i18n.t('installation:termuxEnvironmentInfo')))
     }
 
-    // Step 2: Read ZCF config once for multiple uses
-    const zcfConfig = readZcfConfig()
-
-    // Step 2.1: Select config language with intelligent detection
+    // Step 2.1: Select config language with intelligent detection (skip duplicate prompts for Codex)
     let configLang = options.configLang
-    if (!configLang && !options.skipPrompt) {
-      // Use intelligent template language selection
-      const { resolveTemplateLanguage } = await import('../utils/prompts')
-      configLang = await resolveTemplateLanguage(
-        options.configLang, // Command line option
-        zcfConfig,
-      )
+    if (codeToolType === 'codex') {
+      if (!configLang) {
+        if (options.skipPrompt) {
+          configLang = zcfConfig?.templateLang || 'en'
+        }
+        else {
+          configLang = zcfConfig?.templateLang || (i18n.language as SupportedLang) || 'en'
+        }
+      }
     }
-    else if (!configLang && options.skipPrompt) {
-      configLang = 'en' // Default to English in skip-prompt mode
+    else {
+      if (!configLang && !options.skipPrompt) {
+        const { resolveTemplateLanguage } = await import('../utils/prompts')
+        configLang = await resolveTemplateLanguage(
+          options.configLang,
+          zcfConfig,
+        )
+      }
+      else if (!configLang && options.skipPrompt) {
+        configLang = 'en'
+      }
     }
 
-    // Step 3: Select code tool
-    const codeToolType = resolveCodeToolType(options.codeType, zcfConfig?.codeToolType)
-    options.codeType = codeToolType
+    if (!configLang) {
+      configLang = 'en'
+    }
 
     if (codeToolType === 'codex') {
-      await runCodexFullInit()
+      const resolvedAiOutputLang = await runCodexFullInit({
+        aiOutputLang: options.aiOutputLang,
+        skipPrompt: options.skipPrompt,
+      })
       updateZcfConfig({
         version,
         preferredLang: i18n.language as SupportedLang, // ZCF界面语言
         templateLang: configLang, // 模板语言
-        aiOutputLang: options.aiOutputLang || 'en',
+        aiOutputLang: resolvedAiOutputLang
+          ?? options.aiOutputLang
+          ?? zcfConfig?.aiOutputLang
+          ?? 'en',
         codeToolType,
       })
       console.log(ansis.green(i18n.t('codex:setupComplete')))

@@ -206,7 +206,7 @@ describe('codex code tool utilities', () => {
     const module = await import('../../../../src/utils/code-tools/codex')
 
     // Test that the function executes without throwing errors
-    await expect(module.runCodexFullInit()).resolves.not.toThrow()
+    await expect(module.runCodexFullInit()).resolves.toBe('zh-CN')
 
     // Test that npm install is called for CLI installation
     expect(x).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex'])
@@ -992,6 +992,10 @@ describe('codex code tool utilities', () => {
         expect.objectContaining({ OPENAI_API_KEY: null }),
         { pretty: true },
       )
+      // Should comment out model_provider when switching to official mode
+      const writeCalls = vi.mocked(fsOps.writeFile).mock.calls
+      const lastWriteCall = writeCalls[writeCalls.length - 1]
+      expect(lastWriteCall?.[1]).toContain('# model_provider = "custom"')
     })
 
     it('parseCodexConfig should handle empty content', async () => {

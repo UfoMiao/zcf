@@ -1,4 +1,4 @@
-import type { SupportedLang } from '../../constants'
+import type { AiOutputLanguage, SupportedLang } from '../../constants'
 import type { CodexUninstallItem, CodexUninstallResult } from './codex-uninstaller'
 import { homedir } from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +11,7 @@ import semver from 'semver'
 import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../../config/mcp-services'
+import { AI_OUTPUT_LANGUAGES } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
@@ -623,16 +624,27 @@ export async function runCodexWorkflowImport(): Promise<void> {
  * Run Codex workflow import with language selection (AI output language + system prompt + workflow)
  * Reuses Claude Code's language selection functionality
  */
-export async function runCodexWorkflowImportWithLanguageSelection(): Promise<void> {
+export interface CodexWorkflowLanguageOptions {
+  aiOutputLang?: AiOutputLanguage | string
+  skipPrompt?: boolean
+}
+
+export async function runCodexWorkflowImportWithLanguageSelection(
+  options?: CodexWorkflowLanguageOptions,
+): Promise<AiOutputLanguage | string> {
   ensureI18nInitialized()
 
   // Step 1: Select AI output language (uses global config memory)
   const zcfConfig = readZcfConfig()
-  const aiOutputLang = await resolveAiOutputLanguage(
-    i18n.language as SupportedLang,
-    undefined, // No command line option
-    zcfConfig,
-  )
+  const { aiOutputLang: commandLineOption, skipPrompt } = options ?? {}
+
+  const aiOutputLang = skipPrompt
+    ? (commandLineOption || zcfConfig?.aiOutputLang || 'en')
+    : await resolveAiOutputLanguage(
+        i18n.language as SupportedLang,
+        commandLineOption,
+        zcfConfig,
+      )
 
   // Step 2: Save AI output language to global config
   updateZcfConfig({ aiOutputLang })
@@ -640,8 +652,11 @@ export async function runCodexWorkflowImportWithLanguageSelection(): Promise<voi
 
   // Step 3: Continue with original workflow (system prompt + workflow selection)
   await runCodexSystemPromptSelection()
+  ensureCodexAgentsLanguageDirective(aiOutputLang)
   await runCodexWorkflowSelection()
   console.log(ansis.green(i18n.t('codex:workflowInstall')))
+
+  return aiOutputLang
 }
 
 export async function runCodexSystemPromptSelection(): Promise<void> {
@@ -660,6 +675,8 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
     undefined, // No command line option for this function
     zcfConfig,
   )
+
+  updateZcfConfig({ templateLang: preferredLang })
 
   let langDir = join(templateRoot, preferredLang)
 
@@ -1180,12 +1197,62 @@ export async function configureCodexMcp(): Promise<void> {
   console.log(ansis.green(i18n.t('codex:mcpConfigured')))
 }
 
-export async function runCodexFullInit(): Promise<void> {
+export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {}
+
+export async function runCodexFullInit(
+  options?: CodexFullInitOptions,
+): Promise<AiOutputLanguage | string> {
   ensureI18nInitialized()
   await installCodexCli()
-  await runCodexWorkflowImport()
+  const aiOutputLang = await runCodexWorkflowImportWithLanguageSelection(options)
   await configureCodexApi()
   await configureCodexMcp()
+  return aiOutputLang
+}
+
+function ensureCodexAgentsLanguageDirective(aiOutputLang: AiOutputLanguage | string): void {
+  if (!exists(CODEX_AGENTS_FILE))
+    return
+
+  const content = readFile(CODEX_AGENTS_FILE)
+  const targetLabel = resolveCodexLanguageLabel(aiOutputLang)
+  const directiveRegex = /\*\*Most Important:\s*Always respond in ([^*]+)\*\*/i
+  const existingMatch = directiveRegex.exec(content)
+
+  if (existingMatch && normalizeLanguageLabel(existingMatch[1]) === normalizeLanguageLabel(targetLabel))
+    return
+
+  let updatedContent = content.replace(/\*\*Most Important:\s*Always respond in [^*]+\*\*\s*/gi, '').trimEnd()
+
+  if (updatedContent.length > 0 && !updatedContent.endsWith('\n'))
+    updatedContent += '\n'
+
+  updatedContent += `\n**Most Important:Always respond in ${targetLabel}**\n`
+
+  const backupPath = backupCodexAgents()
+  if (backupPath)
+    console.log(ansis.gray(getBackupMessage(backupPath)))
+
+  writeFile(CODEX_AGENTS_FILE, updatedContent)
+  console.log(ansis.gray(`  ${i18n.t('configuration:addedLanguageDirective')}: ${targetLabel}`))
+}
+
+function resolveCodexLanguageLabel(aiOutputLang: AiOutputLanguage | string): string {
+  const directive = AI_OUTPUT_LANGUAGES[aiOutputLang as AiOutputLanguage]?.directive
+  if (directive) {
+    const match = directive.match(/Always respond in\s+(.+)/i)
+    if (match)
+      return match[1].trim()
+  }
+
+  if (typeof aiOutputLang === 'string')
+    return aiOutputLang
+
+  return 'English'
+}
+
+function normalizeLanguageLabel(label: string): string {
+  return label.trim().toLowerCase()
 }
 
 export async function runCodexUpdate(force = false, skipPrompt = false): Promise<boolean> {
@@ -1433,11 +1500,28 @@ export async function switchToOfficialLogin(): Promise<boolean> {
   }
 
   try {
+    let preservedModelProvider = existingConfig.modelProvider
+    if (!preservedModelProvider) {
+      try {
+        const rawContent = readFile(CODEX_CONFIG_FILE)
+        const parsedToml = parseToml(rawContent) as Record<string, any>
+        if (typeof parsedToml.model_provider === 'string' && parsedToml.model_provider.trim().length > 0)
+          preservedModelProvider = parsedToml.model_provider.trim()
+      }
+      catch {
+        // Ignore read/parse failures; fall back to parsed config value
+      }
+    }
+
+    const shouldCommentModelProvider = typeof preservedModelProvider === 'string' && preservedModelProvider.length > 0
+
     // Comment out model_provider but keep providers configuration
     const updatedConfig: CodexConfigData = {
       ...existingConfig,
-      modelProvider: existingConfig.modelProvider, // Keep the current provider value
-      modelProviderCommented: true, // Mark as commented
+      modelProvider: shouldCommentModelProvider ? preservedModelProvider : existingConfig.modelProvider,
+      modelProviderCommented: shouldCommentModelProvider
+        ? true
+        : existingConfig.modelProviderCommented,
     }
 
     writeCodexConfig(updatedConfig)

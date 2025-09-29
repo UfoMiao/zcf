@@ -301,7 +301,17 @@ export function writeZcfConfig(config: ZcfConfig): void {
       ...config,
       codeToolType: sanitizeCodeToolType(config.codeToolType),
     }
+    const existingTomlConfig = readTomlConfig(ZCF_CONFIG_FILE)
     const tomlConfig = convertLegacyToTomlConfig(sanitizedConfig)
+
+    const nextSystemPromptStyle
+      = (sanitizedConfig as any).systemPromptStyle
+        || existingTomlConfig?.codex?.systemPromptStyle
+
+    if (nextSystemPromptStyle) {
+      tomlConfig.codex.systemPromptStyle = nextSystemPromptStyle
+    }
+
     writeTomlConfig(ZCF_CONFIG_FILE, tomlConfig)
   }
   catch {

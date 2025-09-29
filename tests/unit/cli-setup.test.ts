@@ -226,7 +226,7 @@ describe('cli-setup', () => {
 
       it('should default code-type to claude-code when not provided', () => {
         const parsed = cli.parse(['node', 'test', 'init'], { run: false })
-        expect(parsed.options.codeType).toBe('claude-code')
+        expect(parsed.options.codeType).toBeUndefined()
       })
 
       it('should work with multiple new shortcuts together', () => {
