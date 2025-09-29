@@ -174,6 +174,7 @@ npx zcf → Select 4  # Configure Codex MCP services
 3. **Workflow Integration**:
    - **Six-Step Workflow**: Structured development process from research to optimization
    - **Custom Workflows**: Import and configure task-specific development templates
+   - **⚠️ Important**: Due to Codex prompt limitations, `/workflow` commands cannot pass parameters directly. Use `/workflow` first, then provide task description in follow-up message
 
 4. **MCP Services**: Full compatibility with existing MCP services including:
    - Context7, Open WebSearch, Spec Workflow
@@ -348,6 +349,8 @@ After configuration:
 - `<task description>` - Execute directly without workflow, following SOLID, KISS, DRY, and YAGNI principles, suitable for small tasks like bug fixes
 - `/feat <task description>` - Start new feature development, divided into plan and UI phases
 - `/workflow <task description>` - Execute complete development workflow, not automated, starts with multiple solution options, asks for user feedback at each step, allows plan modifications, maximum control
+
+> **⚠️ Important Note for Codex Users**: Due to Codex functionality limitations, prompts cannot pass parameters directly. When using `/workflow`, you need to send the workflow command first, wait for AI response, then send your task description in a separate message.
 
 > **PS**:
 >
