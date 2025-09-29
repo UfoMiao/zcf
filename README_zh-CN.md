@@ -10,6 +10,8 @@
 
 **中文** | [English](README.md) | [日本語](README_ja-JP.md) | [更新日志](CHANGELOG.md)
 
+**✨ 快速导航**: [Codex 支持](#-codex-支持v300-新增) | [BMad 工作流](#-bmad-工作流v27-新功能) | [Spec 工作流](#-spec-工作流v2124-新功能) | [开放网页搜索](#-开放网页搜索v2129-新功能) | [CCR 代理](#-ccr-claude-code-router-支持v28-增强版) | [CCometixLine](#-ccometixline-支持状态栏工具v299-新增) | [输出风格](#-ai-输出风格v212-新功能)
+
 > 零配置，一键搞定 Claude Code 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
 
 ![效果图](./src/assets/screenshot.webp)
@@ -126,6 +128,82 @@ npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" -
 | `--default-output-style, -d` | 默认输出风格                            | 同输出风格选项，还包括内置风格：`default`, `explanatory`, `learning`                                   | 否                            | `engineer-professional`                                                                |
 | `--install-cometix-line, -x` | 安装 CCometixLine 状态栏工具            | `true`, `false`                                                                                        | 否                            | `true`                                                                                 |
 
+#### 🤖 Codex 支持（v3.0.0+ 新增）
+
+[Codex](https://www.npmjs.com/package/@openai/codex) 是 OpenAI 官方的代码生成 CLI 工具。ZCF 现在支持完整的 Codex 集成，具备与 Claude Code 相同的配置便利性。
+
+**核心特性：**
+
+- **统一工具管理**：通过 ZCF 菜单在 Claude Code 和 Codex 之间无缝切换
+- **智能配置系统**：自动 Codex CLI 安装、API 提供商设置和 MCP 服务集成
+- **完善备份机制**：所有配置更改都包含时间戳备份，支持恢复功能
+- **多提供商支持**：配置多个 API 提供商（OpenAI、自定义端点），支持轻松切换
+- **系统提示集成**：安装专业 AI 个性（工程师、猫娘工程师、老王工程师）
+- **工作流模板**：导入为代码生成任务优化的结构化开发工作流
+- **高级卸载器**：选择性移除 Codex 组件，支持冲突解决
+
+**Codex 快速入门：**
+
+在 ZCF 主菜单中切换到 Codex 模式：
+```bash
+npx zcf → 选择 S  # 在 Claude Code 和 Codex 之间切换
+```
+
+或直接访问 Codex 功能：
+```bash
+# 完整 Codex 初始化
+npx zcf → 选择 1（切换到 Codex 模式后）
+
+# 单独 Codex 配置
+npx zcf → 选择 3  # 配置 Codex API 提供商
+npx zcf → 选择 4  # 配置 Codex MCP 服务
+```
+
+**配置选项：**
+
+1. **API 提供商配置**：
+   - **官方登录**：使用 OpenAI 官方认证系统
+   - **自定义提供商**：配置多个 API 端点，支持提供商切换
+   - **增量管理**：添加、编辑或删除提供商，不影响现有配置
+
+2. **系统提示风格**：
+   - **专业工程师**：遵循 SOLID、KISS、DRY、YAGNI 原则的健壮代码
+   - **猫娘工程师**：可爱猫娘工程师，具备严格的技术标准
+   - **老王工程师**：暴脾气技术流，绝不容忍低质量代码
+
+3. **工作流集成**：
+   - **六步工作流**：从研究到优化的结构化开发流程
+   - **自定义工作流**：导入和配置任务特定的开发模板
+
+4. **MCP 服务**：与现有 MCP 服务完全兼容，包括：
+   - Context7、开放网页搜索、Spec 工作流
+   - DeepWiki、Playwright、EXA 搜索
+   - 自动服务配置与 API 密钥管理
+
+**文件位置：**
+
+- 配置文件：`~/.codex/config.toml`
+- 认证文件：`~/.codex/auth.json`
+- 系统提示：`~/.codex/AGENTS.md`
+- 工作流：`~/.codex/prompts/`
+- 备份：`~/.codex/backup/`
+
+**命令行操作：**
+
+Codex 专用命令行工具（v3.0.0+ 新增）：
+
+```bash
+# Codex API 提供商切换
+npx zcf config-switch     # 交互式提供商选择
+npx zcf cs                # 使用别名
+npx zcf cs provider-name  # 直接切换到指定提供商
+npx zcf cs --list         # 列出所有可用提供商
+```
+
+**工具间迁移：**
+
+ZCF 允许在 Claude Code 和 Codex 之间无缝切换，同时保留您的偏好设置和工作流配置。两个工具共享相同的 MCP 服务和工作流模板，确保一致的开发体验。
+
 #### 🎨 AI 输出风格（v2.12+ 新功能）
 
 ZCF 现在支持可定制的 AI 输出风格，个性化你的 Claude Code 体验：
@@ -223,6 +301,7 @@ CCR 菜单选项：
 CCR 设置完成后，ZCF 会自动配置 Claude Code 使用 CCR 作为 API 代理。
 
 > **v2.9.1 版本用户重要提示**：如果您之前使用过 ZCF v2.9.1 版本初始化 CCR，请重新执行 CCR 初始化流程，以确保安装正确的 `@musistudio/claude-code-router` 包。v2.9.1 版本中存在包名错误问题，该问题已在后续版本中修复。
+
 
 #### 📊 CCometixLine 支持（状态栏工具）（v2.9.9+ 新增）
 
@@ -475,6 +554,7 @@ $ npx zcf
 | `zcf update`        | `zcf u` | 更新 Prompt 文档并备份旧配置                                                    |
 | `zcf ccu`           | -       | 运行 Claude Code 用量分析工具 - [ccusage](https://github.com/ryoppippi/ccusage) |
 | `zcf ccr`           | -       | 打开 CCR (Claude Code Router) 管理菜单                                          |
+| `zcf config-switch` | `zcf cs` | Codex API 提供商切换工具 - 在官方登录和自定义提供商之间切换                        |
 | `zcf uninstall`     | -       | 交互式 Claude Code 配置和工具卸载程序                                            |
 | `zcf check-updates` | -       | 检查并更新 Claude Code、CCR 和 CCometixLine 的版本                              |
 
@@ -526,6 +606,12 @@ npx zcf u -c en            # 使用缩写
 
 # 运行 Claude Code 用量分析工具（由 ccusage 提供支持）
 npx zcf ccu               # 每日用量（默认），或使用: monthly, session, blocks
+
+# Codex API 提供商切换（v3.0.0+ 新增）
+npx zcf config-switch     # 交互式选择提供商
+npx zcf cs                # 使用缩写
+npx zcf cs provider-name  # 直接切换到指定提供商
+npx zcf cs --list         # 列出所有可用的提供商
 ```
 
 ## 📁 项目结构

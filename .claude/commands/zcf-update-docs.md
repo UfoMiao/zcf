@@ -121,6 +121,13 @@ Based on file changes, determine which documentation sections need updates:
    - Service descriptions
    - Configuration requirements
 
+7. **Codex Integration** (`src/utils/code-tools/codex*`, `templates/codex/`, `src/i18n/locales/*/codex.json`)
+   - Codex CLI installation and configuration
+   - API providers and authentication
+   - System prompts and workflows
+   - MCP service integration
+   - Multi-language template support
+
 ### 4. Check Current Documentation
 
 Read and analyze current documentation files:
@@ -153,11 +160,15 @@ Compare menu structure in code with documentation:
 - Keyboard shortcuts
 - Navigation flow
 - Exit options
+- Codex menu integration and options
+- Codex configuration workflows
 
 **Code Sources:**
 - `src/commands/menu.ts` - Main menu implementation
 - `src/menu/*.ts` - Submenu implementations
 - `src/i18n/locales/*/menu.ts` - Menu translations
+- `src/utils/code-tools/codex.ts` - Codex integration logic
+- `src/i18n/locales/*/codex.json` - Codex translations
 
 ### 6. Verify Initialization Flow
 
@@ -170,12 +181,20 @@ Ensure initialization steps in documentation match actual implementation:
 4. Workflow installation options
 5. Configuration file generation
 6. Success/error messages
+7. Codex CLI installation and setup
+8. Codex API provider configuration
+9. Codex system prompt selection
+10. Codex workflow template installation
 
 **Code Sources:**
 - `src/commands/init.ts` - Main initialization logic
 - `src/utils/installer.ts` - Installation process
 - `src/utils/config.ts` - Configuration setup
 - `src/utils/mcp-selector.ts` - MCP selection
+- `src/utils/code-tools/codex.ts` - Codex installation logic
+- `src/utils/code-tools/codex-provider-manager.ts` - Codex API providers
+- `src/utils/code-tools/codex-config-switch.ts` - Codex configuration
+- `templates/codex/` - Codex template files
 
 ### 7. Generate Update Report
 
@@ -194,24 +213,32 @@ Create a detailed report of findings:
 - [ ] Installation steps
 - [ ] Command usage
 - [ ] Configuration options
+- [ ] Codex integration features
+- [ ] Codex CLI usage and examples
 
 #### README_zh-CN.md
 - [ ] 菜单结构
 - [ ] 安装步骤
 - [ ] 命令使用
 - [ ] 配置选项
+- [ ] Codex 集成功能
+- [ ] Codex CLI 使用和示例
 
 #### README_ja.md
 - [ ] メニュー構造
 - [ ] インストール手順
 - [ ] コマンド使用方法
 - [ ] 設定オプション
+- [ ] Codex 統合機能
+- [ ] Codex CLI の使用と例
 
 #### CLAUDE.md
 - [ ] Development commands
 - [ ] Architecture updates
 - [ ] Testing guidelines
 - [ ] Workflow system
+- [ ] Codex integration documentation
+- [ ] Codex development guidelines
 
 ### Specific Inconsistencies Found
 [Detailed list of mismatches between code and documentation]
@@ -230,22 +257,30 @@ if [ "$CHECK_ONLY" = false ]; then
   # - Update initialization flow based on src/commands/init.ts
   # - Update command list based on src/commands/*.ts
   # - Update configuration section based on types and constants
+  # - Update Codex integration features based on src/utils/code-tools/codex.ts
+  # - Update Codex CLI usage based on src/i18n/locales/en/codex.json
   
   # Update README_zh-CN.md
   # - Ensure consistency with README.md content
   # - Use proper Chinese translations from i18n files
   # - Maintain the same structure as English version
+  # - Update Codex features using src/i18n/locales/zh-CN/codex.json
+  # - Sync Codex CLI usage examples with Chinese translations
   
   # Update README_ja.md
   # - Ensure consistency with README.md content
-  # - Use proper Japanese translations from i18n files  
+  # - Use proper Japanese translations from i18n files
   # - Maintain the same structure as English version
-  
+  # - Update Codex features with Japanese translations (maintain structure consistency)
+  # - Sync Codex CLI usage examples with proper Japanese formatting
+
   # Update CLAUDE.md
   # - Update development commands if package.json scripts changed
   # - Update architecture section if new modules added
   # - Update testing section if test structure changed
   # - Update workflow documentation if workflows modified
+  # - Update Codex integration documentation and development guidelines
+  # - Add Codex module documentation if templates/codex/ structure changed
   
   echo "✅ Documentation files updated"
 else
@@ -271,6 +306,15 @@ echo "Checking multilingual translation consistency..."
 
 # Validate markdown formatting
 echo "Validating markdown format..."
+
+# Validate Codex configuration files
+echo "Validating Codex template files..."
+
+# Check Codex i18n translations completeness
+echo "Checking Codex multilingual translation completeness..."
+
+# Verify Codex CLI integration consistency
+echo "Verifying Codex CLI integration consistency..."
 
 echo "✅ Validation complete"
 ```
@@ -348,6 +392,11 @@ fi
 - [ ] All code examples are executable
 - [ ] No broken internal links
 - [ ] Markdown formatting is valid
+- [ ] Codex features match `src/utils/code-tools/codex.ts`
+- [ ] Codex CLI usage matches `src/i18n/locales/*/codex.json`
+- [ ] Codex templates match `templates/codex/` structure
+- [ ] Codex integration documentation is comprehensive
+- [ ] Codex multilingual translations are complete and consistent
 
 ---
 

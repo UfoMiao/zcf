@@ -10,6 +10,8 @@
 
 [English](README.md) | [中文](README_zh-CN.md) | **日本語** | [更新履歴](CHANGELOG.md)
 
+**✨ クイックリンク**: [Codexサポート](#-codexサポートv300新機能) | [BMadワークフロー](#-bmadワークフローv27新機能) | [Specワークフロー](#-specワークフローv2124新機能) | [Open Web Search](#-open-web-searchv2129新機能) | [CCRルーター](#-ccr-claude-code-router-サポートv28強化版) | [CCometixLine](#-ccometixlineサポートステータスバーツールv299新機能) | [出力スタイル](#-ai出力スタイルv212新機能)
+
 > ゼロ設定、ワンクリックでClaude Code環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
 
 ![スクリーンショット](./src/assets/screenshot-en.webp)
@@ -126,6 +128,82 @@ npx zcf i --skip-prompt --all-lang ja --api-type api_key --api-key "sk-xxx" --ap
 | `--default-output-style, -d` | デフォルト出力スタイル                     | 出力スタイルオプションと同じ、さらに組み込みスタイル：`default`, `explanatory`, `learning`                | いいえ                        | `engineer-professional`                                                                |
 | `--install-cometix-line, -x` | CCometixLineステータスバーツールのインストール | `true`, `false`                                                                                        | いいえ                        | `true`                                                                                 |
 
+#### 🤖 Codexサポート（v3.0.0+新機能）
+
+[Codex](https://www.npmjs.com/package/@openai/codex)はOpenAI公式のコード生成CLIツール。ZCFはClaude Codeと同じ設定の便利さでCodexの完全統合をサポートします。
+
+**主要機能：**
+
+- **統合ツール管理**：ZCFメニューを通じてClaude CodeとCodex間でシームレスに切り替え
+- **インテリジェント設定**：自動Codex CLIインストール、APIプロバイダー設定、MCPサービス統合
+- **包括的バックアップシステム**：すべての設定変更にタイムスタンプ付きバックアップとリカバリ機能を含む
+- **マルチプロバイダーサポート**：複数のAPIプロバイダー（OpenAI、カスタムエンドポイント）を設定し、簡単に切り替え
+- **システムプロンプト統合**：プロフェッショナルAIパーソナリティ（エンジニア、猫娘エンジニア、老王エンジニア）をインストール
+- **ワークフローテンプレート**：コード生成タスクに最適化された構造化開発ワークフローをインポート
+- **高度なアンインストーラー**：競合解決付きCodexコンポーネントの選択的削除
+
+**Codexクイックスタート：**
+
+ZCFメインメニューでCodexモードに切り替え：
+```bash
+npx zcf → Sを選択  # Claude CodeとCodex間で切り替え
+```
+
+またはCodex機能に直接アクセス：
+```bash
+# 完全Codex初期化
+npx zcf → 1を選択（Codexモードに切り替え後）
+
+# 個別Codex設定
+npx zcf → 3を選択  # Codex APIプロバイダーを設定
+npx zcf → 4を選択  # Codex MCPサービスを設定
+```
+
+**設定オプション：**
+
+1. **APIプロバイダー設定**：
+   - **公式ログイン**：OpenAI公式認証システムを使用
+   - **カスタムプロバイダー**：複数のAPIエンドポイントを設定し、プロバイダー切り替え
+   - **インクリメンタル管理**：既存設定に影響を与えずにプロバイダーを追加、編集、削除
+
+2. **システムプロンプトスタイル**：
+   - **プロフェッショナルエンジニア**：堅牢なコードのためのSOLID、KISS、DRY、YAGNI原則
+   - **猫娘エンジニア**：厳格な技術基準を持つ可愛い猫娘エンジニア
+   - **老王エンジニア**：低品質なコードを決して許さない短気な技術流
+
+3. **ワークフロー統合**：
+   - **6ステップワークフロー**：研究から最適化までの構造化開発プロセス
+   - **カスタムワークフロー**：タスク固有の開発テンプレートをインポートして設定
+
+4. **MCPサービス**：既存のMCPサービスと完全に互換性があり、以下を含む：
+   - Context7、オープンWeb検索、Specワークフロー
+   - DeepWiki、Playwright、EXA検索
+   - APIキー管理付き自動サービス設定
+
+**ファイルの場所：**
+
+- 設定：`~/.codex/config.toml`
+- 認証：`~/.codex/auth.json`
+- システムプロンプト：`~/.codex/AGENTS.md`
+- ワークフロー：`~/.codex/prompts/`
+- バックアップ：`~/.codex/backup/`
+
+**コマンドライン操作：**
+
+Codex用の専用コマンドラインツール（v3.0.0+新機能）：
+
+```bash
+# Codex APIプロバイダー切り替え
+npx zcf config-switch     # インタラクティブプロバイダー選択
+npx zcf cs                # エイリアス使用
+npx zcf cs provider-name  # 指定プロバイダーに直接切り替え
+npx zcf cs --list         # 利用可能なプロバイダーをすべて表示
+```
+
+**ツール間の移行：**
+
+ZCFはClaude CodeとCodex間でのシームレスな切り替えを可能にし、設定とワークフロー設定を保持します。両方のツールは一貫した開発体験のために同じMCPサービスとワークフローテンプレートを共有します。
+
 #### 🎨 AI出力スタイル（v2.12+新機能）
 
 ZCFはカスタマイズ可能なAI出力スタイルをサポートし、Claude Code体験をパーソナライズ：
@@ -223,6 +301,7 @@ CCRメニューオプション：
 CCRセットアップ完了後、ZCFは自動的にClaude CodeがCCRをAPIプロキシとして使用するよう設定。
 
 > **v2.9.1バージョンユーザーへの重要な注意**：以前にZCF v2.9.1バージョンでCCRを初期化した場合は、CCR初期化プロセスを再実行して、正しい`@musistudio/claude-code-router`パッケージがインストールされていることを確認してください。v2.9.1バージョンにはパッケージ名エラーの問題があり、後続バージョンで修正されています。
+
 
 #### 📊 CCometixLineサポート（ステータスバーツール）（v2.9.9+新機能）
 

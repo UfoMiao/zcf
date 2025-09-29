@@ -10,6 +10,8 @@
 
 [中文](README_zh-CN.md) | **English** | [日本語](README_ja-JP.md) | [Changelog](CHANGELOG.md)
 
+**✨ Quick Links**: [Codex Support](#-codex-support-v300-new) | [BMad Workflow](#-bmad-workflow-v27-new-feature) | [Spec Workflow](#-spec-workflow-v2124-new-feature) | [Open Web Search](#-open-web-search-v2129-new-feature) | [CCR Router](#-ccr-claude-code-router-support-v28-enhanced) | [CCometixLine](#-ccometixline-support-status-bar-tool-v299-new) | [Output Styles](#-ai-output-styles-v212-new-feature)
+
 > Zero-config, one-click setup for Claude Code with bilingual support, intelligent agent system and personalized AI assistant
 
 ![Rendering](./src/assets/screenshot-en.webp)
@@ -126,6 +128,82 @@ When using `--skip-prompt`, the following parameters are available:
 | `--default-output-style, -d` | Default output style                                     | Same as output styles plus built-in: `default`, `explanatory`, `learning`                          | No                                     | `engineer-professional`                                                                                                          |
 | `--install-cometix-line, -x` | Install CCometixLine statusline tool                     | `true`, `false`                                                                                    | No                                     | `true`                                                                                                                           |
 
+#### 🤖 Codex Support (v3.0.0+ New)
+
+[Codex](https://www.npmjs.com/package/@openai/codex) is OpenAI's official code generation CLI tool. ZCF now supports complete Codex integration with the same configuration convenience as Claude Code.
+
+**Key Features:**
+
+- **Unified Tool Management**: Switch between Claude Code and Codex seamlessly through ZCF menu
+- **Intelligent Configuration**: Automatic Codex CLI installation, API provider setup, and MCP service integration
+- **Comprehensive Backup System**: All configuration changes include timestamped backups with recovery capabilities
+- **Multi-Provider Support**: Configure multiple API providers (OpenAI, custom endpoints) with easy switching
+- **System Prompt Integration**: Install professional AI personalities (Engineer, Nekomata Engineer, Laowang Engineer)
+- **Workflow Templates**: Import structured development workflows optimized for code generation tasks
+- **Advanced Uninstaller**: Selective removal of Codex components with conflict resolution
+
+**Getting Started with Codex:**
+
+Switch to Codex mode in ZCF main menu:
+```bash
+npx zcf → Select S  # Switch between Claude Code and Codex
+```
+
+Or access Codex features directly:
+```bash
+# Full Codex initialization
+npx zcf → Select 1 (after switching to Codex mode)
+
+# Individual Codex configuration
+npx zcf → Select 3  # Configure Codex API providers
+npx zcf → Select 4  # Configure Codex MCP services
+```
+
+**Configuration Options:**
+
+1. **API Provider Configuration**:
+   - **Official Login**: Use OpenAI's official authentication system
+   - **Custom Providers**: Configure multiple API endpoints with provider switching
+   - **Incremental Management**: Add, edit, or remove providers without affecting existing configuration
+
+2. **System Prompt Styles**:
+   - **Engineer Professional**: SOLID, KISS, DRY, YAGNI principles for robust code
+   - **Nekomata Engineer**: Cute catgirl engineer with rigorous technical standards
+   - **Laowang Engineer**: Grumpy tech style that never tolerates substandard code
+
+3. **Workflow Integration**:
+   - **Six-Step Workflow**: Structured development process from research to optimization
+   - **Custom Workflows**: Import and configure task-specific development templates
+
+4. **MCP Services**: Full compatibility with existing MCP services including:
+   - Context7, Open WebSearch, Spec Workflow
+   - DeepWiki, Playwright, EXA search
+   - Automatic service configuration with API key management
+
+**File Locations:**
+
+- Configuration: `~/.codex/config.toml`
+- Authentication: `~/.codex/auth.json`
+- System Prompts: `~/.codex/AGENTS.md`
+- Workflows: `~/.codex/prompts/`
+- Backups: `~/.codex/backup/`
+
+**Command Line Operations:**
+
+Dedicated command line tool for Codex (v3.0.0+ New):
+
+```bash
+# Codex API provider switching
+npx zcf config-switch     # Interactive provider selection
+npx zcf cs                # Using alias
+npx zcf cs provider-name  # Direct switch to specified provider
+npx zcf cs --list         # List all available providers
+```
+
+**Migration Between Tools:**
+
+ZCF allows seamless switching between Claude Code and Codex while preserving your preferences and workflow configurations. Both tools share the same MCP services and workflow templates for consistent development experience.
+
 #### 🎨 AI Output Styles (v2.12+ New Feature)
 
 ZCF now supports customizable AI output styles to personalize your Claude Code experience:
@@ -223,6 +301,7 @@ CCR menu options:
 After CCR setup, ZCF automatically configures Claude Code to use CCR as the API proxy.
 
 **Important Notice for v2.9.9 Users**: If you previously installed CCometixLine using ZCF v2.9.9, please rerun the installation process to ensure that the CCometixLine configuration is correctly added. Run `npx zcf` -> `Select L` -> `Select 1` to add the CCometixLine configuration.
+
 
 #### 📊 CCometixLine Support (Status Bar Tool) (v2.9.9+ New)
 
@@ -473,6 +552,7 @@ Enter your choice: _
 | `zcf update`        | `zcf u` | Update workflow-related md files with backup                                          |
 | `zcf ccu`           | -       | Run Claude Code usage analysis tool - [ccusage](https://github.com/ryoppippi/ccusage) |
 | `zcf ccr`           | -       | Open CCR (Claude Code Router) management menu                                         |
+| `zcf config-switch` | `zcf cs` | Codex API provider switching tool - Switch between official login and custom providers |
 | `zcf uninstall`     | -       | Interactive uninstall tool for Claude Code configurations and tools                   |
 | `zcf check-updates` | -       | Check and update Claude Code, CCR and CCometixLine versions                           |
 
@@ -524,6 +604,12 @@ npx zcf u -c en            # Using short option
 
 # Run Claude Code usage analysis tool (powered by ccusage)
 npx zcf ccu               # Daily usage (default), or use: monthly, session, blocks
+
+# Codex API provider switching (v3.0.0+ New)
+npx zcf config-switch     # Interactive provider selection
+npx zcf cs                # Using alias
+npx zcf cs provider-name  # Direct switch to specified provider
+npx zcf cs --list         # List all available providers
 ```
 
 ## 📁 Project Structure
