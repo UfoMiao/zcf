@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.0.1
+
+### Patch Changes
+
+- ## Improvements
+  - Enhanced Codex API key handling with improved existing authentication reading logic
+  - Added workflow command parameter limitation documentation across all language versions
+
+  ## Optimization
+  - Improved Codex provider configuration with better default API key handling
+  - Enhanced authentication file reading for existing configurations
+
+  ## Documentation
+  - Added important workflow command usage notes to README files
+  - Updated multilingual documentation with Codex prompt limitations guidance
+
+  ## 改进
+  - 增强 Codex API 密钥处理，改进现有认证读取逻辑
+  - 在所有语言版本中添加工作流命令参数限制文档说明
+
+  ## 优化
+  - 改进 Codex 提供商配置，提供更好的默认 API 密钥处理
+  - 增强现有配置的认证文件读取功能
+
+  ## 文档
+  - 在 README 文件中添加重要的工作流命令使用说明
+  - 更新多语言文档，提供 Codex 提示限制指导
+
 ## 3.0.0
 
 ### Major Changes
