@@ -853,6 +853,7 @@ function createApiConfigChoices(providers: CodexProvider[], currentProvider?: st
 export async function configureCodexApi(): Promise<void> {
   ensureI18nInitialized()
   const existingConfig = readCodexConfig()
+  const existingAuth = readJsonConfig<Record<string, string | null>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
 
   // Check if there are existing providers for switch option
   const hasProviders = existingConfig?.providers && existingConfig.providers.length > 0
@@ -1063,6 +1064,14 @@ export async function configureCodexApi(): Promise<void> {
     choices: addNumbersToChoices(toProvidersList(providers)),
     default: existingConfig?.modelProvider || providers[0].id,
   }])
+
+  const selectedProvider = providers.find(provider => provider.id === defaultProvider)
+  if (selectedProvider) {
+    const envKey = selectedProvider.envKey
+    const defaultApiKey = authEntries[envKey] ?? existingAuth[envKey] ?? null
+    if (defaultApiKey)
+      authEntries.OPENAI_API_KEY = defaultApiKey
+  }
 
   writeCodexConfig({
     model: existingConfig?.model || null,

@@ -269,7 +269,7 @@ describe('codex code tool utilities', () => {
     const jsonConfigModule = await import('../../../../src/utils/json-config')
     expect(jsonConfigModule.writeJsonConfig).toHaveBeenCalledWith(
       '/home/test/.codex/auth.json',
-      { PACKYCODE_API_KEY: 'secret' },
+      { PACKYCODE_API_KEY: 'secret', OPENAI_API_KEY: 'secret' },
       { pretty: true },
     )
 
