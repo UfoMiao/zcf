@@ -10,9 +10,7 @@
   "permissions": {
     "allow": [
       "Bash",
-      "LS",
       "Read",
-      "Agent",
       "Write",
       "Edit",
       "MultiEdit",

@@ -11,6 +11,7 @@ import {
   mergeMcpServers,
   readMcpConfig,
   removeApiKeyFromRejected,
+  setPrimaryApiKey,
   writeMcpConfig,
 } from '../../../src/utils/claude-config'
 
@@ -18,6 +19,7 @@ import {
 vi.mock('../../../src/constants', () => ({
   ClAUDE_CONFIG_FILE: '/test/.claude.json',
   CLAUDE_DIR: '/test/.claude',
+  CLAUDE_VSC_CONFIG_FILE: '/test/.claude/config.json',
 }))
 
 vi.mock('../../../src/i18n', () => ({
@@ -508,6 +510,88 @@ describe('claude-config', () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       expect(() => manageApiKeyApproval('test-key')).not.toThrow()
+      expect(consoleSpy).toHaveBeenCalled()
+
+      consoleSpy.mockRestore()
+    })
+  })
+
+  describe('setPrimaryApiKey', () => {
+    it('should set primaryApiKey to "zcf" for new config', () => {
+      mockJsonConfig.readJsonConfig.mockReturnValue(null)
+
+      setPrimaryApiKey()
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith('/test/.claude/config.json', {
+        primaryApiKey: 'zcf',
+      })
+    })
+
+    it('should set primaryApiKey to "zcf" for existing config', () => {
+      const existingConfig = {
+        someOtherField: 'value',
+      }
+      mockJsonConfig.readJsonConfig.mockReturnValue(existingConfig)
+
+      setPrimaryApiKey()
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith('/test/.claude/config.json', {
+        someOtherField: 'value',
+        primaryApiKey: 'zcf',
+      })
+    })
+
+    it('should overwrite existing primaryApiKey value', () => {
+      const existingConfig = {
+        primaryApiKey: 'old-value',
+      }
+      mockJsonConfig.readJsonConfig.mockReturnValue(existingConfig)
+
+      setPrimaryApiKey()
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith('/test/.claude/config.json', {
+        primaryApiKey: 'zcf',
+      })
+    })
+
+    it('should preserve other config fields when setting primaryApiKey', () => {
+      const existingConfig = {
+        customField1: 'test1',
+        customField2: { nested: 'value' },
+        customField3: ['array', 'values'],
+      }
+      mockJsonConfig.readJsonConfig.mockReturnValue(existingConfig)
+
+      setPrimaryApiKey()
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith('/test/.claude/config.json', {
+        customField1: 'test1',
+        customField2: { nested: 'value' },
+        customField3: ['array', 'values'],
+        primaryApiKey: 'zcf',
+      })
+    })
+
+    it('should handle errors gracefully without throwing', () => {
+      mockJsonConfig.readJsonConfig.mockImplementation(() => {
+        throw new Error('Read failed')
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      expect(() => setPrimaryApiKey()).not.toThrow()
+      expect(consoleSpy).toHaveBeenCalled()
+
+      consoleSpy.mockRestore()
+    })
+
+    it('should continue execution even if writeJsonConfig fails', () => {
+      mockJsonConfig.readJsonConfig.mockReturnValue({})
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {
+        throw new Error('Write failed')
+      })
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      expect(() => setPrimaryApiKey()).not.toThrow()
       expect(consoleSpy).toHaveBeenCalled()
 
       consoleSpy.mockRestore()

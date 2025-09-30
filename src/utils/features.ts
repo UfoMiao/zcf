@@ -8,7 +8,6 @@ import { changeLanguage, ensureI18nInitialized, i18n } from '../i18n'
 import { setupCcrConfiguration } from './ccr/config'
 import { installCcr, isCcrInstalled } from './ccr/installer'
 import {
-  addCompletedOnboarding,
   backupMcpConfig,
   buildMcpServerConfig,
   fixWindowsMcpConfig,
@@ -21,6 +20,8 @@ import {
   configureApi,
   getExistingApiConfig,
   getExistingModelConfig,
+  promptApiConfigurationAction,
+  switchToOfficialLogin,
   updateCustomModel,
   updateDefaultModel,
 } from './config'
@@ -39,85 +40,41 @@ async function handleCancellation(): Promise<void> {
   console.log(ansis.yellow(i18n.t('common:cancelled')))
 }
 
-// Configure API
-export async function configureApiFeature(): Promise<void> {
+// Handle official login mode
+async function handleOfficialLoginMode(): Promise<void> {
+  ensureI18nInitialized()
+  const success = switchToOfficialLogin()
+  if (success) {
+    console.log(ansis.green(`✔ ${i18n.t('api:officialLoginConfigured')}`))
+  }
+  else {
+    console.log(ansis.red(i18n.t('api:officialLoginFailed')))
+  }
+}
+
+// Handle custom API configuration mode
+async function handleCustomApiMode(): Promise<void> {
   ensureI18nInitialized()
 
   // Check for existing API configuration
-  const existingApiConfig = getExistingApiConfig()
+  const existingConfig = getExistingApiConfig()
 
-  if (existingApiConfig) {
-    // Display existing configuration
-    console.log(`\n${ansis.blue(`ℹ ${i18n.t('api:existingApiConfig')}`)}`)
-    console.log(ansis.gray(`  ${i18n.t('api:apiConfigUrl')}: ${existingApiConfig.url || i18n.t('common:notConfigured')}`))
-    console.log(
-      ansis.gray(
-        `  ${i18n.t('api:apiConfigKey')}: ${
-          existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.t('common:notConfigured')
-        }`,
-      ),
-    )
-    console.log(
-      ansis.gray(`  ${i18n.t('api:apiConfigAuthType')}: ${existingApiConfig.authType || i18n.t('common:notConfigured')}\n`),
-    )
+  if (existingConfig) {
+    // Use common configuration action selection
+    const configAction = await promptApiConfigurationAction()
 
-    // Ask user what to do with existing config
-    const { action } = await inquirer.prompt<{ action: string }>({
-      type: 'list',
-      name: 'action',
-      message: i18n.t('api:selectApiAction'),
-      choices: addNumbersToChoices([
-        { name: i18n.t('api:keepExistingConfig'), value: 'keep' },
-        { name: i18n.t('api:modifyAllConfig'), value: 'modify-all' },
-        { name: i18n.t('api:modifyPartialConfig'), value: 'modify-partial' },
-        { name: i18n.t('api:useCcrProxy'), value: 'use-ccr' },
-      ]),
-    })
-
-    if (!action) {
-      await handleCancellation()
-      return
-    }
-
-    if (action === 'keep') {
+    if (configAction === 'keep-existing') {
       console.log(ansis.green(`✔ ${i18n.t('api:keepExistingConfig')}`))
-      // Ensure onboarding flag is set for existing API config
-      try {
-        addCompletedOnboarding()
-      }
-      catch (error) {
-        console.error(ansis.red(i18n.t('errors:failedToSetOnboarding')), error)
-      }
       return
     }
-    else if (action === 'modify-partial') {
-      // Handle partial modification
-      await modifyApiConfigPartially(existingApiConfig)
-      // addCompletedOnboarding is already called inside modifyApiConfigPartially -> configureApi
+    else if (configAction === 'modify-partial') {
+      // Call existing partial configuration modification function
+      await modifyApiConfigPartially(existingConfig)
       return
     }
-    else if (action === 'use-ccr') {
-      // Handle CCR proxy configuration
-      const ccrStatus = await isCcrInstalled()
-      if (!ccrStatus.hasCorrectPackage) {
-        await installCcr()
-      }
-      else {
-        console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
-      }
-
-      // Setup CCR configuration
-      const ccrConfigured = await setupCcrConfiguration()
-      if (ccrConfigured) {
-        console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
-        // addCompletedOnboarding is already called inside setupCcrConfiguration
-      }
-      return
-    }
-    // If 'modify-all', continue to full configuration below
+    // For 'modify-all', continue with full reconfiguration
   }
 
-  // Full configuration (new or modify-all)
   const { apiChoice } = await inquirer.prompt<{ apiChoice: string }>({
     type: 'list',
     name: 'apiChoice',
@@ -133,35 +90,12 @@ export async function configureApiFeature(): Promise<void> {
         value: 'api_key',
         short: i18n.t('api:useApiKey'),
       },
-      {
-        name: `${i18n.t('api:useCcrProxy')} - ${ansis.gray(i18n.t('api:ccrProxyDesc'))}`,
-        value: 'ccr_proxy',
-        short: i18n.t('api:useCcrProxy'),
-      },
       { name: i18n.t('api:skipApi'), value: 'skip' },
     ]),
   })
 
   if (!apiChoice || apiChoice === 'skip') {
-    return
-  }
-
-  // Handle CCR proxy configuration
-  if (apiChoice === 'ccr_proxy') {
-    const ccrStatus = await isCcrInstalled()
-    if (!ccrStatus.hasCorrectPackage) {
-      await installCcr()
-    }
-    else {
-      console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
-    }
-
-    // Setup CCR configuration
-    const ccrConfigured = await setupCcrConfiguration()
-    if (ccrConfigured) {
-      console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
-      // addCompletedOnboarding is already called inside setupCcrConfiguration
-    }
+    await handleCancellation()
     return
   }
 
@@ -171,7 +105,6 @@ export async function configureApiFeature(): Promise<void> {
     message: `${i18n.t('api:enterApiUrl')}${i18n.t('common:emptyToSkip')}`,
     validate: (value) => {
       if (!value) {
-        // Allow skipping - this will be handled in the next check
         return true
       }
       try {
@@ -198,7 +131,6 @@ export async function configureApiFeature(): Promise<void> {
     message: keyMessage,
     validate: (value) => {
       if (!value) {
-        // Allow skipping - this will be handled in the next check
         return true
       }
 
@@ -223,7 +155,63 @@ export async function configureApiFeature(): Promise<void> {
     console.log(ansis.green(`✔ ${i18n.t('api:apiConfigSuccess')}`))
     console.log(ansis.gray(`  URL: ${configuredApi.url}`))
     console.log(ansis.gray(`  Key: ${formatApiKeyDisplay(configuredApi.key)}`))
-    // addCompletedOnboarding is already called inside configureApi
+  }
+}
+
+// Handle CCR proxy mode
+async function handleCcrProxyMode(): Promise<void> {
+  ensureI18nInitialized()
+
+  const ccrStatus = await isCcrInstalled()
+  if (!ccrStatus.hasCorrectPackage) {
+    await installCcr()
+  }
+  else {
+    console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
+  }
+
+  // Setup CCR configuration
+  const ccrConfigured = await setupCcrConfiguration()
+  if (ccrConfigured) {
+    console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
+  }
+}
+
+// Configure API
+export async function configureApiFeature(): Promise<void> {
+  ensureI18nInitialized()
+
+  // New API configuration mode selection
+  const { mode } = await inquirer.prompt<{ mode: string }>({
+    type: 'list',
+    name: 'mode',
+    message: i18n.t('api:apiModePrompt'),
+    choices: addNumbersToChoices([
+      { name: i18n.t('api:apiModeOfficial'), value: 'official' },
+      { name: i18n.t('api:apiModeCustom'), value: 'custom' },
+      { name: i18n.t('api:apiModeCcr'), value: 'ccr' },
+      { name: i18n.t('api:apiModeSkip'), value: 'skip' },
+    ]),
+  })
+
+  if (!mode || mode === 'skip') {
+    await handleCancellation()
+    return
+  }
+
+  switch (mode) {
+    case 'official':
+      await handleOfficialLoginMode()
+      break
+    case 'custom':
+      await handleCustomApiMode()
+      break
+    case 'ccr':
+      await handleCcrProxyMode()
+      break
+    default:
+      await handleCancellation()
+      break
   }
 }
 
@@ -328,7 +316,7 @@ export async function configureDefaultModelFeature(): Promise<void> {
     }
   }
 
-  const { model } = await inquirer.prompt<{ model: 'opus' | 'sonnet' | 'default' | 'custom' }>({
+  const { model } = await inquirer.prompt<{ model: 'opus' | 'sonnet' | 'sonnet[1m]' | 'default' | 'custom' }>({
     type: 'list',
     name: 'model',
     message: i18n.t('configuration:selectDefaultModel') || 'Select default model',
@@ -342,11 +330,15 @@ export async function configureDefaultModelFeature(): Promise<void> {
         value: 'opus' as const,
       },
       {
+        name: i18n.t('configuration:sonnet1mModelOption') || 'Sonnet 1M - 1M context version',
+        value: 'sonnet[1m]' as const,
+      },
+      {
         name: i18n.t('configuration:customModelOption') || 'Custom - Specify custom model names',
         value: 'custom' as const,
       },
     ]),
-    default: existingModel ? ['default', 'opus', 'custom'].indexOf(existingModel) : 0,
+    default: existingModel ? ['default', 'opus', 'sonnet[1m]', 'custom'].indexOf(existingModel) : 0,
   })
 
   if (!model) {

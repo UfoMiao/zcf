@@ -38,6 +38,7 @@
   "openSettingsJsonDesc": "Advanced user customization",
   "openingSettingsJson": "Opening settings.json...",
   "opusModelOption": "Opus - Only use opus, high token consumption, use with caution",
+  "sonnet1mModelOption": "Sonnet 1M - 1M context version",
   "outputStyleInstalled": "Output styles installed successfully",
   "outputStyles.default.description": "Claude completes coding tasks efficiently and provides concise responses (Claude Code built-in)",
   "outputStyles.default.name": "Default",

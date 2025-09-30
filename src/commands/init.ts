@@ -19,6 +19,7 @@ import {
   fixWindowsMcpConfig,
   mergeMcpServers,
   readMcpConfig,
+  setPrimaryApiKey,
   writeMcpConfig,
 } from '../utils/claude-config'
 import { runCodexFullInit } from '../utils/code-tools/codex'
@@ -30,6 +31,8 @@ import {
   copyConfigFiles,
   ensureClaudeDir,
   getExistingApiConfig,
+  promptApiConfigurationAction,
+  switchToOfficialLogin,
 } from '../utils/config'
 import { configureApiCompletely, modifyApiConfigPartially } from '../utils/config-operations'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
@@ -241,6 +244,94 @@ export async function init(options: InitOptions = {}): Promise<void> {
     // Step 3: Select code tool
     const codeToolType = resolveCodeToolType(options.codeType, zcfConfig?.codeToolType)
     options.codeType = codeToolType
+
+    // Add the new API configuration mode selection function
+    async function selectApiConfigurationMode(): Promise<string> {
+      const { apiMode } = await inquirer.prompt<{ apiMode: string }>({
+        type: 'list',
+        name: 'apiMode',
+        message: i18n.t('api:selectApiMode'),
+        choices: [
+          {
+            name: i18n.t('api:useOfficialLogin'),
+            value: 'official',
+          },
+          {
+            name: i18n.t('api:customApiConfig'),
+            value: 'custom',
+          },
+          {
+            name: i18n.t('api:useCcrProxy'),
+            value: 'ccr',
+          },
+          {
+            name: i18n.t('api:skipApi'),
+            value: 'skip',
+          },
+        ],
+      })
+      return apiMode
+    }
+
+    async function handleCustomApiConfiguration(existingConfig: any): Promise<any> {
+      if (existingConfig) {
+        // Handle existing configuration with smart choices using common function
+        const customConfigAction = await promptApiConfigurationAction()
+
+        if (customConfigAction === 'modify-partial') {
+          await modifyApiConfigPartially(existingConfig)
+          return null // No need to configure again
+        }
+        else if (customConfigAction === 'modify-all') {
+          return await configureApiCompletely()
+        }
+        else if (customConfigAction === 'keep-existing') {
+          try {
+            addCompletedOnboarding()
+          }
+          catch (error) {
+            console.error(ansis.red(i18n.t('errors:failedToSetOnboarding')), error)
+          }
+          // Set primaryApiKey for third-party API (Claude Code 2.0 requirement)
+          try {
+            setPrimaryApiKey()
+          }
+          catch (error) {
+            const { ensureI18nInitialized, i18n: i18nModule } = await import('../i18n')
+            ensureI18nInitialized()
+            console.error(i18nModule.t('mcp:primaryApiKeySetFailed'), error)
+          }
+          return null
+        }
+      }
+      else {
+        // No existing config, show standard choices
+        const { apiChoice } = await inquirer.prompt<{ apiChoice: string }>({
+          type: 'list',
+          name: 'apiChoice',
+          message: i18n.t('api:configureApi'),
+          choices: [
+            {
+              name: `${i18n.t('api:useAuthToken')} - ${ansis.gray(i18n.t('api:authTokenDesc'))}`,
+              value: 'auth_token',
+              short: i18n.t('api:useAuthToken'),
+            },
+            {
+              name: `${i18n.t('api:useApiKey')} - ${ansis.gray(i18n.t('api:apiKeyDesc'))}`,
+              value: 'api_key',
+              short: i18n.t('api:useApiKey'),
+            },
+          ],
+        })
+
+        if (!apiChoice) {
+          console.log(ansis.yellow(i18n.t('common:cancelled')))
+          process.exit(0)
+        }
+
+        return await configureApiCompletely(apiChoice as 'auth_token' | 'api_key')
+      }
+    }
 
     // Display banner based on selected code tool
     if (!options.skipBanner) {
@@ -480,139 +571,57 @@ export async function init(options: InitOptions = {}): Promise<void> {
         // Check for existing API configuration
         const existingApiConfig = getExistingApiConfig()
 
-        if (existingApiConfig) {
-          // Display existing configuration
-          console.log(`\n${ansis.blue(`ℹ ${i18n.t('api:existingApiConfig')}`)}`)
-          console.log(ansis.gray(`  ${i18n.t('api:apiConfigUrl')}: ${existingApiConfig.url || i18n.t('common:notConfigured')}`))
-          console.log(
-            ansis.gray(
-              `  ${i18n.t('api:apiConfigKey')}: ${
-                existingApiConfig.key ? formatApiKeyDisplay(existingApiConfig.key) : i18n.t('common:notConfigured')
-              }`,
-            ),
-          )
-          console.log(
-            ansis.gray(`  ${i18n.t('api:apiConfigAuthType')}: ${existingApiConfig.authType || i18n.t('common:notConfigured')}\n`),
-          )
+        // Use unified API configuration mode selection
+        const apiMode = await selectApiConfigurationMode()
 
-          // Ask user what to do with existing config
-          const { action: apiAction } = await inquirer.prompt<{ action: string }>({
-            type: 'list',
-            name: 'action',
-            message: i18n.t('api:selectApiAction'),
-            choices: addNumbersToChoices([
-              { name: i18n.t('api:keepExistingConfig'), value: 'keep' },
-              { name: i18n.t('api:modifyAllConfig'), value: 'modify-all' },
-              { name: i18n.t('api:modifyPartialConfig'), value: 'modify-partial' },
-              { name: i18n.t('api:useCcrProxy'), value: 'use-ccr' },
-              { name: i18n.t('api:skipApi'), value: 'skip' },
-            ]),
-          })
-
-          if (!apiAction) {
-            console.log(ansis.yellow(i18n.t('common:cancelled')))
-            process.exit(0)
+        switch (apiMode) {
+          case 'official': {
+            // Handle official login
+            const success = switchToOfficialLogin()
+            if (success) {
+              console.log(ansis.green(`✔ ${i18n.t('api:officialLoginConfigured')}`))
+              apiConfig = null // No need for API config
+            }
+            else {
+              console.log(ansis.red(i18n.t('api:officialLoginFailed')))
+            }
+            break
           }
 
-          if (apiAction === 'keep' || apiAction === 'skip') {
-            // Keep existing config, no changes needed
+          case 'custom':
+            // Handle custom API configuration with smart existing config handling
+            apiConfig = await handleCustomApiConfiguration(existingApiConfig)
+            break
+
+          case 'ccr': {
+            // Handle CCR proxy configuration
+            const ccrStatus = await isCcrInstalled()
+            if (!ccrStatus.hasCorrectPackage) {
+              await installCcr()
+            }
+            else {
+              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
+            }
+
+            // Setup CCR configuration
+            const ccrConfigured = await setupCcrConfiguration()
+            if (ccrConfigured) {
+              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
+              // CCR configuration already sets up the proxy in settings.json
+              // addCompletedOnboarding is already called inside setupCcrConfiguration
+              apiConfig = null // No need for traditional API config
+            }
+            break
+          }
+
+          case 'skip':
+            // Skip API configuration
             apiConfig = null
-            // Ensure onboarding flag is set for existing API config
-            if (apiAction === 'keep') {
-              try {
-                addCompletedOnboarding()
-              }
-              catch (error) {
-                console.error(ansis.red(i18n.t('errors:failedToSetOnboarding')), error)
-              }
-            }
-          }
-          else if (apiAction === 'modify-partial') {
-            // Handle partial modification
-            await modifyApiConfigPartially(existingApiConfig)
-            apiConfig = null // No need to configure again
-            // addCompletedOnboarding is already called inside modifyApiConfigPartially
-          }
-          else if (apiAction === 'modify-all') {
-            // Proceed with full configuration
-            apiConfig = await configureApiCompletely()
-          }
-          else if (apiAction === 'use-ccr') {
-            // Handle CCR proxy configuration
-            const ccrStatus = await isCcrInstalled()
-            if (!ccrStatus.hasCorrectPackage) {
-              await installCcr()
-            }
-            else {
-              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
-            }
+            break
 
-            // Setup CCR configuration
-            const ccrConfigured = await setupCcrConfiguration()
-            if (ccrConfigured) {
-              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
-              // CCR configuration already sets up the proxy in settings.json
-              // addCompletedOnboarding is already called inside setupCcrConfiguration
-              apiConfig = null // No need for traditional API config
-            }
-          }
-        }
-        else {
-          // No existing config, proceed with normal flow
-          const { apiChoice } = await inquirer.prompt<{ apiChoice: string }>({
-            type: 'list',
-            name: 'apiChoice',
-            message: i18n.t('api:configureApi'),
-            choices: [
-              {
-                name: `${i18n.t('api:useAuthToken')} - ${ansis.gray(i18n.t('api:authTokenDesc'))}`,
-                value: 'auth_token',
-                short: i18n.t('api:useAuthToken'),
-              },
-              {
-                name: `${i18n.t('api:useApiKey')} - ${ansis.gray(i18n.t('api:apiKeyDesc'))}`,
-                value: 'api_key',
-                short: i18n.t('api:useApiKey'),
-              },
-              {
-                name: `${i18n.t('api:useCcrProxy')} - ${ansis.gray(i18n.t('api:ccrProxyDesc'))}`,
-                value: 'ccr_proxy',
-                short: i18n.t('api:useCcrProxy'),
-              },
-              {
-                name: i18n.t('api:skipApi'),
-                value: 'skip',
-              },
-            ],
-          })
-
-          if (!apiChoice) {
+          default:
             console.log(ansis.yellow(i18n.t('common:cancelled')))
             process.exit(0)
-          }
-
-          if (apiChoice === 'ccr_proxy') {
-            // Handle CCR proxy configuration
-            const ccrStatus = await isCcrInstalled()
-            if (!ccrStatus.hasCorrectPackage) {
-              await installCcr()
-            }
-            else {
-              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrAlreadyInstalled')}`))
-            }
-
-            // Setup CCR configuration
-            const ccrConfigured = await setupCcrConfiguration()
-            if (ccrConfigured) {
-              console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
-              // CCR configuration already sets up the proxy in settings.json
-              // addCompletedOnboarding is already called inside setupCcrConfiguration
-              apiConfig = null // No need for traditional API config
-            }
-          }
-          else if (apiChoice !== 'skip') {
-            apiConfig = await configureApiCompletely(apiChoice as 'auth_token' | 'api_key')
-          }
         }
       }
     }

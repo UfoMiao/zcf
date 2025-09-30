@@ -9,7 +9,7 @@
   "menuDescriptions.configureApiOrCcr": "Configure API URL, authentication or CCR proxy",
   "menuDescriptions.configureEnvPermission": "Import privacy protection environment variables and system permissions",
   "menuDescriptions.configureMcp": "Configure MCP services (includes Windows fix)",
-  "menuDescriptions.configureModel": "Set default model (opus/sonnet/opusplan/custom)",
+  "menuDescriptions.configureModel": "Set default model (opus/sonnet/sonnet 1m/custom)",
   "menuDescriptions.fullInit": "Install Claude Code + Import workflow + Configure API or CCR proxy + Configure MCP services",
   "menuDescriptions.importWorkflow": "Import/update workflow-related files only",
   "menuOptions.ccrManagement": "CCR",

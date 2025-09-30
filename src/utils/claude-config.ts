@@ -1,6 +1,6 @@
 import type { ClaudeConfiguration, McpServerConfig } from '../types'
 import { join } from 'pathe'
-import { ClAUDE_CONFIG_FILE, CLAUDE_DIR } from '../constants'
+import { ClAUDE_CONFIG_FILE, CLAUDE_DIR, CLAUDE_VSC_CONFIG_FILE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { backupJsonConfig, readJsonConfig, writeJsonConfig } from './json-config'
 import { deepClone } from './object-utils'
@@ -222,5 +222,32 @@ export function manageApiKeyApproval(apiKey: string): void {
     console.error(i18n.t('mcp:apiKeyApprovalFailed'), error)
     // Don't throw error to avoid breaking the main flow
     // This is a nice-to-have feature, not critical
+  }
+}
+
+/**
+ * Sets the primaryApiKey field in ~/.claude/config.json (VSCode extension config)
+ * This is required for Claude Code 2.0 to properly recognize third-party API configurations
+ * and prevent redirecting to official login page
+ */
+export function setPrimaryApiKey(): void {
+  try {
+    // Read existing VSCode config or create new one
+    let config = readJsonConfig<{ primaryApiKey?: string }>(CLAUDE_VSC_CONFIG_FILE)
+    if (!config) {
+      config = {}
+    }
+
+    // Set primaryApiKey to "zcf" for third-party API identification
+    config.primaryApiKey = 'zcf'
+
+    // Write updated config to ~/.claude/config.json
+    writeJsonConfig(CLAUDE_VSC_CONFIG_FILE, config)
+  }
+  catch (error) {
+    ensureI18nInitialized()
+    console.error(i18n.t('mcp:primaryApiKeySetFailed'), error)
+    // Don't throw error to avoid breaking the main flow
+    // This is important but shouldn't block the configuration process
   }
 }

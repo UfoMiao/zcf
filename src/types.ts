@@ -26,4 +26,5 @@ export interface ClaudeConfiguration {
     rejected: string[]
   }
   env?: Record<string, string>
+  primaryApiKey?: string
 }

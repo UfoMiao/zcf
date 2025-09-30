@@ -30,7 +30,7 @@ Menu options include:
 - `2` Import workflows (equivalent to `zcf u`)
 - `3` Configure API or CCR - API configuration or CCR proxy setup
 - `4` Configure MCP - MCP service configuration and management
-- `5` Configure default model - Set default model (opus/sonnet/opusplan/custom)
+- `5` Configure default model - Set default model (opus/sonnet/sonnet 1m/custom)
 - `6` Configure AI memory - Configure AI output language and global output style
 - `7` Configure environment permissions - Import environment variables and permissions
 - `R` Claude Code Router management (enhanced in v2.8.1)
@@ -421,7 +421,7 @@ Select function:
   2. Import workflow - Import/update workflow-related files only
   3. Configure API - Configure API URL and authentication (supports CCR proxy)
   4. Configure MCP - Configure MCP services (includes Windows fix)
-  5. Configure default model - Set default model (opus/sonnet/opusplan/custom)
+  5. Configure default model - Set default model (opus/sonnet/sonnet 1m/custom)
   6. Configure Claude global memory - Configure AI output language and output styles
   7. Import recommended environment variables and permissions - Import privacy protection environment variables and system permissions
 

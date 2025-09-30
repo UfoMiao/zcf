@@ -24,15 +24,21 @@ vi.mock('../../../src/utils/version-checker', () => ({
   checkClaudeCodeVersionAndPrompt: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/config', () => ({
-  checkExistingConfig: vi.fn(),
-  backupExistingConfig: vi.fn(),
-  copyConfigFiles: vi.fn(),
-  configureApi: vi.fn(),
-  applyAiLanguageDirective: vi.fn(),
-  getExistingApiConfig: vi.fn(),
-  ensureClaudeDir: vi.fn(),
-}))
+vi.mock('../../../src/utils/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../src/utils/config')>()
+  return {
+    ...actual,
+    checkExistingConfig: vi.fn(),
+    backupExistingConfig: vi.fn(),
+    copyConfigFiles: vi.fn(),
+    configureApi: vi.fn(),
+    applyAiLanguageDirective: vi.fn(),
+    getExistingApiConfig: vi.fn(),
+    ensureClaudeDir: vi.fn(),
+    switchToOfficialLogin: vi.fn(),
+    promptApiConfigurationAction: vi.fn(),
+  }
+})
 
 vi.mock('../../../src/utils/config-operations', () => ({
   configureApiCompletely: vi.fn(),
@@ -144,6 +150,13 @@ interface TestMocks {
   existsSync: any
   inquirerPrompt: any
   readZcfConfig: any
+  getExistingApiConfig: any
+  switchToOfficialLogin: any
+  promptApiConfigurationAction: any
+  isCcrInstalled: any
+  setupCcrConfiguration: any
+  configureApiCompletely: any
+  modifyApiConfigPartially: any
 }
 
 let testMocks: TestMocks
@@ -160,11 +173,14 @@ describe('init command', () => {
     const { isClaudeCodeInstalled, getInstallationStatus, installClaudeCode } = await import('../../../src/utils/installer')
     const { handleMultipleInstallations } = await import('../../../src/utils/installation-manager')
     const { checkClaudeCodeVersionAndPrompt } = await import('../../../src/utils/version-checker')
-    const { copyConfigFiles, applyAiLanguageDirective } = await import('../../../src/utils/config')
+    const { copyConfigFiles, applyAiLanguageDirective, getExistingApiConfig, switchToOfficialLogin, promptApiConfigurationAction } = await import('../../../src/utils/config')
     const { selectMcpServices } = await import('../../../src/utils/mcp-selector')
     const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
     const { configureOutputStyle } = await import('../../../src/utils/output-style')
     const { updateZcfConfig, readZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { isCcrInstalled, installCcr: _installCcr } = await import('../../../src/utils/ccr/installer')
+    const { setupCcrConfiguration } = await import('../../../src/utils/ccr/config')
+    const { configureApiCompletely, modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
     const { existsSync } = await import('node:fs')
 
     testMocks = {
@@ -184,6 +200,13 @@ describe('init command', () => {
       readZcfConfig: vi.mocked(readZcfConfig),
       existsSync: vi.mocked(existsSync),
       inquirerPrompt: vi.mocked(inquirer.prompt),
+      getExistingApiConfig: vi.mocked(getExistingApiConfig),
+      switchToOfficialLogin: vi.mocked(switchToOfficialLogin),
+      promptApiConfigurationAction: vi.mocked(promptApiConfigurationAction),
+      isCcrInstalled: vi.mocked(isCcrInstalled),
+      setupCcrConfiguration: vi.mocked(setupCcrConfiguration),
+      configureApiCompletely: vi.mocked(configureApiCompletely),
+      modifyApiConfigPartially: vi.mocked(modifyApiConfigPartially),
     }
   })
 
@@ -688,6 +711,255 @@ describe('init command', () => {
         expect(testMocks.resolveTemplateLanguage).not.toHaveBeenCalled()
         // Should use 'en' as default configLang
         expect(testMocks.copyConfigFiles).toHaveBeenCalled()
+      })
+    })
+  })
+
+  // New API Configuration Mode Tests
+  describe('new API configuration mode', () => {
+    describe('selectApiConfigurationMode', () => {
+      it('should display unified API configuration menu', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({
+          codeToolType: 'claude-code',
+        } as any)
+        testMocks.existsSync.mockReturnValue(false)
+        testMocks.getExistingApiConfig.mockReturnValue(null) // No existing config
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'official' })
+        testMocks.switchToOfficialLogin.mockReturnValue(true)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+
+        await init({
+          skipBanner: true,
+          codeType: 'claude-code',
+          skipPrompt: false,
+        })
+
+        // Should show unified API configuration menu
+        expect(testMocks.inquirerPrompt).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'list',
+            name: 'apiMode',
+            message: expect.any(String),
+            choices: expect.arrayContaining([
+              expect.objectContaining({ value: 'official' }),
+              expect.objectContaining({ value: 'custom' }),
+              expect.objectContaining({ value: 'ccr' }),
+              expect.objectContaining({ value: 'skip' }),
+            ]),
+          }),
+        )
+      })
+
+      it('should handle official login mode selection', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({
+          codeToolType: 'claude-code',
+        } as any)
+        testMocks.existsSync.mockReturnValue(false)
+        testMocks.getExistingApiConfig.mockReturnValue(null)
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'official' }) // Unified menu selection
+        testMocks.switchToOfficialLogin.mockReturnValue(true)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+
+        await init({
+          skipBanner: true,
+          codeType: 'claude-code',
+          skipPrompt: false,
+        })
+
+        // Should call switchToOfficialLogin for official mode
+        expect(testMocks.switchToOfficialLogin).toHaveBeenCalled()
+      })
+
+      it('should handle CCR proxy mode selection', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({
+          codeToolType: 'claude-code',
+        } as any)
+        testMocks.existsSync.mockReturnValue(false)
+        testMocks.getExistingApiConfig.mockReturnValue(null)
+        testMocks.isCcrInstalled.mockResolvedValue({
+          hasCorrectPackage: true,
+        } as any)
+        testMocks.setupCcrConfiguration.mockResolvedValue(true)
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'ccr' }) // Unified menu selection
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+
+        await init({
+          skipBanner: true,
+          codeType: 'claude-code',
+          skipPrompt: false,
+        })
+
+        // Should check CCR installation and setup CCR configuration
+        expect(testMocks.isCcrInstalled).toHaveBeenCalled()
+        expect(testMocks.setupCcrConfiguration).toHaveBeenCalled()
+      })
+
+      it('should handle skip mode selection', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({
+          codeToolType: 'claude-code',
+        } as any)
+        testMocks.existsSync.mockReturnValue(false)
+        testMocks.getExistingApiConfig.mockReturnValue(null)
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'skip' })
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+
+        await init({
+          skipBanner: true,
+          codeType: 'claude-code',
+          skipPrompt: false,
+        })
+
+        // Should not configure API, CCR, or official login
+        expect(testMocks.configureApiCompletely).not.toHaveBeenCalled()
+        expect(testMocks.switchToOfficialLogin).not.toHaveBeenCalled()
+        expect(testMocks.setupCcrConfiguration).not.toHaveBeenCalled()
+      })
+
+      it('should handle custom API configuration with existing config', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        const existingConfig = {
+          authType: 'api_key',
+          url: 'https://api.anthropic.com',
+          key: 'sk-test-key',
+        }
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({
+          codeToolType: 'claude-code',
+        } as any)
+        testMocks.existsSync.mockReturnValue(false) // Bypass global existing config prompt
+        testMocks.getExistingApiConfig.mockReturnValue(existingConfig)
+        testMocks.promptApiConfigurationAction.mockResolvedValue('modify-partial')
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'custom' })
+        testMocks.modifyApiConfigPartially.mockResolvedValue(undefined)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+
+        await init({
+          skipBanner: true,
+          codeType: 'claude-code',
+          skipPrompt: false,
+        })
+
+        // Should handle custom configuration with existing config
+        expect(testMocks.promptApiConfigurationAction).toHaveBeenCalled()
+        expect(testMocks.modifyApiConfigPartially).toHaveBeenCalledWith(existingConfig)
+      })
+
+      it('should handle custom API configuration without existing config', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({
+          codeToolType: 'claude-code',
+        } as any)
+        testMocks.existsSync.mockReturnValue(false) // No existing config
+        testMocks.getExistingApiConfig.mockReturnValue(null)
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'custom' }) // Unified menu selection
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiChoice: 'api_key' }) // Custom config sub-menu
+        testMocks.configureApiCompletely.mockResolvedValue({
+          authType: 'api_key',
+          url: 'https://api.anthropic.com',
+          key: 'sk-new-key',
+        })
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+
+        await init({
+          skipBanner: true,
+          codeType: 'claude-code',
+          skipPrompt: false,
+        })
+
+        // Should show Auth Token / API Key choices for new configuration (second prompt call)
+        // Find the correct call that contains the auth token/api key choices
+        const calls = testMocks.inquirerPrompt.mock.calls
+        const apiChoiceCall = calls.find((call: any[]) =>
+          call[0] && call[0].choices
+          && (call[0].choices.some((choice: any) => choice.value === 'auth_token')
+            || call[0].choices.some((choice: any) => choice.value === 'api_key')),
+        )
+
+        expect(apiChoiceCall).toBeDefined()
+        if (apiChoiceCall) {
+          expect(apiChoiceCall[0]).toMatchObject({
+            choices: expect.arrayContaining([
+              expect.objectContaining({ value: 'auth_token' }),
+              expect.objectContaining({ value: 'api_key' }),
+            ]),
+          })
+        }
+        expect(testMocks.configureApiCompletely).toHaveBeenCalledWith('api_key')
+      })
+
+      it('should handle user cancellation gracefully', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({
+          codeToolType: 'claude-code',
+        } as any)
+        testMocks.existsSync.mockReturnValue(false)
+        testMocks.getExistingApiConfig.mockReturnValue(null)
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ action: 'new' })
+        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: undefined }) // User cancellation
+
+        const processExitSpy = vi.spyOn(process, 'exit').mockImplementation(() => {
+          throw new Error('process.exit called')
+        })
+
+        await expect(init({
+          skipBanner: true,
+          codeType: 'claude-code',
+          skipPrompt: false,
+        })).rejects.toThrow('process.exit called')
+
+        expect(processExitSpy).toHaveBeenCalledWith(0)
       })
     })
   })

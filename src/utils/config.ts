@@ -2,10 +2,13 @@ import type { AiOutputLanguage } from '../constants'
 import type { ApiConfig, ClaudeSettings } from '../types/config'
 import type { CopyDirOptions } from './fs-operations'
 import { fileURLToPath } from 'node:url'
+import ansis from 'ansis'
 import dayjs from 'dayjs'
+import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
-import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, SETTINGS_FILE } from '../constants'
-import { addCompletedOnboarding } from './claude-config'
+import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, CLAUDE_VSC_CONFIG_FILE, SETTINGS_FILE } from '../constants'
+import { ensureI18nInitialized, i18n } from '../i18n'
+import { addCompletedOnboarding, readMcpConfig, setPrimaryApiKey, writeMcpConfig } from './claude-config'
 import {
   copyDir,
   copyFile,
@@ -120,6 +123,18 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
 
   writeJsonConfig(SETTINGS_FILE, settings)
 
+  // Set primaryApiKey for third-party API (Claude Code 2.0 requirement)
+  if (apiConfig.authType) {
+    try {
+      setPrimaryApiKey()
+    }
+    catch (error) {
+      ensureI18nInitialized()
+      console.error(i18n.t('mcp:primaryApiKeySetFailed'), error)
+      // Don't fail the API configuration
+    }
+  }
+
   // Add hasCompletedOnboarding flag after successful API configuration
   try {
     addCompletedOnboarding()
@@ -182,10 +197,10 @@ export function updateCustomModel(primaryModel?: string, fastModel?: string): vo
 
 /**
  * Update the default model configuration in settings.json
- * @param model - The model type to set: opus, sonnet, default, or custom
+ * @param model - The model type to set: opus, sonnet, sonnet[1m], default, or custom
  * Note: 'custom' model type is handled differently - it should use environment variables instead
  */
-export function updateDefaultModel(model: 'opus' | 'sonnet' | 'default' | 'custom'): void {
+export function updateDefaultModel(model: 'opus' | 'sonnet' | 'sonnet[1m]' | 'default' | 'custom'): void {
   let settings = getDefaultSettings()
 
   const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
@@ -284,7 +299,7 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
 /**
  * Get existing model configuration from settings.json
  */
-export function getExistingModelConfig(): 'opus' | 'sonnet' | 'default' | 'custom' | null {
+export function getExistingModelConfig(): 'opus' | 'sonnet' | 'sonnet[1m]' | 'default' | 'custom' | null {
   const settings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
 
   if (!settings) {
@@ -361,4 +376,90 @@ export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string
 
   // Write to CLAUDE.md file directly without markers
   writeFile(claudeFile, directive)
+}
+
+/**
+ * Switch to official login mode - remove all third-party API configurations
+ * Removes: ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY from settings.json
+ * Removes: primaryApiKey from ~/.claude/config.json
+ * Removes: hasCompletedOnboarding from ~/.claude.json
+ */
+export function switchToOfficialLogin(): boolean {
+  try {
+    ensureI18nInitialized()
+
+    // 1. Clean settings.json - remove all API-related env vars
+    const settings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE) || {}
+    if (settings.env) {
+      delete settings.env.ANTHROPIC_BASE_URL
+      delete settings.env.ANTHROPIC_AUTH_TOKEN
+      delete settings.env.ANTHROPIC_API_KEY
+    }
+    writeJsonConfig(SETTINGS_FILE, settings)
+
+    // 2. Clean ~/.claude/config.json - remove primaryApiKey
+    const vscConfig = readJsonConfig<{ primaryApiKey?: string }>(CLAUDE_VSC_CONFIG_FILE)
+    if (vscConfig) {
+      delete vscConfig.primaryApiKey
+      writeJsonConfig(CLAUDE_VSC_CONFIG_FILE, vscConfig)
+    }
+
+    // 3. Clean ~/.claude.json - remove hasCompletedOnboarding
+    const mcpConfig = readMcpConfig()
+    if (mcpConfig) {
+      delete mcpConfig.hasCompletedOnboarding
+      writeMcpConfig(mcpConfig)
+    }
+
+    console.log(i18n.t('api:officialLoginConfigured'))
+    return true
+  }
+  catch (error) {
+    ensureI18nInitialized()
+    console.error(i18n.t('api:officialLoginFailed'), error)
+    return false
+  }
+}
+
+/**
+ * Prompt user for API configuration action when existing config is found
+ * Returns the user's choice for how to handle existing configuration
+ */
+export async function promptApiConfigurationAction(): Promise<'modify-partial' | 'modify-all' | 'keep-existing' | null> {
+  ensureI18nInitialized()
+
+  const existingConfig = getExistingApiConfig()
+
+  // If no existing config, return null
+  if (!existingConfig) {
+    return null
+  }
+
+  // Display existing configuration
+  console.log(`\n${ansis.blue(`ℹ ${i18n.t('api:existingApiConfig')}`)}`)
+  console.log(ansis.gray(`  ${i18n.t('api:apiConfigUrl')}: ${existingConfig.url || 'N/A'}`))
+  console.log(ansis.gray(`  ${i18n.t('api:apiConfigKey')}: ${existingConfig.key ? `***${existingConfig.key.slice(-4)}` : 'N/A'}`))
+  console.log(ansis.gray(`  ${i18n.t('api:apiConfigAuthType')}: ${existingConfig.authType || 'N/A'}\n`))
+
+  const { choice } = await inquirer.prompt<{ choice: 'modify-partial' | 'modify-all' | 'keep-existing' | undefined }>({
+    type: 'list',
+    name: 'choice',
+    message: i18n.t('api:selectCustomConfigAction'),
+    choices: [
+      {
+        name: i18n.t('api:modifyPartialConfig'),
+        value: 'modify-partial',
+      },
+      {
+        name: i18n.t('api:modifyAllConfig'),
+        value: 'modify-all',
+      },
+      {
+        name: i18n.t('api:keepExistingConfig'),
+        value: 'keep-existing',
+      },
+    ],
+  })
+
+  return choice || null
 }

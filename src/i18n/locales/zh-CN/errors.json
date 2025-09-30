@@ -10,7 +10,7 @@
   "invalidOutputStyle": "无效的输出样式：{style}。可用的样式：{validStyles}",
   "invalidDefaultOutputStyle": "无效的默认输出样式：{style}。可用的样式：{validStyles}",
   "invalidWorkflow": "无效的工作流：{workflow}。可用的工作流：{validWorkflows}",
-  "invalidModel": "无效的模型：{model}。期望的值：'opus', 'sonnet', 或 'opusplan'",
+  "invalidModel": "无效的模型：{model}。期望的值：'opus', 'sonnet', 或 'sonnet[1m]'",
   "invalidEnvConfig": "无效的环境配置：期望对象类型",
   "invalidBaseUrl": "无效的 ANTHROPIC_BASE_URL：期望字符串类型",
   "invalidApiKeyConfig": "无效的 ANTHROPIC_API_KEY：期望字符串类型",

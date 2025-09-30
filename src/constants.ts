@@ -6,6 +6,7 @@ export const CLAUDE_DIR = join(homedir(), '.claude')
 export const SETTINGS_FILE = join(CLAUDE_DIR, 'settings.json')
 export const CLAUDE_MD_FILE = join(CLAUDE_DIR, 'CLAUDE.md')
 export const ClAUDE_CONFIG_FILE = join(homedir(), '.claude.json')
+export const CLAUDE_VSC_CONFIG_FILE = join(CLAUDE_DIR, 'config.json')
 export const ZCF_CONFIG_DIR = join(homedir(), '.ufomiao', 'zcf')
 export const ZCF_CONFIG_FILE = join(ZCF_CONFIG_DIR, 'config.toml')
 export const LEGACY_ZCF_CONFIG_FILES = [

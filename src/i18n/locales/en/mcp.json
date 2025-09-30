@@ -17,5 +17,6 @@
   "services.spec-workflow.description": "Structured feature development workflow, systematic approach from requirements to implementation",
   "services.spec-workflow.name": "Spec Workflow",
   "apiKeyApprovalFailed": "Failed to manage API key approval status",
-  "apiKeyPrompt": "Enter API Key"
+  "apiKeyPrompt": "Enter API Key",
+  "primaryApiKeySetFailed": "Failed to set primaryApiKey"
 }

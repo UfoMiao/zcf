@@ -30,7 +30,7 @@ npx zcf          # 打开交互式菜单，根据你的需求选择操作
 - `2` 导入工作流（等同于 `zcf u`）
 - `3` 配置 API 或 CCR - API 配置或 CCR 代理设置
 - `4` 配置 MCP - MCP 服务配置和管理
-- `5` 配置默认模型 - 设置默认模型（opus/sonnet/opusplan/自定义）
+- `5` 配置默认模型 - 设置默认模型（opus/sonnet/sonnet 1m/自定义）
 - `6` 配置 AI 记忆 - 配置 AI 输出语言和全局输出风格
 - `7` 配置环境权限 - 导入环境变量和权限设置
 - `R` Claude Code Router 管理（v2.8.1 增强）
@@ -421,7 +421,7 @@ $ npx zcf
   2. 导入工作流 - 仅导入/更新工作流相关文件
   3. 配置 API - 配置 API URL 和认证信息（支持 CCR 代理）
   4. 配置 MCP - 配置 MCP 服务（含 Windows 修复）
-  5. 配置默认模型 - 设置默认模型（opus/sonnet/opusplan/自定义）
+  5. 配置默认模型 - 设置默认模型（opus/sonnet/sonnet 1m/自定义）
   6. 配置 Claude 全局记忆 - 配置 AI 输出语言和输出风格
   7. 导入推荐环境变量和权限配置 - 导入隐私保护环境变量和系统权限配置
 

@@ -9,6 +9,7 @@ import {
   backupExistingConfig,
   configureApi,
   getExistingApiConfig,
+  switchToOfficialLogin,
 } from './config'
 import { configureOutputStyle } from './output-style'
 import { addNumbersToChoices } from './prompt-helpers'
@@ -18,17 +19,22 @@ import { formatApiKeyDisplay, validateApiKey } from './validator'
  * Configure API completely (for new config or full modification)
  */
 export async function configureApiCompletely(
-  preselectedAuthType?: 'auth_token' | 'api_key',
+  preselectedAuthType?: 'auth_token' | 'api_key' | 'official',
 ): Promise<ApiConfig | null> {
   ensureI18nInitialized()
   let authType = preselectedAuthType
 
   if (!authType) {
-    const { authType: selectedAuthType } = await inquirer.prompt<{ authType: 'auth_token' | 'api_key' }>({
+    const { authType: selectedAuthType } = await inquirer.prompt<{ authType: 'auth_token' | 'api_key' | 'official' }>({
       type: 'list',
       name: 'authType',
       message: i18n.t('api:configureApi'),
       choices: addNumbersToChoices([
+        {
+          name: i18n.t('api:useOfficialLogin'),
+          value: 'official',
+          short: i18n.t('api:useOfficialLogin'),
+        },
         {
           name: `${i18n.t('api:useAuthToken')} - ${ansis.gray(i18n.t('api:authTokenDesc'))}`,
           value: 'auth_token',
@@ -48,6 +54,18 @@ export async function configureApiCompletely(
     }
 
     authType = selectedAuthType
+  }
+
+  // Handle official login mode
+  if (authType === 'official') {
+    const success = switchToOfficialLogin()
+    if (success) {
+      return null // No API config needed for official login
+    }
+    else {
+      console.log(ansis.red(i18n.t('api:officialLoginFailed')))
+      return null
+    }
   }
 
   const { url } = await inquirer.prompt<{ url: string }>({

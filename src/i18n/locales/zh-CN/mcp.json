@@ -17,5 +17,6 @@
   "services.spec-workflow.description": "规范化特性开发工作流程，从需求到实现的系统化方法",
   "services.spec-workflow.name": "Spec 工作流",
   "apiKeyApprovalFailed": "API密钥批准状态管理失败",
-  "apiKeyPrompt": "请输入 API Key"
+  "apiKeyPrompt": "请输入 API Key",
+  "primaryApiKeySetFailed": "设置 primaryApiKey 失败"
 }

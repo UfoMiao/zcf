@@ -10,7 +10,7 @@ import inquirer from 'inquirer'
 import { join } from 'pathe'
 import { SETTINGS_FILE } from '../../constants'
 import { ensureI18nInitialized, i18n } from '../../i18n'
-import { addCompletedOnboarding } from '../claude-config'
+import { addCompletedOnboarding, setPrimaryApiKey } from '../claude-config'
 import { backupExistingConfig } from '../config'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { fetchProviderPresets } from './presets'
@@ -88,6 +88,16 @@ export async function configureCcrProxy(ccrConfig: CcrConfig): Promise<void> {
 
   // Write back to settings
   writeJsonConfig(SETTINGS_FILE, settings)
+
+  // Set primaryApiKey for CCR proxy (Claude Code 2.0 requirement)
+  try {
+    setPrimaryApiKey()
+  }
+  catch (error) {
+    ensureI18nInitialized()
+    console.error(i18n.t('mcp:primaryApiKeySetFailed'), error)
+    // Don't fail the CCR configuration
+  }
 }
 
 export async function selectCcrPreset(): Promise<ProviderPreset | 'skip' | null> {

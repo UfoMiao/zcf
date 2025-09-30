@@ -19,11 +19,23 @@ vi.mock('../../../src/utils/config', () => ({
   updateCustomModel: vi.fn(),
   getExistingApiConfig: vi.fn(),
   getExistingModelConfig: vi.fn(),
+  switchToOfficialLogin: vi.fn(),
+  promptApiConfigurationAction: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/config-operations', () => ({
   configureApiCompletely: vi.fn(),
   modifyApiConfigPartially: vi.fn(),
+}))
+
+vi.mock('../../../src/utils/ccr/config', () => ({
+  setupCcrConfiguration: vi.fn(),
+  configureCcrProxy: vi.fn(),
+}))
+
+vi.mock('../../../src/utils/ccr/installer', () => ({
+  isCcrInstalled: vi.fn(),
+  installCcr: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/claude-config', () => ({
@@ -131,36 +143,64 @@ describe('features utilities', () => {
   })
 
   describe('configureApiFeature', () => {
-    it('should configure API completely when no existing config', async () => {
+    it('should handle official login mode', async () => {
       const { configureApiFeature } = await import('../../../src/utils/features')
-      const { getExistingApiConfig, configureApi } = await import('../../../src/utils/config')
+      const { switchToOfficialLogin } = await import('../../../src/utils/config')
 
-      vi.mocked(getExistingApiConfig).mockReturnValue(null)
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ apiChoice: 'api_key' })
-        .mockResolvedValueOnce({ url: 'https://api.test.com' })
-        .mockResolvedValueOnce({ key: 'test-key' })
-      vi.mocked(configureApi).mockReturnValue({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'official' })
+      vi.mocked(switchToOfficialLogin).mockReturnValue(true)
 
       await configureApiFeature()
 
-      expect(getExistingApiConfig).toHaveBeenCalled()
-      expect(configureApi).toHaveBeenCalledWith({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
+      expect(switchToOfficialLogin).toHaveBeenCalled()
     })
 
-    it('should modify API partially when existing config', async () => {
+    it('should handle custom API mode', async () => {
       const { configureApiFeature } = await import('../../../src/utils/features')
-      const { getExistingApiConfig } = await import('../../../src/utils/config')
-      const { modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
-      await import('../../../src/constants')
+      const configModule = await import('../../../src/utils/config')
 
-      vi.mocked(getExistingApiConfig).mockReturnValue({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
-      vi.mocked(inquirer.prompt).mockResolvedValue({ action: 'modify-partial' })
+      const mockPrompt = vi.mocked(inquirer.prompt)
+      mockPrompt
+        .mockResolvedValueOnce({ mode: 'custom' })
+
+      // Mock existing config to trigger partial configuration flow
+      vi.mocked(configModule.getExistingApiConfig).mockReturnValue({ url: 'existing', key: 'existing', authType: 'api_key' })
+      vi.mocked(configModule.promptApiConfigurationAction).mockResolvedValue('modify-partial')
+
+      const { modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
       vi.mocked(modifyApiConfigPartially).mockResolvedValue(undefined)
 
       await configureApiFeature()
 
-      expect(modifyApiConfigPartially).toHaveBeenCalledWith({ url: 'https://api.test.com', key: 'test-key', authType: 'api_key' })
+      // Verify the function calls based on actual behavior
+      expect(mockPrompt).toHaveBeenCalledTimes(1) // Only mode selection
+      expect(configModule.promptApiConfigurationAction).toHaveBeenCalled()
+      expect(modifyApiConfigPartially).toHaveBeenCalled()
+    })
+
+    it('should handle CCR proxy mode', async () => {
+      const { configureApiFeature } = await import('../../../src/utils/features')
+      const ccrConfigModule = await import('../../../src/utils/ccr/config')
+      const ccrInstallerModule = await import('../../../src/utils/ccr/installer')
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'ccr' })
+      vi.mocked(ccrInstallerModule.isCcrInstalled).mockResolvedValue({ hasCorrectPackage: true } as any)
+      vi.mocked(ccrConfigModule.setupCcrConfiguration).mockResolvedValue(true as any)
+
+      await configureApiFeature()
+
+      expect(ccrConfigModule.setupCcrConfiguration).toHaveBeenCalled()
+    })
+
+    it('should handle skip mode', async () => {
+      const { configureApiFeature } = await import('../../../src/utils/features')
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'skip' })
+
+      await configureApiFeature()
+
+      // Should not call any configuration functions except the cancellation message
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('cancelled'))
     })
   })
 
@@ -185,33 +225,33 @@ describe('features utilities', () => {
   describe('configureDefaultModelFeature', () => {
     it('should update default model when no existing config', async () => {
       const { configureDefaultModelFeature } = await import('../../../src/utils/features')
-      const { updateDefaultModel, getExistingModelConfig } = await import('../../../src/utils/config')
+      const configModule = await import('../../../src/utils/config')
 
-      vi.mocked(getExistingModelConfig).mockReturnValue(null)
+      vi.mocked(configModule.getExistingModelConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'opus' })
-      vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
+      vi.mocked(configModule.updateDefaultModel).mockResolvedValue(undefined)
 
       await configureDefaultModelFeature()
 
-      expect(getExistingModelConfig).toHaveBeenCalled()
-      expect(updateDefaultModel).toHaveBeenCalledWith('opus')
+      expect(configModule.getExistingModelConfig).toHaveBeenCalled()
+      expect(configModule.updateDefaultModel).toHaveBeenCalledWith('opus')
     })
 
     it('should show existing config and ask for modification', async () => {
       const { configureDefaultModelFeature } = await import('../../../src/utils/features')
-      const { updateDefaultModel, getExistingModelConfig } = await import('../../../src/utils/config')
+      const configModule = await import('../../../src/utils/config')
 
-      vi.mocked(getExistingModelConfig).mockReturnValue('sonnet')
+      vi.mocked(configModule.getExistingModelConfig).mockReturnValue('sonnet')
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ modify: true })
         .mockResolvedValueOnce({ model: 'opus' })
-      vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
+      vi.mocked(configModule.updateDefaultModel).mockResolvedValue(undefined)
 
       await configureDefaultModelFeature()
 
-      expect(getExistingModelConfig).toHaveBeenCalled()
+      expect(configModule.getExistingModelConfig).toHaveBeenCalled()
       expect(inquirer.prompt).toHaveBeenCalledTimes(2)
-      expect(updateDefaultModel).toHaveBeenCalledWith('opus')
+      expect(configModule.updateDefaultModel).toHaveBeenCalledWith('opus')
     })
 
     it('should keep existing config when user declines modification', async () => {
@@ -230,27 +270,27 @@ describe('features utilities', () => {
 
     it('should handle default model option selection', async () => {
       const { configureDefaultModelFeature } = await import('../../../src/utils/features')
-      const { updateDefaultModel, getExistingModelConfig } = await import('../../../src/utils/config')
+      const configModule = await import('../../../src/utils/config')
 
-      vi.mocked(getExistingModelConfig).mockReturnValue(null)
+      vi.mocked(configModule.getExistingModelConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'default' })
-      vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
+      vi.mocked(configModule.updateDefaultModel).mockResolvedValue(undefined)
 
       await configureDefaultModelFeature()
 
-      expect(updateDefaultModel).toHaveBeenCalledWith('default')
+      expect(configModule.updateDefaultModel).toHaveBeenCalledWith('default')
     })
 
     it('should handle user cancellation', async () => {
       const { configureDefaultModelFeature } = await import('../../../src/utils/features')
-      const { updateDefaultModel, getExistingModelConfig } = await import('../../../src/utils/config')
+      const configModule = await import('../../../src/utils/config')
 
-      vi.mocked(getExistingModelConfig).mockReturnValue(null)
+      vi.mocked(configModule.getExistingModelConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt).mockResolvedValue({ model: undefined })
 
       await configureDefaultModelFeature()
 
-      expect(updateDefaultModel).not.toHaveBeenCalled()
+      expect(configModule.updateDefaultModel).not.toHaveBeenCalled()
     })
 
     it('should set correct default choice based on existing config', async () => {
