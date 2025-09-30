@@ -38,7 +38,6 @@
   "openSettingsJsonDesc": "Advanced user customization",
   "openingSettingsJson": "Opening settings.json...",
   "opusModelOption": "Opus - Only use opus, high token consumption, use with caution",
-  "opusPlanModelOption": "OpusPlan - Use Opus for planning, write code with sonnet, recommended",
   "outputStyleInstalled": "Output styles installed successfully",
   "outputStyles.default.description": "Claude completes coding tasks efficiently and provides concise responses (Claude Code built-in)",
   "outputStyles.default.name": "Default",

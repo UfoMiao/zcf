@@ -182,10 +182,10 @@ export function updateCustomModel(primaryModel?: string, fastModel?: string): vo
 
 /**
  * Update the default model configuration in settings.json
- * @param model - The model type to set: opus, sonnet, opusplan, default, or custom
+ * @param model - The model type to set: opus, sonnet, default, or custom
  * Note: 'custom' model type is handled differently - it should use environment variables instead
  */
-export function updateDefaultModel(model: 'opus' | 'sonnet' | 'opusplan' | 'default' | 'custom'): void {
+export function updateDefaultModel(model: 'opus' | 'sonnet' | 'default' | 'custom'): void {
   let settings = getDefaultSettings()
 
   const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
@@ -284,7 +284,7 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
 /**
  * Get existing model configuration from settings.json
  */
-export function getExistingModelConfig(): 'opus' | 'sonnet' | 'opusplan' | 'default' | 'custom' | null {
+export function getExistingModelConfig(): 'opus' | 'sonnet' | 'default' | 'custom' | null {
   const settings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
 
   if (!settings) {

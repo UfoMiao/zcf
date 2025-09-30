@@ -12,7 +12,7 @@ export function validateClaudeSettings(settings: any): settings is ClaudeSetting
   }
 
   // Validate model if present
-  if (settings.model && !['opus', 'sonnet', 'opusplan'].includes(settings.model)) {
+  if (settings.model && !['opus', 'sonnet'].includes(settings.model)) {
     console.log(i18n.t('errors:invalidModel', { model: settings.model }))
     return false
   }
@@ -71,7 +71,7 @@ export function sanitizeClaudeSettings(settings: any): ClaudeSettings {
   }
 
   // Copy valid model
-  if (settings.model && ['opus', 'sonnet', 'opusplan'].includes(settings.model)) {
+  if (settings.model && ['opus', 'sonnet'].includes(settings.model)) {
     sanitized.model = settings.model
   }
 

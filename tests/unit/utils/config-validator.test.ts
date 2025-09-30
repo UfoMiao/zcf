@@ -13,7 +13,7 @@ vi.mock('../../../src/i18n', () => ({
       // Mock translation function to return expected error messages
       switch (key) {
         case 'errors:invalidModel':
-          return `Invalid model: ${params?.model}. Expected 'opus', 'sonnet', or 'opusplan'`
+          return `Invalid model: ${params?.model}. Expected 'opus' or 'sonnet'`
         case 'errors:invalidEnvConfig':
           return 'Invalid env configuration: expected object'
         case 'errors:invalidBaseUrl':
@@ -58,13 +58,12 @@ describe('config-validator utilities', () => {
     it('should validate valid model values', () => {
       expect(validateClaudeSettings({ model: 'opus' })).toBe(true)
       expect(validateClaudeSettings({ model: 'sonnet' })).toBe(true)
-      expect(validateClaudeSettings({ model: 'opusplan' })).toBe(true)
     })
 
     it('should reject invalid model values', () => {
       const consoleSpy = vi.spyOn(console, 'log')
       expect(validateClaudeSettings({ model: 'invalid' })).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith('Invalid model: invalid. Expected \'opus\', \'sonnet\', or \'opusplan\'')
+      expect(consoleSpy).toHaveBeenCalledWith('Invalid model: invalid. Expected \'opus\' or \'sonnet\'')
     })
 
     it('should validate env object', () => {
@@ -175,7 +174,6 @@ describe('config-validator utilities', () => {
     it('should copy valid model', () => {
       expect(sanitizeClaudeSettings({ model: 'opus' })).toEqual({ model: 'opus' })
       expect(sanitizeClaudeSettings({ model: 'sonnet' })).toEqual({ model: 'sonnet' })
-      expect(sanitizeClaudeSettings({ model: 'opusplan' })).toEqual({ model: 'opusplan' })
     })
 
     it('should filter out invalid model', () => {

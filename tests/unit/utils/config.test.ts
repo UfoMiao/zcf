@@ -186,20 +186,6 @@ describe('config utilities', () => {
       )
     })
 
-    it('should update model to opusplan', () => {
-      const mockSettings = { model: 'opus' }
-      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
-
-      updateDefaultModel('opusplan')
-
-      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
-        SETTINGS_FILE,
-        expect.objectContaining({
-          model: 'opusplan',
-        }),
-      )
-    })
-
     it('should handle custom model type by not setting model field', () => {
       const mockSettings = { model: 'opus' }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
@@ -260,29 +246,6 @@ describe('config utilities', () => {
           env: expect.objectContaining({
             ANTHROPIC_API_KEY: 'keep-this',
           }),
-        }),
-      )
-
-      const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
-      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
-      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
-    })
-
-    it('should clean environment variables when switching from custom to opusplan', () => {
-      const mockSettings = {
-        env: {
-          ANTHROPIC_MODEL: 'custom-model',
-          ANTHROPIC_SMALL_FAST_MODEL: 'custom-fast-model',
-        },
-      }
-      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
-
-      updateDefaultModel('opusplan')
-
-      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
-        SETTINGS_FILE,
-        expect.objectContaining({
-          model: 'opusplan',
         }),
       )
 
@@ -564,14 +527,6 @@ describe('config utilities', () => {
       const result = getExistingModelConfig()
 
       expect(result).toBe('sonnet')
-    })
-
-    it('should return "opusplan" when model is set to opusplan', () => {
-      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ model: 'opusplan' })
-
-      const result = getExistingModelConfig()
-
-      expect(result).toBe('opusplan')
     })
 
     it('should return "default" when model is explicitly set to default', () => {

@@ -328,7 +328,7 @@ export async function configureDefaultModelFeature(): Promise<void> {
     }
   }
 
-  const { model } = await inquirer.prompt<{ model: 'opus' | 'sonnet' | 'opusplan' | 'default' | 'custom' }>({
+  const { model } = await inquirer.prompt<{ model: 'opus' | 'sonnet' | 'default' | 'custom' }>({
     type: 'list',
     name: 'model',
     message: i18n.t('configuration:selectDefaultModel') || 'Select default model',
@@ -342,17 +342,11 @@ export async function configureDefaultModelFeature(): Promise<void> {
         value: 'opus' as const,
       },
       {
-        name:
-          i18n.t('configuration:opusPlanModelOption')
-          || 'OpusPlan - Use Opus for planning, write code with sonnet, recommended',
-        value: 'opusplan' as const,
-      },
-      {
         name: i18n.t('configuration:customModelOption') || 'Custom - Specify custom model names',
         value: 'custom' as const,
       },
     ]),
-    default: existingModel ? ['default', 'opus', 'opusplan', 'custom'].indexOf(existingModel) : 0,
+    default: existingModel ? ['default', 'opus', 'custom'].indexOf(existingModel) : 0,
   })
 
   if (!model) {

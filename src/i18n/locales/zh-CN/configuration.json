@@ -38,7 +38,6 @@
   "openSettingsJsonDesc": "高级用户自定义",
   "openingSettingsJson": "正在打开 settings.json...",
   "opusModelOption": "Opus - 只用opus，token消耗高，慎用",
-  "opusPlanModelOption": "OpusPlan - Opus做计划，sonnet编写代码，推荐",
   "outputStyleInstalled": "输出风格安装成功",
   "outputStyles.default.description": "完成编码任务时高效且提供简洁响应 (Claude Code自带)",
   "outputStyles.default.name": "默认风格",

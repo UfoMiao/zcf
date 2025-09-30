@@ -253,19 +253,6 @@ describe('features utilities', () => {
       expect(updateDefaultModel).not.toHaveBeenCalled()
     })
 
-    it('should handle opusplan model selection', async () => {
-      const { configureDefaultModelFeature } = await import('../../../src/utils/features')
-      const { updateDefaultModel, getExistingModelConfig } = await import('../../../src/utils/config')
-
-      vi.mocked(getExistingModelConfig).mockReturnValue(null)
-      vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'opusplan' })
-      vi.mocked(updateDefaultModel).mockResolvedValue(undefined)
-
-      await configureDefaultModelFeature()
-
-      expect(updateDefaultModel).toHaveBeenCalledWith('opusplan')
-    })
-
     it('should set correct default choice based on existing config', async () => {
       const { configureDefaultModelFeature } = await import('../../../src/utils/features')
       const { getExistingModelConfig } = await import('../../../src/utils/config')
@@ -278,23 +265,7 @@ describe('features utilities', () => {
       await configureDefaultModelFeature()
 
       const secondCall = vi.mocked(inquirer.prompt).mock.calls[1][0] as any
-      expect(secondCall.default).toBe(1) // 'opus' is at index 1 in ['default', 'opus', 'opusplan']
-    })
-
-    it('should include opusplan in model choices', async () => {
-      const { configureDefaultModelFeature } = await import('../../../src/utils/features')
-      const { getExistingModelConfig } = await import('../../../src/utils/config')
-
-      vi.mocked(getExistingModelConfig).mockReturnValue(null)
-      vi.mocked(inquirer.prompt).mockResolvedValue({ model: 'opusplan' })
-
-      await configureDefaultModelFeature()
-
-      const promptCall = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
-      const choices = promptCall.choices
-
-      // Should include opusplan option
-      expect(choices.some((choice: any) => choice.value === 'opusplan')).toBe(true)
+      expect(secondCall.default).toBe(1) // 'opus' is at index 1 in ['default', 'opus', 'custom']
     })
 
     it('should show custom model option in choices', async () => {
