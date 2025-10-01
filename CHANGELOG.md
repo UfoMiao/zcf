@@ -1,5 +1,39 @@
 # Changelog
 
+## 3.0.3
+
+### Patch Changes
+
+- ## New Features
+  - Adapt to Claude Code 2.0 API changes with improved compatibility
+  - Add comprehensive API refactoring documentation and planning
+  - Enhance configuration management with better validation and error handling
+
+  ## 新功能
+  - 适配 Claude Code 2.0 API 变更，提升兼容性
+  - 添加全面的 API 重构文档和规划
+  - 增强配置管理功能，改进验证和错误处理
+
+  ## Optimization
+  - Remove deprecated opusplan model option from configuration
+  - Improve test coverage for initialization and configuration utilities
+  - Optimize configuration operations and validation logic
+
+  ## 优化
+  - 移除已弃用的 opusplan 模型选项
+  - 改进初始化和配置工具的测试覆盖率
+  - 优化配置操作和验证逻辑
+
+  ## Documentation
+  - Update multilingual documentation (README, Japanese, Chinese)
+  - Enhance i18n translations for API and configuration
+  - Add comprehensive API refactor summary documentation
+
+  ## 文档
+  - 更新多语言文档（README、日语、中文）
+  - 增强 API 和配置的国际化翻译
+  - 添加全面的 API 重构摘要文档
+
 ## 3.0.2
 
 ### Patch Changes
