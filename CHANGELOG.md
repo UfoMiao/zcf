@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.1.1
+
+### Patch Changes
+
+- ## Template Enhancement
+  - Update ojousama-engineer persona from blonde to blue-haired twintails design
+  - Adjust age from 17 to 18 years old for maturity consistency
+  - Update personality description and ending gesture in template
+
+  ## 模板增强
+  - 更新傲娇工程师角色设定：从金发改为蓝发双马尾设计
+  - 调整年龄从17岁至18岁以保持成熟度一致性
+  - 更新模板中的个性描述和结尾动作
+
+  ## Documentation Update
+  - Refresh project index with latest architecture analysis
+  - Update module documentation coverage metrics
+  - Enhance AI context initialization information
+
+  ## 文档更新
+  - 刷新项目索引以包含最新架构分析
+  - 更新模块文档覆盖指标
+  - 增强AI上下文初始化信息
+
 ## 3.1.0
 
 ### Minor Changes

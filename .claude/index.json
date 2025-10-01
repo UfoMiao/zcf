@@ -1,282 +1,239 @@
 {
-  "timestamp": "2025-09-14T18:43:08+08:00",
-  "version": "1.7.0",
-  "project": {
-    "name": "zcf",
-    "description": "Zero-Config Code Flow - One-click configuration tool for Claude Code",
-    "version": "2.12.12",
-    "type": "CLI Tool",
-    "language": "TypeScript",
-    "architecture": "ESM-only modular CLI with advanced i18next internationalization, comprehensive cross-platform support, sophisticated tool integration, and advanced uninstallation system"
-  },
-  "scanning": {
-    "strategy": "Adaptive three-stage comprehensive architecture analysis with enhanced uninstallation functionality assessment and updated v2.12.12 coverage metrics",
-    "stages_completed": ["Repository Census", "Module Priority Scanning", "Deep Architecture Analysis", "Tool Integration Analysis", "Uninstallation System Analysis", "Coverage Update"],
-    "total_files_estimated": 290,
-    "files_scanned": 240,
-    "coverage_percentage": 82.8,
-    "truncated": false,
-    "truncation_reason": null,
-    "update_focus": "Complete adaptive architecture analysis for ZCF v2.12.12 with enhanced uninstallation functionality, advanced test coverage enhancement, and comprehensive multi-language support updates"
-  },
+  "scanTimestamp": "2025-10-01T17:41:31.000Z",
+  "projectName": "ZCF (Zero-Config Code Flow)",
+  "version": "3.1.0",
+  "language": "typescript",
+  "totalFiles": 500,
+  "scannedFiles": 425,
+  "coveragePercentage": 85,
+  "truncated": false,
   "modules": [
     {
-      "path": "root",
-      "type": "main",
-      "description": "Main CLI application with comprehensive configuration, advanced build system, sophisticated ESLint integration, and complete uninstallation capabilities",
-      "entryPoints": ["bin/zcf.mjs", "src/cli.ts", "src/index.ts", "src/cli-setup.ts"],
-      "keyInterfaces": ["CliOptions", "InitOptions", "setupCommands", "LanguageOptions", "UninstallOptions"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 98,
-      "gaps": []
-    },
-    {
-      "path": "src/commands",
-      "type": "commands",
-      "description": "CLI command implementations with advanced interactive and non-interactive modes, sophisticated error handling, comprehensive tool integration, and complete uninstallation functionality",
-      "entryPoints": ["init.ts", "menu.ts", "update.ts", "ccr.ts", "ccu.ts", "check-updates.ts", "uninstall.ts"],
-      "keyInterfaces": ["InitOptions", "UpdateOptions", "CcrOptions", "MenuFeatures", "CheckUpdatesOptions", "UninstallOptions"],
-      "testFiles": ["tests/commands/*.test.ts", "tests/commands/*.edge.test.ts", "tests/unit/commands/"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 96,
-      "gaps": []
-    },
-    {
-      "path": "src/utils",
-      "type": "utilities",
-      "description": "Core functionality with enhanced configuration management, comprehensive platform support, advanced tool integration including CCR, Cometix, CCusage, and sophisticated uninstallation system with cross-platform trash integration",
+      "name": "commands",
+      "path": "src/commands/",
+      "description": "CLI命令实现，包含高级交互和非交互模式以及全面卸载功能",
       "entryPoints": [
-        "config.ts", "installer.ts", "mcp.ts", "platform.ts",
-        "workflow-installer.ts", "ccr/", "cometix/", "tools/",
-        "uninstaller.ts", "trash.ts"
+        "init.ts",
+        "menu.ts",
+        "update.ts",
+        "ccr.ts",
+        "ccu.ts",
+        "check-updates.ts",
+        "uninstall.ts"
       ],
-      "keyInterfaces": [
-        "ApiConfig", "McpServerConfig", "WorkflowInstallResult",
-        "CcrConfig", "CometixOptions", "PlatformInfo", "ToolsIntegration",
-        "ZcfUninstaller", "UninstallItem", "UninstallResult"
+      "testCoverage": "high",
+      "interfaces": [
+        "InitOptions",
+        "UpdateOptions",
+        "CcrOptions",
+        "UninstallOptions"
       ],
-      "testFiles": [
-        "tests/utils/*.test.ts", "tests/utils/*.edge.test.ts",
-        "tests/utils/ccr/", "tests/utils/cometix/", "tests/unit/utils/",
-        "tests/utils/uninstaller.test.ts", "tests/utils/uninstaller.edge.test.ts"
-      ],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 94,
-      "gaps": []
+      "keyFeatures": [
+        "完整初始化流程",
+        "交互式菜单系统",
+        "CCR代理管理",
+        "CCusage分析集成",
+        "高级卸载功能",
+        "双代码工具支持(Claude Code + Codex)"
+      ]
     },
     {
-      "path": "src/i18n",
-      "type": "internationalization",
-      "description": "Advanced i18next-based multilingual support with sophisticated namespace organization for Chinese and English locales, dynamic language switching, and complete uninstallation translations",
-      "entryPoints": ["index.ts", "locales/zh-CN/", "locales/en/", "locales/*/uninstall.json"],
-      "keyInterfaces": ["i18n", "initI18n", "SupportedLang", "TranslationNamespaces", "ensureI18nInitialized"],
-      "testFiles": ["tests/i18n/core/i18next-setup.test.ts", "tests/i18n/locales/workflow.test.ts", "tests/i18n/i18n-integrity.test.ts"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 92,
-      "gaps": []
-    },
-    {
-      "path": "src/types",
-      "type": "types",
-      "description": "Comprehensive TypeScript type definitions for workflow, configuration, tool integration, uninstallation, and advanced system interfaces",
-      "entryPoints": ["workflow.ts", "config.ts", "ccr.ts"],
-      "keyInterfaces": [
-        "WorkflowConfig", "WorkflowType", "ApiConfig",
-        "ClaudeConfiguration", "CcrConfig", "WorkflowAgent",
-        "UninstallItem", "UninstallResult"
-      ],
-      "testFiles": ["Implicit through usage in other modules"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 100,
-      "gaps": []
-    },
-    {
-      "path": "src/config",
-      "type": "configuration",
-      "description": "Centralized workflow configurations, comprehensive MCP service definitions, and sophisticated system presets",
-      "entryPoints": ["workflows.ts", "mcp-services.ts"],
-      "keyInterfaces": ["WorkflowConfig", "WORKFLOW_CONFIGS", "MCP_SERVICE_CONFIGS", "WorkflowConfigBase"],
-      "testFiles": ["tests/config/workflows.test.ts", "tests/config/mcp-services.test.ts"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 95,
-      "gaps": []
-    },
-    {
-      "path": "templates",
-      "type": "templates",
-      "description": "Enhanced multilingual configuration templates, comprehensive workflows, and professional AI personality styles with advanced output customization",
+      "name": "utils",
+      "path": "src/utils/",
+      "description": "具有增强配置管理、平台支持和高级卸载功能的核心功能",
       "entryPoints": [
-        "common/", "zh-CN/", "en/",
-        "output-styles/", "workflow/"
+        "config.ts",
+        "installer.ts",
+        "mcp.ts",
+        "platform.ts",
+        "workflow-installer.ts",
+        "uninstaller.ts",
+        "trash.ts"
       ],
-      "keyInterfaces": ["Template structure", "Workflow templates", "AI personalities", "Output styles", "Professional engineering styles"],
-      "testFiles": ["tests/templates/*.test.ts"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 87,
-      "gaps": ["Some advanced template validation scenarios"]
+      "testCoverage": "high",
+      "subModules": [
+        "ccr/",
+        "cometix/",
+        "tools/"
+      ],
+      "keyFeatures": [
+        "配置文件管理",
+        "Claude Code安装",
+        "MCP服务配置",
+        "跨平台支持",
+        "工作流安装",
+        "高级卸载器",
+        "跨平台垃圾箱集成"
+      ]
     },
     {
-      "path": "tests",
-      "type": "testing",
-      "description": "Comprehensive test suite with unit, integration, and edge case coverage, enhanced with advanced helper utilities, sophisticated testing infrastructure, and complete uninstaller testing",
+      "name": "i18n",
+      "path": "src/i18n/",
+      "description": "具有命名空间组织和完整卸载翻译的高级i18next多语言支持",
       "entryPoints": [
-        "commands/", "utils/", "unit/",
-        "integration/", "edge/", "helpers/", "fixtures/",
-        "utils/uninstaller.test.ts", "utils/uninstaller.edge.test.ts"
+        "index.ts",
+        "locales/zh-CN/",
+        "locales/en/"
       ],
-      "keyInterfaces": ["Test helpers", "Mock functions", "Coverage utilities", "Test fixtures", "Advanced testing patterns", "Uninstaller test scenarios"],
-      "testFiles": ["Self-testing module with 80%+ coverage requirements"],
-      "claudeMdStatus": "current",
-      "scanned": true,
-      "coverage": 92,
-      "gaps": []
+      "testCoverage": "high",
+      "namespaces": [
+        "common",
+        "api",
+        "cli",
+        "menu",
+        "installation",
+        "configuration",
+        "mcp",
+        "ccr",
+        "cometix",
+        "workflow",
+        "errors",
+        "tools",
+        "uninstall",
+        "updater",
+        "language",
+        "codex"
+      ],
+      "supportedLanguages": ["zh-CN", "en"]
+    },
+    {
+      "name": "types",
+      "path": "src/types/",
+      "description": "全面TypeScript类型定义",
+      "entryPoints": [
+        "workflow.ts",
+        "config.ts",
+        "ccr.ts"
+      ],
+      "testCoverage": "implicit",
+      "typeCategories": [
+        "工作流类型",
+        "配置类型",
+        "CCR类型",
+        "MCP服务类型"
+      ]
+    },
+    {
+      "name": "config",
+      "path": "src/config/",
+      "description": "集中式工作流和系统配置",
+      "entryPoints": [
+        "workflows.ts",
+        "mcp-services.ts"
+      ],
+      "testCoverage": "high",
+      "configurations": [
+        "工作流定义",
+        "MCP服务配置"
+      ]
+    },
+    {
+      "name": "templates",
+      "path": "templates/",
+      "description": "增强多语言配置模板和AI个性风格，新增Codex支持",
+      "entryPoints": [
+        "common/",
+        "zh-CN/",
+        "en/",
+        "output-styles/",
+        "workflow/",
+        "codex/"
+      ],
+      "testCoverage": "medium",
+      "templateCategories": [
+        "Claude Code模板",
+        "Codex模板",
+        "AI个性风格",
+        "工作流模板",
+        "多语言支持"
+      ]
+    },
+    {
+      "name": "tests",
+      "path": "tests/",
+      "description": "具有分层覆盖架构和高级卸载器测试的综合测试套件",
+      "entryPoints": [
+        "commands/",
+        "utils/",
+        "unit/",
+        "integration/",
+        "edge/"
+      ],
+      "testCoverage": "self-targeting",
+      "testTypes": [
+        "单元测试",
+        "集成测试",
+        "边界测试",
+        "卸载器测试"
+      ],
+      "coverageTarget": 80
     }
   ],
-  "architecture_analysis": {
-    "patterns": [
-      "Advanced modular CLI architecture with strict TypeScript typing and ESNext configuration",
-      "Sophisticated i18next internationalization with namespace-based organization (zh-CN/en)",
-      "Comprehensive cross-platform support (Windows/macOS/Linux/Termux) with advanced platform detection",
-      "Enhanced template-based workflow system with professional AI personality support",
-      "Advanced external tool integration (CCR, Cometix, CCusage) with sophisticated version management",
-      "Intelligent configuration merging with comprehensive backup system for user preservation",
-      "Test-driven development with sophisticated layered testing and 80%+ coverage requirements",
-      "Advanced error handling with user-friendly i18n messages and graceful degradation",
-      "Sophisticated uninstallation system with conflict resolution and cross-platform trash integration"
+  "architecture": {
+    "type": "modular-cli",
+    "coreTechnology": [
+      "TypeScript",
+      "ESM",
+      "Vitest",
+      "i18next",
+      "unbuild",
+      "cac"
     ],
-    "key_technologies": [
-      "TypeScript (ESM-only with ESNext target and strict mode)",
-      "i18next (advanced internationalization with namespace organization)",
-      "Vitest (comprehensive testing framework with UI and coverage)",
-      "@antfu/eslint-config (strict code quality with advanced rules)",
-      "unbuild (modern build system with TypeScript support)",
-      "pathe (cross-platform path handling)",
-      "tinyexec (reliable cross-platform command execution)",
-      "inquirer (enhanced interactive prompts with advanced validation)",
-      "ansis (sophisticated terminal styling)",
-      "cac (powerful CLI framework)",
-      "trash (cross-platform file removal for safety)"
+    "integrations": [
+      "CCR (Claude Code Router)",
+      "Cometix (Status Line)",
+      "CCusage (Analytics)",
+      "MCP Services",
+      "Trash (Cross-platform)",
+      "Claude Code",
+      "Codex"
     ],
-    "integration_points": [
-      "Claude Code installation and advanced configuration management",
-      "MCP service management with comprehensive configuration validation and Windows support",
-      "CCR proxy server integration with sophisticated configuration backup and validation",
-      "Cometix status line tools with advanced installer integration and configuration",
-      "CCusage analytics integration with argument forwarding and error handling",
-      "Git workflow automation with advanced templates and professional styles",
-      "AI personality configuration with sophisticated output style customization",
-      "Advanced i18next language switching with namespace management and dynamic loading",
-      "Sophisticated uninstallation system with selective removal and conflict resolution"
-    ]
+    "platforms": ["Windows", "macOS", "Linux", "Termux"]
   },
-  "coverage_analysis": {
-    "total_files": 290,
-    "scanned_files": 240,
-    "coverage_by_type": {
-      "source_files": "92% (58/63)",
-      "test_files": "88% (85/97)",
-      "config_files": "100% (25/25)",
-      "template_files": "82% (73/89)",
-      "json_locales": "100% (32/32)"
+  "keyFeatures": [
+    "高级i18next国际化",
+    "双代码工具架构(Claude Code + Codex)",
+    "智能配置合并",
+    "全面跨平台支持",
+    "高级卸载系统",
+    "CCR/Cometix/CCusage集成",
+    "MCP服务管理",
+    "AI个性风格",
+    "全面测试覆盖"
+  ],
+  "gaps": [
+    {
+      "module": "templates",
+      "type": "feature",
+      "description": "新增Codex模板系统需要更多测试覆盖",
+      "priority": "medium"
     },
-    "critical_paths_coverage": "96%",
-    "documentation_coverage": "100%"
-  },
-  "new_features": {
-    "uninstallation_system": {
-      "description": "Comprehensive ZCF uninstallation functionality with advanced conflict resolution",
-      "features": [
-        "Complete uninstallation mode - removes all ZCF configurations and tools",
-        "Custom selective uninstallation - choose specific components to remove",
-        "Interactive uninstallation menu with user-friendly interface",
-        "Cross-platform trash/recycle bin integration for safe file removal",
-        "Sophisticated conflict resolution (e.g., Claude Code removal includes MCP cleanup)",
-        "Advanced error handling and recovery mechanisms",
-        "Complete i18next translation support for zh-CN and en locales"
-      ],
-      "components": [
-        "src/commands/uninstall.ts - Main uninstall command interface",
-        "src/utils/uninstaller.ts - ZcfUninstaller class with 11 removal methods",
-        "src/utils/trash.ts - Cross-platform trash integration",
-        "src/i18n/locales/*/uninstall.json - Complete translation support",
-        "tests/utils/uninstaller*.test.ts - Comprehensive test coverage"
-      ],
-      "test_coverage": "Extensive edge case testing with sophisticated mocking and failure scenarios"
+    {
+      "module": "utils",
+      "type": "documentation",
+      "description": "高级卸载器和垃圾箱集成功能需要更详细文档",
+      "priority": "low"
     }
-  },
-  "navigation_enhancements": {
-    "mermaid_diagram": "Enhanced with clickable navigation to all 7 core modules and updated v2.12.12 structure",
-    "breadcrumb_system": "Implemented across all module CLAUDE.md files with relative path linking",
-    "module_linking": "Complete cross-module navigation structure established",
-    "uninstall_integration": "Added uninstallation components to architecture diagrams"
-  },
-  "recommendations": {
-    "next_steps": [
-      "Expand uninstallation system with additional tool cleanup capabilities",
-      "Enhance integration test coverage for advanced uninstaller features and edge cases",
-      "Add comprehensive template validation with sophisticated edge case testing",
-      "Expand cross-platform testing scenarios for advanced Termux environment features",
-      "Consider adding performance benchmarks for large-scale template operations and CLI workflows",
-      "Implement automated dependency security auditing with comprehensive vulnerability scanning"
+  ],
+  "nextScanRecommendations": [
+    "重点关注新增Codex模板系统的完整性和测试",
+    "验证高级卸载功能在所有平台的兼容性",
+    "检查CCR/Cometix/CCusage集成的最新版本兼容性",
+    "完善双代码工具架构的文档和示例"
+  ],
+  "scanningStrategy": {
+    "phases": [
+      "阶段A: 全仓清点（轻量）",
+      "阶段B: 模块优先扫描（中等）",
+      "阶段C: 深度补捞（按需）"
     ],
-    "maintenance": [
-      "Regular update of MCP service configurations with latest Claude Code features and capabilities",
-      "Template synchronization with evolving Claude Code capabilities and best practices",
-      "Translation completeness verification and consistency checks across all namespaces including uninstall",
-      "Dependency security audits and comprehensive version compatibility testing",
-      "Performance monitoring for CLI operations and advanced template processing workflows",
-      "Uninstaller functionality testing with various system configurations and permission scenarios"
+    "ignoreRules": [
+      "node_modules/**",
+      ".git/**",
+      "dist/**",
+      "build/**",
+      "*.log",
+      "*.lock"
     ]
-  },
-  "gaps": {
-    "minor": [
-      "Some advanced template validation scenarios for complex multilingual workflows",
-      "Integration test scenarios for sophisticated external tool interaction patterns with uninstaller"
-    ],
-    "documentation": "Complete - all modules comprehensively documented with enhanced navigation and uninstallation system",
-    "critical": "None identified - all critical functionality including uninstallation comprehensively covered"
-  },
-  "ignored_patterns": [
-    "node_modules/**",
-    "dist/**",
-    ".DS_Store",
-    "*.log",
-    "*.local",
-    ".env",
-    ".env.*",
-    "!.env.example",
-    "package-lock.json",
-    "yarn.lock",
-    "test.mjs",
-    "coverage",
-    ".nyc_output",
-    "*.lcov",
-    ".coverage",
-    ".vscode/*",
-    "!.vscode/settings.json",
-    "!.vscode/extensions.json",
-    ".idea",
-    "*.test.tmp",
-    "*.spec.tmp",
-    "test-results",
-    "junit.xml",
-    ".vitest-result.json",
-    "*-output.txt",
-    "tmp-npm-test/",
-    "*_test.log",
-    "zh_test.log",
-    "en_test.log",
-    "zh_output.txt",
-    "en_output.txt",
-    "release_*_test.log",
-    "test-*.js",
-    "zcf-*.tgz"
-  ]
+  }
 }
