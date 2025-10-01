@@ -1,5 +1,45 @@
 # Changelog
 
+## 3.1.0
+
+### Minor Changes
+
+- ## New Features
+  - Add new "ojousama-engineer" AI personality style combining tsundere ojou-sama traits with professional engineering excellence
+  - Implement comprehensive bilingual support (zh-CN/en) for new personality including descriptions and UI elements
+  - Add personality-specific template files for both Claude Code and Codex systems with detailed behavioral guidelines
+  - Update output style configuration and selection logic to include new personality option
+  - Enhance internationalization files with complete translations for new personality style
+  - Add comprehensive test coverage for new output style functionality
+
+  ## 新功能
+  - 新增"ojousama-engineer"傲娇工程师AI个性风格，融合傲娇大小姐特质与专业工程卓越性
+  - 实现新个性的全面双语支持(zh-CN/en)，包括描述和UI元素
+  - 为Claude Code和Codex系统添加个性化模板文件，包含详细行为指南
+  - 更新输出风格配置和选择逻辑以包含新的个性选项
+  - 增强国际化文件，为新个性风格提供完整翻译
+  - 为新输出风格功能添加全面测试覆盖
+
+  ## Optimization
+  - Improve personality configuration system architecture
+  - Enhance template organization for AI personality styles
+  - Optimize bilingual translation workflow for personality descriptions
+
+  ## 优化
+  - 改进个性配置系统架构
+  - 优化AI个性风格的模板组织
+  - 优化个性描述的双语翻译工作流
+
+  ## Documentation
+  - Update README files across all languages to reflect new personality addition
+  - Configure spell checker to recognize new personality-related terms
+  - Add comprehensive documentation for new personality traits and behavior guidelines
+
+  ## 文档
+  - 更新所有语言的README文件以反映新个性添加
+  - 配置拼写检查器以识别新的个性相关术语
+  - 为新个性特质和行为指南添加全面文档
+
 ## 3.0.3
 
 ### Patch Changes
