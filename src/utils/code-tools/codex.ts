@@ -17,11 +17,24 @@ import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { selectMcpServices } from '../mcp-selector'
-import { isWindows } from '../platform'
+import { getMcpCommand, isWindows } from '../platform'
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
 import { readZcfConfig, updateZcfConfig } from '../zcf-config'
 import { detectConfigManagementMode } from './codex-config-detector'
+
+/**
+ * Apply platform-specific command handling for Codex MCP services
+ * This function mirrors the logic from Claude Code's applyPlatformCommand
+ * @param config - MCP service configuration to modify
+ */
+function applyCodexPlatformCommand(config: CodexMcpService): void {
+  if (config.command === 'npx' && isWindows()) {
+    const mcpCmd = getMcpCommand()
+    config.command = mcpCmd[0]
+    config.args = [...mcpCmd.slice(1), ...(config.args || [])]
+  }
+}
 
 export const CODEX_DIR = join(homedir(), '.codex')
 const CODEX_CONFIG_FILE = join(CODEX_DIR, 'config.toml')
@@ -1150,10 +1163,13 @@ export async function configureCodexMcp(): Promise<void> {
 
     const serviceMeta = servicesMeta.find(service => service.id === id)
     let command = configInfo.config.command || id
-    const args = (configInfo.config.args || []).map(arg => String(arg))
+    let args = (configInfo.config.args || []).map(arg => String(arg))
 
-    if (isWindows() && command === 'npx')
-      command = 'npx.cmd'
+    // Apply platform-specific command handling
+    const serviceConfig: CodexMcpService = { id: id.toLowerCase(), command, args }
+    applyCodexPlatformCommand(serviceConfig)
+    command = serviceConfig.command
+    args = serviceConfig.args || []
 
     // Get environment variables from the service config
     const env = { ...(configInfo.config.env || {}) }
@@ -1177,8 +1193,8 @@ export async function configureCodexMcp(): Promise<void> {
 
     selection.push({
       id: id.toLowerCase(), // Convert to lowercase for Codex compatibility
-      command,
-      args,
+      command: serviceConfig.command,
+      args: serviceConfig.args,
       env: Object.keys(env).length > 0 ? env : undefined,
       startup_timeout_ms: configInfo.config.startup_timeout_ms,
     })
