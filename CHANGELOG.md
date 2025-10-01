@@ -1,5 +1,31 @@
 # Changelog
 
+## 3.1.2
+
+### Patch Changes
+
+- ## New Features
+  - Add SYSTEMROOT environment variable support for Codex MCP services on Windows
+  - Implement platform-specific command handling for npx services in Codex
+  - Add getSystemRoot() function for Windows environment detection
+  - Add applyCodexPlatformCommand() function for consistent cross-platform execution
+
+  ## 新功能
+  - 为 Windows 平台上的 Codex MCP 服务添加 SYSTEMROOT 环境变量支持
+  - 为 Codex 中的 npx 服务实现平台特定命令处理
+  - 添加 getSystemRoot() 函数用于 Windows 环境检测
+  - 添加 applyCodexPlatformCommand() 函数确保跨平台执行一致性
+
+  ## Bug Fixes
+  - Fix Windows MCP service execution by using proper "cmd /c npx" instead of "npx.cmd"
+  - Ensure Codex MCP services have required Windows environment variables
+  - Resolve Windows command execution context issues for npx services
+
+  ## 修复
+  - 修复 Windows MCP 服务执行问题，使用正确的 "cmd /c npx" 替代 "npx.cmd"
+  - 确保 Codex MCP 服务拥有必需的 Windows 环境变量
+  - 解决 npx 服务在 Windows 上的命令执行上下文问题
+
 ## 3.1.1
 
 ### Patch Changes
