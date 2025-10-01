@@ -111,6 +111,17 @@ export function getMcpCommand(): string[] {
   return ['npx']
 }
 
+export function getSystemRoot(): string | null {
+  // For Windows environments, get the SYSTEMROOT environment variable
+  if (isWindows()) {
+    const systemRoot = process.env.SYSTEMROOT || process.env.SystemRoot || 'C:\Windows'
+    // Ensure path uses double backslashes for TOML configuration
+    // Replace single backslashes with double backslashes for TOML escaping
+    return systemRoot.replace(/\\/g, '\\\\')
+  }
+  return null
+}
+
 export async function commandExists(command: string): Promise<boolean> {
   try {
     // First try standard which/where command

@@ -17,7 +17,7 @@ import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { selectMcpServices } from '../mcp-selector'
-import { getMcpCommand, isWindows } from '../platform'
+import { getMcpCommand, getSystemRoot, isWindows } from '../platform'
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
 import { readZcfConfig, updateZcfConfig } from '../zcf-config'
@@ -1173,6 +1173,14 @@ export async function configureCodexMcp(): Promise<void> {
 
     // Get environment variables from the service config
     const env = { ...(configInfo.config.env || {}) }
+
+    // Add SYSTEMROOT environment variable for Windows
+    if (isWindows()) {
+      const systemRoot = getSystemRoot()
+      if (systemRoot) {
+        env.SYSTEMROOT = systemRoot
+      }
+    }
 
     // If service requires API key, prompt for it and add to env
     if (configInfo.requiresApiKey && configInfo.apiKeyEnvVar) {
