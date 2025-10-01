@@ -44,7 +44,7 @@ npx zcf          # インタラクティブメニューを開き、必要に応�
 **モデル設定（オプション5）**：デフォルトのClaudeモデルを柔軟に設定：
 - **デフォルト**：Claude Codeが各タスクに最適なモデルを自動選択
 - **Opus**：Claude-3.5-Opusを専用使用（高トークン消費、慎重に使用してください）
-- **OpusPlan**：計画時にOpus、実装時にSonnetを使用（推奨バランス選択）
+- **Sonnet 1M**：1Mコンテキストウィンドウを持つSonnetモデルで大規模コンテキストタスクを処理
 - **カスタム**：メインタスクとクイックタスク用に独自のモデル名を指定（任意のカスタムモデル対応）
 
 **AIメモリ設定（オプション6）**：AIアシスタントをパーソナライズ：
@@ -443,18 +443,18 @@ $ npx zcf
 ### 完全初期化フロー（1を選択または`zcf i`を使用）
 
 ```bash
-? Claude Code設定言語を選択:
-  ❯ 日本語 (ja) - 日本語版（日本のユーザー向け）
-    简体中文 (zh-CN) - 中国語版（中国のユーザー向け）
-    English (en) - 英語版（トークン消費が少ない）
+? 設定言語を選択:
+  ❯ English (en) - 英語版（トークン消費が少ない）
+    简体中文 (zh-CN) - 中国語版（中国のユーザー向けカスタマイズ）
+    日本語 (ja) - 日本語版（日本のユーザー向けカスタマイズ）
 
 ? AI出力言語を選択:
   AIはこの言語であなたの質問に答えます
   ❯ 日本語
-    简体中文
     English
+    简体中文
     Custom
-    （日本語、フランス語、ドイツ語など多言語サポート）
+    （フランス語、ドイツ語など多言語サポート）
 
 ? Claude Codeがインストールされていないことを検出しました。自動的にインストールしますか？(Y/n)
 
@@ -467,16 +467,20 @@ $ npx zcf
     スキップ - 設定更新をスキップ
 
 ? API認証方法を選択
-  ❯ Auth Tokenを使用（OAuth認証）
+  ❯ 公式ログインを使用
+    公式認証システムを使用、API設定不要
+    Auth Tokenを使用（OAuth認証）
     OAuthまたはブラウザログインで取得したトークンに適用
     API Keyを使用（キー認証）
     Anthropic Consoleから取得したAPIキーに適用
     CCRプロキシの設定（Claude Code Router）
-    無料モデルとカスタムルーティングを使用、コスト削減、Claude Codeの可能性を探る
+    プロキシルーティングで複数のAIモデルを使用、コスト削減と可能性の拡張
     スキップ（後で手動設定）
 
 ? API URLを入力してください: https://api.anthropic.com
 ? Auth TokenまたはAPI Keyを入力してください: xxx
+
+✔ API設定完了
 
 ? インストールする出力スタイルを選択:
   ❯ エンジニアプロフェッショナル版 - プロフェッショナルソフトウェアエンジニア、SOLID、KISS、DRY、YAGNI原則を厳格に遵守
@@ -486,24 +490,46 @@ $ npx zcf
 ? グローバルデフォルト出力スタイルを選択:
   ❯ エンジニアプロフェッショナル版
 
+? インストールするワークフローを選択（スペースで選択、Enterで確定）:
+❯ ◉ 汎用ツール (init-project + init-architect + get-current-datetime) - 基本的なプロジェクト初期化と実用コマンド
+◉ 6ステップワークフロー (workflow) - 完全な6段階開発プロセス
+◉ 機能計画とUX設計 (feat + planner + ui-ux-designer) - 構造化された新機能開発
+◉ Git コマンド (commit + rollback + cleanBranches + worktree) - 簡略化されたGit操作
+◉ BMAD-Method 拡張インストーラー - エンタープライズアジャイル開発ワークフロー
+
+✔ ワークフローをインストール中...
+✔ インストール済みコマンド: zcf/workflow.md
+✔ インストール済みコマンド: zcf/feat.md
+✔ インストール済みエージェント: zcf/plan/planner.md
+✔ インストール済みエージェント: zcf/plan/ui-ux-designer.md
+✔ インストール済みコマンド: zcf/git/git-commit.md
+✔ インストール済みコマンド: zcf/git/git-rollback.md
+✔ インストール済みコマンド: zcf/git/git-cleanBranches.md
+✔ インストール済みコマンド: zcf/git/git-worktree.md
+✔ インストール済みコマンド: zcf/bmad-init.md
+✔ ワークフローのインストールが成功しました
+
 ? MCPサービスを設定しますか？(Y/n)
 
-? インストールするMCPサービスを選択:
-  ❯ context7 - 最新のライブラリとフレームワークのドキュメントを取得
-    mcp-deepwiki - deepwiki.comのナレッジベースにアクセス
-    Playwright - ブラウザ自動化とWebテスト
-    exa - 高度な検索とエンタープライズグレードの研究ツール
+? インストールするMCPサービスを選択（スペースで選択、Enterで確定）:
+❯ ◯ すべてインストール
+◯ Context7 ドキュメント検索 - 最新のライブラリドキュメントとコード例を検索
+◯ open-websearch - DuckDuckGo、Bing、Brave検索エンジンでウェブ検索
+◯ Spec ワークフロー - 要件から実装までの体系的な機能開発ワークフロー
+◯ DeepWiki - GitHubリポジトリドキュメントとサンプルを検索
+◯ Playwright ブラウザ制御 - ブラウザを直接制御して自動操作
+◯ Exa AI 検索 - Exa AIでウェブ検索
 
-? インストールするワークフローを選択:
-  ❯ 汎用ツールワークフロー - init-projectと関連エージェント
-    6ステップワークフロー - 完全な6段階開発プロセス
-    機能計画UX - 完全な機能開発ライフサイクル
-    Gitワークフロー - Git操作とブランチ管理
-    BMadワークフロー - AI駆動のアジャイル開発方法論
+? Exa API Keyを入力してください（https://dashboard.exa.ai/api-keys から取得）
+
+✔ MCPサービスが設定されました
 
 ? CCometixLineステータスバーツールをインストールしますか？(Y/n)
 
 ✔ 設定完了！Claude Code環境の準備ができました
+
+🎉 設定完了！'claude'コマンドで体験を開始してください。
+
 ```
 
 ## 🛠️ 開発
