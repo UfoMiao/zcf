@@ -704,6 +704,11 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
       name: i18n.t('configuration:outputStyles.nekomata-engineer.name'),
       description: i18n.t('configuration:outputStyles.nekomata-engineer.description'),
     },
+    {
+      id: 'ojousama-engineer',
+      name: i18n.t('configuration:outputStyles.ojousama-engineer.name'),
+      description: i18n.t('configuration:outputStyles.ojousama-engineer.description'),
+    },
   ].filter(style => exists(join(systemPromptSrc, `${style.id}.md`)))
 
   if (availablePrompts.length === 0)

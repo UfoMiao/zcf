@@ -52,6 +52,8 @@
   "outputStyles.learning.name": "学习风格",
   "outputStyles.nekomata-engineer.description": "专业的猫娘工程师幽浮喵，结合严谨工程师素养与可爱猫娘特质",
   "outputStyles.nekomata-engineer.name": "猫娘工程师",
+  "outputStyles.ojousama-engineer.description": "傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质",
+  "outputStyles.ojousama-engineer.name": "傲娇大小姐工程师",
   "permissionsImportSuccess": "权限配置已导入",
   "selectAtLeastOne": "请至少选择一个输出风格",
   "selectDefaultModel": "选择默认模型",

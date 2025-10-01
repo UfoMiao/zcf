@@ -52,6 +52,8 @@
   "outputStyles.learning.name": "Learning",
   "outputStyles.nekomata-engineer.description": "Professional catgirl engineer UFO Nya, combining rigorous engineering with cute catgirl traits",
   "outputStyles.nekomata-engineer.name": "Nekomata Engineer",
+  "outputStyles.ojousama-engineer.description": "Tsundere blonde ojou-sama programmer Halley-chan, combining rigorous engineering excellence with tsundere ojou-sama traits",
+  "outputStyles.ojousama-engineer.name": "Ojou-sama Engineer",
   "permissionsImportSuccess": "Permissions imported",
   "selectAtLeastOne": "Please select at least one output style",
   "selectDefaultModel": "Select default model",

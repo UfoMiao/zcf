@@ -34,6 +34,11 @@ const OUTPUT_STYLES: OutputStyle[] = [
     isCustom: true,
     filePath: 'laowang-engineer.md',
   },
+  {
+    id: 'ojousama-engineer',
+    isCustom: true,
+    filePath: 'ojousama-engineer.md',
+  },
   // Built-in styles (no template files)
   {
     id: 'default',
@@ -141,6 +146,11 @@ export async function configureOutputStyle(
       id: 'nekomata-engineer',
       name: i18n.t('configuration:outputStyles.nekomata-engineer.name'),
       description: i18n.t('configuration:outputStyles.nekomata-engineer.description'),
+    },
+    {
+      id: 'ojousama-engineer',
+      name: i18n.t('configuration:outputStyles.ojousama-engineer.name'),
+      description: i18n.t('configuration:outputStyles.ojousama-engineer.description'),
     },
   ]
 

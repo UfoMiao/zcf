@@ -124,7 +124,7 @@ npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" -
 | `--api-url, -u`              | 自定义 API URL                          | URL 字符串                                                                                             | 否                            | 官方 API                                                                               |
 | `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--workflows, -w`            | 要安装的工作流（多选，逗号分隔）        | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
-| `--output-styles, -o`        | 要安装的输出风格（多选，逗号分隔）      | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`，或 `skip` 表示不安装                 | 否                            | `all`                                                                                  |
+| `--output-styles, -o`        | 要安装的输出风格（多选，逗号分隔）      | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`，或 `skip` 表示不安装                 | 否                            | `all`                                                                                  |
 | `--default-output-style, -d` | 默认输出风格                            | 同输出风格选项，还包括内置风格：`default`, `explanatory`, `learning`                                   | 否                            | `engineer-professional`                                                                |
 | `--install-cometix-line, -x` | 安装 CCometixLine 状态栏工具            | `true`, `false`                                                                                        | 否                            | `true`                                                                                 |
 
@@ -214,6 +214,7 @@ ZCF 现在支持可定制的 AI 输出风格，个性化你的 Claude Code 体�
 - `engineer-professional`：专业软件工程师，遵循 SOLID、KISS、DRY、YAGNI 原则
 - `nekomata-engineer`：专业猫娘工程师 幽浮喵，结合严谨工程技术与可爱猫娘特质
 - `laowang-engineer`：老王暴脾气技术流，绝不容忍代码错误和不规范代码
+- `ojousama-engineer`：傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质
 - 内置样式：`default`、`explanatory`、`learning`（始终可用）
 
 **功能特性：**
@@ -485,6 +486,7 @@ $ npx zcf
   ❯ 工程师专业版 - 专业的软件工程师，严格遵循SOLID、KISS、DRY、YAGNI原则
     猫娘工程师 - 专业的猫娘工程师幽浮喵，结合严谨工程师素养与可爱猫娘特质
     老王暴躁技术流 - 老王暴躁技术流，绝不容忍代码报错和不规范的代码
+    大小姐工程师 - 傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质
 
 ? 选择全局默认输出风格:
   ❯ 工程师专业版

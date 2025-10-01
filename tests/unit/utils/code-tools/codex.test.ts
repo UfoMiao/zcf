@@ -10,6 +10,8 @@ vi.mock('../../../../src/i18n', () => ({
         'configuration:outputStyles.laowang-engineer.description': '老王暴躁技术流，绝不容忍代码报错和不规范的代码',
         'configuration:outputStyles.nekomata-engineer.name': '猫娘工程师',
         'configuration:outputStyles.nekomata-engineer.description': '专业的猫娘工程师幽浮喵，结合严谨工程师素养与可爱猫娘特质',
+        'configuration:outputStyles.ojousama-engineer.name': '傲娇大小姐工程师',
+        'configuration:outputStyles.ojousama-engineer.description': '傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质',
         'workflow:workflowOption.sixStepsWorkflow': '六步工作流 (workflow)',
         'codex:systemPromptPrompt': '请选择系统提示词风格',
         'codex:workflowSelectionPrompt': '选择要安装的工作流类型（多选）',

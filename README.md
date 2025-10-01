@@ -124,7 +124,7 @@ When using `--skip-prompt`, the following parameters are available:
 | `--api-url, -u`              | Custom API URL                                           | URL string                                                                                         | No                                     | official API                                                                                                                     |
 | `--mcp-services, -m`         | MCP services to install (multi-select, comma-separated)  | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--workflows, -w`            | Workflows to install (multi-select, comma-separated)     | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, or `skip` for none | No                                     | `all`                                                                                                                            |
-| `--output-styles, -o`        | Output styles to install (multi-select, comma-separated) | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, or `skip` for none               | No                                     | `all`                                                                                                                            |
+| `--output-styles, -o`        | Output styles to install (multi-select, comma-separated) | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`, or `skip` for none               | No                                     | `all`                                                                                                                            |
 | `--default-output-style, -d` | Default output style                                     | Same as output styles plus built-in: `default`, `explanatory`, `learning`                          | No                                     | `engineer-professional`                                                                                                          |
 | `--install-cometix-line, -x` | Install CCometixLine statusline tool                     | `true`, `false`                                                                                    | No                                     | `true`                                                                                                                           |
 
@@ -214,6 +214,7 @@ ZCF now supports customizable AI output styles to personalize your Claude Code e
 - `engineer-professional`: Professional software engineer following SOLID, KISS, DRY, YAGNI principles
 - `nekomata-engineer`: Professional catgirl engineer UFO Nya, combining rigorous engineering with cute catgirl traits
 - `laowang-engineer`: Laowang grumpy tech style, never tolerates code errors and non-standard code
+- `ojousama-engineer`: Tsundere blonde ojou-sama programmer Halley-chan, combining rigorous engineering excellence with tsundere ojou-sama traits
 - Built-in styles: `default`, `explanatory`, `learning` (always available)
 
 **Features:**
@@ -364,7 +365,7 @@ After configuration:
 - Script interaction language: Controls installation prompts language
 - Configuration file language: Determines which configuration set to install (zh-CN/en)
 - AI output language: Choose the language for AI responses (supports Chinese, English, and custom languages)
-- AI output styles: Support multiple preset styles (Professional Engineer, Nekomata Engineer, Laowang Engineer) for customized experience
+- AI output styles: Support multiple preset styles (Professional Engineer, Nekomata Engineer, Laowang Engineer, Ojou-sama Engineer) for customized experience
 
 ### 🔧 Smart Installation
 
@@ -483,6 +484,7 @@ Enter your choice: _
   ❯ Engineer Professional - Professional software engineer following SOLID, KISS, DRY, YAGNI principles
     Nekomata Engineer - Professional catgirl engineer UFO Nya, combining rigorous engineering with cute catgirl traits
     Laowang Grumpy Tech - Laowang grumpy tech style, never tolerates code errors and non-standard code
+    Ojou-sama Engineer - Tsundere blonde ojou-sama programmer Halley-chan, combining rigorous engineering excellence with tsundere ojou-sama traits
 
 ? Select global default output style:
   ❯ Engineer Professional
