@@ -376,7 +376,7 @@ fi
 - **NEVER** break markdown formatting or links
 
 📌 **Best Practices:**
-- Use actual i18n translations from the codebase (zh-CN, ja, en)
+- Use actual i18n translations from the codebase (zh-CN, ja-JP, en)
 - Preserve existing formatting and style
 - Update examples to reflect current implementation
 - Include new features and commands added since last tag
@@ -388,7 +388,7 @@ fi
 - [ ] Commands match files in `src/commands/`
 - [ ] Workflows match `src/config/workflows.ts`
 - [ ] MCP services match `src/constants.ts`
-- [ ] Translations are consistent between all languages (zh-CN, ja, en)
+- [ ] Translations are consistent between all languages (zh-CN, ja-JP, en)
 - [ ] All code examples are executable
 - [ ] No broken internal links
 - [ ] Markdown formatting is valid

@@ -44,7 +44,7 @@ Menu options include:
 **Model Configuration (Option 5)**: Configure your default Claude model with flexible options:
 - **Default**: Let Claude Code automatically choose the best model for each task
 - **Opus**: Use Claude-3.5-Opus exclusively (high token consumption, use with caution)
-- **OpusPlan**: Use Opus for planning, Sonnet for implementation (recommended balance)
+- **Sonnet 1M**: Use Sonnet with 1M context window for larger context tasks
 - **Custom**: Specify your own model names for both primary and fast tasks (supports any custom model)
 
 **AI Memory Configuration (Option 6)**: Personalize your AI assistant:
@@ -443,15 +443,17 @@ Enter your choice: _
 
 ```bash
 ? Select Claude Code configuration language:
-  ❯ 简体中文 (zh-CN) - Chinese (easier for Chinese users to customize)
-    English (en) - English (recommended, lower token consumption)
+  ❯ English (en) - English (recommended, lower token consumption)
+    简体中文 (zh-CN) - Chinese (easier for Chinese users to customize)
+    日本語 (ja) - Japanese (日本のユーザー向け)
 
 ? Select AI output language:
   AI will respond to you in this language
-  ❯ 简体中文
-    English
+  ❯ English
+    简体中文
+    日本語
     Custom
-    (Supports Japanese, French, German, and more)
+    (Supports French, German, and more)
 
 ? Claude Code not found. Install automatically? (Y/n)
 
@@ -464,12 +466,14 @@ Enter your choice: _
     Skip - Skip configuration update
 
 ? Select API authentication method
-  ❯ Use Auth Token (OAuth authentication)
+  ❯ Use Official Login
+    Use official authentication system without API configuration
+    Use Auth Token (OAuth authentication)
     For tokens obtained via OAuth or browser login
     Use API Key (Key authentication)
     For API keys from Anthropic Console
     Configure CCR Proxy (Claude Code Router)
-    Use free models and custom routing to reduce costs and explore the possibilities of Claude Code
+    Use multiple AI models via proxy routing to reduce costs and explore possibilities
     Skip (configure manually later)
 
 ? Enter API URL: https://api.anthropic.com
@@ -483,30 +487,7 @@ Enter your choice: _
 ? Select global default output style:
   ❯ Engineer Professional
 
-? Configure MCP services? (Y/n)
-
-? Select MCP services to install:
-  ❯ context7 - Get latest library and framework documentation
-    mcp-deepwiki - Access deepwiki.com knowledge base
-    Playwright - Browser automation and web testing
-    exa - Advanced search and enterprise research tools
-
-? Select workflows to install:
-  ❯ Common Tools Workflow - init-project and related agents
-    Six Steps Workflow - Complete six-stage development process
-    Feature Planning UX - Complete feature development lifecycle
-    Git Workflow - Git operations and branch management
-    BMad Workflow - AI-driven agile development methodology
-
-? Install CCometixLine statusline tool? (Y/n)
-
-✔ Setup complete! Claude Code environment is ready
-```
-
-✔ All config files backed up to ~/.claude/backup/xxx
-✔ Config files copied to ~/.claude
-
-? Select workflows to install (space to select, enter to confirm)
+? Select workflows to install (space to select, enter to confirm):
 ❯ ◉ Common Tools (init-project + init-architect + get-current-datetime) - Essential project initialization and utility commands
 ◉ Six Steps Workflow (workflow) - Complete 6-phase development process
 ◉ Feature Planning and UX Design (feat + planner + ui-ux-designer) - Structured feature development
@@ -525,24 +506,24 @@ Enter your choice: _
 ✔ Installed command: zcf/bmad-init.md
 ✔ Workflow installation successful
 
-✔ API configured
-
 ? Configure MCP services? (Y/n)
 
-? Select MCP services to install (space to select, enter to confirm)
-❯ ◯ Install all
-◯ Context7 Documentation Query - Query latest library docs and code examples
-◯ DeepWiki - Query GitHub repository docs and examples
-◯ Playwright Browser Control - Direct browser automation control
-◯ Exa AI Search - Web search using Exa AI
-
-? Enter Exa API Key (get from https://dashboard.exa.ai/api-keys)
+? Select MCP services to install (space to select, enter to confirm):
+❯ ◉ Context7 Documentation Query - Query latest library docs and code examples
+◉ DeepWiki - Query GitHub repository docs and examples
+◉ Playwright Browser Control - Direct browser automation control
+◉ Exa AI Search - Web search using Exa AI
+◯ Install all services
 
 ✔ MCP services configured
 
+? Install CCometixLine statusline tool? (Y/n)
+
+✔ Setup complete! Claude Code environment is ready
+
 🎉 Setup complete! Use 'claude' command to start.
 
-````
+```
 
 ### Command Line Options
 
@@ -581,7 +562,7 @@ npx zcf -h
 # Show version
 npx zcf --version
 npx zcf -v
-````
+```
 
 #### Usage Examples
 

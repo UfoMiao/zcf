@@ -689,7 +689,7 @@ describe('init command with simplified parameters', () => {
       expect(backupCcrConfig).toHaveBeenCalledWith()
     })
 
-    it.skip('should create default skip configuration for ccr_proxy in skip-prompt mode', async () => {
+    it('should create default skip configuration for ccr_proxy in skip-prompt mode', async () => {
       vi.mocked(existsSync).mockReturnValue(false)
       vi.mocked(getInstallationStatus).mockResolvedValue({
         hasGlobal: true,

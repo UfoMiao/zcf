@@ -1,7 +1,9 @@
 import dayjs from 'dayjs'
 import { join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { CLAUDE_DIR, SETTINGS_FILE } from '../../../src/constants'
+import { CLAUDE_DIR, CLAUDE_VSC_CONFIG_FILE, SETTINGS_FILE } from '../../../src/constants'
+import { i18n } from '../../../src/i18n'
+import * as claudeConfig from '../../../src/utils/claude-config'
 import {
   applyAiLanguageDirective,
   backupExistingConfig,
@@ -11,6 +13,7 @@ import {
   getExistingApiConfig,
   getExistingModelConfig,
   mergeSettingsFile,
+  switchToOfficialLogin,
   updateCustomModel,
   updateDefaultModel,
 } from '../../../src/utils/config'
@@ -23,6 +26,8 @@ vi.mock('../../../src/utils/fs-operations')
 vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/zcf-config')
 vi.mock('../../../src/utils/permission-cleaner')
+vi.mock('../../../src/utils/claude-config')
+vi.mock('../../../src/i18n')
 vi.mock('dayjs')
 
 describe('config utilities', () => {
@@ -155,6 +160,81 @@ describe('config utilities', () => {
         }),
       )
     })
+
+    describe('claude Code 2.0 API enhancements', () => {
+      beforeEach(() => {
+        vi.clearAllMocks()
+        // Setup claude-config mocks
+        vi.mocked(claudeConfig.setPrimaryApiKey).mockClear()
+        vi.mocked(claudeConfig.addCompletedOnboarding).mockClear()
+      })
+
+      it('should call setPrimaryApiKey when authType is provided', () => {
+        configureApi({
+          authType: 'api_key',
+          key: 'test-key',
+          url: 'https://test.com',
+        })
+
+        expect(claudeConfig.setPrimaryApiKey).toHaveBeenCalled()
+      })
+
+      it('should handle setPrimaryApiKey errors gracefully', () => {
+        const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        vi.mocked(claudeConfig.setPrimaryApiKey).mockImplementation(() => {
+          throw new Error('setPrimaryApiKey failed')
+        })
+
+        // Mock i18n
+        vi.mocked(i18n.t).mockReturnValue('Mocked: mcp:primaryApiKeySetFailed')
+
+        // Should not throw error
+        expect(() => {
+          configureApi({
+            authType: 'api_key',
+            key: 'test-key',
+            url: 'https://test.com',
+          })
+        }).not.toThrow()
+
+        expect(mockConsoleError).toHaveBeenCalledWith(
+          'Mocked: mcp:primaryApiKeySetFailed',
+          expect.any(Error),
+        )
+
+        mockConsoleError.mockRestore()
+      })
+
+      it('should not fail API configuration when setPrimaryApiKey fails', () => {
+        const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+        vi.mocked(claudeConfig.setPrimaryApiKey).mockImplementation(() => {
+          throw new Error('setPrimaryApiKey failed')
+        })
+
+        // Mock i18n
+        const mockI18n = { t: vi.fn(key => `Mocked: ${key}`) }
+        vi.doMock('../../../src/i18n', () => ({
+          ensureI18nInitialized: vi.fn(),
+          i18n: mockI18n,
+        }))
+
+        const result = configureApi({
+          authType: 'api_key',
+          key: 'test-key',
+          url: 'https://test.com',
+        })
+
+        // Should still return successful result despite setPrimaryApiKey failure
+        expect(result).toEqual(expect.objectContaining({
+          authType: 'api_key',
+          key: 'test-key',
+        }))
+
+        mockConsoleError.mockRestore()
+      })
+    })
   })
 
   describe('updateDefaultModel', () => {
@@ -274,6 +354,55 @@ describe('config utilities', () => {
           }),
         }),
       )
+    })
+  })
+
+  describe('updateDefaultModel with sonnet[1m] support', () => {
+    it('should handle sonnet[1m] model parameter correctly', () => {
+      const mockSettings = { model: 'opus' }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('sonnet[1m]')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          model: 'sonnet[1m]',
+        }),
+      )
+    })
+
+    it('should update model configuration for sonnet[1m]', () => {
+      const mockSettings = { model: 'custom' }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('sonnet[1m]')
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          model: 'sonnet[1m]',
+        }),
+      )
+    })
+
+    it('should clean environment variables when switching to sonnet[1m]', () => {
+      const mockSettings = {
+        model: 'custom',
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
+          ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+          ANTHROPIC_API_KEY: 'keep-this-key',
+        },
+      }
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
+
+      updateDefaultModel('sonnet[1m]')
+
+      const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
+      expect(writtenConfig.env).toHaveProperty('ANTHROPIC_API_KEY', 'keep-this-key')
     })
   })
 
@@ -573,6 +702,96 @@ describe('config utilities', () => {
       const result = getExistingModelConfig()
 
       expect(result).toBe('custom')
+    })
+  })
+
+  describe('switchToOfficialLogin', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+      // Mock i18n translation function
+      ;(i18n.t as any).mockImplementation((key: string) => `Mocked: ${key}`)
+    })
+
+    it('should clean API configurations from settings.json', () => {
+      // Mock existing settings with API configs
+      const mockSettings = {
+        env: {
+          ANTHROPIC_API_KEY: 'test-key',
+          ANTHROPIC_AUTH_TOKEN: 'test-token',
+          ANTHROPIC_BASE_URL: 'https://test.com',
+        },
+      }
+
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce(mockSettings) // SETTINGS_FILE read
+        .mockReturnValueOnce({ primaryApiKey: 'test-primary-key' }) // VSC config read
+        .mockReturnValueOnce({ hasCompletedOnboarding: true }) // MCP config read
+
+      const result = switchToOfficialLogin()
+
+      expect(result).toBe(true)
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        SETTINGS_FILE,
+        expect.objectContaining({
+          env: {}, // Should be empty after cleaning
+        }),
+      )
+    })
+
+    it('should remove primaryApiKey from ~/.claude/config.json', () => {
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce({ env: {} }) // SETTINGS_FILE
+        .mockReturnValueOnce({ primaryApiKey: 'test-primary-key' }) // VSC config
+        .mockReturnValueOnce({}) // MCP config
+
+      switchToOfficialLogin()
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        CLAUDE_VSC_CONFIG_FILE,
+        expect.not.objectContaining({
+          primaryApiKey: expect.any(String),
+        }),
+      )
+    })
+
+    it('should remove hasCompletedOnboarding from ~/.claude.json', () => {
+      // Setup mock for readMcpConfig and writeMcpConfig
+      vi.mocked(claudeConfig.readMcpConfig).mockReturnValue({
+        mcpServers: {},
+        hasCompletedOnboarding: true,
+      })
+
+      switchToOfficialLogin()
+
+      expect(claudeConfig.writeMcpConfig).toHaveBeenCalledWith({ mcpServers: {} })
+    })
+
+    it('should handle errors gracefully', () => {
+      // Mock readJsonConfig to throw an error
+      vi.mocked(jsonConfig.readJsonConfig).mockImplementation(() => {
+        throw new Error('Read failed')
+      })
+
+      const result = switchToOfficialLogin()
+
+      expect(result).toBe(false)
+    })
+
+    it('should log success message in correct language', () => {
+      const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce({ env: {} })
+        .mockReturnValueOnce({})
+        .mockReturnValueOnce({})
+
+      switchToOfficialLogin()
+
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('Mocked: api:officialLoginConfigured'),
+      )
+
+      mockConsoleLog.mockRestore()
     })
   })
 })

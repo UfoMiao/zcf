@@ -44,7 +44,7 @@ npx zcf          # 打开交互式菜单，根据你的需求选择操作
 **模型配置（选项 5）**：灵活配置您的默认 Claude 模型：
 - **默认**：让 Claude Code 为每个任务自动选择最佳模型
 - **Opus**：专门使用 Claude-3.5-Opus（高 token 消耗，请谨慎使用）
-- **OpusPlan**：规划时使用 Opus，实现时使用 Sonnet（推荐平衡选择）
+- **Sonnet 1M**：使用具有 1M 上下文窗口的 Sonnet 模型处理大上下文任务
 - **自定义**：为主要任务和快速任务指定您自己的模型名称（支持任何自定义模型）
 
 **AI 记忆配置（选项 6）**：个性化您的 AI 助手：
@@ -442,16 +442,18 @@ $ npx zcf
 ### 完整初始化流程（选择 1 或使用 `zcf i`）
 
 ```bash
-? 选择 Claude Code 配置语言:
-  ❯ 简体中文 (zh-CN) - 中文版（便于中文用户自定义）
-    English (en) - 英文版（token 消耗更低）
+? 选择配置语言:
+  ❯ English (en) - 英文版（token 消耗更低）
+    简体中文 (zh-CN) - 中文版（便于中文用户自定义）
+    日本語 (ja) - 日本語版（日本語ユーザー向けカスタマイズ）
 
 ? 选择 AI 输出语言:
   AI 将使用此语言回复你的问题
   ❯ 简体中文
     English
+    日本語
     Custom
-    （支持日语、法语、德语等多种语言）
+    （支持法语、德语等多种语言）
 
 ? 检测到 Claude Code 未安装，是否自动安装？(Y/n)
 
@@ -464,16 +466,20 @@ $ npx zcf
     跳过 - 跳过配置更新
 
 ? 选择 API 认证方式
-  ❯ 使用 Auth Token (OAuth 认证)
+  ❯ 使用官方登录
+    使用官方认证系统，无需配置 API
+    使用 Auth Token (OAuth 认证)
     适用于通过 OAuth 或浏览器登录获取的令牌
     使用 API Key (密钥认证)
     适用于从 Anthropic Console 获取的 API 密钥
     配置 CCR 代理（Claude Code Router）
-    使用免费模型和自定义路由，降低成本，探索Claude Code 的可能性
+    通过代理路由使用多种 AI 模型，降低成本并探索更多可能性
     跳过（稍后手动配置）
 
 ? 请输入 API URL: https://api.anthropic.com
 ? 请输入 Auth Token 或 API Key: xxx
+
+✔ API 配置完成
 
 ? 选择要安装的输出风格:
   ❯ 工程师专业版 - 专业的软件工程师，严格遵循SOLID、KISS、DRY、YAGNI原则
@@ -482,29 +488,6 @@ $ npx zcf
 
 ? 选择全局默认输出风格:
   ❯ 工程师专业版
-
-? 是否配置 MCP 服务？(Y/n)
-
-? 选择要安装的 MCP 服务:
-  ❯ context7 - 获取最新的库和框架文档
-    mcp-deepwiki - 访问 deepwiki.com 的知识库
-    Playwright - 浏览器自动化和网页测试
-    exa - 高级搜索和企业级研究工具
-
-? 选择要安装的工作流:
-  ❯ 通用工具工作流 - init-project 和相关代理
-    六步工作流 - 完整的六阶段开发流程
-    功能规划UX - 完整的功能开发生命周期
-    Git工作流 - Git操作和分支管理
-    BMad工作流 - AI驱动的敏捷开发方法论
-
-? 是否安装 CCometixLine 状态栏工具？(Y/n)
-
-✔ 配置完成！Claude Code 环境已就绪
-```
-
-✔ 已备份所有配置文件到 ~/.claude/backup/xxx
-✔ 配置文件已复制到 ~/.claude
 
 ? 选择要安装的工作流（空格选择，回车确认）
 ❯ ◉ 通用工具 (init-project + init-architect + get-current-datetime) - 基础项目初始化和实用命令
@@ -525,8 +508,6 @@ $ npx zcf
 ✔ 已安装命令: zcf/bmad-init.md
 ✔ 工作流安装成功
 
-✔ API 配置完成
-
 ? 是否配置 MCP 服务？(Y/n)
 
 ? 选择要安装的 MCP 服务（空格选择，回车确认）
@@ -542,9 +523,13 @@ $ npx zcf
 
 ✔ MCP 服务已配置
 
+? 是否安装 CCometixLine 状态栏工具？(Y/n)
+
+✔ 配置完成！Claude Code 环境已就绪
+
 🎉 配置完成！使用 'claude' 命令开始体验。
 
-````
+```
 
 ### 命令行参数
 
@@ -583,7 +568,7 @@ npx zcf -h
 # 查看版本
 npx zcf --version
 npx zcf -v
-````
+```
 
 #### 使用示例
 
