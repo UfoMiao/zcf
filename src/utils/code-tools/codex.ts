@@ -251,8 +251,14 @@ export function parseCodexConfig(content: string): CodexConfigData {
   }
 
   try {
+    // Normalize problematic Windows backslashes in SYSTEMROOT to prevent TOML parse failures
+    // e.g. env = {SYSTEMROOT = "C:\\Windows"} or "C:\Windows" => use forward slashes
+    const normalizedContent = content.replace(/(SYSTEMROOT\s*=\s*")[^"\n]+("?)/g, (match) => {
+      return match.replace(/\\\\/g, '/').replace(/\\/g, '/').replace('C:/Windows"?', 'C:/Windows"')
+    })
+
     // Parse TOML using smol-toml
-    const tomlData = parseToml(content) as any
+    const tomlData = parseToml(normalizedContent) as any
 
     // Extract providers from [model_providers.*] sections
     const providers: CodexProvider[] = []
@@ -342,42 +348,43 @@ export function parseCodexConfig(content: string): CodexConfigData {
       }
     }
 
-    // Preserve other configuration sections (not managed by ZCF)
+    // Preserve other configuration (line-scan, skip ZCF-managed sections/fields)
     const otherConfig: string[] = []
     const lines = content.split('\n')
     let skipCurrentSection = false
-    let currentSection = ''
 
     for (const line of lines) {
-      const trimmedLine = line.trim()
+      const trimmed = line.trim()
+      if (!trimmed)
+        continue
 
-      // Skip ZCF managed comments
-      if (trimmedLine.includes('--- model provider added by ZCF ---')
-        || trimmedLine.includes('--- MCP servers added by ZCF ---')
-        || trimmedLine.includes('Managed by ZCF')) {
+      // Skip ZCF managed comments/headers
+      if (/^#\s*---\s*model provider added by ZCF\s*---\s*$/i.test(trimmed))
+        continue
+      if (/^#\s*---\s*MCP servers added by ZCF\s*---\s*$/i.test(trimmed))
+        continue
+      if (/Managed by ZCF/i.test(trimmed))
+        continue
+
+      // Section header detection
+      const sec = trimmed.match(/^\[([^\]]+)\]/)
+      if (sec) {
+        const name = sec[1]
+        skipCurrentSection = name.startsWith('model_providers.') || name.startsWith('mcp_servers.')
+        // Do not push the section header if it's ZCF-managed; allow non-managed sections to pass
+        if (skipCurrentSection)
+          continue
+        otherConfig.push(line)
         continue
       }
 
-      // Detect section headers
-      const sectionMatch = trimmedLine.match(/^\[([^\]]+)\]/)
-      if (sectionMatch) {
-        currentSection = sectionMatch[1]
-        // Skip ZCF managed sections
-        skipCurrentSection = currentSection.startsWith('model_providers.')
-          || currentSection.startsWith('mcp_servers.')
-      }
-
-      // Skip ZCF managed global fields
-      if (!skipCurrentSection && (
-        trimmedLine.startsWith('model_provider')
-        || trimmedLine.startsWith('# model_provider')
-        || /^model\s*=/.test(trimmedLine)
-      )) {
+      // Global managed fields
+      if (/^#?\s*model_provider\s*=/.test(trimmed))
         continue
-      }
+      if (/^model\s*=/.test(trimmed))
+        continue
 
-      // Collect lines that are not in ZCF managed sections
-      if (!skipCurrentSection && trimmedLine) {
+      if (!skipCurrentSection) {
         otherConfig.push(line)
       }
     }
@@ -397,13 +404,33 @@ export function parseCodexConfig(content: string): CodexConfigData {
   catch (error) {
     // Fallback to basic parsing if TOML parsing fails
     console.warn('TOML parsing failed, falling back to basic parsing:', error)
+
+    // Clean previously managed sections to avoid duplication on subsequent renders
+    const cleaned = content
+      // Remove ZCF headers
+      .replace(/^\s*#\s*---\s*model provider added by ZCF\s*---\s*$/gim, '')
+      .replace(/^\s*#\s*---\s*MCP servers added by ZCF\s*---\s*$/gim, '')
+      // Remove entire [model_providers.*] and [mcp_servers.*] blocks
+      .replace(/^\[model_providers\.[^\]]+\][\s\S]*?(?=^\[|$)/gim, '')
+      .replace(/^\[mcp_servers\.[^\]]+\][\s\S]*?(?=^\[|$)/gim, '')
+      // Remove global model/model_provider lines (commented or not)
+      .replace(/^\s*(?:#\s*)?model_provider\s*=.*$/gim, '')
+      .replace(/^\s*model\s*=.*$/gim, '')
+      // Collapse excessive blank lines
+      .replace(/\n{3,}/g, '\n\n')
+
+    const otherConfig = cleaned
+      .split('\n')
+      .map(l => l.replace(/\s+$/g, ''))
+      .filter(l => l.trim().length > 0)
+
     return {
       model: null,
       modelProvider: null,
       providers: [],
       mcpServices: [],
       managed: false,
-      otherConfig: content.split('\n'),
+      otherConfig,
       modelProviderCommented: undefined,
     }
   }
@@ -446,10 +473,31 @@ export function renderCodexConfig(data: CodexConfigData): string {
 
   // Add preserved non-ZCF configuration after global config
   if (data.otherConfig && data.otherConfig.length > 0) {
-    lines.push(...data.otherConfig)
-    // Add blank line only if we have sections to add
-    if (data.providers.length > 0 || data.mcpServices.length > 0) {
-      lines.push('')
+    const preserved = data.otherConfig.filter((raw) => {
+      const l = String(raw).trim()
+      if (!l)
+        return false
+      // Guard: never re-insert any ZCF-managed headers/sections/fields
+      if (/^#\s*---\s*model provider added by ZCF\s*---\s*$/i.test(l))
+        return false
+      if (/^#\s*---\s*MCP servers added by ZCF\s*---\s*$/i.test(l))
+        return false
+      if (/^\[\s*mcp_servers\./i.test(l))
+        return false
+      if (/^\[\s*model_providers\./i.test(l))
+        return false
+      if (/^#?\s*model_provider\s*=/.test(l))
+        return false
+      if (/^\s*model\s*=/.test(l))
+        return false
+      return true
+    })
+    if (preserved.length > 0) {
+      lines.push(...preserved)
+      // Add blank line only if we have sections to add
+      if (data.providers.length > 0 || data.mcpServices.length > 0) {
+        lines.push('')
+      }
     }
   }
 
@@ -1140,15 +1188,35 @@ export async function configureCodexMcp(): Promise<void> {
   const servicesMeta = await getMcpServices()
   const baseProviders = existingConfig?.providers || []
   const selection: CodexMcpService[] = []
-  const existingMap = new Map((existingConfig?.mcpServices || []).map(service => [service.id, service]))
+
+  // Load existing services
+  const existingServices = existingConfig?.mcpServices || []
 
   if (selectedIds.length === 0) {
     console.log(ansis.yellow(i18n.t('codex:noMcpConfigured')))
+
+    // Union-style: preserve all existing services (predefined + custom)
+    const preserved = (existingServices || []).map((svc) => {
+      if (isWindows()) {
+        const systemRoot = getSystemRoot()
+        if (systemRoot) {
+          return {
+            ...svc,
+            env: {
+              ...(svc.env || {}),
+              SYSTEMROOT: systemRoot,
+            },
+          }
+        }
+      }
+      return svc
+    })
+
     writeCodexConfig({
       model: existingConfig?.model || null,
       modelProvider: existingConfig?.modelProvider || null,
       providers: baseProviders,
-      mcpServices: Array.from(existingMap.values()),
+      mcpServices: preserved,
       managed: true,
       otherConfig: existingConfig?.otherConfig || [],
     })
@@ -1208,16 +1276,39 @@ export async function configureCodexMcp(): Promise<void> {
     })
   }
 
-  const selectionMap = new Map(selection.map(service => [service.id, service]))
-  const mergedMap = new Map(existingMap)
-  for (const service of selectionMap.values())
-    mergedMap.set(service.id, service)
+  // Build a union-style merged services map like Claude Code: preserve existing, update selected
+  const mergedMap = new Map<string, CodexMcpService>()
+  // 1) Seed with all existing services (predefined and custom)
+  for (const svc of existingServices) {
+    mergedMap.set(svc.id.toLowerCase(), { ...svc })
+  }
+  // 2) Overlay selected predefined services (overwrite same id)
+  for (const svc of selection) {
+    mergedMap.set(svc.id.toLowerCase(), { ...svc })
+  }
+
+  // 3) Windows: ensure SYSTEMROOT on all services
+  const finalServices = Array.from(mergedMap.values()).map((svc) => {
+    if (isWindows()) {
+      const systemRoot = getSystemRoot()
+      if (systemRoot) {
+        return {
+          ...svc,
+          env: {
+            ...(svc.env || {}),
+            SYSTEMROOT: systemRoot,
+          },
+        }
+      }
+    }
+    return svc
+  })
 
   writeCodexConfig({
     model: existingConfig?.model || null,
     modelProvider: existingConfig?.modelProvider || null,
     providers: baseProviders,
-    mcpServices: Array.from(mergedMap.values()),
+    mcpServices: finalServices,
     managed: true,
     otherConfig: existingConfig?.otherConfig || [],
   })

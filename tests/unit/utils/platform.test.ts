@@ -6,6 +6,7 @@ import {
   commandExists,
   getMcpCommand,
   getPlatform,
+  getSystemRoot,
   getTermuxPrefix,
   getWSLDistro,
   getWSLInfo,
@@ -213,6 +214,59 @@ ID=ubuntu`)
     it('should return null when not in WSL environment', () => {
       vi.mocked(existsSync).mockReturnValue(false)
       expect(getWSLInfo()).toBe(null)
+    })
+  })
+
+  describe('getSystemRoot', () => {
+    beforeEach(() => {
+      vi.mocked(platform).mockReturnValue('win32')
+      delete process.env.SYSTEMROOT
+      delete process.env.SystemRoot
+    })
+
+    it('should return null on non-Windows platforms', () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      expect(getSystemRoot()).toBeNull()
+    })
+
+    it('should return forward slash format for SYSTEMROOT env var', () => {
+      process.env.SYSTEMROOT = 'C:\\Windows'
+      expect(getSystemRoot()).toBe('C:/Windows')
+    })
+
+    it('should return forward slash format for SystemRoot env var', () => {
+      process.env.SystemRoot = 'C:\\Windows'
+      expect(getSystemRoot()).toBe('C:/Windows')
+    })
+
+    it('should convert double backslashes to forward slashes', () => {
+      process.env.SYSTEMROOT = 'C:\\\\Windows'
+      expect(getSystemRoot()).toBe('C:/Windows')
+    })
+
+    it('should convert mixed backslashes to forward slashes', () => {
+      process.env.SYSTEMROOT = 'C:\\Windows\\\\System32'
+      expect(getSystemRoot()).toBe('C:/Windows/System32')
+    })
+
+    it('should use default C:/Windows when no env vars are set', () => {
+      expect(getSystemRoot()).toBe('C:/Windows')
+    })
+
+    it('should handle already forward slash paths correctly', () => {
+      process.env.SYSTEMROOT = 'C:/Windows'
+      expect(getSystemRoot()).toBe('C:/Windows')
+    })
+
+    it('should preserve forward slashes in mixed paths', () => {
+      process.env.SYSTEMROOT = 'C:/Windows\\System32'
+      expect(getSystemRoot()).toBe('C:/Windows/System32')
+    })
+
+    it('should prioritize SYSTEMROOT over SystemRoot', () => {
+      process.env.SystemRoot = 'D:\\Windows'
+      process.env.SYSTEMROOT = 'C:\\Windows'
+      expect(getSystemRoot()).toBe('C:/Windows')
     })
   })
 

@@ -112,14 +112,24 @@ export function getMcpCommand(): string[] {
 }
 
 export function getSystemRoot(): string | null {
-  // For Windows environments, get the SYSTEMROOT environment variable
-  if (isWindows()) {
-    const systemRoot = process.env.SYSTEMROOT || process.env.SystemRoot || 'C:\Windows'
-    // Ensure path uses double backslashes for TOML configuration
-    // Replace single backslashes with double backslashes for TOML escaping
-    return systemRoot.replace(/\\/g, '\\\\')
-  }
-  return null
+  // For Windows environments, prefer exact 'SYSTEMROOT' over 'SystemRoot'.
+  // On Windows, env keys are case-insensitive and the last write wins, so
+  // explicitly check key presence to keep behavior deterministic across CI.
+  if (!isWindows())
+    return null
+
+  const env = process.env as Record<string, string | undefined>
+
+  let systemRoot = 'C:\\Windows'
+  if (Object.prototype.hasOwnProperty.call(env, 'SYSTEMROOT') && env.SYSTEMROOT)
+    systemRoot = env.SYSTEMROOT
+  else if (Object.prototype.hasOwnProperty.call(env, 'SystemRoot') && env.SystemRoot)
+    systemRoot = env.SystemRoot
+
+  // Normalize: convert backslashes to forward slashes and collapse duplicates
+  return systemRoot
+    .replace(/\\+/g, '/')
+    .replace(/\/+/g, '/')
 }
 
 export async function commandExists(command: string): Promise<boolean> {
