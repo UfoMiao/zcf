@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.1.3
+
+### Patch Changes
+
+- ## Fixes
+  - Fix Codex Windows MCP configuration issues and improve configuration handling.
+
+  ## 修复
+  - 修复 Codex 在 Windows 上的 MCP 配置问题，并改进配置处理。
+
+  ## Testing
+  - Add unit tests for Codex MCP deduplication and Windows platform detection.
+
+  ## 测试
+  - 新增 Codex MCP 去重与 Windows 平台检测的单元测试。
+
 ## 3.1.2
 
 ### Patch Changes
