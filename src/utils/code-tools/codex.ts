@@ -1377,7 +1377,8 @@ function normalizeLanguageLabel(label: string): string {
 
 export async function runCodexUpdate(force = false, skipPrompt = false): Promise<boolean> {
   ensureI18nInitialized()
-  const spinner = ora(i18n.t('codex:checkingVersion')).start()
+  console.log(ansis.bold.cyan(`\n🔍 ${i18n.t('updater:checkingTools')}\n`))
+  const spinner = ora(i18n.t('updater:checkingVersion')).start()
 
   try {
     const { installed, currentVersion, latestVersion, needsUpdate } = await checkCodexUpdate()

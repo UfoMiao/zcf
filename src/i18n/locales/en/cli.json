@@ -39,6 +39,8 @@
   "help.exampleDescriptions.runClaudeCodeUsageAnalysis": "Run Claude Code usage analysis",
   "help.exampleDescriptions.uninstallConfigurations": "Uninstall configurations and tools",
   "help.exampleDescriptions.checkAndUpdateTools": "Check and update tools",
+  "help.exampleDescriptions.checkClaudeCode": "Check and update Claude Code tools",
+  "help.exampleDescriptions.checkCodex": "Check and update Codex tools",
   "help.exampleDescriptions.nonInteractiveModeCicd": "Non-interactive mode (CI/CD)",
   "banner.subtitle": "One-click configuration tool for Claude Code",
   "banner.updateSubtitle": "Update configuration for Claude Code",

@@ -39,6 +39,8 @@
   "help.exampleDescriptions.runClaudeCodeUsageAnalysis": "运行 Claude Code 用量分析",
   "help.exampleDescriptions.uninstallConfigurations": "卸载配置和工具",
   "help.exampleDescriptions.checkAndUpdateTools": "检查并更新工具",
+  "help.exampleDescriptions.checkClaudeCode": "检查并更新Claude Code工具",
+  "help.exampleDescriptions.checkCodex": "检查并更新Codex工具",
   "help.exampleDescriptions.nonInteractiveModeCicd": "非交互模式（CI/CD）",
   "banner.subtitle": "Claude Code 一键配置工具",
   "banner.updateSubtitle": "更新 Claude Code 配置",
