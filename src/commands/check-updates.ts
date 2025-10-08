@@ -1,3 +1,4 @@
+import type { CodeToolType } from '../constants'
 import process from 'node:process'
 import ansis from 'ansis'
 import { i18n } from '../i18n'
@@ -15,7 +16,16 @@ export async function checkUpdates(options: CheckUpdatesOptions = {}): Promise<v
     const skipPrompt = options.skipPrompt || false
 
     // Resolve code type using the new resolver
-    const codeType = await resolveCodeType(options.codeType)
+    let codeType: CodeToolType
+    try {
+      codeType = await resolveCodeType(options.codeType)
+    }
+    catch (err) {
+      // If invalid, default to a safe value
+      const errorMessage = err instanceof Error ? err.message : String(err)
+      console.error(ansis.red(`${errorMessage}\nDefaulting to "claude-code".`))
+      codeType = 'claude-code'
+    }
 
     // Use the new scheduler for updates
     const scheduler = new ToolUpdateScheduler()

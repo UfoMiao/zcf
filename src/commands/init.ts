@@ -7,7 +7,7 @@ import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
 import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
-import { CLAUDE_DIR, CODE_TOOL_BANNERS, SETTINGS_FILE } from '../constants'
+import { CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, SETTINGS_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
@@ -225,7 +225,16 @@ export async function init(options: InitOptions = {}): Promise<void> {
     const zcfConfig = readZcfConfig()
 
     // Step 3: Select code tool
-    const codeToolType = await resolveCodeType(options.codeType)
+    let codeToolType: CodeToolType
+    try {
+      codeToolType = await resolveCodeType(options.codeType)
+    }
+    catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      console.error(ansis.red(`${i18n.t('errors:generalError')} ${errorMessage}`))
+      // Fallback to default value
+      codeToolType = DEFAULT_CODE_TOOL_TYPE
+    }
     options.codeType = codeToolType
 
     // Add the new API configuration mode selection function

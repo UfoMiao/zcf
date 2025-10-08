@@ -54,7 +54,14 @@ describe('npm Package Integration Tests', () => {
       // Use platform-specific npm command for Windows compatibility
       const buildCommand = process.platform === 'win32' ? 'npm.cmd run build' : 'npm run build'
 
-      const { stdout: buildOutput } = await execAsync(buildCommand, { cwd: projectRoot })
+      const { stdout: buildOutput } = await execAsync(buildCommand, {
+        cwd: projectRoot,
+        env: {
+          ...process.env,
+          HUSKY: '0', // Disable husky to avoid Windows file locking issues
+          NO_UPDATE_NOTIFIER: '1', // Disable npm update notifications
+        },
+      })
       expect(buildOutput).toContain('Successfully copied')
       expect(buildOutput).toContain('i18n files')
 
@@ -69,48 +76,37 @@ describe('npm Package Integration Tests', () => {
     }
 
     // Use npm pack with --json for detailed package contents
-    const { stdout: packOutput } = await execAsync('npm pack --json', { cwd: projectRoot })
+    // Skip husky prepare script to avoid Windows file locking issues
+    const { stdout: packOutput } = await execAsync('npm pack --json', {
+      cwd: projectRoot,
+      env: {
+        ...process.env,
+        HUSKY: '0', // Disable husky to avoid Windows file locking issues
+        NO_UPDATE_NOTIFIER: '1', // Disable npm update notifications
+      },
+    })
     let packData: Array<{ files?: Array<{ path: string }>, filename?: string }>
     try {
-      // Clean the output by extracting only JSON content
-      // Filter out any error messages or non-JSON lines
-      const lines = packOutput.trim().split('\n')
-      let jsonContent = ''
-      let jsonStarted = false
+      // Try to find JSON content more robustly
+      // Look for the first occurrence of [ or { that starts a valid JSON structure
+      const fullText = packOutput.trim()
 
-      for (const line of lines) {
-        const trimmedLine = line.trim()
-        // Skip error lines (like git config errors)
-        if (trimmedLine.startsWith('error:')
-          || trimmedLine.startsWith('warning:')
-          || trimmedLine.includes('could not lock config file')) {
-          continue
-        }
+      // Remove any prefix text before JSON
+      const jsonStartIndex = Math.min(
+        !fullText.includes('[') ? Infinity : fullText.indexOf('['),
+        !fullText.includes('{') ? Infinity : fullText.indexOf('{'),
+      )
 
-        // Look for JSON content (starts with [ or {)
-        if ((trimmedLine.startsWith('[') || trimmedLine.startsWith('{')) && !jsonStarted) {
-          jsonStarted = true
-          jsonContent = trimmedLine
-        }
-        else if (jsonStarted) {
-          // Continue building JSON content
-          jsonContent += `\n${trimmedLine}`
-        }
+      if (jsonStartIndex === Infinity) {
+        throw new Error('No JSON structure found in npm pack output')
       }
 
-      // If no clear JSON structure found, try to extract it differently
-      if (!jsonContent) {
-        // Look for the largest JSON-like content
-        const potentialJson = lines
-          .filter(line =>
-            !line.includes('error:')
-            && !line.includes('warning:')
-            && !line.includes('could not lock config file'),
-          )
-          .join('\n')
-          .trim()
+      // Extract everything from the JSON start to the end
+      const jsonContent = fullText.substring(jsonStartIndex).trim()
 
-        jsonContent = potentialJson || packOutput
+      // Validate that we have proper JSON content
+      if (!jsonContent.startsWith('[') && !jsonContent.startsWith('{')) {
+        throw new Error('Invalid JSON start structure found')
       }
 
       packData = JSON.parse(jsonContent)
@@ -195,7 +191,16 @@ describe('npm Package Integration Tests', () => {
     console.log('Fast validation: verifying npm pack contents')
 
     // Use npm pack --dry-run for fast content verification
-    const { stdout: dryRunOutput } = await execAsync('npm pack --dry-run', { cwd: projectRoot, timeout: 5000 })
+    // Skip husky prepare script to avoid Windows file locking issues
+    const { stdout: dryRunOutput } = await execAsync('npm pack --dry-run', {
+      cwd: projectRoot,
+      timeout: 5000,
+      env: {
+        ...process.env,
+        HUSKY: '0', // Disable husky to avoid Windows file locking issues
+        NO_UPDATE_NOTIFIER: '1', // Disable npm update notifications
+      },
+    })
 
     // Extract file list from dry-run output
     const packedFiles = dryRunOutput

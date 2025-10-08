@@ -89,6 +89,9 @@ describe('check updates command', () => {
         updateByCodeType: mockUpdate,
       }) as any)
 
+      // Mock console.error to capture error output
+      const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       // Mock process.exit to prevent test termination
       const mockExit = vi.fn(() => {
         throw new Error('process.exit called')
@@ -103,44 +106,51 @@ describe('check updates command', () => {
       try {
         await checkUpdates(options)
       }
-      catch {
+      catch (error) {
         // Expected error from process.exit mock
+        expect(error).toBeInstanceOf(Error)
+        expect((error as Error).message).toBe('process.exit called')
       }
 
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        expect.stringContaining('Error checking updates: Update failed'),
+      )
       expect(mockExit).toHaveBeenCalledWith(1)
 
-      // Restore original process.exit
+      // Restore mocks
+      mockConsoleError.mockRestore()
       process.exit = originalExit
     })
 
     it('should handle code type resolution errors correctly', async () => {
       const { resolveCodeType } = await import('../../src/utils/code-type-resolver')
+      const { ToolUpdateScheduler } = await import('../../src/utils/tool-update-scheduler')
 
       const mockError = new Error('Invalid code type')
       vi.mocked(resolveCodeType).mockRejectedValue(mockError)
 
-      // Mock process.exit to prevent test termination
-      const mockExit = vi.fn(() => {
-        throw new Error('process.exit called')
-      })
-      const originalExit = process.exit
-      process.exit = mockExit
+      const mockUpdate = vi.fn()
+      vi.mocked(ToolUpdateScheduler).mockImplementation(() => ({
+        updateByCodeType: mockUpdate,
+      }) as any)
+
+      // Mock console.error to capture error output
+      const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       const options: CheckUpdatesOptions = {
         codeType: 'invalid',
       }
 
-      try {
-        await checkUpdates(options)
-      }
-      catch {
-        // Expected error from process.exit mock
-      }
+      await checkUpdates(options)
 
-      expect(mockExit).toHaveBeenCalledWith(1)
+      // Should fallback to claude-code and continue
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        expect.stringContaining('Invalid code type'),
+      )
+      expect(mockUpdate).toHaveBeenCalledWith('claude-code', false)
 
-      // Restore original process.exit
-      process.exit = originalExit
+      // Restore mocks
+      mockConsoleError.mockRestore()
     })
 
     it('should maintain backward compatibility with existing interface', async () => {

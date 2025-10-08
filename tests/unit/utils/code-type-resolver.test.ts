@@ -8,6 +8,18 @@ vi.mock('../../../src/utils/zcf-config', () => ({
   }),
 }))
 
+// Mock i18n
+vi.mock('../../../src/i18n', () => ({
+  i18n: {
+    t: vi.fn((key, fallback, variables) => {
+      if (key === 'errors:invalidCodeType') {
+        return fallback.replace(/\{(\w+)\}/g, (match: string, varName: string) => variables?.[varName] || match)
+      }
+      return fallback
+    }),
+  },
+}))
+
 describe('resolveCodeType', () => {
   it('should resolve cc abbreviation to claude-code', async () => {
     const result = await resolveCodeType('cc')
@@ -37,7 +49,7 @@ describe('resolveCodeType', () => {
 
   it('should throw error for invalid code type', async () => {
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid types are: claude-code, codex, cc, cx',
+      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex.',
     )
   })
 

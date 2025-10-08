@@ -119,7 +119,7 @@ describe('codex Language Selection', () => {
       // Assert
       expect(vi.mocked(writeFile)).toHaveBeenCalledTimes(2)
 
-      const calls = vi.mocked(writeFile).mock.calls
+      const { calls } = vi.mocked(writeFile).mock
       const configCall = calls.find(call => (call[0] as string).includes('config.toml'))
       const authCall = calls.find(call => (call[0] as string).includes('auth.json'))
 

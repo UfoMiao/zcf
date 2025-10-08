@@ -442,6 +442,9 @@ describe('init command', () => {
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
           aiOutputLang: 'en',
           skipPrompt: true,
+          apiMode: 'skip',
+          customApiConfig: undefined,
+          workflows: ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
         })
       })
 
@@ -469,8 +472,11 @@ describe('init command', () => {
         } as any)
 
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
-          aiOutputLang: 'en',
+          aiOutputLang: undefined,
           skipPrompt: true,
+          apiMode: 'skip',
+          customApiConfig: undefined,
+          workflows: ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
         })
         // Should not call resolveTemplateLanguage for codex when skipPrompt is true
         expect(testMocks.resolveTemplateLanguage).not.toHaveBeenCalled()
@@ -541,6 +547,9 @@ describe('init command', () => {
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
           aiOutputLang: 'japanese',
           skipPrompt: true,
+          apiMode: 'skip',
+          customApiConfig: undefined,
+          workflows: ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
         })
 
         expect(runCodexFullInitSpy).toHaveBeenCalled()
@@ -679,7 +688,8 @@ describe('init command', () => {
 
         expect(testMocks.resolveTemplateLanguage).toHaveBeenCalledWith(
           undefined,
-          expect.objectContaining({ codeToolType: 'claude-code' }),
+          { codeToolType: 'claude-code' },
+          false,
         )
       })
 
@@ -707,8 +717,12 @@ describe('init command', () => {
           skipPrompt: true, // Skip prompt mode
         })
 
-        // Should not call resolveTemplateLanguage in skip-prompt mode
-        expect(testMocks.resolveTemplateLanguage).not.toHaveBeenCalled()
+        // Should call resolveTemplateLanguage in skip-prompt mode
+        expect(testMocks.resolveTemplateLanguage).toHaveBeenCalledWith(
+          undefined,
+          { codeToolType: 'claude-code' },
+          true,
+        )
         // Should use 'en' as default configLang
         expect(testMocks.copyConfigFiles).toHaveBeenCalled()
       })

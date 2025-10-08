@@ -1,5 +1,6 @@
 import type { CodeToolType } from '../constants'
 import { DEFAULT_CODE_TOOL_TYPE } from '../constants'
+import { i18n } from '../i18n'
 import { readZcfConfigAsync } from './zcf-config'
 
 /**
@@ -30,8 +31,19 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
       return normalizedParam as CodeToolType
     }
 
-    // Invalid code type
-    throw new Error(`Invalid code type: "${codeTypeParam}". Valid types are: claude-code, codex, cc, cx`)
+    // Prepare valid options for error message
+    const validAbbreviations = Object.keys(CODE_TYPE_ABBREVIATIONS)
+    const validFullTypes = Object.values(CODE_TYPE_ABBREVIATIONS)
+    const validOptions = [...validAbbreviations, ...validFullTypes].join(', ')
+
+    // Use i18n for error message
+    throw new Error(
+      i18n.t(
+        'errors:invalidCodeType',
+        `Invalid code type: "${codeTypeParam}". Valid options are: ${validOptions}.`,
+        { value: codeTypeParam, validOptions },
+      ),
+    )
   }
 
   // No parameter provided, use config default

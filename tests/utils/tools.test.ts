@@ -297,7 +297,7 @@ describe('tools', () => {
         const { readZcfConfigAsync } = await import('../../src/utils/zcf-config')
         vi.mocked(readZcfConfigAsync).mockResolvedValue(null)
 
-        await expect(resolveCodeType('invalid-type')).rejects.toThrow('Invalid code type')
+        await expect(resolveCodeType('invalid-type')).rejects.toThrow('errors:invalidCodeType')
       })
 
       it('should handle case insensitive abbreviations', async () => {
