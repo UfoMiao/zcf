@@ -1305,6 +1305,9 @@ env = {}
         templateLang: 'zh-CN',
       } as any)
 
+      const prompts = await import('../../../../src/utils/prompts')
+      vi.mocked(prompts.resolveAiOutputLanguage).mockResolvedValue('en')
+
       const module = await import('../../../../src/utils/code-tools/codex')
       const result = await module.runCodexWorkflowImportWithLanguageSelection({
         skipPrompt: true,
@@ -1312,6 +1315,12 @@ env = {}
       })
 
       expect(result).toBe('en')
+      expect(prompts.resolveAiOutputLanguage).toHaveBeenCalledWith(
+        'en',
+        'en',
+        { aiOutputLang: 'zh-CN', templateLang: 'zh-CN' },
+        true,
+      )
     })
 
     it('runCodexWorkflowImportWithLanguageSelection should handle interactive mode', async () => {
@@ -1390,6 +1399,15 @@ env = {}
       const fsOps = await import('../../../../src/utils/fs-operations')
       vi.mocked(fsOps.exists).mockReturnValue(false) // No files exist, simplest path
 
+      const zcfConfig = await import('../../../../src/utils/zcf-config')
+      vi.mocked(zcfConfig.readZcfConfig).mockReturnValue({
+        aiOutputLang: 'chinese-simplified',
+        templateLang: 'zh-CN',
+      } as any)
+
+      const prompts = await import('../../../../src/utils/prompts')
+      vi.mocked(prompts.resolveAiOutputLanguage).mockResolvedValue('en')
+
       const module = await import('../../../../src/utils/code-tools/codex')
 
       // Test direct function calls to cover new code paths
@@ -1399,10 +1417,12 @@ env = {}
       })
       expect(result1).toBe('en')
 
+      vi.mocked(prompts.resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
       const result2 = await module.runCodexFullInit({
         skipPrompt: true,
+        aiOutputLang: 'chinese-simplified',
       })
-      expect(typeof result2).toBe('string')
+      expect(result2).toBe('chinese-simplified')
     })
   })
 

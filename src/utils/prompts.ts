@@ -123,6 +123,7 @@ export async function resolveAiOutputLanguage(
   scriptLang: SupportedLang,
   commandLineOption?: AiOutputLanguage | string,
   savedConfig?: ZcfConfig | null,
+  skipPrompt?: boolean,
 ): Promise<AiOutputLanguage | string> {
   ensureI18nInitialized()
 
@@ -131,8 +132,14 @@ export async function resolveAiOutputLanguage(
     return commandLineOption
   }
 
-  // Priority 2: Check saved config and ask for modification
+  // Priority 2: Check saved config
   if (savedConfig?.aiOutputLang) {
+    if (skipPrompt) {
+      // Non-interactive mode: return saved config directly
+      return savedConfig.aiOutputLang
+    }
+
+    // Interactive mode: ask for modification
     const currentLanguageLabel = getAiOutputLanguageLabel(savedConfig.aiOutputLang as AiOutputLanguage) || savedConfig.aiOutputLang
     console.log(ansis.blue(`${i18n.t('language:currentConfigFound')}: ${currentLanguageLabel}`))
 
@@ -157,7 +164,13 @@ export async function resolveAiOutputLanguage(
     return await selectAiOutputLanguage(scriptLang)
   }
 
-  // Priority 3: No saved config, ask user to select
+  // Priority 3: No saved config
+  if (skipPrompt) {
+    // Non-interactive mode: fallback to script language
+    return scriptLang
+  }
+
+  // Interactive mode: ask user to select
   return await selectAiOutputLanguage(scriptLang)
 }
 
@@ -200,6 +213,7 @@ export async function selectTemplateLanguage(): Promise<SupportedLang> {
 export async function resolveTemplateLanguage(
   commandLineOption?: SupportedLang,
   savedConfig?: ZcfConfig | null,
+  skipPrompt?: boolean,
 ): Promise<SupportedLang> {
   ensureI18nInitialized()
 
@@ -208,8 +222,14 @@ export async function resolveTemplateLanguage(
     return commandLineOption
   }
 
-  // Priority 2: Check saved template language config and ask for modification
+  // Priority 2: Check saved template language config
   if (savedConfig?.templateLang) {
+    if (skipPrompt) {
+      // Non-interactive mode: return saved config directly
+      return savedConfig.templateLang
+    }
+
+    // Interactive mode: ask for modification
     const currentLanguageLabel = LANG_LABELS[savedConfig.templateLang]
     console.log(ansis.blue(`${i18n.t('language:currentTemplateLanguageFound')}: ${currentLanguageLabel}`))
 
@@ -236,6 +256,12 @@ export async function resolveTemplateLanguage(
 
   // Priority 3: Backward compatibility - use preferredLang if templateLang is not set
   if (savedConfig?.preferredLang && !savedConfig?.templateLang) {
+    if (skipPrompt) {
+      // Non-interactive mode: return fallback directly
+      return savedConfig.preferredLang
+    }
+
+    // Interactive mode: ask for modification
     console.log(ansis.yellow(`${i18n.t('language:usingFallbackTemplate')}: ${LANG_LABELS[savedConfig.preferredLang]}`))
 
     const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
@@ -259,7 +285,13 @@ export async function resolveTemplateLanguage(
     return await selectTemplateLanguage()
   }
 
-  // Priority 4: No saved config, ask user to select
+  // Priority 4: No saved config
+  if (skipPrompt) {
+    // Non-interactive mode: default to English
+    return 'en'
+  }
+
+  // Interactive mode: ask user to select
   return await selectTemplateLanguage()
 }
 
@@ -271,6 +303,7 @@ export async function resolveSystemPromptStyle(
   availablePrompts: Array<{ id: string, name: string, description: string }>,
   commandLineOption?: string,
   savedConfig?: ZcfTomlConfig | null,
+  skipPrompt?: boolean,
 ): Promise<string> {
   ensureI18nInitialized()
 
@@ -279,12 +312,18 @@ export async function resolveSystemPromptStyle(
     return commandLineOption
   }
 
-  // Priority 2: Check saved config and ask for modification
+  // Priority 2: Check saved config
   if (savedConfig?.codex?.systemPromptStyle) {
     const currentStyleId = savedConfig.codex.systemPromptStyle
     const currentStyle = availablePrompts.find(p => p.id === currentStyleId)
 
     if (currentStyle) {
+      if (skipPrompt) {
+        // Non-interactive mode: return saved config directly
+        return currentStyleId
+      }
+
+      // Interactive mode: ask for modification
       console.log(ansis.blue(`${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))
 
       const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
@@ -306,7 +345,13 @@ export async function resolveSystemPromptStyle(
     }
   }
 
-  // Priority 3: No saved config or user wants to modify, ask user to select
+  // Priority 3: No saved config
+  if (skipPrompt) {
+    // Non-interactive mode: default to engineer-professional
+    return 'engineer-professional'
+  }
+
+  // Interactive mode: ask user to select
   const { systemPrompt } = await inquirer.prompt<{ systemPrompt: string }>([{
     type: 'list',
     name: 'systemPrompt',

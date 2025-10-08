@@ -7,7 +7,7 @@ import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
 import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
-import { CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, isCodeToolType, SETTINGS_FILE } from '../constants'
+import { CLAUDE_DIR, CODE_TOOL_BANNERS, SETTINGS_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
@@ -23,6 +23,7 @@ import {
   writeMcpConfig,
 } from '../utils/claude-config'
 import { runCodexFullInit } from '../utils/code-tools/codex'
+import { resolveCodeType } from '../utils/code-type-resolver'
 import { installCometixLine, isCometixLineInstalled } from '../utils/cometix/installer'
 import {
   applyAiLanguageDirective,
@@ -54,7 +55,7 @@ export interface InitOptions {
   force?: boolean
   skipBanner?: boolean
   skipPrompt?: boolean
-  codeType?: CodeToolType
+  codeType?: CodeToolType | string // Accept abbreviations like 'cc', 'cx'
   // Non-interactive parameters
   configAction?: 'new' | 'backup' | 'merge' | 'docs-only' | 'skip'
   apiType?: 'auth_token' | 'api_key' | 'ccr_proxy' | 'skip'
@@ -86,12 +87,6 @@ function validateSkipPromptOptions(options: InitOptions): void {
   // Set defaults
   if (!options.configAction) {
     options.configAction = 'backup'
-  }
-  if (!options.configLang) {
-    options.configLang = 'en'
-  }
-  if (!options.aiOutputLang) {
-    options.aiOutputLang = 'en'
   }
   // Parse outputStyles parameter
   if (typeof options.outputStyles === 'string') {
@@ -219,18 +214,6 @@ function validateSkipPromptOptions(options: InitOptions): void {
   }
 }
 
-function resolveCodeToolType(optionValue: unknown, savedValue?: CodeToolType | null): CodeToolType {
-  if (isCodeToolType(optionValue)) {
-    return optionValue
-  }
-
-  if (savedValue && isCodeToolType(savedValue)) {
-    return savedValue
-  }
-
-  return DEFAULT_CODE_TOOL_TYPE
-}
-
 export async function init(options: InitOptions = {}): Promise<void> {
   // Validate options if in skip-prompt mode (outside try-catch to allow errors to propagate in tests)
   if (options.skipPrompt) {
@@ -242,7 +225,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
     const zcfConfig = readZcfConfig()
 
     // Step 3: Select code tool
-    const codeToolType = resolveCodeToolType(options.codeType, zcfConfig?.codeToolType)
+    const codeToolType = await resolveCodeType(options.codeType)
     options.codeType = codeToolType
 
     // Add the new API configuration mode selection function
@@ -357,15 +340,13 @@ export async function init(options: InitOptions = {}): Promise<void> {
       }
     }
     else {
-      if (!configLang && !options.skipPrompt) {
+      if (!configLang) {
         const { resolveTemplateLanguage } = await import('../utils/prompts')
         configLang = await resolveTemplateLanguage(
           options.configLang,
           zcfConfig,
+          options.skipPrompt,
         )
-      }
-      else if (!configLang && options.skipPrompt) {
-        configLang = 'en'
       }
     }
 
@@ -374,9 +355,41 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     if (codeToolType === 'codex') {
+      // Map InitOptions to CodexFullInitOptions
+      const apiMode = options.apiType === 'auth_token'
+        ? 'official'
+        : options.apiType === 'api_key'
+          ? 'custom'
+          : options.apiType === 'skip'
+            ? 'skip'
+            : options.skipPrompt ? 'skip' : undefined
+
+      const customApiConfig = options.apiType === 'api_key' && options.apiKey
+        ? {
+            type: 'api_key' as const,
+            token: options.apiKey,
+            baseUrl: options.apiUrl,
+          }
+        : undefined
+
+      // Convert workflows parameter to string array
+      let selectedWorkflows: string[] | undefined
+      if (Array.isArray(options.workflows)) {
+        selectedWorkflows = options.workflows
+      }
+      else if (typeof options.workflows === 'string') {
+        selectedWorkflows = [options.workflows]
+      }
+      else if (options.workflows === true) {
+        selectedWorkflows = [] // Empty array means install all workflows
+      }
+
       const resolvedAiOutputLang = await runCodexFullInit({
         aiOutputLang: options.aiOutputLang,
         skipPrompt: options.skipPrompt,
+        apiMode,
+        customApiConfig,
+        workflows: selectedWorkflows,
       })
       updateZcfConfig({
         version,
@@ -393,9 +406,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 4: Select AI output language
-    const aiOutputLang = options.skipPrompt
-      ? options.aiOutputLang || 'en'
-      : await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig)
+    const aiOutputLang = await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig, options.skipPrompt)
 
     // Step 4: Check and handle Claude Code installation
     const installationStatus = await getInstallationStatus()

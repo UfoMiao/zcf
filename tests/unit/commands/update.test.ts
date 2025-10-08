@@ -159,7 +159,7 @@ describe('update command', () => {
 
       await update({ configLang: 'en', aiOutputLang: 'chinese-simplified', skipBanner: true })
 
-      expect(resolveTemplateLanguage).toHaveBeenCalledWith('en', expect.any(Object))
+      expect(resolveTemplateLanguage).toHaveBeenCalledWith('en', expect.any(Object), undefined)
       expect(selectAndInstallWorkflows).toHaveBeenCalled()
       expect(_updatePromptOnly).toHaveBeenCalledWith('chinese-simplified')
     })

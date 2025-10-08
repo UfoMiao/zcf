@@ -316,6 +316,41 @@ describe('prompts utilities', () => {
       const call = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
       expect(call.default).toBe('zh-CN')
     })
+
+    // skipPrompt tests
+    it('should return command line option directly in skip-prompt mode', async () => {
+      const result = await resolveAiOutputLanguage('zh-CN', 'fr', null, true)
+
+      expect(result).toBe('fr')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should return saved config directly in skip-prompt mode when command line option not provided', async () => {
+      const result = await resolveAiOutputLanguage('zh-CN', undefined, {
+        version: '2.3.0',
+        preferredLang: 'zh-CN',
+        aiOutputLang: 'en',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+      }, true)
+
+      expect(result).toBe('en')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should return script language as default in skip-prompt mode when no config available', async () => {
+      const result = await resolveAiOutputLanguage('zh-CN', undefined, null, true)
+
+      expect(result).toBe('zh-CN')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should fallback to English as script language default in skip-prompt mode', async () => {
+      const result = await resolveAiOutputLanguage('en', undefined, null, true)
+
+      expect(result).toBe('en')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
   })
 
   describe('selectAiOutputLanguage - user selection', () => {
@@ -383,9 +418,61 @@ describe('prompts utilities', () => {
         preferredLang: 'zh-CN',
         lastUpdated: '2024-01-01',
         codeToolType: 'claude-code',
-      })
+      }, false) // skipPrompt = false (interactive mode)
 
       expect(result).toBe('en')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should return saved config directly in skip-prompt mode', async () => {
+      const consoleSpy = vi.spyOn(console, 'log')
+
+      const result = await resolveTemplateLanguage(undefined, {
+        version: '2.3.0',
+        preferredLang: 'en',
+        templateLang: 'zh-CN',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+      }, true) // skipPrompt = true
+
+      expect(result).toBe('zh-CN')
+      expect(consoleSpy).not.toHaveBeenCalled()
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should return fallback config directly in skip-prompt mode', async () => {
+      const consoleSpy = vi.spyOn(console, 'log')
+
+      const result = await resolveTemplateLanguage(undefined, {
+        version: '2.3.0',
+        preferredLang: 'zh-CN',
+        // no templateLang - should use fallback
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+      }, true) // skipPrompt = true
+
+      expect(result).toBe('zh-CN')
+      expect(consoleSpy).not.toHaveBeenCalled()
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should default to en in skip-prompt mode when no config exists', async () => {
+      const result = await resolveTemplateLanguage(undefined, null, true) // skipPrompt = true
+
+      expect(result).toBe('en')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should prioritize command line option in skip-prompt mode', async () => {
+      const result = await resolveTemplateLanguage('zh-CN', {
+        version: '2.3.0',
+        preferredLang: 'en',
+        templateLang: 'en',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+      }, true) // skipPrompt = true
+
+      expect(result).toBe('zh-CN') // command line option wins
       expect(inquirer.prompt).not.toHaveBeenCalled()
     })
 
@@ -399,7 +486,7 @@ describe('prompts utilities', () => {
         templateLang: 'zh-CN', // 使用新的templateLang字段
         lastUpdated: '2024-01-01',
         codeToolType: 'claude-code',
-      })
+      }, false) // skipPrompt = false (interactive mode)
 
       expect(result).toBe('zh-CN')
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:currentTemplateLanguageFound'))
@@ -421,7 +508,7 @@ describe('prompts utilities', () => {
         // 没有templateLang字段，应该使用向后兼容模式
         lastUpdated: '2024-01-01',
         codeToolType: 'claude-code',
-      })
+      }, false) // skipPrompt = false (interactive mode)
 
       expect(result).toBe('zh-CN')
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:usingFallbackTemplate'))
@@ -443,7 +530,7 @@ describe('prompts utilities', () => {
         preferredLang: 'zh-CN',
         lastUpdated: '2024-01-01',
         codeToolType: 'claude-code',
-      })
+      }, false) // skipPrompt = false (interactive mode)
 
       expect(result).toBe('en')
       expect(inquirer.prompt).toHaveBeenCalledTimes(2)
@@ -452,7 +539,7 @@ describe('prompts utilities', () => {
     it('should ask user when no saved config', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ lang: 'zh-CN' })
 
-      const result = await resolveTemplateLanguage(undefined, null)
+      const result = await resolveTemplateLanguage(undefined, null, false) // skipPrompt = false (interactive mode)
 
       expect(result).toBe('zh-CN')
       expect(inquirer.prompt).toHaveBeenCalled()
@@ -501,9 +588,61 @@ describe('prompts utilities', () => {
           claudeCode: { enabled: true, outputStyles: [], installType: 'global' },
           codex: { enabled: true, systemPromptStyle: 'engineer-professional' },
         },
+        false, // skipPrompt = false
       )
 
       expect(result).toBe('laowang-engineer')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should return saved config directly in skip-prompt mode', async () => {
+      const consoleSpy = vi.spyOn(console, 'log')
+
+      const result = await resolveSystemPromptStyle(
+        availablePrompts,
+        undefined, // No command line option
+        {
+          version: '1.0.0',
+          lastUpdated: '2024-01-01',
+          general: { preferredLang: 'en', currentTool: 'codex' },
+          claudeCode: { enabled: true, outputStyles: [], installType: 'global' },
+          codex: { enabled: true, systemPromptStyle: 'nekomata-engineer' },
+        },
+        true, // skipPrompt = true
+      )
+
+      expect(result).toBe('nekomata-engineer')
+      expect(consoleSpy).not.toHaveBeenCalled()
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should default to engineer-professional in skip-prompt mode when no config exists', async () => {
+      const result = await resolveSystemPromptStyle(
+        availablePrompts,
+        undefined, // No command line option
+        null, // No saved config
+        true, // skipPrompt = true
+      )
+
+      expect(result).toBe('engineer-professional')
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
+    it('should prioritize command line option in skip-prompt mode', async () => {
+      const result = await resolveSystemPromptStyle(
+        availablePrompts,
+        'laowang-engineer', // Command line option
+        {
+          version: '1.0.0',
+          lastUpdated: '2024-01-01',
+          general: { preferredLang: 'en', currentTool: 'codex' },
+          claudeCode: { enabled: true, outputStyles: [], installType: 'global' },
+          codex: { enabled: true, systemPromptStyle: 'nekomata-engineer' },
+        },
+        true, // skipPrompt = true
+      )
+
+      expect(result).toBe('laowang-engineer') // Command line option wins
       expect(inquirer.prompt).not.toHaveBeenCalled()
     })
 

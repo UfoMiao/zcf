@@ -691,36 +691,35 @@ export interface CodexWorkflowLanguageOptions {
 }
 
 export async function runCodexWorkflowImportWithLanguageSelection(
-  options?: CodexWorkflowLanguageOptions,
+  options?: CodexFullInitOptions,
 ): Promise<AiOutputLanguage | string> {
   ensureI18nInitialized()
 
   // Step 1: Select AI output language (uses global config memory)
   const zcfConfig = readZcfConfig()
-  const { aiOutputLang: commandLineOption, skipPrompt } = options ?? {}
+  const { aiOutputLang: commandLineOption, skipPrompt = false } = options ?? {}
 
-  const aiOutputLang = skipPrompt
-    ? (commandLineOption || zcfConfig?.aiOutputLang || 'en')
-    : await resolveAiOutputLanguage(
-        i18n.language as SupportedLang,
-        commandLineOption,
-        zcfConfig,
-      )
+  const aiOutputLang = await resolveAiOutputLanguage(
+    i18n.language as SupportedLang,
+    commandLineOption,
+    zcfConfig,
+    skipPrompt,
+  )
 
   // Step 2: Save AI output language to global config
   updateZcfConfig({ aiOutputLang })
   applyAiLanguageDirective(aiOutputLang)
 
   // Step 3: Continue with original workflow (system prompt + workflow selection)
-  await runCodexSystemPromptSelection()
+  await runCodexSystemPromptSelection(skipPrompt)
   ensureCodexAgentsLanguageDirective(aiOutputLang)
-  await runCodexWorkflowSelection()
+  await runCodexWorkflowSelection(options)
   console.log(ansis.green(i18n.t('codex:workflowInstall')))
 
   return aiOutputLang
 }
 
-export async function runCodexSystemPromptSelection(): Promise<void> {
+export async function runCodexSystemPromptSelection(skipPrompt = false): Promise<void> {
   ensureI18nInitialized()
   const rootDir = getRootDir()
   const templateRoot = join(rootDir, 'templates', 'codex')
@@ -735,6 +734,7 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
   const preferredLang = await resolveTemplateLanguage(
     undefined, // No command line option for this function
     zcfConfig,
+    skipPrompt, // Pass skipPrompt flag
   )
 
   updateZcfConfig({ templateLang: preferredLang })
@@ -781,6 +781,7 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
     availablePrompts,
     undefined, // No command line option for this function
     tomlConfig,
+    skipPrompt, // Pass skipPrompt flag
   )
 
   if (!systemPrompt)
@@ -819,8 +820,10 @@ export async function runCodexSystemPromptSelection(): Promise<void> {
   }
 }
 
-export async function runCodexWorkflowSelection(): Promise<void> {
+export async function runCodexWorkflowSelection(options?: CodexFullInitOptions): Promise<void> {
   ensureI18nInitialized()
+
+  const { skipPrompt = false, workflows: presetWorkflows = [] } = options ?? {}
   const rootDir = getRootDir()
   const templateRoot = join(rootDir, 'templates', 'codex')
 
@@ -842,6 +845,42 @@ export async function runCodexWorkflowSelection(): Promise<void> {
 
   if (allWorkflows.length === 0)
     return
+
+  // Handle skipPrompt mode
+  if (skipPrompt) {
+    // Ensure prompts directory exists
+    ensureDir(CODEX_PROMPTS_DIR)
+
+    // Create backup before modifying prompts directory
+    const backupPath = backupCodexPrompts()
+    if (backupPath) {
+      console.log(ansis.gray(getBackupMessage(backupPath)))
+    }
+
+    let workflowsToInstall: string[]
+
+    // If specific workflows are provided, install only those
+    if (presetWorkflows.length > 0) {
+      const selectedWorkflows = allWorkflows.filter(workflow =>
+        presetWorkflows.includes(workflow.name),
+      )
+      workflowsToInstall = selectedWorkflows.map(w => w.path)
+    }
+    else {
+      // If no specific workflows provided, install all available workflows
+      workflowsToInstall = allWorkflows.map(w => w.path)
+    }
+
+    // Copy selected workflow files to prompts directory (flattened)
+    for (const workflowPath of workflowsToInstall) {
+      const content = readFile(workflowPath)
+      const filename = workflowPath.split('/').pop() || 'workflow.md'
+      const targetPath = join(CODEX_PROMPTS_DIR, filename)
+      writeFile(targetPath, content)
+    }
+
+    return
+  }
 
   // Prompt user to select workflows (multi-select, default all selected)
   const { workflows } = await inquirer.prompt<{ workflows: string[] }>([{
@@ -933,10 +972,88 @@ function createApiConfigChoices(providers: CodexProvider[], currentProvider?: st
   return choices
 }
 
-export async function configureCodexApi(): Promise<void> {
+/**
+ * Apply custom API configuration directly (for skipPrompt mode)
+ */
+async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOptions['customApiConfig']>): Promise<void> {
+  const { type, token, baseUrl } = customApiConfig
+
+  // Always backup existing config before modification
+  const backupPath = backupCodexComplete()
+  if (backupPath) {
+    console.log(ansis.gray(getBackupMessage(backupPath)))
+  }
+
+  const providers: CodexProvider[] = []
+  const authEntries: Record<string, string> = {}
+
+  // Create provider based on configuration
+  const providerId = type === 'auth_token' ? 'official-auth-token' : 'custom-api-key'
+  const providerName = type === 'auth_token' ? 'Official Auth Token' : 'Custom API Key'
+
+  providers.push({
+    id: providerId,
+    name: providerName,
+    baseUrl: baseUrl || 'https://api.anthropic.com',
+    wireApi: 'claude',
+    envKey: `${providerId.toUpperCase()}_API_KEY`,
+    requiresOpenaiAuth: false,
+  })
+
+  // Store auth entry if token provided
+  if (token) {
+    authEntries[providerId] = token
+  }
+
+  // Write configuration files
+  const configData: CodexConfigData = {
+    model: 'claude-3-5-sonnet-20241022',
+    modelProvider: providerId,
+    modelProviderCommented: false,
+    providers,
+    mcpServices: [],
+    managed: true,
+  }
+
+  // Write TOML format for config file
+  writeFile(CODEX_CONFIG_FILE, renderCodexConfig(configData))
+  // Auth file remains JSON format
+  writeJsonConfig(CODEX_AUTH_FILE, authEntries)
+
+  updateZcfConfig({ codeToolType: 'codex' })
+
+  console.log(ansis.green(`✔ ${i18n.t('codex:apiConfigured')}`))
+}
+
+export async function configureCodexApi(options?: CodexFullInitOptions): Promise<void> {
   ensureI18nInitialized()
+
+  const { skipPrompt = false, apiMode, customApiConfig } = options ?? {}
   const existingConfig = readCodexConfig()
   const existingAuth = readJsonConfig<Record<string, string | null>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
+
+  // Handle skipPrompt mode
+  if (skipPrompt) {
+    if (apiMode === 'skip') {
+      // Skip API configuration entirely
+      return
+    }
+
+    if (apiMode === 'custom' && customApiConfig) {
+      // Use custom API configuration directly
+      await applyCustomApiConfig(customApiConfig)
+      return
+    }
+
+    if (apiMode === 'official') {
+      // Use official API mode
+      const success = await switchToOfficialLogin()
+      if (success) {
+        updateZcfConfig({ codeToolType: 'codex' })
+      }
+      return
+    }
+  }
 
   // Check if there are existing providers for switch option
   const hasProviders = existingConfig?.providers && existingConfig.providers.length > 0
@@ -1170,9 +1287,16 @@ export async function configureCodexApi(): Promise<void> {
   console.log(ansis.green(i18n.t('codex:apiConfigured')))
 }
 
-export async function configureCodexMcp(): Promise<void> {
+export async function configureCodexMcp(options?: CodexFullInitOptions): Promise<void> {
   ensureI18nInitialized()
+
+  const { skipPrompt = false } = options ?? {}
   const existingConfig = readCodexConfig()
+
+  // Handle skipPrompt mode - skip MCP configuration entirely
+  if (skipPrompt) {
+    return
+  }
 
   // Always backup existing config before modification
   const backupPath = backupCodexComplete()
@@ -1317,16 +1441,29 @@ export async function configureCodexMcp(): Promise<void> {
   console.log(ansis.green(i18n.t('codex:mcpConfigured')))
 }
 
-export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {}
+export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {
+  // Workflow selection options
+  workflows?: string[] // Specific workflows to install, empty means all
+  // API configuration options
+  apiMode?: 'official' | 'custom' | 'skip' // API mode selection
+  customApiConfig?: {
+    type: 'auth_token' | 'api_key'
+    token?: string
+    baseUrl?: string
+  }
+}
 
 export async function runCodexFullInit(
   options?: CodexFullInitOptions,
 ): Promise<AiOutputLanguage | string> {
   ensureI18nInitialized()
+
   await installCodexCli()
   const aiOutputLang = await runCodexWorkflowImportWithLanguageSelection(options)
-  await configureCodexApi()
-  await configureCodexMcp()
+  await configureCodexApi(options)
+  await configureCodexMcp(options)
+  await runCodexWorkflowSelection(options)
+
   return aiOutputLang
 }
 

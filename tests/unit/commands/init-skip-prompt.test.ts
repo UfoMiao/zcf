@@ -6,6 +6,7 @@ import { init } from '../../../src/commands/init'
 import { backupCcrConfig, configureCcrProxy, readCcrConfig, writeCcrConfig } from '../../../src/utils/ccr/config'
 import { installCcr, isCcrInstalled } from '../../../src/utils/ccr/installer'
 import { readMcpConfig, setPrimaryApiKey, writeMcpConfig } from '../../../src/utils/claude-config'
+import { runCodexFullInit } from '../../../src/utils/code-tools/codex'
 import { installCometixLine, isCometixLineInstalled } from '../../../src/utils/cometix/installer'
 import { applyAiLanguageDirective, backupExistingConfig, configureApi, copyConfigFiles } from '../../../src/utils/config'
 import { getInstallationStatus, installClaudeCode } from '../../../src/utils/installer'
@@ -78,6 +79,10 @@ vi.mock('../../../src/utils/workflow-installer', () => ({
   selectAndInstallWorkflows: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/code-tools/codex', () => ({
+  runCodexFullInit: vi.fn(),
+}))
+
 vi.mock('../../../src/config/workflows', () => ({
   WORKFLOW_CONFIG_BASE: [
     { id: 'commonTools', defaultSelected: true, order: 1 },
@@ -105,6 +110,10 @@ vi.mock('../../../src/constants', () => ({
   CLAUDE_DIR: '/home/user/.claude',
   SETTINGS_FILE: '/home/user/.claude/settings.json',
   DEFAULT_CODE_TOOL_TYPE: 'claude-code',
+  CODE_TOOL_BANNERS: {
+    'claude-code': 'for Claude Code',
+    'codex': 'for Codex',
+  },
   LANG_LABELS: { 'zh-CN': '中文', 'en': 'English' },
   SUPPORTED_LANGS: ['zh-CN', 'en'],
   isCodeToolType: vi.fn().mockReturnValue(true),
@@ -724,6 +733,123 @@ describe('init command with simplified parameters', () => {
 
       // Should configure proxy in settings.json
       expect(configureCcrProxy).toHaveBeenCalled()
+    })
+  })
+})
+
+describe('code type abbreviation support', () => {
+  const setupInstantMocks = () => {
+    vi.mocked(existsSync).mockReturnValue(false)
+    vi.mocked(getInstallationStatus).mockResolvedValue({
+      hasGlobal: true,
+      hasLocal: false,
+      localPath: '/test/local/path',
+    })
+    vi.mocked(installClaudeCode).mockResolvedValue()
+    vi.mocked(configureApi).mockReturnValue({
+      url: 'https://api.anthropic.com',
+      key: 'test-key',
+      authType: 'api_key',
+    })
+    vi.mocked(backupExistingConfig).mockReturnValue('/test/backup')
+    vi.mocked(copyConfigFiles).mockResolvedValue()
+    vi.mocked(selectAndInstallWorkflows).mockResolvedValue()
+    vi.mocked(installCcr).mockResolvedValue()
+    vi.mocked(isCcrInstalled).mockResolvedValue({
+      isInstalled: true,
+      hasCorrectPackage: true,
+    })
+    vi.mocked(configureCcrProxy).mockResolvedValue()
+    vi.mocked(readCcrConfig).mockReturnValue({
+      LOG: false,
+      CLAUDE_PATH: '',
+      HOST: '127.0.0.1',
+      PORT: 3456,
+      APIKEY: 'sk-zcf-x-ccr',
+      API_TIMEOUT_MS: '600000',
+      PROXY_URL: '',
+      transformers: [],
+      Providers: [],
+      Router: {} as CcrRouter,
+    })
+    vi.mocked(writeCcrConfig).mockResolvedValue()
+    vi.mocked(installCometixLine).mockResolvedValue()
+    vi.mocked(isCometixLineInstalled).mockResolvedValue(true)
+    vi.mocked(configureOutputStyle).mockResolvedValue()
+    vi.mocked(readMcpConfig).mockReturnValue(null)
+    vi.mocked(setPrimaryApiKey).mockReturnValue()
+    vi.mocked(writeMcpConfig).mockResolvedValue()
+    vi.mocked(applyAiLanguageDirective).mockResolvedValue()
+    vi.mocked(runCodexFullInit).mockResolvedValue('en')
+  }
+
+  beforeEach(() => {
+    setupInstantMocks()
+  })
+
+  it('should resolve cc abbreviation to claude-code', async () => {
+    const options: InitOptions = {
+      skipPrompt: true,
+      codeType: 'cc', // Use abbreviation
+      apiType: 'skip',
+      mcpServices: 'skip',
+      workflows: 'skip',
+    }
+
+    await init(options)
+
+    // Verify that runCodexFullInit was called with claude-code
+    expect(runCodexFullInit).toHaveBeenCalledWith({
+      codeToolType: 'claude-code', // Should be resolved from 'cc'
+      workflows: expect.any(Array),
+      apiMode: 'skip',
+      selectedMcpServices: [],
+      selectedWorkflows: [],
+      skipBanner: false,
+    })
+  })
+
+  it('should resolve cx abbreviation to codex', async () => {
+    const options: InitOptions = {
+      skipPrompt: true,
+      codeType: 'cx', // Use abbreviation
+      apiType: 'skip',
+      mcpServices: 'skip',
+      workflows: 'skip',
+    }
+
+    await init(options)
+
+    // Verify that runCodexFullInit was called with codex
+    expect(runCodexFullInit).toHaveBeenCalledWith({
+      codeToolType: 'codex', // Should be resolved from 'cx'
+      workflows: expect.any(Array),
+      apiMode: 'skip',
+      selectedMcpServices: [],
+      selectedWorkflows: [],
+      skipBanner: false,
+    })
+  })
+
+  it('should accept full code type names', async () => {
+    const options: InitOptions = {
+      skipPrompt: true,
+      codeType: 'claude-code', // Use full name
+      apiType: 'skip',
+      mcpServices: 'skip',
+      workflows: 'skip',
+    }
+
+    await init(options)
+
+    // Verify that runCodexFullInit was called with claude-code
+    expect(runCodexFullInit).toHaveBeenCalledWith({
+      codeToolType: 'claude-code',
+      workflows: expect.any(Array),
+      apiMode: 'skip',
+      selectedMcpServices: [],
+      selectedWorkflows: [],
+      skipBanner: false,
     })
   })
 })

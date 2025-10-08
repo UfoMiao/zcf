@@ -16,6 +16,7 @@ export interface UpdateOptions {
   configLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
   skipBanner?: boolean
+  skipPrompt?: boolean
   codeType?: CodeToolType
 }
 
@@ -68,10 +69,11 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
     const configLang = await resolveTemplateLanguage(
       options.configLang, // Command line option
       zcfConfig,
+      options.skipPrompt, // Non-interactive mode flag
     )
 
     // Select AI output language
-    const aiOutputLang = await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig)
+    const aiOutputLang = await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig, options.skipPrompt)
 
     console.log(ansis.cyan(`\n${i18n.t('configuration:updatingPrompts')}\n`))
 
