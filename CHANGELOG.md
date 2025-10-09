@@ -1,5 +1,63 @@
 # Changelog
 
+## 3.1.4
+
+### Patch Changes
+
+- ## New Features
+  - Add code type resolver with improved error handling and i18n support
+  - Add tool update scheduler for automated tool management
+  - Enhance Codex tool with skipPrompt support and language selection
+  - Add ZCF pull request creation command (/zcf-pr)
+  - Add comprehensive Git workflow prompt templates collection
+  - Support grouped Git workflows selection and expansion
+  - Add Termux user sponsor information to README files
+
+  ## 新功能
+  - 添加代码类型解析器，增强错误处理和国际化支持
+  - 新增工具更新调度器，实现自动化工具管理
+  - 增强 Codex 工具的 skipPrompt 支持和语言选择功能
+  - 新增 ZCF PR 创建命令 (/zcf-pr)
+  - 添加完整的 Git 工作流提示模板集合
+  - 支持分组 Git 工作流选择和扩展
+  - 在 README 文件中添加 Termux 用户赞助信息
+
+  ## Optimizations
+  - Improve init command configuration and user experience
+  - Enhance check-updates command functionality
+  - Optimize CLI setup and internationalization support
+  - Refine code tools integration and error handling
+
+  ## 优化
+  - 改进 init 命令的配置和用户体验
+  - 增强检查更新命令的功能
+  - 优化 CLI 设置和国际化支持
+  - 完善代码工具集成和错误处理
+
+  ## Testing Enhancements
+  - Significantly expand test coverage with new test files
+  - Add comprehensive integration and unit tests
+  - Include edge cases and error scenario testing
+  - Add tests for code type resolver and tool update scheduler
+
+  ## 测试增强
+  - 大幅增加测试覆盖率，新增多个测试文件
+  - 添加全面的集成测试和单元测试
+  - 包含边界条件和错误场景测试
+  - 为代码类型解析器和工具更新调度器添加测试
+
+  ## Documentation
+  - Update README files with Termux user sponsor
+  - Add Git workflow prompt templates documentation
+  - Enhance CLAUDE.md project documentation
+  - Add detailed command documentation for new features
+
+  ## 文档
+  - 更新 README 文件，添加 Termux 用户赞助信息
+  - 添加 Git 工作流提示模板文档
+  - 完善 CLAUDE.md 项目文档
+  - 为新功能添加详细的命令文档
+
 ## 3.1.3
 
 ### Patch Changes
