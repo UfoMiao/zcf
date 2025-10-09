@@ -864,11 +864,12 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
       const selectedWorkflows = allWorkflows.filter(workflow =>
         presetWorkflows.includes(workflow.name),
       )
-      workflowsToInstall = selectedWorkflows.map(w => w.path)
+      // Expand grouped selections (e.g., Git) to concrete files
+      workflowsToInstall = expandSelectedWorkflowPaths(selectedWorkflows.map(w => w.path), workflowSrc)
     }
     else {
       // If no specific workflows provided, install all available workflows
-      workflowsToInstall = allWorkflows.map(w => w.path)
+      workflowsToInstall = expandSelectedWorkflowPaths(allWorkflows.map(w => w.path), workflowSrc)
     }
 
     // Copy selected workflow files to prompts directory (flattened)
@@ -906,14 +907,20 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
 
+  // Expand grouped selections (e.g., Git) to concrete files
+  const finalWorkflowPaths = expandSelectedWorkflowPaths(workflows, workflowSrc)
+
   // Copy selected workflow files to prompts directory (flattened)
-  for (const workflowPath of workflows) {
+  for (const workflowPath of finalWorkflowPaths) {
     const content = readFile(workflowPath)
     const filename = workflowPath.split('/').pop() || 'workflow.md'
     const targetPath = join(CODEX_PROMPTS_DIR, filename)
     writeFile(targetPath, content)
   }
 }
+
+// Sentinel value for grouped Git workflow option
+const GIT_GROUP_SENTINEL = '::gitGroup'
 
 function getAllWorkflowFiles(dirPath: string): Array<{ name: string, path: string }> {
   const workflows: Array<{ name: string, path: string }> = []
@@ -931,7 +938,50 @@ function getAllWorkflowFiles(dirPath: string): Array<{ name: string, path: strin
     }
   }
 
+  // Add Git workflow as a grouped option mirroring Claude Code's description
+  const gitPromptsDir = join(dirPath, 'git', 'prompts')
+  if (exists(gitPromptsDir)) {
+    workflows.push({
+      name: i18n.t('workflow:workflowOption.gitWorkflow'),
+      // Use sentinel path for grouped selection; expanded later
+      path: GIT_GROUP_SENTINEL,
+    })
+  }
+
   return workflows
+}
+
+// Expand grouped selections to actual file paths
+function expandSelectedWorkflowPaths(paths: string[], workflowSrc: string): string[] {
+  const expanded: string[] = []
+  for (const p of paths) {
+    if (p === GIT_GROUP_SENTINEL) {
+      expanded.push(...getGitPromptFiles(workflowSrc))
+    }
+    else {
+      expanded.push(p)
+    }
+  }
+  return expanded
+}
+
+// Resolve actual Git prompt files from templates
+function getGitPromptFiles(workflowSrc: string): string[] {
+  const gitDir = join(workflowSrc, 'git', 'prompts')
+  const files = [
+    'git-commit.md',
+    'git-rollback.md',
+    'git-cleanBranches.md',
+    'git-worktree.md',
+  ]
+
+  const resolved: string[] = []
+  for (const f of files) {
+    const full = join(gitDir, f)
+    if (exists(full))
+      resolved.push(full)
+  }
+  return resolved
 }
 
 function toProvidersList(providers: CodexProvider[]): Array<{ name: string, value: string }> {
@@ -1462,7 +1512,6 @@ export async function runCodexFullInit(
   const aiOutputLang = await runCodexWorkflowImportWithLanguageSelection(options)
   await configureCodexApi(options)
   await configureCodexMcp(options)
-  await runCodexWorkflowSelection(options)
 
   return aiOutputLang
 }
