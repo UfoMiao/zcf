@@ -43,7 +43,7 @@ Menu options include:
 
 **Model Configuration (Option 5)**: Configure your default Claude model with flexible options:
 - **Default**: Let Claude Code automatically choose the best model for each task
-- **Opus**: Use Claude-3.5-Opus exclusively (high token consumption, use with caution)
+- **Opus**: Use Claude-4.1-Opus exclusively (high token consumption, use with caution)
 - **Sonnet 1M**: Use Sonnet with 1M context window for larger context tasks
 - **Custom**: Specify your own model names for both primary and fast tasks (supports any custom model)
 
@@ -350,8 +350,6 @@ After configuration:
 - `<task description>` - Execute directly without workflow, following SOLID, KISS, DRY, and YAGNI principles, suitable for small tasks like bug fixes
 - `/feat <task description>` - Start new feature development, divided into plan and UI phases
 - `/workflow <task description>` - Execute complete development workflow, not automated, starts with multiple solution options, asks for user feedback at each step, allows plan modifications, maximum control
-
-> **⚠️ Important Note for Codex Users**: Due to Codex functionality limitations, prompts cannot pass parameters directly. When using `/workflow`, you need to send the workflow command first, wait for AI response, then send your task description in a separate message.
 
 > **PS**:
 >
