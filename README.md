@@ -784,6 +784,7 @@ A huge thank you to all our sponsors for their generous support!
 - r\*r (first anonymous sponsor🤣)
 - \*\*康 (first KFC sponsor🍗)
 - \*东 (first coffee sponsor☕️)
+- 炼\*3 (first Termux user sponsor📱)
 - 16°C coffee (My best friend🤪, offered Claude Code max $200 package)
 
 ## 📄 License
