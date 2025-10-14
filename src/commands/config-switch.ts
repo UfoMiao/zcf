@@ -1,14 +1,19 @@
+import type { CodeToolType } from '../constants'
 import process from 'node:process'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
+import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
-import { getCurrentCodexProvider, listCodexProviders, readCodexConfig, switchCodexProvider, switchToOfficialLogin, switchToProvider } from '../utils/code-tools/codex'
+import { ClaudeCodeConfigManager } from '../utils/claude-code-config-manager'
+import { listCodexProviders, readCodexConfig, switchCodexProvider, switchToOfficialLogin, switchToProvider } from '../utils/code-tools/codex'
 import { handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
+import { readZcfConfig } from '../utils/zcf-config'
 
 interface ConfigSwitchOptions {
-  provider?: string
-  list?: boolean
+  codeType?: CodeToolType // --code-type, -T
+  list?: boolean // --list
+  target?: string // Positional parameter: profile name or provider name
 }
 
 /**
@@ -21,18 +26,19 @@ export async function configSwitchCommand(options: ConfigSwitchOptions): Promise
 
     // Handle --list flag
     if (options.list) {
-      await handleListProviders()
+      await handleList(options.codeType)
       return
     }
 
-    // Handle direct provider switch
-    if (options.provider) {
-      await handleDirectSwitch(options.provider)
+    // Handle direct switch
+    if (options.target) {
+      const resolvedCodeType = resolveCodeType(options.codeType)
+      await handleDirectSwitch(resolvedCodeType, options.target)
       return
     }
 
     // Interactive mode
-    await handleInteractiveSwitch()
+    await handleInteractiveSwitch(options.codeType)
   }
   catch (error) {
     // In test environment, re-throw the error instead of calling handleGeneralError
@@ -44,45 +50,252 @@ export async function configSwitchCommand(options: ConfigSwitchOptions): Promise
 }
 
 /**
- * Handle --list flag to show available providers
+ * Resolve code type with priority: parameter > ZCF config > default value (claude-code)
+ * @param codeType - Code type from command line parameter (supports short aliases like 'cc', 'cx')
  */
-async function handleListProviders(): Promise<void> {
-  const providers = await listCodexProviders()
-  const currentProvider = await getCurrentCodexProvider()
-
-  console.log(ansis.cyan(i18n.t('codex:listProvidersTitle')))
-  console.log('')
-
-  if (providers.length === 0) {
-    console.log(ansis.yellow(i18n.t('codex:noProvidersAvailable')))
-    return
+function resolveCodeType(codeType?: unknown): CodeToolType {
+  // First try to use the parameter value (supports short aliases)
+  if (codeType !== undefined) {
+    const resolved = resolveCodeToolType(codeType)
+    return resolved
   }
 
-  if (currentProvider) {
-    console.log(ansis.green(`${i18n.t('codex:currentProvider', { provider: currentProvider })}`))
-    console.log('')
+  // Fall back to ZCF config
+  const zcfConfig = readZcfConfig()
+  if (zcfConfig?.codeToolType && isCodeToolType(zcfConfig.codeToolType)) {
+    return zcfConfig.codeToolType
   }
 
-  for (const provider of providers) {
-    const marker = currentProvider === provider.id ? ansis.green('● ') : '  '
-    console.log(`${marker}${ansis.cyan(provider.id)} - ${provider.name}`)
-    console.log(`    ${ansis.gray(provider.baseUrl)}`)
+  return DEFAULT_CODE_TOOL_TYPE
+}
+
+/**
+ * Handle --list flag to show available configurations
+ */
+async function handleList(codeType?: CodeToolType): Promise<void> {
+  const targetCodeType = resolveCodeType(codeType)
+
+  if (targetCodeType === 'claude-code') {
+    await listClaudeCodeProfiles()
+  }
+  else if (targetCodeType === 'codex') {
+    await listCodexProvidersWithDisplay()
   }
 }
 
 /**
- * Handle direct provider switch with specified provider
- * @param providerId - Provider ID to switch to
+ * List available Codex providers with display
  */
-async function handleDirectSwitch(providerId: string): Promise<void> {
-  await switchCodexProvider(providerId)
-  // switchCodexProvider already handles success/failure messages
+async function listCodexProvidersWithDisplay(): Promise<void> {
+  const providers = await listCodexProviders()
+  const existingConfig = readCodexConfig()
+  const currentProvider = existingConfig?.modelProvider
+  const isCommented = existingConfig?.modelProviderCommented
+
+  if (!providers || providers.length === 0) {
+    console.log(ansis.yellow(i18n.t('codex:noProvidersAvailable')))
+    return
+  }
+
+  console.log(ansis.bold(i18n.t('codex:listProvidersTitle')))
+  console.log()
+
+  if (currentProvider && !isCommented) {
+    console.log(ansis.cyan(i18n.t('codex:currentProvider', { provider: currentProvider })))
+    console.log()
+  }
+
+  providers.forEach((provider: any) => {
+    const isCurrent = currentProvider === provider.id && !isCommented
+    const status = isCurrent ? ansis.green('● ') : '  '
+    const current = isCurrent ? ansis.yellow(` (${i18n.t('common:current')})`) : ''
+
+    console.log(`${status}${ansis.white(provider.name)}${current}`)
+    console.log(`    ${ansis.cyan(`ID: ${provider.id}`)} ${ansis.gray(`(${provider.baseUrl})`)}`)
+    if (provider.envKey) {
+      console.log(`    ${ansis.gray(`Env: ${provider.envKey}`)}`)
+    }
+    console.log()
+  })
+}
+
+/**
+ * List available Claude Code profiles
+ */
+async function listClaudeCodeProfiles(): Promise<void> {
+  const config = ClaudeCodeConfigManager.readConfig()
+
+  if (!config || !config.profiles || Object.keys(config.profiles).length === 0) {
+    console.log(ansis.yellow(i18n.t('multi-config:noClaudeCodeProfilesAvailable')))
+    return
+  }
+
+  console.log(ansis.bold(i18n.t('multi-config:availableClaudeCodeProfiles')))
+  console.log()
+
+  const currentProfileId = config.currentProfileId
+
+  Object.values(config.profiles).forEach((profile: any) => {
+    const isCurrent = profile.id === currentProfileId
+    const status = isCurrent ? ansis.green('● ') : '  '
+    const current = isCurrent ? ansis.yellow(i18n.t('common:current')) : ''
+
+    console.log(`${status}${ansis.white(profile.name)}${current}`)
+    if (profile.description) {
+      console.log(`    ${ansis.gray(profile.description)}`)
+    }
+    console.log(`    ${ansis.cyan(`ID: ${profile.id}`)} ${ansis.gray(`(${profile.authType})`)}`)
+    console.log()
+  })
+}
+
+/**
+ * Handle direct configuration switch with specified target
+ * @param codeType - Code tool type
+ * @param target - Target configuration ID or special value
+ */
+async function handleDirectSwitch(codeType: CodeToolType, target: string): Promise<void> {
+  const resolvedCodeType = resolveCodeType(codeType)
+
+  if (resolvedCodeType === 'claude-code') {
+    await handleClaudeCodeDirectSwitch(target)
+  }
+  else if (resolvedCodeType === 'codex') {
+    await switchCodexProvider(target)
+    // switchCodexProvider already handles success/failure messages
+  }
+}
+
+/**
+ * Handle direct Claude Code profile switch
+ * @param target - Profile ID or special value ('official', 'ccr')
+ */
+async function handleClaudeCodeDirectSwitch(target: string): Promise<void> {
+  if (target === 'official') {
+    const result = await ClaudeCodeConfigManager.switchToOfficial()
+    if (result.success) {
+      console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToOfficial')))
+    }
+    else {
+      console.log(ansis.red(i18n.t('multi-config:failedToSwitchToOfficial', { error: result.error })))
+    }
+  }
+  else if (target === 'ccr') {
+    const result = await ClaudeCodeConfigManager.switchToCcr()
+    if (result.success) {
+      console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToCcr')))
+    }
+    else {
+      console.log(ansis.red(i18n.t('multi-config:failedToSwitchToCcr', { error: result.error })))
+    }
+  }
+  else {
+    // Assume it's a profile ID
+    const result = await ClaudeCodeConfigManager.switchProfile(target)
+    if (result.success) {
+      console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToProfile', { id: target })))
+    }
+    else {
+      console.log(ansis.red(i18n.t('multi-config:failedToSwitchToProfile', { error: result.error })))
+    }
+  }
 }
 
 /**
  * Handle interactive API configuration selection (includes official login + providers)
  */
-async function handleInteractiveSwitch(): Promise<void> {
+async function handleInteractiveSwitch(codeType?: CodeToolType): Promise<void> {
+  const resolvedCodeType = resolveCodeType(codeType)
+
+  if (resolvedCodeType === 'claude-code') {
+    await handleClaudeCodeInteractiveSwitch()
+  }
+  else if (resolvedCodeType === 'codex') {
+    await handleCodexInteractiveSwitch()
+  }
+}
+
+/**
+ * Handle interactive Claude Code configuration selection
+ */
+async function handleClaudeCodeInteractiveSwitch(): Promise<void> {
+  const config = ClaudeCodeConfigManager.readConfig()
+
+  if (!config || !config.profiles || Object.keys(config.profiles).length === 0) {
+    console.log(ansis.yellow('No Claude Code profiles available'))
+    return
+  }
+
+  const currentProfileId = config.currentProfileId
+
+  // Create configuration choices (official login + CCR + profiles)
+  const createClaudeCodeChoices = (profiles: Record<string, any>, currentProfileId?: string): Array<{ name: string, value: string }> => {
+    const choices: Array<{ name: string, value: string }> = []
+
+    // Add official login option first
+    const isOfficialMode = !currentProfileId || currentProfileId === 'official'
+    choices.push({
+      name: isOfficialMode
+        ? `${ansis.green('● ')}${i18n.t('codex:useOfficialLogin')} ${ansis.yellow(`(${i18n.t('common:current')})`)}`
+        : `  ${i18n.t('codex:useOfficialLogin')}`,
+      value: 'official',
+    })
+
+    // Add CCR option
+    const isCcrMode = currentProfileId === 'ccr'
+    choices.push({
+      name: isCcrMode
+        ? `${ansis.green('● ')}CCR Proxy ${ansis.yellow('(current)')}`
+        : `  CCR Proxy`,
+      value: 'ccr',
+    })
+
+    // Add profile options
+    Object.values(profiles).forEach((profile: any) => {
+      const isCurrent = profile.id === currentProfileId
+      choices.push({
+        name: isCurrent
+          ? `${ansis.green('● ')}${profile.name} ${ansis.yellow('(current)')}`
+          : `  ${profile.name}`,
+        value: profile.id,
+      })
+    })
+
+    return choices
+  }
+
+  const choices = createClaudeCodeChoices(config.profiles, currentProfileId)
+
+  try {
+    const { selectedConfig } = await inquirer.prompt<{ selectedConfig: string }>([{
+      type: 'list',
+      name: 'selectedConfig',
+      message: i18n.t('multi-config:selectClaudeCodeConfiguration'),
+      choices: addNumbersToChoices(choices),
+    }])
+
+    if (!selectedConfig) {
+      console.log(ansis.yellow(i18n.t('multi-config:cancelled')))
+      return
+    }
+
+    await handleClaudeCodeDirectSwitch(selectedConfig)
+  }
+  catch (error: any) {
+    // Handle user exit (Ctrl+C)
+    if (error.name === 'ExitPromptError') {
+      console.log(ansis.cyan(`\n${i18n.t('common:goodbye')}`))
+      return
+    }
+    // Re-throw other errors
+    throw error
+  }
+}
+
+/**
+ * Handle interactive Codex configuration selection
+ */
+async function handleCodexInteractiveSwitch(): Promise<void> {
   const providers = await listCodexProviders()
 
   if (!providers || providers.length === 0) {

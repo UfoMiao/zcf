@@ -23,8 +23,28 @@ export const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
   'codex': 'for Codex',
 }
 
+// Short aliases for code tool types
+export const CODE_TOOL_ALIASES: Record<string, CodeToolType> = {
+  cc: 'claude-code',
+  cx: 'codex',
+}
+
 export function isCodeToolType(value: any): value is CodeToolType {
   return CODE_TOOL_TYPES.includes(value as CodeToolType)
+}
+
+export function resolveCodeToolType(value: unknown): CodeToolType {
+  // First check if it's already a valid code tool type
+  if (isCodeToolType(value)) {
+    return value
+  }
+
+  // Check if it's a short alias
+  if (typeof value === 'string' && value in CODE_TOOL_ALIASES) {
+    return CODE_TOOL_ALIASES[value]
+  }
+
+  return DEFAULT_CODE_TOOL_TYPE
 }
 
 export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const

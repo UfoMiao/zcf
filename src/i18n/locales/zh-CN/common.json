@@ -14,5 +14,6 @@
   "back": "返回",
   "inputHidden": "（输入会被隐藏）",
   "operationFailed": "操作失败",
-  "backupCreated": "📁 已创建配置备份：{{path}}"
+  "backupCreated": "📁 已创建配置备份：{{path}}",
+  "current": "当前"
 }

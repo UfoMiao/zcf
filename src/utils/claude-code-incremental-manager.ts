@@ -1,0 +1,454 @@
+import type { ClaudeCodeProfile } from '../types/claude-code-config'
+import ansis from 'ansis'
+import inquirer from 'inquirer'
+import { ensureI18nInitialized, i18n } from '../i18n'
+import { ClaudeCodeConfigManager } from './claude-code-config-manager'
+import { addNumbersToChoices } from './prompt-helpers'
+import { validateApiKey } from './validator'
+
+/**
+ * Configure incremental management interface for existing Claude Code configurations
+ */
+export async function configureIncrementalManagement(): Promise<void> {
+  ensureI18nInitialized()
+
+  const config = ClaudeCodeConfigManager.readConfig()
+
+  if (!config || !config.profiles || Object.keys(config.profiles).length === 0) {
+    // No existing configurations, add first one
+    await handleAddProfile()
+    return
+  }
+
+  const profiles = Object.values(config.profiles)
+  const currentProfile = config.currentProfileId ? config.profiles[config.currentProfileId] : null
+
+  console.log(ansis.cyan(i18n.t('multi-config:incrementalManagementTitle')))
+  console.log(ansis.gray(i18n.t('multi-config:currentProfileCount', { count: profiles.length })))
+
+  if (currentProfile) {
+    console.log(ansis.gray(i18n.t('multi-config:currentDefaultProfile', { profile: currentProfile.name })))
+  }
+
+  const choices = [
+    { name: i18n.t('multi-config:addProfile'), value: 'add' },
+    { name: i18n.t('multi-config:editProfile'), value: 'edit' },
+    { name: i18n.t('multi-config:deleteProfile'), value: 'delete' },
+    { name: i18n.t('common:skip'), value: 'skip' },
+  ]
+
+  const { action } = await inquirer.prompt<{ action: 'add' | 'edit' | 'delete' | 'skip' }>([{
+    type: 'list',
+    name: 'action',
+    message: i18n.t('multi-config:selectAction'),
+    choices: addNumbersToChoices(choices),
+  }])
+
+  if (!action || action === 'skip') {
+    console.log(ansis.yellow(i18n.t('common:skip')))
+    return
+  }
+
+  switch (action) {
+    case 'add':
+      await handleAddProfile()
+      break
+    case 'edit':
+      await handleEditProfile(profiles)
+      break
+    case 'delete':
+      await handleDeleteProfile(profiles)
+      break
+  }
+}
+
+/**
+ * Handle adding a new Claude Code profile
+ */
+async function handleAddProfile(): Promise<void> {
+  console.log(ansis.cyan(`\n${i18n.t('multi-config:addingNewProfile')}`))
+
+  const answers = await inquirer.prompt<{
+    profileName: string
+    authType: 'api_key' | 'auth_token' | 'ccr_proxy'
+    apiKey: string
+    baseUrl: string
+    description: string
+    setAsDefault: boolean
+  }>([
+    {
+      type: 'input',
+      name: 'profileName',
+      message: i18n.t('multi-config:profileNamePrompt'),
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed) {
+          return i18n.t('multi-config:profileNameRequired')
+        }
+        if (!/^[\w\-\s\u4E00-\u9FA5]+$/.test(trimmed)) {
+          return i18n.t('multi-config:profileNameInvalid')
+        }
+        return true
+      },
+    },
+    {
+      type: 'list',
+      name: 'authType',
+      message: i18n.t('multi-config:authTypePrompt'),
+      choices: [
+        { name: i18n.t('multi-config:authType.api_key'), value: 'api_key' },
+        { name: i18n.t('multi-config:authType.auth_token'), value: 'auth_token' },
+        { name: i18n.t('multi-config:authType.ccr_proxy'), value: 'ccr_proxy' },
+      ],
+      default: 'api_key',
+    },
+    {
+      type: 'input',
+      name: 'baseUrl',
+      message: i18n.t('multi-config:baseUrlPrompt'),
+      default: 'https://api.anthropic.com',
+      when: answers => answers.authType !== 'ccr_proxy',
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed) {
+          return i18n.t('multi-config:baseUrlRequired')
+        }
+        // Basic URL validation
+        try {
+          // eslint-disable-next-line no-new
+          new URL(trimmed)
+          return true
+        }
+        catch {
+          return i18n.t('multi-config:baseUrlInvalid')
+        }
+      },
+    },
+    {
+      type: 'password',
+      name: 'apiKey',
+      message: i18n.t('multi-config:apiKeyPrompt') + i18n.t('common:inputHidden'),
+      when: answers => answers.authType !== 'ccr_proxy',
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed) {
+          return i18n.t('multi-config:apiKeyRequired')
+        }
+
+        // Validate API key format
+        const validation = validateApiKey(trimmed)
+        if (!validation.isValid) {
+          return validation.error || 'Invalid API key format'
+        }
+
+        return true
+      },
+    },
+    {
+      type: 'input',
+      name: 'description',
+      message: i18n.t('multi-config:descriptionPrompt'),
+    },
+    {
+      type: 'confirm',
+      name: 'setAsDefault',
+      message: i18n.t('multi-config:setAsDefaultPrompt'),
+      default: true,
+    },
+  ])
+
+  // Create profile object
+  const profileId = ClaudeCodeConfigManager.generateProfileId(answers.profileName.trim())
+  const profile: ClaudeCodeProfile = {
+    id: profileId,
+    name: answers.profileName.trim(),
+    authType: answers.authType,
+    description: answers.description?.trim() || undefined,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  if (answers.authType !== 'ccr_proxy') {
+    profile.apiKey = answers.apiKey.trim()
+    profile.baseUrl = answers.baseUrl.trim()
+  }
+
+  // Add profile
+  const result = await ClaudeCodeConfigManager.addProfile(profile)
+
+  if (result.success) {
+    console.log(ansis.green(i18n.t('multi-config:profileAdded', { name: profile.name })))
+    if (result.backupPath) {
+      console.log(ansis.gray(i18n.t('common:backupCreated', { path: result.backupPath })))
+    }
+
+    // Set as default if requested
+    if (answers.setAsDefault) {
+      const switchResult = await ClaudeCodeConfigManager.switchProfile(profile.id)
+      if (switchResult.success) {
+        console.log(ansis.green(i18n.t('multi-config:profileSetAsDefault', { name: profile.name })))
+        // Apply the configuration to Claude Code settings
+        await applyProfileToSettings(profile)
+      }
+    }
+  }
+  else {
+    console.log(ansis.red(i18n.t('multi-config:profileAddFailed', { error: result.error })))
+  }
+}
+
+/**
+ * Handle editing an existing Claude Code profile
+ */
+async function handleEditProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
+  const choices = profiles.map(profile => ({
+    name: `${profile.name} (${i18n.t(`multi-config:authType.${profile.authType}`)})`,
+    value: profile.id,
+  }))
+
+  const { selectedProfileId } = await inquirer.prompt<{ selectedProfileId: string }>([{
+    type: 'list',
+    name: 'selectedProfileId',
+    message: i18n.t('multi-config:selectProfileToEdit'),
+    choices: addNumbersToChoices(choices),
+  }])
+
+  if (!selectedProfileId) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  const selectedProfile = profiles.find(p => p.id === selectedProfileId)
+  if (!selectedProfile) {
+    console.log(ansis.red(i18n.t('multi-config:profileNotFound')))
+    return
+  }
+
+  console.log(ansis.cyan(`\n${i18n.t('multi-config:editingProfile', { name: selectedProfile.name })}`))
+
+  const answers = await inquirer.prompt<{
+    profileName: string
+    apiKey: string
+    baseUrl: string
+    description: string
+  }>([
+    {
+      type: 'input',
+      name: 'profileName',
+      message: i18n.t('multi-config:profileNamePrompt'),
+      default: selectedProfile.name,
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed) {
+          return i18n.t('multi-config:profileNameRequired')
+        }
+        if (!/^[\w\-\s\u4E00-\u9FA5]+$/.test(trimmed)) {
+          return i18n.t('multi-config:profileNameInvalid')
+        }
+        return true
+      },
+    },
+    {
+      type: 'input',
+      name: 'baseUrl',
+      message: i18n.t('multi-config:baseUrlPrompt'),
+      default: selectedProfile.baseUrl || 'https://api.anthropic.com',
+      when: () => selectedProfile.authType !== 'ccr_proxy',
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed) {
+          return i18n.t('multi-config:baseUrlRequired')
+        }
+        try {
+          // eslint-disable-next-line no-new
+          new URL(trimmed)
+          return true
+        }
+        catch {
+          return i18n.t('multi-config:baseUrlInvalid')
+        }
+      },
+    },
+    {
+      type: 'password',
+      name: 'apiKey',
+      message: i18n.t('multi-config:apiKeyPrompt') + i18n.t('common:inputHidden'),
+      default: selectedProfile.apiKey,
+      when: () => selectedProfile.authType !== 'ccr_proxy',
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed) {
+          return i18n.t('multi-config:apiKeyRequired')
+        }
+
+        const validation = validateApiKey(trimmed)
+        if (!validation.isValid) {
+          return validation.error || 'Invalid API key format'
+        }
+
+        return true
+      },
+    },
+    {
+      type: 'input',
+      name: 'description',
+      message: i18n.t('multi-config:descriptionPrompt'),
+      default: selectedProfile.description || '',
+    },
+  ])
+
+  // Update profile data
+  const updateData: Partial<ClaudeCodeProfile> = {
+    name: answers.profileName.trim(),
+    description: answers.description?.trim() || undefined,
+    updatedAt: new Date().toISOString(),
+  }
+
+  if (selectedProfile.authType !== 'ccr_proxy') {
+    updateData.apiKey = answers.apiKey.trim()
+    updateData.baseUrl = answers.baseUrl.trim()
+  }
+
+  const result = await ClaudeCodeConfigManager.updateProfile(selectedProfile.id, updateData)
+
+  if (result.success) {
+    console.log(ansis.green(i18n.t('multi-config:profileUpdated', { name: updateData.name })))
+    if (result.backupPath) {
+      console.log(ansis.gray(i18n.t('common:backupCreated', { path: result.backupPath })))
+    }
+
+    // If this is the current profile, apply changes
+    const currentConfig = ClaudeCodeConfigManager.readConfig()
+    if (currentConfig?.currentProfileId === selectedProfile.id) {
+      const updatedProfile = ClaudeCodeConfigManager.getProfileById(selectedProfile.id)
+      if (updatedProfile) {
+        await applyProfileToSettings(updatedProfile)
+        console.log(ansis.green(i18n.t('multi-config:settingsApplied')))
+      }
+    }
+  }
+  else {
+    console.log(ansis.red(i18n.t('multi-config:profileUpdateFailed', { error: result.error })))
+  }
+}
+
+/**
+ * Handle deleting Claude Code profiles
+ */
+async function handleDeleteProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
+  if (profiles.length <= 1) {
+    console.log(ansis.yellow(i18n.t('multi-config:cannotDeleteLast')))
+    return
+  }
+
+  const choices = profiles.map(profile => ({
+    name: `${profile.name} (${i18n.t(`multi-config:authType.${profile.authType}`)})`,
+    value: profile.id,
+  }))
+
+  const { selectedProfileIds } = await inquirer.prompt<{ selectedProfileIds: string[] }>({
+    type: 'checkbox',
+    name: 'selectedProfileIds',
+    message: i18n.t('multi-config:selectProfilesToDelete'),
+    choices: addNumbersToChoices(choices),
+    validate: (input: readonly any[]) => {
+      if (input.length === 0) {
+        return i18n.t('multi-config:selectAtLeastOne')
+      }
+      if (input.length >= profiles.length) {
+        return i18n.t('multi-config:cannotDeleteAll')
+      }
+      return true
+    },
+  })
+
+  if (!selectedProfileIds || selectedProfileIds.length === 0) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  const selectedNames = selectedProfileIds.map(id =>
+    profiles.find(p => p.id === id)?.name || id,
+  )
+
+  const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([{
+    type: 'confirm',
+    name: 'confirmed',
+    message: i18n.t('multi-config:confirmDeleteProfiles', { providers: selectedNames.join(', ') }),
+    default: false,
+  }])
+
+  if (!confirmed) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  const result = await ClaudeCodeConfigManager.deleteProfiles(selectedProfileIds)
+
+  if (result.success) {
+    console.log(ansis.green(i18n.t('multi-config:profilesDeleted', { count: selectedProfileIds.length })))
+    if (result.backupPath) {
+      console.log(ansis.gray(i18n.t('common:backupCreated', { path: result.backupPath })))
+    }
+
+    if (result.newCurrentProfileId) {
+      const newProfile = ClaudeCodeConfigManager.getProfileById(result.newCurrentProfileId)
+      if (newProfile) {
+        console.log(ansis.cyan(i18n.t('multi-config:newDefaultProfile', { profile: newProfile.name })))
+        await applyProfileToSettings(newProfile)
+      }
+    }
+  }
+  else {
+    console.log(ansis.red(i18n.t('multi-config:profilesDeleteFailed', { error: result.error })))
+  }
+}
+
+/**
+ * Apply profile settings to Claude Code configuration
+ */
+async function applyProfileToSettings(profile: ClaudeCodeProfile): Promise<void> {
+  const { readJsonConfig, writeJsonConfig } = await import('./json-config')
+  const { SETTINGS_FILE } = await import('../constants')
+
+  try {
+    const settings = readJsonConfig<any>(SETTINGS_FILE) || {}
+
+    if (!settings.env) {
+      settings.env = {}
+    }
+
+    // Apply configuration based on auth type
+    if (profile.authType === 'api_key') {
+      settings.env.ANTHROPIC_API_KEY = profile.apiKey
+      delete settings.env.ANTHROPIC_AUTH_TOKEN
+    }
+    else if (profile.authType === 'auth_token') {
+      settings.env.ANTHROPIC_AUTH_TOKEN = profile.apiKey
+      delete settings.env.ANTHROPIC_API_KEY
+    }
+    else if (profile.authType === 'ccr_proxy') {
+      // CCR proxy configuration
+      delete settings.env.ANTHROPIC_API_KEY
+      delete settings.env.ANTHROPIC_AUTH_TOKEN
+    }
+
+    // Apply base URL if specified
+    if (profile.baseUrl) {
+      settings.env.ANTHROPIC_BASE_URL = profile.baseUrl
+    }
+    else {
+      delete settings.env.ANTHROPIC_BASE_URL
+    }
+
+    writeJsonConfig(SETTINGS_FILE, settings)
+
+    // Set primary API key
+    const { setPrimaryApiKey } = await import('./claude-config')
+    setPrimaryApiKey()
+  }
+  catch (error) {
+    console.error(ansis.red(i18n.t('multi-config:failedToApplySettings')), error)
+    throw error
+  }
+}

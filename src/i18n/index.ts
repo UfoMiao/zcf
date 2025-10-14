@@ -23,6 +23,7 @@ const NAMESPACES = [
   'language',
   'mcp',
   'menu',
+  'multi-config',
   'tools',
   'uninstall',
   'updater',

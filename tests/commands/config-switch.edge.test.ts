@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 // Import the module under test
 import { configSwitchCommand } from '../../src/commands/config-switch'
 import {
-  getCurrentCodexProvider,
   listCodexProviders,
   switchCodexProvider,
 } from '../../src/utils/code-tools/codex'
@@ -33,7 +32,6 @@ vi.mock('../../src/i18n', () => ({
 vi.mock('../../src/utils/code-tools/codex', () => ({
   switchCodexProvider: vi.fn(),
   listCodexProviders: vi.fn(),
-  getCurrentCodexProvider: vi.fn(),
   readCodexConfig: vi.fn(),
   switchToOfficialLogin: vi.fn(),
   switchToProvider: vi.fn(),
@@ -43,10 +41,30 @@ vi.mock('../../src/utils/prompt-helpers', () => ({
   addNumbersToChoices: vi.fn(choices => choices),
 }))
 
+vi.mock('../../src/utils/zcf-config', () => ({
+  readZcfConfig: vi.fn(() => ({
+    version: '1.0.0',
+    preferredLang: 'zh-CN',
+    codeToolType: 'codex',
+    lastUpdated: new Date().toISOString(),
+  })),
+}))
+
+vi.mock('ansis', () => ({
+  default: {
+    bold: vi.fn((str: string) => str),
+    cyan: vi.fn((str: string) => str),
+    green: vi.fn((str: string) => str),
+    red: vi.fn((str: string) => str),
+    yellow: vi.fn((str: string) => str),
+    gray: vi.fn((str: string) => str),
+    white: vi.fn((str: string) => str),
+  },
+}))
+
 const mockInquirer = vi.mocked(inquirer)
 const mockSwitchCodexProvider = vi.mocked(switchCodexProvider)
 const mockListCodexProviders = vi.mocked(listCodexProviders)
-const mockGetCurrentCodexProvider = vi.mocked(getCurrentCodexProvider)
 // const mockHandleGeneralError = vi.mocked(handleGeneralError) // Not used in tests
 
 // Import and mock new functions
@@ -124,7 +142,7 @@ describe('config-switch command - Edge Cases', () => {
       timeoutError.name = 'TimeoutError'
       mockSwitchCodexProvider.mockRejectedValue(timeoutError)
 
-      await expect(configSwitchCommand({ provider: 'claude-api' })).rejects.toThrow('Request timeout')
+      await expect(configSwitchCommand({ target: 'claude-api' })).rejects.toThrow('Request timeout')
     })
 
     it('should handle system interruption (SIGINT)', async () => {
@@ -154,7 +172,7 @@ describe('config-switch command - Edge Cases', () => {
       // Empty provider should fall back to interactive mode
       mockListCodexProviders.mockResolvedValue([])
 
-      await configSwitchCommand({ provider: '' })
+      await configSwitchCommand({ target: '' })
 
       expect(mockListCodexProviders).toHaveBeenCalled()
       expect(mockSwitchCodexProvider).not.toHaveBeenCalled()
@@ -164,7 +182,7 @@ describe('config-switch command - Edge Cases', () => {
     it('should handle provider name with special characters', async () => {
       mockSwitchCodexProvider.mockResolvedValue(false)
 
-      await configSwitchCommand({ provider: 'provider@#$%^&*()' })
+      await configSwitchCommand({ target: 'provider@#$%^&*()' })
 
       expect(mockSwitchCodexProvider).toHaveBeenCalledWith('provider@#$%^&*()')
       // switchCodexProvider handles its own error messages
@@ -174,7 +192,7 @@ describe('config-switch command - Edge Cases', () => {
       const longName = 'a'.repeat(1000)
       mockSwitchCodexProvider.mockResolvedValue(false)
 
-      await configSwitchCommand({ provider: longName })
+      await configSwitchCommand({ target: longName })
 
       expect(mockSwitchCodexProvider).toHaveBeenCalledWith(longName)
       // switchCodexProvider handles its own error messages
@@ -219,7 +237,7 @@ describe('config-switch command - Edge Cases', () => {
       diskError.name = 'DiskSpaceError'
       mockSwitchCodexProvider.mockRejectedValue(diskError)
 
-      await expect(configSwitchCommand({ provider: 'claude-api' })).rejects.toThrow('ENOSPC: no space left on device')
+      await expect(configSwitchCommand({ target: 'claude-api' })).rejects.toThrow('ENOSPC: no space left on device')
     })
   })
 
@@ -228,7 +246,7 @@ describe('config-switch command - Edge Cases', () => {
       const unicodeName = '测试提供商🔥'
       mockSwitchCodexProvider.mockResolvedValue(true)
 
-      await configSwitchCommand({ provider: unicodeName })
+      await configSwitchCommand({ target: unicodeName })
 
       expect(mockSwitchCodexProvider).toHaveBeenCalledWith(unicodeName)
       // switchCodexProvider handles its own success messages
@@ -238,7 +256,7 @@ describe('config-switch command - Edge Cases', () => {
       const nameWithNull = 'provider\0name'
       mockSwitchCodexProvider.mockResolvedValue(false)
 
-      await configSwitchCommand({ provider: nameWithNull })
+      await configSwitchCommand({ target: nameWithNull })
 
       expect(mockSwitchCodexProvider).toHaveBeenCalledWith(nameWithNull)
     })
@@ -281,12 +299,18 @@ describe('config-switch command - Edge Cases', () => {
           requiresOpenaiAuth: true,
         },
       ])
-      mockGetCurrentCodexProvider.mockResolvedValue(null)
+      mockReadCodexConfig.mockReturnValue({
+        model: null,
+        modelProvider: null,
+        modelProviderCommented: false,
+        providers: [],
+        mcpServices: [],
+        managed: false,
+      })
 
       await configSwitchCommand({ list: true })
 
       expect(mockListCodexProviders).toHaveBeenCalled()
-      expect(mockGetCurrentCodexProvider).toHaveBeenCalled()
       // Should handle the case where current provider is null
     })
   })

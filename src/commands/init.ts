@@ -1,5 +1,7 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 import type { McpServerConfig } from '../types'
+import type { ApiConfigDefinition, ClaudeCodeProfile } from '../types/claude-code-config'
+import type { CodexProvider } from '../utils/code-tools/codex'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
 import ansis from 'ansis'
@@ -67,6 +69,9 @@ export interface InitOptions {
   defaultOutputStyle?: string
   allLang?: string // New: unified language parameter
   installCometixLine?: string | boolean // New: CCometixLine installation control
+  // Multi-configuration parameters
+  apiConfigs?: string // JSON string for multiple API configurations
+  apiConfigsFile?: string // Path to JSON file with API configurations
 }
 
 function validateSkipPromptOptions(options: InitOptions): void {
@@ -128,6 +133,11 @@ function validateSkipPromptOptions(options: InitOptions): void {
     throw new Error(
       i18n.t('errors:invalidApiType', { value: options.apiType }),
     )
+  }
+
+  // Validate multi-configuration parameters
+  if (options.apiConfigs && options.apiConfigsFile) {
+    throw new Error('Cannot specify both --api-configs and --api-configs-file at the same time')
   }
 
   // Validate required API parameters (both use apiKey now)
@@ -266,6 +276,14 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     async function handleCustomApiConfiguration(existingConfig: any): Promise<any> {
+      // For Claude Code, always use the new incremental configuration management
+      if (codeToolType === 'claude-code') {
+        const { configureIncrementalManagement } = await import('../utils/claude-code-incremental-manager')
+        await configureIncrementalManagement()
+        return null
+      }
+
+      // For Codex or other tools, keep the existing logic
       if (existingConfig) {
         // Handle existing configuration with smart choices using common function
         const customConfigAction = await promptApiConfigurationAction()
@@ -532,7 +550,12 @@ export async function init(options: InitOptions = {}): Promise<void> {
     if (action !== 'docs-only' && (isNewInstall || ['backup', 'merge', 'new'].includes(action))) {
       // In skip-prompt mode, handle API configuration directly
       if (options.skipPrompt) {
-        if (options.apiType === 'auth_token' && options.apiKey) {
+        // Handle multi-configuration parameters (priority over traditional single config)
+        if (options.apiConfigs || options.apiConfigsFile) {
+          await handleMultiConfigurations(options, codeToolType)
+          apiConfig = null // Multi-config handles its own API configuration
+        }
+        else if (options.apiType === 'auth_token' && options.apiKey) {
           apiConfig = {
             authType: 'auth_token',
             key: options.apiKey,
@@ -870,5 +893,195 @@ export async function init(options: InitOptions = {}): Promise<void> {
     if (!handleExitPromptError(error)) {
       handleGeneralError(error)
     }
+  }
+}
+
+/**
+ * Handle multi-configuration API setup
+ * @param options - Command line options
+ * @param codeToolType - Target code tool type
+ */
+async function handleMultiConfigurations(options: InitOptions, codeToolType: 'claude-code' | 'codex'): Promise<void> {
+  const { ensureI18nInitialized } = await import('../i18n')
+  ensureI18nInitialized()
+
+  try {
+    let configs: ApiConfigDefinition[] = []
+
+    // Parse API configurations from JSON string
+    if (options.apiConfigs) {
+      try {
+        configs = JSON.parse(options.apiConfigs) as ApiConfigDefinition[]
+      }
+      catch (error) {
+        throw new Error(`Invalid API configs JSON: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
+    // Parse API configurations from file
+    if (options.apiConfigsFile) {
+      try {
+        const { readFile } = await import('../utils/fs-operations')
+        const fileContent = readFile(options.apiConfigsFile)
+        configs = JSON.parse(fileContent) as ApiConfigDefinition[]
+      }
+      catch (error) {
+        throw new Error(`Failed to read API configs file: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
+
+    // Validate configurations
+    validateApiConfigs(configs)
+
+    // Process configurations based on code tool type
+    if (codeToolType === 'claude-code') {
+      await handleClaudeCodeConfigs(configs)
+    }
+    else if (codeToolType === 'codex') {
+      await handleCodexConfigs(configs)
+    }
+
+    console.log(ansis.green(`✔ ${i18n.t('multi-config:configsAddedSuccessfully')}`))
+  }
+  catch (error) {
+    console.error(ansis.red(`${i18n.t('multi-config:configsFailed')}: ${error instanceof Error ? error.message : String(error)}`))
+    throw error
+  }
+}
+
+/**
+ * Validate API configurations
+ * @param configs - Array of API configurations to validate
+ */
+function validateApiConfigs(configs: ApiConfigDefinition[]): void {
+  if (!Array.isArray(configs)) {
+    throw new TypeError('API configs must be an array')
+  }
+
+  const names = new Set<string>()
+
+  for (const config of configs) {
+    // Validate required fields
+    if (!config.name || typeof config.name !== 'string' || config.name.trim() === '') {
+      throw new Error('Each config must have a valid name')
+    }
+
+    if (!['api_key', 'auth_token', 'ccr_proxy'].includes(config.type)) {
+      throw new Error(`Invalid auth type: ${config.type}`)
+    }
+
+    // Validate name uniqueness
+    if (names.has(config.name)) {
+      throw new Error(`Duplicate config name: ${config.name}`)
+    }
+    names.add(config.name)
+
+    // Validate API key for non-CCR types
+    if (config.type !== 'ccr_proxy' && !config.key) {
+      throw new Error(`Config "${config.name}" requires API key`)
+    }
+  }
+}
+
+/**
+ * Handle Claude Code API configurations
+ * @param configs - Array of API configurations
+ */
+async function handleClaudeCodeConfigs(configs: ApiConfigDefinition[]): Promise<void> {
+  const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+
+  for (const config of configs) {
+    const profile = await convertToClaudeCodeProfile(config)
+    const result = await ClaudeCodeConfigManager.addProfile(profile)
+
+    if (!result.success) {
+      throw new Error(`Failed to add profile "${config.name}": ${result.error}`)
+    }
+
+    console.log(ansis.green(`✔ ${i18n.t('multi-config:profileAdded', { name: config.name })}`))
+  }
+
+  // Set default profile if specified
+  const defaultConfig = configs.find(c => c.default)
+  if (defaultConfig) {
+    const profile = ClaudeCodeConfigManager.getProfileByName(defaultConfig.name)
+    if (profile) {
+      await ClaudeCodeConfigManager.switchProfile(profile.id)
+      console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProfileSet', { name: defaultConfig.name })}`))
+    }
+  }
+
+  // Sync CCR configuration if needed
+  await ClaudeCodeConfigManager.syncCcrProfile()
+}
+
+/**
+ * Handle Codex API configurations
+ * @param configs - Array of API configurations
+ */
+async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void> {
+  // Import Codex provider management functions
+  const { addProviderToExisting } = await import('../utils/code-tools/codex-provider-manager')
+
+  for (const config of configs) {
+    try {
+      const provider = convertToCodexProvider(config)
+      const result = await addProviderToExisting(provider, config.key || '')
+
+      if (!result.success) {
+        throw new Error(`Failed to add provider "${config.name}": ${result.error}`)
+      }
+
+      console.log(ansis.green(`✔ ${i18n.t('multi-config:providerAdded', { name: config.name })}`))
+    }
+    catch (error) {
+      console.error(ansis.red(`Failed to add provider "${config.name}": ${error instanceof Error ? error.message : String(error)}`))
+      throw error
+    }
+  }
+
+  // Set default provider if specified
+  const defaultConfig = configs.find(c => c.default)
+  if (defaultConfig) {
+    // Import and call Codex provider switching function
+    const { switchCodexProvider } = await import('../utils/code-tools/codex')
+    await switchCodexProvider(defaultConfig.name)
+    console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProviderSet', { name: defaultConfig.name })}`))
+  }
+}
+
+/**
+ * Convert API config definition to Claude Code profile
+ * @param config - API configuration definition
+ */
+async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<ClaudeCodeProfile> {
+  const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+
+  const profile: ClaudeCodeProfile = {
+    id: ClaudeCodeConfigManager.generateProfileId(config.name),
+    name: config.name,
+    authType: config.type,
+    apiKey: config.key,
+    baseUrl: config.url,
+    description: config.description,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  }
+
+  return profile
+}
+
+/**
+ * Convert API config definition to Codex provider
+ * @param config - API configuration definition
+ */
+function convertToCodexProvider(config: ApiConfigDefinition): CodexProvider {
+  return {
+    id: config.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+    name: config.name,
+    baseUrl: config.url || 'https://api.anthropic.com',
+    wireApi: 'chat' as const,
+    envKey: 'ANTHROPIC_API_KEY',
+    requiresOpenaiAuth: false,
   }
 }

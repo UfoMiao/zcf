@@ -325,8 +325,6 @@ if [ "$HAS_UNCOMMITTED" = true ]; then
     done
     COMMIT_BODY="${COMMIT_BODY}
 🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
     
     # Create the commit
     git commit -m "${COMMIT_MSG}
