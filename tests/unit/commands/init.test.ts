@@ -45,6 +45,10 @@ vi.mock('../../../src/utils/config-operations', () => ({
   modifyApiConfigPartially: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/claude-code-incremental-manager', () => ({
+  configureIncrementalManagement: vi.fn(),
+}))
+
 vi.mock('../../../src/utils/prompts', () => ({
   selectAiOutputLanguage: vi.fn(),
   resolveAiOutputLanguage: vi.fn(),
@@ -157,6 +161,7 @@ interface TestMocks {
   setupCcrConfiguration: any
   configureApiCompletely: any
   modifyApiConfigPartially: any
+  configureIncrementalManagement: any
 }
 
 let testMocks: TestMocks
@@ -181,6 +186,7 @@ describe('init command', () => {
     const { isCcrInstalled, installCcr: _installCcr } = await import('../../../src/utils/ccr/installer')
     const { setupCcrConfiguration } = await import('../../../src/utils/ccr/config')
     const { configureApiCompletely, modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
+    const { configureIncrementalManagement } = await import('../../../src/utils/claude-code-incremental-manager')
     const { existsSync } = await import('node:fs')
 
     testMocks = {
@@ -207,6 +213,7 @@ describe('init command', () => {
       setupCcrConfiguration: vi.mocked(setupCcrConfiguration),
       configureApiCompletely: vi.mocked(configureApiCompletely),
       modifyApiConfigPartially: vi.mocked(modifyApiConfigPartially),
+      configureIncrementalManagement: vi.mocked(configureIncrementalManagement),
     }
   })
 
@@ -880,9 +887,11 @@ describe('init command', () => {
         } as any)
         testMocks.existsSync.mockReturnValue(false) // Bypass global existing config prompt
         testMocks.getExistingApiConfig.mockReturnValue(existingConfig)
-        testMocks.promptApiConfigurationAction.mockResolvedValue('modify-partial')
         testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'custom' })
-        testMocks.modifyApiConfigPartially.mockResolvedValue(undefined)
+
+        // Mock the incremental configuration manager for Claude Code
+        const mockConfigureIncrementalManagement = vi.spyOn(await import('../../../src/utils/claude-code-incremental-manager'), 'configureIncrementalManagement').mockResolvedValue()
+
         testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
 
@@ -892,9 +901,10 @@ describe('init command', () => {
           skipPrompt: false,
         })
 
-        // Should handle custom configuration with existing config
-        expect(testMocks.promptApiConfigurationAction).toHaveBeenCalled()
-        expect(testMocks.modifyApiConfigPartially).toHaveBeenCalledWith(existingConfig)
+        // For Claude Code, should call configureIncrementalManagement instead of promptApiConfigurationAction
+        expect(mockConfigureIncrementalManagement).toHaveBeenCalled()
+        expect(testMocks.promptApiConfigurationAction).not.toHaveBeenCalled()
+        expect(testMocks.modifyApiConfigPartially).not.toHaveBeenCalled()
       })
 
       it('should handle custom API configuration without existing config', async () => {
@@ -911,12 +921,10 @@ describe('init command', () => {
         testMocks.existsSync.mockReturnValue(false) // No existing config
         testMocks.getExistingApiConfig.mockReturnValue(null)
         testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'custom' }) // Unified menu selection
-        testMocks.inquirerPrompt.mockResolvedValueOnce({ apiChoice: 'api_key' }) // Custom config sub-menu
-        testMocks.configureApiCompletely.mockResolvedValue({
-          authType: 'api_key',
-          url: 'https://api.anthropic.com',
-          key: 'sk-new-key',
-        })
+
+        // Mock the incremental configuration manager for Claude Code
+        const mockConfigureIncrementalManagement = vi.spyOn(await import('../../../src/utils/claude-code-incremental-manager'), 'configureIncrementalManagement').mockResolvedValue()
+
         testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
 
@@ -926,25 +934,9 @@ describe('init command', () => {
           skipPrompt: false,
         })
 
-        // Should show Auth Token / API Key choices for new configuration (second prompt call)
-        // Find the correct call that contains the auth token/api key choices
-        const calls = testMocks.inquirerPrompt.mock.calls
-        const apiChoiceCall = calls.find((call: any[]) =>
-          call[0] && call[0].choices
-          && (call[0].choices.some((choice: any) => choice.value === 'auth_token')
-            || call[0].choices.some((choice: any) => choice.value === 'api_key')),
-        )
-
-        expect(apiChoiceCall).toBeDefined()
-        if (apiChoiceCall) {
-          expect(apiChoiceCall[0]).toMatchObject({
-            choices: expect.arrayContaining([
-              expect.objectContaining({ value: 'auth_token' }),
-              expect.objectContaining({ value: 'api_key' }),
-            ]),
-          })
-        }
-        expect(testMocks.configureApiCompletely).toHaveBeenCalledWith('api_key')
+        // For Claude Code, should call configureIncrementalManagement for both existing and new configs
+        expect(mockConfigureIncrementalManagement).toHaveBeenCalled()
+        expect(testMocks.configureApiCompletely).not.toHaveBeenCalled()
       })
 
       it('should handle user cancellation gracefully', async () => {

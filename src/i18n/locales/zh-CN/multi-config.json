@@ -22,7 +22,7 @@
   "deleteProfile": "删除配置",
   "selectAction": "请选择操作",
   "addingNewProfile": "添加新配置",
-  "profileNamePrompt": "请输入配置名称",
+  "profileNamePrompt": "配置名称（仅限字母、数字、空格、._-）",
   "profileNameRequired": "配置名称不能为空",
   "profileNameInvalid": "配置名称只能包含字母、数字、空格、中划线和下划线",
   "authTypePrompt": "请选择认证类型",
@@ -33,11 +33,9 @@
   "baseUrlInvalid": "请输入有效的URL",
   "descriptionPrompt": "请输入配置描述（可选）",
   "setAsDefaultPrompt": "是否设为默认配置",
-  "authType": {
-    "api_key": "API Key",
-    "auth_token": "Auth Token",
-    "ccr_proxy": "CCR 代理"
-  },
+  "authType.api_key": "API Key",
+  "authType.auth_token": "Auth Token",
+  "authType.ccr_proxy": "CCR 代理",
   "profileAdded": "✔ 已成功添加配置：{name}",
   "profileAddFailed": "❌ 添加配置失败：{error}",
   "profileSetAsDefault": "✔ 已将配置 {name} 设为默认",

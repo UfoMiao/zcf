@@ -74,7 +74,7 @@ export interface InitOptions {
   apiConfigsFile?: string // Path to JSON file with API configurations
 }
 
-function validateSkipPromptOptions(options: InitOptions): void {
+export function validateSkipPromptOptions(options: InitOptions): void {
   // Apply --all-lang logic first
   if (options.allLang) {
     if (options.allLang === 'zh-CN' || options.allLang === 'en') {
@@ -901,7 +901,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
  * @param options - Command line options
  * @param codeToolType - Target code tool type
  */
-async function handleMultiConfigurations(options: InitOptions, codeToolType: 'claude-code' | 'codex'): Promise<void> {
+export async function handleMultiConfigurations(options: InitOptions, codeToolType: 'claude-code' | 'codex'): Promise<void> {
   const { ensureI18nInitialized } = await import('../i18n')
   ensureI18nInitialized()
 
@@ -953,7 +953,7 @@ async function handleMultiConfigurations(options: InitOptions, codeToolType: 'cl
  * Validate API configurations
  * @param configs - Array of API configurations to validate
  */
-function validateApiConfigs(configs: ApiConfigDefinition[]): void {
+export function validateApiConfigs(configs: ApiConfigDefinition[]): void {
   if (!Array.isArray(configs)) {
     throw new TypeError('API configs must be an array')
   }

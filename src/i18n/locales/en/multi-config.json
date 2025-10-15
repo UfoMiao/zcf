@@ -22,7 +22,7 @@
   "deleteProfile": "Delete Profile",
   "selectAction": "Select action",
   "addingNewProfile": "Adding New Profile",
-  "profileNamePrompt": "Enter profile name",
+  "profileNamePrompt": "Profile name (letters, numbers, spaces, . _ -)",
   "profileNameRequired": "Profile name is required",
   "profileNameInvalid": "Profile name can only contain letters, numbers, spaces, hyphens, and underscores",
   "authTypePrompt": "Select authentication type",
@@ -33,11 +33,9 @@
   "baseUrlInvalid": "Please enter a valid URL",
   "descriptionPrompt": "Enter profile description (optional)",
   "setAsDefaultPrompt": "Set as default profile",
-  "authType": {
-    "api_key": "API Key",
-    "auth_token": "Auth Token",
-    "ccr_proxy": "CCR Proxy"
-  },
+  "authType.api_key": "API Key",
+  "authType.auth_token": "Auth Token",
+  "authType.ccr_proxy": "CCR Proxy",
   "profileAdded": "✔ Successfully added profile: {name}",
   "profileAddFailed": "❌ Failed to add profile: {error}",
   "profileSetAsDefault": "✔ Set profile {name} as default",

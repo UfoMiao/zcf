@@ -28,6 +28,10 @@ vi.mock('../../../src/utils/config-operations', () => ({
   modifyApiConfigPartially: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/claude-code-incremental-manager', () => ({
+  configureIncrementalManagement: vi.fn(),
+}))
+
 vi.mock('../../../src/utils/ccr/config', () => ({
   setupCcrConfiguration: vi.fn(),
   configureCcrProxy: vi.fn(),
@@ -157,25 +161,20 @@ describe('features utilities', () => {
 
     it('should handle custom API mode', async () => {
       const { configureApiFeature } = await import('../../../src/utils/features')
-      const configModule = await import('../../../src/utils/config')
+      const incrementalManagerModule = await import('../../../src/utils/claude-code-incremental-manager')
 
       const mockPrompt = vi.mocked(inquirer.prompt)
       mockPrompt
         .mockResolvedValueOnce({ mode: 'custom' })
 
-      // Mock existing config to trigger partial configuration flow
-      vi.mocked(configModule.getExistingApiConfig).mockReturnValue({ url: 'existing', key: 'existing', authType: 'api_key' })
-      vi.mocked(configModule.promptApiConfigurationAction).mockResolvedValue('modify-partial')
-
-      const { modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
-      vi.mocked(modifyApiConfigPartially).mockResolvedValue(undefined)
+      // Mock the incremental configuration manager
+      const mockConfigureIncrementalManagement = vi.mocked(incrementalManagerModule.configureIncrementalManagement).mockResolvedValue()
 
       await configureApiFeature()
 
-      // Verify the function calls based on actual behavior
+      // For Claude Code, should call configureIncrementalManagement instead of the old functions
+      expect(mockConfigureIncrementalManagement).toHaveBeenCalled()
       expect(mockPrompt).toHaveBeenCalledTimes(1) // Only mode selection
-      expect(configModule.promptApiConfigurationAction).toHaveBeenCalled()
-      expect(modifyApiConfigPartially).toHaveBeenCalled()
     })
 
     it('should handle CCR proxy mode', async () => {

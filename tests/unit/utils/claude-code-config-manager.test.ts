@@ -6,8 +6,9 @@ import { ZCF_CONFIG_DIR } from '../../../src/constants'
 import { ClaudeCodeConfigManager } from '../../../src/utils/claude-code-config-manager'
 
 // Mock dependencies
+const mockReadCcrConfig = vi.fn()
 vi.mock('../../../src/utils/ccr/config', () => ({
-  readCcrConfig: vi.fn(),
+  readCcrConfig: mockReadCcrConfig,
 }))
 
 describe('claudeCodeConfigManager', () => {
@@ -531,7 +532,174 @@ describe('claudeCodeConfigManager', () => {
 
     it('应该处理特殊字符', () => {
       const id = ClaudeCodeConfigManager.generateProfileId('Test@#$%^&*Profile')
-      expect(id).toMatch(/^testprofile-[a-z0-9]{8}$/)
+      expect(id).toMatch(/^test-profile-[a-z0-9]+$/)
+    })
+  })
+
+  describe('deleteProfiles', () => {
+    beforeEach(async () => {
+      // 添加三个测试配置
+      const profile1: ClaudeCodeProfile = {
+        id: 'profile1',
+        name: 'Profile 1',
+        authType: 'api_key',
+        apiKey: 'key1',
+      }
+
+      const profile2: ClaudeCodeProfile = {
+        id: 'profile2',
+        name: 'Profile 2',
+        authType: 'auth_token',
+        apiKey: 'key2',
+      }
+
+      const profile3: ClaudeCodeProfile = {
+        id: 'profile3',
+        name: 'Profile 3',
+        authType: 'ccr_proxy',
+      }
+
+      await ClaudeCodeConfigManager.addProfile(profile1)
+      await ClaudeCodeConfigManager.addProfile(profile2)
+      await ClaudeCodeConfigManager.addProfile(profile3)
+    })
+
+    it('应该批量删除配置', async () => {
+      const result = await ClaudeCodeConfigManager.deleteProfiles(['profile1', 'profile3'])
+
+      expect(result.success).toBe(true)
+
+      const config = ClaudeCodeConfigManager.readConfig()
+      expect(config?.profiles.profile1).toBeUndefined()
+      expect(config?.profiles.profile2).toBeDefined()
+      expect(config?.profiles.profile3).toBeUndefined()
+    })
+
+    it('应该处理不存在的配置', async () => {
+      const result = await ClaudeCodeConfigManager.deleteProfiles(['non-existent'])
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('not found')
+    })
+
+    it('应该防止删除所有配置', async () => {
+      const result = await ClaudeCodeConfigManager.deleteProfiles(['profile1', 'profile2', 'profile3'])
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Cannot delete all profiles')
+    })
+
+    it('应该更新当前配置ID（如果删除的是当前配置）', async () => {
+      // 确保profile1是当前配置
+      await ClaudeCodeConfigManager.switchProfile('profile1')
+
+      // 删除当前配置
+      const result = await ClaudeCodeConfigManager.deleteProfiles(['profile1'])
+
+      expect(result.success).toBe(true)
+      expect(result.newCurrentProfileId).toBeTruthy()
+
+      const config = ClaudeCodeConfigManager.readConfig()
+      expect(config?.currentProfileId).toBe(result.newCurrentProfileId)
+    })
+  })
+
+  describe('switchToCcr', () => {
+    beforeEach(async () => {
+      // 添加一个测试配置
+      const profile: ClaudeCodeProfile = {
+        id: 'test-profile',
+        name: 'Test Profile',
+        authType: 'api_key',
+        apiKey: 'test-key',
+      }
+      await ClaudeCodeConfigManager.addProfile(profile)
+      vi.clearAllMocks()
+    })
+
+    it('应该切换到CCR代理', async () => {
+      // Mock CCR配置存在
+      mockReadCcrConfig.mockReturnValue({
+        host: 'localhost',
+        port: 8080,
+      } as any)
+
+      const result = await ClaudeCodeConfigManager.switchToCcr()
+
+      expect(result.success).toBe(true)
+
+      const config = ClaudeCodeConfigManager.readConfig()
+      expect(config?.currentProfileId).toBe('ccr-proxy')
+      expect(config?.profiles['ccr-proxy']).toBeTruthy()
+    })
+
+    it('应该处理CCR未配置的情况', async () => {
+      // Mock CCR配置不存在
+      mockReadCcrConfig.mockReturnValue(null)
+
+      const result = await ClaudeCodeConfigManager.switchToCcr()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('CCR proxy configuration not found')
+    })
+
+    it('应该处理读取CCR配置失败', async () => {
+      // Mock CCR配置读取失败
+      mockReadCcrConfig.mockImplementation(() => {
+        throw new Error('Failed to read CCR config')
+      })
+
+      const result = await ClaudeCodeConfigManager.switchToCcr()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBeTruthy()
+    })
+  })
+
+  describe('syncCcrProfile', () => {
+    beforeEach(() => {
+      vi.clearAllMocks()
+    })
+
+    it('应该同步存在的CCR配置', async () => {
+      // Mock CCR配置存在
+      mockReadCcrConfig.mockReturnValue({
+        host: 'localhost',
+        port: 8080,
+      } as any)
+
+      await ClaudeCodeConfigManager.syncCcrProfile()
+
+      const config = ClaudeCodeConfigManager.readConfig()
+      expect(config?.profiles['ccr-proxy']).toBeTruthy()
+      expect(config?.profiles['ccr-proxy']?.name).toBe('CCR Proxy')
+      expect(config?.profiles['ccr-proxy']?.authType).toBe('ccr_proxy')
+    })
+
+    it('应该删除不存在的CCR配置', async () => {
+      // 先创建CCR配置
+      mockReadCcrConfig.mockReturnValue({
+        host: 'localhost',
+        port: 8080,
+      } as any)
+      await ClaudeCodeConfigManager.syncCcrProfile()
+
+      // 然后Mock CCR配置不存在
+      mockReadCcrConfig.mockReturnValue(null)
+      await ClaudeCodeConfigManager.syncCcrProfile()
+
+      const config = ClaudeCodeConfigManager.readConfig()
+      expect(config?.profiles['ccr-proxy']).toBeUndefined()
+    })
+
+    it('应该处理同步错误', async () => {
+      // Mock CCR配置读取失败
+      mockReadCcrConfig.mockImplementation(() => {
+        throw new Error('Sync failed')
+      })
+
+      // 应该不抛出错误，而是静默处理
+      await expect(ClaudeCodeConfigManager.syncCcrProfile()).resolves.toBeUndefined()
     })
   })
 

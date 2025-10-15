@@ -382,4 +382,481 @@ describe('claudeCode Incremental Configuration Manager', () => {
       await expect(configureIncrementalManagement()).rejects.toThrow()
     })
   })
+
+  describe('error handling and edge cases', () => {
+    it('should handle profile addition failure', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+        profileName: 'Test Profile',
+        authType: 'api_key' as const,
+        apiKey: 'sk-ant-test-key',
+        baseUrl: 'https://api.anthropic.com',
+        description: 'Test description',
+        setAsDefault: true,
+      } as any)
+
+      // Mock profile addition failure
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: false,
+        error: 'Profile already exists',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
+      // Should not call switchProfile when addition fails
+      expect(ClaudeCodeConfigManager.switchProfile).not.toHaveBeenCalled()
+    })
+
+    it('should handle profile update failure', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            apiKey: 'sk-ant-old-key',
+            baseUrl: 'https://api.anthropic.com',
+            description: 'Old description',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'edit' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'Updated Profile',
+          apiKey: 'sk-ant-new-key',
+          baseUrl: 'https://api.anthropic.com',
+          description: 'Updated description',
+        })
+
+      // Mock update failure
+      vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
+        success: false,
+        error: 'Profile not found',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.updateProfile).toHaveBeenCalled()
+      // Should not call getProfileById when update fails
+      expect(ClaudeCodeConfigManager.getProfileById).not.toHaveBeenCalled()
+    })
+
+    it('should handle profile deletion failure', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+          'profile-2': {
+            id: 'profile-2',
+            name: 'Profile 2',
+            authType: 'auth_token' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'delete' })
+        .mockResolvedValueOnce({ selectedProfileIds: ['profile-2'] })
+        .mockResolvedValueOnce({ confirmed: true })
+
+      // Mock deletion failure
+      vi.mocked(ClaudeCodeConfigManager.deleteProfiles).mockResolvedValue({
+        success: false,
+        error: 'Failed to delete profiles',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.deleteProfiles).toHaveBeenCalledWith(['profile-2'])
+      // Should not call getProfileById when deletion fails
+      expect(ClaudeCodeConfigManager.getProfileById).not.toHaveBeenCalled()
+    })
+
+    it('should handle user cancellation during profile selection', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      // Mock user cancellation (no selected profile)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'edit' })
+        .mockResolvedValueOnce({ selectedProfileId: null })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.updateProfile).not.toHaveBeenCalled()
+    })
+
+    it('should handle profile not found during edit', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'edit' })
+        .mockResolvedValueOnce({ selectedProfileId: 'non-existent-profile' })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.updateProfile).not.toHaveBeenCalled()
+    })
+
+    it('should handle user cancellation during delete confirmation', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+          'profile-2': {
+            id: 'profile-2',
+            name: 'Profile 2',
+            authType: 'auth_token' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'delete' })
+        .mockResolvedValueOnce({ selectedProfileIds: ['profile-2'] })
+        .mockResolvedValueOnce({ confirmed: false }) // User cancels deletion
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
+    })
+
+    it('should handle user cancellation during profile selection for deletion', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+          'profile-2': {
+            id: 'profile-2',
+            name: 'Profile 2',
+            authType: 'auth_token' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'delete' })
+        .mockResolvedValueOnce({ selectedProfileIds: [] }) // User selects nothing
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
+    })
+
+    it('should handle auth_token profile type correctly', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+        profileName: 'Auth Token Profile',
+        authType: 'auth_token' as const,
+        apiKey: 'sk-ant-auth-token',
+        baseUrl: 'https://api.anthropic.com',
+        description: 'Auth Token Profile',
+        setAsDefault: true,
+      } as any)
+
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('auth-token-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+      vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({
+        success: true,
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'auth-token-profile-id',
+          name: 'Auth Token Profile',
+          authType: 'auth_token' as const,
+          apiKey: 'sk-ant-auth-token',
+          baseUrl: 'https://api.anthropic.com',
+        }),
+      )
+    })
+
+    it('should handle setting non-default profile', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
+        profileName: 'Non-Default Profile',
+        authType: 'api_key' as const,
+        apiKey: 'sk-ant-test-key',
+        baseUrl: 'https://api.anthropic.com',
+        description: 'Non-default profile',
+        setAsDefault: false, // Not set as default
+      } as any)
+
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('non-default-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
+      // Should not call switchProfile when setAsDefault is false
+      expect(ClaudeCodeConfigManager.switchProfile).not.toHaveBeenCalled()
+    })
+
+    it('should handle editing CCR proxy profile', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'CCR Profile',
+            authType: 'ccr_proxy' as const,
+            description: 'CCR Proxy Configuration',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'edit' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'Updated CCR Profile',
+          description: 'Updated CCR Description',
+        })
+
+      vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      const updatedProfile = {
+        ...mockConfig.profiles['profile-1'],
+        name: 'Updated CCR Profile',
+        description: 'Updated CCR Description',
+        updatedAt: expect.any(String),
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.getProfileById).mockResolvedValue(updatedProfile)
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.updateProfile).toHaveBeenCalledWith(
+        'profile-1',
+        expect.objectContaining({
+          name: 'Updated CCR Profile',
+          description: 'Updated CCR Description',
+          updatedAt: expect.any(String),
+        }),
+      )
+    })
+
+    it('should handle invalid action selection', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      // Mock invalid action (null/undefined)
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ action: null })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).not.toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.updateProfile).not.toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('applyProfileToSettings function coverage', () => {
+    it('should apply auth_token profile settings correctly', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Auth Token Profile',
+            authType: 'auth_token' as const,
+            apiKey: 'sk-ant-auth-token',
+            baseUrl: 'https://api.anthropic.com',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'edit' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'Updated Auth Token Profile',
+          apiKey: 'sk-ant-updated-token',
+          baseUrl: 'https://api.anthropic.com',
+          description: 'Updated auth token profile',
+        })
+
+      vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      const mockReadJsonConfig = vi.fn().mockReturnValue({})
+      const mockWriteJsonConfig = vi.fn()
+      const mockSetPrimaryApiKey = vi.fn()
+
+      vi.doMock('../../../src/utils/json-config', () => ({
+        readJsonConfig: mockReadJsonConfig,
+        writeJsonConfig: mockWriteJsonConfig,
+      }))
+
+      vi.doMock('../../../src/utils/claude-config', () => ({
+        setPrimaryApiKey: mockSetPrimaryApiKey,
+      }))
+
+      vi.mocked(ClaudeCodeConfigManager.getProfileById).mockResolvedValue({
+        ...mockConfig.profiles['profile-1'],
+        name: 'Updated Auth Token Profile',
+        apiKey: 'sk-ant-updated-token',
+        updatedAt: new Date().toISOString(),
+      })
+
+      await configureIncrementalManagement()
+
+      // Verify the settings application process was triggered
+      expect(ClaudeCodeConfigManager.updateProfile).toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.getProfileById).toHaveBeenCalled()
+    })
+
+    it('should handle CCR proxy profile settings correctly', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'CCR Profile',
+            authType: 'ccr_proxy' as const,
+            description: 'CCR Proxy Configuration',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'edit' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'Updated CCR Profile',
+          description: 'Updated CCR Description',
+        })
+
+      vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      vi.mocked(ClaudeCodeConfigManager.getProfileById).mockResolvedValue({
+        ...mockConfig.profiles['profile-1'],
+        name: 'Updated CCR Profile',
+        description: 'Updated CCR Description',
+        updatedAt: new Date().toISOString(),
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.updateProfile).toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.getProfileById).toHaveBeenCalled()
+    })
+  })
 })

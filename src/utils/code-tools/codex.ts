@@ -1,6 +1,7 @@
 import type { AiOutputLanguage, SupportedLang } from '../../constants'
 import type { CodexUninstallItem, CodexUninstallResult } from './codex-uninstaller'
 import { homedir } from 'node:os'
+import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
 import dayjs from 'dayjs'
@@ -402,8 +403,11 @@ export function parseCodexConfig(content: string): CodexConfigData {
     }
   }
   catch (error) {
-    // Fallback to basic parsing if TOML parsing fails
-    console.warn('TOML parsing failed, falling back to basic parsing:', error)
+    // Graceful fallback to basic parsing if TOML parsing fails
+    // Only show warning in development/debug mode to avoid user confusion
+    if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+      console.warn('TOML parsing failed, falling back to basic parsing:', error)
+    }
 
     // Clean previously managed sections to avoid duplication on subsequent renders
     const cleaned = content

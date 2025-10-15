@@ -205,10 +205,10 @@ describe('codex code tool utilities', () => {
     const { x } = await import('tinyexec')
     vi.mocked(x).mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-    const module = await import('../../../../src/utils/code-tools/codex')
+    const codexModule = await import('../../../../src/utils/code-tools/codex')
 
     // Test that the function executes without throwing errors
-    await expect(module.runCodexFullInit()).resolves.toBe('zh-CN')
+    await expect(codexModule.runCodexFullInit()).resolves.toBe('zh-CN')
 
     // Test that npm install is called for CLI installation
     expect(x).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex'])
@@ -226,9 +226,9 @@ describe('codex code tool utilities', () => {
     const { readZcfConfig } = await import('../../../../src/utils/zcf-config')
     vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN' } as any)
 
-    const module = await import('../../../../src/utils/code-tools/codex')
+    const codexModule = await import('../../../../src/utils/code-tools/codex')
     // Test that the function executes without throwing errors
-    await expect(module.runCodexWorkflowImport()).resolves.not.toThrow()
+    await expect(codexModule.runCodexWorkflowImport()).resolves.not.toThrow()
   })
 
   it('configureCodexApi should write config and auth files', async () => {
@@ -257,8 +257,8 @@ describe('codex code tool utilities', () => {
     const jsonConfig = await import('../../../../src/utils/json-config')
     vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({})
 
-    const module = await import('../../../../src/utils/code-tools/codex')
-    await module.configureCodexApi()
+    const codexModule = await import('../../../../src/utils/code-tools/codex')
+    await codexModule.configureCodexApi()
 
     expect(writeFileMock).toHaveBeenCalledTimes(1)
     const configContent = writeFileMock.mock.calls[0][1] as string
@@ -299,11 +299,11 @@ describe('codex code tool utilities', () => {
     const jsonModule = await import('../../../../src/utils/json-config')
     vi.mocked(jsonModule.readJsonConfig).mockReturnValue({ OPENAI_API_KEY: 'old', PACKYCODE_API_KEY: 'existing-key' })
 
-    const module = await import('../../../../src/utils/code-tools/codex')
+    const codexModule = await import('../../../../src/utils/code-tools/codex')
     const writeFileMock = vi.mocked(fsOps.writeFile)
     writeFileMock.mockClear()
 
-    await module.configureCodexApi()
+    await codexModule.configureCodexApi()
 
     // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
     // This test validates the core functionality but backup verification is handled by dedicated backup tests
@@ -342,11 +342,11 @@ describe('codex code tool utilities', () => {
     })
     vi.mocked(fsOps.readFile).mockReturnValue(managedConfig)
 
-    const module = await import('../../../../src/utils/code-tools/codex')
+    const codexModule = await import('../../../../src/utils/code-tools/codex')
     const writeFileMock = vi.mocked(fsOps.writeFile)
     writeFileMock.mockClear()
 
-    await module.configureCodexMcp()
+    await codexModule.configureCodexMcp()
 
     // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
     // This test validates the core functionality but backup verification is handled by dedicated backup tests
@@ -372,27 +372,27 @@ describe('codex code tool utilities', () => {
   })
 
   it('runCodexUpdate should refresh workflows', async () => {
-    const module = await import('../../../../src/utils/code-tools/codex')
+    const codexModule = await import('../../../../src/utils/code-tools/codex')
 
     // Test that the function executes without throwing errors
-    await expect(module.runCodexUpdate()).resolves.not.toThrow()
+    await expect(codexModule.runCodexUpdate()).resolves.not.toThrow()
   })
 
   it('runCodexUninstall should remove codex directory after confirmation', async () => {
-    const module = await import('../../../../src/utils/code-tools/codex')
+    const codexModule = await import('../../../../src/utils/code-tools/codex')
 
     // Test that the function executes without throwing errors
-    await expect(module.runCodexUninstall()).resolves.not.toThrow()
+    await expect(codexModule.runCodexUninstall()).resolves.not.toThrow()
   })
 
   // TDD Tests for workflow configuration step-by-step functionality
   describe('codex workflow configuration two-step process', () => {
     it('should have separate functions for system prompt and workflow selection', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // These functions should exist but don't yet (RED phase)
-      expect(typeof module.runCodexSystemPromptSelection).toBe('function')
-      expect(typeof module.runCodexWorkflowSelection).toBe('function')
+      expect(typeof codexModule.runCodexSystemPromptSelection).toBe('function')
+      expect(typeof codexModule.runCodexWorkflowSelection).toBe('function')
     })
 
     it('runCodexSystemPromptSelection should prompt user to select system prompt styles', async () => {
@@ -409,10 +409,10 @@ describe('codex code tool utilities', () => {
       vi.mocked(fsOps.readFile).mockReturnValue('# Nekomata Engineer\n\nSystem prompt content...')
       vi.mocked(fsOps.writeFile).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // Test that the function executes without throwing errors
-      await expect(module.runCodexSystemPromptSelection()).resolves.not.toThrow()
+      await expect(codexModule.runCodexSystemPromptSelection()).resolves.not.toThrow()
     })
 
     it('runCodexWorkflowSelection should support multi-selection and flatten structure', async () => {
@@ -429,19 +429,19 @@ describe('codex code tool utilities', () => {
       vi.mocked(fsOps.readFile).mockReturnValue('# Workflow content')
       vi.mocked(fsOps.writeFile).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // Test that the function executes without throwing errors
-      await expect(module.runCodexWorkflowSelection()).resolves.not.toThrow()
+      await expect(codexModule.runCodexWorkflowSelection()).resolves.not.toThrow()
     })
 
     it('updated runCodexWorkflowImport should call both step functions', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const systemPromptSpy = vi.spyOn(module, 'runCodexSystemPromptSelection').mockResolvedValue()
-      const workflowSelectionSpy = vi.spyOn(module, 'runCodexWorkflowSelection').mockResolvedValue()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const systemPromptSpy = vi.spyOn(codexModule, 'runCodexSystemPromptSelection').mockResolvedValue()
+      const workflowSelectionSpy = vi.spyOn(codexModule, 'runCodexWorkflowSelection').mockResolvedValue()
 
       // Test that the function executes without throwing errors
-      await expect(module.runCodexWorkflowImport()).resolves.not.toThrow()
+      await expect(codexModule.runCodexWorkflowImport()).resolves.not.toThrow()
 
       systemPromptSpy.mockRestore()
       workflowSelectionSpy.mockRestore()
@@ -472,13 +472,13 @@ describe('codex code tool utilities', () => {
   // TDD Tests for update flow improvements
   describe('codex update flow should check CLI updates', () => {
     it('runCodexUpdate should check for Codex CLI updates instead of workflow updates', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // Should use the proper checkCodexUpdate function (not checkCodexCliUpdate)
-      expect(typeof module.checkCodexUpdate).toBe('function')
+      expect(typeof codexModule.checkCodexUpdate).toBe('function')
 
       // Test that runCodexUpdate executes without throwing errors
-      await expect(module.runCodexUpdate()).resolves.not.toThrow()
+      await expect(codexModule.runCodexUpdate()).resolves.not.toThrow()
     })
   })
 
@@ -741,8 +741,8 @@ describe('codex code tool utilities', () => {
       vi.mocked(fsOps.copyFile).mockImplementation(() => {})
       vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.backupCodexAgents()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.backupCodexAgents()
 
       expect(result).toMatch(/backup.*AGENTS\.md$/)
       expect(fsOps.copyFile).toHaveBeenCalled()
@@ -752,8 +752,8 @@ describe('codex code tool utilities', () => {
       const fsOps = await import('../../../../src/utils/fs-operations')
       vi.mocked(fsOps.exists).mockReturnValue(false)
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.backupCodexAgents()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.backupCodexAgents()
 
       expect(result).toBeNull()
       expect(fsOps.copyFile).not.toHaveBeenCalled()
@@ -766,8 +766,8 @@ describe('codex code tool utilities', () => {
         throw new Error('Copy failed')
       })
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.backupCodexAgents()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.backupCodexAgents()
 
       expect(result).toBeNull()
     })
@@ -778,8 +778,8 @@ describe('codex code tool utilities', () => {
       vi.mocked(fsOps.copyDir).mockImplementation(() => {})
       vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.backupCodexComplete()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.backupCodexComplete()
 
       expect(result).toMatch(/backup.*backup_20\d{2}-/)
       expect(fsOps.copyDir).toHaveBeenCalled()
@@ -791,8 +791,8 @@ describe('codex code tool utilities', () => {
       vi.mocked(fsOps.copyDir).mockImplementation(() => {})
       vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.backupCodexPrompts()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.backupCodexPrompts()
 
       expect(result).toMatch(/backup.*prompts$/)
       expect(fsOps.copyDir).toHaveBeenCalled()
@@ -807,8 +807,8 @@ describe('codex code tool utilities', () => {
       const fsOps = await import('../../../../src/utils/fs-operations')
       vi.mocked(fsOps.exists).mockReturnValue(false)
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.readCodexConfig()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.readCodexConfig()
 
       expect(result).toBeNull()
     })
@@ -818,7 +818,7 @@ describe('codex code tool utilities', () => {
       const writeFileMock = vi.mocked(fsOps.writeFile)
       writeFileMock.mockClear()
 
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const mockData = {
         model: null,
         modelProvider: 'test',
@@ -828,7 +828,7 @@ describe('codex code tool utilities', () => {
         otherConfig: [],
       }
 
-      module.writeCodexConfig(mockData)
+      codexModule.writeCodexConfig(mockData)
 
       expect(writeFileMock).toHaveBeenCalled()
       const writtenContent = writeFileMock.mock.calls[0][1] as string
@@ -839,10 +839,10 @@ describe('codex code tool utilities', () => {
       const jsonConfig = await import('../../../../src/utils/json-config')
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const authData = { TEST_API_KEY: 'secret-key' }
 
-      module.writeAuthFile(authData)
+      codexModule.writeAuthFile(authData)
 
       expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
         expect.stringContaining('auth.json'),
@@ -858,17 +858,17 @@ describe('codex code tool utilities', () => {
       const fsOps = await import('../../../../src/utils/fs-operations')
       vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const timestamp = '2024-01-01_12-00-00'
-      const result = module.createBackupDirectory(timestamp)
+      const result = codexModule.createBackupDirectory(timestamp)
 
       expect(result).toContain('backup_2024-01-01_12-00-00')
       expect(fsOps.ensureDir).toHaveBeenCalledWith(result)
     })
 
     it('getBackupMessage should generate backup success message', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.getBackupMessage('/test/backup/path')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.getBackupMessage('/test/backup/path')
 
       // Should return i18n key with path
       expect(typeof result).toBe('string')
@@ -876,22 +876,22 @@ describe('codex code tool utilities', () => {
     })
 
     it('getBackupMessage should handle null path', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.getBackupMessage(null)
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.getBackupMessage(null)
 
       expect(result).toBe('')
     })
 
     it('switchCodexProvider should handle missing configuration', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // Mock console methods to avoid output
       const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
 
       // Mock readCodexConfig to return null (no config found)
-      const mockSpy = vi.spyOn(module, 'readCodexConfig').mockReturnValue(null)
+      const mockSpy = vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(null)
 
-      const result = await module.switchCodexProvider('test-provider')
+      const result = await codexModule.switchCodexProvider('test-provider')
 
       expect(result).toBe(false)
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.anything()) // Should log an error message
@@ -905,11 +905,11 @@ describe('codex code tool utilities', () => {
   // Tests for error handling and edge cases
   describe('error handling and edge cases', () => {
     it('parseCodexConfig should handle malformed TOML content and fallback gracefully', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // Test with invalid TOML - should not throw but fallback
       const invalidToml = 'invalid toml content ['
-      const result = module.parseCodexConfig(invalidToml)
+      const result = codexModule.parseCodexConfig(invalidToml)
 
       // Should fallback to basic parsing
       expect(result).toBeDefined()
@@ -918,11 +918,11 @@ describe('codex code tool utilities', () => {
     })
 
     it('getCurrentCodexProvider should handle missing config file', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const mockSpy = vi.spyOn(module, 'readCodexConfig')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const mockSpy = vi.spyOn(codexModule, 'readCodexConfig')
       mockSpy.mockReturnValue(null)
 
-      const result = await module.getCurrentCodexProvider()
+      const result = await codexModule.getCurrentCodexProvider()
 
       expect(result).toBeNull()
       mockSpy.mockRestore()
@@ -932,8 +932,8 @@ describe('codex code tool utilities', () => {
       const { x } = await import('tinyexec')
       vi.mocked(x).mockRejectedValue(new Error('Command not found'))
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = await module.isCodexInstalled()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = await codexModule.isCodexInstalled()
 
       expect(result).toBe(false)
     })
@@ -946,18 +946,18 @@ describe('codex code tool utilities', () => {
         stderr: 'Command failed',
       })
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = await module.getCodexVersion()
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = await codexModule.getCodexVersion()
 
       expect(result).toBeNull()
     })
 
     it('listCodexProviders should handle missing config', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const mockSpy = vi.spyOn(module, 'readCodexConfig')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const mockSpy = vi.spyOn(codexModule, 'readCodexConfig')
       mockSpy.mockReturnValue(null)
 
-      const result = await module.listCodexProviders()
+      const result = await codexModule.listCodexProviders()
 
       expect(Array.isArray(result)).toBe(true)
       expect(result.length).toBe(0)
@@ -975,8 +975,8 @@ describe('codex code tool utilities', () => {
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ CUSTOM_API_KEY: 'test' })
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      vi.spyOn(module, 'readCodexConfig').mockReturnValue({
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
         model: null,
         modelProvider: 'custom',
         providers: [],
@@ -985,7 +985,7 @@ describe('codex code tool utilities', () => {
         otherConfig: [],
       })
 
-      const result = await module.switchToOfficialLogin()
+      const result = await codexModule.switchToOfficialLogin()
 
       expect(result).toBe(true)
       // Should write null for OPENAI_API_KEY
@@ -1001,8 +1001,8 @@ describe('codex code tool utilities', () => {
     })
 
     it('parseCodexConfig should handle empty content', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = module.parseCodexConfig('')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = codexModule.parseCodexConfig('')
 
       expect(result.model).toBeNull()
       expect(result.modelProvider).toBeNull()
@@ -1012,7 +1012,7 @@ describe('codex code tool utilities', () => {
     })
 
     it('renderCodexConfig should generate proper TOML format', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const testData = {
         model: 'gpt-4',
         modelProvider: 'test-provider',
@@ -1029,7 +1029,7 @@ describe('codex code tool utilities', () => {
         otherConfig: [],
       }
 
-      const result = module.renderCodexConfig(testData)
+      const result = codexModule.renderCodexConfig(testData)
 
       expect(result).toContain('model = "gpt-4"')
       expect(result).toContain('model_provider = "test-provider"')
@@ -1040,7 +1040,7 @@ describe('codex code tool utilities', () => {
   // Enhanced tests for parseCodexConfig edge cases - increasing coverage
   describe('enhanced parseCodexConfig edge cases', () => {
     it('parseCodexConfig should handle commented model_provider', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const tomlWithCommentedProvider = `
 # --- model provider added by ZCF ---
 model = "gpt-4"
@@ -1053,7 +1053,7 @@ wire_api = "responses"
 env_key = "ANTHROPIC_API_KEY"
 requires_openai_auth = true
 `
-      const result = module.parseCodexConfig(tomlWithCommentedProvider)
+      const result = codexModule.parseCodexConfig(tomlWithCommentedProvider)
       expect(result.model).toBe('gpt-4')
       expect(result.modelProvider).toBe('claude-api')
       expect(result.modelProviderCommented).toBe(true)
@@ -1062,7 +1062,7 @@ requires_openai_auth = true
     })
 
     it('parseCodexConfig should handle complex TOML with multiple providers and MCP services', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const complexToml = `
 # --- model provider added by ZCF ---
 model = "gpt-4"
@@ -1094,7 +1094,7 @@ args = ["-y", "exa-mcp-server"]
 env = {EXA_API_KEY = "test-key"}
 startup_timeout_ms = 30000
 `
-      const result = module.parseCodexConfig(complexToml)
+      const result = codexModule.parseCodexConfig(complexToml)
       expect(result.model).toBe('gpt-4')
       expect(result.modelProvider).toBe('claude-api')
       expect(result.modelProviderCommented).toBe(false)
@@ -1116,7 +1116,7 @@ startup_timeout_ms = 30000
     })
 
     it('parseCodexConfig should preserve otherConfig sections', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const tomlWithCustomConfig = `
 # Custom user configuration
 debug = true
@@ -1136,7 +1136,7 @@ wire_api = "responses"
 env_key = "TEST_KEY"
 requires_openai_auth = true
 `
-      const result = module.parseCodexConfig(tomlWithCustomConfig)
+      const result = codexModule.parseCodexConfig(tomlWithCustomConfig)
       expect(result.otherConfig).toBeDefined()
       expect(result.otherConfig!).toContain('debug = true')
       expect(result.otherConfig!).toContain('log_level = "info"')
@@ -1148,7 +1148,7 @@ requires_openai_auth = true
     })
 
     it('parseCodexConfig should handle model_provider detection with ZCF comments', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const tomlWithZcfComments = `
 [some_section]
 key = "value"
@@ -1163,7 +1163,7 @@ wire_api = "responses"
 env_key = "ANTHROPIC_API_KEY"
 requires_openai_auth = true
 `
-      const result = module.parseCodexConfig(tomlWithZcfComments)
+      const result = codexModule.parseCodexConfig(tomlWithZcfComments)
       expect(result.modelProvider).toBe('claude')
       expect(result.modelProviderCommented).toBe(false)
       // ZCF comment should reset inSection flag, so model_provider is treated as global
@@ -1171,7 +1171,7 @@ requires_openai_auth = true
     })
 
     it('parseCodexConfig should handle MCP services with minimal configuration', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const minimalMcpToml = `
 [mcp_servers.simple]
 command = "simple-cmd"
@@ -1182,7 +1182,7 @@ command = "complex-cmd"
 args = ["arg1", "arg2"]
 env = {}
 `
-      const result = module.parseCodexConfig(minimalMcpToml)
+      const result = codexModule.parseCodexConfig(minimalMcpToml)
       expect(result.mcpServices).toHaveLength(2)
 
       const simpleService = result.mcpServices.find(s => s.id === 'simple')
@@ -1197,9 +1197,9 @@ env = {}
     })
 
     it('parseCodexConfig should handle whitespace-only content', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const whitespaceContent = '   \n\t\n   \n'
-      const result = module.parseCodexConfig(whitespaceContent)
+      const result = codexModule.parseCodexConfig(whitespaceContent)
       expect(result.model).toBeNull()
       expect(result.modelProvider).toBeNull()
       expect(result.providers).toEqual([])
@@ -1212,7 +1212,7 @@ env = {}
   // Enhanced tests for renderCodexConfig edge cases
   describe('enhanced renderCodexConfig edge cases', () => {
     it('renderCodexConfig should handle commented model_provider', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const testData = {
         model: 'gpt-4',
         modelProvider: 'claude-api',
@@ -1229,14 +1229,14 @@ env = {}
         managed: true,
         otherConfig: [],
       }
-      const result = module.renderCodexConfig(testData)
+      const result = codexModule.renderCodexConfig(testData)
       expect(result).toContain('# model_provider = "claude-api"')
       expect(result).not.toMatch(/^model_provider = "claude-api"$/m)
       expect(result).toContain('model = "gpt-4"')
     })
 
     it('renderCodexConfig should handle MCP services with environment variables', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const testData = {
         model: null,
         modelProvider: null,
@@ -1251,7 +1251,7 @@ env = {}
         managed: true,
         otherConfig: [],
       }
-      const result = module.renderCodexConfig(testData)
+      const result = codexModule.renderCodexConfig(testData)
       expect(result).toContain('[mcp_servers.exa]')
       expect(result).toContain('command = "npx"')
       expect(result).toContain('args = ["-y", "exa-mcp-server"]')
@@ -1260,7 +1260,7 @@ env = {}
     })
 
     it('renderCodexConfig should preserve otherConfig and add proper spacing', async () => {
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       const testData = {
         model: 'gpt-4',
         modelProvider: 'test',
@@ -1276,7 +1276,7 @@ env = {}
         managed: true,
         otherConfig: ['# Custom config', 'debug = true', '[custom_section]', 'key = "value"'],
       }
-      const result = module.renderCodexConfig(testData)
+      const result = codexModule.renderCodexConfig(testData)
       expect(result).toContain('# Custom config')
       expect(result).toContain('debug = true')
       expect(result).toContain('[custom_section]')
@@ -1308,8 +1308,8 @@ env = {}
       const prompts = await import('../../../../src/utils/prompts')
       vi.mocked(prompts.resolveAiOutputLanguage).mockResolvedValue('en')
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = await module.runCodexWorkflowImportWithLanguageSelection({
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = await codexModule.runCodexWorkflowImportWithLanguageSelection({
         skipPrompt: true,
         aiOutputLang: 'en',
       })
@@ -1344,8 +1344,8 @@ env = {}
       const prompts = await import('../../../../src/utils/prompts')
       vi.mocked(prompts.resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = await module.runCodexWorkflowImportWithLanguageSelection({
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = await codexModule.runCodexWorkflowImportWithLanguageSelection({
         skipPrompt: false,
       })
 
@@ -1374,8 +1374,8 @@ env = {}
         templateLang: 'en',
       } as any)
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      const result = await module.runCodexFullInit({
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const result = await codexModule.runCodexFullInit({
         aiOutputLang: 'chinese-simplified',
         skipPrompt: true,
       })
@@ -1388,11 +1388,11 @@ env = {}
   describe('language directive functionality', () => {
     it('should execute language selection integration functions', async () => {
       // Just test the functions exist and can be called - this covers code paths
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // Test that the function is exported and callable
-      expect(typeof module.runCodexWorkflowImportWithLanguageSelection).toBe('function')
-      expect(typeof module.runCodexFullInit).toBe('function')
+      expect(typeof codexModule.runCodexWorkflowImportWithLanguageSelection).toBe('function')
+      expect(typeof codexModule.runCodexFullInit).toBe('function')
     })
 
     it('should handle direct function calls for enhanced coverage', async () => {
@@ -1408,17 +1408,17 @@ env = {}
       const prompts = await import('../../../../src/utils/prompts')
       vi.mocked(prompts.resolveAiOutputLanguage).mockResolvedValue('en')
 
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
 
       // Test direct function calls to cover new code paths
-      const result1 = await module.runCodexWorkflowImportWithLanguageSelection({
+      const result1 = await codexModule.runCodexWorkflowImportWithLanguageSelection({
         skipPrompt: true,
         aiOutputLang: 'en',
       })
       expect(result1).toBe('en')
 
       vi.mocked(prompts.resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
-      const result2 = await module.runCodexFullInit({
+      const result2 = await codexModule.runCodexFullInit({
         skipPrompt: true,
         aiOutputLang: 'chinese-simplified',
       })
@@ -1453,9 +1453,9 @@ base_url = "https://api.anthropic.com"
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ CUSTOM_API_KEY: 'test' })
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
       // Mock readCodexConfig to return config without modelProvider (simulating parsing issue)
-      vi.spyOn(module, 'readCodexConfig').mockReturnValue({
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
         model: 'gpt-4',
         modelProvider: null, // Simulate parsing not finding model_provider
         providers: [{
@@ -1471,7 +1471,7 @@ base_url = "https://api.anthropic.com"
         otherConfig: [],
       })
 
-      const result = await module.switchToOfficialLogin()
+      const result = await codexModule.switchToOfficialLogin()
 
       expect(result).toBe(true)
       // Should comment out the model_provider that was found in raw TOML
@@ -1498,8 +1498,8 @@ base_url = "https://api.anthropic.com"
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({})
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      vi.spyOn(module, 'readCodexConfig').mockReturnValue({
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
         model: null,
         modelProvider: 'existing-provider',
         providers: [],
@@ -1508,7 +1508,7 @@ base_url = "https://api.anthropic.com"
         otherConfig: [],
       })
 
-      const result = await module.switchToOfficialLogin()
+      const result = await codexModule.switchToOfficialLogin()
 
       expect(result).toBe(true)
       // Should fall back to using existing config when raw TOML parsing fails
@@ -1535,8 +1535,8 @@ model_provider = ""
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({})
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
 
-      const module = await import('../../../../src/utils/code-tools/codex')
-      vi.spyOn(module, 'readCodexConfig').mockReturnValue({
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
         model: 'gpt-4',
         modelProvider: null,
         providers: [],
@@ -1545,13 +1545,304 @@ model_provider = ""
         otherConfig: [],
       })
 
-      const result = await module.switchToOfficialLogin()
+      const result = await codexModule.switchToOfficialLogin()
 
       expect(result).toBe(true)
       // Should not comment model_provider when it's empty
       const writeCalls = vi.mocked(fsOps.writeFile).mock.calls
       const configWriteCall = writeCalls.find(call => call[0].includes('config.toml'))
       expect(configWriteCall?.[1]).not.toContain('# model_provider = ""')
+    })
+  })
+
+  // Tests for uncovered functions to improve coverage
+  describe('uncovered utility functions', () => {
+    describe('createApiConfigChoices function', () => {
+      it('should create API configuration choices with official login first', async () => {
+        // Since createApiConfigChoices is not exported, we need to test it through configureCodexApi
+        const fsOps = await import('../../../../src/utils/fs-operations')
+        vi.mocked(fsOps.exists).mockReturnValue(true)
+        vi.mocked(fsOps.readFile).mockReturnValue(`
+          model_provider = "test-provider"
+          [model_providers.test-provider]
+          name = "Test Provider"
+          base_url = "https://test.com"
+          wire_api = "responses"
+          env_key = "TEST_KEY"
+          requires_openai_auth = true
+        `)
+        vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+        vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+        const jsonConfig = await import('../../../../src/utils/json-config')
+        vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ TEST_KEY: 'test' })
+
+        const inquirer = await import('inquirer')
+        vi.mocked(inquirer.default.prompt)
+          .mockResolvedValueOnce({ mode: 'switch' })
+          .mockResolvedValueOnce({ selectedConfig: 'official' })
+
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+        await codexModule.configureCodexApi()
+
+        // The function should be called internally and create proper choices
+        expect(inquirer.default.prompt).toHaveBeenCalledWith([
+          expect.objectContaining({
+            type: 'list',
+            name: 'selectedConfig',
+            choices: expect.arrayContaining([
+              expect.objectContaining({ value: 'official' }),
+              expect.objectContaining({ value: 'test-provider' }),
+            ]),
+          }),
+        ])
+      })
+
+      it('should handle commented provider correctly', async () => {
+        const fsOps = await import('../../../../src/utils/fs-operations')
+        vi.mocked(fsOps.exists).mockReturnValue(true)
+        vi.mocked(fsOps.readFile).mockReturnValue(`
+          # model_provider = "test-provider"
+          [model_providers.test-provider]
+          name = "Test Provider"
+          base_url = "https://test.com"
+          wire_api = "responses"
+          env_key = "TEST_KEY"
+          requires_openai_auth = true
+        `)
+        vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+        vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+        const jsonConfig = await import('../../../../src/utils/json-config')
+        vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ TEST_KEY: 'test' })
+
+        const inquirer = await import('inquirer')
+        vi.mocked(inquirer.default.prompt)
+          .mockResolvedValueOnce({ mode: 'switch' })
+          .mockResolvedValueOnce({ selectedConfig: 'test-provider' })
+
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+        vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+          model: null,
+          modelProvider: 'test-provider',
+          modelProviderCommented: true,
+          providers: [{
+            id: 'test-provider',
+            name: 'Test Provider',
+            baseUrl: 'https://test.com',
+            wireApi: 'responses',
+            envKey: 'TEST_KEY',
+            requiresOpenaiAuth: true,
+          }],
+          mcpServices: [],
+          managed: true,
+          otherConfig: [],
+        })
+
+        await codexModule.configureCodexApi()
+
+        // Should handle commented provider correctly
+        expect(inquirer.default.prompt).toHaveBeenCalled()
+      })
+    })
+
+    describe('normalizeLanguageLabel function', () => {
+      it('should normalize language labels by trimming and lowercasing', async () => {
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+
+        // Test through ensureCodexAgentsLanguageDirective which uses normalizeLanguageLabel internally
+        const fsOps = await import('../../../../src/utils/fs-operations')
+        vi.mocked(fsOps.exists).mockReturnValue(true)
+        vi.mocked(fsOps.readFile).mockReturnValue(`
+          **Most Important: Always respond in English**
+          Some content here
+        `)
+        vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+        vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+        const zcfConfig = await import('../../../../src/utils/zcf-config')
+        vi.mocked(zcfConfig.readZcfConfig).mockReturnValue({
+          aiOutputLang: 'chinese-simplified',
+        } as any)
+
+        // Call the function that uses normalizeLanguageLabel internally
+        const result = await codexModule.runCodexWorkflowImportWithLanguageSelection({
+          aiOutputLang: 'chinese-simplified',
+          skipPrompt: true,
+        })
+
+        expect(result).toBe('chinese-simplified')
+      })
+
+      it('should handle empty language labels', async () => {
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+
+        const fsOps = await import('../../../../src/utils/fs-operations')
+        vi.mocked(fsOps.exists).mockReturnValue(true)
+        vi.mocked(fsOps.readFile).mockReturnValue('Some content')
+        vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+        vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+        const zcfConfig = await import('../../../../src/utils/zcf-config')
+        vi.mocked(zcfConfig.readZcfConfig).mockReturnValue({} as any)
+
+        const result = await codexModule.runCodexWorkflowImportWithLanguageSelection({
+          aiOutputLang: '',
+          skipPrompt: true,
+        })
+
+        // Should handle empty language label gracefully
+        expect(typeof result).toBe('string')
+      })
+    })
+
+    describe('switchToProvider function', () => {
+      it('should switch to specific provider successfully', async () => {
+        const fsOps = await import('../../../../src/utils/fs-operations')
+        vi.mocked(fsOps.exists).mockReturnValue(true)
+        vi.mocked(fsOps.readFile).mockReturnValue(`
+          model_provider = "old-provider"
+          [model_providers.test-provider]
+          name = "Test Provider"
+          base_url = "https://test.com"
+          wire_api = "responses"
+          env_key = "TEST_KEY"
+          requires_openai_auth = true
+        `)
+        vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+        vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+        const jsonConfig = await import('../../../../src/utils/json-config')
+        vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({
+          TEST_KEY: 'test-key',
+          OLD_KEY: 'old-key',
+        })
+
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+        vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+          model: null,
+          modelProvider: 'old-provider',
+          modelProviderCommented: false,
+          providers: [{
+            id: 'test-provider',
+            name: 'Test Provider',
+            baseUrl: 'https://test.com',
+            wireApi: 'responses',
+            envKey: 'TEST_KEY',
+            requiresOpenaiAuth: true,
+          }],
+          mcpServices: [],
+          managed: true,
+          otherConfig: [],
+        })
+
+        const result = await codexModule.switchToProvider('test-provider')
+
+        expect(result).toBe(true)
+        // Should update OPENAI_API_KEY to the provider's key
+        expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+          expect.stringContaining('auth.json'),
+          expect.objectContaining({
+            TEST_KEY: 'test-key',
+            OLD_KEY: 'old-key',
+            OPENAI_API_KEY: 'test-key',
+          }),
+          { pretty: true },
+        )
+      })
+
+      it('should handle missing configuration file', async () => {
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+        vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(null)
+
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const result = await codexModule.switchToProvider('nonexistent')
+
+        expect(result).toBe(false)
+        expect(consoleSpy).toHaveBeenCalledWith(expect.anything())
+        consoleSpy.mockRestore()
+      })
+
+      it('should handle nonexistent provider', async () => {
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+        vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+          model: null,
+          modelProvider: 'existing-provider',
+          providers: [{
+            id: 'existing-provider',
+            name: 'Existing Provider',
+            baseUrl: 'https://existing.com',
+            wireApi: 'responses',
+            envKey: 'EXISTING_KEY',
+            requiresOpenaiAuth: true,
+          }],
+          mcpServices: [],
+          managed: true,
+          otherConfig: [],
+        })
+
+        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+        const result = await codexModule.switchToProvider('nonexistent-provider')
+
+        expect(result).toBe(false)
+        expect(consoleSpy).toHaveBeenCalledWith(expect.anything())
+        consoleSpy.mockRestore()
+      })
+
+      it('should handle backup creation and config writing', async () => {
+        const fsOps = await import('../../../../src/utils/fs-operations')
+        vi.mocked(fsOps.exists).mockReturnValue(true)
+        vi.mocked(fsOps.readFile).mockReturnValue(`
+          model_provider = "old-provider"
+          [model_providers.test-provider]
+          name = "Test Provider"
+          base_url = "https://test.com"
+          wire_api = "responses"
+          env_key = "TEST_KEY"
+          requires_openai_auth = true
+        `)
+        vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+        vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+        const jsonConfig = await import('../../../../src/utils/json-config')
+        vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({
+          TEST_KEY: 'test-key',
+        })
+
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+        vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+          model: null,
+          modelProvider: 'old-provider',
+          providers: [{
+            id: 'test-provider',
+            name: 'Test Provider',
+            baseUrl: 'https://test.com',
+            wireApi: 'responses',
+            envKey: 'TEST_KEY',
+            requiresOpenaiAuth: true,
+          }],
+          mcpServices: [],
+          managed: true,
+          otherConfig: [],
+        })
+
+        const result = await codexModule.switchToProvider('test-provider')
+
+        expect(result).toBe(true)
+        // Should create backup
+        expect(fsOps.copyDir).toHaveBeenCalled()
+        // Should write updated config
+        expect(fsOps.writeFile).toHaveBeenCalled()
+        // Should update auth file with OPENAI_API_KEY set to TEST_KEY value
+        expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+          expect.stringContaining('auth.json'),
+          expect.objectContaining({
+            TEST_KEY: 'test-key',
+            OPENAI_API_KEY: 'test-key',
+          }),
+          { pretty: true },
+        )
+      })
     })
   })
 })
