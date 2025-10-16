@@ -1,4 +1,5 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
+import type { ClaudeCodeProfile } from './claude-code-config'
 
 /**
  * Claude Code specific configuration
@@ -9,6 +10,9 @@ export interface ClaudeCodeConfig {
   outputStyles: string[]
   defaultOutputStyle?: string
   installType: 'global' | 'local'
+  currentProfile?: string
+  profiles?: Record<string, ClaudeCodeProfile>
+  version?: string
 }
 
 /**

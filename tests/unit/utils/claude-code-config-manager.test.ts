@@ -1,9 +1,37 @@
 import type { ClaudeCodeProfile } from '../../../src/types/claude-code-config'
-import { existsSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'pathe'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ZCF_CONFIG_DIR } from '../../../src/constants'
-import { ClaudeCodeConfigManager } from '../../../src/utils/claude-code-config-manager'
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+const testConfigDir = mkdtempSync(join(tmpdir(), 'zcf-config-manager-test-'))
+const testConfigFile = join(testConfigDir, 'config.toml')
+
+vi.mock('../../../src/constants', async () => {
+  const actual = await vi.importActual<typeof import('../../../src/constants')>('../../../src/constants')
+  return {
+    ...actual,
+    ZCF_CONFIG_DIR: testConfigDir,
+    ZCF_CONFIG_FILE: testConfigFile,
+  }
+})
+
+const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+
+function cleanConfigDir(): void {
+  if (!existsSync(testConfigDir)) {
+    return
+  }
+
+  for (const entry of readdirSync(testConfigDir)) {
+    rmSync(join(testConfigDir, entry), { force: true, recursive: true })
+  }
+}
+
+afterAll(() => {
+  cleanConfigDir()
+  rmSync(testConfigDir, { force: true, recursive: true })
+})
 
 // Mock dependencies
 const mockReadCcrConfig = vi.fn()
@@ -12,22 +40,13 @@ vi.mock('../../../src/utils/ccr/config', () => ({
 }))
 
 describe('claudeCodeConfigManager', () => {
-  const testConfigDir = ZCF_CONFIG_DIR
-  const testConfigFile = join(testConfigDir, 'claude-code-configs.json')
-
   beforeEach(() => {
-    // 清理测试环境
-    if (existsSync(testConfigFile)) {
-      rmSync(testConfigFile, { force: true })
-    }
+    cleanConfigDir()
     vi.clearAllMocks()
   })
 
   afterEach(() => {
-    // 清理测试环境
-    if (existsSync(testConfigFile)) {
-      rmSync(testConfigFile, { force: true })
-    }
+    cleanConfigDir()
   })
 
   describe('基础操作', () => {
@@ -37,7 +56,6 @@ describe('claudeCodeConfigManager', () => {
       expect(config).toEqual({
         currentProfileId: '',
         profiles: {},
-        version: '1.0.0',
       })
     })
 
@@ -51,21 +69,27 @@ describe('claudeCodeConfigManager', () => {
         currentProfileId: 'test-profile',
         profiles: {
           'test-profile': {
-            id: 'test-profile',
             name: 'Test Profile',
             authType: 'api_key' as const,
             apiKey: 'test-key',
-            createdAt: '2025-01-14T00:00:00.000Z',
-            updatedAt: '2025-01-14T00:00:00.000Z',
           },
         },
-        version: '1.0.0',
       }
 
       ClaudeCodeConfigManager.writeConfig(testConfig)
       const readConfig = ClaudeCodeConfigManager.readConfig()
 
-      expect(readConfig).toEqual(testConfig)
+      expect(readConfig).toEqual({
+        currentProfileId: 'test-profile',
+        profiles: {
+          'test-profile': {
+            name: 'Test Profile',
+            authType: 'api_key',
+            apiKey: 'test-key',
+            id: 'test-profile',
+          },
+        },
+      })
     })
 
     it('应该备份配置', () => {
@@ -81,46 +105,50 @@ describe('claudeCodeConfigManager', () => {
       const backupPath = ClaudeCodeConfigManager.backupConfig()
 
       expect(backupPath).toBeTruthy()
-      expect(backupPath).toContain('claude-code-configs.backup.')
+      expect(backupPath).toContain('config.backup.')
       expect(existsSync(backupPath!)).toBe(true)
     })
   })
 
   describe('addProfile', () => {
-    it('应该成功添加新配置', async () => {
+    it('应该成功添加新配置并返回新增配置', async () => {
       const profile: ClaudeCodeProfile = {
-        id: 'test-profile',
         name: 'Test Profile',
         authType: 'api_key',
         apiKey: 'test-api-key',
         baseUrl: 'https://api.anthropic.com',
-        description: 'Test configuration',
       }
 
       const result = await ClaudeCodeConfigManager.addProfile(profile)
 
       expect(result.success).toBe(true)
+      expect(result.addedProfile).toMatchObject({
+        name: 'Test Profile',
+        authType: 'api_key',
+        id: 'test-profile',
+      })
 
       const config = ClaudeCodeConfigManager.readConfig()
       expect(config?.profiles['test-profile']).toEqual({
-        ...profile,
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
+        name: 'Test Profile',
+        authType: 'api_key',
+        apiKey: 'test-api-key',
+        baseUrl: 'https://api.anthropic.com',
+        id: 'test-profile',
       })
       expect(config?.currentProfileId).toBe('test-profile')
+      expect(config?.profiles['test-profile']).not.toHaveProperty('description')
     })
 
-    it('应该处理重复ID', async () => {
+    it('应该处理重复名称', async () => {
       const profile1: ClaudeCodeProfile = {
-        id: 'duplicate-id',
         name: 'Profile 1',
         authType: 'api_key',
         apiKey: 'key1',
       }
 
       const profile2: ClaudeCodeProfile = {
-        id: 'duplicate-id',
-        name: 'Profile 2',
+        name: 'Profile 1',
         authType: 'auth_token',
         apiKey: 'key2',
       }
@@ -137,7 +165,6 @@ describe('claudeCodeConfigManager', () => {
 
     it('应该验证必填字段', async () => {
       const invalidProfile = {
-        id: '',
         name: '',
         authType: 'invalid_type' as any,
       }
@@ -146,25 +173,6 @@ describe('claudeCodeConfigManager', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toContain('Validation failed')
-    })
-
-    it('应该自动生成时间戳', async () => {
-      const before = Date.now()
-      const profile: ClaudeCodeProfile = {
-        id: 'test-profile',
-        name: 'Test Profile',
-        authType: 'api_key',
-        apiKey: 'test-key',
-      }
-
-      await ClaudeCodeConfigManager.addProfile(profile)
-
-      const config = ClaudeCodeConfigManager.readConfig()
-      const savedProfile = config?.profiles['test-profile']
-
-      expect(savedProfile?.createdAt).toBeTruthy()
-      expect(savedProfile?.updatedAt).toBeTruthy()
-      expect(new Date(savedProfile?.createdAt || '').getTime()).toBeGreaterThanOrEqual(before)
     })
   })
 
@@ -180,28 +188,32 @@ describe('claudeCodeConfigManager', () => {
       await ClaudeCodeConfigManager.addProfile(profile)
     })
 
-    it('应该更新现有配置', async () => {
+    it('应该更新现有配置并返回更新后的配置', async () => {
       // 等待一毫秒确保时间戳不同
       await new Promise(resolve => setTimeout(resolve, 1))
 
       const updateData = {
         name: 'Updated Profile',
-        description: 'Updated description',
         baseUrl: 'https://updated.api.com',
       }
 
       const result = await ClaudeCodeConfigManager.updateProfile('test-profile', updateData)
 
       expect(result.success).toBe(true)
+      expect(result.updatedProfile).toMatchObject({
+        id: 'updated-profile',
+        name: 'Updated Profile',
+        baseUrl: 'https://updated.api.com',
+      })
+      expect(result.updatedProfile).not.toHaveProperty('description')
 
       const config = ClaudeCodeConfigManager.readConfig()
-      const updatedProfile = config?.profiles['test-profile']
+      const updatedProfile = config?.profiles['updated-profile']
 
       expect(updatedProfile?.name).toBe('Updated Profile')
-      expect(updatedProfile?.description).toBe('Updated description')
       expect(updatedProfile?.baseUrl).toBe('https://updated.api.com')
-      expect(updatedProfile?.id).toBe('test-profile') // ID不应该改变
-      expect(updatedProfile?.updatedAt).not.toBe(updatedProfile?.createdAt)
+      expect(updatedProfile?.id).toBe('updated-profile')
+      expect(updatedProfile).not.toHaveProperty('description')
     })
 
     it('应该处理不存在的配置', async () => {
@@ -231,15 +243,13 @@ describe('claudeCodeConfigManager', () => {
     beforeEach(async () => {
       // 添加两个测试配置
       const profile1: ClaudeCodeProfile = {
-        id: 'profile1',
-        name: 'Profile 1',
+        name: 'profile1',
         authType: 'api_key',
         apiKey: 'key1',
       }
 
       const profile2: ClaudeCodeProfile = {
-        id: 'profile2',
-        name: 'Profile 2',
+        name: 'profile2',
         authType: 'auth_token',
         apiKey: 'key2',
       }
@@ -293,15 +303,13 @@ describe('claudeCodeConfigManager', () => {
   describe('switchProfile', () => {
     beforeEach(async () => {
       const profile1: ClaudeCodeProfile = {
-        id: 'profile1',
-        name: 'Profile 1',
+        name: 'profile1',
         authType: 'api_key',
         apiKey: 'key1',
       }
 
       const profile2: ClaudeCodeProfile = {
-        id: 'profile2',
-        name: 'Profile 2',
+        name: 'profile2',
         authType: 'auth_token',
         apiKey: 'key2',
       }
@@ -343,15 +351,13 @@ describe('claudeCodeConfigManager', () => {
 
     it('应该返回所有配置', async () => {
       const profile1: ClaudeCodeProfile = {
-        id: 'profile1',
-        name: 'Profile 1',
+        name: 'profile1',
         authType: 'api_key',
         apiKey: 'key1',
       }
 
       const profile2: ClaudeCodeProfile = {
-        id: 'profile2',
-        name: 'Profile 2',
+        name: 'profile2',
         authType: 'auth_token',
         apiKey: 'key2',
       }
@@ -456,9 +462,7 @@ describe('claudeCodeConfigManager', () => {
 
     it('应该处理无配置的情况', async () => {
       // 清空配置
-      if (existsSync(testConfigFile)) {
-        rmSync(testConfigFile, { force: true })
-      }
+      cleanConfigDir()
 
       const result = await ClaudeCodeConfigManager.switchToOfficial()
       expect(result.success).toBe(true)
@@ -490,7 +494,6 @@ describe('claudeCodeConfigManager', () => {
 
       const errors = ClaudeCodeConfigManager.validateProfile(invalidProfile)
       expect(errors.length).toBeGreaterThan(0)
-      expect(errors.some(e => e.includes('Profile ID is required'))).toBe(true)
       expect(errors.some(e => e.includes('Profile name is required'))).toBe(true)
       expect(errors.some(e => e.includes('Invalid auth type'))).toBe(true)
     })
@@ -521,18 +524,17 @@ describe('claudeCodeConfigManager', () => {
   })
 
   describe('generateProfileId', () => {
-    it('应该生成唯一ID', () => {
+    it('应该生成稳定的标识', () => {
       const id1 = ClaudeCodeConfigManager.generateProfileId('Test Profile')
       const id2 = ClaudeCodeConfigManager.generateProfileId('Test Profile')
 
-      expect(id1).not.toBe(id2)
-      expect(id1).toContain('test-profile')
-      expect(id2).toContain('test-profile')
+      expect(id1).toBe('test-profile')
+      expect(id2).toBe('test-profile')
     })
 
     it('应该处理特殊字符', () => {
       const id = ClaudeCodeConfigManager.generateProfileId('Test@#$%^&*Profile')
-      expect(id).toMatch(/^test-profile-[a-z0-9]+$/)
+      expect(id).toBe('test-profile')
     })
   })
 
@@ -540,22 +542,19 @@ describe('claudeCodeConfigManager', () => {
     beforeEach(async () => {
       // 添加三个测试配置
       const profile1: ClaudeCodeProfile = {
-        id: 'profile1',
-        name: 'Profile 1',
+        name: 'profile1',
         authType: 'api_key',
         apiKey: 'key1',
       }
 
       const profile2: ClaudeCodeProfile = {
-        id: 'profile2',
-        name: 'Profile 2',
+        name: 'profile2',
         authType: 'auth_token',
         apiKey: 'key2',
       }
 
       const profile3: ClaudeCodeProfile = {
-        id: 'profile3',
-        name: 'Profile 3',
+        name: 'profile3',
         authType: 'ccr_proxy',
       }
 
@@ -568,6 +567,10 @@ describe('claudeCodeConfigManager', () => {
       const result = await ClaudeCodeConfigManager.deleteProfiles(['profile1', 'profile3'])
 
       expect(result.success).toBe(true)
+      expect(result.deletedProfiles).toEqual(['profile1', 'profile3'])
+      expect(result.remainingProfiles).toEqual([
+        expect.objectContaining({ id: 'profile2' }),
+      ])
 
       const config = ClaudeCodeConfigManager.readConfig()
       expect(config?.profiles.profile1).toBeUndefined()
@@ -587,6 +590,8 @@ describe('claudeCodeConfigManager', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toContain('Cannot delete all profiles')
+      expect(result.deletedProfiles).toBeUndefined()
+      expect(result.remainingProfiles).toBeUndefined()
     })
 
     it('应该更新当前配置ID（如果删除的是当前配置）', async () => {
@@ -620,8 +625,9 @@ describe('claudeCodeConfigManager', () => {
     it('应该切换到CCR代理', async () => {
       // Mock CCR配置存在
       mockReadCcrConfig.mockReturnValue({
-        host: 'localhost',
-        port: 8080,
+        HOST: 'localhost',
+        PORT: 8080,
+        APIKEY: 'sk-test',
       } as any)
 
       const result = await ClaudeCodeConfigManager.switchToCcr()
@@ -664,8 +670,9 @@ describe('claudeCodeConfigManager', () => {
     it('应该同步存在的CCR配置', async () => {
       // Mock CCR配置存在
       mockReadCcrConfig.mockReturnValue({
-        host: 'localhost',
-        port: 8080,
+        HOST: 'localhost',
+        PORT: 8080,
+        APIKEY: 'sk-test',
       } as any)
 
       await ClaudeCodeConfigManager.syncCcrProfile()
@@ -674,13 +681,16 @@ describe('claudeCodeConfigManager', () => {
       expect(config?.profiles['ccr-proxy']).toBeTruthy()
       expect(config?.profiles['ccr-proxy']?.name).toBe('CCR Proxy')
       expect(config?.profiles['ccr-proxy']?.authType).toBe('ccr_proxy')
+      expect(config?.profiles['ccr-proxy']?.baseUrl).toBe('http://localhost:8080')
+      expect(config?.profiles['ccr-proxy']?.apiKey).toBe('sk-test')
     })
 
     it('应该删除不存在的CCR配置', async () => {
       // 先创建CCR配置
       mockReadCcrConfig.mockReturnValue({
-        host: 'localhost',
-        port: 8080,
+        HOST: 'localhost',
+        PORT: 8080,
+        APIKEY: 'sk-test',
       } as any)
       await ClaudeCodeConfigManager.syncCcrProfile()
 
@@ -706,8 +716,7 @@ describe('claudeCodeConfigManager', () => {
   describe('isLastProfile', () => {
     it('应该检测最后一个配置', async () => {
       const profile: ClaudeCodeProfile = {
-        id: 'only-profile',
-        name: 'Only Profile',
+        name: 'only-profile',
         authType: 'api_key',
         apiKey: 'test-key',
       }
@@ -719,15 +728,13 @@ describe('claudeCodeConfigManager', () => {
 
     it('应该检测不是最后一个配置', async () => {
       const profile1: ClaudeCodeProfile = {
-        id: 'profile1',
-        name: 'Profile 1',
+        name: 'profile1',
         authType: 'api_key',
         apiKey: 'key1',
       }
 
       const profile2: ClaudeCodeProfile = {
-        id: 'profile2',
-        name: 'Profile 2',
+        name: 'profile2',
         authType: 'auth_token',
         apiKey: 'key2',
       }

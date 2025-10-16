@@ -4,16 +4,22 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // Mock modules
 vi.mock('../../../src/i18n', () => ({
   i18n: {
-    t: vi.fn((key: string, _params?: any) => {
+    t: vi.fn((key: string, params?: Record<string, string>) => {
       const translations: Record<string, string> = {
         'multi-config:configsAddedSuccessfully': 'API configurations added successfully',
-        'multi-config:configsFailed': 'Failed to add API configurations: {error}',
-        'multi-config:profileAdded': 'Profile added: {name}',
-        'multi-config:defaultProfileSet': 'Default profile set: {name}',
-        'multi-config:providerAdded': 'Provider added: {name}',
-        'multi-config:defaultProviderSet': 'Default provider set: {name}',
+        'multi-config:configsFailed': 'Failed to add API configurations: {{error}}',
+        'multi-config:profileAdded': 'Profile added: {{name}}',
+        'multi-config:defaultProfileSet': 'Default profile set: {{name}}',
+        'multi-config:providerAdded': 'Provider added: {{name}}',
+        'multi-config:defaultProviderSet': 'Default provider set: {{name}}',
       }
-      return translations[key] || key
+      let template = translations[key] || key
+      if (params) {
+        template = template.replace(/\{\{(\w+)\}\}/g, (_match, group) => {
+          return group in params ? params[group] : `{{${group}}}`
+        })
+      }
+      return template
     }),
     language: 'en',
   },
@@ -31,11 +37,13 @@ vi.mock('../../../src/utils/code-tools/codex', () => ({
 
 vi.mock('../../../src/utils/claude-code-config-manager', () => ({
   ClaudeCodeConfigManager: {
+    CONFIG_FILE: '/mock/config.toml',
     addProfile: vi.fn().mockResolvedValue({ success: true }),
-    getProfileByName: vi.fn().mockReturnValue({ id: 'test-id', name: 'Test Profile', authType: 'api_key' }),
+    getProfileByName: vi.fn((name: string) => ({ id: `${name}-id`, name, authType: 'api_key' })),
     switchProfile: vi.fn().mockResolvedValue({ success: true }),
     syncCcrProfile: vi.fn().mockResolvedValue(undefined),
     generateProfileId: vi.fn().mockReturnValue('test-profile-id'),
+    applyProfileSettings: vi.fn(),
   },
 }))
 
@@ -44,10 +52,19 @@ vi.mock('../../../src/utils/fs-operations', () => ({
 }))
 
 describe('handleMultiConfigurations', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+    vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+      success: true,
+      addedProfile: {
+        id: 'test-profile-id',
+        name: 'Mock Profile',
+        authType: 'api_key',
+      },
+    })
   })
 
   it('should handle Claude Code API configurations from JSON string', async () => {
@@ -79,6 +96,39 @@ describe('handleMultiConfigurations', () => {
         baseUrl: 'https://api.anthropic.com',
       }),
     )
+    expect(ClaudeCodeConfigManager.switchProfile).toHaveBeenCalledWith('Test Config-id')
+    expect(ClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Test Config', id: 'Test Config-id' }),
+    )
+  })
+
+  it('should omit description when converting Claude Code configs', async () => {
+    const { handleMultiConfigurations } = await import('../../../src/commands/init')
+    const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+
+    const apiConfigs = JSON.stringify([
+      {
+        name: 'Desc Config',
+        type: 'api_key',
+        key: 'sk-test-key',
+        url: 'https://api.anthropic.com',
+        description: 'Should be ignored',
+      },
+    ])
+
+    const options: InitOptions = {
+      skipPrompt: true,
+      apiConfigs,
+    }
+
+    await handleMultiConfigurations(options, 'claude-code')
+
+    const callArgs = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls[0][0]
+    expect(callArgs).toMatchObject({
+      name: 'Desc Config',
+      authType: 'api_key',
+    })
+    expect(callArgs).not.toHaveProperty('description')
   })
 
   it('should handle Codex provider configurations from JSON string', async () => {
@@ -139,6 +189,44 @@ describe('handleMultiConfigurations', () => {
         apiKey: 'sk-auth-token',
       }),
     )
+  })
+
+  it('should log summary with config file path after adding Claude Code profiles', async () => {
+    const { handleMultiConfigurations } = await import('../../../src/commands/init')
+    const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+
+    vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValueOnce({
+      success: true,
+      addedProfile: {
+        id: 'summary-profile-id',
+        name: 'Summary Profile',
+        authType: 'api_key',
+        apiKey: 'sk-summary',
+        baseUrl: 'https://api.anthropic.com',
+      },
+    })
+
+    const apiConfigs = JSON.stringify([
+      {
+        name: 'Summary Profile',
+        type: 'api_key',
+        key: 'sk-summary',
+        url: 'https://api.anthropic.com',
+      },
+    ])
+
+    const options: InitOptions = {
+      skipPrompt: true,
+      apiConfigs,
+    }
+
+    await handleMultiConfigurations(options, 'claude-code')
+
+    const logMessages = vi.mocked(console.log).mock.calls.map(args => args.join(' '))
+    const hasSummary = logMessages.some(msg =>
+      msg.includes('config.toml') && msg.includes('Summary Profile'),
+    )
+    expect(hasSummary).toBe(true)
   })
 
   it('should throw error for invalid JSON', async () => {
@@ -240,7 +328,7 @@ describe('handleMultiConfigurations', () => {
     expect(console.error).toHaveBeenCalled()
   })
 
-  it('should allow CCR proxy without API key', async () => {
+  it('should reject manual CCR proxy configuration', async () => {
     const { handleMultiConfigurations } = await import('../../../src/commands/init')
 
     const apiConfigs = JSON.stringify([
@@ -252,14 +340,11 @@ describe('handleMultiConfigurations', () => {
       apiConfigs,
     }
 
-    await expect(handleMultiConfigurations(options, 'claude-code')).resolves.not.toThrow()
+    await expect(handleMultiConfigurations(options, 'claude-code'))
+      .rejects
+      .toThrow('CCR proxy type is reserved')
 
     const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
-    expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: 'CCR Config',
-        authType: 'ccr_proxy',
-      }),
-    )
+    expect(ClaudeCodeConfigManager.addProfile).not.toHaveBeenCalled()
   })
 })

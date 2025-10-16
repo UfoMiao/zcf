@@ -10,7 +10,7 @@
 
 [English](README.md) | [中文](README_zh-CN.md) | **日本語** | [更新履歴](CHANGELOG.md)
 
-**✨ クイックリンク**: [Codexサポート](#-codexサポートv300新機能) | [BMadワークフロー](#-bmadワークフローv27新機能) | [Specワークフロー](#-specワークフローv2124新機能) | [Open Web Search](#-open-web-searchv2129新機能) | [CCRルーター](#-ccr-claude-code-router-サポートv28強化版) | [CCometixLine](#-ccometixlineサポートステータスバーツールv299新機能) | [出力スタイル](#-ai出力スタイルv212新機能)
+**✨ クイックリンク**: [Codexサポート](#-codexサポートv300新機能) | [BMadワークフロー](#-bmadワークフローv27新機能) | [Specワークフロー](#-specワークフローv2124新機能) | [Open Web Search](#-open-web-searchv2129新機能) | [CCRルーター](#-ccr-claude-code-router-サポートv28強化版) | [CCometixLine](#-ccometixlineサポートステータスバーツールv299新機能) | [出力スタイル](#-ai出力スタイルv212新機能) | [多設定管理](#-多設定管理v320-新機能)
 
 > ゼロ設定、ワンクリックで Claude Code & Codex 環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
 
@@ -399,6 +399,50 @@ npx zcf → +を選択
 - デフォルトモデル設定（v2.0新機能）
 - AIメモリ管理（v2.0新機能）
 - ZCFキャッシュクリーニング（v2.0新機能）
+
+### 🧩 多設定管理（v3.2.0 新機能）
+
+Claude Code と Codex の両方に対して、統一された増分式・対話型の設定管理を提供します：
+
+- Claude Code：APIプロファイルの管理（追加/編集/削除、デフォルト、重複検知）
+- Codex：モデルプロバイダーの管理（一覧/切替、公式ログインは対話モード）
+- 安全なバックアップ；最後の1件の削除防止（Claude Code）
+- 適用時に `~/.claude/settings.json` を更新し、必要に応じて CCR を再起動
+- 保存先：`~/.ufomiao/zcf/config.toml`（バックアップ `config.backup.YYYY-MM-DD_HH-mm-ss.toml`）
+
+ツール種別の指定：
+
+```bash
+# -T は claude-code|codex または短縮 cc|cx を受け付け
+npx zcf cs --list -T cc    # Claude Code プロファイルを一覧
+npx zcf cs --list -T cx    # Codex プロバイダーを一覧
+```
+
+Claude Code の使い方：
+
+```bash
+# クイックスイッチ
+npx zcf cs official -T cc  # 公式ログインへ切替
+npx zcf cs ccr -T cc       # CCR プロキシへ切替
+npx zcf cs my-profile -T cc
+```
+
+Codex の使い方：
+
+```bash
+# プロバイダーの一覧と切替
+npx zcf cs --list -T cx
+npx zcf cs my-provider -T cx
+
+# 公式ログインへ切替（対話式）
+npx zcf config-switch -T cx
+```
+
+補足：
+- 環境変数（Claude Code）：API Key → `ANTHROPIC_API_KEY`、Auth Token → `ANTHROPIC_AUTH_TOKEN`、Base URL → `ANTHROPIC_BASE_URL`。
+- 現在のツール種別は ZCF 設定に保存されます。通常は `-T cc/cx` を付ける必要はなく、別ツールを対象にする場合のみ指定してください。
+
+ 
 
 ## 📖 使用説明
 

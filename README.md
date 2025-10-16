@@ -10,7 +10,7 @@
 
 [中文](README_zh-CN.md) | **English** | [日本語](README_ja-JP.md) | [Changelog](CHANGELOG.md)
 
-**✨ Quick Links**: [Codex Support](#-codex-support-v300-new) | [BMad Workflow](#-bmad-workflow-v27-new-feature) | [Spec Workflow](#-spec-workflow-v2124-new-feature) | [Open Web Search](#-open-web-search-v2129-new-feature) | [CCR Router](#-ccr-claude-code-router-support-v28-enhanced) | [CCometixLine](#-ccometixline-support-status-bar-tool-v299-new) | [Output Styles](#-ai-output-styles-v212-new-feature)
+**✨ Quick Links**: [Codex Support](#-codex-support-v300-new) | [BMad Workflow](#-bmad-workflow-v27-new-feature) | [Spec Workflow](#-spec-workflow-v2124-new-feature) | [Open Web Search](#-open-web-search-v2129-new-feature) | [CCR Router](#-ccr-claude-code-router-support-v28-enhanced) | [CCometixLine](#-ccometixline-support-status-bar-tool-v299-new) | [Output Styles](#-ai-output-styles-v212-new-feature) | [Multi-Configuration Management](#-multi-configuration-management-v320-new)
 
 > Zero-config, one-click setup for Claude Code & Codex with bilingual support, intelligent agent system and personalized AI assistant
 
@@ -400,6 +400,48 @@ After configuration:
 - Default model configuration (v2.0 new)
 - AI memory management (v2.0 new)
 - ZCF cache cleanup (v2.0 new)
+
+### 🧩 Multi-Configuration Management (v3.2.0 New)
+
+Unified, incremental, interactive management for both Claude Code and Codex:
+
+- Claude Code: Manage API profiles (add/edit/delete, default profile, duplicate detection)
+- Codex: Manage model providers (list/switch, official login via interactive)
+- Safe backups; prevents deleting the last profile (Claude Code)
+- Applies environment to `~/.claude/settings.json` and restarts CCR when needed
+- Config storage: `~/.ufomiao/zcf/config.toml` (backups `config.backup.YYYY-MM-DD_HH-mm-ss.toml`)
+
+Choose tool type explicitly:
+
+```bash
+# -T accepts: claude-code|codex or short aliases cc|cx
+npx zcf cs --list -T cc    # List Claude Code profiles
+npx zcf cs --list -T cx    # List Codex providers
+```
+
+Claude Code usage:
+
+```bash
+# Quick switch
+npx zcf cs official -T cc  # Switch to official login
+npx zcf cs ccr -T cc       # Switch to CCR proxy
+npx zcf cs my-profile -T cc
+```
+
+Codex usage:
+
+```bash
+# List and switch providers
+npx zcf cs --list -T cx
+npx zcf cs my-provider -T cx
+
+# Switch to official login (interactive selection)
+npx zcf config-switch -T cx
+```
+
+Notes:
+- ENV mapping (Claude Code): API Key → `ANTHROPIC_API_KEY`, Auth Token → `ANTHROPIC_AUTH_TOKEN`, Base URL → `ANTHROPIC_BASE_URL`.
+- Active code tool type is stored in ZCF config; use `-T cc/cx` only when targeting a different tool than the current one.
 
 ## 📖 Usage Instructions
 

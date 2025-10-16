@@ -5,7 +5,7 @@ import inquirer from 'inquirer'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { ClaudeCodeConfigManager } from '../utils/claude-code-config-manager'
-import { listCodexProviders, readCodexConfig, switchCodexProvider, switchToOfficialLogin, switchToProvider } from '../utils/code-tools/codex'
+import { listCodexProviders, readCodexConfig, switchToOfficialLogin as switchCodexOfficialLogin, switchCodexProvider, switchToProvider } from '../utils/code-tools/codex'
 import { handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
 import { readZcfConfig } from '../utils/zcf-config'
@@ -141,9 +141,6 @@ async function listClaudeCodeProfiles(): Promise<void> {
     const current = isCurrent ? ansis.yellow(i18n.t('common:current')) : ''
 
     console.log(`${status}${ansis.white(profile.name)}${current}`)
-    if (profile.description) {
-      console.log(`    ${ansis.gray(profile.description)}`)
-    }
     console.log(`    ${ansis.cyan(`ID: ${profile.id}`)} ${ansis.gray(`(${profile.authType})`)}`)
     console.log()
   })
@@ -174,7 +171,14 @@ async function handleClaudeCodeDirectSwitch(target: string): Promise<void> {
   if (target === 'official') {
     const result = await ClaudeCodeConfigManager.switchToOfficial()
     if (result.success) {
-      console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToOfficial')))
+      try {
+        await ClaudeCodeConfigManager.applyProfileSettings(null)
+        console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToOfficial')))
+      }
+      catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        console.log(ansis.red(reason))
+      }
     }
     else {
       console.log(ansis.red(i18n.t('multi-config:failedToSwitchToOfficial', { error: result.error })))
@@ -183,17 +187,56 @@ async function handleClaudeCodeDirectSwitch(target: string): Promise<void> {
   else if (target === 'ccr') {
     const result = await ClaudeCodeConfigManager.switchToCcr()
     if (result.success) {
-      console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToCcr')))
+      try {
+        const profile = ClaudeCodeConfigManager.getProfileById('ccr-proxy')
+        await ClaudeCodeConfigManager.applyProfileSettings(profile)
+        console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToCcr')))
+      }
+      catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        console.log(ansis.red(reason))
+      }
     }
     else {
       console.log(ansis.red(i18n.t('multi-config:failedToSwitchToCcr', { error: result.error })))
     }
   }
   else {
-    // Assume it's a profile ID
-    const result = await ClaudeCodeConfigManager.switchProfile(target)
+    const config = ClaudeCodeConfigManager.readConfig()
+    if (!config || !config.profiles || Object.keys(config.profiles).length === 0) {
+      console.log(ansis.yellow(i18n.t('multi-config:noClaudeCodeProfilesAvailable')))
+      return
+    }
+
+    const normalizedTarget = target.trim()
+    let resolvedId = normalizedTarget
+    let resolvedProfile = config.profiles[normalizedTarget]
+
+    if (!resolvedProfile) {
+      const match = Object.entries(config.profiles)
+        .find(([, profile]) => profile.name === normalizedTarget)
+
+      if (match) {
+        resolvedId = match[0]
+        resolvedProfile = match[1]
+      }
+    }
+
+    if (!resolvedProfile) {
+      console.log(ansis.red(i18n.t('multi-config:profileNameNotFound', { name: target })))
+      return
+    }
+
+    const result = await ClaudeCodeConfigManager.switchProfile(resolvedId)
     if (result.success) {
-      console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToProfile', { id: target })))
+      try {
+        await ClaudeCodeConfigManager.applyProfileSettings({ ...resolvedProfile, id: resolvedId })
+        console.log(ansis.green(i18n.t('multi-config:successfullySwitchedToProfile', { name: resolvedProfile.name })))
+      }
+      catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        console.log(ansis.red(reason))
+      }
     }
     else {
       console.log(ansis.red(i18n.t('multi-config:failedToSwitchToProfile', { error: result.error })))
@@ -222,7 +265,7 @@ async function handleClaudeCodeInteractiveSwitch(): Promise<void> {
   const config = ClaudeCodeConfigManager.readConfig()
 
   if (!config || !config.profiles || Object.keys(config.profiles).length === 0) {
-    console.log(ansis.yellow('No Claude Code profiles available'))
+    console.log(ansis.yellow(i18n.t('multi-config:noClaudeCodeProfilesAvailable')))
     return
   }
 
@@ -242,7 +285,7 @@ async function handleClaudeCodeInteractiveSwitch(): Promise<void> {
     })
 
     // Add CCR option
-    const isCcrMode = currentProfileId === 'ccr'
+    const isCcrMode = currentProfileId === 'ccr-proxy'
     choices.push({
       name: isCcrMode
         ? `${ansis.green('● ')}CCR Proxy ${ansis.yellow('(current)')}`
@@ -251,15 +294,17 @@ async function handleClaudeCodeInteractiveSwitch(): Promise<void> {
     })
 
     // Add profile options
-    Object.values(profiles).forEach((profile: any) => {
-      const isCurrent = profile.id === currentProfileId
-      choices.push({
-        name: isCurrent
-          ? `${ansis.green('● ')}${profile.name} ${ansis.yellow('(current)')}`
-          : `  ${profile.name}`,
-        value: profile.id,
+    Object.values(profiles)
+      .filter((profile: any) => profile.id !== 'ccr-proxy')
+      .forEach((profile: any) => {
+        const isCurrent = profile.id === currentProfileId
+        choices.push({
+          name: isCurrent
+            ? `${ansis.green('● ')}${profile.name} ${ansis.yellow('(current)')}`
+            : `  ${profile.name}`,
+          value: profile.id,
+        })
       })
-    })
 
     return choices
   }
@@ -351,7 +396,7 @@ async function handleCodexInteractiveSwitch(): Promise<void> {
 
     let success = false
     if (selectedConfig === 'official') {
-      success = await switchToOfficialLogin()
+      success = await switchCodexOfficialLogin()
     }
     else {
       success = await switchToProvider(selectedConfig)

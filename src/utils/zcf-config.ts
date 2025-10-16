@@ -104,6 +104,8 @@ function createDefaultTomlConfig(preferredLang: SupportedLang = 'en', claudeCode
       outputStyles: ['engineer-professional'],
       defaultOutputStyle: 'engineer-professional',
       installType: claudeCodeInstallType,
+      currentProfile: '',
+      profiles: {},
     },
     codex: {
       enabled: false,
@@ -137,6 +139,8 @@ function migrateFromJsonConfig(jsonConfig: any): ZcfTomlConfig {
       outputStyles: jsonConfig.outputStyles || defaultConfig.claudeCode.outputStyles,
       defaultOutputStyle: jsonConfig.defaultOutputStyle || defaultConfig.claudeCode.defaultOutputStyle,
       installType: claudeCodeInstallType,
+      currentProfile: jsonConfig.currentProfileId || defaultConfig.claudeCode.currentProfile,
+      profiles: jsonConfig.claudeCode?.profiles || {},
     },
     codex: {
       enabled: jsonConfig.codeToolType === 'codex',
@@ -321,6 +325,18 @@ export function writeZcfConfig(config: ZcfConfig): void {
 
     if (nextSystemPromptStyle) {
       tomlConfig.codex.systemPromptStyle = nextSystemPromptStyle
+    }
+
+    if (existingTomlConfig?.claudeCode) {
+      if (existingTomlConfig.claudeCode.profiles) {
+        tomlConfig.claudeCode.profiles = existingTomlConfig.claudeCode.profiles
+      }
+      if (existingTomlConfig.claudeCode.currentProfile !== undefined) {
+        tomlConfig.claudeCode.currentProfile = existingTomlConfig.claudeCode.currentProfile
+      }
+      if (existingTomlConfig.claudeCode.version) {
+        tomlConfig.claudeCode.version = existingTomlConfig.claudeCode.version
+      }
     }
 
     writeTomlConfig(ZCF_CONFIG_FILE, tomlConfig)

@@ -989,8 +989,13 @@ export function validateApiConfigs(configs: ApiConfigDefinition[]): void {
  */
 async function handleClaudeCodeConfigs(configs: ApiConfigDefinition[]): Promise<void> {
   const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+  const addedProfiles: ClaudeCodeProfile[] = []
 
   for (const config of configs) {
+    if (config.type === 'ccr_proxy') {
+      throw new Error(`CCR proxy type is reserved and cannot be added manually (config: "${config.name}")`)
+    }
+
     const profile = await convertToClaudeCodeProfile(config)
     const result = await ClaudeCodeConfigManager.addProfile(profile)
 
@@ -998,15 +1003,29 @@ async function handleClaudeCodeConfigs(configs: ApiConfigDefinition[]): Promise<
       throw new Error(`Failed to add profile "${config.name}": ${result.error}`)
     }
 
+    const storedProfile = result.addedProfile
+      || ClaudeCodeConfigManager.getProfileByName(config.name)
+      || profile
+    addedProfiles.push(storedProfile)
+
     console.log(ansis.green(`✔ ${i18n.t('multi-config:profileAdded', { name: config.name })}`))
+  }
+
+  if (addedProfiles.length > 0) {
+    const summary = addedProfiles
+      .map(profile => `${profile.name} [${profile.authType}]`)
+      .join(', ')
+    console.log(ansis.gray(`  • ${ClaudeCodeConfigManager.CONFIG_FILE}: ${summary}`))
   }
 
   // Set default profile if specified
   const defaultConfig = configs.find(c => c.default)
   if (defaultConfig) {
-    const profile = ClaudeCodeConfigManager.getProfileByName(defaultConfig.name)
-    if (profile) {
+    const profile = addedProfiles.find(p => p.name === defaultConfig.name)
+      || ClaudeCodeConfigManager.getProfileByName(defaultConfig.name)
+    if (profile && profile.id) {
       await ClaudeCodeConfigManager.switchProfile(profile.id)
+      await ClaudeCodeConfigManager.applyProfileSettings(profile)
       console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProfileSet', { name: defaultConfig.name })}`))
     }
   }
@@ -1058,14 +1077,11 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
   const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
 
   const profile: ClaudeCodeProfile = {
-    id: ClaudeCodeConfigManager.generateProfileId(config.name),
     name: config.name,
     authType: config.type,
     apiKey: config.key,
     baseUrl: config.url,
-    description: config.description,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    id: ClaudeCodeConfigManager.generateProfileId(config.name),
   }
 
   return profile

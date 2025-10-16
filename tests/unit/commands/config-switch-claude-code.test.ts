@@ -34,8 +34,9 @@ vi.mock('../../../src/i18n', () => ({
         'multi-config:failedToSwitchToOfficial': '切换到官方登录失败：{error}',
         'multi-config:successfullySwitchedToCcr': '成功切换到 CCR 代理',
         'multi-config:failedToSwitchToCcr': '切换到 CCR 代理失败：{error}',
-        'multi-config:successfullySwitchedToProfile': '成功切换到配置文件：{id}',
+        'multi-config:successfullySwitchedToProfile': '成功切换到配置文件：{name}',
         'multi-config:failedToSwitchToProfile': '切换到配置文件失败：{error}',
+        'multi-config:profileNameNotFound': '未找到配置：{name}',
         'codex:useOfficialLogin': '使用官方登录',
         'common:current': '当前',
         'common:cancelled': '已取消操作',
@@ -63,6 +64,8 @@ vi.mock('../../../src/utils/claude-code-config-manager', () => ({
     switchProfile: vi.fn(),
     switchToOfficial: vi.fn(),
     switchToCcr: vi.fn(),
+    applyProfileSettings: vi.fn(),
+    getProfileById: vi.fn(),
   },
 }))
 
@@ -109,30 +112,24 @@ describe('config-switch command - Claude Code Support', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    // Setup default Claude Code config mocks
-    mockClaudeCodeConfigManager.readConfig.mockReturnValue({
-      version: '1.0.0',
+    const defaultConfig = {
       profiles: {
         profile1: {
           id: 'profile1',
           name: 'Test Profile 1',
-          authType: 'api_key',
-          description: 'Test profile 1 description',
-          createdAt: '2023-01-01T00:00:00Z',
-          updatedAt: '2023-01-01T00:00:00Z',
+          authType: 'api_key' as const,
         },
         profile2: {
           id: 'profile2',
           name: 'Test Profile 2',
-          authType: 'auth_token',
-          description: 'Test profile 2 description',
-          createdAt: '2023-01-01T00:00:00Z',
-          updatedAt: '2023-01-01T00:00:00Z',
+          authType: 'auth_token' as const,
         },
       },
       currentProfileId: 'profile1',
-    })
+    }
 
+    mockClaudeCodeConfigManager.readConfig.mockReturnValue(defaultConfig)
+    mockClaudeCodeConfigManager.getProfileById.mockImplementation((id: string) => (defaultConfig.profiles as Record<string, any>)[id] || null)
     mockClaudeCodeConfigManager.switchProfile.mockResolvedValue({ success: true })
     mockClaudeCodeConfigManager.switchToOfficial.mockResolvedValue({ success: true })
     mockClaudeCodeConfigManager.switchToCcr.mockResolvedValue({ success: true })
@@ -169,7 +166,6 @@ describe('config-switch command - Claude Code Support', () => {
 
     it('should handle profiles object with no profiles', async () => {
       mockClaudeCodeConfigManager.readConfig.mockReturnValue({
-        version: '1.0.0',
         profiles: {},
         currentProfileId: '',
       })
@@ -185,6 +181,7 @@ describe('config-switch command - Claude Code Support', () => {
       await configSwitchCommand({ target: 'official', codeType: 'claude-code' })
 
       expect(mockClaudeCodeConfigManager.switchToOfficial).toHaveBeenCalled()
+      expect(mockClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalledWith(null)
       expect(mockConsoleLog).toHaveBeenCalledWith('成功切换到官方登录')
     })
 
@@ -203,6 +200,7 @@ describe('config-switch command - Claude Code Support', () => {
       await configSwitchCommand({ target: 'ccr', codeType: 'claude-code' })
 
       expect(mockClaudeCodeConfigManager.switchToCcr).toHaveBeenCalled()
+      expect(mockClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith('成功切换到 CCR 代理')
     })
 
@@ -221,18 +219,30 @@ describe('config-switch command - Claude Code Support', () => {
       await configSwitchCommand({ target: 'profile2', codeType: 'claude-code' })
 
       expect(mockClaudeCodeConfigManager.switchProfile).toHaveBeenCalledWith('profile2')
-      expect(mockConsoleLog).toHaveBeenCalledWith('成功切换到配置文件：profile2')
+      expect(mockClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalledWith(expect.objectContaining({ id: 'profile2', name: 'Test Profile 2' }))
+      expect(mockConsoleLog).toHaveBeenCalledWith('成功切换到配置文件：Test Profile 2')
     })
 
-    it('should handle profile switch failure', async () => {
+    it('should handle profile switch failure when manager returns error', async () => {
       mockClaudeCodeConfigManager.switchProfile.mockResolvedValue({
         success: false,
         error: 'Profile not found',
       })
 
+      await configSwitchCommand({ target: 'profile1', codeType: 'claude-code' })
+
+      expect(mockClaudeCodeConfigManager.switchProfile).toHaveBeenCalledWith('profile1')
+      expect(mockConsoleLog).toHaveBeenCalledWith('切换到配置文件失败：Profile not found')
+    })
+
+    it('should warn when specified profile does not exist', async () => {
+      mockClaudeCodeConfigManager.switchProfile.mockResolvedValue({ success: true })
+
       await configSwitchCommand({ target: 'nonexistent', codeType: 'claude-code' })
 
-      expect(mockConsoleLog).toHaveBeenCalledWith('切换到配置文件失败：Profile not found')
+      expect(mockClaudeCodeConfigManager.switchProfile).not.toHaveBeenCalled()
+      expect(mockClaudeCodeConfigManager.applyProfileSettings).not.toHaveBeenCalled()
+      expect(mockConsoleLog).toHaveBeenCalledWith('未找到配置：nonexistent')
     })
   })
 
@@ -287,7 +297,7 @@ describe('config-switch command - Claude Code Support', () => {
       await configSwitchCommand({ codeType: 'claude-code' })
 
       expect(mockInquirer.prompt).not.toHaveBeenCalled()
-      expect(mockConsoleLog).toHaveBeenCalledWith('No Claude Code profiles available')
+      expect(mockConsoleLog).toHaveBeenCalledWith('没有可用的 Claude Code 配置文件')
     })
 
     it('should handle Ctrl+C exit gracefully', async () => {

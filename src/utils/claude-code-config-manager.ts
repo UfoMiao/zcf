@@ -1,14 +1,16 @@
 import type { CcrConfig } from '../types/ccr'
 import type { ClaudeCodeConfigData, ClaudeCodeProfile, OperationResult } from '../types/claude-code-config'
+import type { ZcfTomlConfig } from '../types/toml-config'
 import dayjs from 'dayjs'
 import { join } from 'pathe'
-import { ZCF_CONFIG_DIR } from '../constants'
-import { ensureDir, exists, readFile, writeFile } from './fs-operations'
-import { writeJsonConfig } from './json-config'
+import { SETTINGS_FILE, ZCF_CONFIG_DIR, ZCF_CONFIG_FILE } from '../constants'
+import { copyFile, ensureDir, exists } from './fs-operations'
+import { readJsonConfig } from './json-config'
+import { createDefaultTomlConfig, readDefaultTomlConfig, writeTomlConfig } from './zcf-config'
 
 export class ClaudeCodeConfigManager {
-  static readonly CONFIG_FILE = join(ZCF_CONFIG_DIR, 'claude-code-configs.json')
-  static readonly CONFIG_VERSION = '1.0.0'
+  static readonly CONFIG_FILE = ZCF_CONFIG_FILE
+  static readonly LEGACY_CONFIG_FILE = join(ZCF_CONFIG_DIR, 'claude-code-configs.json')
 
   /**
    * Ensure configuration directory exists
@@ -18,23 +20,127 @@ export class ClaudeCodeConfigManager {
   }
 
   /**
+   * Read TOML configuration
+   */
+  private static readTomlConfig(): ZcfTomlConfig | null {
+    return readDefaultTomlConfig()
+  }
+
+  /**
+   * Load TOML configuration, falling back to default when missing
+   */
+  private static loadTomlConfig(): ZcfTomlConfig {
+    const existingConfig = this.readTomlConfig()
+    if (existingConfig) {
+      return existingConfig
+    }
+    return createDefaultTomlConfig()
+  }
+
+  /**
+   * Migrate legacy JSON-based configuration into TOML storage
+   */
+  private static migrateFromLegacyConfig(): ClaudeCodeConfigData | null {
+    if (!exists(this.LEGACY_CONFIG_FILE)) {
+      return null
+    }
+
+    try {
+      const legacyConfig = readJsonConfig<any>(this.LEGACY_CONFIG_FILE)
+      if (!legacyConfig) {
+        return null
+      }
+
+      const normalizedProfiles: Record<string, ClaudeCodeProfile> = {}
+      const existingKeys = new Set<string>()
+      let migratedCurrentKey = ''
+
+      Object.entries(legacyConfig.profiles || {}).forEach(([legacyKey, profile]) => {
+        const sourceProfile = profile as ClaudeCodeProfile
+        const name = sourceProfile.name?.trim() || legacyKey
+        const baseKey = this.generateProfileId(name)
+        let uniqueKey = baseKey || legacyKey
+        let suffix = 2
+        while (existingKeys.has(uniqueKey)) {
+          uniqueKey = `${baseKey || legacyKey}-${suffix++}`
+        }
+        existingKeys.add(uniqueKey)
+
+        const sanitizedProfile = this.sanitizeProfile({
+          ...sourceProfile,
+          name,
+        })
+
+        normalizedProfiles[uniqueKey] = {
+          ...sanitizedProfile,
+          id: uniqueKey,
+        }
+
+        if (legacyConfig.currentProfileId === legacyKey || legacyConfig.currentProfileId === sourceProfile.id) {
+          migratedCurrentKey = uniqueKey
+        }
+      })
+
+      if (!migratedCurrentKey && legacyConfig.currentProfileId) {
+        const fallbackKey = this.generateProfileId(legacyConfig.currentProfileId)
+        if (existingKeys.has(fallbackKey)) {
+          migratedCurrentKey = fallbackKey
+        }
+      }
+
+      if (!migratedCurrentKey && existingKeys.size > 0) {
+        migratedCurrentKey = Array.from(existingKeys)[0]
+      }
+
+      const migratedConfig: ClaudeCodeConfigData = {
+        currentProfileId: migratedCurrentKey,
+        profiles: normalizedProfiles,
+      }
+
+      this.writeConfig(migratedConfig)
+      return migratedConfig
+    }
+    catch (error) {
+      console.error('Failed to migrate legacy Claude Code config:', error)
+      return null
+    }
+  }
+
+  /**
    * Read configuration
    */
   static readConfig(): ClaudeCodeConfigData | null {
     try {
-      if (!exists(this.CONFIG_FILE)) {
-        return null
+      const tomlConfig = readDefaultTomlConfig()
+      if (!tomlConfig || !tomlConfig.claudeCode) {
+        return this.migrateFromLegacyConfig()
       }
 
-      const content = readFile(this.CONFIG_FILE)
-      const config = JSON.parse(content) as ClaudeCodeConfigData
+      const { claudeCode } = tomlConfig
+      const rawProfiles = claudeCode.profiles || {}
+      const sanitizedProfiles = Object.fromEntries(
+        Object.entries(rawProfiles).map(([key, profile]) => {
+          const storedProfile = this.sanitizeProfile({
+            ...(profile as ClaudeCodeProfile),
+            name: (profile as ClaudeCodeProfile).name || key,
+          })
+          return [key, { ...storedProfile, id: key }]
+        }),
+      )
 
-      // Validate configuration version
-      if (config.version !== this.CONFIG_VERSION) {
-        console.warn(`Claude Code config version mismatch. Expected: ${this.CONFIG_VERSION}, Found: ${config.version}`)
+      const configData: ClaudeCodeConfigData = {
+        currentProfileId: claudeCode.currentProfile || '',
+        profiles: sanitizedProfiles,
       }
 
-      return config
+      if (Object.keys(configData.profiles).length === 0) {
+        const migrated = this.migrateFromLegacyConfig()
+        if (migrated) {
+          return migrated
+        }
+      }
+
+      return configData
     }
     catch (error) {
       console.error('Failed to read Claude Code config:', error)
@@ -49,13 +155,32 @@ export class ClaudeCodeConfigManager {
     try {
       this.ensureConfigDir()
 
-      const configToWrite = {
-        ...config,
-        version: this.CONFIG_VERSION,
+      const keyMap = new Map<string, string>()
+      const sanitizedProfiles = Object.fromEntries(
+        Object.entries(config.profiles).map(([key, profile]) => {
+          const normalizedName = profile.name?.trim() || key
+          const profileKey = this.generateProfileId(normalizedName)
+          keyMap.set(key, profileKey)
+
+          const sanitizedProfile = this.sanitizeProfile({
+            ...profile,
+            name: normalizedName,
+          })
+          return [profileKey, sanitizedProfile]
+        }),
+      )
+
+      const tomlConfig = this.loadTomlConfig()
+      const nextTomlConfig: ZcfTomlConfig = {
+        ...tomlConfig,
+        claudeCode: {
+          ...tomlConfig.claudeCode,
+          currentProfile: keyMap.get(config.currentProfileId) || config.currentProfileId,
+          profiles: sanitizedProfiles,
+        },
       }
 
-      const content = JSON.stringify(configToWrite, null, 2)
-      writeFile(this.CONFIG_FILE, content)
+      writeTomlConfig(this.CONFIG_FILE, nextTomlConfig)
     }
     catch (error) {
       console.error('Failed to write Claude Code config:', error)
@@ -70,8 +195,99 @@ export class ClaudeCodeConfigManager {
     return {
       currentProfileId: '',
       profiles: {},
-      version: this.CONFIG_VERSION,
     }
+  }
+
+  /**
+   * Apply profile settings to Claude Code runtime
+   */
+  static async applyProfileSettings(profile: ClaudeCodeProfile | null): Promise<void> {
+    const { ensureI18nInitialized, i18n } = await import('../i18n')
+    ensureI18nInitialized()
+
+    try {
+      if (!profile) {
+        const { switchToOfficialLogin } = await import('./config')
+        switchToOfficialLogin()
+        return
+      }
+
+      const { readJsonConfig, writeJsonConfig } = await import('./json-config')
+      const settings = readJsonConfig<any>(SETTINGS_FILE) || {}
+
+      if (!settings.env)
+        settings.env = {}
+
+      let shouldRestartCcr = false
+
+      if (profile.authType === 'api_key') {
+        settings.env.ANTHROPIC_API_KEY = profile.apiKey
+        delete settings.env.ANTHROPIC_AUTH_TOKEN
+      }
+      else if (profile.authType === 'auth_token') {
+        settings.env.ANTHROPIC_AUTH_TOKEN = profile.apiKey
+        delete settings.env.ANTHROPIC_API_KEY
+      }
+      else if (profile.authType === 'ccr_proxy') {
+        const { readCcrConfig } = await import('./ccr/config')
+        const ccrConfig = readCcrConfig()
+        if (!ccrConfig) {
+          throw new Error(i18n.t('ccr:ccrNotConfigured') || 'CCR proxy configuration not found')
+        }
+
+        const host = ccrConfig.HOST || '127.0.0.1'
+        const port = ccrConfig.PORT || 3456
+        const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
+
+        settings.env.ANTHROPIC_BASE_URL = `http://${host}:${port}`
+        settings.env.ANTHROPIC_API_KEY = apiKey
+        delete settings.env.ANTHROPIC_AUTH_TOKEN
+        shouldRestartCcr = true
+      }
+
+      if (profile.authType !== 'ccr_proxy') {
+        if (profile.baseUrl)
+          settings.env.ANTHROPIC_BASE_URL = profile.baseUrl
+        else
+          delete settings.env.ANTHROPIC_BASE_URL
+      }
+
+      writeJsonConfig(SETTINGS_FILE, settings)
+
+      const { setPrimaryApiKey } = await import('./claude-config')
+      setPrimaryApiKey()
+
+      if (shouldRestartCcr) {
+        const { runCcrRestart } = await import('./ccr/commands')
+        await runCcrRestart()
+      }
+    }
+    catch (error) {
+      const reason = error instanceof Error ? error.message : String(error)
+      throw new Error(`${i18n.t('multi-config:failedToApplySettings')}: ${reason}`)
+    }
+  }
+
+  static async applyCurrentProfile(): Promise<void> {
+    const currentProfile = this.getCurrentProfile()
+    await this.applyProfileSettings(currentProfile)
+  }
+
+  /**
+   * Remove unsupported fields from profile payload
+   */
+  private static sanitizeProfile(profile: ClaudeCodeProfile): ClaudeCodeProfile {
+    const sanitized: ClaudeCodeProfile = {
+      name: profile.name,
+      authType: profile.authType,
+    }
+
+    if (profile.apiKey)
+      sanitized.apiKey = profile.apiKey
+    if (profile.baseUrl)
+      sanitized.baseUrl = profile.baseUrl
+
+    return sanitized
   }
 
   /**
@@ -79,21 +295,14 @@ export class ClaudeCodeConfigManager {
    */
   static backupConfig(): string | null {
     try {
-      const config = this.readConfig()
-      if (!config) {
+      if (!exists(this.CONFIG_FILE)) {
         return null
       }
 
       const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
-      const backupPath = join(ZCF_CONFIG_DIR, `claude-code-configs.backup.${timestamp}.json`)
+      const backupPath = join(ZCF_CONFIG_DIR, `config.backup.${timestamp}.toml`)
 
-      const backupData = {
-        ...config,
-        backupAt: new Date().toISOString(),
-        originalFile: this.CONFIG_FILE,
-      }
-
-      writeJsonConfig(backupPath, backupData)
+      copyFile(this.CONFIG_FILE, backupPath)
       return backupPath
     }
     catch (error) {
@@ -126,7 +335,7 @@ export class ClaudeCodeConfigManager {
       }
 
       // 检查ID冲突
-      if (config.profiles[profile.id]) {
+      if (profile.id && config.profiles[profile.id]) {
         return {
           success: false,
           error: `Profile with ID "${profile.id}" already exists`,
@@ -135,8 +344,10 @@ export class ClaudeCodeConfigManager {
       }
 
       // 检查名称冲突
+      const normalizedName = profile.name.trim()
+      const profileKey = this.generateProfileId(normalizedName)
       const existingNames = Object.values(config.profiles).map(p => p.name || '')
-      if (existingNames.includes(profile.name)) {
+      if (config.profiles[profileKey] || existingNames.some(name => name.toLowerCase() === normalizedName.toLowerCase())) {
         return {
           success: false,
           error: `Profile with name "${profile.name}" already exists`,
@@ -144,17 +355,22 @@ export class ClaudeCodeConfigManager {
         }
       }
 
-      // 设置时间戳
-      const now = new Date().toISOString()
-      profile.createdAt = now
-      profile.updatedAt = now
+      const sanitizedProfile = this.sanitizeProfile({
+        ...profile,
+        name: normalizedName,
+      })
+
+      const runtimeProfile = {
+        ...sanitizedProfile,
+        id: profileKey,
+      }
 
       // 添加配置
-      config.profiles[profile.id] = profile
+      config.profiles[profileKey] = runtimeProfile
 
       // 如果这是第一个配置，设为当前配置
       if (!config.currentProfileId) {
-        config.currentProfileId = profile.id
+        config.currentProfileId = profileKey
       }
 
       // 写入配置
@@ -163,6 +379,7 @@ export class ClaudeCodeConfigManager {
       return {
         success: true,
         backupPath: backupPath || undefined,
+        addedProfile: runtimeProfile,
       }
     }
     catch (error) {
@@ -200,13 +417,15 @@ export class ClaudeCodeConfigManager {
         }
       }
 
-      // 检查名称冲突（如果更新了名称）
-      if (data.name && data.name !== config.profiles[id].name) {
-        const existingNames = Object.values(config.profiles)
-          .filter(p => p.id !== id)
-          .map(p => p.name || '')
+      const existingProfile = config.profiles[id]
+      const nextName = data.name !== undefined ? data.name.trim() : existingProfile.name
+      const nextKey = this.generateProfileId(nextName)
+      const nameChanged = nextKey !== id
 
-        if (existingNames.includes(data.name)) {
+      if (nameChanged) {
+        const duplicateName = Object.entries(config.profiles)
+          .some(([key, profile]) => key !== id && (profile.name || '').toLowerCase() === nextName.toLowerCase())
+        if (duplicateName || config.profiles[nextKey]) {
           return {
             success: false,
             error: `Profile with name "${data.name}" already exists`,
@@ -215,20 +434,38 @@ export class ClaudeCodeConfigManager {
         }
       }
 
-      // 更新配置（保留不可变字段）
-      const updatedProfile: ClaudeCodeProfile = {
-        ...config.profiles[id],
+      const mergedProfile: ClaudeCodeProfile = this.sanitizeProfile({
+        ...existingProfile,
         ...data,
-        id, // 确保ID不被更改
-        updatedAt: new Date().toISOString(),
+        name: nextName,
+      })
+
+      if (nameChanged) {
+        delete config.profiles[id]
+        config.profiles[nextKey] = {
+          ...mergedProfile,
+          id: nextKey,
+        }
+        if (config.currentProfileId === id) {
+          config.currentProfileId = nextKey
+        }
+      }
+      else {
+        config.profiles[id] = {
+          ...mergedProfile,
+          id,
+        }
       }
 
-      config.profiles[id] = updatedProfile
       this.writeConfig(config)
 
       return {
         success: true,
         backupPath: backupPath || undefined,
+        updatedProfile: {
+          ...mergedProfile,
+          id: nameChanged ? nextKey : id,
+        },
       }
     }
     catch (error) {
@@ -281,6 +518,10 @@ export class ClaudeCodeConfigManager {
       return {
         success: true,
         backupPath: backupPath || undefined,
+        remainingProfiles: Object.entries(config.profiles).map(([key, profile]) => ({
+          ...profile,
+          id: key,
+        })),
       }
     }
     catch (error) {
@@ -348,6 +589,11 @@ export class ClaudeCodeConfigManager {
         success: true,
         backupPath: backupPath || undefined,
         newCurrentProfileId,
+        deletedProfiles: ids,
+        remainingProfiles: Object.entries(config.profiles).map(([key, profile]) => ({
+          ...profile,
+          id: key,
+        })),
       }
     }
     catch (error) {
@@ -362,12 +608,11 @@ export class ClaudeCodeConfigManager {
    * Generate profile ID from name
    */
   static generateProfileId(name: string): string {
-    return `${name
-      .toLowerCase()
+    return name
       .trim()
-      .replace(/\W+/g, '-') // Replace spaces and non-word characters with hyphens
-      .replace(/^-+|-+$/g, '') // Remove leading/trailing hyphens
-    }-${Math.random().toString(36).substring(2, 8)}` // Add random suffix for uniqueness
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric with hyphen
+      .replace(/^-+|-+$/g, '') || 'profile'
   }
 
   /**
@@ -380,7 +625,7 @@ export class ClaudeCodeConfigManager {
       if (!config || !config.profiles[id]) {
         return {
           success: false,
-          error: `Profile with ID "${id}" not found`,
+          error: 'Profile not found',
         }
       }
 
@@ -496,17 +741,23 @@ export class ClaudeCodeConfigManager {
       return
     }
 
+    const host = ccrConfig.HOST || '127.0.0.1'
+    const port = ccrConfig.PORT || 3456
+    const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
+    const baseUrl = `http://${host}:${port}`
+
     // 创建或更新CCR配置
     const ccrProfile: ClaudeCodeProfile = {
-      id: ccrProfileId,
       name: 'CCR Proxy',
       authType: 'ccr_proxy',
-      description: 'CCR代理配置（动态同步）',
-      createdAt: existingCcrProfile?.createdAt || new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      baseUrl,
+      apiKey,
     }
 
-    config.profiles[ccrProfileId] = ccrProfile
+    config.profiles[ccrProfileId] = {
+      ...ccrProfile,
+      id: ccrProfileId,
+    }
 
     // 如果没有当前配置，设为当前配置
     if (!config.currentProfileId) {
@@ -573,14 +824,12 @@ export class ClaudeCodeConfigManager {
     const errors: string[] = []
 
     // 必需字段验证
-    if (!isUpdate) {
-      if (!profile.id || typeof profile.id !== 'string' || profile.id.trim() === '') {
-        errors.push('Profile ID is required')
-      }
+    if (!isUpdate && (!profile.name || typeof profile.name !== 'string' || profile.name.trim() === '')) {
+      errors.push('Profile name is required')
+    }
 
-      if (!profile.name || typeof profile.name !== 'string' || profile.name.trim() === '') {
-        errors.push('Profile name is required')
-      }
+    if (profile.name && typeof profile.name !== 'string') {
+      errors.push('Profile name must be a string')
     }
 
     // authType验证

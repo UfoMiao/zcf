@@ -13,6 +13,7 @@ vi.mock('../../../src/utils/claude-config')
 vi.mock('../../../src/constants', () => ({
   ZCF_CONFIG_DIR: '/test/.zcf',
   SETTINGS_FILE: '/test/settings.json',
+  ZCF_CONFIG_FILE: '/test/.zcf/config.toml',
 }))
 
 describe('claudeCode Incremental Configuration Manager', () => {
@@ -40,14 +41,15 @@ describe('claudeCode Incremental Configuration Manager', () => {
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
 
       // Mock user input for adding configuration
-      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
-        profileName: 'Test Profile',
-        authType: 'api_key' as const,
-        apiKey: 'sk-ant-test-key',
-        baseUrl: 'https://api.anthropic.com',
-        description: 'Test description',
-        setAsDefault: true,
-      } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({
+          profileName: 'Test Profile',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: true,
+        } as any)
+        .mockResolvedValueOnce({ continueAdding: false })
 
       // Mock successful configuration addition
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -62,14 +64,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       await configureIncrementalManagement()
 
       expect(ClaudeCodeConfigManager.readConfig).toHaveBeenCalled()
-      expect(inquirer.prompt).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ name: 'profileName' }),
-          expect.objectContaining({ name: 'authType' }),
-          expect.objectContaining({ name: 'apiKey' }),
-          expect.objectContaining({ name: 'setAsDefault' }),
-        ]),
-      )
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
     })
 
@@ -106,9 +100,9 @@ describe('claudeCode Incremental Configuration Manager', () => {
           authType: 'api_key' as const,
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
-          description: 'Test description',
           setAsDefault: true,
         } as any) // Detailed information for adding configuration
+        .mockResolvedValueOnce({ continueAdding: false })
 
       // Mock necessary functions
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
@@ -123,7 +117,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       await configureIncrementalManagement()
 
       expect(ClaudeCodeConfigManager.readConfig).toHaveBeenCalled()
-      expect(inquirer.prompt).toHaveBeenCalledTimes(2) // First action selection, second add configuration details
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
     })
 
@@ -168,7 +162,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
             authType: 'api_key' as const,
             apiKey: 'sk-ant-old-key',
             baseUrl: 'https://api.anthropic.com',
-            description: 'Old description',
             createdAt: '2025-01-01T00:00:00Z',
             updatedAt: '2025-01-01T00:00:00Z',
           },
@@ -186,12 +179,18 @@ describe('claudeCode Incremental Configuration Manager', () => {
           profileName: 'Updated Profile',
           apiKey: 'sk-ant-new-key',
           baseUrl: 'https://api.anthropic.com',
-          description: 'Updated description',
         })
 
       vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
         success: true,
         backupPath: '/test/backup.json',
+        updatedProfile: {
+          id: 'profile-1',
+          name: 'Updated Profile',
+          authType: 'api_key',
+          apiKey: 'sk-ant-new-key',
+          baseUrl: 'https://api.anthropic.com',
+        },
       })
 
       vi.mocked(ClaudeCodeConfigManager.getProfileById).mockResolvedValue(mockConfig.profiles['profile-1'])
@@ -202,10 +201,12 @@ describe('claudeCode Incremental Configuration Manager', () => {
         'profile-1',
         expect.objectContaining({
           name: 'Updated Profile',
-          description: 'Updated description',
-          updatedAt: expect.any(String),
+          apiKey: 'sk-ant-new-key',
+          baseUrl: 'https://api.anthropic.com',
         }),
       )
+      const updatePayload = vi.mocked(ClaudeCodeConfigManager.updateProfile).mock.calls.at(-1)?.[1] as Record<string, any>
+      expect(updatePayload).not.toHaveProperty('description')
     })
 
     it('should handle delete configuration flow', async () => {
@@ -279,7 +280,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
     })
 
-    it('should correctly handle CCR proxy configuration', async () => {
+    it('should set new API profile as default and apply settings', async () => {
       const mockConfig = {
         currentProfileId: 'profile-1',
         profiles: {
@@ -296,34 +297,50 @@ describe('claudeCode Incremental Configuration Manager', () => {
 
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
 
-      // Mock user adding CCR configuration
+      // Mock user adding new API profile and setting as default
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'add' }) // Select add
         .mockResolvedValueOnce({
-          profileName: 'CCR Profile',
-          authType: 'ccr_proxy' as const,
-          description: 'CCR Proxy Configuration',
-          setAsDefault: false,
+          profileName: 'API Profile',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: true,
         })
+        .mockResolvedValueOnce({ continueAdding: false })
 
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
         backupPath: '/test/backup.json',
+        addedProfile: {
+          id: 'api-profile-id',
+          name: 'API Profile',
+          authType: 'api_key',
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+        },
       })
 
-      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('ccr-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('api-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({ success: true })
+      vi.mocked(ClaudeCodeConfigManager.applyProfileSettings).mockResolvedValue()
 
       await configureIncrementalManagement()
 
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
         expect.objectContaining({
-          id: 'ccr-profile-id',
-          name: 'CCR Profile',
-          authType: 'ccr_proxy' as const,
-          description: 'CCR Proxy Configuration',
-          // Note: CCR configuration should not have apiKey and baseUrl
+          id: 'api-profile-id',
+          name: 'API Profile',
+          authType: 'api_key',
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
         }),
       )
+      expect(ClaudeCodeConfigManager.switchProfile).toHaveBeenCalledWith('api-profile-id')
+      expect(ClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalledWith(expect.objectContaining({
+        id: 'api-profile-id',
+        name: 'API Profile',
+      }))
     })
   })
 
@@ -337,7 +354,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
         authType: 'api_key' as const,
         apiKey: 'sk-ant-test-key',
         baseUrl: 'https://api.anthropic.com',
-        description: 'Test description',
         setAsDefault: true,
       })
 
@@ -355,14 +371,15 @@ describe('claudeCode Incremental Configuration Manager', () => {
         error: 'Invalid API key format',
       })
 
-      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
-        profileName: 'Test Profile',
-        authType: 'api_key' as const,
-        apiKey: 'invalid-key', // Invalid API key
-        baseUrl: 'https://api.anthropic.com',
-        description: 'Test description',
-        setAsDefault: true,
-      })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({
+          profileName: 'Test Profile',
+          authType: 'api_key' as const,
+          apiKey: 'invalid-key', // Invalid API key
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: true,
+        })
+        .mockResolvedValueOnce({ continueAdding: false })
 
       await expect(configureIncrementalManagement()).rejects.toThrow()
     })
@@ -370,14 +387,15 @@ describe('claudeCode Incremental Configuration Manager', () => {
     it('should validate URL format', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
 
-      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
-        profileName: 'Test Profile',
-        authType: 'api_key' as const,
-        apiKey: 'sk-ant-test-key',
-        baseUrl: 'invalid-url', // Invalid URL
-        description: 'Test description',
-        setAsDefault: true,
-      })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({
+          profileName: 'Test Profile',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'invalid-url', // Invalid URL
+          setAsDefault: true,
+        })
+        .mockResolvedValueOnce({ continueAdding: false })
 
       await expect(configureIncrementalManagement()).rejects.toThrow()
     })
@@ -387,14 +405,15 @@ describe('claudeCode Incremental Configuration Manager', () => {
     it('should handle profile addition failure', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
 
-      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
-        profileName: 'Test Profile',
-        authType: 'api_key' as const,
-        apiKey: 'sk-ant-test-key',
-        baseUrl: 'https://api.anthropic.com',
-        description: 'Test description',
-        setAsDefault: true,
-      } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({
+          profileName: 'Test Profile',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: true,
+        } as any)
+        .mockResolvedValueOnce({ continueAdding: false })
 
       // Mock profile addition failure
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -419,7 +438,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
             authType: 'api_key' as const,
             apiKey: 'sk-ant-old-key',
             baseUrl: 'https://api.anthropic.com',
-            description: 'Old description',
             createdAt: '2025-01-01T00:00:00Z',
             updatedAt: '2025-01-01T00:00:00Z',
           },
@@ -436,7 +454,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
           profileName: 'Updated Profile',
           apiKey: 'sk-ant-new-key',
           baseUrl: 'https://api.anthropic.com',
-          description: 'Updated description',
         })
 
       // Mock update failure
@@ -617,14 +634,15 @@ describe('claudeCode Incremental Configuration Manager', () => {
     it('should handle auth_token profile type correctly', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
 
-      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
-        profileName: 'Auth Token Profile',
-        authType: 'auth_token' as const,
-        apiKey: 'sk-ant-auth-token',
-        baseUrl: 'https://api.anthropic.com',
-        description: 'Auth Token Profile',
-        setAsDefault: true,
-      } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({
+          profileName: 'Auth Token Profile',
+          authType: 'auth_token' as const,
+          apiKey: 'sk-ant-auth-token',
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: true,
+        } as any)
+        .mockResolvedValueOnce({ continueAdding: false })
 
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('auth-token-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -651,14 +669,15 @@ describe('claudeCode Incremental Configuration Manager', () => {
     it('should handle setting non-default profile', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
 
-      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
-        profileName: 'Non-Default Profile',
-        authType: 'api_key' as const,
-        apiKey: 'sk-ant-test-key',
-        baseUrl: 'https://api.anthropic.com',
-        description: 'Non-default profile',
-        setAsDefault: false, // Not set as default
-      } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({
+          profileName: 'Non-Default Profile',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: false, // Not set as default
+        } as any)
+        .mockResolvedValueOnce({ continueAdding: false })
 
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('non-default-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -681,7 +700,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
             id: 'profile-1',
             name: 'CCR Profile',
             authType: 'ccr_proxy' as const,
-            description: 'CCR Proxy Configuration',
             createdAt: '2025-01-01T00:00:00Z',
             updatedAt: '2025-01-01T00:00:00Z',
           },
@@ -696,18 +714,21 @@ describe('claudeCode Incremental Configuration Manager', () => {
         .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
         .mockResolvedValueOnce({
           profileName: 'Updated CCR Profile',
-          description: 'Updated CCR Description',
         })
 
       vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
         success: true,
         backupPath: '/test/backup.json',
+        updatedProfile: {
+          id: 'profile-1',
+          name: 'Updated CCR Profile',
+          authType: 'ccr_proxy',
+        },
       })
 
       const updatedProfile = {
         ...mockConfig.profiles['profile-1'],
         name: 'Updated CCR Profile',
-        description: 'Updated CCR Description',
         updatedAt: expect.any(String),
       }
 
@@ -719,10 +740,10 @@ describe('claudeCode Incremental Configuration Manager', () => {
         'profile-1',
         expect.objectContaining({
           name: 'Updated CCR Profile',
-          description: 'Updated CCR Description',
-          updatedAt: expect.any(String),
         }),
       )
+      const updateArgs = vi.mocked(ClaudeCodeConfigManager.updateProfile).mock.calls.at(-1)?.[1] as Record<string, any>
+      expect(updateArgs).not.toHaveProperty('description')
     })
 
     it('should handle invalid action selection', async () => {
@@ -750,113 +771,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.addProfile).not.toHaveBeenCalled()
       expect(ClaudeCodeConfigManager.updateProfile).not.toHaveBeenCalled()
       expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('applyProfileToSettings function coverage', () => {
-    it('should apply auth_token profile settings correctly', async () => {
-      const mockConfig = {
-        currentProfileId: 'profile-1',
-        profiles: {
-          'profile-1': {
-            id: 'profile-1',
-            name: 'Auth Token Profile',
-            authType: 'auth_token' as const,
-            apiKey: 'sk-ant-auth-token',
-            baseUrl: 'https://api.anthropic.com',
-            createdAt: '2025-01-01T00:00:00Z',
-            updatedAt: '2025-01-01T00:00:00Z',
-          },
-        },
-        version: '1.0.0',
-      }
-
-      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
-
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ action: 'edit' })
-        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
-        .mockResolvedValueOnce({
-          profileName: 'Updated Auth Token Profile',
-          apiKey: 'sk-ant-updated-token',
-          baseUrl: 'https://api.anthropic.com',
-          description: 'Updated auth token profile',
-        })
-
-      vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
-        success: true,
-        backupPath: '/test/backup.json',
-      })
-
-      const mockReadJsonConfig = vi.fn().mockReturnValue({})
-      const mockWriteJsonConfig = vi.fn()
-      const mockSetPrimaryApiKey = vi.fn()
-
-      vi.doMock('../../../src/utils/json-config', () => ({
-        readJsonConfig: mockReadJsonConfig,
-        writeJsonConfig: mockWriteJsonConfig,
-      }))
-
-      vi.doMock('../../../src/utils/claude-config', () => ({
-        setPrimaryApiKey: mockSetPrimaryApiKey,
-      }))
-
-      vi.mocked(ClaudeCodeConfigManager.getProfileById).mockResolvedValue({
-        ...mockConfig.profiles['profile-1'],
-        name: 'Updated Auth Token Profile',
-        apiKey: 'sk-ant-updated-token',
-        updatedAt: new Date().toISOString(),
-      })
-
-      await configureIncrementalManagement()
-
-      // Verify the settings application process was triggered
-      expect(ClaudeCodeConfigManager.updateProfile).toHaveBeenCalled()
-      expect(ClaudeCodeConfigManager.getProfileById).toHaveBeenCalled()
-    })
-
-    it('should handle CCR proxy profile settings correctly', async () => {
-      const mockConfig = {
-        currentProfileId: 'profile-1',
-        profiles: {
-          'profile-1': {
-            id: 'profile-1',
-            name: 'CCR Profile',
-            authType: 'ccr_proxy' as const,
-            description: 'CCR Proxy Configuration',
-            createdAt: '2025-01-01T00:00:00Z',
-            updatedAt: '2025-01-01T00:00:00Z',
-          },
-        },
-        version: '1.0.0',
-      }
-
-      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
-
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ action: 'edit' })
-        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
-        .mockResolvedValueOnce({
-          profileName: 'Updated CCR Profile',
-          description: 'Updated CCR Description',
-        })
-
-      vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
-        success: true,
-        backupPath: '/test/backup.json',
-      })
-
-      vi.mocked(ClaudeCodeConfigManager.getProfileById).mockResolvedValue({
-        ...mockConfig.profiles['profile-1'],
-        name: 'Updated CCR Profile',
-        description: 'Updated CCR Description',
-        updatedAt: new Date().toISOString(),
-      })
-
-      await configureIncrementalManagement()
-
-      expect(ClaudeCodeConfigManager.updateProfile).toHaveBeenCalled()
-      expect(ClaudeCodeConfigManager.getProfileById).toHaveBeenCalled()
     })
   })
 })
