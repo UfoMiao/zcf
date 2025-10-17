@@ -1,11 +1,12 @@
 import type { ClaudeCodeProfile } from '../../../src/types/claude-code-config'
-import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'pathe'
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const testConfigDir = mkdtempSync(join(tmpdir(), 'zcf-config-manager-test-'))
 const testConfigFile = join(testConfigDir, 'config.toml')
+const testSettingsFile = join(testConfigDir, 'settings.json')
 
 vi.mock('../../../src/constants', async () => {
   const actual = await vi.importActual<typeof import('../../../src/constants')>('../../../src/constants')
@@ -13,8 +14,58 @@ vi.mock('../../../src/constants', async () => {
     ...actual,
     ZCF_CONFIG_DIR: testConfigDir,
     ZCF_CONFIG_FILE: testConfigFile,
+    SETTINGS_FILE: testSettingsFile,
   }
 })
+
+const mockEnsureI18nInitialized = vi.fn()
+const mockI18nT = vi.fn((key: string, params?: Record<string, any>) => {
+  if (!params) {
+    return key
+  }
+  return Object.keys(params).reduce<string>((acc, paramKey) => {
+    return acc.replace(`{${paramKey}}`, String(params[paramKey]))
+  }, key)
+})
+
+vi.mock('../../../src/i18n', () => ({
+  ensureI18nInitialized: mockEnsureI18nInitialized,
+  i18n: {
+    t: mockI18nT,
+  },
+}))
+
+const mockSwitchToOfficialLogin = vi.fn()
+
+vi.mock('../../../src/utils/config', () => ({
+  switchToOfficialLogin: mockSwitchToOfficialLogin,
+}))
+
+const mockReadJsonConfig = vi.fn()
+const mockWriteJsonConfig = vi.fn()
+
+vi.mock('../../../src/utils/json-config', async () => {
+  const actual = await vi.importActual<typeof import('../../../src/utils/json-config')>('../../../src/utils/json-config')
+  if (!mockReadJsonConfig.getMockImplementation()) {
+    mockReadJsonConfig.mockImplementation(actual.readJsonConfig)
+  }
+  if (!mockWriteJsonConfig.getMockImplementation()) {
+    mockWriteJsonConfig.mockImplementation(actual.writeJsonConfig)
+  }
+  return {
+    ...actual,
+    readJsonConfig: mockReadJsonConfig,
+    writeJsonConfig: mockWriteJsonConfig,
+  }
+})
+
+const mockSetPrimaryApiKey = vi.fn()
+
+vi.mock('../../../src/utils/claude-config', () => ({
+  setPrimaryApiKey: mockSetPrimaryApiKey,
+}))
+
+const mockRunCcrRestart = vi.fn()
 
 const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
 
@@ -39,10 +90,30 @@ vi.mock('../../../src/utils/ccr/config', () => ({
   readCcrConfig: mockReadCcrConfig,
 }))
 
+vi.mock('../../../src/utils/ccr/commands', () => ({
+  runCcrRestart: mockRunCcrRestart,
+}))
+
 describe('claudeCodeConfigManager', () => {
   beforeEach(() => {
     cleanConfigDir()
     vi.clearAllMocks()
+    mockReadJsonConfig.mockImplementation((path: string) => {
+      if (!existsSync(path)) {
+        return null
+      }
+      const content = readFileSync(path, 'utf8')
+      try {
+        return JSON.parse(content)
+      }
+      catch {
+        return null
+      }
+    })
+    mockWriteJsonConfig.mockImplementation((path: string, data: any) => {
+      writeFileSync(path, JSON.stringify(data, null, 2))
+    })
+    mockReadCcrConfig.mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -110,6 +181,180 @@ describe('claudeCodeConfigManager', () => {
     })
   })
 
+  describe('legacy migration', () => {
+    it('应该从旧版JSON配置迁移并保持唯一ID', () => {
+      const legacyPath = join(testConfigDir, 'claude-code-configs.json')
+      const legacyData = {
+        currentProfileId: 'Primary Profile',
+        profiles: {
+          legacy1: {
+            name: 'Primary Profile',
+            authType: 'api_key',
+            apiKey: 'sk-primary',
+          },
+          legacy2: {
+            name: 'Primary Profile',
+            authType: 'auth_token',
+            apiKey: 'token-primary',
+          },
+        },
+      }
+      writeFileSync(legacyPath, JSON.stringify(legacyData, null, 2))
+
+      const migrated = (ClaudeCodeConfigManager as any).migrateFromLegacyConfig() as any
+
+      expect(migrated).toBeTruthy()
+      const migratedProfiles = Object.values(migrated!.profiles) as ClaudeCodeProfile[]
+      expect(migratedProfiles).toHaveLength(2)
+      expect(new Set(migratedProfiles.map(profile => profile.id)).size).toBe(2)
+      expect(migratedProfiles.every(profile => profile.name === 'Primary Profile')).toBe(true)
+
+      const persisted = ClaudeCodeConfigManager.readConfig()
+      expect(persisted?.profiles).toBeTruthy()
+      expect(persisted?.profiles['primary-profile']).toBeTruthy()
+      expect(persisted?.profiles['primary-profile']?.name).toBe('Primary Profile')
+    })
+
+    it('应该在迁移失败时返回null', () => {
+      const legacyPath = join(testConfigDir, 'claude-code-configs.json')
+      writeFileSync(legacyPath, 'invalid-json')
+      mockReadJsonConfig.mockImplementation(() => {
+        throw new Error('bad legacy file')
+      })
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      const migrated = (ClaudeCodeConfigManager as any).migrateFromLegacyConfig()
+
+      expect(migrated).toBeNull()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to migrate legacy Claude Code config:',
+        expect.any(Error),
+      )
+
+      consoleErrorSpy.mockRestore()
+      mockReadJsonConfig.mockImplementation((path: string) => {
+        if (!existsSync(path)) {
+          return null
+        }
+        const content = readFileSync(path, 'utf8')
+        return JSON.parse(content)
+      })
+    })
+  })
+
+  describe('writeConfig', () => {
+    it('应该在写入失败时抛出明确错误', () => {
+      const loadSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'loadTomlConfig').mockImplementation(() => {
+        throw new Error('load failed')
+      })
+
+      expect(() => ClaudeCodeConfigManager.writeConfig(ClaudeCodeConfigManager.createEmptyConfig()))
+        .toThrow('Failed to write config: load failed')
+
+      loadSpy.mockRestore()
+    })
+  })
+
+  describe('applyProfileSettings', () => {
+    it('配置为空时应该切换到官方登录', async () => {
+      await ClaudeCodeConfigManager.applyProfileSettings(null)
+
+      expect(mockEnsureI18nInitialized).toHaveBeenCalled()
+      expect(mockSwitchToOfficialLogin).toHaveBeenCalled()
+    })
+
+    it('api_key 模式应该写入API Key并清理旧Token', async () => {
+      const settings = { env: { ANTHROPIC_AUTH_TOKEN: 'old-token', ANTHROPIC_BASE_URL: 'https://old.example.com' } }
+      mockReadJsonConfig.mockImplementationOnce(() => settings)
+      let writtenSettings: any
+      mockWriteJsonConfig.mockImplementationOnce((_path, data) => {
+        writtenSettings = data
+      })
+
+      await ClaudeCodeConfigManager.applyProfileSettings({
+        id: 'test',
+        name: 'Test',
+        authType: 'api_key',
+        apiKey: 'sk-new',
+      })
+
+      expect(writtenSettings.env.ANTHROPIC_API_KEY).toBe('sk-new')
+      expect(writtenSettings.env.ANTHROPIC_AUTH_TOKEN).toBeUndefined()
+      expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBeUndefined()
+      expect(mockSetPrimaryApiKey).toHaveBeenCalled()
+      expect(mockRunCcrRestart).not.toHaveBeenCalled()
+    })
+
+    it('auth_token 模式应该写入Token并清理API Key', async () => {
+      const settings = { env: { ANTHROPIC_API_KEY: 'old-key', ANTHROPIC_BASE_URL: 'https://custom.example.com' } }
+      mockReadJsonConfig.mockImplementationOnce(() => settings)
+      let writtenSettings: any
+      mockWriteJsonConfig.mockImplementationOnce((_path, data) => {
+        writtenSettings = data
+      })
+
+      await ClaudeCodeConfigManager.applyProfileSettings({
+        id: 'token-profile',
+        name: 'Token profile',
+        authType: 'auth_token',
+        apiKey: 'token-xyz',
+        baseUrl: 'https://api.anthropic.com',
+      })
+
+      expect(writtenSettings.env.ANTHROPIC_AUTH_TOKEN).toBe('token-xyz')
+      expect(writtenSettings.env.ANTHROPIC_API_KEY).toBeUndefined()
+      expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBe('https://api.anthropic.com')
+      expect(mockRunCcrRestart).not.toHaveBeenCalled()
+    })
+
+    it('ccr_proxy 模式应该读取CCR配置并触发重启', async () => {
+      mockReadCcrConfig.mockReturnValue({
+        HOST: '10.0.0.2',
+        PORT: 7000,
+        APIKEY: 'sk-ccr',
+      })
+      mockReadJsonConfig.mockImplementationOnce(() => ({ env: {} }))
+      let writtenSettings: any
+      mockWriteJsonConfig.mockImplementationOnce((_path, data) => {
+        writtenSettings = data
+      })
+
+      await ClaudeCodeConfigManager.applyProfileSettings({
+        id: 'ccr',
+        name: 'CCR',
+        authType: 'ccr_proxy',
+      })
+
+      expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBe('http://10.0.0.2:7000')
+      expect(writtenSettings.env.ANTHROPIC_API_KEY).toBe('sk-ccr')
+      expect(mockRunCcrRestart).toHaveBeenCalled()
+    })
+
+    it('ccr_proxy 模式缺少配置时应该抛出错误', async () => {
+      mockReadCcrConfig.mockReturnValue(null)
+
+      await expect(ClaudeCodeConfigManager.applyProfileSettings({
+        id: 'ccr',
+        name: 'CCR',
+        authType: 'ccr_proxy',
+      })).rejects.toThrow('multi-config:failedToApplySettings: ccr:ccrNotConfigured')
+    })
+
+    it('写入设置失败时应该抛出包装错误', async () => {
+      mockReadJsonConfig.mockImplementationOnce(() => ({ env: {} }))
+      mockWriteJsonConfig.mockImplementationOnce(() => {
+        throw new Error('write failed')
+      })
+
+      await expect(ClaudeCodeConfigManager.applyProfileSettings({
+        id: 'test',
+        name: 'Test',
+        authType: 'api_key',
+        apiKey: 'sk-error',
+      })).rejects.toThrow('multi-config:failedToApplySettings: write failed')
+    })
+  })
+
   describe('addProfile', () => {
     it('应该成功添加新配置并返回新增配置', async () => {
       const profile: ClaudeCodeProfile = {
@@ -174,6 +419,41 @@ describe('claudeCodeConfigManager', () => {
       expect(result.success).toBe(false)
       expect(result.error).toContain('Validation failed')
     })
+
+    it('应该阻止手动指定的重复ID', async () => {
+      const baseProfile: ClaudeCodeProfile = {
+        id: 'manual-id',
+        name: 'Manual',
+        authType: 'api_key',
+        apiKey: 'first-key',
+      }
+
+      await ClaudeCodeConfigManager.addProfile(baseProfile)
+      const secondAttempt = await ClaudeCodeConfigManager.addProfile({
+        ...baseProfile,
+        apiKey: 'second-key',
+      })
+
+      expect(secondAttempt.success).toBe(false)
+      expect(secondAttempt.error).toContain('already exists')
+    })
+
+    it('写入失败时应该返回错误信息', async () => {
+      const writeSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'writeConfig').mockImplementation(() => {
+        throw new Error('persist failed')
+      })
+
+      const result = await ClaudeCodeConfigManager.addProfile({
+        name: 'Failure Profile',
+        authType: 'api_key',
+        apiKey: 'sk-fail',
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('persist failed')
+
+      writeSpy.mockRestore()
+    })
   })
 
   describe('updateProfile', () => {
@@ -237,6 +517,45 @@ describe('claudeCodeConfigManager', () => {
 
       expect(profile?.id).toBe('test-profile') // ID不应该改变
     })
+
+    it('应该在验证失败时返回错误信息', async () => {
+      const result = await ClaudeCodeConfigManager.updateProfile('test-profile', {
+        authType: 'invalid' as any,
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('Validation failed')
+    })
+
+    it('应该阻止名称冲突', async () => {
+      await ClaudeCodeConfigManager.addProfile({
+        name: 'Existing',
+        authType: 'api_key',
+        apiKey: 'sk-existing',
+      })
+
+      const result = await ClaudeCodeConfigManager.updateProfile('test-profile', {
+        name: 'Existing',
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toContain('already exists')
+    })
+
+    it('写入失败时应该返回错误信息', async () => {
+      const writeSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'writeConfig').mockImplementation(() => {
+        throw new Error('update failed')
+      })
+
+      const result = await ClaudeCodeConfigManager.updateProfile('test-profile', {
+        name: 'Still Test',
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('update failed')
+
+      writeSpy.mockRestore()
+    })
   })
 
   describe('deleteProfile', () => {
@@ -298,6 +617,41 @@ describe('claudeCodeConfigManager', () => {
       const config = ClaudeCodeConfigManager.readConfig()
       expect(config?.currentProfileId).toBe('profile2')
     })
+
+    it('写入失败时应该返回错误信息', async () => {
+      const writeSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'writeConfig').mockImplementation(() => {
+        throw new Error('delete failed')
+      })
+
+      const result = await ClaudeCodeConfigManager.deleteProfile('profile1')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('delete failed')
+
+      writeSpy.mockRestore()
+    })
+
+    it('应该在无配置时返回错误', async () => {
+      cleanConfigDir()
+
+      const result = await ClaudeCodeConfigManager.deleteProfiles(['profile1'])
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('No configuration found')
+    })
+
+    it('批量删除写入失败时应该返回错误信息', async () => {
+      const writeSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'writeConfig').mockImplementation(() => {
+        throw new Error('batch delete failed')
+      })
+
+      const result = await ClaudeCodeConfigManager.deleteProfiles(['profile1'])
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('batch delete failed')
+
+      writeSpy.mockRestore()
+    })
   })
 
   describe('switchProfile', () => {
@@ -340,6 +694,19 @@ describe('claudeCodeConfigManager', () => {
       const result = await ClaudeCodeConfigManager.switchProfile('profile1')
 
       expect(result.success).toBe(true)
+    })
+
+    it('写入失败时应该返回错误信息', async () => {
+      const writeSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'writeConfig').mockImplementation(() => {
+        throw new Error('switch failed')
+      })
+
+      const result = await ClaudeCodeConfigManager.switchProfile('profile2')
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('switch failed')
+
+      writeSpy.mockRestore()
     })
   })
 
@@ -659,6 +1026,116 @@ describe('claudeCodeConfigManager', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBeTruthy()
+    })
+  })
+
+  describe('cCR profile同步', () => {
+    it('syncCcrProfile应该在缺少配置时清理CCR profile', async () => {
+      await ClaudeCodeConfigManager.addProfile({
+        name: 'Placeholder',
+        authType: 'api_key',
+        apiKey: 'sk-placeholder',
+      })
+      // 添加CCR profile
+      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists({
+        HOST: '127.0.0.1',
+        PORT: 3456,
+        APIKEY: 'sk-zcf',
+      })
+
+      mockReadCcrConfig.mockReturnValue(null)
+      const ensureSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'ensureCcrProfileExists')
+
+      await ClaudeCodeConfigManager.syncCcrProfile()
+
+      expect(ensureSpy).toHaveBeenCalledWith(null)
+      const config = ClaudeCodeConfigManager.readConfig()
+      expect(config?.profiles['ccr-proxy']).toBeUndefined()
+      ensureSpy.mockRestore()
+    })
+
+    it('ensureCcrProfileExists应该基于CCR配置创建profile', async () => {
+      cleanConfigDir()
+      ClaudeCodeConfigManager.writeConfig(ClaudeCodeConfigManager.createEmptyConfig())
+
+      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists({
+        HOST: '10.0.0.5',
+        PORT: 4567,
+        APIKEY: 'sk-ensure',
+      })
+
+      const config = ClaudeCodeConfigManager.readConfig()
+      const profile = config?.profiles['ccr-proxy']
+      expect(profile).toMatchObject({
+        id: 'ccr-proxy',
+        name: 'CCR Proxy',
+        authType: 'ccr_proxy',
+        baseUrl: 'http://10.0.0.5:4567',
+        apiKey: 'sk-ensure',
+      })
+      expect(config?.currentProfileId).toBe('ccr-proxy')
+    })
+
+    it('ensureCcrProfileExists应该删除当前CCR profile并切换', async () => {
+      await ClaudeCodeConfigManager.addProfile({
+        name: 'Main',
+        authType: 'api_key',
+        apiKey: 'sk-main',
+      })
+      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists({
+        HOST: '127.0.0.1',
+        PORT: 3456,
+        APIKEY: 'sk-ccr',
+      })
+
+      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists(null)
+
+      const config = ClaudeCodeConfigManager.readConfig()
+      expect(config?.profiles['ccr-proxy']).toBeUndefined()
+      expect(config?.currentProfileId).toBeTruthy()
+      expect(config?.currentProfileId).not.toBe('ccr-proxy')
+    })
+
+    it('switchToOfficial写入失败时应该返回错误', async () => {
+      await ClaudeCodeConfigManager.addProfile({
+        name: 'Official Test',
+        authType: 'api_key',
+        apiKey: 'sk-official',
+      })
+      const writeSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'writeConfig').mockImplementation(() => {
+        throw new Error('official failed')
+      })
+
+      const result = await ClaudeCodeConfigManager.switchToOfficial()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('official failed')
+
+      writeSpy.mockRestore()
+    })
+
+    it('switchToCcr在切换失败时应该返回错误', async () => {
+      await ClaudeCodeConfigManager.addProfile({
+        name: 'CCREntry',
+        authType: 'api_key',
+        apiKey: 'sk-entry',
+      })
+      mockReadCcrConfig.mockReturnValue({
+        HOST: '127.0.0.1',
+        PORT: 3456,
+        APIKEY: 'sk-ccr',
+      })
+
+      const switchSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'switchProfile').mockImplementation(() => {
+        throw new Error('switch fail')
+      })
+
+      const result = await ClaudeCodeConfigManager.switchToCcr()
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('switch fail')
+
+      switchSpy.mockRestore()
     })
   })
 

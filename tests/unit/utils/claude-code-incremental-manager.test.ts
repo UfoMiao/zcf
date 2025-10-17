@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '../../../src/i18n'
 import { ClaudeCodeConfigManager } from '../../../src/utils/claude-code-config-manager'
 import { configureIncrementalManagement } from '../../../src/utils/claude-code-incremental-manager'
+import { validateApiKey } from '../../../src/utils/validator'
 
 // Mock dependencies
 vi.mock('inquirer')
@@ -342,66 +343,222 @@ describe('claudeCode Incremental Configuration Manager', () => {
         name: 'API Profile',
       }))
     })
+
+    it('should display raw auth type label when type is unknown', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'custom-auth' as any,
+          },
+          'profile-2': {
+            id: 'profile-2',
+            name: 'Profile 2',
+            authType: 'api_key' as const,
+          },
+        },
+      }
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig as any)
+
+      let capturedChoices: any[] = []
+      vi.mocked(inquirer.prompt)
+        .mockImplementationOnce((() => Promise.resolve({ action: 'delete' })) as any)
+        .mockImplementationOnce(((questions: any) => {
+          const prompt = Array.isArray(questions) ? questions[0] : questions
+          capturedChoices = prompt.choices
+          return Promise.resolve({ selectedProfileIds: ['profile-1'] })
+        }) as any)
+        .mockImplementationOnce((() => Promise.resolve({ confirmed: false })) as any)
+
+      await configureIncrementalManagement()
+
+      expect(capturedChoices.some(choice => String(choice.name).includes('custom-auth'))).toBe(true)
+    })
   })
 
   describe('configuration validation', () => {
-    it('should validate configuration name format', async () => {
-      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
-
-      // Mock user input with invalid name
-      vi.mocked(inquirer.prompt).mockResolvedValueOnce({
-        profileName: 'Invalid@Name#', // Contains invalid characters
+    async function captureAddQuestions(answerOverride: Partial<Record<string, any>> = {}) {
+      const baseAnswer = {
+        profileName: 'Test Profile',
         authType: 'api_key' as const,
-        apiKey: 'sk-ant-test-key',
+        apiKey: 'sk-ant-valid',
         baseUrl: 'https://api.anthropic.com',
-        setAsDefault: true,
-      })
+        setAsDefault: false,
+      }
+      const answers = { ...baseAnswer, ...answerOverride }
 
-      // Validation function should return error message
-      await expect(configureIncrementalManagement()).rejects.toThrow()
-    })
-
-    it('should validate API key format', async () => {
-      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
-
-      // Mock validation failure
-      const { validateApiKey } = await import('../../../src/utils/validator')
-      vi.mocked(validateApiKey).mockReturnValue({
-        isValid: false,
-        error: 'Invalid API key format',
-      })
-
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({
-          profileName: 'Test Profile',
-          authType: 'api_key' as const,
-          apiKey: 'invalid-key', // Invalid API key
-          baseUrl: 'https://api.anthropic.com',
-          setAsDefault: true,
-        })
-        .mockResolvedValueOnce({ continueAdding: false })
-
-      await expect(configureIncrementalManagement()).rejects.toThrow()
-    })
-
-    it('should validate URL format', async () => {
+      let capturedQuestions: any[] = []
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({
-          profileName: 'Test Profile',
-          authType: 'api_key' as const,
-          apiKey: 'sk-ant-test-key',
-          baseUrl: 'invalid-url', // Invalid URL
-          setAsDefault: true,
-        })
-        .mockResolvedValueOnce({ continueAdding: false })
+        .mockImplementationOnce(((questions: any[]) => {
+          capturedQuestions = questions
+          return Promise.resolve(answers)
+        }) as any)
+        .mockImplementationOnce((() => Promise.resolve({ continueAdding: false })) as any)
 
-      await expect(configureIncrementalManagement()).rejects.toThrow()
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        addedProfile: {
+          id: 'test-profile-id',
+          name: answers.profileName,
+          authType: answers.authType,
+        },
+      })
+
+      await configureIncrementalManagement()
+
+      return { capturedQuestions, answers }
+    }
+
+    it('should validate profile name input rules', async () => {
+      const { capturedQuestions } = await captureAddQuestions()
+      const nameQuestion = capturedQuestions.find(q => q.name === 'profileName')
+
+      expect(nameQuestion.validate('   ')).toBe('multi-config:profileNameRequired')
+      expect(nameQuestion.validate('Invalid@Name')).toBe('multi-config:profileNameInvalid')
+      expect(nameQuestion.validate('Normal Name')).toBe(true)
+    })
+
+    it('should validate API key via helper', async () => {
+      vi.mocked(validateApiKey).mockImplementation((value: string) => {
+        if (value === 'invalid') {
+          return { isValid: false, error: 'Invalid API key format' }
+        }
+        return { isValid: true }
+      })
+
+      const { capturedQuestions } = await captureAddQuestions()
+      const apiQuestion = capturedQuestions.find(q => q.name === 'apiKey')
+
+      expect(apiQuestion.validate('')).toBe('multi-config:apiKeyRequired')
+      expect(apiQuestion.validate('invalid')).toBe('Invalid API key format')
+      expect(apiQuestion.validate('sk-okay')).toBe(true)
+    })
+
+    it('should validate base URL format', async () => {
+      const { capturedQuestions } = await captureAddQuestions()
+      const baseUrlQuestion = capturedQuestions.find(q => q.name === 'baseUrl')
+
+      expect(baseUrlQuestion.validate('')).toBe('multi-config:baseUrlRequired')
+      expect(baseUrlQuestion.validate('not-a-url')).toBe('multi-config:baseUrlInvalid')
+      expect(baseUrlQuestion.validate('https://valid.example.com')).toBe(true)
+    })
+
+    it('should skip API key and base URL when CCR proxy selected', async () => {
+      const { capturedQuestions } = await captureAddQuestions({ authType: 'ccr_proxy', setAsDefault: false })
+      const apiQuestion = capturedQuestions.find(q => q.name === 'apiKey')
+      const baseUrlQuestion = capturedQuestions.find(q => q.name === 'baseUrl')
+
+      expect(apiQuestion.when({ authType: 'ccr_proxy' })).toBe(false)
+      expect(baseUrlQuestion.when({ authType: 'ccr_proxy' })).toBe(false)
+    })
+
+    it('should validate delete selections to prevent removing all profiles', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': { id: 'profile-1', name: 'Profile 1', authType: 'api_key' as const },
+          'profile-2': { id: 'profile-2', name: 'Profile 2', authType: 'auth_token' as const },
+        },
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig as any)
+
+      let deletePrompt: any
+      vi.mocked(inquirer.prompt)
+        .mockImplementationOnce((() => Promise.resolve({ action: 'delete' })) as any)
+        .mockImplementationOnce(((questions: any) => {
+          deletePrompt = Array.isArray(questions) ? questions[0] : questions
+          return Promise.resolve({ selectedProfileIds: ['profile-1'] })
+        }) as any)
+        .mockImplementationOnce((() => Promise.resolve({ confirmed: false })) as any)
+
+      await configureIncrementalManagement()
+
+      expect(deletePrompt.validate([])).toBe('multi-config:selectAtLeastOne')
+      expect(deletePrompt.validate(['profile-1', 'profile-2'])).toBe('multi-config:cannotDeleteAll')
+      expect(deletePrompt.validate(['profile-1'])).toBe(true)
     })
   })
 
   describe('error handling and edge cases', () => {
+    it('should skip adding duplicate profile when overwrite is declined', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue({
+        currentProfileId: '',
+        profiles: {},
+      } as any)
+
+      vi.mocked(ClaudeCodeConfigManager.getProfileByName).mockReturnValue({
+        id: 'duplicate',
+        name: 'Duplicate',
+        authType: 'api_key',
+      } as any)
+
+      vi.mocked(inquirer.prompt)
+        .mockImplementationOnce((() => Promise.resolve({
+          profileName: 'Duplicate',
+          authType: 'api_key',
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: false,
+        })) as any)
+        .mockImplementationOnce((() => Promise.resolve({ overwrite: false })) as any)
+        .mockImplementationOnce((() => Promise.resolve({ continueAdding: false })) as any)
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.updateProfile).not.toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.addProfile).not.toHaveBeenCalled()
+    })
+
+    it('should overwrite existing profile when confirmed', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue({
+        currentProfileId: 'existing',
+        profiles: {},
+      } as any)
+
+      vi.mocked(ClaudeCodeConfigManager.getProfileByName).mockReturnValue({
+        id: 'existing',
+        name: 'Duplicate',
+        authType: 'api_key',
+      } as any)
+
+      vi.mocked(inquirer.prompt)
+        .mockImplementationOnce((() => Promise.resolve({
+          profileName: 'Duplicate',
+          authType: 'api_key',
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+          setAsDefault: true,
+        })) as any)
+        .mockImplementationOnce((() => Promise.resolve({ overwrite: true })) as any)
+        .mockImplementationOnce((() => Promise.resolve({ continueAdding: false })) as any)
+
+      vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+        updatedProfile: {
+          id: 'existing',
+          name: 'Duplicate',
+          authType: 'api_key',
+          apiKey: 'sk-ant-test-key',
+        },
+      })
+      vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({ success: true })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.updateProfile).toHaveBeenCalledWith('existing', expect.objectContaining({
+        name: 'Duplicate',
+        apiKey: 'sk-ant-test-key',
+      }))
+      expect(ClaudeCodeConfigManager.switchProfile).toHaveBeenCalledWith('existing')
+    })
+
     it('should handle profile addition failure', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
 

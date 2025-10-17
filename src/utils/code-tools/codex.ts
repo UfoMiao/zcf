@@ -11,31 +11,21 @@ import { dirname, join } from 'pathe'
 import semver from 'semver'
 import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
-import { getMcpServices, MCP_SERVICE_CONFIGS } from '../../config/mcp-services'
+// Removed MCP config imports; MCP configuration moved to codex-configure.ts
 import { AI_OUTPUT_LANGUAGES } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
-import { selectMcpServices } from '../mcp-selector'
-import { getMcpCommand, getSystemRoot, isWindows } from '../platform'
+// Removed MCP selection and platform command imports from this module
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
 import { readZcfConfig, updateZcfConfig } from '../zcf-config'
 import { detectConfigManagementMode } from './codex-config-detector'
+import { configureCodexMcp } from './codex-configure'
 
-/**
- * Apply platform-specific command handling for Codex MCP services
- * This function mirrors the logic from Claude Code's applyPlatformCommand
- * @param config - MCP service configuration to modify
- */
-function applyCodexPlatformCommand(config: CodexMcpService): void {
-  if (config.command === 'npx' && isWindows()) {
-    const mcpCmd = getMcpCommand()
-    config.command = mcpCmd[0]
-    config.args = [...mcpCmd.slice(1), ...(config.args || [])]
-  }
-}
+// 公共化导出，便于复用和测试
+export { applyCodexPlatformCommand } from './codex-platform'
 
 export const CODEX_DIR = join(homedir(), '.codex')
 const CODEX_CONFIG_FILE = join(CODEX_DIR, 'config.toml')
@@ -1341,159 +1331,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
   console.log(ansis.green(i18n.t('codex:apiConfigured')))
 }
 
-export async function configureCodexMcp(options?: CodexFullInitOptions): Promise<void> {
-  ensureI18nInitialized()
-
-  const { skipPrompt = false } = options ?? {}
-  const existingConfig = readCodexConfig()
-
-  // Handle skipPrompt mode - skip MCP configuration entirely
-  if (skipPrompt) {
-    return
-  }
-
-  // Always backup existing config before modification
-  const backupPath = backupCodexComplete()
-  if (backupPath) {
-    console.log(ansis.gray(getBackupMessage(backupPath)))
-  }
-
-  const selectedIds = await selectMcpServices()
-
-  if (!selectedIds)
-    return
-
-  const servicesMeta = await getMcpServices()
-  const baseProviders = existingConfig?.providers || []
-  const selection: CodexMcpService[] = []
-
-  // Load existing services
-  const existingServices = existingConfig?.mcpServices || []
-
-  if (selectedIds.length === 0) {
-    console.log(ansis.yellow(i18n.t('codex:noMcpConfigured')))
-
-    // Union-style: preserve all existing services (predefined + custom)
-    const preserved = (existingServices || []).map((svc) => {
-      if (isWindows()) {
-        const systemRoot = getSystemRoot()
-        if (systemRoot) {
-          return {
-            ...svc,
-            env: {
-              ...(svc.env || {}),
-              SYSTEMROOT: systemRoot,
-            },
-          }
-        }
-      }
-      return svc
-    })
-
-    writeCodexConfig({
-      model: existingConfig?.model || null,
-      modelProvider: existingConfig?.modelProvider || null,
-      providers: baseProviders,
-      mcpServices: preserved,
-      managed: true,
-      otherConfig: existingConfig?.otherConfig || [],
-    })
-    updateZcfConfig({ codeToolType: 'codex' })
-    return
-  }
-
-  for (const id of selectedIds) {
-    const configInfo = MCP_SERVICE_CONFIGS.find(service => service.id === id)
-    if (!configInfo)
-      continue
-
-    const serviceMeta = servicesMeta.find(service => service.id === id)
-    let command = configInfo.config.command || id
-    let args = (configInfo.config.args || []).map(arg => String(arg))
-
-    // Apply platform-specific command handling
-    const serviceConfig: CodexMcpService = { id: id.toLowerCase(), command, args }
-    applyCodexPlatformCommand(serviceConfig)
-    command = serviceConfig.command
-    args = serviceConfig.args || []
-
-    // Get environment variables from the service config
-    const env = { ...(configInfo.config.env || {}) }
-
-    // Add SYSTEMROOT environment variable for Windows
-    if (isWindows()) {
-      const systemRoot = getSystemRoot()
-      if (systemRoot) {
-        env.SYSTEMROOT = systemRoot
-      }
-    }
-
-    // If service requires API key, prompt for it and add to env
-    if (configInfo.requiresApiKey && configInfo.apiKeyEnvVar) {
-      const promptMessage = serviceMeta?.apiKeyPrompt || i18n.t('mcp:apiKeyPrompt')
-      const { apiKey } = await inquirer.prompt<{ apiKey: string }>([{
-        type: 'password',
-        name: 'apiKey',
-        message: promptMessage + i18n.t('common:inputHidden'),
-        validate: input => !!input || i18n.t('api:keyRequired'),
-      }])
-
-      if (!apiKey)
-        continue
-
-      // Add API key to environment variables instead of auth.json
-      env[configInfo.apiKeyEnvVar] = apiKey
-    }
-
-    selection.push({
-      id: id.toLowerCase(), // Convert to lowercase for Codex compatibility
-      command: serviceConfig.command,
-      args: serviceConfig.args,
-      env: Object.keys(env).length > 0 ? env : undefined,
-      startup_timeout_ms: configInfo.config.startup_timeout_ms,
-    })
-  }
-
-  // Build a union-style merged services map like Claude Code: preserve existing, update selected
-  const mergedMap = new Map<string, CodexMcpService>()
-  // 1) Seed with all existing services (predefined and custom)
-  for (const svc of existingServices) {
-    mergedMap.set(svc.id.toLowerCase(), { ...svc })
-  }
-  // 2) Overlay selected predefined services (overwrite same id)
-  for (const svc of selection) {
-    mergedMap.set(svc.id.toLowerCase(), { ...svc })
-  }
-
-  // 3) Windows: ensure SYSTEMROOT on all services
-  const finalServices = Array.from(mergedMap.values()).map((svc) => {
-    if (isWindows()) {
-      const systemRoot = getSystemRoot()
-      if (systemRoot) {
-        return {
-          ...svc,
-          env: {
-            ...(svc.env || {}),
-            SYSTEMROOT: systemRoot,
-          },
-        }
-      }
-    }
-    return svc
-  })
-
-  writeCodexConfig({
-    model: existingConfig?.model || null,
-    modelProvider: existingConfig?.modelProvider || null,
-    providers: baseProviders,
-    mcpServices: finalServices,
-    managed: true,
-    otherConfig: existingConfig?.otherConfig || [],
-  })
-
-  updateZcfConfig({ codeToolType: 'codex' })
-  console.log(ansis.green(i18n.t('codex:mcpConfigured')))
-}
+export { configureCodexMcp }
 
 export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {
   // Workflow selection options

@@ -69,12 +69,26 @@ vi.mock('../../../src/utils/claude-code-config-manager', () => ({
   },
 }))
 
+const {
+  mockListCodexProvidersFn,
+  mockReadCodexConfigFn,
+  mockSwitchCodexProviderFn,
+  mockSwitchCodexOfficialLoginFn,
+  mockSwitchToProviderFn,
+} = vi.hoisted(() => ({
+  mockListCodexProvidersFn: vi.fn(),
+  mockReadCodexConfigFn: vi.fn(),
+  mockSwitchCodexProviderFn: vi.fn(),
+  mockSwitchCodexOfficialLoginFn: vi.fn(),
+  mockSwitchToProviderFn: vi.fn(),
+}))
+
 vi.mock('../../../src/utils/code-tools/codex', () => ({
-  listCodexProviders: vi.fn(),
-  readCodexConfig: vi.fn(),
-  switchCodexProvider: vi.fn(),
-  switchToOfficialLogin: vi.fn(),
-  switchToProvider: vi.fn(),
+  listCodexProviders: mockListCodexProvidersFn,
+  readCodexConfig: mockReadCodexConfigFn,
+  switchCodexProvider: mockSwitchCodexProviderFn,
+  switchToOfficialLogin: mockSwitchCodexOfficialLoginFn,
+  switchToProvider: mockSwitchToProviderFn,
 }))
 
 vi.mock('../../../src/utils/prompt-helpers', () => ({
@@ -105,9 +119,15 @@ vi.mock('../../../src/constants', () => ({
 
 const mockInquirer = vi.mocked(inquirer)
 const mockClaudeCodeConfigManager = vi.mocked(ClaudeCodeConfigManager)
+const mockResolveCodeToolType = vi.mocked(resolveCodeToolType)
 
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(vi.fn())
 
+const mockListCodexProviders = vi.mocked(mockListCodexProvidersFn)
+const mockReadCodexConfig = vi.mocked(mockReadCodexConfigFn)
+const mockSwitchCodexProvider = vi.mocked(mockSwitchCodexProviderFn)
+const mockSwitchCodexOfficialLogin = vi.mocked(mockSwitchCodexOfficialLoginFn)
+const mockSwitchToProvider = vi.mocked(mockSwitchToProviderFn)
 describe('config-switch command - Claude Code Support', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -125,7 +145,7 @@ describe('config-switch command - Claude Code Support', () => {
           authType: 'auth_token' as const,
         },
       },
-      currentProfileId: 'profile1',
+      currentProfileId: 'profile1' as string,
     }
 
     mockClaudeCodeConfigManager.readConfig.mockReturnValue(defaultConfig)
@@ -409,5 +429,79 @@ describe('config-switch command - Claude Code Support', () => {
       mockInquirer.prompt.mockResolvedValue({ selectedConfig: 'provider1' })
       await expect(configSwitchCommand({ codeType: 'codex' })).resolves.not.toThrow()
     })
+  })
+})
+
+describe('config-switch command - Codex Support', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockResolveCodeToolType.mockImplementation((type: any) => type || 'claude-code')
+    mockClaudeCodeConfigManager.readConfig.mockReturnValue(undefined as any)
+    mockListCodexProviders.mockResolvedValue([
+      { id: 'provider-1', name: 'Provider One', baseUrl: 'https://one.test', envKey: 'PROVIDER_ONE' },
+      { id: 'provider-2', name: 'Provider Two', baseUrl: 'https://two.test' },
+    ] as any[])
+    mockReadCodexConfig.mockReturnValue({
+      modelProvider: 'provider-1',
+      modelProviderCommented: false,
+    } as any)
+    mockSwitchCodexProvider.mockResolvedValue(true)
+    mockSwitchCodexOfficialLogin.mockResolvedValue(true)
+    mockSwitchToProvider.mockResolvedValue(true)
+  })
+
+  it('should list Codex providers including current provider', async () => {
+    await configSwitchCommand({ list: true, codeType: 'codex' })
+
+    expect(mockListCodexProviders).toHaveBeenCalled()
+    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Provider One'))
+    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Provider Two'))
+  })
+
+  it('should display message when no Codex providers available', async () => {
+    mockListCodexProviders.mockResolvedValue([])
+
+    await configSwitchCommand({ list: true, codeType: 'codex' })
+
+    expect(mockConsoleLog).toHaveBeenCalledWith('codex:noProvidersAvailable')
+  })
+
+  it('should switch Codex provider directly when target specified', async () => {
+    await configSwitchCommand({ target: 'provider-2', codeType: 'codex' })
+
+    expect(mockSwitchCodexProvider).toHaveBeenCalledWith('provider-2')
+  })
+
+  it('should switch to official Codex login via interactive flow', async () => {
+    mockInquirer.prompt.mockImplementationOnce(((questions: any) => {
+      const questionArray = Array.isArray(questions) ? questions : [questions]
+      expect(questionArray[0].choices.some((choice: any) => choice.value === 'official')).toBe(true)
+      return Promise.resolve({ selectedConfig: 'official' })
+    }) as any)
+
+    await configSwitchCommand({ codeType: 'codex' })
+
+    expect(mockSwitchCodexOfficialLogin).toHaveBeenCalled()
+  })
+
+  it('should switch to selected Codex provider via interactive flow', async () => {
+    mockInquirer.prompt.mockImplementationOnce((() => Promise.resolve({ selectedConfig: 'provider-2' })) as any)
+
+    await configSwitchCommand({ codeType: 'codex' })
+
+    expect(mockSwitchToProvider).toHaveBeenCalledWith('provider-2')
+  })
+
+  it('should fall back to Codex type from configuration when option omitted', async () => {
+    const mockReadZcfConfig = vi.mocked(readZcfConfig)
+    mockReadZcfConfig.mockReturnValue({
+      codeToolType: 'codex',
+    } as any)
+    mockListCodexProviders.mockResolvedValue([])
+
+    await configSwitchCommand({})
+
+    expect(mockListCodexProviders).toHaveBeenCalled()
+    expect(mockConsoleLog).toHaveBeenCalledWith('codex:noProvidersAvailable')
   })
 })
