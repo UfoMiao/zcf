@@ -81,6 +81,58 @@ install_type = "global"
 enabled = false
 system_prompt_style = "engineer-professional"`
 
+  describe('helper utilities', () => {
+    it('should create default config with zh-CN AI output when preferredLang is zh-CN', () => {
+      const config = createDefaultTomlConfig('zh-CN')
+
+      expect(config.general.aiOutputLang).toBe('zh-CN')
+      expect(config.general.currentTool).toBe(DEFAULT_CODE_TOOL_TYPE)
+    })
+
+    it('should migrate legacy JSON configuration into TOML structure', () => {
+      const legacy = {
+        version: '2.0.0',
+        lastUpdated: '2024-08-01',
+        preferredLang: 'zh-CN',
+        templateLang: 'en',
+        aiOutputLang: 'zh-CN',
+        codeToolType: 'codex',
+        outputStyles: ['engineer-professional'],
+        defaultOutputStyle: 'engineer-professional',
+        currentProfileId: 'profile-1',
+        claudeCodeInstallation: { type: 'local' },
+        claudeCode: { profiles: { 'profile-1': { name: 'Test' } } },
+      }
+
+      const migrated = migrateFromJsonConfig(legacy)
+
+      expect(migrated.general.preferredLang).toBe('zh-CN')
+      expect(migrated.claudeCode.installType).toBe('local')
+      expect(migrated.codex.enabled).toBe(true)
+      expect(migrated.claudeCode.currentProfile).toBe('profile-1')
+    })
+
+    it('should readTomlConfig return null when file missing or parse fails', () => {
+      mockExists.mockReturnValueOnce(false)
+      expect(readTomlConfig('missing.toml')).toBeNull()
+
+      mockExists.mockReturnValueOnce(true)
+      mockReadFile.mockReturnValueOnce('invalid')
+      mockParse.mockImplementationOnce(() => {
+        throw new Error('parse failed')
+      })
+      expect(readTomlConfig('broken.toml')).toBeNull()
+    })
+
+    it('should writeTomlConfig ignore underlying write errors', () => {
+      mockEnsureDir.mockImplementationOnce(() => {
+        throw new Error('mkdir failed')
+      })
+
+      expect(() => writeTomlConfig('path/config.toml', createDefaultTomlConfig())).not.toThrow()
+    })
+  })
+
   describe('readZcfConfig', () => {
     it('should read config from TOML file', () => {
       const mockTomlConfig = {
@@ -288,6 +340,18 @@ system_prompt_style = "engineer-professional"`
 
       // Should not throw
       expect(() => writeZcfConfig(config)).not.toThrow()
+    })
+  })
+
+  describe('getZcfConfig defaults', () => {
+    it('should return default config when nothing stored', () => {
+      mockExists.mockReturnValue(false)
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
+
+      const config = getZcfConfig()
+
+      expect(config.preferredLang).toBe('en')
+      expect(config.codeToolType).toBe(DEFAULT_CODE_TOOL_TYPE)
     })
   })
 

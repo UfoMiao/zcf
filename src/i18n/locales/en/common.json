@@ -6,7 +6,6 @@
   "error": "Error",
   "complete": "🎉 Setup complete! Use 'claude' command to start.",
   "none": "None",
-  "notConfigured": "Not configured",
   "enterChoice": "Enter your choice and press enter (case-insensitive)",
   "invalidChoice": "Invalid choice. Please enter a valid option.",
   "goodbye": "👋 Thanks for using ZCF! Goodbye!",
@@ -14,5 +13,6 @@
   "back": "Back",
   "inputHidden": " (input will be hidden)",
   "operationFailed": "Operation failed",
-  "backupCreated": "📁 Configuration backup created: {{path}}"
+  "backupCreated": "📁 Configuration backup created: {{path}}",
+  "current": "current"
 }

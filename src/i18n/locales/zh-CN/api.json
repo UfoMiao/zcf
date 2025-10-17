@@ -6,7 +6,6 @@
   "apiKeyDesc": "适用于从 Anthropic Console 获取的 API 密钥",
   "apiKeyValidation.example": "示例格式: sk-abcdef123456_789xyz",
   "authTokenDesc": "适用于通过 OAuth 或浏览器登录获取的令牌",
-  "ccrProxyDesc": "通过 Claude Code Router 使用多个 AI 模型",
   "configureApi": "选择 API 认证方式",
   "enterApiKey": "请输入 API Key",
   "enterApiUrl": "请输入 API URL",
@@ -24,7 +23,7 @@
   "modifyApiUrl": "修改 API URL",
   "modifyAuthType": "修改认证类型",
   "modifyPartialConfig": "修改部分配置",
-  "selectApiAction": "请选择API处理操作",
+
   "selectApiMode": "请选择 API 配置模式",
   "selectCustomConfigAction": "请选择自定义配置操作",
   "selectModifyItems": "请选择要修改的项",

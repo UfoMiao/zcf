@@ -87,7 +87,6 @@
   "useOfficialLogin": "使用官方登录",
   "apiConfigSwitchPrompt": "选择要切换的API配置",
   "agentsFileNotFound": "AGENTS.md 文件未找到，请先配置系统提示词",
-  "checkingVersion": "检查版本中...",
   "currentVersion": "当前版本: v{version}",
   "latestVersion": "最新版本: v{version}",
   "confirmUpdate": "将 Codex 更新到最新版本？",

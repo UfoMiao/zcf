@@ -56,7 +56,18 @@ async function handleOfficialLoginMode(): Promise<void> {
 async function handleCustomApiMode(): Promise<void> {
   ensureI18nInitialized()
 
-  // Check for existing API configuration
+  // Get current code tool type from ZCF config
+  const zcfConfig = readZcfConfig()
+  const codeToolType = zcfConfig?.codeToolType || 'claude-code'
+
+  // For Claude Code, use the new incremental configuration management
+  if (codeToolType === 'claude-code') {
+    const { configureIncrementalManagement } = await import('../utils/claude-code-incremental-manager')
+    await configureIncrementalManagement()
+    return
+  }
+
+  // For other tools, keep the existing logic
   const existingConfig = getExistingApiConfig()
 
   if (existingConfig) {

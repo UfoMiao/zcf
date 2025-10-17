@@ -6,7 +6,6 @@
   "apiKeyDesc": "For API keys from Anthropic Console",
   "apiKeyValidation.example": "Example format: sk-abcdef123456_789xyz",
   "authTokenDesc": "For tokens obtained via OAuth or browser login",
-  "ccrProxyDesc": "Use multiple AI models via Claude Code Router",
   "configureApi": "Select API authentication method",
   "enterApiKey": "Enter API Key",
   "enterApiUrl": "Enter API URL",
@@ -24,7 +23,7 @@
   "modifyApiUrl": "Modify API URL",
   "modifyAuthType": "Modify auth type",
   "modifyPartialConfig": "Modify partial configuration",
-  "selectApiAction": "Select API processing operation",
+
   "selectApiMode": "Select API configuration mode",
   "selectCustomConfigAction": "Select custom configuration action",
   "selectModifyItems": "Select items to modify",

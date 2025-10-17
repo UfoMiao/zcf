@@ -10,7 +10,7 @@
 
 **中文** | [English](README.md) | [日本語](README_ja-JP.md) | [更新日志](CHANGELOG.md)
 
-**✨ 快速导航**: [Codex 支持](#-codex-支持v300-新增) | [BMad 工作流](#-bmad-工作流v27-新功能) | [Spec 工作流](#-spec-工作流v2124-新功能) | [开放网页搜索](#-开放网页搜索v2129-新功能) | [CCR 代理](#-ccr-claude-code-router-支持v28-增强版) | [CCometixLine](#-ccometixline-支持状态栏工具v299-新增) | [输出风格](#-ai-输出风格v212-新功能)
+**✨ 快速导航**: [Codex 支持](#-codex-支持v300-新增) | [BMad 工作流](#-bmad-工作流v27-新功能) | [Spec 工作流](#-spec-工作流v2124-新功能) | [开放网页搜索](#-开放网页搜索v2129-新功能) | [CCR 代理](#-ccr-claude-code-router-支持v28-增强版) | [CCometixLine](#-ccometixline-支持状态栏工具v299-新增) | [输出风格](#-ai-输出风格v212-新功能) | [多配置管理](#-多配置管理v320-新增)
 
 > 零配置，一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
 
@@ -399,6 +399,48 @@ npx zcf → 选择 +
 - 默认模型配置（v2.0 新增）
 - AI 记忆管理（v2.0 新增）
 - ZCF 缓存清理（v2.0 新增）
+
+### 🧩 多配置管理（v3.2.0 新增）
+
+统一的增量式、交互式多配置管理，覆盖 Claude Code 与 Codex：
+
+- Claude Code：管理 API 配置（新增/编辑/删除、默认配置、重复检测）
+- Codex：管理模型提供商（列出/切换，官方登录通过交互式选择）
+- 安全备份；防止误删最后一个配置（Claude Code）
+- 应用时写入 `~/.claude/settings.json`，必要时自动重启 CCR
+- 配置存储：`~/.ufomiao/zcf/config.toml`（备份 `config.backup.YYYY-MM-DD_HH-mm-ss.toml`）
+
+指定工具类型：
+
+```bash
+# -T 支持：claude-code|codex 或短别名 cc|cx
+npx zcf cs --list -T cc    # 列出 Claude Code 配置
+npx zcf cs --list -T cx    # 列出 Codex 提供商
+```
+
+Claude Code 用法：
+
+```bash
+# 快速切换
+npx zcf cs official -T cc  # 切换到官方登录
+npx zcf cs ccr -T cc       # 切换到 CCR 代理
+npx zcf cs my-profile -T cc
+```
+
+Codex 用法：
+
+```bash
+# 列出并切换提供商
+npx zcf cs --list -T cx
+npx zcf cs my-provider -T cx
+
+# 切换到官方登录（交互式选择）
+npx zcf config-switch -T cx
+```
+
+说明：
+- 环境变量映射（Claude Code）：API Key → `ANTHROPIC_API_KEY`，Auth Token → `ANTHROPIC_AUTH_TOKEN`，Base URL → `ANTHROPIC_BASE_URL`。
+- 当前工具类型会记录在 ZCF 配置中；只有当你要操作的不是当前工具时，才需要加 `-T cc/cx`。
 
 ## 📖 使用说明
 

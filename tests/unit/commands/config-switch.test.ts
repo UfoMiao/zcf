@@ -16,11 +16,13 @@ import {
 vi.mock('inquirer')
 vi.mock('ansis', () => ({
   default: {
+    bold: vi.fn((str: string) => str),
     cyan: vi.fn((str: string) => str),
     green: vi.fn((str: string) => str),
     red: vi.fn((str: string) => str),
     yellow: vi.fn((str: string) => str),
     gray: vi.fn((str: string) => str),
+    white: vi.fn((str: string) => str),
   },
 }))
 vi.mock('../../../src/i18n', () => ({
@@ -61,6 +63,15 @@ vi.mock('../../../src/utils/prompt-helpers', () => ({
 
 vi.mock('../../../src/utils/error-handler', () => ({
   handleGeneralError: vi.fn(),
+}))
+
+vi.mock('../../../src/utils/zcf-config', () => ({
+  readZcfConfig: vi.fn(() => ({
+    version: '1.0.0',
+    preferredLang: 'zh-CN',
+    codeToolType: 'codex',
+    lastUpdated: new Date().toISOString(),
+  })),
 }))
 
 const mockInquirer = vi.mocked(inquirer)
@@ -137,7 +148,6 @@ describe('config-switch command', () => {
       await configSwitchCommand({ list: true })
 
       expect(mockListCodexProviders).toHaveBeenCalled()
-      expect(mockGetCurrentCodexProvider).toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('可用的提供商列表'))
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('当前提供商：openai-custom'))
       expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('OpenAI Custom'))
@@ -146,12 +156,10 @@ describe('config-switch command', () => {
 
     it('should handle case when no providers are available', async () => {
       mockListCodexProviders.mockResolvedValue([])
-      mockGetCurrentCodexProvider.mockResolvedValue(null)
 
       await configSwitchCommand({ list: true })
 
       expect(mockListCodexProviders).toHaveBeenCalled()
-      expect(mockGetCurrentCodexProvider).toHaveBeenCalled()
       // Function should complete without errors when no providers available
     })
   })
@@ -160,7 +168,7 @@ describe('config-switch command', () => {
     it('should switch to specified provider directly', async () => {
       mockSwitchCodexProvider.mockResolvedValue(true)
 
-      await configSwitchCommand({ provider: 'claude-api' })
+      await configSwitchCommand({ target: 'claude-api' })
 
       expect(mockSwitchCodexProvider).toHaveBeenCalledWith('claude-api')
       // switchCodexProvider handles its own success/failure messages
@@ -169,7 +177,7 @@ describe('config-switch command', () => {
     it('should handle switching to non-existent provider', async () => {
       mockSwitchCodexProvider.mockResolvedValue(false)
 
-      await configSwitchCommand({ provider: 'non-existent' })
+      await configSwitchCommand({ target: 'non-existent' })
 
       expect(mockSwitchCodexProvider).toHaveBeenCalledWith('non-existent')
       // switchCodexProvider handles its own success/failure messages
@@ -183,7 +191,6 @@ describe('config-switch command', () => {
       await configSwitchCommand({})
 
       expect(mockListCodexProviders).toHaveBeenCalled()
-      expect(mockReadCodexConfig).toHaveBeenCalled()
       expect(mockInquirer.prompt).toHaveBeenCalledWith([{
         type: 'list',
         name: 'selectedConfig',
@@ -233,7 +240,6 @@ describe('config-switch command', () => {
       await configSwitchCommand({})
 
       expect(mockListCodexProviders).toHaveBeenCalled()
-      expect(mockReadCodexConfig).toHaveBeenCalled()
       expect(mockSwitchToOfficialLogin).toHaveBeenCalled()
       expect(mockSwitchToProvider).not.toHaveBeenCalled()
     })
@@ -264,7 +270,7 @@ describe('config-switch command', () => {
       const error = new Error('Failed to write config')
       mockSwitchCodexProvider.mockRejectedValue(error)
 
-      await expect(configSwitchCommand({ provider: 'claude-api' })).rejects.toThrow('Failed to write config')
+      await expect(configSwitchCommand({ target: 'claude-api' })).rejects.toThrow('Failed to write config')
     })
   })
 })

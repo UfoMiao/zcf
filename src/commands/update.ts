@@ -1,7 +1,7 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 import ansis from 'ansis'
 import { version } from '../../package.json'
-import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
+import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType as resolveCodeToolTypeAlias } from '../constants'
 import { i18n } from '../i18n'
 import { displayBanner } from '../utils/banner'
 import { runCodexUpdate } from '../utils/code-tools/codex'
@@ -21,10 +21,15 @@ export interface UpdateOptions {
 }
 
 function resolveCodeToolType(optionValue: unknown, savedValue?: CodeToolType | null): CodeToolType {
-  if (isCodeToolType(optionValue)) {
-    return optionValue
+  // First try to use the option value (supports short aliases)
+  if (optionValue !== undefined) {
+    const resolved = resolveCodeToolTypeAlias(optionValue)
+    if (resolved !== DEFAULT_CODE_TOOL_TYPE || optionValue === DEFAULT_CODE_TOOL_TYPE) {
+      return resolved
+    }
   }
 
+  // Fall back to saved value
   if (savedValue && isCodeToolType(savedValue)) {
     return savedValue
   }

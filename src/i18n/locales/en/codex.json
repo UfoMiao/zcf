@@ -87,7 +87,6 @@
   "useOfficialLogin": "Use Official Login",
   "apiConfigSwitchPrompt": "Select API configuration to switch to",
   "agentsFileNotFound": "AGENTS.md file not found, please configure system prompt first",
-  "checkingVersion": "Checking version...",
   "currentVersion": "Current version: v{version}",
   "latestVersion": "Latest version: v{version}",
   "confirmUpdate": "Update Codex to the latest version?",

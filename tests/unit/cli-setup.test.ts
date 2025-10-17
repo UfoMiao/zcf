@@ -1,11 +1,7 @@
 import cac from 'cac'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { version } from '../../package.json'
-import {
-
-  customizeHelp,
-  setupCommands,
-} from '../../src/cli-setup'
+import { customizeHelp, setupCommands, withLanguageResolution } from '../../src/cli-setup'
 
 // Mock commands
 vi.mock('../../src/commands/init', () => ({
@@ -33,15 +29,18 @@ vi.mock('../../src/i18n', async (importOriginal) => {
 })
 
 // Mock zcf-config
+function createMockZcfConfig() {
+  return {
+    version: '1.0.0',
+    preferredLang: 'en' as const,
+    codeToolType: 'claude-code' as const,
+    lastUpdated: new Date().toISOString(),
+  }
+}
+
 vi.mock('../../src/utils/zcf-config', () => ({
-  readZcfConfigAsync: vi.fn().mockResolvedValue({
-    preferredLang: 'en',
-    codeToolType: 'claude-code',
-  }),
-  readZcfConfig: vi.fn().mockReturnValue({
-    preferredLang: 'en',
-    codeToolType: 'claude-code',
-  }),
+  readZcfConfigAsync: vi.fn().mockResolvedValue(createMockZcfConfig()),
+  readZcfConfig: vi.fn().mockReturnValue(createMockZcfConfig()),
   updateZcfConfig: vi.fn(),
 }))
 
@@ -49,6 +48,11 @@ vi.mock('../../src/utils/zcf-config', () => ({
 vi.mock('../../src/utils/prompts', () => ({
   selectScriptLanguage: vi.fn().mockResolvedValue('en'),
 }))
+
+const { changeLanguage, i18n } = await import('../../src/i18n')
+const { readZcfConfigAsync } = await import('../../src/utils/zcf-config')
+const { selectScriptLanguage } = await import('../../src/utils/prompts')
+const mockSelectScriptLanguage = vi.mocked(selectScriptLanguage)
 
 describe('cli-setup', () => {
   beforeEach(async () => {
@@ -83,6 +87,47 @@ describe('cli-setup', () => {
       // Check help and version were setup
       expect(helpSpy).toHaveBeenCalled()
       expect(versionSpy).toHaveBeenCalled()
+    })
+  })
+
+  describe('withLanguageResolution', () => {
+    beforeEach(() => {
+      vi.mocked(changeLanguage).mockReset()
+      mockSelectScriptLanguage.mockResolvedValue('en')
+      vi.mocked(readZcfConfigAsync).mockResolvedValue(createMockZcfConfig())
+    })
+
+    it('should switch language when option specifies different language', async () => {
+      i18n.isInitialized = true
+      i18n.language = 'en'
+
+      const wrapped = await withLanguageResolution(async (_options: any) => {}, false)
+      await wrapped({ lang: 'zh-CN' })
+
+      expect(changeLanguage).toHaveBeenCalledWith('zh-CN')
+    })
+
+    it('should prompt for language when not skipping and config missing', async () => {
+      i18n.isInitialized = true
+      i18n.language = 'en'
+      vi.mocked(readZcfConfigAsync).mockResolvedValue(null)
+      mockSelectScriptLanguage.mockResolvedValue('zh-CN')
+
+      const wrapped = await withLanguageResolution(async (_options: any) => {}, false)
+      await wrapped({})
+
+      expect(mockSelectScriptLanguage).toHaveBeenCalled()
+      expect(changeLanguage).toHaveBeenCalledWith('zh-CN')
+    })
+
+    it('should avoid switching when target equals current language', async () => {
+      i18n.isInitialized = true
+      i18n.language = 'en'
+
+      const wrapped = await withLanguageResolution(async (_options: any) => {}, true)
+      await wrapped({ lang: 'en' })
+
+      expect(changeLanguage).not.toHaveBeenCalled()
     })
   })
 

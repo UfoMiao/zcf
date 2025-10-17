@@ -246,6 +246,8 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .option('--install-cometix-line, -x <value>', `Install CCometixLine statusline tool (true/false), ${i18n.t('cli:help.defaults.prefix')} true`)
+    .option('--api-configs <configs>', 'API configurations as JSON string for multiple profiles')
+    .option('--api-configs-file <file>', 'Path to JSON file containing API configurations')
     .action(await withLanguageResolution(async (options) => {
       await init(options)
     }))
@@ -280,16 +282,18 @@ export async function setupCommands(cli: CAC): Promise<void> {
       await executeCcusage(args)
     }))
 
-  // Config switch command - Switch Codex provider
+  // Config switch command - Switch Codex provider or Claude Code configuration
   cli
-    .command('config-switch [provider]', 'Switch Codex provider or list available providers')
+    .command('config-switch [target]', 'Switch Codex provider or Claude Code configuration, or list available configurations')
     .alias('cs')
+    .option('--code-type, -T <type>', 'Code tool type (claude-code, codex, cc, cx)')
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--list', 'List available providers')
-    .action(await withLanguageResolution(async (provider, options) => {
+    .option('--list', 'List available configurations')
+    .action(await withLanguageResolution(async (target, options) => {
       await configSwitchCommand({
-        provider,
+        target,
+        codeType: options.codeType,
         list: options.list,
       })
     }))

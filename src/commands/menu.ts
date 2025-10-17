@@ -4,7 +4,7 @@ import inquirer from 'inquirer'
 import { CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
-import { configureCodexApi, configureCodexMcp, runCodexFullInit, runCodexUninstall, runCodexUpdate, runCodexWorkflowImport } from '../utils/code-tools/codex'
+import { configureCodexApi, configureCodexMcp, runCodexFullInit, runCodexUninstall, runCodexUpdate, runCodexWorkflowImportWithLanguageSelection } from '../utils/code-tools/codex'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import {
   changeScriptLanguageFeature,
@@ -299,7 +299,7 @@ async function showCodexMenu(): Promise<MenuResult> {
       await runCodexFullInit()
       break
     case '2':
-      await runCodexWorkflowImport()
+      await runCodexWorkflowImportWithLanguageSelection()
       break
     case '3':
       await configureCodexApi()
