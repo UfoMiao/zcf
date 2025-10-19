@@ -287,9 +287,9 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .command('config-switch [target]', 'Switch Codex provider or Claude Code configuration, or list available configurations')
     .alias('cs')
     .option('--code-type, -T <type>', 'Code tool type (claude-code, codex, cc, cx)')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--list', 'List available configurations')
+    .option('--list, -l', 'List available configurations')
     .action(await withLanguageResolution(async (target, options) => {
       await configSwitchCommand({
         target,

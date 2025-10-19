@@ -83,7 +83,7 @@ ZCF supports bilingual operation with automatic language switching for all comma
 # Use Chinese for all operations
 npx zcf --lang zh-CN          # Interactive menu in Chinese
 npx zcf init --lang zh-CN      # Initialize with Chinese interface  
-npx zcf ccr --allLang zh-CN    # Configure CCR in Chinese
+npx zcf ccr --all-lang zh-CN    # Configure CCR in Chinese
 
 # Language parameter priority (highest to lowest):
 # --all-lang > --lang > saved user preference > interactive prompt
@@ -117,7 +117,7 @@ When using `--skip-prompt`, the following parameters are available:
 | `--lang, -l`                 | ZCF display language (applies to all commands)           | `zh-CN`, `en`                                                                                      | No                                     | `en` or user's saved preference                                                                                                  |
 | `--config-lang, -c`          | Configuration language (template files language)         | `zh-CN`, `en`                                                                                      | No                                     | `en`                                                                                                                             |
 | `--ai-output-lang, -a`       | AI output language                                       | `zh-CN`, `en`, custom string                                                                       | No                                     | `en`                                                                                                                             |
-| `--all-lang, -g`             | Set all language parameters (applies to all commands)    | `zh-CN`, `en`, custom string                                                                       | No                                     | - (Priority: allLang > lang > user preference > prompt. Custom string sets AI output language to custom while interaction and config languages remain 'en') |
+| `--all-lang, -g`             | Set all language parameters (applies to all commands)    | `zh-CN`, `en`, custom string                                                                       | No                                     | - (Priority: `--all-lang` > `--lang` > saved user preference > interactive prompt. Custom string sets AI output language to custom while interaction and config languages remain 'en') |
 | `--config-action, -r`        | Config handling                                          | `new`, `backup`, `merge`, `docs-only`, `skip`                                                      | No                                     | `backup`                                                                                                                         |
 | `--api-type, -t`             | API configuration type                                   | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                       | No                                     | `skip`                                                                                                                           |
 | `--api-key, -k`              | API key (for both API key and auth token types)          | string                                                                                             | Required when `api-type` is not `skip` | -                                                                                                                                |
@@ -188,18 +188,6 @@ npx zcf → Select 4  # Configure Codex MCP services
 - System Prompts: `~/.codex/AGENTS.md`
 - Workflows: `~/.codex/prompts/`
 - Backups: `~/.codex/backup/`
-
-**Command Line Operations:**
-
-Dedicated command line tool for Codex (v3.0.0+ New):
-
-```bash
-# Codex API provider switching
-npx zcf config-switch     # Interactive provider selection
-npx zcf cs                # Using alias
-npx zcf cs provider-name  # Direct switch to specified provider
-npx zcf cs --list         # List all available providers
-```
 
 **Migration Between Tools:**
 
@@ -301,8 +289,6 @@ CCR menu options:
 - Check Status - View current CCR service status
 
 After CCR setup, ZCF automatically configures Claude Code to use CCR as the API proxy.
-
-**Important Notice for v2.9.9 Users**: If you previously installed CCometixLine using ZCF v2.9.9, please rerun the installation process to ensure that the CCometixLine configuration is correctly added. Run `npx zcf` -> `Select L` -> `Select 1` to add the CCometixLine configuration.
 
 
 #### 📊 CCometixLine Support (Status Bar Tool) (v2.9.9+ New)
@@ -417,6 +403,8 @@ Choose tool type explicitly:
 # -T accepts: claude-code|codex or short aliases cc|cx
 npx zcf cs --list -T cc    # List Claude Code profiles
 npx zcf cs --list -T cx    # List Codex providers
+npx zcf cs -l -T cc        # Short option for --list
+npx zcf cs -l -T cx        # Short option for --list
 ```
 
 Claude Code usage:
@@ -578,7 +566,7 @@ Enter your choice: _
 | `zcf update`        | `zcf u` | Update workflow-related md files with backup                                          |
 | `zcf ccu`           | -       | Run Claude Code usage analysis tool - [ccusage](https://github.com/ryoppippi/ccusage) |
 | `zcf ccr`           | -       | Open CCR (Claude Code Router) management menu                                         |
-| `zcf config-switch` | `zcf cs` | Codex API provider switching tool - Switch between official login and custom providers |
+| `zcf config-switch` | `zcf cs` | API provider/config switching for Claude Code and Codex (`-T cc` / `-T cx`) |
 | `zcf uninstall`     | -       | Interactive uninstall tool for Claude Code configurations and tools                   |
 | `zcf check-updates` | -       | Check and update Claude Code, CCR and CCometixLine versions                           |
 

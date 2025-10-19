@@ -83,7 +83,7 @@ ZCF 支持双语操作，所有命令自动进行语言切换：
 # 使用中文进行所有操作
 npx zcf --lang zh-CN          # 中文交互菜单
 npx zcf init --lang zh-CN      # 中文界面初始化
-npx zcf ccr --allLang zh-CN    # 中文配置 CCR
+npx zcf ccr --all-lang zh-CN    # 中文配置 CCR
 
 # 语言参数优先级（由高到低）：
 # --all-lang > --lang > 用户保存的偏好 > 交互提示
@@ -117,7 +117,7 @@ npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" -
 | `--lang, -l`                 | ZCF 显示语言（适用于所有命令）           | `zh-CN`, `en`                                                                                          | 否                            | `en` 或用户保存的偏好                                                                 |
 | `--config-lang, -c`          | 配置文件语言（模板文件语言）            | `zh-CN`, `en`                                                                                          | 否                            | `en`                                                                                   |
 | `--ai-output-lang, -a`       | AI 输出语言                             | `zh-CN`, `en`, 自定义字符串                                                                            | 否                            | `en`                                                                                   |
-| `--all-lang, -g`             | 统一设置所有语言参数（适用于所有命令）  | `zh-CN`, `en`, 自定义字符串                                                                            | 否                            | -（优先级：allLang > lang > 用户偏好 > 提示。自定义字符串时，AI 输出语言为自定义，交互和配置语言为 en） |
+| `--all-lang, -g`             | 统一设置所有语言参数（适用于所有命令）  | `zh-CN`, `en`, 自定义字符串                                                                            | 否                            | -（优先级：`--all-lang` > `--lang` > 用户保存的偏好 > 交互提示。若传入自定义字符串，则仅 AI 输出语言使用该值，交互与配置语言保持 `en`） |
 | `--config-action, -r`        | 配置处理方式                            | `new`, `backup`, `merge`, `docs-only`, `skip`                                                          | 否                            | `backup`                                                                               |
 | `--api-type, -t`             | API 配置类型                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | 否                            | `skip`                                                                                 |
 | `--api-key, -k`              | API 密钥（用于 API 密钥和认证令牌类型） | 字符串                                                                                                 | `api-type` 不为 `skip` 时必需 | -                                                                                      |
@@ -187,18 +187,6 @@ npx zcf → 选择 4  # 配置 Codex MCP 服务
 - 系统提示：`~/.codex/AGENTS.md`
 - 工作流：`~/.codex/prompts/`
 - 备份：`~/.codex/backup/`
-
-**命令行操作：**
-
-Codex 专用命令行工具（v3.0.0+ 新增）：
-
-```bash
-# Codex API 提供商切换
-npx zcf config-switch     # 交互式提供商选择
-npx zcf cs                # 使用别名
-npx zcf cs provider-name  # 直接切换到指定提供商
-npx zcf cs --list         # 列出所有可用提供商
-```
 
 **工具间迁移：**
 
@@ -416,6 +404,8 @@ npx zcf → 选择 +
 # -T 支持：claude-code|codex 或短别名 cc|cx
 npx zcf cs --list -T cc    # 列出 Claude Code 配置
 npx zcf cs --list -T cx    # 列出 Codex 提供商
+npx zcf cs -l -T cc        # 使用缩写（等价于 --list）
+npx zcf cs -l -T cx        # 使用缩写（等价于 --list）
 ```
 
 Claude Code 用法：
@@ -583,7 +573,7 @@ $ npx zcf
 | `zcf update`        | `zcf u` | 更新 Prompt 文档并备份旧配置                                                    |
 | `zcf ccu`           | -       | 运行 Claude Code 用量分析工具 - [ccusage](https://github.com/ryoppippi/ccusage) |
 | `zcf ccr`           | -       | 打开 CCR (Claude Code Router) 管理菜单                                          |
-| `zcf config-switch` | `zcf cs` | Codex API 提供商切换工具 - 在官方登录和自定义提供商之间切换                        |
+| `zcf config-switch` | `zcf cs` | API 提供商/配置切换（支持 Claude Code 与 Codex，使用 `-T cc` / `-T cx`） |
 | `zcf uninstall`     | -       | 交互式 Claude Code 配置和工具卸载程序                                            |
 | `zcf check-updates` | -       | 检查并更新 Claude Code、CCR 和 CCometixLine 的版本                              |
 
@@ -641,6 +631,7 @@ npx zcf config-switch     # 交互式选择提供商
 npx zcf cs                # 使用缩写
 npx zcf cs provider-name  # 直接切换到指定提供商
 npx zcf cs --list         # 列出所有可用的提供商
+npx zcf cs -l             # 使用缩写（等价于 --list）
 ```
 
 ## 📁 项目结构

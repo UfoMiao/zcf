@@ -83,7 +83,7 @@ ZCFはバイリンガル操作をサポートし、すべてのコマンドで�
 # 日本語ですべての操作を実行
 npx zcf --lang ja          # 日本語インタラクティブメニュー
 npx zcf init --lang ja      # 日本語インターフェース初期化
-npx zcf ccr --allLang ja    # 日本語でCCR設定
+npx zcf ccr --all-lang ja    # 日本語でCCR設定
 
 # 言語パラメータの優先順位（高から低）：
 # --all-lang > --lang > ユーザー保存の設定 > インタラクティブプロンプト
@@ -117,7 +117,7 @@ npx zcf i --skip-prompt --all-lang ja --api-type api_key --api-key "sk-xxx" --ap
 | `--lang, -l`                 | ZCF表示言語（すべてのコマンドに適用）       | `zh-CN`, `en`, `ja`                                                                                    | いいえ                        | `en`またはユーザー保存の設定                                                           |
 | `--config-lang, -c`          | 設定ファイル言語（テンプレートファイル言語） | `zh-CN`, `en`                                                                                          | いいえ                        | `en`                                                                                   |
 | `--ai-output-lang, -a`       | AI出力言語                               | `zh-CN`, `en`, `ja`, カスタム文字列                                                                     | いいえ                        | `en`                                                                                   |
-| `--all-lang, -g`             | すべての言語パラメータを統一設定（すべてのコマンドに適用） | `zh-CN`, `en`, `ja`, カスタム文字列                                                     | いいえ                        | -（優先順位：allLang > lang > ユーザー設定 > プロンプト。カスタム文字列の場合、AI出力言語はカスタム、インタラクションと設定言語はen） |
+| `--all-lang, -g`             | すべての言語パラメータを統一設定（すべてのコマンドに適用） | `zh-CN`, `en`, `ja`, カスタム文字列                                                     | いいえ                        | -（優先順位：`--all-lang` > `--lang` > ユーザー保存の設定 > インタラクティブプロンプト。カスタム文字列の場合、AI出力言語はカスタム、対話と設定言語は `en` のまま） |
 | `--config-action, -r`        | 設定処理方法                              | `new`, `backup`, `merge`, `docs-only`, `skip`                                                          | いいえ                        | `backup`                                                                               |
 | `--api-type, -t`             | API設定タイプ                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | いいえ                        | `skip`                                                                                 |
 | `--api-key, -k`              | APIキー（APIキーと認証トークンタイプ用）    | 文字列                                                                                                 | `api-type`が`skip`でない場合必須 | -                                                                                      |
@@ -188,18 +188,6 @@ npx zcf → 4を選択  # Codex MCPサービスを設定
 - システムプロンプト：`~/.codex/AGENTS.md`
 - ワークフロー：`~/.codex/prompts/`
 - バックアップ：`~/.codex/backup/`
-
-**コマンドライン操作：**
-
-Codex用の専用コマンドラインツール（v3.0.0+新機能）：
-
-```bash
-# Codex APIプロバイダー切り替え
-npx zcf config-switch     # インタラクティブプロバイダー選択
-npx zcf cs                # エイリアス使用
-npx zcf cs provider-name  # 指定プロバイダーに直接切り替え
-npx zcf cs --list         # 利用可能なプロバイダーをすべて表示
-```
 
 **ツール間の移行：**
 
@@ -416,6 +404,8 @@ Claude Code と Codex の両方に対して、統一された増分式・対話�
 # -T は claude-code|codex または短縮 cc|cx を受け付け
 npx zcf cs --list -T cc    # Claude Code プロファイルを一覧
 npx zcf cs --list -T cx    # Codex プロバイダーを一覧
+npx zcf cs -l -T cc        # --list の短縮オプション
+npx zcf cs -l -T cx        # --list の短縮オプション
 ```
 
 Claude Code の使い方：
@@ -575,6 +565,21 @@ $ npx zcf
 ```
 
 ## 🛠️ 開発
+
+### コマンドラインオプション
+
+#### コマンド早見表
+
+| コマンド              | エイリアス | 説明                                                                                           |
+| --------------------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| `zcf`                 | -          | インタラクティブメニューを表示（v2.0 デフォルトコマンド）                                      |
+| `zcf init`            | `zcf i`    | Claude Code の設定を初期化                                                                      |
+| `zcf update`          | `zcf u`    | ワークフロー関連の Markdown ドキュメントをバックアップ付きで更新                               |
+| `zcf ccu`             | -          | Claude Code 使用量分析ツールを実行 - [ccusage](https://github.com/ryoppippi/ccusage)           |
+| `zcf ccr`             | -          | CCR (Claude Code Router) 管理メニューを開く                                                    |
+| `zcf config-switch`   | `zcf cs`   | Claude Code / Codex の API プロバイダー/設定切替（`-T cc` / `-T cx` を使用）                   |
+| `zcf uninstall`       | -          | Claude Code の設定とツールをインタラクティブにアンインストール                                 |
+| `zcf check-updates`   | -          | Claude Code、CCR、CCometixLine のバージョンを確認・更新                                         |
 
 ```bash
 # プロジェクトをクローン
