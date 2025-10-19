@@ -1,5 +1,79 @@
 # Changelog
 
+## 3.2.0
+
+### Minor Changes
+
+- ## New Features
+  - Add comprehensive Claude Code multi-configuration management system with TDD approach
+  - Introduce TOML-based configuration storage for better portability and version control
+  - Implement incremental configuration manager for progressive profile updates
+  - Add Codex platform support and enhanced code tool integration
+  - Provide advanced git commit templates with improved formatting
+  - Support dynamic configuration switching with backup and recovery mechanisms
+  - Add comprehensive configuration validation and conflict detection
+  - Implement intelligent profile merging strategies for complex workflows
+
+  ## 新功能
+  - 添加全面的 Claude Code 多配置管理系统，采用 TDD 开发方法
+  - 引入基于 TOML 的配置存储，提供更好的可移植性和版本控制支持
+  - 实现增量配置管理器，支持渐进式配置文件更新
+  - 添加 Codex 平台支持和增强的代码工具集成
+  - 提供改进格式的 git 提交模板
+  - 支持动态配置切换，包含备份和恢复机制
+  - 添加全面的配置验证和冲突检测功能
+  - 实现智能配置文件合并策略，支持复杂工作流程
+
+  ## Optimization
+  - Enhance test coverage with comprehensive multi-configuration scenarios
+  - Improve CLI option standardization and parameter conflict resolution
+  - Refactor test organization for better maintainability and coverage
+  - Optimize configuration detection and validation workflows
+  - Enhance incremental update mechanisms for better performance
+  - Streamline configuration loading and caching processes
+  - Improve error handling and user feedback systems
+
+  ## 优化
+  - 增强测试覆盖率，包含全面的多配置场景测试
+  - 改进 CLI 选项标准化和参数冲突解决
+  - 重构测试组织结构，提高可维护性和覆盖率
+  - 优化配置检测和验证工作流程
+  - 增强增量更新机制以提升性能
+  - 简化配置加载和缓存流程
+  - 改进错误处理和用户反馈系统
+
+  ## Documentation
+  - Update README files with improved multi-language support
+  - Add comprehensive TDD plan documentation for multi-config system
+  - Enhance API documentation with clearer parameter descriptions
+  - Update command documentation with latest feature additions
+  - Add detailed configuration management guides and examples
+  - Create comprehensive troubleshooting documentation
+
+  ## 文档
+  - 更新 README 文件，改进多语言支持
+  - 为多配置系统添加全面的 TDD 计划文档
+  - 增强API文档，提供更清晰的参数描述
+  - 更新命令文档，包含最新功能添加
+  - 添加详细的配置管理指南和示例
+  - 创建全面的故障排除文档
+
+  ## Testing
+  - Add extensive test coverage for configuration management features
+  - Implement edge case testing for multi-configuration scenarios
+  - Enhance unit tests for better coverage and reliability
+  - Add integration tests for Codex platform functionality
+  - Create comprehensive performance testing suites
+  - Implement automated configuration validation tests
+
+  ## 测试
+  - 为配置管理功能添加广泛的测试覆盖
+  - 实现多配置场景的边界情况测试
+  - 增强单元测试以提高覆盖率和可靠性
+  - 为 Codex 平台功能添加集成测试
+  - 创建全面的性能测试套件
+  - 实现自动化配置验证测试
+
 ## 3.1.4
 
 ### Patch Changes
