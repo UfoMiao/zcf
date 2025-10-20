@@ -33,6 +33,10 @@ export function isCodeToolType(value: any): value is CodeToolType {
   return CODE_TOOL_TYPES.includes(value as CodeToolType)
 }
 
+// API configuration constants
+export const API_DEFAULT_URL = 'https://api.anthropic.com'
+export const API_ENV_KEY = 'ANTHROPIC_API_KEY'
+
 export function resolveCodeToolType(value: unknown): CodeToolType {
   // First check if it's already a valid code tool type
   if (isCodeToolType(value)) {

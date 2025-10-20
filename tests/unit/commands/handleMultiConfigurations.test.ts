@@ -12,6 +12,13 @@ vi.mock('../../../src/i18n', () => ({
         'multi-config:defaultProfileSet': 'Default profile set: {{name}}',
         'multi-config:providerAdded': 'Provider added: {{name}}',
         'multi-config:defaultProviderSet': 'Default provider set: {{name}}',
+        'multi-config:invalidJson': 'Invalid API configs JSON',
+        'multi-config:fileReadFailed': 'Failed to read API configs file',
+        'multi-config:mustHaveValidName': 'Each config must have a valid name',
+        'multi-config:duplicateName': 'Duplicate config name: {{name}}',
+        'multi-config:invalidAuthType': 'Invalid auth type: {{type}}',
+        'multi-config:configApiKeyRequired': 'Config "{{name}}" requires API key',
+        'multi-config:ccrProxyReserved': 'CCR proxy type is reserved and cannot be added manually (config: "{{name}}")',
       }
       let template = translations[key] || key
       if (params) {

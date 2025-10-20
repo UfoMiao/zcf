@@ -16,6 +16,8 @@
   "services.mcp-deepwiki.name": "DeepWiki",
   "services.spec-workflow.description": "Structured feature development workflow, systematic approach from requirements to implementation",
   "services.spec-workflow.name": "Spec Workflow",
+  "services.serena.name": "Serena Assistant",
+  "services.serena.description": "Semantic code retrieval and editing akin to an IDE; extracts symbol-level entities and leverages relations to greatly improve token efficiency with coding agents",
   "apiKeyApprovalFailed": "Failed to manage API key approval status",
   "apiKeyPrompt": "Enter API Key",
   "primaryApiKeySetFailed": "Failed to set primaryApiKey"

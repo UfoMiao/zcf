@@ -32,6 +32,7 @@ describe('mcp services configuration', () => {
         'mcp-deepwiki',
         'Playwright',
         'exa',
+        'serena',
       ]
 
       const actualIds = MCP_SERVICE_CONFIGS.map(config => config.id)

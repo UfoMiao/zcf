@@ -77,6 +77,16 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
       },
     },
   },
+  {
+    id: 'serena',
+    requiresApiKey: false,
+    config: {
+      type: 'stdio',
+      command: 'uvx',
+      args: ['--from', 'git+https://github.com/oraios/serena', 'serena', 'start-mcp-server', '--context', 'ide-assistant', '--enable-web-dashboard', 'false'],
+      env: {},
+    },
+  },
 ]
 
 /**
@@ -117,6 +127,11 @@ export async function getMcpServices(): Promise<McpService[]> {
       name: i18n.t('mcp:services.exa.name'),
       description: i18n.t('mcp:services.exa.description'),
       apiKeyPrompt: i18n.t('mcp:services.exa.apiKeyPrompt'),
+    },
+    {
+      id: 'serena',
+      name: i18n.t('mcp:services.serena.name'),
+      description: i18n.t('mcp:services.serena.description'),
     },
   ]
 

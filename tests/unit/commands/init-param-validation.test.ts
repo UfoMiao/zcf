@@ -5,12 +5,27 @@ import { validateSkipPromptOptions } from '../../../src/commands/init'
 vi.mock('../../../src/i18n', () => ({
   i18n: {
     t: vi.fn((key: string, params?: Record<string, any>) => {
-      if (!params) {
-        return key
+      // Mock specific translations for testing
+      const translations: Record<string, string> = {
+        'multi-config:conflictingParams': 'Cannot specify both --api-configs and --api-configs-file at the same time',
+        'errors:invalidWorkflow': 'Invalid workflow selected',
+        'api:keyRequired': 'API key is required for API key authentication',
+        'api:authTokenRequired': 'Auth token is required for auth token authentication',
+        'api:invalidType': 'Invalid API type',
+        'workflow:invalidId': 'Invalid workflow ID: {{id}}',
+        'mcp:invalidId': 'Invalid MCP service ID: {{id}}',
+        'output:invalidStyle': 'Invalid output style: {{style}}',
       }
+
+      const translation = translations[key] || key
+
+      if (!params) {
+        return translation
+      }
+
       return Object.entries(params).reduce<string>((acc, [param, value]) => {
         return acc.replace(`{${param}}`, String(value))
-      }, key)
+      }, translation)
     }),
   },
 }))
@@ -173,7 +188,7 @@ describe('validateSkipPromptOptions', () => {
   it('should throw when workflows contains invalid id', () => {
     options.workflows = 'workflow-a,invalid'
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:invalidWorkflow')
+    expect(() => validateSkipPromptOptions(options)).toThrow('Invalid workflow selected')
   })
 
   it('should throw when both apiConfigs and apiConfigsFile provided', () => {

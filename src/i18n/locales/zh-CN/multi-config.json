@@ -57,5 +57,16 @@
   "newDefaultProfile": "ℹ️ 新的默认配置：{{profile}}",
   "settingsApplied": "✔ 设置已生效",
   "failedToApplySettings": "应用设置失败",
-  "profileNameNotFound": "未找到名为「{{name}}」的配置"
+  "profileNameNotFound": "未找到名为「{{name}}」的配置",
+  "conflictingParams": "不能同时指定 --api-configs 和 --api-configs-file",
+  "mustBeArray": "API配置必须是数组格式",
+  "mustHaveValidName": "每个配置必须具有有效的名称",
+  "invalidAuthType": "无效的认证类型：{{type}}",
+  "duplicateName": "重复的配置名称：{{name}}",
+  "configApiKeyRequired": "配置 \"{{name}}\" 需要API密钥",
+  "ccrProxyReserved": "CCR代理类型为保留类型，不能手动添加（配置：\"{{name}}\"）",
+  "configProfileAddFailed": "添加配置文件 \"{{name}}\" 失败：{{error}}",
+  "providerAddFailed": "添加提供商 \"{{name}}\" 失败：{{error}}",
+  "invalidJson": "无效的API配置JSON：{{error}}",
+  "fileReadFailed": "读取API配置文件失败：{{error}}"
 }

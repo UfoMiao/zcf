@@ -71,6 +71,17 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
     let command = configInfo.config.command || id
     let args = (configInfo.config.args || []).map(arg => String(arg))
 
+    // Special handling: serena context should be "codex" for Codex
+    if (id === 'serena') {
+      const idx = args.indexOf('--context')
+      if (idx >= 0 && idx + 1 < args.length) {
+        args[idx + 1] = 'codex'
+      }
+      else {
+        args.push('--context', 'codex')
+      }
+    }
+
     const serviceConfig: CodexMcpService = { id: id.toLowerCase(), command, args }
     applyCodexPlatformCommand(serviceConfig)
     command = serviceConfig.command

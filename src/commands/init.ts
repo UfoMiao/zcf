@@ -9,7 +9,7 @@ import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
 import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
-import { CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, SETTINGS_FILE } from '../constants'
+import { API_DEFAULT_URL, API_ENV_KEY, CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, SETTINGS_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
@@ -137,7 +137,7 @@ export function validateSkipPromptOptions(options: InitOptions): void {
 
   // Validate multi-configuration parameters
   if (options.apiConfigs && options.apiConfigsFile) {
-    throw new Error('Cannot specify both --api-configs and --api-configs-file at the same time')
+    throw new Error(i18n.t('multi-config:conflictingParams'))
   }
 
   // Validate required API parameters (both use apiKey now)
@@ -559,14 +559,14 @@ export async function init(options: InitOptions = {}): Promise<void> {
           apiConfig = {
             authType: 'auth_token',
             key: options.apiKey,
-            url: options.apiUrl || 'https://api.anthropic.com',
+            url: options.apiUrl || API_DEFAULT_URL,
           }
         }
         else if (options.apiType === 'api_key' && options.apiKey) {
           apiConfig = {
             authType: 'api_key',
             key: options.apiKey,
-            url: options.apiUrl || 'https://api.anthropic.com',
+            url: options.apiUrl || API_DEFAULT_URL,
           }
         }
         else if (options.apiType === 'ccr_proxy') {
@@ -794,6 +794,19 @@ export async function init(options: InitOptions = {}): Promise<void> {
 
             let config = service.config
 
+            // Special handling: serena context differs by code tool
+            if (service.id === 'serena' && Array.isArray(config.args)) {
+              const adjusted = { ...config, args: [...(config.args || [])] }
+              const idx = adjusted.args.indexOf('--context')
+              if (idx >= 0 && idx + 1 < adjusted.args.length) {
+                adjusted.args[idx + 1] = (codeToolType as CodeToolType === 'codex') ? 'codex' : 'ide-assistant'
+              }
+              else {
+                adjusted.args.push('--context', (codeToolType as CodeToolType === 'codex') ? 'codex' : 'ide-assistant')
+              }
+              config = adjusted
+            }
+
             // Handle services that require API key
             if (service.requiresApiKey) {
               if (options.skipPrompt) {
@@ -901,7 +914,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
  * @param options - Command line options
  * @param codeToolType - Target code tool type
  */
-export async function handleMultiConfigurations(options: InitOptions, codeToolType: 'claude-code' | 'codex'): Promise<void> {
+export async function handleMultiConfigurations(options: InitOptions, codeToolType: CodeToolType): Promise<void> {
   const { ensureI18nInitialized } = await import('../i18n')
   ensureI18nInitialized()
 
@@ -914,7 +927,7 @@ export async function handleMultiConfigurations(options: InitOptions, codeToolTy
         configs = JSON.parse(options.apiConfigs) as ApiConfigDefinition[]
       }
       catch (error) {
-        throw new Error(`Invalid API configs JSON: ${error instanceof Error ? error.message : String(error)}`)
+        throw new Error(i18n.t('multi-config:invalidJson', { error: error instanceof Error ? error.message : String(error) }))
       }
     }
 
@@ -926,7 +939,7 @@ export async function handleMultiConfigurations(options: InitOptions, codeToolTy
         configs = JSON.parse(fileContent) as ApiConfigDefinition[]
       }
       catch (error) {
-        throw new Error(`Failed to read API configs file: ${error instanceof Error ? error.message : String(error)}`)
+        throw new Error(i18n.t('multi-config:fileReadFailed', { error: error instanceof Error ? error.message : String(error) }))
       }
     }
 
@@ -955,7 +968,7 @@ export async function handleMultiConfigurations(options: InitOptions, codeToolTy
  */
 export function validateApiConfigs(configs: ApiConfigDefinition[]): void {
   if (!Array.isArray(configs)) {
-    throw new TypeError('API configs must be an array')
+    throw new TypeError(i18n.t('multi-config:mustBeArray'))
   }
 
   const names = new Set<string>()
@@ -963,22 +976,22 @@ export function validateApiConfigs(configs: ApiConfigDefinition[]): void {
   for (const config of configs) {
     // Validate required fields
     if (!config.name || typeof config.name !== 'string' || config.name.trim() === '') {
-      throw new Error('Each config must have a valid name')
+      throw new Error(i18n.t('multi-config:mustHaveValidName'))
     }
 
     if (!['api_key', 'auth_token', 'ccr_proxy'].includes(config.type)) {
-      throw new Error(`Invalid auth type: ${config.type}`)
+      throw new Error(i18n.t('multi-config:invalidAuthType', { type: config.type }))
     }
 
     // Validate name uniqueness
     if (names.has(config.name)) {
-      throw new Error(`Duplicate config name: ${config.name}`)
+      throw new Error(i18n.t('multi-config:duplicateName', { name: config.name }))
     }
     names.add(config.name)
 
     // Validate API key for non-CCR types
     if (config.type !== 'ccr_proxy' && !config.key) {
-      throw new Error(`Config "${config.name}" requires API key`)
+      throw new Error(i18n.t('multi-config:configApiKeyRequired', { name: config.name }))
     }
   }
 }
@@ -993,14 +1006,14 @@ async function handleClaudeCodeConfigs(configs: ApiConfigDefinition[]): Promise<
 
   for (const config of configs) {
     if (config.type === 'ccr_proxy') {
-      throw new Error(`CCR proxy type is reserved and cannot be added manually (config: "${config.name}")`)
+      throw new Error(i18n.t('multi-config:ccrProxyReserved', { name: config.name }))
     }
 
     const profile = await convertToClaudeCodeProfile(config)
     const result = await ClaudeCodeConfigManager.addProfile(profile)
 
     if (!result.success) {
-      throw new Error(`Failed to add profile "${config.name}": ${result.error}`)
+      throw new Error(i18n.t('multi-config:configProfileAddFailed', { name: config.name, error: result.error }))
     }
 
     const storedProfile = result.addedProfile
@@ -1048,13 +1061,16 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
       const result = await addProviderToExisting(provider, config.key || '')
 
       if (!result.success) {
-        throw new Error(`Failed to add provider "${config.name}": ${result.error}`)
+        throw new Error(i18n.t('multi-config:providerAddFailed', { name: config.name, error: result.error }))
       }
 
       console.log(ansis.green(`✔ ${i18n.t('multi-config:providerAdded', { name: config.name })}`))
     }
     catch (error) {
-      console.error(ansis.red(`Failed to add provider "${config.name}": ${error instanceof Error ? error.message : String(error)}`))
+      console.error(ansis.red(i18n.t('multi-config:providerAddFailed', {
+        name: config.name,
+        error: error instanceof Error ? error.message : String(error),
+      })))
       throw error
     }
   }
@@ -1095,9 +1111,9 @@ function convertToCodexProvider(config: ApiConfigDefinition): CodexProvider {
   return {
     id: config.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
     name: config.name,
-    baseUrl: config.url || 'https://api.anthropic.com',
+    baseUrl: config.url || API_DEFAULT_URL,
     wireApi: 'chat' as const,
-    envKey: 'ANTHROPIC_API_KEY',
+    envKey: API_ENV_KEY,
     requiresOpenaiAuth: false,
   }
 }

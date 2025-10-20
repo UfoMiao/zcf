@@ -57,5 +57,16 @@
   "newDefaultProfile": "ℹ️ New default profile: {{profile}}",
   "settingsApplied": "✔ Settings applied",
   "failedToApplySettings": "Failed to apply settings",
-  "profileNameNotFound": "Profile \"{{name}}\" not found"
+  "profileNameNotFound": "Profile \"{{name}}\" not found",
+  "conflictingParams": "Cannot specify both --api-configs and --api-configs-file at the same time",
+  "mustBeArray": "API configs must be an array",
+  "mustHaveValidName": "Each config must have a valid name",
+  "invalidAuthType": "Invalid auth type: {{type}}",
+  "duplicateName": "Duplicate config name: {{name}}",
+  "configApiKeyRequired": "Config \"{{name}}\" requires API key",
+  "ccrProxyReserved": "CCR proxy type is reserved and cannot be added manually (config: \"{{name}}\")",
+  "configProfileAddFailed": "Failed to add profile \"{{name}}\": {{error}}",
+  "providerAddFailed": "Failed to add provider \"{{name}}\": {{error}}",
+  "invalidJson": "Invalid API configs JSON: {{error}}",
+  "fileReadFailed": "Failed to read API configs file: {{error}}"
 }
