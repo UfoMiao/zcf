@@ -13,7 +13,7 @@ export interface StatusLineConfig {
 
 export interface ClaudeSettings {
   /** Model configuration: opus, sonnet, sonnet[1m], or custom. Custom models should use env variables instead. */
-  model?: 'opus' | 'sonnet' | 'sonnet[1m]' | 'custom'
+  model?: string
   env?: {
     ANTHROPIC_API_KEY?: string
     ANTHROPIC_AUTH_TOKEN?: string

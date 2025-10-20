@@ -327,6 +327,11 @@ export async function configureDefaultModelFeature(): Promise<void> {
     }
   }
 
+  const selectableModels = ['default', 'opus', 'sonnet', 'sonnet[1m]', 'custom'] as const
+  const initialIndex = existingModel
+    ? selectableModels.indexOf(existingModel as typeof selectableModels[number])
+    : -1
+
   const { model } = await inquirer.prompt<{ model: 'opus' | 'sonnet' | 'sonnet[1m]' | 'default' | 'custom' }>({
     type: 'list',
     name: 'model',
@@ -349,7 +354,7 @@ export async function configureDefaultModelFeature(): Promise<void> {
         value: 'custom' as const,
       },
     ]),
-    default: existingModel ? ['default', 'opus', 'sonnet[1m]', 'custom'].indexOf(existingModel) : 0,
+    default: initialIndex >= 0 ? initialIndex : 0,
   })
 
   if (!model) {

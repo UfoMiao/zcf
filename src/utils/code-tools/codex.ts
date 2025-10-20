@@ -1333,6 +1333,35 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
 
 export { configureCodexMcp }
 
+function applyCodexDefaultModel(model?: string | null): void {
+  if (model === undefined)
+    return
+
+  ensureI18nInitialized()
+
+  const config = readCodexConfig()
+  if (!config)
+    return
+
+  const trimmed = typeof model === 'string' ? model.trim() : ''
+  const normalized = trimmed.toLowerCase()
+  const resolvedModel = trimmed.length === 0 || normalized === 'default' ? null : trimmed
+
+  const updatedConfig: CodexConfigData = {
+    ...config,
+    model: resolvedModel,
+  }
+
+  writeCodexConfig(updatedConfig)
+
+  const modelDisplay = resolvedModel
+    || i18n.t('configuration:defaultModelOption')
+    || 'Default - Let Claude Code choose'
+
+  console.log(ansis.green(`✔ ${i18n.t('configuration:modelConfigured')}`))
+  console.log(ansis.gray(`  ${i18n.t('configuration:currentModel')}: ${modelDisplay}`))
+}
+
 export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {
   // Workflow selection options
   workflows?: string[] // Specific workflows to install, empty means all
@@ -1343,6 +1372,7 @@ export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {
     token?: string
     baseUrl?: string
   }
+  defaultModel?: string | null
 }
 
 export async function runCodexFullInit(
@@ -1353,6 +1383,7 @@ export async function runCodexFullInit(
   await installCodexCli()
   const aiOutputLang = await runCodexWorkflowImportWithLanguageSelection(options)
   await configureCodexApi(options)
+  applyCodexDefaultModel(options?.defaultModel)
   await configureCodexMcp(options)
 
   return aiOutputLang

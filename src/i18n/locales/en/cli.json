@@ -22,6 +22,7 @@
   "help.optionDescriptions.skipAllPrompts": "Skip all prompts",
   "help.optionDescriptions.apiType": "API type",
   "help.optionDescriptions.apiKey": "API key (for both types)",
+  "help.optionDescriptions.apiModel": "Default model (use \"default\" to clear)",
   "help.optionDescriptions.customApiUrl": "Custom API URL",
   "help.optionDescriptions.aiOutputLanguage": "AI output language",
   "help.optionDescriptions.setAllLanguageParams": "Set all language params",

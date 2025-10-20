@@ -10,7 +10,7 @@
   "invalidOutputStyle": "Invalid output style: {style}. Available styles: {validStyles}",
   "invalidDefaultOutputStyle": "Invalid default output style: {style}. Available styles: {validStyles}",
   "invalidWorkflow": "Invalid workflow: {workflow}. Available workflows: {validWorkflows}",
-  "invalidModel": "Invalid model: {model}. Expected 'opus', 'sonnet', or 'sonnet[1m]'",
+  "invalidModel": "Invalid model value: {model}. Please provide a string",
   "invalidEnvConfig": "Invalid env configuration: expected object",
   "invalidBaseUrl": "Invalid ANTHROPIC_BASE_URL: expected string",
   "invalidApiKeyConfig": "Invalid ANTHROPIC_API_KEY: expected string",

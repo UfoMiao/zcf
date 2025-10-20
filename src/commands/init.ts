@@ -35,6 +35,7 @@ import {
   ensureClaudeDir,
   getExistingApiConfig,
   promptApiConfigurationAction,
+  setDefaultModelValue,
   switchToOfficialLogin,
 } from '../utils/config'
 import { configureApiCompletely, modifyApiConfigPartially } from '../utils/config-operations'
@@ -63,6 +64,7 @@ export interface InitOptions {
   apiType?: 'auth_token' | 'api_key' | 'ccr_proxy' | 'skip'
   apiKey?: string // Used for both API key and auth token
   apiUrl?: string
+  apiModel?: string
   mcpServices?: string[] | string | boolean
   workflows?: string[] | string | boolean
   outputStyles?: string[] | string | boolean
@@ -86,6 +88,13 @@ export function validateSkipPromptOptions(options: InitOptions): void {
       // Use en for config-lang, allLang for ai-output-lang
       options.configLang = 'en'
       options.aiOutputLang = options.allLang
+    }
+  }
+
+  if (typeof options.apiModel === 'string') {
+    options.apiModel = options.apiModel.trim()
+    if (options.apiModel.length === 0 || options.apiModel.toLowerCase() === 'skip') {
+      options.apiModel = undefined
     }
   }
 
@@ -417,6 +426,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
         apiMode,
         customApiConfig,
         workflows: selectedWorkflows,
+        defaultModel: options.apiModel,
       })
       updateZcfConfig({
         version,
@@ -731,6 +741,26 @@ export async function init(options: InitOptions = {}): Promise<void> {
         console.log(ansis.gray(`  Key: ${formatApiKeyDisplay(configuredApi.key)}`))
         // addCompletedOnboarding is now called inside configureApi
       }
+    }
+
+    if (
+      options.skipPrompt
+      && typeof options.apiModel === 'string'
+      && options.apiModel
+      && codeToolType === 'claude-code'
+      && action !== 'docs-only'
+    ) {
+      const normalizedModel = options.apiModel.toLowerCase()
+      const modelValue = normalizedModel === 'default' ? null : options.apiModel
+
+      setDefaultModelValue(modelValue)
+
+      const modelDisplay = modelValue
+        || i18n.t('configuration:defaultModelOption')
+        || 'Default - Let Claude Code choose'
+
+      console.log(ansis.green(`✔ ${i18n.t('configuration:modelConfigured')}`))
+      console.log(ansis.gray(`  ${i18n.t('configuration:currentModel')}: ${modelDisplay}`))
     }
 
     // Step 10: Configure MCP services (skip if only updating docs)

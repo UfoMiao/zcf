@@ -22,6 +22,7 @@
   "help.optionDescriptions.skipAllPrompts": "跳过所有交互提示",
   "help.optionDescriptions.apiType": "API类型",
   "help.optionDescriptions.apiKey": "API密钥（适用于所有类型）",
+  "help.optionDescriptions.apiModel": "默认模型（使用 \"default\" 清除）",
   "help.optionDescriptions.customApiUrl": "自定义API地址",
   "help.optionDescriptions.aiOutputLanguage": "AI输出语言",
   "help.optionDescriptions.setAllLanguageParams": "统一设置所有语言参数",

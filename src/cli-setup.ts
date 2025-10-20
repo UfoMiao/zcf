@@ -26,6 +26,7 @@ export interface CliOptions {
   apiType?: string
   apiKey?: string // Used for both API key and auth token
   apiUrl?: string
+  apiModel?: string
   mcpServices?: string // default: all non-key services, "skip" to skip all
   workflows?: string // default: all workflows, "skip" to skip all
   outputStyles?: string // default: all custom styles
@@ -142,6 +143,7 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.green('--api-type, -t')} <type>      ${i18n.t('cli:help.optionDescriptions.apiType')} (auth_token, api_key, ccr_proxy, skip)`,
       `  ${ansis.green('--api-key, -k')} <key>       ${i18n.t('cli:help.optionDescriptions.apiKey')}`,
       `  ${ansis.green('--api-url, -u')} <url>       ${i18n.t('cli:help.optionDescriptions.customApiUrl')}`,
+      `  ${ansis.green('--api-model, -M')} <model>   ${i18n.t('cli:help.optionDescriptions.apiModel')}`,
       `  ${ansis.green('--ai-output-lang, -a')} <lang> ${i18n.t('cli:help.optionDescriptions.aiOutputLanguage')}`,
       `  ${ansis.green('--all-lang, -g')} <lang>     ${i18n.t('cli:help.optionDescriptions.setAllLanguageParams')}`,
       `  ${ansis.green('--config-action, -r')} <action> ${i18n.t('cli:help.optionDescriptions.configHandling')} (${i18n.t('cli:help.defaults.prefix')} backup)`,
@@ -193,6 +195,7 @@ export function customizeHelp(sections: any[]): any[] {
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.nonInteractiveModeCicd')}`),
       `  ${ansis.cyan('npx zcf i --skip-prompt --api-type api_key --api-key "sk-ant-..."')}`,
       `  ${ansis.cyan('npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "key"')}`,
+      `  ${ansis.cyan('npx zcf i --skip-prompt --api-type api_key --api-key "key" --api-model "moonshotai/Kimi-K2-Instruct-0905"')}`,
       `  ${ansis.cyan('npx zcf i --skip-prompt --api-type ccr_proxy')}`,
       '',
     ].join('\n'),
@@ -239,6 +242,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--api-type, -t <type>', 'API type (auth_token/api_key/ccr_proxy/skip)')
     .option('--api-key, -k <key>', 'API key (used for both API key and auth token types)')
     .option('--api-url, -u <url>', 'Custom API URL')
+    .option('--api-model, -M <model>', 'Default model to set (use "default" to clear)')
     .option('--mcp-services, -m <services>', `Comma-separated MCP services to install (context7,mcp-deepwiki,Playwright,exa), "skip" to skip all, "all" for all non-key services, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--workflows, -w <workflows>', `Comma-separated workflows to install (sixStepsWorkflow,featPlanUx,gitWorkflow,bmadWorkflow), "skip" to skip all, "all" for all workflows, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--output-styles, -o <styles>', `Comma-separated output styles (engineer-professional,nekomata-engineer,laowang-engineer,default,explanatory,learning), "skip" to skip all, "all" for all custom styles, ${i18n.t('cli:help.defaults.prefix')} all`)

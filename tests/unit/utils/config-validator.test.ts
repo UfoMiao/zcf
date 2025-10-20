@@ -13,7 +13,7 @@ vi.mock('../../../src/i18n', () => ({
       // Mock translation function to return expected error messages
       switch (key) {
         case 'errors:invalidModel':
-          return `Invalid model: ${params?.model}. Expected 'opus' or 'sonnet'`
+          return `Invalid model value: ${params?.model}. Please provide a string`
         case 'errors:invalidEnvConfig':
           return 'Invalid env configuration: expected object'
         case 'errors:invalidBaseUrl':
@@ -60,10 +60,12 @@ describe('config-validator utilities', () => {
       expect(validateClaudeSettings({ model: 'sonnet' })).toBe(true)
     })
 
-    it('should reject invalid model values', () => {
+    it('should accept arbitrary string model values', () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      expect(validateClaudeSettings({ model: 'invalid' })).toBe(false)
-      expect(consoleSpy).toHaveBeenCalledWith('Invalid model: invalid. Expected \'opus\' or \'sonnet\'')
+      expect(validateClaudeSettings({ model: 'moonshotai/Kimi-K2-Instruct-0905' })).toBe(true)
+      expect(consoleSpy).not.toHaveBeenCalledWith(
+        'Invalid model value: moonshotai/Kimi-K2-Instruct-0905. Please provide a string',
+      )
     })
 
     it('should validate env object', () => {
@@ -176,8 +178,9 @@ describe('config-validator utilities', () => {
       expect(sanitizeClaudeSettings({ model: 'sonnet' })).toEqual({ model: 'sonnet' })
     })
 
-    it('should filter out invalid model', () => {
-      expect(sanitizeClaudeSettings({ model: 'invalid' })).toEqual({})
+    it('should preserve arbitrary model values', () => {
+      const customModel = 'moonshotai/Kimi-K2-Instruct-0905'
+      expect(sanitizeClaudeSettings({ model: customModel })).toEqual({ model: customModel })
     })
 
     it('should sanitize env object', () => {

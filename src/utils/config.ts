@@ -236,6 +236,35 @@ export function updateDefaultModel(model: 'opus' | 'sonnet' | 'sonnet[1m]' | 'de
 }
 
 /**
+ * Directly set the model field in settings.json.
+ * Passing null or undefined removes the model field.
+ */
+export function setDefaultModelValue(model: string | null | undefined): void {
+  let settings = getDefaultSettings()
+
+  const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
+  if (existingSettings) {
+    settings = existingSettings
+  }
+
+  if (!settings.env) {
+    settings.env = {}
+  }
+
+  delete settings.env.ANTHROPIC_MODEL
+  delete settings.env.ANTHROPIC_SMALL_FAST_MODEL
+
+  if (!model || model.trim().length === 0) {
+    delete settings.model
+  }
+  else {
+    settings.model = model.trim()
+  }
+
+  writeJsonConfig(SETTINGS_FILE, settings)
+}
+
+/**
  * Merge settings.json intelligently
  * Preserves user's environment variables and custom configurations
  */
@@ -299,7 +328,7 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
 /**
  * Get existing model configuration from settings.json
  */
-export function getExistingModelConfig(): 'opus' | 'sonnet' | 'sonnet[1m]' | 'default' | 'custom' | null {
+export function getExistingModelConfig(): string | null {
   const settings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
 
   if (!settings) {
@@ -313,6 +342,10 @@ export function getExistingModelConfig(): 'opus' | 'sonnet' | 'sonnet[1m]' | 'de
 
   // If model field doesn't exist, it means using default
   if (!settings.model) {
+    return 'default'
+  }
+
+  if (typeof settings.model !== 'string') {
     return 'default'
   }
 
