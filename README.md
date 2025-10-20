@@ -122,7 +122,7 @@ When using `--skip-prompt`, the following parameters are available:
 | `--api-type, -t`             | API configuration type                                   | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                       | No                                     | `skip`                                                                                                                           |
 | `--api-key, -k`              | API key (for both API key and auth token types)          | string                                                                                             | Required when `api-type` is not `skip` | -                                                                                                                                |
 | `--api-url, -u`              | Custom API URL                                           | URL string                                                                                         | No                                     | official API                                                                                                                     |
-| `--mcp-services, -m`         | MCP services to install (multi-select, comma-separated)  | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, or `skip` for none | No                                     | `all`                                                                                                                            |
+| `--mcp-services, -m`         | MCP services to install (multi-select, comma-separated)  | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--workflows, -w`            | Workflows to install (multi-select, comma-separated)     | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--output-styles, -o`        | Output styles to install (multi-select, comma-separated) | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`, or `skip` for none               | No                                     | `all`                                                                                                                            |
 | `--default-output-style, -d` | Default output style                                     | Same as output styles plus built-in: `default`, `explanatory`, `learning`                          | No                                     | `engineer-professional`                                                                                                          |
@@ -179,6 +179,7 @@ npx zcf → Select 4  # Configure Codex MCP services
 4. **MCP Services**: Full compatibility with existing MCP services including:
    - Context7, Open WebSearch, Spec Workflow
    - DeepWiki, Playwright, EXA search
+   - Serena Assistant for semantic code retrieval and editing
    - Automatic service configuration with API key management
 
 **File Locations:**
@@ -543,6 +544,7 @@ Enter your choice: _
 ◉ DeepWiki - Query GitHub repository docs and examples
 ◉ Playwright Browser Control - Direct browser automation control
 ◉ Exa AI Search - Web search using Exa AI
+◉ Serena Assistant - Semantic code retrieval and editing akin to an IDE
 ◯ Install all services
 
 ✔ MCP services configured

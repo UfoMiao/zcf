@@ -122,7 +122,7 @@ npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" -
 | `--api-type, -t`             | API 配置类型                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | 否                            | `skip`                                                                                 |
 | `--api-key, -k`              | API 密钥（用于 API 密钥和认证令牌类型） | 字符串                                                                                                 | `api-type` 不为 `skip` 时必需 | -                                                                                      |
 | `--api-url, -u`              | 自定义 API URL                          | URL 字符串                                                                                             | 否                            | 官方 API                                                                               |
-| `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
+| `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--workflows, -w`            | 要安装的工作流（多选，逗号分隔）        | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--output-styles, -o`        | 要安装的输出风格（多选，逗号分隔）      | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`，或 `skip` 表示不安装                 | 否                            | `all`                                                                                  |
 | `--default-output-style, -d` | 默认输出风格                            | 同输出风格选项，还包括内置风格：`default`, `explanatory`, `learning`                                   | 否                            | `engineer-professional`                                                                |
@@ -178,6 +178,7 @@ npx zcf → 选择 4  # 配置 Codex MCP 服务
 4. **MCP 服务**：与现有 MCP 服务完全兼容，包括：
    - Context7、开放网页搜索、Spec 工作流
    - DeepWiki、Playwright、EXA 搜索
+   - Serena 助手用于语义代码检索与编辑
    - 自动服务配置与 API 密钥管理
 
 **文件位置：**
@@ -549,6 +550,7 @@ $ npx zcf
 ◯ DeepWiki - 查询 GitHub 仓库文档和示例
 ◯ Playwright 浏览器控制 - 直接控制浏览器进行自动化操作
 ◯ Exa AI 搜索 - 使用 Exa AI 进行网页搜索
+◯ Serena 助手 - 提供类似 IDE 的语义代码检索与编辑
 
 ? 请输入 Exa API Key（可从 https://dashboard.exa.ai/api-keys 获取）
 

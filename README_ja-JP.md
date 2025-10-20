@@ -122,7 +122,7 @@ npx zcf i --skip-prompt --all-lang ja --api-type api_key --api-key "sk-xxx" --ap
 | `--api-type, -t`             | API設定タイプ                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | いいえ                        | `skip`                                                                                 |
 | `--api-key, -k`              | APIキー（APIキーと認証トークンタイプ用）    | 文字列                                                                                                 | `api-type`が`skip`でない場合必須 | -                                                                                      |
 | `--api-url, -u`              | カスタムAPI URL                          | URL文字列                                                                                              | いいえ                        | 公式API                                                                                |
-| `--mcp-services, -m`         | インストールするMCPサービス（複数選択、カンマ区切り） | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`、または`skip`ですべてスキップ | いいえ                        | `all`                                                                                  |
+| `--mcp-services, -m`         | インストールするMCPサービス（複数選択、カンマ区切り） | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`、または`skip`ですべてスキップ | いいえ                        | `all`                                                                                  |
 | `--workflows, -w`            | インストールするワークフロー（複数選択、カンマ区切り） | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`、または`skip`ですべてスキップ | いいえ                        | `all`                                                                                  |
 | `--output-styles, -o`        | インストールする出力スタイル（複数選択、カンマ区切り） | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`、または`skip`でインストールしない      | いいえ                        | `all`                                                                                  |
 | `--default-output-style, -d` | デフォルト出力スタイル                     | 出力スタイルオプションと同じ、さらに組み込みスタイル：`default`, `explanatory`, `learning`                | いいえ                        | `engineer-professional`                                                                |
@@ -179,6 +179,7 @@ npx zcf → 4を選択  # Codex MCPサービスを設定
 4. **MCPサービス**：既存のMCPサービスと完全に互換性があり、以下を含む：
    - Context7、オープンWeb検索、Specワークフロー
    - DeepWiki、Playwright、EXA検索
+   - Serenaアシスタントによるセマンティックコード検索・編集
    - APIキー管理付き自動サービス設定
 
 **ファイルの場所：**
@@ -551,6 +552,7 @@ $ npx zcf
 ◯ DeepWiki - GitHubリポジトリドキュメントとサンプルを検索
 ◯ Playwright ブラウザ制御 - ブラウザを直接制御して自動操作
 ◯ Exa AI 検索 - Exa AIでウェブ検索
+◯ Serena アシスタント - IDEのようなセマンティックコード検索・編集
 
 ? Exa API Keyを入力してください（https://dashboard.exa.ai/api-keys から取得）
 
