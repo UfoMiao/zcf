@@ -1,5 +1,47 @@
 # Changelog
 
+## 3.2.1
+
+### Patch Changes
+
+- ## New Features
+  - Add Serena MCP service integration, support Claude Code and Codex
+  - Improve MCP service configuration with type safety enhancements
+  - Add comprehensive internationalization support for new MCP services
+
+  ## 新功能
+  - 新增 Serena MCP 服务集成，支持 Claude Code 和 Codex
+  - 改进 MCP 服务配置，增强类型安全性
+  - 为新增 MCP 服务添加全面的国际化支持
+
+  ## Optimization
+  - Enhance type safety for MCP service configurations
+  - Improve multi-config handling with better validation
+  - Strengthen test coverage for MCP integration scenarios
+
+  ## 优化
+  - 增强 MCP 服务配置的类型安全性
+  - 改进多配置处理，提供更好的验证机制
+  - 加强 MCP 集成场景的测试覆盖率
+
+  ## Fixes
+  - Resolve configuration validation issues in multi-config scenarios
+  - Ensure proper type checking for MCP service definitions
+
+  ## 修复
+  - 解决多配置场景中的配置验证问题
+  - 确保 MCP 服务定义的适当类型检查
+
+  ## Testing
+  - Add comprehensive test coverage for Serena MCP integration
+  - Enhance validation tests for multi-config handling
+  - Improve test coverage for MCP service type safety
+
+  ## 测试
+  - 为 Serena MCP 集成添加全面的测试覆盖
+  - 增强多配置处理的验证测试
+  - 改进 MCP 服务类型安全的测试覆盖率
+
 ## 3.2.0
 
 ### Minor Changes
