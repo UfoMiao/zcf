@@ -1,5 +1,7 @@
 # ZCF - Zero-Config Code Flow
 
+![ZCF Banner](./src/assets/banner.png)
+
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
@@ -13,8 +15,6 @@
 **✨ クイックリンク**: [Codexサポート](#-codexサポートv300新機能) | [BMadワークフロー](#-bmadワークフローv27新機能) | [Specワークフロー](#-specワークフローv2124新機能) | [Open Web Search](#-open-web-searchv2129新機能) | [CCRルーター](#-ccr-claude-code-router-サポートv28強化版) | [CCometixLine](#-ccometixlineサポートステータスバーツールv299新機能) | [出力スタイル](#-ai出力スタイルv212新機能) | [多設定管理](#-多設定管理v320-新機能)
 
 > ゼロ設定、ワンクリックで Claude Code & Codex 環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
-
-![スクリーンショット](./src/assets/screenshot-en.webp)
 
 ## 🚀 クイックスタート
 

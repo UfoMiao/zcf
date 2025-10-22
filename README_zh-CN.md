@@ -1,5 +1,7 @@
 # ZCF - Zero-Config Code Flow
 
+![ZCF Banner](./src/assets/banner.png)
+
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
@@ -13,8 +15,6 @@
 **✨ 快速导航**: [Codex 支持](#-codex-支持v300-新增) | [BMad 工作流](#-bmad-工作流v27-新功能) | [Spec 工作流](#-spec-工作流v2124-新功能) | [开放网页搜索](#-开放网页搜索v2129-新功能) | [CCR 代理](#-ccr-claude-code-router-支持v28-增强版) | [CCometixLine](#-ccometixline-支持状态栏工具v299-新增) | [输出风格](#-ai-输出风格v212-新功能) | [多配置管理](#-多配置管理v320-新增)
 
 > 零配置，一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
-
-![效果图](./src/assets/screenshot.webp)
 
 ## 🚀 快速开始
 
