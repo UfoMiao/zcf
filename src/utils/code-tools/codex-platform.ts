@@ -6,7 +6,8 @@ import { getMcpCommand, isWindows } from '../platform'
  * Handles Windows cmd /c wrapper for commands like npx, uvx, etc.
  */
 export function applyCodexPlatformCommand(config: CodexMcpService): void {
-  if (isWindows()) {
+  // Only process if command exists (avoid wrapping configs without command, e.g., SSE services)
+  if (isWindows() && config.command) {
     const mcpCmd = getMcpCommand(config.command)
     // Only modify if command needs Windows wrapper (cmd /c)
     if (mcpCmd[0] === 'cmd') {
