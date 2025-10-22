@@ -105,6 +105,17 @@ npx zcf i -s -g zh-CN -t api_key -k "sk-xxx" -u "https://xxx.xxx"
 
 # Complete version
 npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" --api-url "https://xxx.xxx"
+
+# Shorthand version (with custom models)
+npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
+
+# Complete version (with custom models)
+npx zcf i --skip-prompt \
+  --api-type api_key \
+  --api-key "sk-xxx" \
+  --api-url "https://xxx.xxx" \
+  --api-model "claude-sonnet-4-5" \
+  --api-fast-model "claude-haiku-4-5"
 ```
 
 #### Non-interactive Mode Parameters
@@ -122,6 +133,8 @@ When using `--skip-prompt`, the following parameters are available:
 | `--api-type, -t`             | API configuration type                                   | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                       | No                                     | `skip`                                                                                                                           |
 | `--api-key, -k`              | API key (for both API key and auth token types)          | string                                                                                             | Required when `api-type` is not `skip` | -                                                                                                                                |
 | `--api-url, -u`              | Custom API URL                                           | URL string                                                                                         | No                                     | official API                                                                                                                     |
+| `--api-model, -M`            | Primary API model                                        | string (e.g., `claude-sonnet-4-5`)                                                                 | No                                     | -                                                                                                                                |
+| `--api-fast-model, -F`       | Fast API model (Claude Code only)                        | string (e.g., `claude-haiku-4-5`)                                                                  | No                                     | -                                                                                                                                |
 | `--mcp-services, -m`         | MCP services to install (multi-select, comma-separated)  | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--workflows, -w`            | Workflows to install (multi-select, comma-separated)     | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, or `skip` for none | No                                     | `all`                                                                                                                            |
 | `--output-styles, -o`        | Output styles to install (multi-select, comma-separated) | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`, or `skip` for none               | No                                     | `all`                                                                                                                            |

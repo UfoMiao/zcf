@@ -23,6 +23,8 @@
   "help.optionDescriptions.apiType": "API type",
   "help.optionDescriptions.apiKey": "API key (for both types)",
   "help.optionDescriptions.customApiUrl": "Custom API URL",
+  "help.optionDescriptions.apiModel": "Primary API model",
+  "help.optionDescriptions.apiFastModel": "Fast API model",
   "help.optionDescriptions.aiOutputLanguage": "AI output language",
   "help.optionDescriptions.setAllLanguageParams": "Set all language params",
   "help.optionDescriptions.configHandling": "Config handling",

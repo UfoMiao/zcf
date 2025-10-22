@@ -1020,7 +1020,7 @@ function createApiConfigChoices(providers: CodexProvider[], currentProvider?: st
  * Apply custom API configuration directly (for skipPrompt mode)
  */
 async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOptions['customApiConfig']>): Promise<void> {
-  const { type, token, baseUrl } = customApiConfig
+  const { type, token, baseUrl, model } = customApiConfig
 
   // Always backup existing config before modification
   const backupPath = backupCodexComplete()
@@ -1051,7 +1051,7 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
 
   // Write configuration files
   const configData: CodexConfigData = {
-    model: 'claude-3-5-sonnet-20241022',
+    model: model || 'claude-3-5-sonnet-20241022', // Use provided model or default
     modelProvider: providerId,
     modelProviderCommented: false,
     providers,
@@ -1342,6 +1342,7 @@ export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {
     type: 'auth_token' | 'api_key'
     token?: string
     baseUrl?: string
+    model?: string // Model parameter for Codex
   }
 }
 

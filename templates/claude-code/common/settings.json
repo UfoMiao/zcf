@@ -29,7 +29,8 @@
       "mcp__mcp-deepwiki",
       "mcp__Playwright",
       "mcp__spec-workflow",
-      "mcp__open-websearch"
+      "mcp__open-websearch",
+      "mcp__serena"
     ],
     "deny": []
   },

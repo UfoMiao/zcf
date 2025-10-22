@@ -15,6 +15,8 @@ vi.mock('../../../src/i18n', () => ({
         'workflow:invalidId': 'Invalid workflow ID: {{id}}',
         'mcp:invalidId': 'Invalid MCP service ID: {{id}}',
         'output:invalidStyle': 'Invalid output style: {{style}}',
+        'errors:invalidApiModel': 'Invalid API model parameter: {{value}}',
+        'errors:invalidApiFastModel': 'Invalid fast model parameter: {{value}}',
       }
 
       const translation = translations[key] || key
@@ -212,5 +214,59 @@ describe('validateSkipPromptOptions', () => {
     validateSkipPromptOptions(options)
 
     expect(options.installCometixLine).toBe(false)
+  })
+
+  describe('aPI model validation', () => {
+    it('should accept valid apiModel parameter', () => {
+      options.apiType = 'api_key'
+      options.apiKey = 'sk-test'
+      options.apiModel = 'claude-sonnet-4-5'
+
+      expect(() => validateSkipPromptOptions(options)).not.toThrow()
+      expect(options.apiModel).toBe('claude-sonnet-4-5')
+    })
+
+    it('should accept valid apiFastModel parameter', () => {
+      options.apiType = 'api_key'
+      options.apiKey = 'sk-test'
+      options.apiFastModel = 'claude-haiku-4-5'
+
+      expect(() => validateSkipPromptOptions(options)).not.toThrow()
+      expect(options.apiFastModel).toBe('claude-haiku-4-5')
+    })
+
+    it('should accept both apiModel and apiFastModel together', () => {
+      options.apiType = 'api_key'
+      options.apiKey = 'sk-test'
+      options.apiModel = 'claude-sonnet-4-5'
+      options.apiFastModel = 'claude-haiku-4-5'
+
+      expect(() => validateSkipPromptOptions(options)).not.toThrow()
+      expect(options.apiModel).toBe('claude-sonnet-4-5')
+      expect(options.apiFastModel).toBe('claude-haiku-4-5')
+    })
+
+    it('should throw when apiModel is not a string', () => {
+      options.apiType = 'api_key'
+      options.apiKey = 'sk-test'
+      options.apiModel = 123 as any
+
+      expect(() => validateSkipPromptOptions(options)).toThrow('Invalid API model parameter')
+    })
+
+    it('should throw when apiFastModel is not a string', () => {
+      options.apiType = 'api_key'
+      options.apiKey = 'sk-test'
+      options.apiFastModel = true as any
+
+      expect(() => validateSkipPromptOptions(options)).toThrow('Invalid fast model parameter')
+    })
+
+    it('should allow model parameters without apiType in non-skip-prompt mode', () => {
+      options.apiModel = 'claude-sonnet-4-5'
+
+      // Should not throw - validation only applies in skip-prompt mode
+      expect(() => validateSkipPromptOptions(options)).not.toThrow()
+    })
   })
 })

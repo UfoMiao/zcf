@@ -105,6 +105,17 @@ npx zcf i -s -g ja -t api_key -k "sk-xxx" -u "https://xxx.xxx"
 
 # 完全版
 npx zcf i --skip-prompt --all-lang ja --api-type api_key --api-key "sk-xxx" --api-url "https://xxx.xxx"
+
+# 短縮版（カスタムモデル設定）
+npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
+
+# 完全版（カスタムモデル設定）
+npx zcf i --skip-prompt \
+  --api-type api_key \
+  --api-key "sk-xxx" \
+  --api-url "https://xxx.xxx" \
+  --api-model "claude-sonnet-4-5" \
+  --api-fast-model "claude-haiku-4-5"
 ```
 
 #### 非インタラクティブモードパラメータ説明
@@ -122,6 +133,8 @@ npx zcf i --skip-prompt --all-lang ja --api-type api_key --api-key "sk-xxx" --ap
 | `--api-type, -t`             | API設定タイプ                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | いいえ                        | `skip`                                                                                 |
 | `--api-key, -k`              | APIキー（APIキーと認証トークンタイプ用）    | 文字列                                                                                                 | `api-type`が`skip`でない場合必須 | -                                                                                      |
 | `--api-url, -u`              | カスタムAPI URL                          | URL文字列                                                                                              | いいえ                        | 公式API                                                                                |
+| `--api-model, -M`            | プライマリAPIモデル                       | 文字列（例：`claude-sonnet-4-5`）                                                                      | いいえ                        | -                                                                                      |
+| `--api-fast-model, -F`       | 高速APIモデル（Claude Codeのみ）          | 文字列（例：`claude-haiku-4-5`）                                                                       | いいえ                        | -                                                                                      |
 | `--mcp-services, -m`         | インストールするMCPサービス（複数選択、カンマ区切り） | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`、または`skip`ですべてスキップ | いいえ                        | `all`                                                                                  |
 | `--workflows, -w`            | インストールするワークフロー（複数選択、カンマ区切り） | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`、または`skip`ですべてスキップ | いいえ                        | `all`                                                                                  |
 | `--output-styles, -o`        | インストールする出力スタイル（複数選択、カンマ区切り） | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`、または`skip`でインストールしない      | いいえ                        | `all`                                                                                  |

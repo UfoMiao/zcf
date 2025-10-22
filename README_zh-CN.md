@@ -105,6 +105,17 @@ npx zcf i -s -g zh-CN -t api_key -k "sk-xxx" -u "https://xxx.xxx"
 
 # 完整版
 npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" --api-url "https://xxx.xxx"
+
+# 缩写版（配置自定义模型）
+npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
+
+# 完整版（配置自定义模型）
+npx zcf i --skip-prompt \
+  --api-type api_key \
+  --api-key "sk-xxx" \
+  --api-url "https://xxx.xxx" \
+  --api-model "claude-sonnet-4-5" \
+  --api-fast-model "claude-haiku-4-5"
 ```
 
 #### 非交互模式参数说明
@@ -122,6 +133,8 @@ npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" -
 | `--api-type, -t`             | API 配置类型                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | 否                            | `skip`                                                                                 |
 | `--api-key, -k`              | API 密钥（用于 API 密钥和认证令牌类型） | 字符串                                                                                                 | `api-type` 不为 `skip` 时必需 | -                                                                                      |
 | `--api-url, -u`              | 自定义 API URL                          | URL 字符串                                                                                             | 否                            | 官方 API                                                                               |
+| `--api-model, -M`            | 主 API 模型                             | 字符串（如 `claude-sonnet-4-5`）                                                                   | 否                            | -                                                                                      |
+| `--api-fast-model, -F`       | 快速 API 模型（仅 Claude Code）         | 字符串（如 `claude-haiku-4-5`）                                                                        | 否                            | -                                                                                      |
 | `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--workflows, -w`            | 要安装的工作流（多选，逗号分隔）        | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--output-styles, -o`        | 要安装的输出风格（多选，逗号分隔）      | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`，或 `skip` 表示不安装                 | 否                            | `all`                                                                                  |

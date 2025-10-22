@@ -37,6 +37,7 @@ vi.mock('../../../src/utils/config', async (importOriginal) => {
     ensureClaudeDir: vi.fn(),
     switchToOfficialLogin: vi.fn(),
     promptApiConfigurationAction: vi.fn(),
+    updateCustomModel: vi.fn(),
   }
 })
 

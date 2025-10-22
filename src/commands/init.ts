@@ -63,6 +63,8 @@ export interface InitOptions {
   apiType?: 'auth_token' | 'api_key' | 'ccr_proxy' | 'skip'
   apiKey?: string // Used for both API key and auth token
   apiUrl?: string
+  apiModel?: string // Primary API model (e.g., claude-sonnet-4-5)
+  apiFastModel?: string // Fast API model (e.g., claude-haiku-4-5)
   mcpServices?: string[] | string | boolean
   workflows?: string[] | string | boolean
   outputStyles?: string[] | string | boolean
@@ -138,6 +140,19 @@ export function validateSkipPromptOptions(options: InitOptions): void {
   // Validate multi-configuration parameters
   if (options.apiConfigs && options.apiConfigsFile) {
     throw new Error(i18n.t('multi-config:conflictingParams'))
+  }
+
+  // Validate API model parameters
+  if (options.apiModel && typeof options.apiModel !== 'string') {
+    throw new Error(
+      i18n.t('errors:invalidApiModel', { value: options.apiModel }),
+    )
+  }
+
+  if (options.apiFastModel && typeof options.apiFastModel !== 'string') {
+    throw new Error(
+      i18n.t('errors:invalidApiFastModel', { value: options.apiFastModel }),
+    )
   }
 
   // Validate required API parameters (both use apiKey now)
@@ -396,6 +411,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
             type: 'api_key' as const,
             token: options.apiKey,
             baseUrl: options.apiUrl,
+            model: options.apiModel, // Add model parameter for Codex
           }
         : undefined
 
@@ -730,6 +746,25 @@ export async function init(options: InitOptions = {}): Promise<void> {
         console.log(ansis.gray(`  URL: ${configuredApi.url}`))
         console.log(ansis.gray(`  Key: ${formatApiKeyDisplay(configuredApi.key)}`))
         // addCompletedOnboarding is now called inside configureApi
+      }
+    }
+
+    // Step 9.5: Configure API models if provided (Claude Code only)
+    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+      if (options.skipPrompt) {
+        // In skip-prompt mode, configure models
+        const { updateCustomModel } = await import('../utils/config')
+        updateCustomModel(
+          options.apiModel || undefined,
+          options.apiFastModel || undefined,
+        )
+        console.log(ansis.green(`✔ ${i18n.t('api:modelConfigSuccess')}`))
+        if (options.apiModel) {
+          console.log(ansis.gray(`  ${i18n.t('api:primaryModel')}: ${options.apiModel}`))
+        }
+        if (options.apiFastModel) {
+          console.log(ansis.gray(`  ${i18n.t('api:fastModel')}: ${options.apiFastModel}`))
+        }
       }
     }
 
