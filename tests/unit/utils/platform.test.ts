@@ -100,14 +100,54 @@ describe('platform utilities', () => {
   })
 
   describe('getMcpCommand', () => {
-    it('should return cmd command on Windows', () => {
+    it('should return cmd command for npx on Windows', () => {
       vi.mocked(platform).mockReturnValue('win32')
-      expect(getMcpCommand()).toEqual(['cmd', '/c', 'npx'])
+      expect(getMcpCommand('npx')).toEqual(['cmd', '/c', 'npx'])
     })
 
-    it('should return npx command on non-Windows', () => {
+    it('should return cmd command for uvx on Windows', () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      expect(getMcpCommand('uvx')).toEqual(['cmd', '/c', 'uvx'])
+    })
+
+    it('should return cmd command for uv on Windows', () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      expect(getMcpCommand('uv')).toEqual(['cmd', '/c', 'uv'])
+    })
+
+    it('should return unwrapped command for node on Windows', () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      expect(getMcpCommand('node')).toEqual(['node'])
+    })
+
+    it('should return unwrapped command for python on Windows', () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      expect(getMcpCommand('python')).toEqual(['python'])
+    })
+
+    it('should return npx command on non-Windows (default parameter)', () => {
       vi.mocked(platform).mockReturnValue('darwin')
       expect(getMcpCommand()).toEqual(['npx'])
+    })
+
+    it('should return npx command on non-Windows (explicit parameter)', () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      expect(getMcpCommand('npx')).toEqual(['npx'])
+    })
+
+    it('should return uvx command on non-Windows', () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      expect(getMcpCommand('uvx')).toEqual(['uvx'])
+    })
+
+    it('should return uv command on non-Windows', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      expect(getMcpCommand('uv')).toEqual(['uv'])
+    })
+
+    it('should return node command on non-Windows', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      expect(getMcpCommand('node')).toEqual(['node'])
     })
   })
 

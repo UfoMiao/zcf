@@ -19,6 +19,15 @@ vi.mock('../../../../src/config/mcp-services', () => ({
         env: {},
       },
     },
+    {
+      id: 'serena',
+      requiresApiKey: false,
+      config: {
+        command: 'uvx',
+        args: ['--from', 'git+https://github.com/oraios/serena', 'serena', 'start-mcp-server'],
+        env: {},
+      },
+    },
   ],
   getMcpServices: mockGetMcpServices,
 }))
@@ -43,7 +52,11 @@ vi.mock('../../../../src/utils/zcf-config', () => ({
 
 vi.mock('../../../../src/utils/platform', () => ({
   isWindows: vi.fn(() => true),
-  getMcpCommand: vi.fn(() => ['node', 'mcp']),
+  getMcpCommand: vi.fn((cmd: string) => {
+    if (cmd === 'uvx')
+      return ['cmd', '/c', 'uvx']
+    return ['cmd', '/c', 'npx']
+  }),
   getSystemRoot: vi.fn(() => 'C:/Windows'),
 }))
 
@@ -71,7 +84,31 @@ describe('applyCodexPlatformCommand integration', () => {
     await configureCodexMcp()
 
     expect(mockUpdateZcfConfig).toHaveBeenCalledWith({ codeToolType: 'codex' })
-    expect(capturedConfig?.mcpServices?.[0]?.command).toBe('node')
-    expect(capturedConfig?.mcpServices?.[0]?.args).toEqual(['mcp'])
+    expect(capturedConfig?.mcpServices?.[0]?.command).toBe('cmd')
+    expect(capturedConfig?.mcpServices?.[0]?.args).toEqual(['/c', 'npx'])
+  })
+
+  it('should rewrite uvx commands using platform-specific MCP command on Windows', async () => {
+    mockSelectMcpServices.mockResolvedValue(['serena'])
+    mockGetMcpServices.mockResolvedValue([
+      { id: 'serena', name: 'Serena', description: 'Serena MCP service' },
+    ])
+
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+      providers: [],
+      mcpServices: [],
+      managed: false,
+    } as any)
+    vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
+    let capturedConfig: any
+    vi.spyOn(codexModule, 'writeCodexConfig').mockImplementation((config: any) => {
+      capturedConfig = config
+      return undefined
+    })
+    await configureCodexMcp()
+
+    expect(mockUpdateZcfConfig).toHaveBeenCalledWith({ codeToolType: 'codex' })
+    expect(capturedConfig?.mcpServices?.[0]?.command).toBe('cmd')
+    expect(capturedConfig?.mcpServices?.[0]?.args).toEqual(['/c', 'uvx', '--from', 'git+https://github.com/oraios/serena', 'serena', 'start-mcp-server', '--context', 'codex'])
   })
 })

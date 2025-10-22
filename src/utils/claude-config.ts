@@ -40,10 +40,13 @@ export function mergeMcpServers(
 }
 
 function applyPlatformCommand(config: McpServerConfig): void {
-  if (config.command === 'npx' && isWindows()) {
-    const mcpCmd = getMcpCommand()
-    config.command = mcpCmd[0]
-    config.args = [...mcpCmd.slice(1), ...(config.args || [])]
+  if (isWindows()) {
+    const mcpCmd = getMcpCommand(config.command)
+    // Only modify if command needs Windows wrapper (cmd /c)
+    if (mcpCmd[0] === 'cmd') {
+      config.command = mcpCmd[0]
+      config.args = [...mcpCmd.slice(1), ...(config.args || [])]
+    }
   }
 }
 

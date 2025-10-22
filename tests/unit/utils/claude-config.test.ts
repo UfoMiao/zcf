@@ -233,6 +233,22 @@ describe('claude-config', () => {
       expect(result.args).toEqual(['/c', 'npx', 'some-mcp-server', '--api-key=YOUR_EXA_API_KEY'])
     })
 
+    it('should apply Windows platform command for uvx', () => {
+      mockPlatform.isWindows.mockReturnValue(true)
+      mockPlatform.getMcpCommand.mockReturnValue(['cmd', '/c', 'uvx'])
+
+      const uvxConfig: McpServerConfig = {
+        type: 'stdio',
+        command: 'uvx',
+        args: ['--from', 'git+https://github.com/example/repo', 'tool'],
+      }
+
+      const result = buildMcpServerConfig(uvxConfig)
+
+      expect(result.command).toBe('cmd')
+      expect(result.args).toEqual(['/c', 'uvx', '--from', 'git+https://github.com/example/repo', 'tool'])
+    })
+
     it('should use custom placeholder', () => {
       const customConfig: McpServerConfig = {
         type: 'stdio',
@@ -285,6 +301,29 @@ describe('claude-config', () => {
         type: 'stdio',
         command: 'cmd',
         args: ['/c', 'npx', 'test'],
+      })
+    })
+
+    it('should fix uvx command for Windows', () => {
+      mockPlatform.isWindows.mockReturnValue(true)
+      mockPlatform.getMcpCommand.mockImplementation((cmd) => {
+        if (cmd === 'uvx')
+          return ['cmd', '/c', 'uvx']
+        return ['cmd', '/c', 'npx']
+      })
+
+      const config: ClaudeConfiguration = {
+        mcpServers: {
+          serena: { type: 'stdio', command: 'uvx', args: ['--from', 'git+https://github.com/oraios/serena', 'serena'] },
+        },
+      }
+
+      const result = fixWindowsMcpConfig(config)
+
+      expect(result.mcpServers.serena).toEqual({
+        type: 'stdio',
+        command: 'cmd',
+        args: ['/c', 'uvx', '--from', 'git+https://github.com/oraios/serena', 'serena'],
       })
     })
   })

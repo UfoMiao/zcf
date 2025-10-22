@@ -3,6 +3,12 @@ import { platform } from 'node:os'
 import process from 'node:process'
 import { exec } from 'tinyexec'
 
+/**
+ * Commands that require cmd /c wrapper on Windows for proper execution context
+ * Add new commands here if they need Windows-specific handling
+ */
+const WINDOWS_WRAPPED_COMMANDS = ['npx', 'uvx', 'uv']
+
 export function getPlatform(): 'windows' | 'macos' | 'linux' {
   const p = platform()
   if (p === 'win32')
@@ -104,11 +110,16 @@ export function getWSLInfo(): WSLInfo | null {
   }
 }
 
-export function getMcpCommand(): string[] {
-  if (isWindows()) {
-    return ['cmd', '/c', 'npx']
+/**
+ * Get MCP command with platform-specific wrapper if needed
+ * @param command - The base command to execute (default: 'npx')
+ * @returns Command array with Windows wrapper if applicable
+ */
+export function getMcpCommand(command: string = 'npx'): string[] {
+  if (isWindows() && WINDOWS_WRAPPED_COMMANDS.includes(command)) {
+    return ['cmd', '/c', command]
   }
-  return ['npx']
+  return [command]
 }
 
 export function getSystemRoot(): string | null {
