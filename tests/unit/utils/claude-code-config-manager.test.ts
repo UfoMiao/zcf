@@ -60,9 +60,11 @@ vi.mock('../../../src/utils/json-config', async () => {
 })
 
 const mockSetPrimaryApiKey = vi.fn()
+const mockAddCompletedOnboarding = vi.fn()
 
 vi.mock('../../../src/utils/claude-config', () => ({
   setPrimaryApiKey: mockSetPrimaryApiKey,
+  addCompletedOnboarding: mockAddCompletedOnboarding,
 }))
 
 const mockRunCcrRestart = vi.fn()
@@ -282,6 +284,7 @@ describe('claudeCodeConfigManager', () => {
       expect(writtenSettings.env.ANTHROPIC_AUTH_TOKEN).toBeUndefined()
       expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBeUndefined()
       expect(mockSetPrimaryApiKey).toHaveBeenCalled()
+      expect(mockAddCompletedOnboarding).toHaveBeenCalled()
       expect(mockRunCcrRestart).not.toHaveBeenCalled()
     })
 
@@ -304,6 +307,8 @@ describe('claudeCodeConfigManager', () => {
       expect(writtenSettings.env.ANTHROPIC_AUTH_TOKEN).toBe('token-xyz')
       expect(writtenSettings.env.ANTHROPIC_API_KEY).toBeUndefined()
       expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBe('https://api.anthropic.com')
+      expect(mockSetPrimaryApiKey).toHaveBeenCalled()
+      expect(mockAddCompletedOnboarding).toHaveBeenCalled()
       expect(mockRunCcrRestart).not.toHaveBeenCalled()
     })
 
@@ -327,6 +332,8 @@ describe('claudeCodeConfigManager', () => {
 
       expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBe('http://10.0.0.2:7000')
       expect(writtenSettings.env.ANTHROPIC_API_KEY).toBe('sk-ccr')
+      expect(mockSetPrimaryApiKey).toHaveBeenCalled()
+      expect(mockAddCompletedOnboarding).toHaveBeenCalled()
       expect(mockRunCcrRestart).toHaveBeenCalled()
     })
 

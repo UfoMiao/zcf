@@ -254,8 +254,9 @@ export class ClaudeCodeConfigManager {
 
       writeJsonConfig(SETTINGS_FILE, settings)
 
-      const { setPrimaryApiKey } = await import('./claude-config')
+      const { setPrimaryApiKey, addCompletedOnboarding } = await import('./claude-config')
       setPrimaryApiKey()
+      addCompletedOnboarding()
 
       if (shouldRestartCcr) {
         const { runCcrRestart } = await import('./ccr/commands')
