@@ -838,7 +838,8 @@ ZCF 现已支持在 Android Termux 环境中运行：
 - \*\*康 (第一个 KFC 赞助者🍗)
 - \*东 (第一个咖啡赞助者☕️)
 - 炼\*3 (第一个termux 用户赞助者📱)
-- 16°C 咖啡 (我的好基友 🤪, 提供了 Claude Code max $200 套餐)
+- [chamo101](https://github.com/chamo101) (第一个 GitHub issue 赞助者 🎉)
+- 16°C 咖啡 (我的好基友 🤪, 提供了 ChatGPT Pro $200 套餐)
 
 ## 📄 许可证
 

@@ -706,7 +706,8 @@ ZCFはAndroid Termux環境での実行をサポート：
 - \*\*康（最初のKFCスポンサー🍗）
 - \*东（最初のコーヒースポンサー☕️）
 - 炼\*3（最初のTermuxユーザースポンサー📱）
-- 16°C咖啡（私の親友 🤪、Claude Code max $200プランを提供）
+- [chamo101](https://github.com/chamo101)（最初のGitHub issue ユーザースポンサー🎉）
+- 16°C咖啡（私の親友 🤪、ChatGPT Pro $200プランを提供）
 
 ## 📄 ライセンス
 

@@ -830,7 +830,8 @@ A huge thank you to all our sponsors for their generous support!
 - \*\*康 (first KFC sponsor🍗)
 - \*东 (first coffee sponsor☕️)
 - 炼\*3 (first Termux user sponsor📱)
-- 16°C coffee (My best friend🤪, offered Claude Code max $200 package)
+- [chamo101](https://github.com/chamo101) (first GitHub issue sponsor 🎉)
+- 16°C coffee (My best friend🤪, offered ChatGPT Pro $200 package)
 
 ## 📄 License
 
