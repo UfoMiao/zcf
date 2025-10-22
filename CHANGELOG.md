@@ -1,5 +1,37 @@
 # Changelog
 
+## 3.2.2
+
+### Patch Changes
+
+- ## New Features
+  - Add custom API model configuration support for Claude Code
+  - Extend Windows command wrapper support for uvx and uv tools
+  - Update sponsor information in README files
+
+  ## 新功能
+  - 添加 Claude Code 自定义 API 模型配置支持
+  - 扩展 Windows 命令包装器支持 uvx 和 uv 工具
+  - 更新 README 文件中的赞助信息
+
+  ## Fixes
+  - Guard command wrapper to avoid processing undefined commands
+  - Restore primaryApiKey and hasCompletedOnboarding when switching profiles
+
+  ## 修复
+  - 防护命令包装器避免处理未定义的命令
+  - 切换配置文件时恢复 primaryApiKey 和 hasCompletedOnboarding
+
+  ## Testing
+  - Add comprehensive test coverage for custom model configuration
+  - Add parameter validation tests for init command
+  - Enhance platform and codex-platform test coverage
+
+  ## 测试
+  - 添加自定义模型配置的全面测试覆盖
+  - 添加 init 命令的参数验证测试
+  - 增强 platform 和 codex-platform 测试覆盖
+
 ## 3.2.1
 
 ### Patch Changes
