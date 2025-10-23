@@ -1,7 +1,3 @@
-# ZCF - Zero-Config Code Flow
-
-![ZCF Banner](./src/assets/banner.png)
-
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
@@ -10,11 +6,26 @@
 [![JSDocs][jsdocs-src]][jsdocs-href]
 [![Ask DeepWiki][deepwiki-src]][deepwiki-href]
 
-[中文](README_zh-CN.md) | **English** | [日本語](README_ja-JP.md) | [Changelog](CHANGELOG.md)
+<div align="center">
+  <img src="./src/assets/banner.webp" alt="Banner"/>
+
+  <h1>
+    ZCF - Zero-Config Code Flow
+  </h1>
+
+  <p align="center">
+  <b>English</b> | <a href="README_zh-CN.md">中文</a> | <a href="README_ja-JP.md">日本語</a> | <a href="CHANGELOG.md">Changelog</a>
 
 **✨ Quick Links**: [Codex Support](#-codex-support-v300-new) | [BMad Workflow](#-bmad-workflow-v27-new-feature) | [Spec Workflow](#-spec-workflow-v2124-new-feature) | [Open Web Search](#-open-web-search-v2129-new-feature) | [CCR Router](#-ccr-claude-code-router-support-v28-enhanced) | [CCometixLine](#-ccometixline-support-status-bar-tool-v299-new) | [Output Styles](#-ai-output-styles-v212-new-feature) | [Multi-Configuration Management](#-multi-configuration-management-v320-new)
 
 > Zero-config, one-click setup for Claude Code & Codex with bilingual support, intelligent agent system and personalized AI assistant
+</p>
+</div>
+
+## ♥️ Sponsor AI API
+
+[![Sponsor AI API](./src/assets/302.ai-en.jpg)](https://share.302.ai/gAT9VG)
+[302.AI](https://share.302.ai/gAT9VG) is a pay-as-you-go enterprise AI resource hub that offers the latest and most comprehensive AI models and APIs on the market, along with a variety of ready-to-use online AI applications.
 
 ## 🚀 Quick Start
 
@@ -823,21 +834,32 @@ If you find this project helpful, please consider sponsoring its development. Yo
 ### Our Sponsors
 
 A huge thank you to all our sponsors for their generous support!
-
+- [302.AI](https://share.302.ai/gAT9VG) (first corporate sponsorship 🤠)
 - Tc (first sponsor)
 - Argolinhas (first ko-fi sponsor ٩(•̤̀ᵕ•̤́๑))
-- r\*r (first anonymous sponsor🤣)
-- \*\*康 (first KFC sponsor🍗)
-- \*东 (first coffee sponsor☕️)
-- 炼\*3 (first Termux user sponsor📱)
+- r\*r (first anonymous sponsor 🤣)
+- \*\*康 (first KFC sponsor 🍗)
+- \*东 (first coffee sponsor ☕️)
+- 炼\*3 (first Termux user sponsor 📱)
 - [chamo101](https://github.com/chamo101) (first GitHub issue sponsor 🎉)
-- 16°C coffee (My best friend🤪, offered ChatGPT Pro $200 package)
+- 初屿贤 (first Codex user sponsor 🙅🏻‍♂️)
+- Protein (first 1688 sponsor 😏)
+- 16°C coffee (My best friend 🤪, offered ChatGPT Pro $200 package)
 
 ## 📄 License
 
 [MIT License](LICENSE)
 
 ---
+
+## 🚀 Contributors
+
+<a href="https://github.com/UfoMiao/zcf/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=UfoMiao/zcf" />
+</a>
+<br /><br />
+
+## ⭐️ Star History
 
 If this project helps you, please give me a ⭐️ Star!
 

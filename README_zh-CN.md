@@ -1,7 +1,3 @@
-# ZCF - Zero-Config Code Flow
-
-![ZCF Banner](./src/assets/banner.png)
-
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
@@ -10,11 +6,26 @@
 [![JSDocs][jsdocs-src]][jsdocs-href]
 [![Ask DeepWiki][deepwiki-src]][deepwiki-href]
 
-**中文** | [English](README.md) | [日本語](README_ja-JP.md) | [更新日志](CHANGELOG.md)
+<div align="center">
+  <img src="./src/assets/banner.webp" alt="Banner"/>
+
+  <h1>
+    ZCF - Zero-Config Code Flow
+  </h1>
+
+  <p align="center">
+    <a href="README.md">English</a> | <b>中文</b> | <a href="README_ja-JP.md">日本語</a> | <a href="CHANGELOG.md">更新日志</a>
 
 **✨ 快速导航**: [Codex 支持](#-codex-支持v300-新增) | [BMad 工作流](#-bmad-工作流v27-新功能) | [Spec 工作流](#-spec-工作流v2124-新功能) | [开放网页搜索](#-开放网页搜索v2129-新功能) | [CCR 代理](#-ccr-claude-code-router-支持v28-增强版) | [CCometixLine](#-ccometixline-支持状态栏工具v299-新增) | [输出风格](#-ai-输出风格v212-新功能) | [多配置管理](#-多配置管理v320-新增)
 
-> 零配置，一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
+> 零配置,一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
+  </p>
+</div>
+
+## ♥️ 赞助商 AI API
+
+[![赞助商 AI API](./src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
+[302.AI](https://share.302.ai/gAT9VG) 是一个按用量付费的企业级AI资源平台，提供市场上最新、最全面的AI模型和API，以及多种开箱即用的在线AI应用。
 
 ## 🚀 快速开始
 
@@ -832,13 +843,16 @@ ZCF 现已支持在 Android Termux 环境中运行：
 
 非常感谢所有赞助商的慷慨支持！
 
+- [302.AI](https://share.302.ai/gAT9VG) （第一个企业赞助商 🤠）
 - Tc (第一个赞助者)
 - Argolinhas (第一个 ko-fi 赞助者 ٩(•̤̀ᵕ•̤́๑))
-- r\*r (第一个不愿透露姓名的赞助者🤣)
-- \*\*康 (第一个 KFC 赞助者🍗)
-- \*东 (第一个咖啡赞助者☕️)
-- 炼\*3 (第一个termux 用户赞助者📱)
+- r\*r (第一个不愿透露姓名的赞助者 🤣)
+- \*\*康 (第一个 KFC 赞助者 🍗)
+- \*东 (第一个咖啡赞助者 ☕️)
+- 炼\*3 (第一个 termux 用户赞助者 📱)
 - [chamo101](https://github.com/chamo101) (第一个 GitHub issue 赞助者 🎉)
+- 初屿贤 (第一个 codex 用户赞助者 🙅🏻‍♂️)
+- Protein （第一个一路发发赞助者 😏）
 - 16°C 咖啡 (我的好基友 🤪, 提供了 ChatGPT Pro $200 套餐)
 
 ## 📄 许可证
@@ -847,8 +861,16 @@ ZCF 现已支持在 Android Termux 环境中运行：
 
 ---
 
-如果这个项目对你有帮助，请给我一个 ⭐️ Star！
+## 🚀 贡献者
 
+<a href="https://github.com/UfoMiao/zcf/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=UfoMiao/zcf" />
+</a>
+<br /><br />
+
+## ⭐️ Star 历史
+
+如果这个项目对你有帮助，请给我一个 ⭐️ Star！
 [![Star History Chart](https://api.star-history.com/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.com/#UfoMiao/zcf&Date)
 
 <!-- Badges -->

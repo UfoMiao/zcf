@@ -1,7 +1,3 @@
-# ZCF - Zero-Config Code Flow
-
-![ZCF Banner](./src/assets/banner.png)
-
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
@@ -10,12 +6,26 @@
 [![JSDocs][jsdocs-src]][jsdocs-href]
 [![Ask DeepWiki][deepwiki-src]][deepwiki-href]
 
-[English](README.md) | [中文](README_zh-CN.md) | **日本語** | [更新履歴](CHANGELOG.md)
+<div align="center">
+  <img src="./src/assets/banner.webp" alt="Banner"/>
+
+  <h1>
+    ZCF - Zero-Config Code Flow
+  </h1>
+
+  <p align="center">
+   <a href="README.md">English</a> | <a href="README_zh-CN.md">中文</a> | <b>日本語</b> | <a href="CHANGELOG.md">更新履歴</a>
 
 **✨ クイックリンク**: [Codexサポート](#-codexサポートv300新機能) | [BMadワークフロー](#-bmadワークフローv27新機能) | [Specワークフロー](#-specワークフローv2124新機能) | [Open Web Search](#-open-web-searchv2129新機能) | [CCRルーター](#-ccr-claude-code-router-サポートv28強化版) | [CCometixLine](#-ccometixlineサポートステータスバーツールv299新機能) | [出力スタイル](#-ai出力スタイルv212新機能) | [多設定管理](#-多設定管理v320-新機能)
 
 > ゼロ設定、ワンクリックで Claude Code & Codex 環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
+  </p>
+</div>
 
+## ♥️ スポンサー AI API
+
+[![スポンサー AI API](./src/assets/302.ai-jp.jpg)](https://share.302.ai/gAT9VG)
+[302.AI](https://share.302.ai/gAT9VG) は、従量課金制のエンタープライズ向けAIリソースプラットフォームで、市場で最新かつ最も包括的なAIモデルとAPIに加え、すぐに使える多様なオンラインAIアプリを提供します。
 ## 🚀 クイックスタート
 
 ### 🎯 推奨：インタラクティブメニューを使用（v2.0新機能）
@@ -700,20 +710,32 @@ ZCFはAndroid Termux環境での実行をサポート：
 
 すべてのスポンサーの寛大なサポートに感謝します！
 
+- [302.AI](https://share.302.ai/gAT9VG)（最初の企業スポンサー 🤠）
 - Tc（最初のスポンサー）
 - Argolinhas（最初のko-fiスポンサー ٩(•̤̀ᵕ•̤́๑)）
-- r\*r（最初の匿名スポンサー🤣）
-- \*\*康（最初のKFCスポンサー🍗）
-- \*东（最初のコーヒースポンサー☕️）
-- 炼\*3（最初のTermuxユーザースポンサー📱）
-- [chamo101](https://github.com/chamo101)（最初のGitHub issue ユーザースポンサー🎉）
-- 16°C咖啡（私の親友 🤪、ChatGPT Pro $200プランを提供）
+- r\*r（最初の匿名スポンサー 🤣）
+- \*\*康（最初のKFCスポンサー 🍗）
+- \*东（最初のコーヒースポンサー ☕️）
+- 炼\*3（最初のTermuxユーザースポンサー 📱）
+- [chamo101](https://github.com/chamo101)（最初のGitHub issue ユーザースポンサー 🎉）
+- 初屿贤（最初のCodexユーザースポンサー 🙅🏻‍♂️）
+- Protein（最初の1688スポンサー 😏）
+- 16°C coffee（私の親友 🤪、ChatGPT Pro $200パッケージを提供）
 
 ## 📄 ライセンス
 
 [MITライセンス](LICENSE)
 
 ---
+
+## 🚀 コントリビューター
+
+<a href="https://github.com/UfoMiao/zcf/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=UfoMiao/zcf" />
+</a>
+<br /><br />
+
+## ⭐️ スター履歴
 
 このプロジェクトが役立った場合は、⭐️ Starをお願いします！
 
