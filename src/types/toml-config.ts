@@ -32,6 +32,7 @@ export interface GeneralConfig {
   preferredLang: SupportedLang
   templateLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
+  codeCommentLang?: SupportedLang | 'auto'
   currentTool: CodeToolType
 }
 

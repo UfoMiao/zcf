@@ -68,6 +68,7 @@ This command works **without any package manager/build tools**, using only **Git
    - Generate message header: `[<emoji>] <type>(<scope>)?: <subject>` (first line ≤ 72 chars, imperative mood, emoji included only with `--emoji` flag).
    - Generate message body: bullet points (motivation, implementation details, impact scope, BREAKING CHANGE if any).
    - Select message language to match the predominant language in Git history. Inspect recent commit subjects (e.g., `git log -n 50 --pretty=%s`) to decide Chinese vs English; if unclear, fall back to the repository's primary locale or English.
+  - Write all code comments in the same language as the existing codebase (auto-detected from project files) to maintain consistency.
    - Write draft to `.git/COMMIT_EDITMSG` for use with `git commit`.
 
 5. **Execute Commit**

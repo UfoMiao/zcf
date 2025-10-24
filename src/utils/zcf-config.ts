@@ -16,6 +16,7 @@ export interface ZcfConfig {
   preferredLang: SupportedLang
   templateLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage | string
+  codeCommentLang?: SupportedLang | 'auto'
   outputStyles?: string[]
   defaultOutputStyle?: string
   codeToolType: CodeToolType
