@@ -844,7 +844,16 @@ A huge thank you to all our sponsors for their generous support!
 - [chamo101](https://github.com/chamo101) (first GitHub issue sponsor 🎉)
 - 初屿贤 (first Codex user sponsor 🙅🏻‍♂️)
 - Protein (first 1688 sponsor 😏)
+- [BeatSeat](https://github.com/BeatSeat) (community expert 😎, provided $1000 Claude credits)
+- [wenwen](https://github.com/wenwen12345) (community expert 🤓, provided daily $100 Claude&GPT credits)
 - 16°C coffee (My best friend 🤪, offered ChatGPT Pro $200 package)
+
+### Promotion Thanks
+
+Thanks to the following authors for promoting this project:
+
+- 逛逛 GitHub, article: https://mp.weixin.qq.com/s/phqwSRb16MKCHHVozTFeiQ
+- Geek, tweet: https://x.com/geekbb/status/1955174718618866076
 
 ## 📄 License
 

@@ -720,7 +720,16 @@ ZCFはAndroid Termux環境での実行をサポート：
 - [chamo101](https://github.com/chamo101)（最初のGitHub issue ユーザースポンサー 🎉）
 - 初屿贤（最初のCodexユーザースポンサー 🙅🏻‍♂️）
 - Protein（最初の1688スポンサー 😏）
+- [BeatSeat](https://github.com/BeatSeat)（コミュニティエキスパート 😎、$1000 Claude クレジットを提供）
+- [wenwen](https://github.com/wenwen12345)（コミュニティエキスパート 🤓、毎日 $100 Claude&GPT クレジットを提供）
 - 16°C coffee（私の親友 🤪、ChatGPT Pro $200パッケージを提供）
+
+### プロモーション感謝
+
+このプロジェクトを宣伝してくださった以下の著者に感謝します：
+
+- 逛逛 GitHub, ツイート: https://mp.weixin.qq.com/s/phqwSRb16MKCHHVozTFeiQ
+- Geek, ツイート: https://x.com/geekbb/status/1955174718618866076
 
 ## 📄 ライセンス
 

@@ -853,7 +853,16 @@ ZCF 现已支持在 Android Termux 环境中运行：
 - [chamo101](https://github.com/chamo101) (第一个 GitHub issue 赞助者 🎉)
 - 初屿贤 (第一个 codex 用户赞助者 🙅🏻‍♂️)
 - Protein （第一个一路发发赞助者 😏）
+- [BeatSeat](https://github.com/BeatSeat) (社区大佬 😎，提供了 $1000 Claude 额度)
+- [wenwen](https://github.com/wenwen12345) (社区大佬 🤓，提供了每日 $100 Claude&GPT 额度)
 - 16°C 咖啡 (我的好基友 🤪, 提供了 ChatGPT Pro $200 套餐)
+
+### 推广感谢
+
+感谢以下推广本项目的作者：
+
+- 逛逛 GitHub，推文：https://mp.weixin.qq.com/s/phqwSRb16MKCHHVozTFeiQ
+- Geek，推文：https://x.com/geekbb/status/1955174718618866076
 
 ## 📄 许可证
 
