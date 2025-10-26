@@ -1,5 +1,39 @@
 # Changelog
 
+## 3.2.3
+
+### Patch Changes
+
+- ## New Features
+  - Add Halley-chan animated avatar with hover effects to README files
+  - Add new banner and logo assets for enhanced visual identity
+  - Add sponsor information and promotion acknowledgments
+
+  ## Optimization
+  - Enhance code type parameter handling with improved error messages
+  - Change API key input from password to visible text for better user experience
+  - Improve code type resolver with better validation and error handling
+
+  ## Documentation
+  - Update README files across all languages (EN, ZH-CN, JA-JP) with new visual assets
+  - Add comprehensive test coverage for CLI setup and menu commands
+  - Update sponsor and promotion sections
+
+  ## 新功能
+  - 为 README 文件添加 Halley-chan 动画头像和悬停效果
+  - 添加新的 banner 和 logo 资源,增强视觉识别度
+  - 添加赞助商信息和推广致谢
+
+  ## 优化
+  - 增强代码类型参数处理,改进错误消息提示
+  - 将 API key 输入从密码模式改为可见文本,提升用户体验
+  - 改进代码类型解析器,增强验证和错误处理能力
+
+  ## 文档
+  - 更新所有语言版本的 README 文件(英文、中文、日文),添加新的视觉资源
+  - 为 CLI 设置和菜单命令添加全面的测试覆盖
+  - 更新赞助商和推广部分内容
+
 ## 3.2.2
 
 ### Patch Changes
