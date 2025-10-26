@@ -148,10 +148,10 @@ async function handleAddProfile(): Promise<void> {
       },
     },
     {
-      type: 'password',
+      type: 'input',
       name: 'apiKey',
-      message: i18n.t('multi-config:apiKeyPrompt') + i18n.t('common:inputHidden'),
-      when: answers => answers.authType !== 'ccr_proxy',
+      message: i18n.t('multi-config:apiKeyPrompt'),
+      when: (answers: any) => answers.authType !== 'ccr_proxy',
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed) {
@@ -336,9 +336,9 @@ async function handleEditProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
       },
     },
     {
-      type: 'password',
+      type: 'input',
       name: 'apiKey',
-      message: i18n.t('multi-config:apiKeyPrompt') + i18n.t('common:inputHidden'),
+      message: i18n.t('multi-config:apiKeyPrompt'),
       default: selectedProfile.apiKey,
       when: () => selectedProfile.authType !== 'ccr_proxy',
       validate: (input: string) => {

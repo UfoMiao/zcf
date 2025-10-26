@@ -851,10 +851,10 @@ export async function init(options: InitOptions = {}): Promise<void> {
               }
               else {
                 const response = await inquirer.prompt<{ apiKey: string }>({
-                  type: 'password',
+                  type: 'input',
                   name: 'apiKey',
-                  message: service.apiKeyPrompt! + i18n.t('common:inputHidden'),
-                  validate: value => !!value || i18n.t('api:keyRequired'),
+                  message: service.apiKeyPrompt!,
+                  validate: (value: string) => !!value || i18n.t('api:keyRequired'),
                 })
 
                 if (!response.apiKey) {

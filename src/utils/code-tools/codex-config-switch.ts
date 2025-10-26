@@ -99,10 +99,10 @@ async function handleAddProvider(): Promise<void> {
       default: 'responses',
     },
     {
-      type: 'password',
+      type: 'input',
       name: 'apiKey',
-      message: i18n.t('codex:providerApiKeyPrompt') + i18n.t('common:inputHidden'),
-      validate: input => !!input.trim() || i18n.t('codex:providerApiKeyRequired'),
+      message: i18n.t('codex:providerApiKeyPrompt'),
+      validate: (input: string) => !!input.trim() || i18n.t('codex:providerApiKeyRequired'),
     },
   ])
 
@@ -194,10 +194,10 @@ async function handleEditProvider(providers: any[]): Promise<void> {
       default: provider.wireApi,
     },
     {
-      type: 'password',
+      type: 'input',
       name: 'apiKey',
-      message: i18n.t('codex:providerApiKeyPrompt') + i18n.t('common:inputHidden'),
-      validate: input => !!input.trim() || i18n.t('codex:providerApiKeyRequired'),
+      message: i18n.t('codex:providerApiKeyPrompt'),
+      validate: (input: string) => !!input.trim() || i18n.t('codex:providerApiKeyRequired'),
     },
   ])
 

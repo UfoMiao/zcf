@@ -98,10 +98,10 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
     if (configInfo.requiresApiKey && configInfo.apiKeyEnvVar) {
       const promptMessage = serviceMeta?.apiKeyPrompt || i18n.t('mcp:apiKeyPrompt')
       const { apiKey } = await inquirer.prompt<{ apiKey: string }>([{
-        type: 'password',
+        type: 'input',
         name: 'apiKey',
-        message: promptMessage + i18n.t('common:inputHidden'),
-        validate: input => !!input || i18n.t('api:keyRequired'),
+        message: promptMessage,
+        validate: (input: string) => !!input || i18n.t('api:keyRequired'),
       }])
 
       if (!apiKey)

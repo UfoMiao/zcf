@@ -11,7 +11,6 @@
   "goodbye": "👋 Thanks for using ZCF! Goodbye!",
   "returnToMenu": "Return to main menu?",
   "back": "Back",
-  "inputHidden": " (input will be hidden)",
   "operationFailed": "Operation failed",
   "backupCreated": "📁 Configuration backup created: {{path}}",
   "current": "current"

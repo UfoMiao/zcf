@@ -1230,10 +1230,10 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
         default: (answers: any) => existingMap.get(sanitizeProviderName(answers.providerName))?.wireApi || 'responses',
       },
       {
-        type: 'password',
+        type: 'input',
         name: 'apiKey',
-        message: i18n.t('codex:providerApiKeyPrompt') + i18n.t('common:inputHidden'),
-        validate: input => !!input || i18n.t('codex:providerApiKeyRequired'),
+        message: i18n.t('codex:providerApiKeyPrompt'),
+        validate: (input: string) => !!input || i18n.t('codex:providerApiKeyRequired'),
       },
     ])
 
