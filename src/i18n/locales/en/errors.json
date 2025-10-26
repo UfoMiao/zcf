@@ -19,7 +19,7 @@
   "invalidAuthTokenConfig": "Invalid ANTHROPIC_AUTH_TOKEN: expected string",
   "invalidPermissionsConfig": "Invalid permissions configuration: expected object",
   "invalidPermissionsAllow": "Invalid permissions.allow: expected array",
-  "invalidCodeType": "Invalid code type: \"{{value}}\". Valid options are: {{validOptions}}\nDefaulting to \"{{defaultValue}}\".",
+  "invalidCodeType": "Invalid code type: \"{value}\". Valid options are: {validOptions}. Using default: {defaultValue}.",
   "generalError": "Error",
   "stackTrace": "Stack"
 }

@@ -222,6 +222,13 @@ ZCF allows seamless switching between Claude Code and Codex while preserving you
 
 ZCF now supports customizable AI output styles to personalize your Claude Code experience:
 
+<p align="center">
+<a href="https://github.com/Haleclipse">
+<img src="./src/assets/Haleclipse.gif" alt="Halley-chan" width="200"/>
+</a>
+<div align="center">Tsundere <a href="https://github.com/Haleclipse">Halley-chan</a> Ojou-sama (￣▽￣)ゞ</div>
+</p>
+
 **Available Output Styles:**
 
 - `engineer-professional`: Professional software engineer following SOLID, KISS, DRY, YAGNI principles

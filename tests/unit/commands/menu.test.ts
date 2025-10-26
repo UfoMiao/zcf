@@ -54,6 +54,11 @@ vi.mock('../../../src/utils/code-tools/codex', () => ({
   runCodexUninstall: vi.fn(),
   checkCodexCliUpdate: vi.fn().mockResolvedValue(false),
   installCodexCli: vi.fn(),
+  runCodexWorkflowImportWithLanguageSelection: vi.fn(),
+}))
+
+vi.mock('../../../src/utils/code-type-resolver', () => ({
+  resolveCodeType: vi.fn(),
 }))
 
 vi.mock('../../../src/commands/check-updates', () => ({
@@ -513,6 +518,118 @@ describe('menu command', () => {
 
       // Test should complete without throwing
       await expect(showMainMenu()).resolves.not.toThrow()
+    })
+  })
+
+  describe('showMainMenu with codeType parameter', () => {
+    it('should switch code tool type when valid codeType parameter is provided', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { resolveCodeType } = await import('../../../src/utils/code-type-resolver')
+      const { updateZcfConfig, readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      // Mock current code tool type
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+        preferredLang: 'zh-CN',
+      } as any)
+
+      // Mock resolveCodeType to return codex
+      vi.mocked(resolveCodeType).mockResolvedValue('codex')
+
+      // Mock inquirer to exit immediately
+      vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+      await showMainMenu({ codeType: 'cx' })
+
+      // Verify resolveCodeType was called with the parameter
+      expect(resolveCodeType).toHaveBeenCalledWith('cx')
+
+      // Verify updateZcfConfig was called to switch tool type
+      expect(updateZcfConfig).toHaveBeenCalledWith({ codeToolType: 'codex' })
+
+      // Verify success message was logged
+      expect(console.log).toHaveBeenCalled()
+    })
+
+    it('should not update config when codeType matches current tool', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { resolveCodeType } = await import('../../../src/utils/code-type-resolver')
+      const { updateZcfConfig, readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      // Mock current code tool type as codex
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'codex',
+        preferredLang: 'zh-CN',
+      } as any)
+
+      // Mock resolveCodeType to return codex (same as current)
+      vi.mocked(resolveCodeType).mockResolvedValue('codex')
+
+      // Mock inquirer to exit immediately
+      vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+      await showMainMenu({ codeType: 'cx' })
+
+      // Verify resolveCodeType was called
+      expect(resolveCodeType).toHaveBeenCalledWith('cx')
+
+      // Verify updateZcfConfig was NOT called since type matches
+      expect(updateZcfConfig).not.toHaveBeenCalled()
+    })
+
+    it('should handle invalid codeType parameter gracefully', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { resolveCodeType } = await import('../../../src/utils/code-type-resolver')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      // Mock current code tool type
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+        preferredLang: 'zh-CN',
+      } as any)
+
+      // Mock resolveCodeType to throw error for invalid type
+      vi.mocked(resolveCodeType).mockRejectedValue(new Error('Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.'))
+
+      // Mock inquirer to exit immediately
+      vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+      // Should not throw, error should be caught and logged
+      await expect(showMainMenu({ codeType: 'invalid' })).resolves.not.toThrow()
+
+      // Verify error was logged
+      expect(console.error).toHaveBeenCalled()
+    })
+
+    it('should continue to menu after handling codeType parameter', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { resolveCodeType } = await import('../../../src/utils/code-type-resolver')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+      // Mock current code tool type
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        lastUpdated: '2024-01-01',
+        codeToolType: 'claude-code',
+        preferredLang: 'zh-CN',
+      } as any)
+
+      // Mock resolveCodeType
+      vi.mocked(resolveCodeType).mockResolvedValue('codex')
+
+      // Mock inquirer to exit immediately
+      vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+      await showMainMenu({ codeType: 'cx' })
+
+      // Verify menu was displayed (inquirer.prompt was called)
+      expect(inquirer.prompt).toHaveBeenCalled()
     })
   })
 })

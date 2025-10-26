@@ -327,5 +327,46 @@ describe('cli-setup', () => {
         expect(optionsSection.body).toContain('--code-type, -T')
       })
     })
+
+    describe('default command with codeType option', () => {
+      it('should pass codeType option to showMainMenu', async () => {
+        const cli = cac('test')
+        await setupCommands(cli)
+
+        const { showMainMenu } = await import('../../src/commands/menu')
+
+        // Parse command with codeType option
+        const parsed = cli.parse(['node', 'test', '-T', 'codex'], { run: false })
+        expect(parsed.options.codeType).toBe('codex')
+
+        // Execute the default command action
+        const defaultCommand = cli.commands.find(cmd => cmd.name === '')
+        expect(defaultCommand).toBeDefined()
+
+        // Manually trigger the action with options
+        if (defaultCommand?.commandAction) {
+          await defaultCommand.commandAction({ codeType: 'codex' })
+          expect(showMainMenu).toHaveBeenCalledWith({ codeType: 'codex' })
+        }
+      })
+
+      it('should handle codeType abbreviation in default command', async () => {
+        const cli = cac('test')
+        await setupCommands(cli)
+
+        const { showMainMenu } = await import('../../src/commands/menu')
+
+        // Parse command with codeType abbreviation
+        const parsed = cli.parse(['node', 'test', '-T', 'cx'], { run: false })
+        expect(parsed.options.codeType).toBe('cx')
+
+        // Execute the default command action
+        const defaultCommand = cli.commands.find(cmd => cmd.name === '')
+        if (defaultCommand?.commandAction) {
+          await defaultCommand.commandAction({ codeType: 'cx' })
+          expect(showMainMenu).toHaveBeenCalledWith({ codeType: 'cx' })
+        }
+      })
+    })
   })
 })

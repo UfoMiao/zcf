@@ -221,12 +221,20 @@ ZCF 允许在 Claude Code 和 Codex 之间无缝切换，同时保留您的偏�
 
 ZCF 现在支持可定制的 AI 输出风格，个性化你的 Claude Code 体验：
 
+<p align="center">
+<a href="https://github.com/Haleclipse">
+<img src="./src/assets/Haleclipse.gif" alt="哈雷酱" width="200"/>
+</a>
+</p>
+<p align="center">傲娇的<a href="https://github.com/Haleclipse">哈雷酱</a>大小姐(￣▽￣)ゞ</p>
+
+
 **可用的输出风格：**
 
 - `engineer-professional`：专业软件工程师，遵循 SOLID、KISS、DRY、YAGNI 原则
 - `nekomata-engineer`：专业猫娘工程师 幽浮喵，结合严谨工程技术与可爱猫娘特质
 - `laowang-engineer`：老王暴脾气技术流，绝不容忍代码错误和不规范代码
-- `ojousama-engineer`：傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质
+- `ojousama-engineer`：傲娇蓝发双马尾大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质
 - 内置样式：`default`、`explanatory`、`learning`（始终可用）
 
 **功能特性：**

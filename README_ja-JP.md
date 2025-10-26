@@ -221,6 +221,13 @@ ZCFはClaude CodeとCodex間でのシームレスな切り替えを可能にし�
 
 ZCFはカスタマイズ可能なAI出力スタイルをサポートし、Claude Code体験をパーソナライズ：
 
+<p align="center">
+<a href="https://github.com/Haleclipse">
+<img src="./src/assets/Haleclipse.gif" alt="ハレクリプス" width="200"/>
+</a>
+<div align="center">ツンデレな<a href="https://github.com/Haleclipse">ハレクリプス</a>お嬢様(￣▽￣)ゞ</div>
+</p>
+
 **利用可能な出力スタイル：**
 
 - `engineer-professional`：プロフェッショナルソフトウェアエンジニア、SOLID、KISS、DRY、YAGNI原則に従う
