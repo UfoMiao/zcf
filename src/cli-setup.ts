@@ -226,8 +226,8 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
     .option('--force, -f', 'Force overwrite existing configuration')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
-    .action(await withLanguageResolution(async () => {
-      await showMainMenu()
+    .action(await withLanguageResolution(async (options) => {
+      await showMainMenu({ codeType: options.codeType })
     }))
 
   // Init command

@@ -36,13 +36,21 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
     const validFullTypes = Object.values(CODE_TYPE_ABBREVIATIONS)
     const validOptions = [...validAbbreviations, ...validFullTypes].join(', ')
 
+    // Get the actual default value that will be used
+    let defaultValue = DEFAULT_CODE_TOOL_TYPE
+    try {
+      const config = await readZcfConfigAsync()
+      if (config?.codeToolType && isValidCodeType(config.codeToolType)) {
+        defaultValue = config.codeToolType
+      }
+    }
+    catch {
+      // If config reading fails, use DEFAULT_CODE_TOOL_TYPE
+    }
+
     // Use i18n for error message
     throw new Error(
-      i18n.t(
-        'errors:invalidCodeType',
-        `Invalid code type: "${codeTypeParam}". Valid options are: ${validOptions}.`,
-        { value: codeTypeParam, validOptions },
-      ),
+      i18n.t('errors:invalidCodeType', { value: codeTypeParam, validOptions, defaultValue }),
     )
   }
 

@@ -5,6 +5,7 @@ import { CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../co
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { configureCodexApi, configureCodexMcp, runCodexFullInit, runCodexUninstall, runCodexUpdate, runCodexWorkflowImportWithLanguageSelection } from '../utils/code-tools/codex'
+import { resolveCodeType } from '../utils/code-type-resolver'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import {
   changeScriptLanguageFeature,
@@ -359,8 +360,25 @@ async function showCodexMenu(): Promise<MenuResult> {
   return undefined
 }
 
-export async function showMainMenu(): Promise<void> {
+export async function showMainMenu(options: { codeType?: string } = {}): Promise<void> {
   try {
+    // Handle code type parameter if provided
+    if (options.codeType) {
+      try {
+        const resolvedType = await resolveCodeType(options.codeType)
+        const currentType = getCurrentCodeTool()
+
+        if (resolvedType !== currentType) {
+          updateZcfConfig({ codeToolType: resolvedType })
+          console.log(ansis.green(`✔ ${i18n.t('menu:codeToolSwitched', { tool: getCodeToolLabel(resolvedType) })}`))
+        }
+      }
+      catch (err) {
+        const errorMessage = err instanceof Error ? err.message : String(err)
+        console.error(ansis.yellow(errorMessage))
+      }
+    }
+
     // Menu loop
     let exitMenu = false
     while (!exitMenu) {
