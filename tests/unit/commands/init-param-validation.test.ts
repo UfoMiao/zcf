@@ -97,28 +97,28 @@ describe('validateSkipPromptOptions', () => {
     expect(options.outputStyles).toBe(false)
   })
 
-  it('should throw when configAction is invalid', () => {
+  it('should throw when configAction is invalid', async () => {
     options.configAction = 'invalid' as any
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:invalidConfigAction')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:invalidConfigAction')
   })
 
-  it('should throw when apiType is invalid', () => {
+  it('should throw when apiType is invalid', async () => {
     options.apiType = 'wrong' as any
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:invalidApiType')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:invalidApiType')
   })
 
-  it('should require apiKey when apiType is api_key', () => {
+  it('should require apiKey when apiType is api_key', async () => {
     options.apiType = 'api_key'
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:apiKeyRequiredForApiKey')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:apiKeyRequiredForApiKey')
   })
 
-  it('should require apiKey when apiType is auth_token', () => {
+  it('should require apiKey when apiType is auth_token', async () => {
     options.apiType = 'auth_token'
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:apiKeyRequiredForAuthToken')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:apiKeyRequiredForAuthToken')
   })
 
   it('should convert mcpServices string lists and defaults', () => {
@@ -145,22 +145,22 @@ describe('validateSkipPromptOptions', () => {
     expect(options.mcpServices).toEqual(['service-a', 'service-c'])
   })
 
-  it('should throw when mcpServices contains invalid id', () => {
+  it('should throw when mcpServices contains invalid id', async () => {
     options.mcpServices = 'service-a,invalid'
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:invalidMcpService')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:invalidMcpService')
   })
 
-  it('should validate outputStyles array values', () => {
+  it('should validate outputStyles array values', async () => {
     options.outputStyles = ['engineer-professional', 'unknown']
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:invalidOutputStyle')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:invalidOutputStyle')
   })
 
-  it('should validate default output style', () => {
+  it('should validate default output style', async () => {
     options.defaultOutputStyle = 'unknown'
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('errors:invalidDefaultOutputStyle')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:invalidDefaultOutputStyle')
   })
 
   it('should convert workflows string to array and validate entries', () => {
@@ -187,17 +187,17 @@ describe('validateSkipPromptOptions', () => {
     expect(options.workflows).toEqual(['workflow-a', 'workflow-b'])
   })
 
-  it('should throw when workflows contains invalid id', () => {
+  it('should throw when workflows contains invalid id', async () => {
     options.workflows = 'workflow-a,invalid'
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('Invalid workflow selected')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('Invalid workflow selected')
   })
 
-  it('should throw when both apiConfigs and apiConfigsFile provided', () => {
+  it('should throw when both apiConfigs and apiConfigsFile provided', async () => {
     options.apiConfigs = '[]'
     options.apiConfigsFile = 'config.json'
 
-    expect(() => validateSkipPromptOptions(options)).toThrow('Cannot specify both --api-configs and --api-configs-file at the same time')
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('Cannot specify both --api-configs and --api-configs-file at the same time')
   })
 
   it('should set defaults for mcpServices, workflows and installCometixLine', () => {
@@ -246,20 +246,20 @@ describe('validateSkipPromptOptions', () => {
       expect(options.apiFastModel).toBe('claude-haiku-4-5')
     })
 
-    it('should throw when apiModel is not a string', () => {
+    it('should throw when apiModel is not a string', async () => {
       options.apiType = 'api_key'
       options.apiKey = 'sk-test'
       options.apiModel = 123 as any
 
-      expect(() => validateSkipPromptOptions(options)).toThrow('Invalid API model parameter')
+      await expect(validateSkipPromptOptions(options)).rejects.toThrow('Invalid API model parameter')
     })
 
-    it('should throw when apiFastModel is not a string', () => {
+    it('should throw when apiFastModel is not a string', async () => {
       options.apiType = 'api_key'
       options.apiKey = 'sk-test'
       options.apiFastModel = true as any
 
-      expect(() => validateSkipPromptOptions(options)).toThrow('Invalid fast model parameter')
+      await expect(validateSkipPromptOptions(options)).rejects.toThrow('Invalid fast model parameter')
     })
 
     it('should allow model parameters without apiType in non-skip-prompt mode', () => {

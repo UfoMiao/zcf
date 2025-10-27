@@ -767,6 +767,9 @@ describe('config utilities', () => {
     })
 
     it('should handle errors gracefully', () => {
+      // Mock console.error to suppress error output
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       // Mock readJsonConfig to throw an error
       vi.mocked(jsonConfig.readJsonConfig).mockImplementation(() => {
         throw new Error('Read failed')
@@ -775,6 +778,8 @@ describe('config utilities', () => {
       const result = switchToOfficialLogin()
 
       expect(result).toBe(false)
+
+      consoleErrorSpy.mockRestore()
     })
 
     it('should log success message in correct language', () => {

@@ -245,6 +245,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--api-url, -u <url>', 'Custom API URL')
     .option('--api-model, -M <model>', 'Primary API model (e.g., claude-sonnet-4-5)')
     .option('--api-fast-model, -F <model>', 'Fast API model (e.g., claude-haiku-4-5)')
+    .option('--provider, -p <provider>', 'API provider preset (302ai, glm, minimax, kimi, custom)')
     .option('--mcp-services, -m <services>', `Comma-separated MCP services to install (context7,mcp-deepwiki,Playwright,exa), "skip" to skip all, "all" for all non-key services, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--workflows, -w <workflows>', `Comma-separated workflows to install (sixStepsWorkflow,featPlanUx,gitWorkflow,bmadWorkflow), "skip" to skip all, "all" for all workflows, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--output-styles, -o <styles>', `Comma-separated output styles (engineer-professional,nekomata-engineer,laowang-engineer,default,explanatory,learning), "skip" to skip all, "all" for all custom styles, ${i18n.t('cli:help.defaults.prefix')} all`)

@@ -65,6 +65,7 @@ export interface InitOptions {
   apiUrl?: string
   apiModel?: string // Primary API model (e.g., claude-sonnet-4-5)
   apiFastModel?: string // Fast API model (e.g., claude-haiku-4-5)
+  provider?: string // API provider preset (302ai, glm, minimax, kimi, custom)
   mcpServices?: string[] | string | boolean
   workflows?: string[] | string | boolean
   outputStyles?: string[] | string | boolean
@@ -76,7 +77,7 @@ export interface InitOptions {
   apiConfigsFile?: string // Path to JSON file with API configurations
 }
 
-export function validateSkipPromptOptions(options: InitOptions): void {
+export async function validateSkipPromptOptions(options: InitOptions): Promise<void> {
   // Apply --all-lang logic first
   if (options.allLang) {
     if (options.allLang === 'zh-CN' || options.allLang === 'en') {
@@ -88,6 +89,27 @@ export function validateSkipPromptOptions(options: InitOptions): void {
       // Use en for config-lang, allLang for ai-output-lang
       options.configLang = 'en'
       options.aiOutputLang = options.allLang
+    }
+  }
+
+  // Validate and process provider parameter
+  if (options.provider) {
+    const { getValidProviderIds, getProviderPreset } = await import('../config/api-providers')
+    const validProviders = [...getValidProviderIds(), 'custom']
+
+    if (!validProviders.includes(options.provider)) {
+      throw new Error(
+        i18n.t('errors:invalidProvider', {
+          provider: options.provider,
+          validProviders: validProviders.join(', '),
+        }),
+      )
+    }
+
+    // Auto-set apiType based on provider preset's authType
+    if (!options.apiType) {
+      const preset = options.provider !== 'custom' ? getProviderPreset(options.provider) : null
+      options.apiType = preset?.claudeCode?.authType || 'api_key'
     }
   }
 
@@ -242,7 +264,7 @@ export function validateSkipPromptOptions(options: InitOptions): void {
 export async function init(options: InitOptions = {}): Promise<void> {
   // Validate options if in skip-prompt mode (outside try-catch to allow errors to propagate in tests)
   if (options.skipPrompt) {
-    validateSkipPromptOptions(options)
+    await validateSkipPromptOptions(options)
   }
 
   try {
@@ -570,6 +592,23 @@ export async function init(options: InitOptions = {}): Promise<void> {
         if (options.apiConfigs || options.apiConfigsFile) {
           await handleMultiConfigurations(options, codeToolType)
           apiConfig = null // Multi-config handles its own API configuration
+        }
+        else if (options.provider && options.apiKey) {
+          // Handle provider-based configuration
+          const { getProviderPreset } = await import('../config/api-providers')
+          const preset = options.provider !== 'custom' ? getProviderPreset(options.provider) : null
+
+          apiConfig = {
+            authType: preset?.claudeCode?.authType || 'api_key',
+            key: options.apiKey,
+            url: preset?.claudeCode?.baseUrl || options.apiUrl || API_DEFAULT_URL,
+          }
+
+          // Apply provider preset models if available
+          if (preset?.claudeCode?.defaultModels && preset.claudeCode.defaultModels.length >= 2) {
+            options.apiModel = options.apiModel || preset.claudeCode.defaultModels[0]
+            options.apiFastModel = options.apiFastModel || preset.claudeCode.defaultModels[1]
+          }
         }
         else if (options.apiType === 'auth_token' && options.apiKey) {
           apiConfig = {
@@ -979,7 +1018,7 @@ export async function handleMultiConfigurations(options: InitOptions, codeToolTy
     }
 
     // Validate configurations
-    validateApiConfigs(configs)
+    await validateApiConfigs(configs)
 
     // Process configurations based on code tool type
     if (codeToolType === 'claude-code') {
@@ -1001,20 +1040,46 @@ export async function handleMultiConfigurations(options: InitOptions, codeToolTy
  * Validate API configurations
  * @param configs - Array of API configurations to validate
  */
-export function validateApiConfigs(configs: ApiConfigDefinition[]): void {
+export async function validateApiConfigs(configs: ApiConfigDefinition[]): Promise<void> {
   if (!Array.isArray(configs)) {
     throw new TypeError(i18n.t('multi-config:mustBeArray'))
   }
 
+  const { getValidProviderIds } = await import('../config/api-providers')
+  const validProviders = [...getValidProviderIds(), 'custom']
   const names = new Set<string>()
 
   for (const config of configs) {
-    // Validate required fields
+    // Auto-infer type from provider
+    if (config.provider && !config.type) {
+      config.type = 'api_key'
+    }
+
+    // Auto-generate name from provider
+    if (config.provider && !config.name) {
+      config.name = config.provider.toUpperCase()
+    }
+
+    // Validate provider or type must be present
+    if (!config.provider && !config.type) {
+      throw new Error(i18n.t('multi-config:providerOrTypeRequired'))
+    }
+
+    // Validate provider if specified
+    if (config.provider && !validProviders.includes(config.provider)) {
+      throw new Error(i18n.t('errors:invalidProvider', {
+        provider: config.provider,
+        validProviders: validProviders.join(', '),
+      }))
+    }
+
+    // Validate name is present (after auto-generation)
     if (!config.name || typeof config.name !== 'string' || config.name.trim() === '') {
       throw new Error(i18n.t('multi-config:mustHaveValidName'))
     }
 
-    if (!['api_key', 'auth_token', 'ccr_proxy'].includes(config.type)) {
+    // Validate type is valid
+    if (!['api_key', 'auth_token', 'ccr_proxy'].includes(config.type!)) {
       throw new Error(i18n.t('multi-config:invalidAuthType', { type: config.type }))
     }
 
@@ -1052,7 +1117,7 @@ async function handleClaudeCodeConfigs(configs: ApiConfigDefinition[]): Promise<
     }
 
     const storedProfile = result.addedProfile
-      || ClaudeCodeConfigManager.getProfileByName(config.name)
+      || ClaudeCodeConfigManager.getProfileByName(config.name!)
       || profile
     addedProfiles.push(storedProfile)
 
@@ -1070,7 +1135,7 @@ async function handleClaudeCodeConfigs(configs: ApiConfigDefinition[]): Promise<
   const defaultConfig = configs.find(c => c.default)
   if (defaultConfig) {
     const profile = addedProfiles.find(p => p.name === defaultConfig.name)
-      || ClaudeCodeConfigManager.getProfileByName(defaultConfig.name)
+      || ClaudeCodeConfigManager.getProfileByName(defaultConfig.name!)
     if (profile && profile.id) {
       await ClaudeCodeConfigManager.switchProfile(profile.id)
       await ClaudeCodeConfigManager.applyProfileSettings(profile)
@@ -1092,7 +1157,7 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
 
   for (const config of configs) {
     try {
-      const provider = convertToCodexProvider(config)
+      const provider = await convertToCodexProvider(config)
       const result = await addProviderToExisting(provider, config.key || '')
 
       if (!result.success) {
@@ -1115,7 +1180,7 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
   if (defaultConfig) {
     // Import and call Codex provider switching function
     const { switchCodexProvider } = await import('../utils/code-tools/codex')
-    await switchCodexProvider(defaultConfig.name)
+    await switchCodexProvider(defaultConfig.name!)
     console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProviderSet', { name: defaultConfig.name })}`))
   }
 }
@@ -1127,14 +1192,34 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
 async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<ClaudeCodeProfile> {
   const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
 
+  // Apply provider preset if specified
+  let baseUrl = config.url
+  let primaryModel = config.primaryModel
+  let fastModel = config.fastModel
+  let authType = config.type || 'api_key'
+
+  if (config.provider && config.provider !== 'custom') {
+    const { getProviderPreset } = await import('../config/api-providers')
+    const preset = getProviderPreset(config.provider)
+
+    if (preset?.claudeCode) {
+      baseUrl = baseUrl || preset.claudeCode.baseUrl
+      authType = preset.claudeCode.authType
+      if (preset.claudeCode.defaultModels && preset.claudeCode.defaultModels.length >= 2) {
+        primaryModel = primaryModel || preset.claudeCode.defaultModels[0]
+        fastModel = fastModel || preset.claudeCode.defaultModels[1]
+      }
+    }
+  }
+
   const profile: ClaudeCodeProfile = {
-    name: config.name,
-    authType: config.type,
+    name: config.name!,
+    authType,
     apiKey: config.key,
-    baseUrl: config.url,
-    primaryModel: config.primaryModel,
-    fastModel: config.fastModel,
-    id: ClaudeCodeConfigManager.generateProfileId(config.name),
+    baseUrl,
+    primaryModel,
+    fastModel,
+    id: ClaudeCodeConfigManager.generateProfileId(config.name!),
   }
 
   return profile
@@ -1144,14 +1229,30 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
  * Convert API config definition to Codex provider
  * @param config - API configuration definition
  */
-function convertToCodexProvider(config: ApiConfigDefinition): CodexProvider {
+async function convertToCodexProvider(config: ApiConfigDefinition): Promise<CodexProvider> {
+  // Apply provider preset if specified
+  let baseUrl = config.url || API_DEFAULT_URL
+  let model = config.primaryModel || 'gpt-5-codex'
+  let wireApi: 'responses' | 'chat' = 'chat'
+
+  if (config.provider && config.provider !== 'custom') {
+    const { getProviderPreset } = await import('../config/api-providers')
+    const preset = getProviderPreset(config.provider)
+
+    if (preset?.codex) {
+      baseUrl = config.url || preset.codex.baseUrl
+      model = config.primaryModel || preset.codex.defaultModel || model
+      wireApi = preset.codex.wireApi
+    }
+  }
+
   return {
-    id: config.name.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-    name: config.name,
-    baseUrl: config.url || API_DEFAULT_URL,
-    wireApi: 'chat' as const,
+    id: config.name!.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+    name: config.name!,
+    baseUrl,
+    wireApi,
     envKey: API_ENV_KEY,
     requiresOpenaiAuth: false,
-    model: config.primaryModel || 'gpt-5-codex', // Use primaryModel for Codex
+    model,
   }
 }

@@ -246,6 +246,8 @@ describe('claudeCodeConfigManager', () => {
 
   describe('writeConfig', () => {
     it('应该在写入失败时抛出明确错误', () => {
+      // Mock console.error to suppress error output
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
       const loadSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'loadTomlConfig').mockImplementation(() => {
         throw new Error('load failed')
       })
@@ -254,6 +256,7 @@ describe('claudeCodeConfigManager', () => {
         .toThrow('Failed to write config: load failed')
 
       loadSpy.mockRestore()
+      consoleErrorSpy.mockRestore()
     })
   })
 
@@ -1024,6 +1027,9 @@ describe('claudeCodeConfigManager', () => {
     })
 
     it('应该处理读取CCR配置失败', async () => {
+      // Mock console.error to suppress error output
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       // Mock CCR配置读取失败
       mockReadCcrConfig.mockImplementation(() => {
         throw new Error('Failed to read CCR config')
@@ -1033,6 +1039,8 @@ describe('claudeCodeConfigManager', () => {
 
       expect(result.success).toBe(false)
       expect(result.error).toBeTruthy()
+
+      consoleErrorSpy.mockRestore()
     })
   })
 
@@ -1187,6 +1195,9 @@ describe('claudeCodeConfigManager', () => {
     })
 
     it('应该处理同步错误', async () => {
+      // Mock console.error to suppress error output
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
       // Mock CCR配置读取失败
       mockReadCcrConfig.mockImplementation(() => {
         throw new Error('Sync failed')
@@ -1194,6 +1205,8 @@ describe('claudeCodeConfigManager', () => {
 
       // 应该不抛出错误，而是静默处理
       await expect(ClaudeCodeConfigManager.syncCcrProfile()).resolves.toBeUndefined()
+
+      consoleErrorSpy.mockRestore()
     })
   })
 

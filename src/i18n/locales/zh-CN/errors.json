@@ -20,6 +20,7 @@
   "invalidPermissionsConfig": "无效的权限配置：期望对象类型",
   "invalidPermissionsAllow": "无效的 permissions.allow：期望数组类型",
   "invalidCodeType": "无效的代码类型：\"{value}\"。可用的类型：{validOptions}。使用默认值：{defaultValue}。",
+  "invalidProvider": "无效的提供商：{provider}。可用的提供商：{validProviders}",
   "generalError": "错误",
   "stackTrace": "堆栈跟踪"
 }

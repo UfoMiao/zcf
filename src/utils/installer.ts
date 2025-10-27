@@ -20,6 +20,8 @@ export async function installClaudeCode(): Promise<void> {
     console.log(ansis.green(`✔ ${i18n.t('installation:alreadyInstalled')}`))
     // Check for updates after confirming installation
     await updateClaudeCode()
+    // Set installMethod to npm in ~/.claude.json
+    await setInstallMethod('npm')
     return
   }
 
@@ -51,6 +53,9 @@ export async function installClaudeCode(): Promise<void> {
     // Note: If the user can run 'npx zcf', npm is already available
     await exec('npm', ['install', '-g', '@anthropic-ai/claude-code'])
     console.log(`✔ ${i18n.t('installation:installSuccess')}`)
+
+    // Set installMethod to npm in ~/.claude.json
+    await setInstallMethod('npm')
 
     // Additional hint for Termux users
     if (isTermux()) {
@@ -124,5 +129,32 @@ export async function removeLocalClaudeCode(): Promise<void> {
   catch (error) {
     ensureI18nInitialized()
     throw new Error(`${i18n.t('installation:failedToRemoveLocalInstallation')}: ${error}`)
+  }
+}
+
+/**
+ * Set installMethod to 'npm' in ~/.claude.json
+ * This ensures Claude Code knows it was installed via npm for proper auto-updates
+ */
+export async function setInstallMethod(method: 'npm' | 'native' = 'npm'): Promise<void> {
+  try {
+    const { readMcpConfig, writeMcpConfig } = await import('./claude-config')
+
+    // Read existing config or create new one
+    let config = readMcpConfig()
+    if (!config) {
+      config = { mcpServers: {} }
+    }
+
+    // Set installMethod
+    config.installMethod = method
+
+    // Write updated config
+    writeMcpConfig(config)
+  }
+  catch (error) {
+    // Don't throw error to avoid breaking the main flow
+    // This is a nice-to-have feature, not critical
+    console.error('Failed to set installMethod in ~/.claude.json:', error)
   }
 }

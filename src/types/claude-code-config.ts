@@ -21,13 +21,14 @@ export interface ClaudeCodeConfigData {
 }
 
 export interface ApiConfigDefinition {
-  name: string // Profile name (required)
-  type: 'api_key' | 'auth_token' | 'ccr_proxy' // Auth type (required)
-  key?: string // API key (required for api_key and auth_token)
-  url?: string // Custom URL (optional)
+  name?: string // Profile name (optional - auto-generated from provider if not provided)
+  type?: 'api_key' | 'auth_token' | 'ccr_proxy' // Auth type (optional - defaults to api_key when provider is specified)
+  key?: string // API key (required for api_key and auth_token, or when provider is custom)
+  url?: string // Custom URL (optional - auto-filled from provider preset)
   default?: boolean // Set as default profile (optional)
-  primaryModel?: string // Primary model (optional, e.g., claude-sonnet-4-5)
-  fastModel?: string // Fast model (optional, e.g., claude-haiku-4-5)
+  primaryModel?: string // Primary model (optional - auto-filled from provider preset, e.g., claude-sonnet-4-5)
+  fastModel?: string // Fast model (optional - auto-filled from provider preset, e.g., claude-haiku-4-5)
+  provider?: string // API provider preset name (optional - 302ai, glm, minimax, kimi, custom)
 }
 
 // Operation result type

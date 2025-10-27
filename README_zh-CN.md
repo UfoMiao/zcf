@@ -111,14 +111,17 @@ npx zcf ccr --all-lang zh-CN    # 中文配置 CCR
 适用于 CI/CD 和自动化场景，使用 `--skip-prompt` 配合参数：
 
 ```bash
-# 缩写版
+# 使用 API 提供商预设（v3.3.0+ 新增 - 简化版）
+npx zcf i -s -p 302ai -k "sk-xxx"
+
+# 缩写版（传统方式）
 npx zcf i -s -g zh-CN -t api_key -k "sk-xxx" -u "https://xxx.xxx"
 
-# 完整版
+# 完整版（传统方式）
 npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "sk-xxx" --api-url "https://xxx.xxx"
 
-# 缩写版（配置自定义模型）
-npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
+# 使用提供商预设配置自定义模型
+npx zcf i -s -p 302ai -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
 
 # 完整版（配置自定义模型）
 npx zcf i --skip-prompt \
@@ -129,6 +132,48 @@ npx zcf i --skip-prompt \
   --api-fast-model "claude-haiku-4-5"
 ```
 
+#### 🎯 API 提供商预设（v3.3.0+ 新增）
+
+ZCF 现在支持 API 提供商预设，可自动配置 baseUrl 和模型，将配置从 5+ 个参数简化为仅需 2 个：
+
+**支持的提供商：**
+- `302ai` - [302.AI](https://share.302.ai/gAT9VG) API 服务
+- `glm` - GLM（智谱AI）
+- `minimax` - MiniMax API 服务
+- `kimi` - Kimi（月之暗面）
+- `custom` - 自定义 API 端点（需要手动配置 URL）
+
+**使用示例：**
+
+```bash
+# 使用 302.AI 提供商
+npx zcf i --skip-prompt --provider 302ai --api-key "sk-xxx"
+# 或使用缩写
+npx zcf i -s -p 302ai -k "sk-xxx"
+
+# 使用 GLM 提供商
+npx zcf i -s -p glm -k "sk-xxx"
+
+# 使用 MiniMax 提供商
+npx zcf i -s -p minimax -k "sk-xxx"
+
+# 使用 Kimi 提供商
+npx zcf i -s -p kimi -k "sk-xxx"
+
+# 使用自定义提供商（需要 URL）
+npx zcf i -s -p custom -k "sk-xxx" -u "https://api.example.com"
+
+# 用于 Codex
+npx zcf i -s -T cx -p 302ai -k "sk-xxx"
+```
+
+**优势：**
+- ✅ 自动配置 baseUrl
+- ✅ 自动选择 authType
+- ✅ 自动配置模型（如果可用）
+- ✅ 将配置从 5+ 个参数减少到 2 个
+- ✅ 同时支持 Claude Code 和 Codex
+
 #### 非交互模式参数说明
 
 使用 `--skip-prompt` 时，可用的参数：
@@ -136,16 +181,17 @@ npx zcf i --skip-prompt \
 | 参数                         | 说明                                    | 可选值                                                                                                 | 是否必需                      | 默认值                                                                                 |
 | ---------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------------------------------------------- |
 | `--skip-prompt, -s`          | 跳过所有交互提示                        | -                                                                                                      | 是（非交互模式必需）          | -                                                                                      |
+| `--provider, -p`             | API 提供商预设（v3.3.0+ 新增）          | `302ai`, `glm`, `minimax`, `kimi`, `custom`                                                            | 否                            | -（通过自动填充 baseUrl 和模型简化配置）                                              |
 | `--lang, -l`                 | ZCF 显示语言（适用于所有命令）           | `zh-CN`, `en`                                                                                          | 否                            | `en` 或用户保存的偏好                                                                 |
 | `--config-lang, -c`          | 配置文件语言（模板文件语言）            | `zh-CN`, `en`                                                                                          | 否                            | `en`                                                                                   |
 | `--ai-output-lang, -a`       | AI 输出语言                             | `zh-CN`, `en`, 自定义字符串                                                                            | 否                            | `en`                                                                                   |
 | `--all-lang, -g`             | 统一设置所有语言参数（适用于所有命令）  | `zh-CN`, `en`, 自定义字符串                                                                            | 否                            | -（优先级：`--all-lang` > `--lang` > 用户保存的偏好 > 交互提示。若传入自定义字符串，则仅 AI 输出语言使用该值，交互与配置语言保持 `en`） |
 | `--config-action, -r`        | 配置处理方式                            | `new`, `backup`, `merge`, `docs-only`, `skip`                                                          | 否                            | `backup`                                                                               |
-| `--api-type, -t`             | API 配置类型                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | 否                            | `skip`                                                                                 |
+| `--api-type, -t`             | API 配置类型                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | 否                            | `skip`（指定 `--provider` 时自动设置为 `api_key`）                                    |
 | `--api-key, -k`              | API 密钥（用于 API 密钥和认证令牌类型） | 字符串                                                                                                 | `api-type` 不为 `skip` 时必需 | -                                                                                      |
-| `--api-url, -u`              | 自定义 API URL                          | URL 字符串                                                                                             | 否                            | 官方 API                                                                               |
-| `--api-model, -M`            | 主 API 模型                             | 字符串（如 `claude-sonnet-4-5`）                                                                   | 否                            | -                                                                                      |
-| `--api-fast-model, -F`       | 快速 API 模型（仅 Claude Code）         | 字符串（如 `claude-haiku-4-5`）                                                                        | 否                            | -                                                                                      |
+| `--api-url, -u`              | 自定义 API URL                          | URL 字符串                                                                                             | 否                            | 官方 API（使用 `--provider` 时自动填充）                                              |
+| `--api-model, -M`            | 主 API 模型                             | 字符串（如 `claude-sonnet-4-5`）                                                                   | 否                            | -（使用 `--provider` 时自动填充，如果可用）                                           |
+| `--api-fast-model, -F`       | 快速 API 模型（仅 Claude Code）         | 字符串（如 `claude-haiku-4-5`）                                                                        | 否                            | -（使用 `--provider` 时自动填充，如果可用）                                           |
 | `--mcp-services, -m`         | 要安装的 MCP 服务（多选，逗号分隔）     | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--workflows, -w`            | 要安装的工作流（多选，逗号分隔）        | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`, 或 `skip` 表示跳过全部 | 否                            | `all`                                                                                  |
 | `--output-styles, -o`        | 要安装的输出风格（多选，逗号分隔）      | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`，或 `skip` 表示不安装                 | 否                            | `all`                                                                                  |

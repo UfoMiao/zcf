@@ -68,5 +68,6 @@
   "configProfileAddFailed": "Failed to add profile \"{{name}}\": {{error}}",
   "providerAddFailed": "Failed to add provider \"{{name}}\": {{error}}",
   "invalidJson": "Invalid API configs JSON: {{error}}",
-  "fileReadFailed": "Failed to read API configs file: {{error}}"
+  "fileReadFailed": "Failed to read API configs file: {{error}}",
+  "providerOrTypeRequired": "Must provide either provider or type field"
 }

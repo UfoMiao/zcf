@@ -27,4 +27,5 @@ export interface ClaudeConfiguration {
   }
   env?: Record<string, string>
   primaryApiKey?: string
+  installMethod?: 'npm' | 'native'
 }

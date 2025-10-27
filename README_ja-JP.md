@@ -110,14 +110,17 @@ npx zcf ccr --all-lang ja    # 日本語でCCR設定
 CI/CDおよび自動化シナリオ用、`--skip-prompt`とパラメータを使用：
 
 ```bash
-# 短縮版
+# APIプロバイダープリセットを使用（v3.3.0+新機能 - 簡略版）
+npx zcf i -s -p 302ai -k "sk-xxx"
+
+# 短縮版（従来の方法）
 npx zcf i -s -g ja -t api_key -k "sk-xxx" -u "https://xxx.xxx"
 
-# 完全版
+# 完全版（従来の方法）
 npx zcf i --skip-prompt --all-lang ja --api-type api_key --api-key "sk-xxx" --api-url "https://xxx.xxx"
 
-# 短縮版（カスタムモデル設定）
-npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
+# プロバイダープリセットでカスタムモデルを設定
+npx zcf i -s -p 302ai -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
 
 # 完全版（カスタムモデル設定）
 npx zcf i --skip-prompt \
@@ -128,6 +131,48 @@ npx zcf i --skip-prompt \
   --api-fast-model "claude-haiku-4-5"
 ```
 
+#### 🎯 APIプロバイダープリセット（v3.3.0+新機能）
+
+ZCFはAPIプロバイダープリセットをサポートし、baseUrlとモデルを自動設定することで、設定を5+パラメータからわずか2つに簡略化：
+
+**サポートされているプロバイダー：**
+- `302ai` - [302.AI](https://share.302.ai/gAT9VG) APIサービス
+- `glm` - GLM（z.ai）
+- `minimax` - MiniMax APIサービス
+- `kimi` - Kimi（Moonshot AI）
+- `custom` - カスタムAPIエンドポイント（手動URL設定が必要）
+
+**使用例：**
+
+```bash
+# 302.AIプロバイダーを使用
+npx zcf i --skip-prompt --provider 302ai --api-key "sk-xxx"
+# または短縮形
+npx zcf i -s -p 302ai -k "sk-xxx"
+
+# GLMプロバイダーを使用
+npx zcf i -s -p glm -k "sk-xxx"
+
+# MiniMaxプロバイダーを使用
+npx zcf i -s -p minimax -k "sk-xxx"
+
+# Kimiプロバイダーを使用
+npx zcf i -s -p kimi -k "sk-xxx"
+
+# カスタムプロバイダーを使用（URLが必要）
+npx zcf i -s -p custom -k "sk-xxx" -u "https://api.example.com"
+
+# Codex用
+npx zcf i -s -T cx -p 302ai -k "sk-xxx"
+```
+
+**メリット：**
+- ✅ baseUrlの自動設定
+- ✅ authTypeの自動選択
+- ✅ モデルの自動設定（利用可能な場合）
+- ✅ 設定を5+パラメータから2つに削減
+- ✅ Claude CodeとCodexの両方をサポート
+
 #### 非インタラクティブモードパラメータ説明
 
 `--skip-prompt`使用時の利用可能なパラメータ：
@@ -135,16 +180,17 @@ npx zcf i --skip-prompt \
 | パラメータ                    | 説明                                    | 可能な値                                                                                               | 必須                          | デフォルト値                                                                           |
 | ---------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------------------------------------------- |
 | `--skip-prompt, -s`          | すべてのインタラクティブプロンプトをスキップ | -                                                                                                      | はい（非インタラクティブモード必須） | -                                                                                      |
+| `--provider, -p`             | APIプロバイダープリセット（v3.3.0+新機能） | `302ai`, `glm`, `minimax`, `kimi`, `custom`                                                            | いいえ                        | -（baseUrlとモデルの自動入力で設定を簡略化）                                          |
 | `--lang, -l`                 | ZCF表示言語（すべてのコマンドに適用）       | `zh-CN`, `en`, `ja`                                                                                    | いいえ                        | `en`またはユーザー保存の設定                                                           |
 | `--config-lang, -c`          | 設定ファイル言語（テンプレートファイル言語） | `zh-CN`, `en`                                                                                          | いいえ                        | `en`                                                                                   |
 | `--ai-output-lang, -a`       | AI出力言語                               | `zh-CN`, `en`, `ja`, カスタム文字列                                                                     | いいえ                        | `en`                                                                                   |
 | `--all-lang, -g`             | すべての言語パラメータを統一設定（すべてのコマンドに適用） | `zh-CN`, `en`, `ja`, カスタム文字列                                                     | いいえ                        | -（優先順位：`--all-lang` > `--lang` > ユーザー保存の設定 > インタラクティブプロンプト。カスタム文字列の場合、AI出力言語はカスタム、対話と設定言語は `en` のまま） |
 | `--config-action, -r`        | 設定処理方法                              | `new`, `backup`, `merge`, `docs-only`, `skip`                                                          | いいえ                        | `backup`                                                                               |
-| `--api-type, -t`             | API設定タイプ                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | いいえ                        | `skip`                                                                                 |
+| `--api-type, -t`             | API設定タイプ                            | `auth_token`, `api_key`, `ccr_proxy`, `skip`                                                           | いいえ                        | `skip`（`--provider`指定時は自動的に`api_key`に設定）                                 |
 | `--api-key, -k`              | APIキー（APIキーと認証トークンタイプ用）    | 文字列                                                                                                 | `api-type`が`skip`でない場合必須 | -                                                                                      |
-| `--api-url, -u`              | カスタムAPI URL                          | URL文字列                                                                                              | いいえ                        | 公式API                                                                                |
-| `--api-model, -M`            | プライマリAPIモデル                       | 文字列（例：`claude-sonnet-4-5`）                                                                      | いいえ                        | -                                                                                      |
-| `--api-fast-model, -F`       | 高速APIモデル（Claude Codeのみ）          | 文字列（例：`claude-haiku-4-5`）                                                                       | いいえ                        | -                                                                                      |
+| `--api-url, -u`              | カスタムAPI URL                          | URL文字列                                                                                              | いいえ                        | 公式API（`--provider`使用時は自動入力）                                               |
+| `--api-model, -M`            | プライマリAPIモデル                       | 文字列（例：`claude-sonnet-4-5`）                                                                      | いいえ                        | -（`--provider`使用時は自動入力、利用可能な場合）                                     |
+| `--api-fast-model, -F`       | 高速APIモデル（Claude Codeのみ）          | 文字列（例：`claude-haiku-4-5`）                                                                       | いいえ                        | -（`--provider`使用時は自動入力、利用可能な場合）                                     |
 | `--mcp-services, -m`         | インストールするMCPサービス（複数選択、カンマ区切り） | `context7`, `open-websearch`, `spec-workflow`, `mcp-deepwiki`, `Playwright`, `exa`, `serena`、または`skip`ですべてスキップ | いいえ                        | `all`                                                                                  |
 | `--workflows, -w`            | インストールするワークフロー（複数選択、カンマ区切り） | `commonTools`, `sixStepsWorkflow`, `featPlanUx`, `gitWorkflow`, `bmadWorkflow`、または`skip`ですべてスキップ | いいえ                        | `all`                                                                                  |
 | `--output-styles, -o`        | インストールする出力スタイル（複数選択、カンマ区切り） | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`、または`skip`でインストールしない      | いいえ                        | `all`                                                                                  |

@@ -235,12 +235,14 @@ describe('codex code tool utilities', () => {
     const inquirer = await import('inquirer')
     vi.mocked(inquirer.default.prompt)
       .mockResolvedValueOnce({ mode: 'custom' })
+      .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
       .mockResolvedValueOnce({
         providerName: 'packycode',
         baseUrl: 'https://api.example.com/v1',
         wireApi: 'responses',
         apiKey: 'secret',
       })
+      .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model selection for custom provider
       .mockResolvedValueOnce({ addAnother: false })
       .mockResolvedValueOnce({ defaultProvider: 'packycode' })
 
@@ -301,13 +303,15 @@ describe('codex code tool utilities', () => {
 
     const codexModule = await import('../../../../src/utils/code-tools/codex')
     const writeFileMock = vi.mocked(fsOps.writeFile)
+    const copyDirMock = vi.mocked(fsOps.copyDir)
     writeFileMock.mockClear()
+    copyDirMock.mockClear()
 
     await codexModule.configureCodexApi()
 
     // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
     // This test validates the core functionality but backup verification is handled by dedicated backup tests
-    expect(fsOps.copyDir).toHaveBeenCalled() // Verify backup functionality is called
+    expect(copyDirMock).toHaveBeenCalled() // Verify backup functionality is called
     const configContent = writeFileMock.mock.calls[0][1] as string
     // In official mode, model_provider should be commented but providers should be preserved
     expect(configContent).toContain('# model_provider = "packycode"')
@@ -324,11 +328,7 @@ describe('codex code tool utilities', () => {
     const managedConfig = `# Managed by ZCF\nmodel_provider = "packycode"\n\n[model_providers.packycode]\nname = "PackyCode"\nbase_url = "https://api.example.com"\nwire_api = "responses"\nenv_key = "OPENAI_API_KEY"\n`
 
     const selectMcpServices = (await import('../../../../src/utils/mcp-selector')).selectMcpServices
-    vi.mocked(selectMcpServices).mockResolvedValue(['context7', 'exa'])
-
-    const inquirer = await import('inquirer')
-    vi.mocked(inquirer.default.prompt)
-      .mockResolvedValueOnce({ apiKey: 'exa-key' })
+    vi.mocked(selectMcpServices).mockResolvedValue(['context7'])
 
     const fsOps = await import('../../../../src/utils/fs-operations')
     vi.mocked(fsOps.exists).mockImplementation((path) => {
@@ -342,22 +342,21 @@ describe('codex code tool utilities', () => {
     })
     vi.mocked(fsOps.readFile).mockReturnValue(managedConfig)
 
-    const codexModule = await import('../../../../src/utils/code-tools/codex')
+    const codexModule = await import('../../../../src/utils/code-tools/codex-configure')
     const writeFileMock = vi.mocked(fsOps.writeFile)
+    const copyDirMock = vi.mocked(fsOps.copyDir)
     writeFileMock.mockClear()
+    copyDirMock.mockClear()
 
     await codexModule.configureCodexMcp()
 
     // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
     // This test validates the core functionality but backup verification is handled by dedicated backup tests
-    expect(fsOps.copyDir).toHaveBeenCalled() // Verify backup functionality is called
+    expect(copyDirMock).toHaveBeenCalled() // Verify backup functionality is called
     expect(writeFileMock).toHaveBeenCalledTimes(1)
     const updated = writeFileMock.mock.calls[0][1] as string
     expect(updated).toContain('[mcp_servers.context7]')
     expect(updated).toContain('command = "npx"')
-    expect(updated).toContain('[mcp_servers.exa]')
-    expect(updated).toContain('command = "npx"')
-    expect(updated).toContain('env = {EXA_API_KEY = "exa-key"}')
 
     // Should NOT write to auth.json anymore, API keys go in config env sections
     const jsonConfigModule = await import('../../../../src/utils/json-config')

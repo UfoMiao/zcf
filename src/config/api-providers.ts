@@ -110,3 +110,20 @@ export function getApiProviders(codeToolType: CodeToolType): ApiProviderPreset[]
     provider.supportedCodeTools.includes(codeToolType),
   )
 }
+
+/**
+ * Get API provider preset by ID
+ * @param providerId - The provider ID (302ai, glm, minimax, kimi)
+ * @returns API provider preset or undefined if not found
+ */
+export function getProviderPreset(providerId: string): ApiProviderPreset | undefined {
+  return API_PROVIDER_PRESETS.find(provider => provider.id === providerId)
+}
+
+/**
+ * Get all valid provider IDs
+ * @returns Array of valid provider IDs
+ */
+export function getValidProviderIds(): string[] {
+  return API_PROVIDER_PRESETS.map(provider => provider.id)
+}
