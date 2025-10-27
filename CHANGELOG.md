@@ -1,5 +1,51 @@
 # Changelog
 
+## 3.3.0
+
+### Minor Changes
+
+- ## New Features
+  - Add API provider preset system for simplified configuration
+  - Support preset providers: 302.AI, GLM, MiniMax, Kimi, and custom endpoints
+  - Add `--provider/-p` CLI parameter for quick provider selection
+  - Implement automatic baseUrl, authType, and model configuration based on provider
+  - Add comprehensive API provider selection for both Claude Code and Codex
+
+  ## 新功能
+  - 添加 API 提供商预设系统,简化配置流程
+  - 支持预设提供商:302.AI、GLM、MiniMax、Kimi 和自定义端点
+  - 添加 `--provider/-p` CLI 参数用于快速选择提供商
+  - 基于提供商自动配置 baseUrl、authType 和模型
+  - 为 Claude Code 和 Codex 添加全面的 API 提供商选择功能
+
+  ## Optimization
+  - Reduce configuration complexity from 5+ parameters to just 2 (provider + API key)
+  - Improve CI/CD automation experience with preset configurations
+  - Enhance user experience with provider-specific presets
+  - Add comprehensive i18n support for provider-related messages
+
+  ## 优化
+  - 将配置复杂度从 5+ 个参数简化为仅 2 个(提供商 + API 密钥)
+  - 通过预设配置改善 CI/CD 自动化体验
+  - 使用提供商特定预设增强用户体验
+  - 为提供商相关消息添加全面的国际化支持
+
+  ## Fixes
+  - Automatic identification of code comment languages
+
+  ## 修复
+  - 代码注释语言自动识别
+
+  ## Documentation
+  - Add comprehensive documentation for CCR, Code Tools, Cometix, and Templates modules
+  - Update README with provider preset examples in English, Chinese, and Japanese
+  - Add detailed API provider configuration guides
+
+  ## 文档
+  - 为 CCR、Code Tools、Cometix 和 Templates 模块添加全面文档
+  - 更新 README,添加英文、中文和日文的提供商预设示例
+  - 添加详细的 API 提供商配置指南
+
 ## 3.2.3
 
 ### Patch Changes

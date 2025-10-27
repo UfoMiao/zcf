@@ -44,6 +44,3 @@ en_output.txt
 release_*_test.log
 test-*.js
 zcf-*.tgz
-
-# Spec workflow directories
-.spec-workflow
