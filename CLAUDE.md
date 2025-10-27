@@ -1,87 +1,10 @@
 # CLAUDE.md
 
-## Change Log (Changelog)
-
-### 2025-10-01
-
-- **Architecture Initialization Update**: Completed comprehensive adaptive initialization analysis of ZCF v3.1.0 project
-- **Module Structure Enhancement**: Updated complete Mermaid architecture diagram with 8 core modules and navigation system
-- **Coverage Assessment**: Achieved 85%+ file coverage analysis, covering 500+ source code files
-- **Documentation Navigation Optimization**: Enhanced breadcrumb navigation system and cross-references for all modules
-- **Codex Integration Analysis**: Deep analysis of dual code tool architecture (Claude Code + Codex)
-- **Advanced Uninstall Functionality**: Documented complete ZCF uninstall system and conflict resolution mechanisms
-- **Tool Integration Validation**: Confirmed complete integration architecture of CCR, Cometix, CCusage tools
-
-### 2025-09-14
-
-- **Version Update to v2.12.12**: Advanced ZCF uninstallation functionality and comprehensive test coverage enhancement
-- **New Uninstall System**: Introduced complete ZCF uninstallation functionality with comprehensive CLI command and sophisticated conflict resolution
-- **Enhanced Testing Infrastructure**: Significantly expanded edge case testing with advanced uninstaller test coverage and comprehensive test scenarios
-- **Advanced Multi-language Support**: Enhanced i18next integration with complete uninstall command translation support for zh-CN and en locales
-- **Improved File Management**: Advanced trash/recycle bin integration with cross-platform support and sophisticated error handling
-- **Coverage Enhancement**: Achieved improved test coverage with focus on edge case scenarios and sophisticated error recovery mechanisms
-- **Tool Integration Refinement**: Enhanced CCR, Cometix, and CCusage integration with improved uninstallation and management capabilities
-
-### 2025-09-06
-
-- **Architecture Context Refresh**: Updated AI context initialization with current v2.12.7 architecture analysis
-- **Coverage Metrics Update**: Refined coverage analysis showing 80.4% file coverage (225/280 files) with detailed breakdown
-- **Index Enhancement**: Updated .claude/index.json with latest project metadata, module structure, and comprehensive tool integration analysis
-- **Module Status Validation**: Confirmed all 7 core modules maintain comprehensive documentation and navigation structure
-- **Tool Integration Validation**: Verified CCR, Cometix, and CCusage integration architectures remain current and functional
-- **Testing Infrastructure**: Validated comprehensive test coverage across unit/integration/edge patterns with 80% target maintenance
-
-### 2025-09-02
-
-- **Project Architecture Analysis**: Comprehensive adaptive initialization completed for ZCF v2.12.7
-- **Module Structure Enhancement**: Enhanced Mermaid structure diagram with clickable navigation to all 7 core modules
-- **Coverage Assessment**: Achieved 88% file coverage (200/225 source files) with comprehensive analysis of TypeScript architecture
-- **Documentation Navigation**: Added breadcrumb navigation system across all module documentation with relative path linking
-- **Advanced i18next Analysis**: Deep analysis of advanced internationalization system with namespace-based organization
-- **Tool Integration Assessment**: Complete analysis of CCR, Cometix, CCusage tool integration architecture
-- **Testing Infrastructure Analysis**: Comprehensive review of Vitest-based testing with unit/integration/edge coverage
-- **Template System Analysis**: Enhanced multilingual template system with AI personality styles assessment
-
-### 2025-09-01
-
-- **Architecture Refresh & i18n Enhancement**: Comprehensive project analysis and documentation update
-- **Project Version**: Current v2.12.4 with advanced i18next internationalization and enhanced CLI features
-- **Internationalization Upgrade**: Implemented comprehensive i18next system, replacing previous language detection approach
-- **Module Analysis**: Complete analysis of 7 core modules with enhanced TypeScript architecture and testing coverage
-- **Coverage Analysis**: Achieved 88%+ file coverage (200/225 source files) with focus on critical path optimization
-- **Documentation Enhancement**: Updated architecture diagrams, enhanced module navigation, and improved cross-platform documentation
-- **CLI Enhancement**: Advanced command-line interface with improved error handling and user experience
-- **Template System**: Enhanced multilingual template system with professional AI personality styles
-
-### 2025-08-28
-
-- **Architecture Initialization Update**: Comprehensive repository analysis and documentation refresh
-- **Project Version**: Current v2.12.2 with enhanced engineering templates and configuration validation
-- **Module Analysis**: Identified 7 core modules with 100+ TypeScript files and comprehensive test coverage
-- **Coverage Analysis**: Estimated 85%+ file coverage (190/225 source files) with focus on critical paths
-- **Documentation Enhancement**: Updated Mermaid diagrams, module navigation, and cross-platform support documentation
-- **Templates Expansion**: Enhanced template system with multi-language support and professional output styles
-
-### 2025-08-24
-
-- **Project Version Update**: Updated to v2.11.0 with intelligent IDE detection and common tools workflow
-- **Test Directory Reorganization**: Migrated from `test/` to `tests/` for consistency and improved structure
-- **ESLint Integration**: Added comprehensive ESLint configuration with @antfu/eslint-config
-- **Documentation Synchronization**: Updated documentation to reflect latest code changes and architectural improvements
-- **Coverage Analysis Update**: Maintained 63.2% file coverage (158/250 files) with enhanced focus on critical paths
-
-### 2025-08-20
-
-- **AI Context Initialization**: Completed comprehensive repository analysis and documentation generation
-- **Module Structure Mapping**: Identified 6 core modules with detailed architecture documentation
-- **Coverage Analysis**: Achieved 63.2% file coverage (158/250 files) with focus on critical paths
-- **Documentation Enhancement**: Added Mermaid diagrams and module navigation structure
-- **Templates Module Documentation**: Created comprehensive documentation for templates module
-- **Index Generation**: Updated .claude/index.json with complete project metadata and scan results
+**Last Updated**: Mon Oct 27 09:30:54 CST 2025
 
 ## Project Overview
 
-ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v3.1.0 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, and sophisticated uninstallation capabilities with advanced conflict resolution. The project also integrates dual code tool support, enabling both Claude Code and Codex environment configuration.
+ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v3.2.3 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, and sophisticated uninstallation capabilities with advanced conflict resolution. The project also integrates dual code tool support, enabling both Claude Code and Codex environment configuration.
 
 ## Architecture Overview
 
@@ -91,7 +14,7 @@ ZCF follows a modular CLI architecture with strict TypeScript typing, comprehens
 
 ```mermaid
 graph TD
-    A["🚀 ZCF Root (v3.1.0)"] --> B["src/commands"];
+    A["🚀 ZCF Root (v3.2.3)"] --> B["src/commands"];
     A --> C["src/utils"];
     A --> D["src/i18n"];
     A --> E["src/types"];
@@ -106,6 +29,7 @@ graph TD
     B --> B5["ccu.ts - Usage analysis"];
     B --> B6["check-updates.ts - Tool updates"];
     B --> B7["uninstall.ts - ZCF uninstallation"];
+    B --> B8["config-switch.ts - Config switching"];
 
     C --> C1["config.ts - Configuration management"];
     C --> C2["installer.ts - Claude Code installation"];
@@ -117,6 +41,7 @@ graph TD
     C --> C8["tools/ - Tool integration"];
     C --> C9["uninstaller.ts - Advanced uninstaller"];
     C --> C10["trash.ts - Cross-platform trash"];
+    C --> C11["code-tools/ - Codex integration"];
 
     D --> D1["locales/zh-CN/ - Chinese translations"];
     D --> D2["locales/en/ - English translations"];
@@ -127,29 +52,31 @@ graph TD
     E --> E1["workflow.ts - Workflow types"];
     E --> E2["config.ts - Configuration types"];
     E --> E3["ccr.ts - CCR types"];
+    E --> E4["claude-code-config.ts - Claude Code types"];
+    E --> E5["toml-config.ts - TOML types"];
 
     F --> F1["workflows.ts - Workflow definitions"];
     F --> F2["mcp-services.ts - MCP configurations"];
 
-    G --> G1["zh-CN/ - Chinese templates"];
-    G --> G2["en/ - English templates"];
+    G --> G1["claude-code/ - Claude Code templates"];
+    G --> G2["codex/ - Codex templates"];
     G --> G3["common/ - Shared configuration"];
     G --> G4["output-styles/ - AI personalities"];
-    G --> G5["codex/ - Codex templates"];
 
     H --> H1["commands/ - Command tests"];
     H --> H2["utils/ - Utility tests"];
     H --> H3["unit/ - Unit test suites"];
     H --> H4["integration/ - Integration tests"];
     H --> H5["edge/ - Edge case tests"];
-    H --> H6["uninstaller/ - Uninstaller tests"];
+    H --> H6["i18n/ - I18n tests"];
+    H --> H7["templates/ - Template tests"];
 
     click B "./src/commands/CLAUDE.md" "View commands module"
     click C "./src/utils/CLAUDE.md" "View utils module"
     click D "./src/i18n/CLAUDE.md" "View i18n module"
     click E "./src/types/CLAUDE.md" "View types module"
     click F "./src/config/CLAUDE.md" "View config module"
-    click G "./templates/CLAUDE.md" "View templates module"
+    click G "./templates/claude-code/CLAUDE.md" "View templates module"
     click H "./tests/CLAUDE.md" "View tests module"
 ```
 
@@ -157,13 +84,25 @@ graph TD
 
 | Module | Path | Description | Entry Points | Test Coverage |
 |------------------------|--------------|---------------------------------------|-------------------------------------------------------|-------------------------------|
-| **Commands** | `src/commands/` | CLI command implementations with advanced interactive and non-interactive modes including comprehensive uninstallation | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts, check-updates.ts, uninstall.ts | High - comprehensive test suites |
-| **Utilities** | `src/utils/` | Core functionality with enhanced configuration management, platform support, and advanced uninstallation capabilities | config.ts, installer.ts, mcp.ts, platform.ts, workflow-installer.ts, ccr/, cometix/, uninstaller.ts, trash.ts | High - extensive unit tests |
+| **Commands** | `src/commands/` | CLI command implementations with advanced interactive and non-interactive modes including comprehensive uninstallation and config switching | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts, check-updates.ts, uninstall.ts, config-switch.ts | High - comprehensive test suites |
+| **Utilities** | `src/utils/` | Core functionality with enhanced configuration management, platform support, Codex integration, and advanced uninstallation capabilities | config.ts, installer.ts, platform.ts, workflow-installer.ts, ccr/, cometix/, code-tools/, uninstaller.ts, trash.ts | High - extensive unit tests |
+| **CCR Integration** | `src/utils/ccr/` | Claude Code Router proxy management and configuration | presets.ts, commands.ts, installer.ts, config.ts | High - comprehensive CCR tests |
+| **Cometix Tools** | `src/utils/cometix/` | Status line tools and configuration management | errors.ts, common.ts, types.ts, commands.ts, installer.ts, menu.ts | High - extensive Cometix tests |
+| **Code Tools** | `src/utils/code-tools/` | Codex integration and dual code tool support | codex-config-detector.ts, codex-provider-manager.ts, codex-uninstaller.ts, codex-platform.ts, codex-config-switch.ts, codex-configure.ts, codex.ts | High - comprehensive Codex tests |
 | **Internationalization** | `src/i18n/` | Advanced i18next multilingual support with namespace organization and complete uninstall translations | index.ts, locales/zh-CN/, locales/en/ | High - translation validation |
-| **Types** | `src/types/` | Comprehensive TypeScript type definitions | workflow.ts, config.ts, ccr.ts | Implicit through usage |
+| **Types** | `src/types/` | Comprehensive TypeScript type definitions including Claude Code and TOML config types | workflow.ts, config.ts, ccr.ts, claude-code-config.ts, toml-config.ts | Implicit through usage |
 | **Configuration** | `src/config/` | Centralized workflow and system configurations | workflows.ts, mcp-services.ts | High - config validation tests |
-| **Templates** | `templates/` | Enhanced multilingual configuration templates and AI personality styles, new Codex support | common/, zh-CN/, en/, output-styles/, workflow/, codex/ | Medium - template validation tests |
-| **Testing** | `tests/` | Comprehensive test suites with layered coverage architecture and advanced uninstaller testing | commands/, utils/, unit/, integration/, edge/ | Self-testing with 80% target |
+| **Templates** | `templates/` | Enhanced multilingual configuration templates and AI personality styles with dual code tool support | claude-code/, codex/, common/, output-styles/, workflow/ | Medium - template validation tests |
+| **Testing** | `tests/` | Comprehensive test suites with layered coverage architecture and advanced uninstaller testing | commands/, utils/, unit/, integration/, edge/, i18n/, templates/ | Self-testing with 80% target |
+
+## Project Statistics
+
+- **Total Files**: ~7,078 files (TypeScript, JSON, Markdown)
+- **Source Files**: 73 TypeScript files in `src/`
+- **Test Files**: 100+ test files with comprehensive coverage
+- **Translation Files**: 32 JSON files (16 per locale: zh-CN, en)
+- **Template Files**: 50+ template files for workflows and output styles
+- **Module Count**: 10 major modules with clear separation of concerns
 
 ## CLI Usage
 
@@ -178,8 +117,14 @@ npx zcf i                  # Full initialization
 npx zcf u                  # Update workflows only
 npx zcf ccr [--lang <en|zh-CN>]  # Claude Code Router management
 npx zcf ccu [args...]      # Run ccusage with arguments
-npx zcf check-updates [--lang <en|zh-CN>]  # Check tool updates
+npx zcf check-updates [--lang <en|zh-CN>] [--code-type <claude-code|codex>]  # Check tool updates
+npx zcf config-switch [target] [--code-type <claude-code|codex>]  # Switch configurations
 npx zcf uninstall [--mode <complete|custom|interactive>] [--items <items>] [--lang <en|zh-CN>]  # ZCF uninstallation
+
+# Config switch examples
+npx zcf config-switch --list                    # List available configurations
+npx zcf config-switch provider1 --code-type codex  # Switch Codex provider
+npx zcf config-switch config1 --code-type claude-code  # Switch Claude Code config
 
 # Uninstall examples
 npx zcf uninstall                                    # Interactive uninstall menu
