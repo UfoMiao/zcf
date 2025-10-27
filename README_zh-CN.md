@@ -404,12 +404,35 @@ npx zcf → 选择 +
 
 ### 🔐 API 配置
 
-- 支持两种认证方式：
-  - **Auth Token**：适用于通过 OAuth 或浏览器登录获取的令牌
-  - **API Key**：适用于从 Anthropic Console 获取的 API 密钥
-- 自定义 API URL 支持
-- 支持稍后在 claude 命令中配置
-- 部分修改功能：仅更新需要的配置项（v2.0 新增）
+ZCF 为 Claude Code 和 Codex 提供灵活的 API 配置选项：
+
+**API 供应商预设快速配置（v3.3.0+ 新增）：**
+
+从热门 API 供应商中选择预配置设置：
+- **302.AI** - 按需付费的 AI 服务，支持全面的模型
+- **GLM（智谱AI）** - 智谱 AI 的 GLM 模型
+- **MiniMax** - MiniMax AI 服务
+- **Kimi（Moonshot AI）** - Moonshot 的 Kimi 模型
+- **自定义配置** - 适用于任何供应商的完整手动配置
+
+使用预设供应商时，您只需：
+1. 从列表中选择供应商
+2. 输入您的 API 密钥
+
+系统会自动配置：
+- API 基础 URL
+- 认证类型（API Key 或 Auth Token）
+- 默认模型（如适用）
+- Wire API 协议（用于 Codex）
+
+**传统配置方式：**
+
+- **官方登录**：使用官方认证系统（无需 API 配置）
+- **Auth Token**：适用于通过 OAuth 或浏览器登录获取的令牌
+- **API Key**：适用于从 Anthropic Console 或自定义供应商获取的 API 密钥
+- **CCR 代理**：配置 Claude Code Router 代理
+- **自定义 API URL**：支持任何兼容的 API 端点
+- **部分修改**：仅更新需要的配置项（v2.0+）
 
 ### 💾 配置管理
 

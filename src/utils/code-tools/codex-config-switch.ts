@@ -62,6 +62,36 @@ export async function configureIncrementalManagement(): Promise<void> {
  * Handle adding a new provider
  */
 async function handleAddProvider(): Promise<void> {
+  // Step 1: Select API provider (custom or preset)
+  const { getApiProviders } = await import('../../config/api-providers')
+  const apiProviders = getApiProviders('codex')
+
+  const providerChoices = [
+    { name: i18n.t('api:customProvider'), value: 'custom' },
+    ...apiProviders.map((p: any) => ({ name: p.name, value: p.id })),
+  ]
+
+  const { selectedProvider } = await inquirer.prompt<{ selectedProvider: string }>([{
+    type: 'list',
+    name: 'selectedProvider',
+    message: i18n.t('api:selectApiProvider'),
+    choices: addNumbersToChoices(providerChoices),
+  }])
+
+  let prefilledBaseUrl: string | undefined
+  let prefilledWireApi: 'responses' | 'chat' | undefined
+  let prefilledModel: string | undefined
+
+  if (selectedProvider !== 'custom') {
+    const provider = apiProviders.find((p: any) => p.id === selectedProvider)
+    if (provider?.codex) {
+      prefilledBaseUrl = provider.codex.baseUrl
+      prefilledWireApi = provider.codex.wireApi
+      prefilledModel = provider.codex.defaultModel
+      console.log(ansis.gray(i18n.t('api:providerSelected', { name: provider.name })))
+    }
+  }
+
   const answers = await inquirer.prompt<{
     providerName: string
     baseUrl: string
@@ -72,11 +102,12 @@ async function handleAddProvider(): Promise<void> {
       type: 'input',
       name: 'providerName',
       message: i18n.t('codex:providerNamePrompt'),
+      default: selectedProvider !== 'custom' ? apiProviders.find((p: any) => p.id === selectedProvider)?.name : undefined,
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed)
           return i18n.t('codex:providerNameRequired')
-        if (!/^[\w\-\s]+$/.test(trimmed))
+        if (!/^[\w\-\s.]+$/.test(trimmed))
           return i18n.t('codex:providerNameInvalid')
         return true
       },
@@ -85,7 +116,8 @@ async function handleAddProvider(): Promise<void> {
       type: 'input',
       name: 'baseUrl',
       message: i18n.t('codex:providerBaseUrlPrompt'),
-      default: 'https://api.openai.com/v1',
+      default: prefilledBaseUrl || 'https://api.openai.com/v1',
+      when: () => selectedProvider === 'custom',
       validate: input => !!input.trim() || i18n.t('codex:providerBaseUrlRequired'),
     },
     {
@@ -96,32 +128,74 @@ async function handleAddProvider(): Promise<void> {
         { name: i18n.t('codex:protocolResponses'), value: 'responses' },
         { name: i18n.t('codex:protocolChat'), value: 'chat' },
       ],
-      default: 'responses',
+      default: prefilledWireApi || 'responses',
+      when: () => selectedProvider === 'custom',
     },
     {
       type: 'input',
       name: 'apiKey',
-      message: i18n.t('codex:providerApiKeyPrompt'),
+      message: selectedProvider !== 'custom'
+        ? i18n.t('api:enterProviderApiKey', { provider: apiProviders.find((p: any) => p.id === selectedProvider)?.name || selectedProvider })
+        : i18n.t('codex:providerApiKeyPrompt'),
       validate: (input: string) => !!input.trim() || i18n.t('codex:providerApiKeyRequired'),
     },
   ])
 
-  const providerId = answers.providerName.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')
+  const providerId = answers.providerName.trim().toLowerCase().replace(/\s+/g, '-').replace(/\./g, '-').replace(/[^a-z0-9\-]/g, '')
+
+  // Check if provider already exists
+  const managementMode = detectConfigManagementMode()
+  const existingProvider = managementMode.providers?.find((p: any) => p.id === providerId)
+
+  if (existingProvider) {
+    const { shouldOverwrite } = await inquirer.prompt<{ shouldOverwrite: boolean }>([{
+      type: 'confirm',
+      name: 'shouldOverwrite',
+      message: i18n.t('codex:providerDuplicatePrompt', {
+        name: existingProvider.name,
+        source: i18n.t('codex:existingConfig'),
+      }),
+      default: false,
+    }])
+
+    if (!shouldOverwrite) {
+      console.log(ansis.yellow(i18n.t('codex:providerDuplicateSkipped')))
+      return
+    }
+  }
+
   const provider: CodexProvider = {
     id: providerId,
     name: answers.providerName.trim(),
-    baseUrl: answers.baseUrl.trim(),
-    wireApi: answers.wireApi as 'responses' | 'chat',
+    baseUrl: selectedProvider === 'custom' ? answers.baseUrl.trim() : prefilledBaseUrl!,
+    wireApi: (selectedProvider === 'custom' ? answers.wireApi : prefilledWireApi) as 'responses' | 'chat',
     envKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
     requiresOpenaiAuth: true,
+    model: prefilledModel || 'gpt-5-codex', // Use provider's default model or fallback
   }
 
-  const result = await addProviderToExisting(provider, answers.apiKey.trim())
+  const result = await addProviderToExisting(provider, answers.apiKey.trim(), true)
 
   if (result.success) {
     console.log(ansis.green(i18n.t('codex:providerAdded', { name: result.addedProvider?.name })))
     if (result.backupPath) {
       console.log(ansis.gray(i18n.t('common:backupCreated', { path: result.backupPath })))
+    }
+
+    // Ask if user wants to set this provider as default
+    const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([{
+      type: 'confirm',
+      name: 'setAsDefault',
+      message: i18n.t('multi-config:setAsDefaultPrompt'),
+      default: true,
+    }])
+
+    if (setAsDefault) {
+      const { switchToProvider } = await import('./codex')
+      const switched = await switchToProvider(provider.id)
+      if (switched) {
+        console.log(ansis.green(i18n.t('multi-config:profileSetAsDefault', { name: provider.name })))
+      }
     }
   }
   else {

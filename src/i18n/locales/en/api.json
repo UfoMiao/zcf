@@ -43,6 +43,11 @@
   "apiModeOfficial": "Use Official Login (No API Configuration)",
   "apiModeCustom": "Custom API Configuration",
   "apiModeCcr": "Use CCR Proxy",
+  "apiModeSwitch": "Switch API Configuration",
   "apiModeSkip": "Skip",
-  "apiModePrompt": "Select API configuration mode"
+  "apiModePrompt": "Select API configuration mode",
+  "selectApiProvider": "Select API Provider",
+  "customProvider": "Custom Configuration",
+  "providerSelected": "Provider selected: {{name}}",
+  "enterProviderApiKey": "Enter API Key for {{provider}}"
 }

@@ -34,11 +34,13 @@ export interface ProviderUpdateData {
  * Add a new provider to existing configuration
  * @param provider - The new provider to add
  * @param apiKey - The API key for the provider
+ * @param allowOverwrite - Whether to allow overwriting existing provider
  * @returns Operation result
  */
 export async function addProviderToExisting(
   provider: CodexProvider,
   apiKey: string,
+  allowOverwrite = false,
 ): Promise<ProviderOperationResult> {
   try {
     const existingConfig = readCodexConfig()
@@ -51,8 +53,8 @@ export async function addProviderToExisting(
     }
 
     // Check for duplicate provider IDs
-    const existingProvider = existingConfig.providers.find(p => p.id === provider.id)
-    if (existingProvider) {
+    const existingProviderIndex = existingConfig.providers.findIndex(p => p.id === provider.id)
+    if (existingProviderIndex !== -1 && !allowOverwrite) {
       return {
         success: false,
         error: ERROR_MESSAGES.PROVIDER_EXISTS(provider.id),
@@ -68,10 +70,23 @@ export async function addProviderToExisting(
       }
     }
 
-    // Add provider to existing configuration
-    const updatedConfig: CodexConfigData = {
-      ...existingConfig,
-      providers: [...existingConfig.providers, provider],
+    // Add or update provider in configuration
+    let updatedConfig: CodexConfigData
+    if (existingProviderIndex !== -1) {
+      // Overwrite existing provider
+      const updatedProviders = [...existingConfig.providers]
+      updatedProviders[existingProviderIndex] = provider
+      updatedConfig = {
+        ...existingConfig,
+        providers: updatedProviders,
+      }
+    }
+    else {
+      // Add new provider
+      updatedConfig = {
+        ...existingConfig,
+        providers: [...existingConfig.providers, provider],
+      }
     }
 
     // Write updated configuration

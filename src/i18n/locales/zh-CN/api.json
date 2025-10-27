@@ -43,6 +43,11 @@
   "apiModeOfficial": "使用官方登录（不配置 API）",
   "apiModeCustom": "自定义 API 配置",
   "apiModeCcr": "使用CCR代理",
+  "apiModeSwitch": "切换 API 配置",
   "apiModeSkip": "跳过",
-  "apiModePrompt": "请选择 API 配置模式"
+  "apiModePrompt": "请选择 API 配置模式",
+  "selectApiProvider": "请选择 API 供应商",
+  "customProvider": "自定义配置",
+  "providerSelected": "已选择供应商: {{name}}",
+  "enterProviderApiKey": "请输入 {{provider}} 的 API Key"
 }

@@ -188,6 +188,15 @@ async function handleCcrProxyMode(): Promise<void> {
   }
 }
 
+// Handle switch config mode
+async function handleSwitchConfigMode(): Promise<void> {
+  ensureI18nInitialized()
+
+  // Import and call the interactive switch function from config-switch command
+  const { configSwitchCommand } = await import('../commands/config-switch')
+  await configSwitchCommand({ codeType: 'claude-code' })
+}
+
 // Configure API
 export async function configureApiFeature(): Promise<void> {
   ensureI18nInitialized()
@@ -201,6 +210,7 @@ export async function configureApiFeature(): Promise<void> {
       { name: i18n.t('api:apiModeOfficial'), value: 'official' },
       { name: i18n.t('api:apiModeCustom'), value: 'custom' },
       { name: i18n.t('api:apiModeCcr'), value: 'ccr' },
+      { name: i18n.t('api:apiModeSwitch'), value: 'switch' },
       { name: i18n.t('api:apiModeSkip'), value: 'skip' },
     ]),
   })
@@ -219,6 +229,9 @@ export async function configureApiFeature(): Promise<void> {
       break
     case 'ccr':
       await handleCcrProxyMode()
+      break
+    case 'switch':
+      await handleSwitchConfigMode()
       break
     default:
       await handleCancellation()
@@ -381,7 +394,7 @@ export async function configureDefaultModelFeature(): Promise<void> {
  * Prompt user for custom model names
  * @returns Object containing primaryModel and fastModel strings (may be empty for skip)
  */
-async function promptCustomModels(): Promise<{ primaryModel: string, fastModel: string }> {
+export async function promptCustomModels(): Promise<{ primaryModel: string, fastModel: string }> {
   const { primaryModel } = await inquirer.prompt<{ primaryModel: string }>({
     type: 'input',
     name: 'primaryModel',

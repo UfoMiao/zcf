@@ -1132,6 +1132,8 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
     authType: config.type,
     apiKey: config.key,
     baseUrl: config.url,
+    primaryModel: config.primaryModel,
+    fastModel: config.fastModel,
     id: ClaudeCodeConfigManager.generateProfileId(config.name),
   }
 
@@ -1150,5 +1152,6 @@ function convertToCodexProvider(config: ApiConfigDefinition): CodexProvider {
     wireApi: 'chat' as const,
     envKey: API_ENV_KEY,
     requiresOpenaiAuth: false,
+    model: config.primaryModel || 'gpt-5-codex', // Use primaryModel for Codex
   }
 }

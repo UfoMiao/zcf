@@ -93,6 +93,34 @@ async function promptContinueAdding(): Promise<boolean> {
 async function handleAddProfile(): Promise<void> {
   console.log(ansis.cyan(`\n${i18n.t('multi-config:addingNewProfile')}`))
 
+  // Step 1: Select API provider (custom or preset)
+  const { getApiProviders } = await import('../config/api-providers')
+  const providers = getApiProviders('claude-code')
+
+  const providerChoices = [
+    { name: i18n.t('api:customProvider'), value: 'custom' },
+    ...providers.map((p: any) => ({ name: p.name, value: p.id })),
+  ]
+
+  const { selectedProvider } = await inquirer.prompt<{ selectedProvider: string }>([{
+    type: 'list',
+    name: 'selectedProvider',
+    message: i18n.t('api:selectApiProvider'),
+    choices: addNumbersToChoices(providerChoices),
+  }])
+
+  let prefilledBaseUrl: string | undefined
+  let prefilledAuthType: 'api_key' | 'auth_token' | undefined
+
+  if (selectedProvider !== 'custom') {
+    const provider = providers.find((p: any) => p.id === selectedProvider)
+    if (provider?.claudeCode) {
+      prefilledBaseUrl = provider.claudeCode.baseUrl
+      prefilledAuthType = provider.claudeCode.authType
+      console.log(ansis.gray(i18n.t('api:providerSelected', { name: provider.name })))
+    }
+  }
+
   const answers = await inquirer.prompt<{
     profileName: string
     authType: 'api_key' | 'auth_token' | 'ccr_proxy'
@@ -104,12 +132,13 @@ async function handleAddProfile(): Promise<void> {
       type: 'input',
       name: 'profileName',
       message: i18n.t('multi-config:profileNamePrompt'),
+      default: selectedProvider !== 'custom' ? providers.find((p: any) => p.id === selectedProvider)?.name : undefined,
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed) {
           return i18n.t('multi-config:profileNameRequired')
         }
-        if (!/^[\w\-\s\u4E00-\u9FA5]+$/.test(trimmed)) {
+        if (!/^[\w\-\s.\u4E00-\u9FA5]+$/.test(trimmed)) {
           return i18n.t('multi-config:profileNameInvalid')
         }
         return true
@@ -123,14 +152,15 @@ async function handleAddProfile(): Promise<void> {
         { name: i18n.t('multi-config:authType.api_key'), value: 'api_key' },
         { name: i18n.t('multi-config:authType.auth_token'), value: 'auth_token' },
       ],
-      default: 'api_key',
+      default: prefilledAuthType || 'api_key',
+      when: () => selectedProvider === 'custom', // Only ask if custom
     },
     {
       type: 'input',
       name: 'baseUrl',
       message: i18n.t('multi-config:baseUrlPrompt'),
-      default: 'https://api.anthropic.com',
-      when: answers => answers.authType !== 'ccr_proxy',
+      default: prefilledBaseUrl || 'https://api.anthropic.com',
+      when: (answers: any) => selectedProvider === 'custom' && answers.authType !== 'ccr_proxy',
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed) {
@@ -150,8 +180,10 @@ async function handleAddProfile(): Promise<void> {
     {
       type: 'input',
       name: 'apiKey',
-      message: i18n.t('multi-config:apiKeyPrompt'),
-      when: (answers: any) => answers.authType !== 'ccr_proxy',
+      message: selectedProvider !== 'custom'
+        ? i18n.t('api:enterProviderApiKey', { provider: providers.find((p: any) => p.id === selectedProvider)?.name || selectedProvider })
+        : i18n.t('multi-config:apiKeyPrompt'),
+      when: (answers: any) => selectedProvider === 'custom' ? answers.authType !== 'ccr_proxy' : true,
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed) {
@@ -167,6 +199,17 @@ async function handleAddProfile(): Promise<void> {
         return true
       },
     },
+  ])
+
+  // For custom provider, prompt for model configuration
+  let modelConfig: { primaryModel: string, fastModel: string } | null = null
+  if (selectedProvider === 'custom') {
+    const { promptCustomModels } = await import('./features')
+    modelConfig = await promptCustomModels()
+  }
+
+  // Continue with setAsDefault prompt
+  const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([
     {
       type: 'confirm',
       name: 'setAsDefault',
@@ -181,12 +224,22 @@ async function handleAddProfile(): Promise<void> {
   const profile: ClaudeCodeProfile = {
     id: profileId,
     name: profileName,
-    authType: answers.authType,
+    authType: selectedProvider === 'custom' ? answers.authType : prefilledAuthType!,
   }
 
-  if (answers.authType !== 'ccr_proxy') {
+  if (profile.authType !== 'ccr_proxy') {
     profile.apiKey = answers.apiKey.trim()
-    profile.baseUrl = answers.baseUrl.trim()
+    profile.baseUrl = selectedProvider === 'custom' ? answers.baseUrl.trim() : prefilledBaseUrl!
+  }
+
+  // Add model configuration if provided
+  if (modelConfig) {
+    if (modelConfig.primaryModel.trim()) {
+      profile.primaryModel = modelConfig.primaryModel.trim()
+    }
+    if (modelConfig.fastModel.trim()) {
+      profile.fastModel = modelConfig.fastModel.trim()
+    }
   }
 
   const existingProfile = ClaudeCodeConfigManager.getProfileByName(profile.name)
@@ -215,6 +268,8 @@ async function handleAddProfile(): Promise<void> {
       authType: profile.authType,
       apiKey: profile.apiKey,
       baseUrl: profile.baseUrl,
+      primaryModel: profile.primaryModel,
+      fastModel: profile.fastModel,
     })
 
     if (updateResult.success) {
@@ -223,7 +278,7 @@ async function handleAddProfile(): Promise<void> {
         console.log(ansis.gray(i18n.t('common:backupCreated', { path: updateResult.backupPath })))
       }
 
-      if (answers.setAsDefault) {
+      if (setAsDefault) {
         const switchResult = await ClaudeCodeConfigManager.switchProfile(existingProfile.id!)
         if (switchResult.success) {
           console.log(ansis.green(i18n.t('multi-config:profileSetAsDefault', { name: profile.name })))
@@ -245,7 +300,7 @@ async function handleAddProfile(): Promise<void> {
         console.log(ansis.gray(i18n.t('common:backupCreated', { path: result.backupPath })))
       }
 
-      if (answers.setAsDefault) {
+      if (setAsDefault) {
         const switchResult = await ClaudeCodeConfigManager.switchProfile(runtimeProfile.id!)
         if (switchResult.success) {
           console.log(ansis.green(i18n.t('multi-config:profileSetAsDefault', { name: runtimeProfile.name })))

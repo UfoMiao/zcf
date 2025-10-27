@@ -40,6 +40,7 @@ export interface CodexProvider {
   wireApi: string
   envKey: string
   requiresOpenaiAuth: boolean
+  model?: string // Default model for this provider
 }
 
 export interface CodexMcpService {
@@ -224,7 +225,8 @@ function sanitizeProviderName(input: string): string {
   const cleaned = input.trim()
   if (!cleaned)
     return ''
-  return cleaned.replace(/[^\w.-]/g, '')
+  // Replace dots with hyphens, then remove any characters that are not word chars, dots, or hyphens
+  return cleaned.toLowerCase().replace(/\./g, '-').replace(/\s+/g, '-').replace(/[^a-z0-9\-]/g, '')
 }
 
 export function parseCodexConfig(content: string): CodexConfigData {
@@ -263,6 +265,7 @@ export function parseCodexConfig(content: string): CodexConfigData {
           wireApi: provider.wire_api || 'responses',
           envKey: provider.env_key || 'OPENAI_API_KEY',
           requiresOpenaiAuth: provider.requires_openai_auth !== false,
+          model: provider.model || undefined, // Parse model field from provider
         })
       }
     }
@@ -482,7 +485,9 @@ export function renderCodexConfig(data: CodexConfigData): string {
         return false
       if (/^#?\s*model_provider\s*=/.test(l))
         return false
-      if (/^\s*model\s*=/.test(l))
+      // Only filter out global model field (not inside sections)
+      // This regex checks if it's a top-level model field (not inside a section)
+      if (/^\s*model\s*=/.test(l) && !l.includes('['))
         return false
       return true
     })
@@ -505,6 +510,10 @@ export function renderCodexConfig(data: CodexConfigData): string {
       lines.push(`wire_api = "${provider.wireApi}"`)
       lines.push(`env_key = "${provider.envKey}"`)
       lines.push(`requires_openai_auth = ${provider.requiresOpenaiAuth}`)
+      // Add model field if present
+      if (provider.model) {
+        lines.push(`model = "${provider.model}"`)
+      }
     }
   }
 
@@ -1197,12 +1206,42 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
   const firstExisting = existingValues.length === 1 ? existingValues[0] : undefined
 
   while (addMore) {
+    // Step 1: Select API provider (custom or preset)
+    const { getApiProviders } = await import('../../config/api-providers')
+    const apiProviders = getApiProviders('codex')
+
+    const providerChoices = [
+      { name: i18n.t('api:customProvider'), value: 'custom' },
+      ...apiProviders.map((p: any) => ({ name: p.name, value: p.id })),
+    ]
+
+    const { selectedProvider } = await inquirer.prompt<{ selectedProvider: string }>([{
+      type: 'list',
+      name: 'selectedProvider',
+      message: i18n.t('api:selectApiProvider'),
+      choices: addNumbersToChoices(providerChoices),
+    }])
+
+    let prefilledBaseUrl: string | undefined
+    let prefilledWireApi: 'responses' | 'chat' | undefined
+    let prefilledModel: string | undefined
+
+    if (selectedProvider !== 'custom') {
+      const provider = apiProviders.find((p: any) => p.id === selectedProvider)
+      if (provider?.codex) {
+        prefilledBaseUrl = provider.codex.baseUrl
+        prefilledWireApi = provider.codex.wireApi
+        prefilledModel = provider.codex.defaultModel
+        console.log(ansis.gray(i18n.t('api:providerSelected', { name: provider.name })))
+      }
+    }
+
     const answers = await inquirer.prompt<{ providerName: string, baseUrl: string, wireApi: string, apiKey: string }>([
       {
         type: 'input',
         name: 'providerName',
         message: i18n.t('codex:providerNamePrompt'),
-        default: firstExisting?.name,
+        default: selectedProvider !== 'custom' ? apiProviders.find((p: any) => p.id === selectedProvider)?.name : firstExisting?.name,
         validate: (input: string) => {
           const sanitized = sanitizeProviderName(input)
           if (!sanitized)
@@ -1216,7 +1255,8 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
         type: 'input',
         name: 'baseUrl',
         message: i18n.t('codex:providerBaseUrlPrompt'),
-        default: (answers: any) => existingMap.get(answers.providerId)?.baseUrl || 'https://api.openai.com/v1',
+        default: prefilledBaseUrl || ((answers: any) => existingMap.get(answers.providerId)?.baseUrl || 'https://api.openai.com/v1'),
+        when: () => selectedProvider === 'custom',
         validate: input => !!input || i18n.t('codex:providerBaseUrlRequired'),
       },
       {
@@ -1227,15 +1267,32 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
           { name: i18n.t('codex:protocolResponses'), value: 'responses' },
           { name: i18n.t('codex:protocolChat'), value: 'chat' },
         ],
-        default: (answers: any) => existingMap.get(sanitizeProviderName(answers.providerName))?.wireApi || 'responses',
+        default: prefilledWireApi || ((answers: any) => existingMap.get(sanitizeProviderName(answers.providerName))?.wireApi || 'responses'),
+        when: () => selectedProvider === 'custom', // Only ask if custom
       },
       {
         type: 'input',
         name: 'apiKey',
-        message: i18n.t('codex:providerApiKeyPrompt'),
+        message: selectedProvider !== 'custom'
+          ? i18n.t('api:enterProviderApiKey', { provider: apiProviders.find((p: any) => p.id === selectedProvider)?.name || selectedProvider })
+          : i18n.t('codex:providerApiKeyPrompt'),
         validate: (input: string) => !!input || i18n.t('codex:providerApiKeyRequired'),
       },
     ])
+
+    // For custom provider, prompt for model configuration
+    let customModel: string | undefined
+    if (selectedProvider === 'custom') {
+      const { model } = await inquirer.prompt<{ model: string }>([{
+        type: 'input',
+        name: 'model',
+        message: `${i18n.t('configuration:enterCustomModel')}${i18n.t('common:emptyToSkip')}`,
+        default: 'gpt-5-codex',
+      }])
+      if (model.trim()) {
+        customModel = model.trim()
+      }
+    }
 
     const providerId = sanitizeProviderName(answers.providerName)
     const envKey = `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`
@@ -1276,10 +1333,11 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
     const newProvider: CodexProvider = {
       id: providerId,
       name: answers.providerName,
-      baseUrl: answers.baseUrl,
-      wireApi: answers.wireApi || 'responses',
+      baseUrl: selectedProvider === 'custom' ? answers.baseUrl : prefilledBaseUrl!,
+      wireApi: selectedProvider === 'custom' ? (answers.wireApi || 'responses') : prefilledWireApi!,
       envKey,
       requiresOpenaiAuth: true,
+      model: customModel || prefilledModel || 'gpt-5-codex', // Use custom model, provider's default model, or fallback
     }
 
     providers.push(newProvider)
@@ -1718,9 +1776,27 @@ export async function switchToProvider(providerId: string): Promise<boolean> {
   }
 
   try {
+    // Determine the model to use
+    let targetModel = existingConfig.model
+
+    if (provider.model) {
+      // Provider has a specific model, use it
+      targetModel = provider.model
+    }
+    else {
+      // Provider doesn't have a model, check current model
+      const currentModel = existingConfig.model
+      if (currentModel !== 'gpt-5' && currentModel !== 'gpt-5-codex') {
+        // Current model is neither gpt-5 nor gpt-5-codex, change to gpt-5-codex
+        targetModel = 'gpt-5-codex'
+      }
+      // Otherwise keep the current model (gpt-5 or gpt-5-codex)
+    }
+
     // Uncomment model_provider and set to specified provider
     const updatedConfig: CodexConfigData = {
       ...existingConfig,
+      model: targetModel,
       modelProvider: providerId,
       modelProviderCommented: false, // Ensure it's not commented
     }

@@ -7,6 +7,8 @@ export interface ClaudeCodeProfile {
   authType: 'api_key' | 'auth_token' | 'ccr_proxy'
   apiKey?: string // API key (stored in plain text)
   baseUrl?: string // Custom API URL
+  primaryModel?: string // Primary model (e.g., claude-sonnet-4-5)
+  fastModel?: string // Fast model (e.g., claude-haiku-4-5)
   /**
    * Derived at runtime, not persisted to config file
    */
@@ -24,6 +26,8 @@ export interface ApiConfigDefinition {
   key?: string // API key (required for api_key and auth_token)
   url?: string // Custom URL (optional)
   default?: boolean // Set as default profile (optional)
+  primaryModel?: string // Primary model (optional, e.g., claude-sonnet-4-5)
+  fastModel?: string // Fast model (optional, e.g., claude-haiku-4-5)
 }
 
 // Operation result type

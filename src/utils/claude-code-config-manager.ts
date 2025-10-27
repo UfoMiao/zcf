@@ -252,6 +252,21 @@ export class ClaudeCodeConfigManager {
           delete settings.env.ANTHROPIC_BASE_URL
       }
 
+      // Apply model configuration if provided
+      if (profile.primaryModel) {
+        settings.env.ANTHROPIC_MODEL = profile.primaryModel
+      }
+      else {
+        delete settings.env.ANTHROPIC_MODEL
+      }
+
+      if (profile.fastModel) {
+        settings.env.ANTHROPIC_SMALL_FAST_MODEL = profile.fastModel
+      }
+      else {
+        delete settings.env.ANTHROPIC_SMALL_FAST_MODEL
+      }
+
       writeJsonConfig(SETTINGS_FILE, settings)
 
       const { setPrimaryApiKey, addCompletedOnboarding } = await import('./claude-config')
@@ -287,6 +302,10 @@ export class ClaudeCodeConfigManager {
       sanitized.apiKey = profile.apiKey
     if (profile.baseUrl)
       sanitized.baseUrl = profile.baseUrl
+    if (profile.primaryModel)
+      sanitized.primaryModel = profile.primaryModel
+    if (profile.fastModel)
+      sanitized.fastModel = profile.fastModel
 
     return sanitized
   }

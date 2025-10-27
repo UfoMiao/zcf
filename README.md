@@ -402,12 +402,35 @@ After configuration:
 
 ### 🔐 API Configuration
 
-- Supports two authentication methods:
-  - **Auth Token**: For tokens obtained via OAuth or browser login
-  - **API Key**: For API keys from Anthropic Console
-- Custom API URL support
-- Support for manual configuration later
-- Partial modification: Update only needed configuration items (v2.0 new)
+ZCF provides flexible API configuration options for both Claude Code and Codex:
+
+**Quick Setup with API Provider Presets (v3.3.0+ New):**
+
+Choose from popular API providers with pre-configured settings:
+- **302.AI** - Pay-as-you-go AI service with comprehensive model support
+- **GLM (智谱AI)** - Zhipu AI's GLM models
+- **MiniMax** - MiniMax AI service
+- **Kimi (Moonshot AI)** - Moonshot's Kimi models
+- **Custom Configuration** - Full manual configuration for any provider
+
+When using a preset provider, you only need to:
+1. Select the provider from the list
+2. Enter your API key
+
+The system automatically configures:
+- API base URL
+- Authentication type (API Key or Auth Token)
+- Default models (if applicable)
+- Wire API protocol (for Codex)
+
+**Traditional Configuration Methods:**
+
+- **Official Login**: Use official authentication system (no API configuration needed)
+- **Auth Token**: For tokens obtained via OAuth or browser login
+- **API Key**: For API keys from Anthropic Console or custom providers
+- **CCR Proxy**: Configure Claude Code Router proxy
+- **Custom API URL**: Support for any compatible API endpoint
+- **Partial Modification**: Update only needed configuration items (v2.0+)
 
 ### 💾 Configuration Management
 

@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v3.2.3 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, and sophisticated uninstallation capabilities with advanced conflict resolution. The project also integrates dual code tool support, enabling both Claude Code and Codex environment configuration.
+ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v3.3.0 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, sophisticated uninstallation capabilities with advanced conflict resolution, and API provider preset system for simplified configuration. The project also integrates dual code tool support, enabling both Claude Code and Codex environment configuration.
 
 ## Architecture Overview
 
@@ -91,7 +91,7 @@ graph TD
 | **Code Tools** | `src/utils/code-tools/` | Codex integration and dual code tool support | codex-config-detector.ts, codex-provider-manager.ts, codex-uninstaller.ts, codex-platform.ts, codex-config-switch.ts, codex-configure.ts, codex.ts | High - comprehensive Codex tests |
 | **Internationalization** | `src/i18n/` | Advanced i18next multilingual support with namespace organization and complete uninstall translations | index.ts, locales/zh-CN/, locales/en/ | High - translation validation |
 | **Types** | `src/types/` | Comprehensive TypeScript type definitions including Claude Code and TOML config types | workflow.ts, config.ts, ccr.ts, claude-code-config.ts, toml-config.ts | Implicit through usage |
-| **Configuration** | `src/config/` | Centralized workflow and system configurations | workflows.ts, mcp-services.ts | High - config validation tests |
+| **Configuration** | `src/config/` | Centralized workflow and system configurations including API provider presets | workflows.ts, mcp-services.ts, api-providers.ts | High - config validation tests |
 | **Templates** | `templates/` | Enhanced multilingual configuration templates and AI personality styles with dual code tool support | claude-code/, codex/, common/, output-styles/, workflow/ | Medium - template validation tests |
 | **Testing** | `tests/` | Comprehensive test suites with layered coverage architecture and advanced uninstaller testing | commands/, utils/, unit/, integration/, edge/, i18n/, templates/ | Self-testing with 80% target |
 
@@ -313,15 +313,16 @@ graph TD
 
 1. **Advanced Windows Compatibility**: MCP configurations require sophisticated Windows path handling with proper escaping and validation
 2. **Comprehensive Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/` with full recovery capabilities
-3. **Enhanced API Configuration**: Supports Auth Token (OAuth), API Key, and CCR Proxy authentication with comprehensive validation
-4. **Advanced Workflow System**: Modular workflow installation with sophisticated dependency resolution and conflict management
-5. **Advanced CCR Integration**: Claude Code Router proxy management with configuration validation and preset management
-6. **Intelligent Auto-Update System**: Automated tool updating for Claude Code, CCR, and CCometixLine with comprehensive version checking
-7. **Advanced Common Tools Workflow**: Enhanced workflow category with init-project command and comprehensive agent ecosystem
-8. **Professional Template System**: Multilingual templates with professional output styles and comprehensive workflow coverage, new Codex support
-9. **Advanced i18next Integration**: Sophisticated internationalization with namespace-based translation management and dynamic language switching
-10. **Comprehensive Tool Integration**: Advanced CCR, Cometix, and CCusage integration with version management and configuration validation
-11. **Sophisticated Uninstaller**: Advanced ZCF uninstaller with selective removal, conflict resolution, and cross-platform trash integration
+3. **Enhanced API Configuration**: Supports Auth Token (OAuth), API Key, and CCR Proxy authentication with comprehensive validation and API provider preset system (v3.3.0+)
+4. **API Provider Preset System**: Pre-configured settings for popular providers (302.AI, GLM, MiniMax, Kimi) simplifying configuration from 5+ prompts to just 2 (provider + API key)
+5. **Advanced Workflow System**: Modular workflow installation with sophisticated dependency resolution and conflict management
+6. **Advanced CCR Integration**: Claude Code Router proxy management with configuration validation and preset management
+7. **Intelligent Auto-Update System**: Automated tool updating for Claude Code, CCR, and CCometixLine with comprehensive version checking
+8. **Advanced Common Tools Workflow**: Enhanced workflow category with init-project command and comprehensive agent ecosystem
+9. **Professional Template System**: Multilingual templates with professional output styles and comprehensive workflow coverage, new Codex support
+10. **Advanced i18next Integration**: Sophisticated internationalization with namespace-based translation management and dynamic language switching
+11. **Comprehensive Tool Integration**: Advanced CCR, Cometix, and CCusage integration with version management and configuration validation
+12. **Sophisticated Uninstaller**: Advanced ZCF uninstaller with selective removal, conflict resolution, and cross-platform trash integration
 
 ### Testing Philosophy
 
