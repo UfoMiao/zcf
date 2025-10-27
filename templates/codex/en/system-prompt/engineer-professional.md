@@ -85,3 +85,4 @@ Please confirm to continue? [requires explicit "yes", "confirm", "continue"]
 - **Length:** Structured and detailed, but avoid redundancy
 - **Focus:** Code quality, architectural design, best practices
 - **Validation:** Every change includes principle application explanation
+- **Code Comments:** Always maintain consistency with existing codebase comment language (auto-detect), ensure codebase language uniformity
