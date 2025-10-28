@@ -129,6 +129,22 @@ npx zcf i --skip-prompt \
   --api-url "https://xxx.xxx" \
   --api-model "claude-sonnet-4-5" \
   --api-fast-model "claude-haiku-4-5"
+
+# 複数のAPI設定（JSON文字列）
+npx zcf i -s --api-configs '[
+  {"provider":"302ai","key":"sk-xxx"},
+  {"provider":"glm","key":"sk-yyy"},
+  {"name":"custom","type":"api_key","key":"sk-zzz","url":"https://custom.api.com","primaryModel":"claude-sonnet-4-5","fastModel":"claude-haiku-4-5","default":true}
+]'
+
+# 複数のAPI設定（JSONファイル）
+npx zcf i -s --api-configs-file ./api-configs.json
+
+# Codex複数プロバイダー設定
+npx zcf i -s -T cx --api-configs '[
+  {"provider":"302ai","key":"sk-xxx"},
+  {"name":"custom","type":"api_key","key":"sk-yyy","url":"https://custom.api.com","primaryModel":"gpt-5","default":true}
+]'
 ```
 
 #### 🎯 APIプロバイダープリセット（v3.3.0+新機能）
@@ -196,6 +212,9 @@ npx zcf i -s -T cx -p 302ai -k "sk-xxx"
 | `--output-styles, -o`        | インストールする出力スタイル（複数選択、カンマ区切り） | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`、または`skip`でインストールしない      | いいえ                        | `all`                                                                                  |
 | `--default-output-style, -d` | デフォルト出力スタイル                     | 出力スタイルオプションと同じ、さらに組み込みスタイル：`default`, `explanatory`, `learning`                | いいえ                        | `engineer-professional`                                                                |
 | `--install-cometix-line, -x` | CCometixLineステータスバーツールのインストール | `true`, `false`                                                                                        | いいえ                        | `true`                                                                                 |
+| `--code-type, -T`            | ターゲットコードツールタイプ               | `claude-code`, `codex`, `cc`, `cx`                                                                     | いいえ                        | ZCF設定の現在のアクティブツールタイプ                                                  |
+| `--api-configs`              | 複数のAPI設定（JSON文字列）                | API設定オブジェクトのJSON配列文字列                                                                    | いいえ                        | -（`--api-configs-file`と相互排他的）                                                  |
+| `--api-configs-file`         | 複数のAPI設定（JSONファイルパス）          | API設定配列を含むJSONファイルのパス                                                                    | いいえ                        | -（`--api-configs`と相互排他的）                                                       |
 
 #### 🤖 Codexサポート（v3.0.0+新機能）
 

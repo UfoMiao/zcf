@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-**Last Updated**: Mon Oct 27 09:30:54 CST 2025
+**Last Updated**: Mon Oct 27 19:39:26 CST 2025
 
 ## Project Overview
 
@@ -14,7 +14,7 @@ ZCF follows a modular CLI architecture with strict TypeScript typing, comprehens
 
 ```mermaid
 graph TD
-    A["🚀 ZCF Root (v3.2.3)"] --> B["src/commands"];
+    A["🚀 ZCF Root (v3.3.0)"] --> B["src/commands"];
     A --> C["src/utils"];
     A --> D["src/i18n"];
     A --> E["src/types"];
@@ -97,11 +97,11 @@ graph TD
 
 ## Project Statistics
 
-- **Total Files**: ~7,078 files (TypeScript, JSON, Markdown)
-- **Source Files**: 73 TypeScript files in `src/`
-- **Test Files**: 100+ test files with comprehensive coverage
-- **Translation Files**: 32 JSON files (16 per locale: zh-CN, en)
-- **Template Files**: 50+ template files for workflows and output styles
+- **Total Files**: ~517 files (TypeScript, JSON, Markdown)
+- **Source Files**: 74 TypeScript files in `src/`
+- **Test Files**: 122 test files with comprehensive coverage
+- **Translation Files**: 34 JSON files (17 per locale: zh-CN, en)
+- **Template Files**: 54 template files for workflows and output styles
 - **Module Count**: 10 major modules with clear separation of concerns
 
 ## CLI Usage

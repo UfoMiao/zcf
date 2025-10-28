@@ -130,6 +130,22 @@ npx zcf i --skip-prompt \
   --api-url "https://xxx.xxx" \
   --api-model "claude-sonnet-4-5" \
   --api-fast-model "claude-haiku-4-5"
+
+# Multiple API configurations (JSON string)
+npx zcf i -s --api-configs '[
+  {"provider":"302ai","key":"sk-xxx"},
+  {"provider":"glm","key":"sk-yyy"},
+  {"name":"custom","type":"api_key","key":"sk-zzz","url":"https://custom.api.com","primaryModel":"claude-sonnet-4-5","fastModel":"claude-haiku-4-5","default":true}
+]'
+
+# Multiple API configurations (JSON file)
+npx zcf i -s --api-configs-file ./api-configs.json
+
+# For Codex with multiple providers
+npx zcf i -s -T cx --api-configs '[
+  {"provider":"302ai","key":"sk-xxx"},
+  {"name":"custom","type":"api_key","key":"sk-yyy","url":"https://custom.api.com","primaryModel":"gpt-5","default":true}
+]'
 ```
 
 #### 🎯 API Provider Presets (v3.3.0+ New)
@@ -197,6 +213,9 @@ When using `--skip-prompt`, the following parameters are available:
 | `--output-styles, -o`        | Output styles to install (multi-select, comma-separated) | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`, or `skip` for none               | No                                     | `all`                                                                                                                            |
 | `--default-output-style, -d` | Default output style                                     | Same as output styles plus built-in: `default`, `explanatory`, `learning`                          | No                                     | `engineer-professional`                                                                                                          |
 | `--install-cometix-line, -x` | Install CCometixLine statusline tool                     | `true`, `false`                                                                                    | No                                     | `true`                                                                                                                           |
+| `--code-type, -T`            | Target code tool type                                    | `claude-code`, `codex`, `cc`, `cx`                                                                 | No                                     | Current active tool type from ZCF config                                                                                         |
+| `--api-configs`              | Multiple API configurations (JSON string)                | JSON array string of API configuration objects                                                     | No                                     | - (Mutually exclusive with `--api-configs-file`)                                                                                 |
+| `--api-configs-file`         | Multiple API configurations (JSON file path)             | Path to JSON file containing API configuration array                                               | No                                     | - (Mutually exclusive with `--api-configs`)                                                                                      |
 
 #### 🤖 Codex Support (v3.0.0+ New)
 

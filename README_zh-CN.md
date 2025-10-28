@@ -130,6 +130,22 @@ npx zcf i --skip-prompt \
   --api-url "https://xxx.xxx" \
   --api-model "claude-sonnet-4-5" \
   --api-fast-model "claude-haiku-4-5"
+
+# 多个 API 配置（JSON 字符串）
+npx zcf i -s --api-configs '[
+  {"provider":"302ai","key":"sk-xxx"},
+  {"provider":"glm","key":"sk-yyy"},
+  {"name":"custom","type":"api_key","key":"sk-zzz","url":"https://custom.api.com","primaryModel":"claude-sonnet-4-5","fastModel":"claude-haiku-4-5","default":true}
+]'
+
+# 多个 API 配置（JSON 文件）
+npx zcf i -s --api-configs-file ./api-configs.json
+
+# Codex 多提供商配置
+npx zcf i -s -T cx --api-configs '[
+  {"provider":"302ai","key":"sk-xxx"},
+  {"name":"custom","type":"api_key","key":"sk-yyy","url":"https://custom.api.com","primaryModel":"gpt-5","default":true}
+]'
 ```
 
 #### 🎯 API 提供商预设（v3.3.0+ 新增）
@@ -197,6 +213,9 @@ npx zcf i -s -T cx -p 302ai -k "sk-xxx"
 | `--output-styles, -o`        | 要安装的输出风格（多选，逗号分隔）      | `engineer-professional`, `nekomata-engineer`, `laowang-engineer`, `ojousama-engineer`，或 `skip` 表示不安装                 | 否                            | `all`                                                                                  |
 | `--default-output-style, -d` | 默认输出风格                            | 同输出风格选项，还包括内置风格：`default`, `explanatory`, `learning`                                   | 否                            | `engineer-professional`                                                                |
 | `--install-cometix-line, -x` | 安装 CCometixLine 状态栏工具            | `true`, `false`                                                                                        | 否                            | `true`                                                                                 |
+| `--code-type, -T`            | 目标代码工具类型                        | `claude-code`, `codex`, `cc`, `cx`                                                                     | 否                            | ZCF 配置中的当前活动工具类型                                                           |
+| `--api-configs`              | 多个 API 配置（JSON 字符串）            | API 配置对象的 JSON 数组字符串                                                                         | 否                            | -（与 `--api-configs-file` 互斥）                                                      |
+| `--api-configs-file`         | 多个 API 配置（JSON 文件路径）          | 包含 API 配置数组的 JSON 文件路径                                                                      | 否                            | -（与 `--api-configs` 互斥）                                                           |
 
 #### 🤖 Codex 支持（v3.0.0+ 新增）
 

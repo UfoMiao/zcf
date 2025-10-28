@@ -1,20 +1,32 @@
 # Utils Module
 
+**Last Updated**: Mon Oct 27 19:39:26 CST 2025
+
 [Root](../../CLAUDE.md) > [src](../) > **utils**
 
 ## Module Responsibilities
 
-Core utility module providing configuration management, platform compatibility, MCP service integration, Claude Code installation, workflow management, and cross-platform tool support for the ZCF project.
+Core utility module providing configuration management, platform compatibility, MCP service integration, Claude Code installation, workflow management, and cross-platform tool support for the ZCF project. This module contains 52 TypeScript files organized into specialized subdirectories for CCR, Cometix, Code Tools, and general utilities.
 
 ## Entry Points and Startup
 
 - **Main Entry Points**:
-  - `config.ts` - Configuration file management and backup operations
-  - `installer.ts` - Claude Code installation and update logic
-  - `mcp.ts` - MCP service configuration and server management
-  - `platform.ts` - Cross-platform support and environment detection
-  - `workflow-installer.ts` - Workflow template installation and management
-  - `i18n.ts` - Translation helper functions and language support
+  - `config.ts` - Configuration file management and backup operations (14KB)
+  - `installer.ts` - Claude Code installation and update logic (5KB)
+  - `platform.ts` - Cross-platform support and environment detection (5KB)
+  - `workflow-installer.ts` - Workflow template installation and management (7KB)
+  - `claude-code-config-manager.ts` - Advanced Claude Code configuration management (25KB)
+  - `claude-code-incremental-manager.ts` - Incremental configuration updates (17KB)
+  - `features.ts` - Feature management and installation orchestration (28KB)
+  - `uninstaller.ts` - Advanced uninstallation with conflict resolution (18KB)
+  - `trash.ts` - Cross-platform trash/recycle bin integration (1KB)
+  - `zcf-config.ts` - ZCF-specific configuration management (13KB)
+
+- **Subdirectories**:
+  - `ccr/` - Claude Code Router proxy management (7 files)
+  - `cometix/` - Status line tools and configuration (6 files)
+  - `code-tools/` - Codex integration and dual code tool support (7 files)
+  - `tools/` - General tool integration utilities (2 files)
 
 ## External Interfaces
 
