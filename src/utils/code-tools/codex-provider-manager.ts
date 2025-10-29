@@ -28,6 +28,7 @@ export interface ProviderUpdateData {
   baseUrl?: string
   wireApi?: 'responses' | 'chat'
   apiKey?: string
+  model?: string
 }
 
 /**
@@ -155,6 +156,7 @@ export async function editExistingProvider(
       ...(updates.name && { name: updates.name }),
       ...(updates.baseUrl && { baseUrl: updates.baseUrl }),
       ...(updates.wireApi && { wireApi: updates.wireApi }),
+      ...(updates.model && { model: updates.model }),
     }
 
     // Update configuration

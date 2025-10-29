@@ -256,6 +256,16 @@ describe('config-switch command', () => {
       expect(mockSwitchToOfficialLogin).not.toHaveBeenCalled()
       // Should not throw error, should handle gracefully
     })
+
+    it('should handle official login selection with failure', async () => {
+      mockInquirer.prompt.mockResolvedValue({ selectedConfig: 'official' })
+      mockSwitchToOfficialLogin.mockResolvedValue(false)
+
+      await configSwitchCommand({})
+
+      expect(mockSwitchToOfficialLogin).toHaveBeenCalled()
+      expect(mockSwitchToProvider).not.toHaveBeenCalled()
+    })
   })
 
   describe('error handling', () => {
@@ -271,6 +281,13 @@ describe('config-switch command', () => {
       mockSwitchCodexProvider.mockRejectedValue(error)
 
       await expect(configSwitchCommand({ target: 'claude-api' })).rejects.toThrow('Failed to write config')
+    })
+
+    it('should handle errors in interactive mode', async () => {
+      const error = new Error('Unexpected error')
+      mockListCodexProviders.mockRejectedValue(error)
+
+      await expect(configSwitchCommand({})).rejects.toThrow('Unexpected error')
     })
   })
 })

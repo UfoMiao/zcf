@@ -275,11 +275,23 @@ async function handleEditProvider(providers: any[]): Promise<void> {
     },
   ])
 
+  // Prompt for model configuration
+  const { model } = await inquirer.prompt<{ model: string }>([
+    {
+      type: 'input',
+      name: 'model',
+      message: i18n.t('codex:providerModelPrompt'),
+      default: provider.model || 'gpt-5-codex',
+      validate: (input: string) => !!input.trim() || i18n.t('codex:providerModelRequired'),
+    },
+  ])
+
   const updates = {
     name: answers.providerName.trim(),
     baseUrl: answers.baseUrl.trim(),
     wireApi: answers.wireApi as 'responses' | 'chat',
     apiKey: answers.apiKey.trim(),
+    model: model.trim(),
   }
 
   const result = await editExistingProvider(selectedProviderId, updates)

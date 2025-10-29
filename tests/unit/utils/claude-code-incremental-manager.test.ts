@@ -815,5 +815,134 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.updateProfile).not.toHaveBeenCalled()
       expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
     })
+
+    it('should handle preset provider with prefilled values', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
+
+      // Mock preset provider selection
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ selectedProvider: '302ai' }) // Select preset
+        .mockResolvedValueOnce({
+          profileName: '302.AI',
+          apiKey: 'sk-302-test-key',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+        .mockResolvedValueOnce({ continueAdding: false })
+
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
+    })
+
+    it('should handle model configuration with empty strings', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
+
+      const { promptCustomModels } = await import('../../../src/utils/features')
+      vi.mocked(promptCustomModels).mockResolvedValue({
+        primaryModel: '',
+        fastModel: '',
+      })
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ selectedProvider: 'custom' })
+        .mockResolvedValueOnce({
+          profileName: 'Test Profile',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+        .mockResolvedValueOnce({ continueAdding: false })
+
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      await configureIncrementalManagement()
+
+      const addProfileCall = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls[0][0]
+      expect(addProfileCall).not.toHaveProperty('primaryModel')
+      expect(addProfileCall).not.toHaveProperty('fastModel')
+    })
+
+    it('should handle model configuration with only primary model', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
+
+      const { promptCustomModels } = await import('../../../src/utils/features')
+      vi.mocked(promptCustomModels).mockResolvedValue({
+        primaryModel: 'claude-3-5-sonnet-20241022',
+        fastModel: '',
+      })
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ selectedProvider: 'custom' })
+        .mockResolvedValueOnce({
+          profileName: 'Test Profile',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+        .mockResolvedValueOnce({ continueAdding: false })
+
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      await configureIncrementalManagement()
+
+      const addProfileCall = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls[0][0]
+      expect(addProfileCall).toHaveProperty('primaryModel', 'claude-3-5-sonnet-20241022')
+      expect(addProfileCall).not.toHaveProperty('fastModel')
+    })
+
+    it('should continue adding profiles when user confirms', async () => {
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId)
+        .mockReturnValueOnce('profile-1')
+        .mockReturnValueOnce('profile-2')
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ selectedProvider: 'custom' })
+        .mockResolvedValueOnce({
+          profileName: 'Profile 1',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-key-1',
+          baseUrl: 'https://api.anthropic.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: true })
+        .mockResolvedValueOnce({ continueAdding: true }) // Continue
+        .mockResolvedValueOnce({ selectedProvider: 'custom' })
+        .mockResolvedValueOnce({
+          profileName: 'Profile 2',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-key-2',
+          baseUrl: 'https://api.anthropic.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+        .mockResolvedValueOnce({ continueAdding: false }) // Stop
+
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+      vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({
+        success: true,
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledTimes(2)
+    })
   })
 })

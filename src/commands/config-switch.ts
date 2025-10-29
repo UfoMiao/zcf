@@ -288,8 +288,8 @@ async function handleClaudeCodeInteractiveSwitch(): Promise<void> {
     const isCcrMode = currentProfileId === 'ccr-proxy'
     choices.push({
       name: isCcrMode
-        ? `${ansis.green('● ')}CCR Proxy ${ansis.yellow('(current)')}`
-        : `  CCR Proxy`,
+        ? `${ansis.green('● ')}${i18n.t('multi-config:ccrProxyOption')} ${ansis.yellow(`(${i18n.t('common:current')})`)}`
+        : `  ${i18n.t('multi-config:ccrProxyOption')}`,
       value: 'ccr',
     })
 

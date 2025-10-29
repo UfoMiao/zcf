@@ -35,6 +35,7 @@
   "authType.api_key": "API Key",
   "authType.auth_token": "Auth Token",
   "authType.ccr_proxy": "CCR Proxy",
+  "ccrProxyOption": "Use CCR Proxy",
   "profileAdded": "✔ Successfully added profile: {{name}}",
   "profileAddFailed": "❌ Failed to add profile: {{error}}",
   "profileDuplicatePrompt": "Profile '{{name}}' already exists in {{source}}, overwrite it?",

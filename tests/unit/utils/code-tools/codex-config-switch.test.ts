@@ -171,6 +171,7 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'updated-key',
         })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model configuration
       vi.mocked(editExistingProvider).mockResolvedValue({
         success: true,
         updatedProvider: createMockProvider('provider1', 'Updated Provider'),
@@ -181,6 +182,7 @@ describe('codex-config-switch', () => {
         baseUrl: 'https://api.updated.com',
         wireApi: 'responses',
         apiKey: 'updated-key',
+        model: 'gpt-5-codex',
       })
     })
     it('should handle delete provider action', async () => {
@@ -493,6 +495,7 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'updated-key',
         })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model configuration
       vi.mocked(editExistingProvider).mockResolvedValue({
         success: false,
         error: 'Edit failed',
@@ -523,6 +526,7 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'updated-key',
         })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model configuration
       vi.mocked(editExistingProvider).mockResolvedValue({
         success: true,
         updatedProvider: createMockProvider('provider1', 'Updated Provider'),

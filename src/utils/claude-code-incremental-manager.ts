@@ -412,6 +412,16 @@ async function handleEditProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
     },
   ])
 
+  // Prompt for model configuration (for non-CCR profiles)
+  let modelConfig: { primaryModel: string, fastModel: string } | null = null
+  if (selectedProfile.authType !== 'ccr_proxy') {
+    const { promptCustomModels } = await import('./features')
+    modelConfig = await promptCustomModels(
+      selectedProfile.primaryModel,
+      selectedProfile.fastModel,
+    )
+  }
+
   // Update profile data
   const updateData: Partial<ClaudeCodeProfile> = {
     name: answers.profileName.trim(),
@@ -420,6 +430,16 @@ async function handleEditProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
   if (selectedProfile.authType !== 'ccr_proxy') {
     updateData.apiKey = answers.apiKey.trim()
     updateData.baseUrl = answers.baseUrl.trim()
+
+    // Add model configuration if provided
+    if (modelConfig) {
+      if (modelConfig.primaryModel.trim()) {
+        updateData.primaryModel = modelConfig.primaryModel.trim()
+      }
+      if (modelConfig.fastModel.trim()) {
+        updateData.fastModel = modelConfig.fastModel.trim()
+      }
+    }
   }
 
   const result = await ClaudeCodeConfigManager.updateProfile(selectedProfile.id!, updateData)

@@ -394,19 +394,19 @@ export async function configureDefaultModelFeature(): Promise<void> {
  * Prompt user for custom model names
  * @returns Object containing primaryModel and fastModel strings (may be empty for skip)
  */
-export async function promptCustomModels(): Promise<{ primaryModel: string, fastModel: string }> {
+export async function promptCustomModels(defaultPrimaryModel?: string, defaultFastModel?: string): Promise<{ primaryModel: string, fastModel: string }> {
   const { primaryModel } = await inquirer.prompt<{ primaryModel: string }>({
     type: 'input',
     name: 'primaryModel',
     message: `${i18n.t('configuration:enterPrimaryModel')}${i18n.t('common:emptyToSkip')}`,
-    default: '',
+    default: defaultPrimaryModel || '',
   })
 
   const { fastModel } = await inquirer.prompt<{ fastModel: string }>({
     type: 'input',
     name: 'fastModel',
     message: `${i18n.t('configuration:enterFastModel')}${i18n.t('common:emptyToSkip')}`,
-    default: '',
+    default: defaultFastModel || '',
   })
 
   return { primaryModel, fastModel }

@@ -35,6 +35,7 @@
   "authType.api_key": "API Key",
   "authType.auth_token": "Auth Token",
   "authType.ccr_proxy": "CCR 代理",
+  "ccrProxyOption": "使用 CCR 代理",
   "profileAdded": "✔ 已成功添加配置：{{name}}",
   "profileAddFailed": "❌ 添加配置失败：{{error}}",
   "profileDuplicatePrompt": "配置「{{name}}」已经存在于{{source}}，是否覆盖？",
