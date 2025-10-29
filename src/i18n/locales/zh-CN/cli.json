@@ -10,6 +10,7 @@
   "help.commandDescriptions.configureCcrProxy": "配置模型路由代理",
   "help.commandDescriptions.claudeCodeUsageAnalysis": "Claude Code 用量统计分析",
   "help.commandDescriptions.uninstallConfigurations": "删除 Claude Code 配置和工具",
+  "help.commandDescriptions.clearClaudeHistory": "清理 Claude 历史数据和项目对话",
   "help.commandDescriptions.checkUpdateVersions": "检查并更新到最新版本",
   "help.shortcutDescriptions.quickInit": "快速初始化",
   "help.shortcutDescriptions.quickUpdate": "快速更新",

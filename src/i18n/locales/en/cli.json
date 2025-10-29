@@ -10,6 +10,7 @@
   "help.commandDescriptions.configureCcrProxy": "Configure Claude Code Router for model proxy",
   "help.commandDescriptions.claudeCodeUsageAnalysis": "Claude Code usage statistics analysis",
   "help.commandDescriptions.uninstallConfigurations": "Remove Claude Code configurations and tools",
+  "help.commandDescriptions.clearClaudeHistory": "Clear Claude history data and project conversations",
   "help.commandDescriptions.checkUpdateVersions": "Check and update to latest versions",
   "help.shortcutDescriptions.quickInit": "Quick init",
   "help.shortcutDescriptions.quickUpdate": "Quick update",
