@@ -1,5 +1,41 @@
 # Changelog
 
+## 3.3.1
+
+### Patch Changes
+
+- ## New Features
+  - Add configuration copy functionality for easier profile duplication
+  - Support model configuration editing in profile management
+  - Refactor Codex constants management for better maintainability
+  - Enhance multi-language support with new translation keys for configuration features
+
+  ## 新功能
+  - 添加配置复制功能，支持快速复制配置文件
+  - 支持在配置管理中编辑模型配置
+  - 重构 Codex 常量管理，提升代码可维护性
+  - 增强多语言支持，为配置功能添加新的翻译键
+
+  ## Optimization
+  - Improve Codex configuration switch logic with comprehensive testing
+  - Enhance Claude Code incremental manager with better error handling
+  - Update documentation with latest module descriptions and architecture details
+
+  ## 优化
+  - 改进 Codex 配置切换逻辑，新增全面的测试覆盖
+  - 增强 Claude Code 增量管理器的错误处理能力
+  - 更新文档，补充最新的模块描述和架构细节
+
+  ## Testing
+  - Add comprehensive test suites for configuration switching functionality
+  - Add unit tests for Claude Code incremental manager
+  - Add integration tests for Codex configuration management
+
+  ## 测试
+  - 为配置切换功能添加全面的测试套件
+  - 为 Claude Code 增量管理器添加单元测试
+  - 为 Codex 配置管理添加集成测试
+
 ## 3.3.0
 
 ### Minor Changes
