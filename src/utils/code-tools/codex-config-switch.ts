@@ -1,7 +1,9 @@
 import type { CodexProvider } from './codex'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
+import { CODEX_AUTH_FILE } from '../../constants'
 import { ensureI18nInitialized, i18n } from '../../i18n'
+import { readJsonConfig } from '../json-config'
 import { addNumbersToChoices } from '../prompt-helpers'
 import { detectConfigManagementMode } from './codex-config-detector'
 import { addProviderToExisting, deleteProviders, editExistingProvider } from './codex-provider-manager'
@@ -29,11 +31,12 @@ export async function configureIncrementalManagement(): Promise<void> {
   const choices = [
     { name: i18n.t('codex:addProvider'), value: 'add' },
     { name: i18n.t('codex:editProvider'), value: 'edit' },
+    { name: i18n.t('codex:copyProvider'), value: 'copy' },
     { name: i18n.t('codex:deleteProvider'), value: 'delete' },
     { name: i18n.t('common:skip'), value: 'skip' },
   ]
 
-  const { action } = await inquirer.prompt<{ action: 'add' | 'edit' | 'delete' | 'skip' }>([{
+  const { action } = await inquirer.prompt<{ action: 'add' | 'edit' | 'copy' | 'delete' | 'skip' }>([{
     type: 'list',
     name: 'action',
     message: i18n.t('codex:selectAction'),
@@ -51,6 +54,9 @@ export async function configureIncrementalManagement(): Promise<void> {
       break
     case 'edit':
       await handleEditProvider(managementMode.providers!)
+      break
+    case 'copy':
+      await handleCopyProvider(managementMode.providers!)
       break
     case 'delete':
       await handleDeleteProvider(managementMode.providers!)
@@ -230,6 +236,10 @@ async function handleEditProvider(providers: any[]): Promise<void> {
     return
   }
 
+  // Read existing API key from auth.json
+  const existingAuth = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
+  const existingApiKey = existingAuth[provider.envKey] || ''
+
   const answers = await inquirer.prompt<{
     providerName: string
     baseUrl: string
@@ -271,6 +281,7 @@ async function handleEditProvider(providers: any[]): Promise<void> {
       type: 'input',
       name: 'apiKey',
       message: i18n.t('codex:providerApiKeyPrompt'),
+      default: existingApiKey, // Show old API key from auth.json
       validate: (input: string) => !!input.trim() || i18n.t('codex:providerApiKeyRequired'),
     },
   ])
@@ -304,6 +315,140 @@ async function handleEditProvider(providers: any[]): Promise<void> {
   }
   else {
     console.log(ansis.red(i18n.t('codex:providerUpdateFailed', { error: result.error })))
+  }
+}
+
+/**
+ * Handle copying an existing provider
+ */
+async function handleCopyProvider(providers: any[]): Promise<void> {
+  const choices = providers.map(provider => ({
+    name: `${provider.name} (${provider.baseUrl})`,
+    value: provider.id,
+  }))
+
+  const { selectedProviderId } = await inquirer.prompt<{ selectedProviderId: string }>([{
+    type: 'list',
+    name: 'selectedProviderId',
+    message: i18n.t('codex:selectProviderToCopy'),
+    choices: addNumbersToChoices(choices),
+  }])
+
+  if (!selectedProviderId) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  const provider = providers.find(p => p.id === selectedProviderId)
+  if (!provider) {
+    console.log(ansis.red(i18n.t('codex:providerNotFound')))
+    return
+  }
+
+  console.log(ansis.cyan(`\n${i18n.t('codex:copyingProvider', { name: provider.name })}`))
+
+  // Read existing API key from auth.json
+  const existingAuth = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
+  const existingApiKey = existingAuth[provider.envKey] || ''
+
+  // Prepare copied provider with -copy suffix
+  const copiedName = `${provider.name}-copy`
+
+  const answers = await inquirer.prompt<{
+    providerName: string
+    baseUrl: string
+    wireApi: string
+    apiKey: string
+  }>([
+    {
+      type: 'input',
+      name: 'providerName',
+      message: i18n.t('codex:providerNamePrompt'),
+      default: copiedName,
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed)
+          return i18n.t('codex:providerNameRequired')
+        if (!/^[\w\-\s.]+$/.test(trimmed))
+          return i18n.t('codex:providerNameInvalid')
+        return true
+      },
+    },
+    {
+      type: 'input',
+      name: 'baseUrl',
+      message: i18n.t('codex:providerBaseUrlPrompt'),
+      default: provider.baseUrl,
+      validate: input => !!input.trim() || i18n.t('codex:providerBaseUrlRequired'),
+    },
+    {
+      type: 'list',
+      name: 'wireApi',
+      message: i18n.t('codex:providerProtocolPrompt'),
+      choices: [
+        { name: i18n.t('codex:protocolResponses'), value: 'responses' },
+        { name: i18n.t('codex:protocolChat'), value: 'chat' },
+      ],
+      default: provider.wireApi,
+    },
+    {
+      type: 'input',
+      name: 'apiKey',
+      message: i18n.t('codex:providerApiKeyPrompt'),
+      default: existingApiKey, // Show old API key from auth.json
+      validate: (input: string) => !!input.trim() || i18n.t('codex:providerApiKeyRequired'),
+    },
+  ])
+
+  // Prompt for model configuration
+  const { model } = await inquirer.prompt<{ model: string }>([
+    {
+      type: 'input',
+      name: 'model',
+      message: i18n.t('codex:providerModelPrompt'),
+      default: provider.model || 'gpt-5-codex',
+      validate: (input: string) => !!input.trim() || i18n.t('codex:providerModelRequired'),
+    },
+  ])
+
+  const providerId = answers.providerName.trim().toLowerCase().replace(/\s+/g, '-').replace(/\./g, '-').replace(/[^a-z0-9\-]/g, '')
+
+  const copiedProvider: CodexProvider = {
+    id: providerId,
+    name: answers.providerName.trim(),
+    baseUrl: answers.baseUrl.trim(),
+    wireApi: answers.wireApi as 'responses' | 'chat',
+    envKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
+    requiresOpenaiAuth: provider.requiresOpenaiAuth ?? true,
+    model: model.trim(),
+  }
+
+  const result = await addProviderToExisting(copiedProvider, answers.apiKey.trim(), false)
+
+  if (result.success) {
+    console.log(ansis.green(i18n.t('codex:providerCopied', { name: result.addedProvider?.name })))
+    if (result.backupPath) {
+      console.log(ansis.gray(i18n.t('common:backupCreated', { path: result.backupPath })))
+    }
+
+    // Ask if user wants to set this provider as default
+    const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([{
+      type: 'confirm',
+      name: 'setAsDefault',
+      message: i18n.t('multi-config:setAsDefaultPrompt'),
+      default: false,
+    }])
+
+    if (setAsDefault) {
+      const { switchToProvider } = await import('./codex')
+      const switched = await switchToProvider(copiedProvider.id)
+      if (switched) {
+        console.log(ansis.green(i18n.t('multi-config:profileSetAsDefault', { name: copiedProvider.name })))
+      }
+    }
+  }
+  else {
+    console.log(ansis.red(i18n.t('codex:providerCopyFailed', { error: result.error })))
   }
 }
 

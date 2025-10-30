@@ -47,11 +47,12 @@ export async function configureIncrementalManagement(): Promise<void> {
   const choices = [
     { name: i18n.t('multi-config:addProfile'), value: 'add' },
     { name: i18n.t('multi-config:editProfile'), value: 'edit' },
+    { name: i18n.t('multi-config:copyProfile'), value: 'copy' },
     { name: i18n.t('multi-config:deleteProfile'), value: 'delete' },
     { name: i18n.t('common:skip'), value: 'skip' },
   ]
 
-  const { action } = await inquirer.prompt<{ action: 'add' | 'edit' | 'delete' | 'skip' }>([{
+  const { action } = await inquirer.prompt<{ action: 'add' | 'edit' | 'copy' | 'delete' | 'skip' }>([{
     type: 'list',
     name: 'action',
     message: i18n.t('multi-config:selectAction'),
@@ -69,6 +70,9 @@ export async function configureIncrementalManagement(): Promise<void> {
       break
     case 'edit':
       await handleEditProfile(profiles)
+      break
+    case 'copy':
+      await handleCopyProfile(profiles)
       break
     case 'delete':
       await handleDeleteProfile(profiles)
@@ -462,6 +466,176 @@ async function handleEditProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
   }
   else {
     console.log(ansis.red(i18n.t('multi-config:profileUpdateFailed', { error: result.error })))
+  }
+}
+
+/**
+ * Handle copying an existing Claude Code profile
+ */
+async function handleCopyProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
+  const choices = profiles.map(profile => ({
+    name: `${profile.name} (${getAuthTypeLabel(profile.authType)})`,
+    value: profile.id,
+  }))
+
+  const { selectedProfileId } = await inquirer.prompt<{ selectedProfileId: string }>([{
+    type: 'list',
+    name: 'selectedProfileId',
+    message: i18n.t('multi-config:selectProfileToCopy'),
+    choices: addNumbersToChoices(choices),
+  }])
+
+  if (!selectedProfileId) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  const selectedProfile = profiles.find(p => p.id === selectedProfileId)
+  if (!selectedProfile) {
+    console.log(ansis.red(i18n.t('multi-config:profileNotFound')))
+    return
+  }
+
+  console.log(ansis.cyan(`\n${i18n.t('multi-config:copyingProfile', { name: selectedProfile.name })}`))
+
+  // Prepare copied profile with -copy suffix
+  const copiedName = `${selectedProfile.name}-copy`
+
+  // Build prompt questions based on authType
+  const questions: any[] = [
+    {
+      type: 'input',
+      name: 'profileName',
+      message: i18n.t('multi-config:profileNamePrompt'),
+      default: copiedName,
+      validate: (input: string) => {
+        const trimmed = input.trim()
+        if (!trimmed) {
+          return i18n.t('multi-config:profileNameRequired')
+        }
+        if (!/^[\w\-\s.\u4E00-\u9FA5]+$/.test(trimmed)) {
+          return i18n.t('multi-config:profileNameInvalid')
+        }
+        return true
+      },
+    },
+  ]
+
+  // Only add baseUrl and apiKey questions for non-CCR profiles
+  if (selectedProfile.authType !== 'ccr_proxy') {
+    questions.push(
+      {
+        type: 'input',
+        name: 'baseUrl',
+        message: i18n.t('multi-config:baseUrlPrompt'),
+        default: selectedProfile.baseUrl || 'https://api.anthropic.com',
+        validate: (input: string) => {
+          const trimmed = input.trim()
+          if (!trimmed) {
+            return i18n.t('multi-config:baseUrlRequired')
+          }
+          try {
+            // eslint-disable-next-line no-new
+            new URL(trimmed)
+            return true
+          }
+          catch {
+            return i18n.t('multi-config:baseUrlInvalid')
+          }
+        },
+      },
+      {
+        type: 'input',
+        name: 'apiKey',
+        message: i18n.t('multi-config:apiKeyPrompt'),
+        default: selectedProfile.apiKey,
+        validate: (input: string) => {
+          const trimmed = input.trim()
+          if (!trimmed) {
+            return i18n.t('multi-config:apiKeyRequired')
+          }
+
+          const validation = validateApiKey(trimmed)
+          if (!validation.isValid) {
+            return validation.error || 'Invalid API key format'
+          }
+
+          return true
+        },
+      },
+    )
+  }
+
+  const answers = await inquirer.prompt<{
+    profileName: string
+    apiKey?: string
+    baseUrl?: string
+  }>(questions)
+
+  // Prompt for model configuration (for non-CCR profiles)
+  let modelConfig: { primaryModel: string, fastModel: string } | null = null
+  if (selectedProfile.authType !== 'ccr_proxy') {
+    const { promptCustomModels } = await import('./features')
+    modelConfig = await promptCustomModels(
+      selectedProfile.primaryModel,
+      selectedProfile.fastModel,
+    )
+  }
+
+  // Ask if set as default
+  const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([
+    {
+      type: 'confirm',
+      name: 'setAsDefault',
+      message: i18n.t('multi-config:setAsDefaultPrompt'),
+      default: false,
+    },
+  ])
+
+  // Create copied profile object
+  const profileName = answers.profileName.trim()
+  const profileId = ClaudeCodeConfigManager.generateProfileId(profileName)
+  const copiedProfile: ClaudeCodeProfile = {
+    id: profileId,
+    name: profileName,
+    authType: selectedProfile.authType,
+  }
+
+  if (selectedProfile.authType !== 'ccr_proxy') {
+    copiedProfile.apiKey = answers.apiKey!.trim()
+    copiedProfile.baseUrl = answers.baseUrl!.trim()
+
+    // Add model configuration if provided
+    if (modelConfig) {
+      if (modelConfig.primaryModel.trim()) {
+        copiedProfile.primaryModel = modelConfig.primaryModel.trim()
+      }
+      if (modelConfig.fastModel.trim()) {
+        copiedProfile.fastModel = modelConfig.fastModel.trim()
+      }
+    }
+  }
+
+  // Add the copied profile
+  const result = await ClaudeCodeConfigManager.addProfile(copiedProfile)
+
+  if (result.success) {
+    const runtimeProfile = result.addedProfile || { ...copiedProfile, id: profileId }
+    console.log(ansis.green(i18n.t('multi-config:profileCopied', { name: runtimeProfile.name })))
+    if (result.backupPath) {
+      console.log(ansis.gray(i18n.t('common:backupCreated', { path: result.backupPath })))
+    }
+
+    if (setAsDefault) {
+      const switchResult = await ClaudeCodeConfigManager.switchProfile(runtimeProfile.id!)
+      if (switchResult.success) {
+        console.log(ansis.green(i18n.t('multi-config:profileSetAsDefault', { name: runtimeProfile.name })))
+        await ClaudeCodeConfigManager.applyProfileSettings(runtimeProfile)
+      }
+    }
+  }
+  else {
+    console.log(ansis.red(i18n.t('multi-config:profileCopyFailed', { error: result.error })))
   }
 }
 

@@ -1,6 +1,5 @@
 import type { AiOutputLanguage, SupportedLang } from '../../constants'
 import type { CodexUninstallItem, CodexUninstallResult } from './codex-uninstaller'
-import { homedir } from 'node:os'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
@@ -12,7 +11,7 @@ import semver from 'semver'
 import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
 // Removed MCP config imports; MCP configuration moved to codex-configure.ts
-import { AI_OUTPUT_LANGUAGES } from '../../constants'
+import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
@@ -26,12 +25,7 @@ import { configureCodexMcp } from './codex-configure'
 
 // 公共化导出，便于复用和测试
 export { applyCodexPlatformCommand } from './codex-platform'
-
-export const CODEX_DIR = join(homedir(), '.codex')
-const CODEX_CONFIG_FILE = join(CODEX_DIR, 'config.toml')
-const CODEX_AUTH_FILE = join(CODEX_DIR, 'auth.json')
-const CODEX_AGENTS_FILE = join(CODEX_DIR, 'AGENTS.md')
-const CODEX_PROMPTS_DIR = join(CODEX_DIR, 'prompts')
+export { CODEX_DIR }
 
 export interface CodexProvider {
   id: string

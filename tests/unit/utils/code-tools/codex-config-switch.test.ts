@@ -635,6 +635,198 @@ describe('codex-config-switch', () => {
       expect(console.log).toHaveBeenCalledWith('codex:providersDeleteFailed:{"error":"Delete failed"}')
     })
   })
+  describe('handleCopyProvider tests', () => {
+    it('should handle copy provider cancellation', async () => {
+      const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
+      const { detectConfigManagementMode } = await import('../../../../src/utils/code-tools/codex-config-detector')
+      const mockProviders = [
+        createMockProvider('provider1', 'Provider 1', 'https://api.test1.com', 'responses'),
+      ]
+      vi.mocked(detectConfigManagementMode).mockReturnValue({
+        mode: 'management',
+        hasProviders: true,
+        providerCount: 1,
+        providers: mockProviders,
+        currentProvider: 'Provider 1',
+      })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProviderId: undefined })
+      await configureIncrementalManagement()
+      expect(console.log).toHaveBeenCalledWith('common:cancelled')
+    })
+
+    it('should handle provider not found in copy', async () => {
+      const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
+      const { detectConfigManagementMode } = await import('../../../../src/utils/code-tools/codex-config-detector')
+      const mockProviders = [
+        createMockProvider('provider1', 'Provider 1', 'https://api.test1.com', 'responses'),
+      ]
+      vi.mocked(detectConfigManagementMode).mockReturnValue({
+        mode: 'management',
+        hasProviders: true,
+        providerCount: 1,
+        providers: mockProviders,
+        currentProvider: 'Provider 1',
+      })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProviderId: 'nonexistent' })
+      await configureIncrementalManagement()
+      expect(console.log).toHaveBeenCalledWith('codex:providerNotFound')
+    })
+
+    it('should handle copy provider success without setting as default', async () => {
+      const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
+      const { detectConfigManagementMode } = await import('../../../../src/utils/code-tools/codex-config-detector')
+      const { addProviderToExisting } = await import('../../../../src/utils/code-tools/codex-provider-manager')
+      const mockProviders = [
+        createMockProvider('provider1', 'Provider 1', 'https://api.test1.com', 'responses', 'PROVIDER1_API_KEY'),
+      ]
+      vi.mocked(detectConfigManagementMode).mockReturnValue({
+        mode: 'management',
+        hasProviders: true,
+        providerCount: 1,
+        providers: mockProviders,
+        currentProvider: 'Provider 1',
+      })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProviderId: 'provider1' })
+        .mockResolvedValueOnce({
+          providerName: 'Provider 1-copy',
+          baseUrl: 'https://api.test1.com',
+          wireApi: 'responses',
+          apiKey: 'test-key',
+        })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' })
+        .mockResolvedValueOnce({ setAsDefault: false })
+      vi.mocked(addProviderToExisting).mockResolvedValue({
+        success: true,
+        addedProvider: createMockProvider('provider1-copy', 'Provider 1-copy'),
+        backupPath: '/backup/path',
+      })
+      await configureIncrementalManagement()
+      expect(console.log).toHaveBeenCalledWith('codex:providerCopied:{"name":"Provider 1-copy"}')
+      expect(console.log).toHaveBeenCalledWith('common:backupCreated:{"path":"/backup/path"}')
+    })
+
+    it('should handle copy provider success and set as default', async () => {
+      const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
+      const { detectConfigManagementMode } = await import('../../../../src/utils/code-tools/codex-config-detector')
+      const { addProviderToExisting } = await import('../../../../src/utils/code-tools/codex-provider-manager')
+      const mockProviders = [
+        createMockProvider('provider1', 'Provider 1', 'https://api.test1.com', 'responses', 'PROVIDER1_API_KEY'),
+      ]
+      vi.mocked(detectConfigManagementMode).mockReturnValue({
+        mode: 'management',
+        hasProviders: true,
+        providerCount: 1,
+        providers: mockProviders,
+        currentProvider: 'Provider 1',
+      })
+
+      // Mock switchToProvider
+      const mockSwitchToProvider = vi.fn().mockResolvedValue(true)
+      vi.doMock('../../../../src/utils/code-tools/codex', () => ({
+        switchToProvider: mockSwitchToProvider,
+      }))
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProviderId: 'provider1' })
+        .mockResolvedValueOnce({
+          providerName: 'Provider 1-copy',
+          baseUrl: 'https://api.test1.com',
+          wireApi: 'responses',
+          apiKey: 'test-key',
+        })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' })
+        .mockResolvedValueOnce({ setAsDefault: true })
+      vi.mocked(addProviderToExisting).mockResolvedValue({
+        success: true,
+        addedProvider: createMockProvider('provider1-copy', 'Provider 1-copy'),
+        backupPath: '/backup/path',
+      })
+      await configureIncrementalManagement()
+      expect(console.log).toHaveBeenCalledWith('codex:providerCopied:{"name":"Provider 1-copy"}')
+      expect(console.log).toHaveBeenCalledWith('multi-config:profileSetAsDefault:{"name":"Provider 1-copy"}')
+    })
+
+    it('should handle copy provider failure', async () => {
+      const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
+      const { detectConfigManagementMode } = await import('../../../../src/utils/code-tools/codex-config-detector')
+      const { addProviderToExisting } = await import('../../../../src/utils/code-tools/codex-provider-manager')
+      const mockProviders = [
+        createMockProvider('provider1', 'Provider 1', 'https://api.test1.com', 'responses'),
+      ]
+      vi.mocked(detectConfigManagementMode).mockReturnValue({
+        mode: 'management',
+        hasProviders: true,
+        providerCount: 1,
+        providers: mockProviders,
+        currentProvider: 'Provider 1',
+      })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProviderId: 'provider1' })
+        .mockResolvedValueOnce({
+          providerName: 'Provider 1-copy',
+          baseUrl: 'https://api.test1.com',
+          wireApi: 'responses',
+          apiKey: 'test-key',
+        })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' })
+      vi.mocked(addProviderToExisting).mockResolvedValue({
+        success: false,
+        error: 'Copy failed',
+      })
+      await configureIncrementalManagement()
+      expect(console.log).toHaveBeenCalledWith('codex:providerCopyFailed:{"error":"Copy failed"}')
+    })
+
+    it('should generate correct provider ID from copied name', async () => {
+      const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
+      const { detectConfigManagementMode } = await import('../../../../src/utils/code-tools/codex-config-detector')
+      const { addProviderToExisting } = await import('../../../../src/utils/code-tools/codex-provider-manager')
+      const mockProviders = [
+        createMockProvider('provider1', 'My Test Provider', 'https://api.test1.com', 'responses'),
+      ]
+      vi.mocked(detectConfigManagementMode).mockReturnValue({
+        mode: 'management',
+        hasProviders: true,
+        providerCount: 1,
+        providers: mockProviders,
+        currentProvider: 'My Test Provider',
+      })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProviderId: 'provider1' })
+        .mockResolvedValueOnce({
+          providerName: 'My Test Provider @#$ Copy',
+          baseUrl: 'https://api.test1.com',
+          wireApi: 'chat',
+          apiKey: 'test-key',
+        })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' })
+        .mockResolvedValueOnce({ setAsDefault: false })
+      vi.mocked(addProviderToExisting).mockResolvedValue({
+        success: true,
+        addedProvider: createMockProvider('my-test-provider--copy', 'My Test Provider @#$ Copy'),
+      })
+      await configureIncrementalManagement()
+      expect(addProviderToExisting).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'my-test-provider--copy',
+          name: 'My Test Provider @#$ Copy',
+          envKey: 'MY_TEST_PROVIDER__COPY_API_KEY',
+        }),
+        'test-key',
+        false,
+      )
+    })
+  })
+
   describe('error handling and edge cases', () => {
     it('should handle inquirer prompt rejection', async () => {
       const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')

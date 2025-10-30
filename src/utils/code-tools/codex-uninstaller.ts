@@ -1,8 +1,8 @@
 import type { SupportedLang } from '../../constants'
-import { homedir } from 'node:os'
 import { pathExists } from 'fs-extra'
 import { join } from 'pathe'
 import { exec } from 'tinyexec'
+import { CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR } from '../../constants'
 import { i18n } from '../../i18n'
 import { moveToTrash } from '../trash'
 
@@ -31,12 +31,7 @@ export class CodexUninstaller {
   private _lang: SupportedLang
   private conflictResolution = new Map<CodexUninstallItem, CodexUninstallItem[]>()
 
-  private readonly CODEX_DIR = join(homedir(), '.codex')
-  private readonly CODEX_CONFIG_FILE = join(this.CODEX_DIR, 'config.toml')
-  private readonly CODEX_AUTH_FILE = join(this.CODEX_DIR, 'auth.json')
-  private readonly CODEX_AGENTS_FILE = join(this.CODEX_DIR, 'AGENTS.md')
-  private readonly CODEX_PROMPTS_DIR = join(this.CODEX_DIR, 'prompts')
-  private readonly CODEX_BACKUP_DIR = join(this.CODEX_DIR, 'backup')
+  private readonly CODEX_BACKUP_DIR = join(CODEX_DIR, 'backup')
 
   constructor(lang: SupportedLang = 'en') {
     this._lang = lang
@@ -58,8 +53,8 @@ export class CodexUninstaller {
     }
 
     try {
-      if (await pathExists(this.CODEX_CONFIG_FILE)) {
-        const trashResult = await moveToTrash(this.CODEX_CONFIG_FILE)
+      if (await pathExists(CODEX_CONFIG_FILE)) {
+        const trashResult = await moveToTrash(CODEX_CONFIG_FILE)
         if (!trashResult[0]?.success) {
           result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
         }
@@ -91,8 +86,8 @@ export class CodexUninstaller {
     }
 
     try {
-      if (await pathExists(this.CODEX_AUTH_FILE)) {
-        const trashResult = await moveToTrash(this.CODEX_AUTH_FILE)
+      if (await pathExists(CODEX_AUTH_FILE)) {
+        const trashResult = await moveToTrash(CODEX_AUTH_FILE)
         if (!trashResult[0]?.success) {
           result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
         }
@@ -124,8 +119,8 @@ export class CodexUninstaller {
     }
 
     try {
-      if (await pathExists(this.CODEX_AGENTS_FILE)) {
-        const trashResult = await moveToTrash(this.CODEX_AGENTS_FILE)
+      if (await pathExists(CODEX_AGENTS_FILE)) {
+        const trashResult = await moveToTrash(CODEX_AGENTS_FILE)
         if (!trashResult[0]?.success) {
           result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
         }
@@ -157,8 +152,8 @@ export class CodexUninstaller {
     }
 
     try {
-      if (await pathExists(this.CODEX_PROMPTS_DIR)) {
-        const trashResult = await moveToTrash(this.CODEX_PROMPTS_DIR)
+      if (await pathExists(CODEX_PROMPTS_DIR)) {
+        const trashResult = await moveToTrash(CODEX_PROMPTS_DIR)
         if (!trashResult[0]?.success) {
           result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
         }
@@ -220,10 +215,10 @@ export class CodexUninstaller {
     }
 
     try {
-      if (await pathExists(this.CODEX_CONFIG_FILE)) {
+      if (await pathExists(CODEX_CONFIG_FILE)) {
         // Read current config content
         const { readFileSync, writeFileSync } = await import('node:fs')
-        const content = readFileSync(this.CODEX_CONFIG_FILE, 'utf-8')
+        const content = readFileSync(CODEX_CONFIG_FILE, 'utf-8')
 
         // Remove model_provider setting and all [model_providers.xxx] sections
         const lines = content.split('\n')
@@ -259,7 +254,7 @@ export class CodexUninstaller {
         }
 
         if (configModified) {
-          writeFileSync(this.CODEX_CONFIG_FILE, newLines.join('\n'))
+          writeFileSync(CODEX_CONFIG_FILE, newLines.join('\n'))
           result.removedConfigs.push(i18n.t('codex:apiConfigRemoved'))
         }
         result.success = true
@@ -322,10 +317,10 @@ export class CodexUninstaller {
     }
 
     try {
-      if (await pathExists(this.CODEX_CONFIG_FILE)) {
+      if (await pathExists(CODEX_CONFIG_FILE)) {
         // Read current config content
         const { readFileSync, writeFileSync } = await import('node:fs')
-        const content = readFileSync(this.CODEX_CONFIG_FILE, 'utf-8')
+        const content = readFileSync(CODEX_CONFIG_FILE, 'utf-8')
 
         // Remove MCP service sections: [mcp_servers.xxx] (env is inline now)
         const lines = content.split('\n')
@@ -355,7 +350,7 @@ export class CodexUninstaller {
         }
 
         if (configModified) {
-          writeFileSync(this.CODEX_CONFIG_FILE, newLines.join('\n'))
+          writeFileSync(CODEX_CONFIG_FILE, newLines.join('\n'))
           result.removedConfigs.push(i18n.t('codex:mcpConfigRemoved'))
         }
         result.success = true
@@ -386,8 +381,8 @@ export class CodexUninstaller {
 
     try {
       // Remove entire .codex directory
-      if (await pathExists(this.CODEX_DIR)) {
-        const trashResult = await moveToTrash(this.CODEX_DIR)
+      if (await pathExists(CODEX_DIR)) {
+        const trashResult = await moveToTrash(CODEX_DIR)
         if (!trashResult[0]?.success) {
           result.warnings.push(`Failed to move ~/.codex/ to trash: ${trashResult[0]?.error || 'Unknown error'}`)
         }

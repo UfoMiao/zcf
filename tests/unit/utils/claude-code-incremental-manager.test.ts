@@ -945,4 +945,312 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledTimes(2)
     })
   })
+
+  describe('copy profile functionality', () => {
+    it('should show copy option in management menu', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            apiKey: 'sk-ant-test-key',
+            baseUrl: 'https://api.anthropic.com',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      let capturedChoices: any[] = []
+      vi.mocked(inquirer.prompt).mockImplementationOnce(((questions: any) => {
+        const prompt = Array.isArray(questions) ? questions[0] : questions
+        capturedChoices = prompt.choices
+        return Promise.resolve({ action: 'skip' })
+      }) as any)
+
+      await configureIncrementalManagement()
+
+      // Verify copy option exists and is positioned before delete
+      const copyChoice = capturedChoices.find(c => c.value === 'copy')
+      const deleteChoice = capturedChoices.find(c => c.value === 'delete')
+      expect(copyChoice).toBeDefined()
+      expect(deleteChoice).toBeDefined()
+
+      const copyIndex = capturedChoices.findIndex(c => c.value === 'copy')
+      const deleteIndex = capturedChoices.findIndex(c => c.value === 'delete')
+      expect(copyIndex).toBeLessThan(deleteIndex)
+    })
+
+    it('should copy profile with -copy suffix and allow modifications', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Original Profile',
+            authType: 'api_key' as const,
+            apiKey: 'sk-ant-original-key',
+            baseUrl: 'https://api.original.com',
+            primaryModel: 'claude-3-5-sonnet-20241022',
+            fastModel: 'claude-3-5-haiku-20241022',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' }) // Select copy
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' }) // Select profile to copy
+        .mockResolvedValueOnce({
+          profileName: 'Original Profile-copy',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-modified-key',
+          baseUrl: 'https://api.modified.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+        addedProfile: {
+          id: 'copied-profile-id',
+          name: 'Original Profile-copy',
+          authType: 'api_key',
+          apiKey: 'sk-ant-modified-key',
+          baseUrl: 'https://api.modified.com',
+        },
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Original Profile-copy',
+          authType: 'api_key',
+          apiKey: 'sk-ant-modified-key',
+          baseUrl: 'https://api.modified.com',
+        }),
+      )
+    })
+
+    it('should copy profile and preserve model configuration', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile With Models',
+            authType: 'api_key' as const,
+            apiKey: 'sk-ant-test-key',
+            baseUrl: 'https://api.anthropic.com',
+            primaryModel: 'claude-3-opus-20240229',
+            fastModel: 'claude-3-haiku-20240307',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      const { promptCustomModels } = await import('../../../src/utils/features')
+      vi.mocked(promptCustomModels).mockResolvedValue({
+        primaryModel: 'claude-3-opus-20240229',
+        fastModel: 'claude-3-haiku-20240307',
+      })
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'Profile With Models-copy',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          primaryModel: 'claude-3-opus-20240229',
+          fastModel: 'claude-3-haiku-20240307',
+        }),
+      )
+    })
+
+    it('should handle copy cancellation when no profile selected', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Profile 1',
+            authType: 'api_key' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProfileId: null }) // User cancels
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).not.toHaveBeenCalled()
+    })
+
+    it('should handle copy of CCR proxy profile', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'CCR Profile',
+            authType: 'ccr_proxy' as const,
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'CCR Profile-copy',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-ccr-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'CCR Profile-copy',
+          authType: 'ccr_proxy',
+        }),
+      )
+    })
+
+    it('should allow user to modify copied profile name', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Original',
+            authType: 'api_key' as const,
+            apiKey: 'sk-ant-test-key',
+            baseUrl: 'https://api.anthropic.com',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'Custom Copy Name', // User changes the name
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('custom-copy-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+      })
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Custom Copy Name',
+        }),
+      )
+    })
+
+    it('should set copied profile as default when requested', async () => {
+      const mockConfig = {
+        currentProfileId: 'profile-1',
+        profiles: {
+          'profile-1': {
+            id: 'profile-1',
+            name: 'Original',
+            authType: 'api_key' as const,
+            apiKey: 'sk-ant-test-key',
+            baseUrl: 'https://api.anthropic.com',
+            createdAt: '2025-01-01T00:00:00Z',
+            updatedAt: '2025-01-01T00:00:00Z',
+          },
+        },
+        version: '1.0.0',
+      }
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(mockConfig)
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'copy' })
+        .mockResolvedValueOnce({ selectedProfileId: 'profile-1' })
+        .mockResolvedValueOnce({
+          profileName: 'Original-copy',
+          authType: 'api_key' as const,
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: true }) // Set as default
+
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        backupPath: '/test/backup.json',
+        addedProfile: {
+          id: 'copied-id',
+          name: 'Original-copy',
+          authType: 'api_key',
+          apiKey: 'sk-ant-test-key',
+          baseUrl: 'https://api.anthropic.com',
+        },
+      })
+      vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({ success: true })
+      vi.mocked(ClaudeCodeConfigManager.applyProfileSettings).mockResolvedValue()
+
+      await configureIncrementalManagement()
+
+      expect(ClaudeCodeConfigManager.switchProfile).toHaveBeenCalledWith('copied-id')
+      expect(ClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalled()
+    })
+  })
 })

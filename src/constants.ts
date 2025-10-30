@@ -2,11 +2,21 @@ import { homedir } from 'node:os'
 import { join } from 'pathe'
 import { i18n } from './i18n'
 
+// Claude Code configuration paths
 export const CLAUDE_DIR = join(homedir(), '.claude')
 export const SETTINGS_FILE = join(CLAUDE_DIR, 'settings.json')
 export const CLAUDE_MD_FILE = join(CLAUDE_DIR, 'CLAUDE.md')
 export const ClAUDE_CONFIG_FILE = join(homedir(), '.claude.json')
 export const CLAUDE_VSC_CONFIG_FILE = join(CLAUDE_DIR, 'config.json')
+
+// Codex configuration paths
+export const CODEX_DIR = join(homedir(), '.codex')
+export const CODEX_CONFIG_FILE = join(CODEX_DIR, 'config.toml')
+export const CODEX_AUTH_FILE = join(CODEX_DIR, 'auth.json')
+export const CODEX_AGENTS_FILE = join(CODEX_DIR, 'AGENTS.md')
+export const CODEX_PROMPTS_DIR = join(CODEX_DIR, 'prompts')
+
+// ZCF configuration paths
 export const ZCF_CONFIG_DIR = join(homedir(), '.ufomiao', 'zcf')
 export const ZCF_CONFIG_FILE = join(ZCF_CONFIG_DIR, 'config.toml')
 export const LEGACY_ZCF_CONFIG_FILES = [
