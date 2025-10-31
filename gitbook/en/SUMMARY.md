@@ -1,26 +1,16 @@
-# Table of Contents
+# Table of contents
 
-* [Introduction](README_en.md)
+* [Welcome](README.md)
 
 ## Getting Started
-* [Getting Started](getting-started/README.md)
-* [Installation Guide](getting-started/installation.md)
-* [First Run](getting-started/first-run.md)
 
-## Advanced Guide
-* [Advanced Guide](advanced-guide/README.md)
-* [Advanced Configuration](advanced-guide/configuration.md)
-* [Workflow Configuration](advanced-guide/workflows.md)
-* [Troubleshooting](advanced-guide/troubleshooting.md)
+* [Quickstart](getting-started/quickstart.md)
+* [Publish your docs](getting-started/publish-your-docs.md)
 
-## Claude Code Tips
-* [Usage Tips](claude-tips/README.md)
-* [Best Practices](claude-tips/best-practices.md)
-* [MCP Integration](claude-tips/mcp-integration.md)
-* [Template Usage](claude-tips/templates.md)
+## Basics
 
-## Development
-* [Development Docs](development/README.md)
-* [Contributing Guide](development/contributing.md)
-* [Architecture](development/architecture.md)
-* [API Reference](development/api-reference.md)
+* [Editor](basics/editor.md)
+* [Markdown](basics/markdown.md)
+* [Images & media](basics/images-and-media.md)
+* [Interactive blocks](basics/interactive-blocks.md)
+* [Integrations](basics/integrations.md)
