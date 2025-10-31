@@ -1,269 +1,63 @@
 # 安装指南
 
-本指南详细介绍 ZCF 的各种安装方式和系统要求。
+## 环境要求
 
-## 📋 系统要求
+- Node.js 20 或更高版本（使用 CCR 时推荐 22+）。
+- npm 或 pnpm（`npx` 需可用）。
+- 支持运行全局 CLI 的操作系统（macOS、Linux、Windows PowerShell/WSL、Termux）。
 
-### 基础环境
-- **Node.js**: 16.0+ (推荐 18.0+)
-- **包管理器**: npm、pnpm 或 yarn
-- **内存**: 最少 512MB 可用内存
-- **网络**: 需要互联网连接下载依赖
-
-### 支持的操作系统
-- **Windows** 10/11 (包括 WSL)
-- **macOS** 10.15+ (Intel/Apple Silicon)
-- **Linux** 各主流发行版
-- **Termux** Android 终端环境
-
-### API 访问要求
-- Anthropic API Key 或 Claude Code Auth Token
-- 稳定的网络连接访问 Anthropic API
-
-## 🚀 安装方式
-
-### 方式一：NPX 直接使用 (推荐)
-
-无需安装，直接使用最新版本：
+## 交互式安装（推荐）
 
 ```bash
 npx zcf
 ```
 
-**优势**:
-- 总是使用最新版本
-- 无需占用本地存储空间
-- 适合偶尔使用的场景
+- 进入主菜单后选择 `1` 执行完整初始化。
+- 根据提示选择目标语言（默认支持 `zh-CN` 与 `en`）。
+- 按需启用 MCP 服务、工作流及输出风格。
+- 可在同一流程中初始化 Claude Code 或 Codex（或两者皆有）。
 
-### 方式二：全局安装
+## 无交互一键安装
 
-安装到全局环境，随时可用：
-
-```bash
-# 使用 npm
-npm install -g zcf
-
-# 使用 pnpm
-pnpm add -g zcf
-
-# 使用 yarn
-yarn global add zcf
-
-# 安装后使用
-zcf
-```
-
-**优势**:
-- 启动速度快
-- 离线使用（已缓存版本）
-- 适合频繁使用的场景
-
-### 方式三：本地项目安装
-
-在特定项目中安装：
+适合 CI/CD 或批量部署，通过 `--skip-prompt` 与预设参数完成。
 
 ```bash
-# 使用 npm
-npm install zcf --save-dev
+# 使用提供商预设（推荐）
+npx zcf i -s -p 302ai -k "sk-xxx"
 
-# 使用 pnpm  
-pnpm add -D zcf
+# 自定义 Claude Code API
+default: API key 模式
+npx zcf i -s -g zh-CN -t api_key -k "sk-xxx" -u "https://api.example.com"
 
-# 使用 yarn
-yarn add -D zcf
+# 同时配置主模型与快速模型
+npx zcf i -s --api-model "claude-sonnet-4-5" --api-fast-model "claude-haiku-4-5"
 
-# 使用 npx 运行
-npx zcf
+# 多 API 配置（JSON 字符串）
+npx zcf i -s --api-configs '[{"provider":"302ai","key":"sk-xxx"},{"name":"custom","type":"api_key","key":"sk-yyy","url":"https://custom.api.com","primaryModel":"claude-sonnet-4-5","fastModel":"claude-haiku-4-5","default":true}]'
 ```
 
-**优势**:
-- 项目级别的版本控制
-- 团队协作时版本一致
-- 适合项目特定配置需求
+### 参数速览
 
-## 🔧 特殊环境安装
+- `-p, --provider`：API 提供商预设，支持 `302ai`、`glm`、`minimax`、`kimi`、`custom`。
+- `-t, --api-type`：`api_key`、`auth_token`、`ccr_proxy` 或 `skip`。
+- `-M, --api-model` 与 `-F, --api-fast-model`：主模型与快速模型。
+- `-g, --all-lang`：一次性设置配置语言与 AI 输出语言。
+- `-m, --mcp-services`：选择 MCP 服务（`all`、`skip` 或逗号分隔列表）。
+- `-w, --workflows`：选择要导入的工作流集合。
+- `-o, --output-styles`：输出风格集合，默认包含 `engineer-professional`、`nekomata-engineer`、`laowang-engineer`。
+- `-x, --install-cometix-line`：是否安装 CCometixLine。
 
-### Windows 环境
+## Codex 环境安装
 
-#### PowerShell 执行策略
-如果遇到执行策略限制：
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
+当 `--code-type codex` 或在菜单中切换到 Codex 后执行初始化，ZCF 会：
 
-#### Windows Subsystem for Linux (WSL)
-在 WSL 中安装：
-```bash
-# 确保 Node.js 已安装
-node --version
-npm --version
+1. 安装/升级 `@openai/codex` CLI。
+2. 生成 `~/.codex` 下的 `config.toml`、`auth.json`、`prompts/`、`AGENTS.md`。
+3. 支持备份现有配置并在需要时恢复。
+4. 提供 Codex 专属 MCP 配置与 API 提供商预设。
 
-# 正常安装 ZCF
-npx zcf
-```
+## 验证安装
 
-### macOS 环境
-
-#### Homebrew 用户
-如果通过 Homebrew 管理 Node.js：
-```bash
-# 确保 Node.js 最新
-brew upgrade node
-
-# 安装 ZCF
-npm install -g zcf
-```
-
-#### 权限问题解决
-如果遇到权限问题：
-```bash
-# 创建 npm 全局目录
-mkdir ~/.npm-global
-
-# 配置 npm
-npm config set prefix '~/.npm-global'
-
-# 添加到 PATH (添加到 ~/.zshrc 或 ~/.bash_profile)
-export PATH=~/.npm-global/bin:$PATH
-
-# 重新加载配置
-source ~/.zshrc  # 或 source ~/.bash_profile
-```
-
-### Linux 环境
-
-#### Ubuntu/Debian
-```bash
-# 更新包管理器
-sudo apt update
-
-# 安装 Node.js (如果未安装)
-sudo apt install nodejs npm
-
-# 安装 ZCF
-sudo npm install -g zcf
-```
-
-#### CentOS/RHEL/Fedora
-```bash
-# 使用 yum/dnf
-sudo dnf install nodejs npm  # Fedora
-sudo yum install nodejs npm  # CentOS/RHEL
-
-# 安装 ZCF
-sudo npm install -g zcf
-```
-
-#### Arch Linux
-```bash
-# 使用 pacman
-sudo pacman -S nodejs npm
-
-# 安装 ZCF
-sudo npm install -g zcf
-```
-
-### Termux (Android)
-
-在 Android Termux 环境中：
-
-```bash
-# 更新包管理器
-pkg update && pkg upgrade
-
-# 安装 Node.js
-pkg install nodejs
-
-# 安装 ZCF
-npm install -g zcf
-
-# 运行
-zcf
-```
-
-## 🔍 安装验证
-
-### 验证 ZCF 安装
-```bash
-# 检查版本
-zcf --version
-
-# 或者
-npx zcf --version
-```
-
-### 验证 Node.js 环境
-```bash
-# 检查 Node.js 版本
-node --version
-
-# 检查 npm 版本  
-npm --version
-
-# 检查全局安装的包
-npm list -g --depth=0
-```
-
-## 🛠️ 常见安装问题
-
-### 问题 1: 网络连接超时
-```bash
-# 使用淘宝镜像源
-npm config set registry https://registry.npmmirror.com
-
-# 或临时使用镜像
-npx --registry https://registry.npmmirror.com zcf
-```
-
-### 问题 2: 权限拒绝 (Linux/macOS)
-```bash
-# 方案 1: 使用 sudo (不推荐)
-sudo npm install -g zcf
-
-# 方案 2: 更改 npm 默认目录 (推荐)
-npm config set prefix '~/.npm-global'
-echo 'export PATH=~/.npm-global/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### 问题 3: Node.js 版本过低
-```bash
-# 使用 nvm 管理 Node.js 版本
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-source ~/.bashrc
-nvm install 18
-nvm use 18
-```
-
-### 问题 4: Windows 路径问题
-```bash
-# 使用 PowerShell (管理员权限)
-npm install -g zcf --force
-
-# 或者设置 npm 缓存目录
-npm config set cache "C:/npm-cache" --global
-```
-
-## 🔄 更新和卸载
-
-### 更新 ZCF
-```bash
-# 全局更新
-npm update -g zcf
-
-# 或重新安装最新版
-npm install -g zcf@latest
-```
-
-### 卸载 ZCF
-```bash
-# 全局卸载
-npm uninstall -g zcf
-
-# 清理缓存
-npm cache clean --force
-```
-
----
-
-安装完成后，继续阅读 [首次运行](first-run.md) 指南开始配置您的 Claude Code 环境。
+- 在终端执行 `npx zcf --help`，确认 CLI 可用。
+- 打开 Claude Code/Codex，检查 `CLAUDE.md`、工作流、MCP 是否正确载入。
+- 若启用了 CCR 或 CCometixLine，确认工具可在命令行或状态栏中使用。
