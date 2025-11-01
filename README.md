@@ -939,6 +939,7 @@ A huge thank you to all our sponsors for their generous support!
 - [chamo101](https://github.com/chamo101) (first GitHub issue sponsor 🎉)
 - 初屿贤 (first Codex user sponsor 🙅🏻‍♂️)
 - Protein (first 1688 sponsor 😏)
+- [musistudio](https://github.com/musistudio) (first open source project author sponsor, the author of [CCR](https://github.com/musistudio/claude-code-router) 🤩)
 - [BeatSeat](https://github.com/BeatSeat) (community expert 😎, provided $1000 Claude credits)
 - [wenwen](https://github.com/wenwen12345) (community expert 🤓, provided daily $100 Claude&GPT credits)
 - 16°C coffee (My best friend 🤪, offered ChatGPT Pro $200 package)
