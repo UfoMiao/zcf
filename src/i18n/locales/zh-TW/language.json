@@ -1,0 +1,19 @@
+{
+  "selectScriptLang": "選擇ZCF顯示語言",
+  "selectConfigLang": "選擇 Claude Code 設定語言",
+  "selectAiOutputLang": "選擇 AI 輸出語言",
+  "aiOutputLangHint": "AI 將使用此語言回覆你的問題",
+  "enterCustomLanguage": "請輸入自訂語言（例如：Japanese, French 等）",
+  "languageChanged": "語言已更改",
+  "configLangHint.zh-CN": "便於中文使用者自訂",
+  "configLangHint.en": "token 消耗更低",
+  "languageRequired": "語言為必填項",
+  "labels.custom": "自訂",
+  "currentConfigFound": "當前AI輸出語言設定",
+  "modifyConfigPrompt": "是否修改AI輸出語言設定?",
+  "currentTemplateLanguageFound": "當前範本語言設定",
+  "modifyTemplateLanguagePrompt": "是否修改範本語言設定?",
+  "usingFallbackTemplate": "使用介面語言作為範本語言?",
+  "currentSystemPromptFound": "當前系統提示樣式設定",
+  "modifySystemPromptPrompt": "是否修改系統提示樣式設定?"
+}

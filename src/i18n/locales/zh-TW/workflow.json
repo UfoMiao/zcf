@@ -1,0 +1,23 @@
+{
+  "bmadInitPrompt": "✨ 請在專案中執行 /bmad-init 命令來初始化或更新 BMAD-Method 擴充",
+  "cleaningOldFiles": "清理舊版本檔案",
+  "failedToInstallAgent": "安裝代理失敗",
+  "failedToInstallCommand": "安裝命令失敗",
+  "installedAgent": "已安裝代理",
+  "installedCommand": "已安裝命令",
+  "installingWorkflow": "正在安裝工作流",
+  "removedOldFile": "已刪除舊檔案",
+  "selectWorkflowType": "選擇要安裝的工作流類型",
+  "workflowDescription.bmadWorkflow": "BMAD-Method 企業級敏捷開發工作流擴充",
+  "workflowDescription.commonTools": "提供專案初始化和架構分析工具，包含層級目錄初始化命令和智慧架構分析代理",
+  "workflowDescription.featPlanUx": "功能規劃和使用者體驗設計工作流，包含規劃代理和 UX 設計代理",
+  "workflowDescription.gitWorkflow": "Git 版本控制相關命令集合",
+  "workflowDescription.sixStepsWorkflow": "專業開發助手的結構化六步工作流程",
+  "workflowInstallError": "工作流安裝出錯",
+  "workflowInstallSuccess": "工作流安裝成功",
+  "workflowOption.bmadWorkflow": "BMAD-Method 擴充安裝器 (支援敏捷開發工作流)",
+  "workflowOption.commonTools": "通用工具 (層級目錄初始化 + 通用agents)",
+  "workflowOption.featPlanUx": "功能規劃和 UX 設計 (feat + planner + ui-ux-designer)",
+  "workflowOption.gitWorkflow": "Git 指令 (commit + rollback + cleanBranches + worktree)",
+  "workflowOption.sixStepsWorkflow": "六步工作流 (workflow)"
+}

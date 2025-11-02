@@ -61,19 +61,21 @@ export function resolveCodeToolType(value: unknown): CodeToolType {
   return DEFAULT_CODE_TOOL_TYPE
 }
 
-export const SUPPORTED_LANGS = ['zh-CN', 'en'] as const
+export const SUPPORTED_LANGS = ['zh-CN', 'zh-TW', 'en'] as const
 export type SupportedLang = (typeof SUPPORTED_LANGS)[number]
 
 // Dynamic language labels using i18n
 // This will be replaced with a function that uses i18n to get labels
 export const LANG_LABELS = {
   'zh-CN': '简体中文',
+  'zh-TW': '繁體中文',
   'en': 'English',
 } as const
 
 // AI output languages - labels are now retrieved via helper function
 export const AI_OUTPUT_LANGUAGES = {
   'zh-CN': { directive: 'Always respond in Chinese-simplified' },
+  'zh-TW': { directive: 'Always respond in Chinese-traditional' },
   'en': { directive: 'Always respond in English' },
   'custom': { directive: '' },
 } as const

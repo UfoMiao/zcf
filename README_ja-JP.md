@@ -14,7 +14,7 @@
   </h1>
 
   <p align="center">
-   <a href="README.md">English</a> | <a href="README_zh-CN.md">中文</a> | <b>日本語</b> | <a href="CHANGELOG.md">更新履歴</a>
+   <a href="README.md">English</a> | <a href="README_zh-CN.md">简体中文</a> | <a href="README_zh-TW.md">繁體中文</a> | <b>日本語</b> | <a href="CHANGELOG.md">更新履歴</a>
 
 **✨ クイックリンク**: [Codexサポート](#-codexサポートv300新機能) | [BMadワークフロー](#-bmadワークフローv27新機能) | [Specワークフロー](#-specワークフローv2124新機能) | [Open Web Search](#-open-web-searchv2129新機能) | [CCRルーター](#-ccr-claude-code-router-サポートv28強化版) | [CCometixLine](#-ccometixlineサポートステータスバーツールv299新機能) | [出力スタイル](#-ai出力スタイルv212新機能) | [多設定管理](#-多設定管理v320-新機能)
 
