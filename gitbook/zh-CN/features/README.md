@@ -1,3 +1,21 @@
+---
+icon: clipboard-list
+layout:
+  width: default
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
+
 # 功能总览
 
 ZCF 将环境配置、工作流导入与工具链整合到一套 CLI 中。核心能力可以分为以下几个维度：

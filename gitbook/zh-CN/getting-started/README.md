@@ -1,9 +1,47 @@
-# 快速开始概览
+---
+icon: bolt
+layout:
+  width: default
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
 
-本章介绍如何在几分钟内通过 ZCF 初始化环境，涵盖安装前准备、常见命令与推荐操作顺序。如果你首次接触 ZCF，建议按以下步骤阅读：
+# 快速开始
 
-1. 查看 [安装指南](installation.md) 确认系统要求与安装方式。
-2. 按照 [首次运行](first-run.md) 完成交互式配置与语言选择。
-3. 参考 [快速上手示例](quickstart.md) 将 CLI 与工作流应用到实际项目。
+本章介绍如何在几分钟内通过 ZCF 初始化环境，涵盖安装前准备、常见命令与推荐操作顺序。
 
-在操作过程中，如需了解特定功能，请随时跳转到 [功能特性](../features/README.md) 或 [CLI 命令](../cli/README.md)。
+## 快速导航
+
+如果你首次接触 ZCF，建议按照以下步骤操作：
+
+1. **查看 [使用指南](installation.md)** - 了解系统要求、使用方式、交互式与非交互式初始化流程，以及完整的配置步骤
+2. **熟悉核心功能** - 查看 [功能特性](../features/README.md) 了解 Claude Code、Codex、MCP 服务、CCR 代理等核心能力
+3. **掌握 CLI 命令** - 参考 [CLI 命令](../cli/README.md) 学习各种命令的使用方法
+
+## 推荐操作流程
+
+### 首次使用
+
+1. 运行 `npx zcf` 或 `npx zcf init` 进行完整初始化
+2. 选择代码工具类型（Claude Code 或 Codex）
+3. 配置 API 密钥或使用 API 提供商预设
+4. 选择需要安装的 MCP 服务
+5. 选择工作流模板和输出风格
+
+### 已有环境
+
+- 运行 `npx zcf update` 更新工作流和模板
+- 使用 `npx zcf` 打开交互式菜单进行增量配置
+- 通过 `npx zcf config-switch` 切换不同的配置
+
+> 💡 **提示**：在操作过程中，如需了解特定功能，请随时跳转到对应的功能章节或 CLI 命令文档。

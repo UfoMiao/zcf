@@ -1,3 +1,21 @@
+---
+icon: clipboard-list
+layout:
+  width: default
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
+
 # 命令概览
 
 ZCF CLI 基于 `cac` 实现，所有命令均可通过 `npx zcf <command>` 调用。常用命令如下：

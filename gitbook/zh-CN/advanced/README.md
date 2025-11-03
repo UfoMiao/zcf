@@ -1,3 +1,21 @@
+---
+icon: book
+layout:
+  width: default
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
+
 # 进阶指南
 
 本章聚焦于高级配置、模板管理、国际化与故障排除。适合需要大规模部署、团队协作或深度定制的用户。

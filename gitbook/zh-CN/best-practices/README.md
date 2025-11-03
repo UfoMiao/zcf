@@ -1,3 +1,21 @@
+---
+icon: star
+layout:
+  width: default
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
+  metadata:
+    visible: true
+---
+
 # 最佳实践
 
 本章收录日常使用 ZCF 的经验与技巧，帮助你在团队协作与多项目场景中发挥最大效益。
