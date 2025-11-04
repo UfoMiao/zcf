@@ -1,3 +1,7 @@
+> **📢 Note**: This is a fork with Traditional Chinese (zh-TW) support. A [Pull Request](https://github.com/UfoMiao/zcf/pulls) has been submitted to the [original project](https://github.com/UfoMiao/zcf). This package (`zcf-tw`) serves as a temporary solution for Traditional Chinese users until the PR is merged.
+>
+> **📢 注意**：這是一個支援繁體中文（zh-TW）的分支版本。已向[原專案](https://github.com/UfoMiao/zcf)提交 [Pull Request](https://github.com/UfoMiao/zcf/pulls)。本套件 (`zcf-tw`) 作為過渡方案，供繁體中文使用者使用，直到 PR 被合併。
+
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]

@@ -1,3 +1,9 @@
+> **📢 注意**：這是一個支援繁體中文（zh-TW）的分支版本。已向[原專案](https://github.com/UfoMiao/zcf)提交 [Pull Request](https://github.com/UfoMiao/zcf/pulls)。本套件 (`zcf-tw`) 作為過渡方案，供繁體中文使用者使用，直到 PR 被合併。
+>
+> - ✅ **已新增**：4 個 Claude Code 繁體中文輸出風格模板（工程師專業版、老王暴躁技術流、貓娘工程師、傲嬌大小姐工程師）
+> - ✅ **已新增**：4 個 Codex 繁體中文系統提示詞模板
+> - 📦 **臨時安裝**：`npm install -g zcf-tw` 或 `npx zcf-tw`
+
 [![npm version][npm-version-src]][npm-version-href]
 [![npm downloads][npm-downloads-src]][npm-downloads-href]
 [![License][license-src]][license-href]
