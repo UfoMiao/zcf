@@ -1,21 +1,21 @@
 {
-  "name": "zcf",
+  "name": "zcf-tw",
   "type": "module",
-  "version": "3.3.1",
+  "version": "3.3.1-tw.4",
   "packageManager": "pnpm@10.17.1",
-  "description": "Zero-Config Code Flow - One-click configuration tool for Claude Code",
+  "description": "ZCF with Traditional Chinese support - 繁體中文增強版 | Zero-Config Code Flow - One-click configuration tool for Claude Code",
   "author": {
-    "name": "Miao Da",
-    "email": "ufo025174@gmail.com",
-    "url": "https://github.com/WitMiao"
+    "name": "TaichiS",
+    "email": "taichis@shsh.ylc.edu.tw",
+    "url": "https://github.com/TaichiS"
   },
   "license": "MIT",
-  "homepage": "https://github.com/UfoMiao/zcf",
+  "homepage": "https://github.com/TaichiS/zcf",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/UfoMiao/zcf.git"
+    "url": "git+https://github.com/TaichiS/zcf.git"
   },
-  "bugs": "https://github.com/UfoMiao/zcf/issues",
+  "bugs": "https://github.com/TaichiS/zcf/issues",
   "keywords": [
     "claude",
     "claude-code",
@@ -27,7 +27,12 @@
     "anthropic",
     "ai",
     "automation",
-    "mcp"
+    "mcp",
+    "traditional-chinese",
+    "zh-TW",
+    "taiwan",
+    "繁體中文",
+    "台灣"
   ],
   "main": "dist/index.mjs",
   "module": "dist/index.mjs",
@@ -45,7 +50,7 @@
     "build": "unbuild",
     "start": "node bin/zcf.mjs",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm build",
+    "prepublishOnly": "node scripts/resolve-catalog.mjs && pnpm build",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "vitest",
@@ -56,7 +61,7 @@
     "changeset": "changeset",
     "version": "changeset version",
     "update:deps": "pnpx taze major -r -w",
-    "release": "pnpm build && changeset publish",
+    "release": "pnpm build && pnpm changeset publish",
     "prepare": "husky",
     "commitlint": "commitlint",
     "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose"

@@ -133,8 +133,8 @@ export function customizeHelp(sections: any[]): any[] {
   sections.push({
     title: ansis.yellow(i18n.t('cli:help.options')),
     body: [
-      `  ${ansis.green('--lang, -l')} <lang>         ${i18n.t('cli:help.optionDescriptions.displayLanguage')} (zh-CN, en)`,
-      `  ${ansis.green('--config-lang, -c')} <lang>  ${i18n.t('cli:help.optionDescriptions.configurationLanguage')} (zh-CN, en)`,
+      `  ${ansis.green('--lang, -l')} <lang>         ${i18n.t('cli:help.optionDescriptions.displayLanguage')} (zh-CN, zh-TW, en)`,
+      `  ${ansis.green('--config-lang, -c')} <lang>  ${i18n.t('cli:help.optionDescriptions.configurationLanguage')} (zh-CN, zh-TW, en)`,
       `  ${ansis.green('--force, -f')}               ${i18n.t('cli:help.optionDescriptions.forceOverwrite')}`,
       `  ${ansis.green('--help, -h')}                ${i18n.t('cli:help.optionDescriptions.displayHelp')}`,
       `  ${ansis.green('--version, -v')}             ${i18n.t('cli:help.optionDescriptions.displayVersion')}`,
@@ -221,9 +221,9 @@ export async function setupCommands(cli: CAC): Promise<void> {
   // Default command - show menu
   cli
     .command('', 'Show interactive menu (default)')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
+    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, zh-TW, en)')
     .option('--force, -f', 'Force overwrite existing configuration')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .action(await withLanguageResolution(async (options) => {
@@ -234,8 +234,8 @@ export async function setupCommands(cli: CAC): Promise<void> {
   cli
     .command('init', 'Initialize Claude Code configuration')
     .alias('i')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
-    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
+    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, zh-TW, en)')
     .option('--ai-output-lang, -a <lang>', 'AI output language')
     .option('--force, -f', 'Force overwrite existing configuration')
     .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
@@ -263,9 +263,9 @@ export async function setupCommands(cli: CAC): Promise<void> {
   cli
     .command('update', 'Update Claude Code prompts only')
     .alias('u')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
+    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, zh-TW, en)')
     .action(await withLanguageResolution(async (options) => {
       await update(options)
     }))
@@ -273,7 +273,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
   // CCR command - Configure Claude Code Router
   cli
     .command('ccr', 'Configure Claude Code Router for model proxy')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .action(await withLanguageResolution(async () => {
       await ccr()
@@ -282,7 +282,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
   // CCU command - Claude Code usage analysis
   cli
     .command('ccu [...args]', 'Run Claude Code usage analysis tool')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .allowUnknownOptions()
     .action(await withLanguageResolution(async (args) => {
@@ -294,7 +294,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .command('config-switch [target]', 'Switch Codex provider or Claude Code configuration, or list available configurations')
     .alias('cs')
     .option('--code-type, -T <type>', 'Code tool type (claude-code, codex, cc, cx)')
-    .option('--lang <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--list, -l', 'List available configurations')
     .action(await withLanguageResolution(async (target, options) => {
@@ -308,7 +308,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
   // Uninstall command - Remove ZCF configurations and tools
   cli
     .command('uninstall', 'Remove ZCF configurations and tools')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--mode, -m <mode>', 'Uninstall mode (complete/custom/interactive), default: interactive')
     .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
@@ -320,7 +320,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
   cli
     .command('check-updates', 'Check and update Claude Code and CCR to latest versions')
     .alias('check')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, zh-TW, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .action(await withLanguageResolution(async (options) => {

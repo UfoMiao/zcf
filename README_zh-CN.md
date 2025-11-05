@@ -14,7 +14,7 @@
   </h1>
 
   <p align="center">
-    <a href="README.md">English</a> | <b>中文</b> | <a href="README_ja-JP.md">日本語</a> | <a href="CHANGELOG.md">更新日志</a>
+    <a href="README.md">English</a> | <b>简体中文</b> | <a href="README_zh-TW.md">繁體中文</a> | <a href="README_ja-JP.md">日本語</a> | <a href="CHANGELOG.md">更新日志</a>
 
 **✨ 快速导航**: [Codex 支持](#-codex-支持v300-新增) | [BMad 工作流](#-bmad-工作流v27-新功能) | [Spec 工作流](#-spec-工作流v2124-新功能) | [开放网页搜索](#-开放网页搜索v2129-新功能) | [CCR 代理](#-ccr-claude-code-router-支持v28-增强版) | [CCometixLine](#-ccometixline-支持状态栏工具v299-新增) | [输出风格](#-ai-输出风格v212-新功能) | [多配置管理](#-多配置管理v320-新增)
 

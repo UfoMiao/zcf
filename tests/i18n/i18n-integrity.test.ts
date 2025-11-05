@@ -17,7 +17,7 @@ describe('i18n Integrity Tests', () => {
       expect(existsSync(sourceLocalesPath), 'Source i18n directory should exist').toBe(true)
 
       // Define required namespaces and languages
-      const requiredLanguages = ['zh-CN', 'en']
+      const requiredLanguages = ['zh-CN', 'zh-TW', 'en']
       const requiredNamespaces = [
         'common',
         'api',
@@ -67,17 +67,22 @@ describe('i18n Integrity Tests', () => {
       ]
 
       for (const ns of namespaces) {
-        const zhFile = join(sourceLocalesPath, 'zh-CN', `${ns}.json`)
+        const zhCNFile = join(sourceLocalesPath, 'zh-CN', `${ns}.json`)
+        const zhTWFile = join(sourceLocalesPath, 'zh-TW', `${ns}.json`)
         const enFile = join(sourceLocalesPath, 'en', `${ns}.json`)
 
-        if (existsSync(zhFile) && existsSync(enFile)) {
-          const zhContent = JSON.parse(readFileSync(zhFile, 'utf-8'))
+        if (existsSync(zhCNFile) && existsSync(zhTWFile) && existsSync(enFile)) {
+          const zhCNContent = JSON.parse(readFileSync(zhCNFile, 'utf-8'))
+          const zhTWContent = JSON.parse(readFileSync(zhTWFile, 'utf-8'))
           const enContent = JSON.parse(readFileSync(enFile, 'utf-8'))
 
-          const zhKeys = Object.keys(zhContent).sort()
+          const zhCNKeys = Object.keys(zhCNContent).sort()
+          const zhTWKeys = Object.keys(zhTWContent).sort()
           const enKeys = Object.keys(enContent).sort()
 
-          expect(zhKeys, `${ns}: zh-CN and en should have same keys`).toEqual(enKeys)
+          expect(zhCNKeys, `${ns}: zh-CN and en should have same keys`).toEqual(enKeys)
+          expect(zhTWKeys, `${ns}: zh-TW and en should have same keys`).toEqual(enKeys)
+          expect(zhCNKeys, `${ns}: zh-CN and zh-TW should have same keys`).toEqual(zhTWKeys)
         }
       }
     })
@@ -93,7 +98,7 @@ describe('i18n Integrity Tests', () => {
         return
       }
 
-      const requiredLanguages = ['zh-CN', 'en']
+      const requiredLanguages = ['zh-CN', 'zh-TW', 'en']
       const requiredNamespaces = [
         'common',
         'api',
@@ -185,12 +190,29 @@ describe('i18n Integrity Tests', () => {
 
     it('should handle language switching correctly', async () => {
       await initI18n('zh-CN')
-      const zhText = i18n.t('menu:selectFunction')
-      expect(zhText).toBe('请选择功能')
+      const zhCNText = i18n.t('menu:selectFunction')
+      expect(zhCNText).toBe('请选择功能')
+
+      await initI18n('zh-TW')
+      const zhTWText = i18n.t('menu:selectFunction')
+      expect(zhTWText).toBe('請選擇功能')
 
       await initI18n('en')
       const enText = i18n.t('menu:selectFunction')
       expect(enText).toBe('Select function')
+    })
+
+    it('should load zh-TW translations correctly', async () => {
+      await initI18n('zh-TW')
+      expect(i18n.isInitialized).toBe(true)
+      expect(i18n.language).toBe('zh-TW')
+
+      // Test various zh-TW specific translations
+      const commonText = i18n.t('common:complete')
+      expect(commonText).toContain('設定完成') // Traditional Chinese specific
+
+      const menuText = i18n.t('menu:selectFunction')
+      expect(menuText).toBe('請選擇功能')
     })
   })
 
@@ -241,7 +263,7 @@ describe('i18n Integrity Tests', () => {
 
         // Count total i18n files
         const i18nMatches = packOutput.match(/dist\/i18n\/locales\/.*\.json/g) || []
-        const expectedMinCount = 28 // 14 namespaces × 2 languages
+        const expectedMinCount = 42 // 14 namespaces × 3 languages (zh-CN, zh-TW, en)
 
         expect(i18nMatches.length, `Should include at least ${expectedMinCount} i18n files`).toBeGreaterThanOrEqual(expectedMinCount)
       }

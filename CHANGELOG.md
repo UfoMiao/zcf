@@ -4,6 +4,24 @@
 
 ### Patch Changes
 
+- fix: resolve catalog protocol references for npm compatibility
+  - Add scripts/resolve-catalog.mjs to convert pnpm catalog references to actual versions
+  - Update prepublishOnly script to automatically resolve catalogs before publishing
+  - Fixes EUNSUPPORTEDPROTOCOL error when using npx zcf-tw
+
+## 3.3.1
+
+### Patch Changes
+
+- Add Traditional Chinese (zh-TW) output-styles templates
+  - Add 4 output-style templates for Claude Code (zh-TW)
+  - Add 4 system-prompt templates for Codex (zh-TW)
+  - Full translation from zh-CN to zh-TW with preserved technical terms
+
+## 3.3.1
+
+### Patch Changes
+
 - ## New Features
   - Add configuration copy functionality for easier profile duplication
   - Support model configuration editing in profile management

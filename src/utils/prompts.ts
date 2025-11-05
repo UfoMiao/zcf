@@ -183,6 +183,7 @@ export async function selectTemplateLanguage(): Promise<SupportedLang> {
   // Create static language hint keys for i18n-ally compatibility
   const LANG_HINT_KEYS = {
     'zh-CN': i18n.t('language:configLangHint.zh-CN'),
+    'zh-TW': i18n.t('language:configLangHint.en'), // Use EN hint for zh-TW until translation is added
     'en': i18n.t('language:configLangHint.en'),
   } as const
 

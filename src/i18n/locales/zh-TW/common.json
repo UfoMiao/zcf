@@ -1,0 +1,17 @@
+{
+  "multiSelectHint": "（空格選擇，a全選，i反選，回車確認）",
+  "skip": "跳過",
+  "emptyToSkip": "（空內容回車則跳過）",
+  "cancelled": "操作已取消",
+  "error": "錯誤",
+  "complete": "🎉 設定完成！使用 'claude' 命令開始體驗。",
+  "none": "無",
+  "enterChoice": "請輸入選項，回車確認（不區分大小寫）",
+  "invalidChoice": "無效選擇。請輸入有效選項。",
+  "goodbye": "👋 感謝使用 ZCF！再見！",
+  "returnToMenu": "返回主選單？",
+  "back": "返回",
+  "operationFailed": "操作失敗",
+  "backupCreated": "📁 已建立設定備份：{{path}}",
+  "current": "當前"
+}
