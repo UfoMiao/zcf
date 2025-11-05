@@ -1,5 +1,6 @@
 packages:
   - .
+  - docs
 
 catalogs:
   build:
@@ -14,6 +15,8 @@ catalogs:
     cac: ^6.7.14
     inquirer: ^12.9.6
     ora: ^9.0.0
+  docs:
+    vitepress: ^1.6.4
   runtime:
     dayjs: ^1.11.18
     find-up-simple: ^1.0.1
