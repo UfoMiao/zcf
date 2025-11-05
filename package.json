@@ -1,7 +1,7 @@
 {
   "name": "zcf-tw",
   "type": "module",
-  "version": "3.3.1-tw.3",
+  "version": "3.3.1-tw.4",
   "packageManager": "pnpm@10.17.1",
   "description": "ZCF with Traditional Chinese support - 繁體中文增強版 | Zero-Config Code Flow - One-click configuration tool for Claude Code",
   "author": {
@@ -50,7 +50,7 @@
     "build": "unbuild",
     "start": "node bin/zcf.mjs",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm build",
+    "prepublishOnly": "node scripts/resolve-catalog.mjs && pnpm build",
     "lint": "eslint",
     "lint:fix": "eslint --fix",
     "test": "vitest",
