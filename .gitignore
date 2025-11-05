@@ -44,3 +44,6 @@ en_output.txt
 release_*_test.log
 test-*.js
 zcf-*.tgz
+
+# VitePress
+docs/.vitepress/cache/**

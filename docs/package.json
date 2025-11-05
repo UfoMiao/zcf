@@ -1,0 +1,14 @@
+{
+  "name": "@zcf/docs",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vitepress dev --port 3366",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
+  },
+  "dependencies": {
+    "vitepress": "catalog:docs"
+  }
+}
