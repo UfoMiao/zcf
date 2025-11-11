@@ -26,6 +26,16 @@
 
 [![スポンサー AI API](./src/assets/302.ai-jp.jpg)](https://share.302.ai/gAT9VG)
 [302.AI](https://share.302.ai/gAT9VG) は、従量課金制のエンタープライズ向けAIリソースプラットフォームで、市場で最新かつ最も包括的なAIモデルとAPIに加え、すぐに使える多様なオンラインAIアプリを提供します。
+
+---
+
+<table>
+<tr>
+<td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
+<td>PackyCode がこのプロジェクトを支援してくれました！PackyCode は信頼性と効率性の高いAPI中継サービスプロバイダーで、Claude Code、Codex、Gemini などの中継サービスを提供します。PackyCode はこのソフトウェアのユーザーに特別な割引を提供します：<a href="https://www.packyapi.com/register?aff=zcf">このリンク</a> を使用して登録し、再課金時に "zcf" プロモーションコードを入力すると 10% 割引を享受できます。</td>
+</tr>
+</table>
+
 ## 🚀 クイックスタート
 
 ### 🎯 推奨：インタラクティブメニューを使用（v2.0新機能）
@@ -806,6 +816,7 @@ ZCFはAndroid Termux環境での実行をサポート：
 すべてのスポンサーの寛大なサポートに感謝します！
 
 - [302.AI](https://share.302.ai/gAT9VG)（最初の企業スポンサー 🤠）
+- [PackyCode](https://www.packyapi.com/register?aff=zcf)（最初のAPIプロキシサービススポンサー 🧝🏻‍♀️）
 - Tc（最初のスポンサー）
 - Argolinhas（最初のko-fiスポンサー ٩(•̤̀ᵕ•̤́๑)）
 - r\*r（最初の匿名スポンサー 🤣）

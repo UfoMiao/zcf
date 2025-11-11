@@ -22,10 +22,19 @@
   </p>
 </div>
 
-## ♥️ 赞助商 AI API
+## ♥️ 赞助商
 
 [![赞助商 AI API](./src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
 [302.AI](https://share.302.ai/gAT9VG) 是一个按用量付费的企业级AI资源平台，提供市场上最新、最全面的AI模型和API，以及多种开箱即用的在线AI应用。
+
+---
+
+<table>
+<tr>
+<td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
+<td>感谢 PackyCode 赞助了本项目！PackyCode 是一家稳定、高效的API中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务。PackyCode 为本软件的用户提供了特别优惠，使用<a href="https://www.packyapi.com/register?aff=zcf">此链接</a>注册并在充值时填写"zcf"优惠码，可以享受9折优惠。</td>
+</tr>
+</table>
 
 ## 🚀 快速开始
 
@@ -940,6 +949,7 @@ ZCF 现已支持在 Android Termux 环境中运行：
 非常感谢所有赞助商的慷慨支持！
 
 - [302.AI](https://share.302.ai/gAT9VG) （第一个企业赞助商 🤠）
+- [PackyCode](https://www.packyapi.com/register?aff=zcf) （第一个 API 中转服务商赞助商 🧝🏻‍♀️）
 - Tc (第一个赞助者)
 - Argolinhas (第一个 ko-fi 赞助者 ٩(•̤̀ᵕ•̤́๑))
 - r\*r (第一个不愿透露姓名的赞助者 🤣)

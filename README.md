@@ -27,6 +27,15 @@
 [![Sponsor AI API](./src/assets/302.ai-en.jpg)](https://share.302.ai/gAT9VG)
 [302.AI](https://share.302.ai/gAT9VG) is a pay-as-you-go enterprise AI resource hub that offers the latest and most comprehensive AI models and APIs on the market, along with a variety of ready-to-use online AI applications.
 
+---
+
+<table>
+<tr>
+<td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
+<td>Thanks to PackyCode for sponsoring this project! PackyCode is a reliable and efficient API relay service provider, offering relay services for Claude Code, Codex, Gemini, and more. PackyCode provides special discounts for our software users: register using  <a href="https://www.packyapi.com/register?aff=zcf">this link</a>  and enter the "zcf" promo code during recharge to get 10% off.</td>
+</tr>
+</table>
+
 ## 🚀 Quick Start
 
 ### 🎯 Recommended: Use Interactive Menu (v2.0 New)
@@ -930,6 +939,7 @@ If you find this project helpful, please consider sponsoring its development. Yo
 
 A huge thank you to all our sponsors for their generous support!
 - [302.AI](https://share.302.ai/gAT9VG) (first corporate sponsorship 🤠)
+- [PackyCode](https://www.packyapi.com/register?aff=zcf) (first API proxy service sponsor 🧝🏻‍♀️)
 - Tc (first sponsor)
 - Argolinhas (first ko-fi sponsor ٩(•̤̀ᵕ•̤́๑))
 - r\*r (first anonymous sponsor 🤣)

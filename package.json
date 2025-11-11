@@ -3,7 +3,7 @@
   "type": "module",
   "version": "3.3.1",
   "packageManager": "pnpm@10.17.1",
-  "description": "Zero-Config Code Flow - One-click configuration tool for Claude Code",
+  "description": "Zero-Config Code Flow - One-click configuration tool for Code Cli",
   "author": {
     "name": "Miao Da",
     "email": "ufo025174@gmail.com",
@@ -19,12 +19,15 @@
   "keywords": [
     "claude",
     "claude-code",
+    "codex",
     "config",
     "cli",
     "setup",
     "zero-config",
     "zcf",
     "anthropic",
+    "openai",
+    "ChatGPT",
     "ai",
     "automation",
     "mcp"
@@ -59,7 +62,10 @@
     "release": "pnpm build && changeset publish",
     "prepare": "husky",
     "commitlint": "commitlint",
-    "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose"
+    "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose",
+    "docs:dev": "pnpm -F @zcf/docs dev",
+    "docs:build": "pnpm -F @zcf/docs build",
+    "docs:preview": "pnpm -F @zcf/docs preview"
   },
   "dependencies": {
     "@types/semver": "catalog:types",
