@@ -301,7 +301,7 @@ ZCF 现在支持可定制的 AI 输出风格，个性化你的 Claude Code 体�
 
 <p align="center">
 <a href="https://github.com/Haleclipse">
-<img src="./src/assets/Haleclipse.gif" alt="哈雷酱" width="200"/>
+<img src="./src/assets/Haleclipse.webp" alt="哈雷酱" width="200"/>
 </a>
 </p>
 <p align="center">傲娇的<a href="https://github.com/Haleclipse">哈雷酱</a>大小姐(￣▽￣)ゞ</p>

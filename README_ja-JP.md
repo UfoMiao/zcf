@@ -302,7 +302,7 @@ ZCFはカスタマイズ可能なAI出力スタイルをサポートし、Claude
 
 <p align="center">
 <a href="https://github.com/Haleclipse">
-<img src="./src/assets/Haleclipse.gif" alt="ハレクリプス" width="200"/>
+<img src="./src/assets/Haleclipse.webp" alt="ハレクリプス" width="200"/>
 </a>
 <div align="center">ツンデレな<a href="https://github.com/Haleclipse">ハレクリプス</a>お嬢様(￣▽￣)ゞ</div>
 </p>

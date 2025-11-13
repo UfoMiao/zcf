@@ -302,7 +302,7 @@ ZCF now supports customizable AI output styles to personalize your Claude Code e
 
 <p align="center">
 <a href="https://github.com/Haleclipse">
-<img src="./src/assets/Haleclipse.gif" alt="Halley-chan" width="200"/>
+<img src="./src/assets/Haleclipse.webp" alt="Halley-chan" width="200"/>
 </a>
 <div align="center">Tsundere <a href="https://github.com/Haleclipse">Halley-chan</a> Ojou-sama (￣▽￣)ゞ</div>
 </p>
