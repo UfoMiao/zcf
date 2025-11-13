@@ -163,6 +163,7 @@ ZCFはAPIプロバイダープリセットをサポートし、baseUrlとモデ�
 
 **サポートされているプロバイダー：**
 - `302ai` - [302.AI](https://share.302.ai/gAT9VG) APIサービス
+- `packycode` - [PackyCode](https://www.packyapi.com/register?aff=zcf) APIサービス
 - `glm` - GLM（z.ai）
 - `minimax` - MiniMax APIサービス
 - `kimi` - Kimi（Moonshot AI）
@@ -175,6 +176,9 @@ ZCFはAPIプロバイダープリセットをサポートし、baseUrlとモデ�
 npx zcf i --skip-prompt --provider 302ai --api-key "sk-xxx"
 # または短縮形
 npx zcf i -s -p 302ai -k "sk-xxx"
+
+# PackyCodeプロバイダーを使用
+npx zcf i -s -p packycode -k "sk-xxx"
 
 # GLMプロバイダーを使用
 npx zcf i -s -p glm -k "sk-xxx"
@@ -206,7 +210,7 @@ npx zcf i -s -T cx -p 302ai -k "sk-xxx"
 | パラメータ                    | 説明                                    | 可能な値                                                                                               | 必須                          | デフォルト値                                                                           |
 | ---------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------------------------------------------- |
 | `--skip-prompt, -s`          | すべてのインタラクティブプロンプトをスキップ | -                                                                                                      | はい（非インタラクティブモード必須） | -                                                                                      |
-| `--provider, -p`             | APIプロバイダープリセット（v3.3.0+新機能） | `302ai`, `glm`, `minimax`, `kimi`, `custom`                                                            | いいえ                        | -（baseUrlとモデルの自動入力で設定を簡略化）                                          |
+| `--provider, -p`             | APIプロバイダープリセット（v3.3.0+新機能） | `302ai`, `packycode`, `glm`, `minimax`, `kimi`, `custom`                                               | いいえ                        | -（baseUrlとモデルの自動入力で設定を簡略化）                                          |
 | `--lang, -l`                 | ZCF表示言語（すべてのコマンドに適用）       | `zh-CN`, `en`, `ja`                                                                                    | いいえ                        | `en`またはユーザー保存の設定                                                           |
 | `--config-lang, -c`          | 設定ファイル言語（テンプレートファイル言語） | `zh-CN`, `en`                                                                                          | いいえ                        | `en`                                                                                   |
 | `--ai-output-lang, -a`       | AI出力言語                               | `zh-CN`, `en`, `ja`, カスタム文字列                                                                     | いいえ                        | `en`                                                                                   |
@@ -483,6 +487,7 @@ ZCFはClaude CodeとCodexの両方に柔軟なAPI設定オプションを提供�
 
 事前設定された人気のAPIプロバイダーから選択：
 - **302.AI** - 包括的なモデルサポートを備えた従量課金制AIサービス
+- **PackyCode** - PackyCode APIサービス
 - **GLM（智谱AI）** - Zhipu AIのGLMモデル
 - **MiniMax** - MiniMax AIサービス
 - **Kimi（Moonshot AI）** - MoonshotのKimiモデル

@@ -52,6 +52,20 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: '302.AI API Service',
   },
   {
+    id: 'packycode',
+    name: 'PackyCode',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://www.packyapi.com',
+      authType: 'auth_token',
+    },
+    codex: {
+      baseUrl: 'https://www.packyapi.com/v1',
+      wireApi: 'responses',
+    },
+    description: 'PackyCode API Service',
+  },
+  {
     id: 'glm',
     name: 'GLM',
     supportedCodeTools: ['claude-code', 'codex'],
@@ -113,7 +127,7 @@ export function getApiProviders(codeToolType: CodeToolType): ApiProviderPreset[]
 
 /**
  * Get API provider preset by ID
- * @param providerId - The provider ID (302ai, glm, minimax, kimi)
+ * @param providerId - The provider ID (302ai, glm, minimax, kimi, packycode)
  * @returns API provider preset or undefined if not found
  */
 export function getProviderPreset(providerId: string): ApiProviderPreset | undefined {

@@ -28,7 +28,7 @@ export interface ApiConfigDefinition {
   default?: boolean // Set as default profile (optional)
   primaryModel?: string // Primary model (optional - auto-filled from provider preset, e.g., claude-sonnet-4-5)
   fastModel?: string // Fast model (optional - auto-filled from provider preset, e.g., claude-haiku-4-5)
-  provider?: string // API provider preset name (optional - 302ai, glm, minimax, kimi, custom)
+  provider?: string // API provider preset name (optional - 302ai, packycode, glm, minimax, kimi, custom)
 }
 
 // Operation result type

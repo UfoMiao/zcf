@@ -163,6 +163,7 @@ ZCF now supports API provider presets that automatically configure baseUrl and m
 
 **Supported Providers:**
 - `302ai` - [302.AI](https://share.302.ai/gAT9VG) API Service
+- `packycode` - [PackyCode](https://www.packyapi.com/register?aff=zcf) API Service
 - `glm` - GLM (z.ai)
 - `minimax` - MiniMax API Service
 - `kimi` - Kimi (Moonshot AI)
@@ -175,6 +176,9 @@ ZCF now supports API provider presets that automatically configure baseUrl and m
 npx zcf i --skip-prompt --provider 302ai --api-key "sk-xxx"
 # or shorthand
 npx zcf i -s -p 302ai -k "sk-xxx"
+
+# Using PackyCode provider
+npx zcf i -s -p packycode -k "sk-xxx"
 
 # Using GLM provider
 npx zcf i -s -p glm -k "sk-xxx"
@@ -206,7 +210,7 @@ When using `--skip-prompt`, the following parameters are available:
 | Parameter                    | Description                                              | Values                                                                                             | Required                               | Default                                                                                                                          |
 | ---------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `--skip-prompt, -s`          | Skip all interactive prompts                             | -                                                                                                  | Yes (for non-interactive mode)         | -                                                                                                                                |
-| `--provider, -p`             | API provider preset (v3.3.0+ New)                        | `302ai`, `glm`, `minimax`, `kimi`, `custom`                                                        | No                                     | - (Simplifies configuration by auto-filling baseUrl and models)                                                                  |
+| `--provider, -p`             | API provider preset (v3.3.0+ New)                        | `302ai`, `packycode`, `glm`, `minimax`, `kimi`, `custom`                                           | No                                     | - (Simplifies configuration by auto-filling baseUrl and models)                                                                  |
 | `--lang, -l`                 | ZCF display language (applies to all commands)           | `zh-CN`, `en`                                                                                      | No                                     | `en` or user's saved preference                                                                                                  |
 | `--config-lang, -c`          | Configuration language (template files language)         | `zh-CN`, `en`                                                                                      | No                                     | `en`                                                                                                                             |
 | `--ai-output-lang, -a`       | AI output language                                       | `zh-CN`, `en`, custom string                                                                       | No                                     | `en`                                                                                                                             |
@@ -482,6 +486,7 @@ ZCF provides flexible API configuration options for both Claude Code and Codex:
 
 Choose from popular API providers with pre-configured settings:
 - **302.AI** - Pay-as-you-go AI service with comprehensive model support
+- **PackyCode** - PackyCode API Service
 - **GLM (智谱AI)** - Zhipu AI's GLM models
 - **MiniMax** - MiniMax AI service
 - **Kimi (Moonshot AI)** - Moonshot's Kimi models
