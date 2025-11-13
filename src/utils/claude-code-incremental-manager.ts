@@ -115,12 +115,14 @@ async function handleAddProfile(): Promise<void> {
 
   let prefilledBaseUrl: string | undefined
   let prefilledAuthType: 'api_key' | 'auth_token' | undefined
+  let prefilledDefaultModels: string[] | undefined
 
   if (selectedProvider !== 'custom') {
     const provider = providers.find((p: any) => p.id === selectedProvider)
     if (provider?.claudeCode) {
       prefilledBaseUrl = provider.claudeCode.baseUrl
       prefilledAuthType = provider.claudeCode.authType
+      prefilledDefaultModels = provider.claudeCode.defaultModels
       console.log(ansis.gray(i18n.t('api:providerSelected', { name: provider.name })))
     }
   }
@@ -243,6 +245,14 @@ async function handleAddProfile(): Promise<void> {
     }
     if (modelConfig.fastModel.trim()) {
       profile.fastModel = modelConfig.fastModel.trim()
+    }
+  }
+  else if (prefilledDefaultModels?.length) {
+    if (prefilledDefaultModels[0]?.trim()) {
+      profile.primaryModel = prefilledDefaultModels[0].trim()
+    }
+    if (prefilledDefaultModels[1]?.trim()) {
+      profile.fastModel = prefilledDefaultModels[1].trim()
     }
   }
 

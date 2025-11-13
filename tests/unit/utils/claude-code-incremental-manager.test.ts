@@ -67,6 +67,40 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.readConfig).toHaveBeenCalled()
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
     })
+    it('should apply provider default models when adding preset profile', async () => {
+      const { getProviderPreset } = await import('../../../src/config/api-providers')
+      const minimaxPreset = getProviderPreset('minimax')
+
+      expect(minimaxPreset?.claudeCode?.defaultModels?.length).toBeGreaterThan(0)
+
+      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('minimax-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
+        success: true,
+        addedProfile: {
+          id: 'minimax-profile-id',
+          name: minimaxPreset?.name || 'MiniMax',
+          authType: minimaxPreset?.claudeCode?.authType || 'auth_token',
+        },
+      })
+      vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({ success: true })
+      vi.mocked(validateApiKey).mockImplementationOnce(() => ({ isValid: true }))
+
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ selectedProvider: 'minimax' })
+        .mockResolvedValueOnce({
+          profileName: minimaxPreset?.name || 'MiniMax',
+          apiKey: 'sk-minimax-key',
+        } as any)
+        .mockResolvedValueOnce({ setAsDefault: false })
+        .mockResolvedValueOnce({ continueAdding: false })
+
+      await configureIncrementalManagement()
+
+      const addedProfileArg = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls.at(-1)?.[0] as Record<string, any>
+      expect(addedProfileArg.primaryModel).toBe(minimaxPreset?.claudeCode?.defaultModels?.[0])
+      expect(addedProfileArg.fastModel).toBe(minimaxPreset?.claudeCode?.defaultModels?.[1])
+    })
     it('should show management menu when existing configurations are present', async () => {
       // Mock configuration situation
       const mockConfig = {
