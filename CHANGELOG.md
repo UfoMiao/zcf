@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.3.2
+
+### Patch Changes
+
+- ## New Features
+  - Add PackyCode API provider preset with dedicated assets and configuration
+
+  ## 新功能
+  - 新增 PackyCode API 预设供应商及其资源与配置
+
+  ## Fixes
+  - Ensure preset providers apply their default models when creating Claude Code profiles
+  - Update Kimi API endpoints and tests to reflect the latest service domain
+
+  ## 修复
+  - 预设供应商在创建 Claude Code 配置时自动带入默认模型
+  - 更新 Kimi API 接口地址与测试以匹配最新服务域名
+
+  ## Optimization
+  - Remove deprecated onboarding flag from the official login workflow configuration
+
+  ## 优化
+  - 移除官方登录流程中过时的 onboarding 标记配置
+
+  ## Documentation
+  - Refresh multilingual README assets with optimized PackyCode sponsor visuals
+
+  ## 文档
+  - 更新多语言 README，使用优化后的 PackyCode 赞助展示图
+
 ## 3.3.1
 
 ### Patch Changes
