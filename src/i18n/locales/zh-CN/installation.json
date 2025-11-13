@@ -4,6 +4,7 @@
   "installPrompt": "检测到 Claude Code 未安装，是否自动安装？",
   "installSuccess": "Claude Code 安装成功",
   "installing": "正在安装 Claude Code...",
+  "usingSudo": "检测到 Linux 非 root 用户，正在使用 sudo 提升权限进行全局安装（可能需要输入密码）。",
   "termuxDetected": "检测到 Termux 环境",
   "termuxEnvironmentInfo": "Termux 环境通过 pkg 管理器提供 Node.js 和 npm",
   "termuxInstallHint": "在 Termux 中，请先运行: pkg install nodejs 或 pkg install nodejs-lts",

@@ -1,6 +1,7 @@
 {
   "installingCli": "🚀 正在安装 Codex CLI...",
   "installSuccess": "✔ Codex CLI 安装完成",
+  "usingSudo": "⚠️ 检测到 Linux 非 root 用户，正在使用 sudo 安装 Codex CLI（可能需要输入密码）。",
   "alreadyInstalled": "⚠️ Codex CLI 已安装，跳过安装步骤",
   "updatingCli": "🔄 正在更新 Codex CLI...",
   "updateSuccess": "✔ Codex CLI 更新完成",

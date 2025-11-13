@@ -4,6 +4,7 @@
   "installPrompt": "Claude Code not found. Install automatically?",
   "installSuccess": "Claude Code installed successfully",
   "installing": "Installing Claude Code...",
+  "usingSudo": "Detected non-root Linux user. Elevating with sudo for global installation (password prompt may appear).",
   "termuxDetected": "Termux environment detected",
   "termuxEnvironmentInfo": "Termux environment provides Node.js and npm through pkg manager",
   "termuxInstallHint": "In Termux, please run first: pkg install nodejs or pkg install nodejs-lts",

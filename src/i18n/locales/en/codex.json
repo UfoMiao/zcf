@@ -1,6 +1,7 @@
 {
   "installingCli": "🚀 Installing Codex CLI...",
   "installSuccess": "✔ Codex CLI installed",
+  "usingSudo": "⚠️ Detected non-root Linux user. Using sudo for Codex CLI installation (password prompt may appear).",
   "alreadyInstalled": "⚠️ Codex CLI already installed, skipping installation",
   "updatingCli": "🔄 Updating Codex CLI...",
   "updateSuccess": "✔ Codex CLI updated",

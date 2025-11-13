@@ -143,6 +143,44 @@ export function getSystemRoot(): string | null {
     .replace(/\/+/g, '/')
 }
 
+export function shouldUseSudoForGlobalInstall(): boolean {
+  if (isTermux())
+    return false
+
+  if (getPlatform() !== 'linux')
+    return false
+
+  const getuid = (process as NodeJS.Process & { getuid?: () => number }).getuid
+  if (typeof getuid !== 'function')
+    return false
+
+  try {
+    return getuid() !== 0
+  }
+  catch {
+    return false
+  }
+}
+
+export function wrapCommandWithSudo(
+  command: string,
+  args: string[],
+): { command: string, args: string[], usedSudo: boolean } {
+  if (shouldUseSudoForGlobalInstall()) {
+    return {
+      command: 'sudo',
+      args: [command, ...args],
+      usedSudo: true,
+    }
+  }
+
+  return {
+    command,
+    args,
+    usedSudo: false,
+  }
+}
+
 export async function commandExists(command: string): Promise<boolean> {
   try {
     // First try standard which/where command

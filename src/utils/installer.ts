@@ -5,7 +5,7 @@ import { exec } from 'tinyexec'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { updateClaudeCode } from './auto-updater'
 import { exists, isExecutable, remove } from './fs-operations'
-import { commandExists, getTermuxPrefix, getWSLInfo, isTermux, isWSL } from './platform'
+import { commandExists, getTermuxPrefix, getWSLInfo, isTermux, isWSL, wrapCommandWithSudo } from './platform'
 
 export async function isClaudeCodeInstalled(): Promise<boolean> {
   return await commandExists('claude')
@@ -51,7 +51,11 @@ export async function installClaudeCode(): Promise<void> {
   try {
     // Always use npm for installation to ensure automatic updates work
     // Note: If the user can run 'npx zcf', npm is already available
-    await exec('npm', ['install', '-g', '@anthropic-ai/claude-code'])
+    const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@anthropic-ai/claude-code'])
+    if (usedSudo) {
+      console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
+    }
+    await exec(command, args)
     console.log(`✔ ${i18n.t('installation:installSuccess')}`)
 
     // Set installMethod to npm in ~/.claude.json

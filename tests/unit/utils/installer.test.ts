@@ -29,6 +29,13 @@ describe('installer utilities', () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(platform.isTermux).mockReturnValue(false)
+    vi.mocked(platform.getPlatform).mockReturnValue('macos')
+    vi.mocked(platform.wrapCommandWithSudo).mockImplementation((command, args) => ({
+      command,
+      args,
+      usedSudo: false,
+    }))
   })
 
   afterEach(() => {
@@ -183,6 +190,42 @@ describe('installer utilities', () => {
 
       expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@anthropic-ai/claude-code'])
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✔'))
+    })
+
+    it('should use sudo when installing globally on linux as non-root user', async () => {
+      const originalGetuid = (process as any).getuid
+      let getuidSpy: any
+      if (typeof originalGetuid === 'function') {
+        getuidSpy = vi.spyOn(process as any, 'getuid').mockReturnValue(1000)
+      }
+      else {
+        getuidSpy = vi.fn().mockReturnValue(1000)
+        ;(process as any).getuid = getuidSpy
+      }
+
+      vi.mocked(platform.commandExists).mockResolvedValue(false)
+      vi.mocked(platform.getPlatform).mockReturnValue('linux')
+      vi.mocked(platform.wrapCommandWithSudo).mockImplementation((command, args) => ({
+        command: 'sudo',
+        args: [command, ...args],
+        usedSudo: true,
+      }))
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: 'Installation successful',
+        stderr: '',
+      } as any)
+
+      await installClaudeCode()
+
+      expect(exec).toHaveBeenCalledWith('sudo', ['npm', 'install', '-g', '@anthropic-ai/claude-code'])
+
+      if (typeof originalGetuid === 'function') {
+        getuidSpy.mockRestore()
+      }
+      else {
+        delete (process as NodeJS.Process & { getuid?: () => number }).getuid
+      }
     })
 
     it('should show Termux-specific messages when in Termux', async () => {

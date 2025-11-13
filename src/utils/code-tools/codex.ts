@@ -16,6 +16,7 @@ import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
+import { wrapCommandWithSudo } from '../platform'
 // Removed MCP selection and platform command imports from this module
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
@@ -90,7 +91,11 @@ async function executeCodexInstallation(isUpdate: boolean): Promise<void> {
     console.log(ansis.cyan(i18n.t('codex:installingCli')))
   }
 
-  const result = await x('npm', ['install', '-g', '@openai/codex'])
+  const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex'])
+  if (usedSudo)
+    console.log(ansis.yellow(i18n.t('codex:usingSudo')))
+
+  const result = await x(command, args)
   if (result.exitCode !== 0) {
     throw new Error(`Failed to ${action} codex CLI: exit code ${result.exitCode}`)
   }
