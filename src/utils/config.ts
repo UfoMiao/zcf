@@ -8,7 +8,7 @@ import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
 import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, CLAUDE_VSC_CONFIG_FILE, SETTINGS_FILE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
-import { addCompletedOnboarding, readMcpConfig, setPrimaryApiKey, writeMcpConfig } from './claude-config'
+import { addCompletedOnboarding, setPrimaryApiKey } from './claude-config'
 import {
   copyDir,
   copyFile,
@@ -382,7 +382,6 @@ export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string
  * Switch to official login mode - remove all third-party API configurations
  * Removes: ANTHROPIC_BASE_URL, ANTHROPIC_AUTH_TOKEN, ANTHROPIC_API_KEY from settings.json
  * Removes: primaryApiKey from ~/.claude/config.json
- * Removes: hasCompletedOnboarding from ~/.claude.json
  */
 export function switchToOfficialLogin(): boolean {
   try {
@@ -402,13 +401,6 @@ export function switchToOfficialLogin(): boolean {
     if (vscConfig) {
       delete vscConfig.primaryApiKey
       writeJsonConfig(CLAUDE_VSC_CONFIG_FILE, vscConfig)
-    }
-
-    // 3. Clean ~/.claude.json - remove hasCompletedOnboarding
-    const mcpConfig = readMcpConfig()
-    if (mcpConfig) {
-      delete mcpConfig.hasCompletedOnboarding
-      writeMcpConfig(mcpConfig)
     }
 
     console.log(i18n.t('api:officialLoginConfigured'))

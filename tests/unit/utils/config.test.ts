@@ -754,7 +754,7 @@ describe('config utilities', () => {
       )
     })
 
-    it('should remove hasCompletedOnboarding from ~/.claude.json', () => {
+    it('should keep hasCompletedOnboarding flag in ~/.claude.json', () => {
       // Setup mock for readMcpConfig and writeMcpConfig
       vi.mocked(claudeConfig.readMcpConfig).mockReturnValue({
         mcpServers: {},
@@ -763,7 +763,7 @@ describe('config utilities', () => {
 
       switchToOfficialLogin()
 
-      expect(claudeConfig.writeMcpConfig).toHaveBeenCalledWith({ mcpServers: {} })
+      expect(claudeConfig.writeMcpConfig).not.toHaveBeenCalled()
     })
 
     it('should handle errors gracefully', () => {
