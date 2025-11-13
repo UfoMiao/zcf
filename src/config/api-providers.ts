@@ -101,14 +101,13 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     name: 'Kimi',
     supportedCodeTools: ['claude-code', 'codex'],
     claudeCode: {
-      baseUrl: 'https://api.moonshot.cn/anthropic',
+      baseUrl: 'https://api.kimi.com/coding/',
       authType: 'auth_token',
-      defaultModels: ['kimi-k2-0905-preview', 'kimi-k2-turbo-preview'],
     },
     codex: {
-      baseUrl: 'https://api.moonshot.cn/v1',
+      baseUrl: 'https://api.kimi.com/coding/v1',
       wireApi: 'chat',
-      defaultModel: 'kimi-k2-0905-preview',
+      defaultModel: 'kimi-for-coding',
     },
     description: 'Kimi (Moonshot AI)',
   },

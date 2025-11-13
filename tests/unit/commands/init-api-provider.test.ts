@@ -282,7 +282,7 @@ describe('init command - API provider preset', () => {
         lastUpdated: new Date().toISOString(),
       } as any)
       vi.mocked(configureApi).mockReturnValue({
-        url: 'https://api.moonshot.cn/anthropic',
+        url: 'https://api.kimi.com/coding/',
         key: 'test-token',
       })
 
