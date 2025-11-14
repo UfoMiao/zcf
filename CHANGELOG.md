@@ -1,5 +1,37 @@
 # Changelog
 
+## 3.3.3
+
+### Patch Changes
+
+- ## New Features
+  - Add sudo support for global npm installations on Linux systems
+  - Enhance installation process with automatic privilege escalation for Cometix and CCR tools
+  - Improve cross-platform compatibility for system-level package installations
+
+  ## 新功能
+  - 为 Linux 系统添加全局 npm 安装的 sudo 支持
+  - 增强 Cometix 和 CCR 工具的安装流程，支持自动权限提升
+  - 改进系统级软件包安装的跨平台兼容性
+
+  ## Documentation
+  - Update README files with GLM CODING PLAN sponsorship information
+  - Add GLM brand assets and visual resources
+
+  ## 文档更新
+  - 更新 README 文件，添加 GLM CODING PLAN 赞助商信息
+  - 添加 GLM 品牌资源和视觉素材
+
+  ## Testing
+  - Add comprehensive test coverage for sudo installation scenarios
+  - Enhance Codex installation and uninstallation test suites
+  - Improve platform-specific test cases for Linux environments
+
+  ## 测试优化
+  - 为 sudo 安装场景添加全面的测试覆盖
+  - 增强 Codex 安装和卸载测试套件
+  - 改进 Linux 环境的平台特定测试用例
+
 ## 3.3.2
 
 ### Patch Changes
