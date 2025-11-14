@@ -46,10 +46,20 @@ vi.mock('inquirer', () => ({
   },
 }))
 
-// Mock process.exit
-vi.mock('node:process', () => ({
-  exit: vi.fn(),
-}))
+// Mock process while retaining actual implementation for other properties
+const mockProcessExit = vi.hoisted(() => vi.fn())
+vi.mock('node:process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:process')>()
+  const patched = {
+    ...actual,
+    exit: mockProcessExit,
+  }
+  return {
+    __esModule: true,
+    ...patched,
+    default: patched,
+  }
+})
 
 // Mock mcp-selector
 vi.mock('../../../../src/utils/mcp-selector', () => ({
@@ -82,15 +92,35 @@ vi.mock('pathe', () => ({
   resolve: vi.fn((...args) => args.join('/')),
 }))
 
-// Mock node:os
-vi.mock('node:os', () => ({
-  homedir: vi.fn(() => '/home/user'),
-}))
+// Mock node:os while providing required exports
+const mockHomedir = vi.hoisted(() => vi.fn(() => '/home/user'))
+const mockPlatformFn = vi.hoisted(() => vi.fn(() => 'linux'))
+vi.mock('node:os', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:os')>()
+  const patched = {
+    ...actual,
+    homedir: mockHomedir,
+    platform: mockPlatformFn,
+  }
+  return {
+    __esModule: true,
+    ...patched,
+    default: patched,
+  }
+})
 
-// Mock tinyexec
+// Mock tinyexec with both named and default exports
+const mockTinyexec = vi.hoisted(() => {
+  return {
+    x: vi.fn(),
+    exec: vi.fn(),
+    $: vi.fn(),
+  }
+})
 vi.mock('tinyexec', () => ({
-  x: vi.fn(),
-  $: vi.fn(),
+  __esModule: true,
+  ...mockTinyexec,
+  default: mockTinyexec,
 }))
 
 // Mock fs-operations

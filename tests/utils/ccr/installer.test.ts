@@ -31,6 +31,14 @@ vi.mock('../../../src/i18n', async (importOriginal) => {
     ensureI18nInitialized: vi.fn(),
   }
 })
+const wrapCommandWithSudo = vi.hoisted(() => vi.fn((command: string, args: string[]) => ({
+  command,
+  args,
+  usedSudo: false,
+})))
+vi.mock('../../../src/utils/platform', () => ({
+  wrapCommandWithSudo,
+}))
 
 describe('cCR installer', () => {
   let consoleLogSpy: any
@@ -40,6 +48,11 @@ describe('cCR installer', () => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    wrapCommandWithSudo.mockImplementation((command: string, args: string[]) => ({
+      command,
+      args,
+      usedSudo: false,
+    }))
   })
 
   afterEach(() => {
@@ -301,6 +314,39 @@ describe('cCR installer', () => {
 
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('Installing Claude Code Router'))
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('installation successful'))
+    })
+
+    it('should use sudo for installation when platform requires elevation', async () => {
+      wrapCommandWithSudo.mockImplementation((command, args) => ({
+        command: 'sudo',
+        args: [command, ...args],
+        usedSudo: true,
+      }))
+
+      const mockExec = exec as any
+      mockExec.mockImplementation((cmd: string, callback: any) => {
+        if (typeof callback === 'function') {
+          if (cmd === 'ccr version' || cmd === 'which ccr') {
+            callback(new Error('not found'), '', '')
+          }
+          else if (cmd === 'npm list -g @musistudio/claude-code-router') {
+            callback(new Error('not found'), '', '')
+          }
+          else if (cmd === 'sudo npm install -g @musistudio/claude-code-router --force') {
+            callback(null, 'added 1 package', '')
+          }
+          else {
+            callback(new Error('command not found'), '', '')
+          }
+        }
+        return {} as ChildProcess
+      })
+
+      await installerModule.installCcr()
+
+      expect(wrapCommandWithSudo).toHaveBeenCalledWith('npm', ['install', '-g', '@musistudio/claude-code-router', '--force'])
+      expect(mockExec).toHaveBeenCalledWith('sudo npm install -g @musistudio/claude-code-router --force', expect.any(Function))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('sudo'))
     })
 
     it('should continue installation even if uninstall fails', async () => {

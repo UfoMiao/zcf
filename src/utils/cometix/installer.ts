@@ -3,7 +3,8 @@ import { promisify } from 'node:util'
 import ansis from 'ansis'
 import { ensureI18nInitialized, i18n } from '../../i18n'
 import { addCCometixLineConfig, hasCCometixLineConfig } from '../ccometixline-config'
-import { COMETIX_COMMANDS } from './common'
+import { wrapCommandWithSudo } from '../platform'
+import { COMETIX_COMMANDS, COMETIX_PACKAGE_NAME } from './common'
 
 const execAsync = promisify(exec)
 
@@ -19,6 +20,14 @@ export async function isCometixLineInstalled(): Promise<boolean> {
 
 export async function installCometixLine(): Promise<void> {
   ensureI18nInitialized()
+  const runInstallCommand = async (): Promise<void> => {
+    const installArgs = ['install', '-g', COMETIX_PACKAGE_NAME]
+    const { command, args, usedSudo } = wrapCommandWithSudo('npm', installArgs)
+    if (usedSudo) {
+      console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
+    }
+    await execAsync([command, ...args].join(' '))
+  }
 
   // Check if already installed
   const isInstalled = await isCometixLineInstalled()
@@ -28,7 +37,7 @@ export async function installCometixLine(): Promise<void> {
     // Update CCometixLine
     try {
       console.log(ansis.blue(`${i18n.t('cometix:installingOrUpdating')}`))
-      await execAsync(COMETIX_COMMANDS.INSTALL)
+      await runInstallCommand()
       console.log(ansis.green(`✔ ${i18n.t('cometix:installUpdateSuccess')}`))
     }
     catch (error) {
@@ -53,7 +62,7 @@ export async function installCometixLine(): Promise<void> {
 
   try {
     console.log(ansis.blue(`${i18n.t('cometix:installingCometix')}`))
-    await execAsync(COMETIX_COMMANDS.INSTALL)
+    await runInstallCommand()
     console.log(ansis.green(`✔ ${i18n.t('cometix:cometixInstallSuccess')}`))
 
     // Configure Claude Code statusLine after successful installation

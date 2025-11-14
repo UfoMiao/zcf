@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { accessSync, existsSync, readFileSync } from 'node:fs'
 import { platform } from 'node:os'
 import { exec } from 'tinyexec'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -13,6 +13,7 @@ import {
   isTermux,
   isWindows,
   isWSL,
+  shouldUseSudoForGlobalInstall,
 } from '../../../src/utils/platform'
 
 vi.mock('node:os')
@@ -307,6 +308,81 @@ ID=ubuntu`)
       process.env.SystemRoot = 'D:\\Windows'
       process.env.SYSTEMROOT = 'C:\\Windows'
       expect(getSystemRoot()).toBe('C:/Windows')
+    })
+  })
+
+  describe('shouldUseSudoForGlobalInstall', () => {
+    let originalGetuid: typeof process.getuid | undefined
+    let execPathSpy: ReturnType<typeof vi.spyOn>
+    let originalHome: string | undefined
+
+    beforeEach(() => {
+      vi.mocked(accessSync).mockImplementation(() => {})
+      vi.mocked(platform).mockReturnValue('linux')
+      originalHome = process.env.HOME
+      process.env.HOME = '/home/test'
+      delete process.env.npm_config_prefix
+      delete process.env.NPM_CONFIG_PREFIX
+      delete process.env.PREFIX
+      originalGetuid = (process as any).getuid
+      ;(process as NodeJS.Process & { getuid?: () => number }).getuid = vi.fn().mockReturnValue(1000)
+      execPathSpy = vi.spyOn(process, 'execPath', 'get').mockReturnValue('/usr/bin/node')
+    })
+
+    afterEach(() => {
+      if (originalHome === undefined)
+        delete process.env.HOME
+      else
+        process.env.HOME = originalHome
+      if (originalGetuid)
+        (process as any).getuid = originalGetuid
+      else
+        delete (process as any).getuid
+      execPathSpy.mockRestore()
+    })
+
+    it('should return false on non-Linux platforms', () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
+    })
+
+    it('should skip sudo when prefix resides inside the home directory', () => {
+      execPathSpy.mockReturnValue('/home/test/.nvm/versions/node/v20.12.0/bin/node')
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
+      expect(accessSync).not.toHaveBeenCalled()
+    })
+
+    it('should skip sudo when prefix is writable without being in home', () => {
+      execPathSpy.mockReturnValue('/opt/node/bin/node')
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
+      expect(accessSync).toHaveBeenCalledWith('/opt/node', expect.any(Number))
+    })
+
+    it('should require sudo when prefix is not writable and user is non-root', () => {
+      execPathSpy.mockReturnValue('/usr/bin/node')
+      vi.mocked(accessSync).mockImplementation(() => {
+        const err = new Error('EACCES') as NodeJS.ErrnoException
+        err.code = 'EACCES'
+        throw err
+      })
+      expect(shouldUseSudoForGlobalInstall()).toBe(true)
+    })
+
+    it('should not require sudo when user is root even if prefix is not writable', () => {
+      execPathSpy.mockReturnValue('/usr/bin/node')
+      vi.mocked(accessSync).mockImplementation(() => {
+        const err = new Error('EACCES') as NodeJS.ErrnoException
+        err.code = 'EACCES'
+        throw err
+      })
+      ;(process as NodeJS.Process & { getuid?: () => number }).getuid = vi.fn().mockReturnValue(0)
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
+    })
+
+    it('should respect npm_config_prefix when provided', () => {
+      process.env.npm_config_prefix = '/home/test/.asdf/installs/nodejs/20.11.0'
+      execPathSpy.mockRestore()
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
     })
   })
 

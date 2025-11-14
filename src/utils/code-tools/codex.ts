@@ -11,7 +11,7 @@ import semver from 'semver'
 import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
 // Removed MCP config imports; MCP configuration moved to codex-configure.ts
-import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR } from '../../constants'
+import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
@@ -1535,7 +1535,13 @@ export async function runCodexUninstall(): Promise<void> {
 
   // Import CodexUninstaller dynamically to avoid circular dependency
   const { CodexUninstaller } = await import('./codex-uninstaller')
-  const uninstaller = new CodexUninstaller('en') // TODO: Use actual language from config
+  const zcfConfig = readZcfConfig()
+  const preferredLang = zcfConfig?.preferredLang
+  const uninstallLang: SupportedLang
+    = preferredLang && SUPPORTED_LANGS.includes(preferredLang as SupportedLang)
+      ? preferredLang as SupportedLang
+      : 'en'
+  const uninstaller = new CodexUninstaller(uninstallLang)
 
   // Step 1: Mode selection
   const { mode } = await inquirer.prompt<{ mode: 'complete' | 'custom' | null }>([{

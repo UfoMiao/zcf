@@ -3,6 +3,7 @@ import { promisify } from 'node:util'
 import ansis from 'ansis'
 import { ensureI18nInitialized, i18n } from '../../i18n'
 import { updateCcr } from '../auto-updater'
+import { wrapCommandWithSudo } from '../platform'
 
 const execAsync = promisify(exec)
 
@@ -99,7 +100,12 @@ export async function installCcr(): Promise<void> {
   console.log(ansis.cyan(`📦 ${i18n.t('ccr:installingCcr')}`))
 
   try {
-    await execAsync('npm install -g @musistudio/claude-code-router --force')
+    const installArgs = ['install', '-g', '@musistudio/claude-code-router', '--force']
+    const { command, args, usedSudo } = wrapCommandWithSudo('npm', installArgs)
+    if (usedSudo) {
+      console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
+    }
+    await execAsync([command, ...args].join(' '))
     console.log(ansis.green(`✔ ${i18n.t('ccr:ccrInstallSuccess')}`))
   }
   catch (error: any) {

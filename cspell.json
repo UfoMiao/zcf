@@ -7,6 +7,7 @@
     "antfu",
     "bmad",
     "ccline",
+    "ccometixline",
     "chamo",
     "Cicd",
     "cometix",
@@ -38,7 +39,8 @@
     "ufomiao",
     "vitest",
     "webp",
-    "zcf"
+    "zcf",
+    "Zhipu"
   ],
   "ignorePaths": [
     "**/node_modules/**",

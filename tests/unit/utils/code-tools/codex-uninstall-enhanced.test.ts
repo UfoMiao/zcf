@@ -36,6 +36,17 @@ vi.mock('../../../../src/utils/prompt-helpers', () => ({
   addNumbersToChoices: vi.fn(choices => choices),
 }))
 
+const mockReadZcfConfig = vi.hoisted(() => vi.fn(() => ({
+  version: '1.0.0',
+  preferredLang: 'en',
+  templateLang: 'en',
+  codeToolType: 'codex',
+  lastUpdated: new Date().toISOString(),
+} as any)))
+vi.mock('../../../../src/utils/zcf-config', () => ({
+  readZcfConfig: mockReadZcfConfig,
+}))
+
 // Import mocked functions
 const { i18n, ensureI18nInitialized } = await import('../../../../src/i18n')
 const inquirer = await import('inquirer')
@@ -72,6 +83,13 @@ describe('runCodexUninstall - Enhanced Version', () => {
     mockI18nT.mockImplementation(((key: string) => `mocked_${key}`) as any)
     mockEnsureI18nInitialized.mockResolvedValue(undefined as any)
     mockAddNumbersToChoices.mockImplementation((choices: any) => choices)
+    mockReadZcfConfig.mockReturnValue({
+      version: '1.0.0',
+      preferredLang: 'en',
+      templateLang: 'en',
+      codeToolType: 'codex',
+      lastUpdated: new Date().toISOString(),
+    } as any)
   })
 
   afterEach(() => {
@@ -114,6 +132,22 @@ describe('runCodexUninstall - Enhanced Version', () => {
       expect(mockConsoleLog).toHaveBeenCalledWith('mocked_codex:uninstallCancelled')
       expect(mockUninstaller.completeUninstall).not.toHaveBeenCalled()
       expect(mockUninstaller.customUninstall).not.toHaveBeenCalled()
+    })
+
+    it('should initialize uninstaller with preferred language from config', async () => {
+      mockReadZcfConfig.mockReturnValueOnce({
+        version: '1.0.0',
+        preferredLang: 'zh-CN',
+        templateLang: 'zh-CN',
+        codeToolType: 'codex',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+
+      mockInquirerPrompt.mockResolvedValueOnce({ mode: null })
+
+      await runCodexUninstall()
+
+      expect(mockCodexUninstaller).toHaveBeenCalledWith('zh-CN')
     })
   })
 

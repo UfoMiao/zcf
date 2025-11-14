@@ -154,6 +154,19 @@ vi.mock('../../../../src/utils/trash', () => ({
   moveToTrash: vi.fn(),
 }))
 
+const mockWrapCommandWithSudo = vi.hoisted(() => vi.fn((command: string, args: string[]) => ({
+  command,
+  args,
+  usedSudo: false,
+})))
+vi.mock('../../../../src/utils/platform', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../../src/utils/platform')>()
+  return {
+    ...actual,
+    wrapCommandWithSudo: mockWrapCommandWithSudo,
+  }
+})
+
 vi.mock('../../../../src/utils/prompts', () => ({
   selectTemplateLanguage: vi.fn(() => Promise.resolve('zh-CN')),
   resolveTemplateLanguage: vi.fn(() => Promise.resolve('zh-CN')),

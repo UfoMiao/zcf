@@ -1,6 +1,7 @@
-import { existsSync, readFileSync } from 'node:fs'
+import * as nodeFs from 'node:fs'
 import { platform } from 'node:os'
 import process from 'node:process'
+import { dirname } from 'pathe'
 import { exec } from 'tinyexec'
 
 /**
@@ -21,7 +22,7 @@ export function getPlatform(): 'windows' | 'macos' | 'linux' {
 export function isTermux(): boolean {
   return !!(process.env.PREFIX && process.env.PREFIX.includes('com.termux'))
     || !!process.env.TERMUX_VERSION
-    || existsSync('/data/data/com.termux/files/usr')
+    || nodeFs.existsSync('/data/data/com.termux/files/usr')
 }
 
 export function getTermuxPrefix(): string {
@@ -45,9 +46,9 @@ export function isWSL(): boolean {
   }
 
   // Check /proc/version for Microsoft or WSL indicators
-  if (existsSync('/proc/version')) {
+  if (nodeFs.existsSync('/proc/version')) {
     try {
-      const version = readFileSync('/proc/version', 'utf8')
+      const version = nodeFs.readFileSync('/proc/version', 'utf8')
       if (version.includes('Microsoft') || version.includes('WSL')) {
         return true
       }
@@ -58,7 +59,7 @@ export function isWSL(): boolean {
   }
 
   // Check for Windows mount points as fallback
-  if (existsSync('/mnt/c')) {
+  if (nodeFs.existsSync('/mnt/c')) {
     return true
   }
 
@@ -72,9 +73,9 @@ export function getWSLDistro(): string | null {
   }
 
   // Priority 2: Read from /etc/os-release
-  if (existsSync('/etc/os-release')) {
+  if (nodeFs.existsSync('/etc/os-release')) {
     try {
-      const osRelease = readFileSync('/etc/os-release', 'utf8')
+      const osRelease = nodeFs.readFileSync('/etc/os-release', 'utf8')
       const nameMatch = osRelease.match(/^PRETTY_NAME="(.+)"$/m)
       if (nameMatch) {
         return nameMatch[1]
@@ -94,9 +95,9 @@ export function getWSLInfo(): WSLInfo | null {
   }
 
   let version: string | null = null
-  if (existsSync('/proc/version')) {
+  if (nodeFs.existsSync('/proc/version')) {
     try {
-      version = readFileSync('/proc/version', 'utf8').trim()
+      version = nodeFs.readFileSync('/proc/version', 'utf8').trim()
     }
     catch {
       // Ignore read errors
@@ -150,6 +151,13 @@ export function shouldUseSudoForGlobalInstall(): boolean {
   if (getPlatform() !== 'linux')
     return false
 
+  const npmPrefix = getGlobalNpmPrefix()
+  if (npmPrefix) {
+    // If the prefix lives inside the user's home directory or is writable, sudo is unnecessary
+    if (isPathInsideHome(npmPrefix) || canWriteToPath(npmPrefix))
+      return false
+  }
+
   const getuid = (process as NodeJS.Process & { getuid?: () => number }).getuid
   if (typeof getuid !== 'function')
     return false
@@ -181,6 +189,47 @@ export function wrapCommandWithSudo(
   }
 }
 
+const WRITE_CHECK_FLAG = 0o2
+
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/\/+$/, '')
+}
+
+function isPathInsideHome(path: string): boolean {
+  const home = process.env.HOME
+  if (!home)
+    return false
+
+  const normalizedHome = normalizePath(home)
+  const normalizedPath = normalizePath(path)
+  return normalizedPath === normalizedHome || normalizedPath.startsWith(`${normalizedHome}/`)
+}
+
+function canWriteToPath(path: string): boolean {
+  try {
+    nodeFs.accessSync(path, WRITE_CHECK_FLAG)
+    return true
+  }
+  catch {
+    return false
+  }
+}
+
+function getGlobalNpmPrefix(): string | null {
+  const env = process.env
+  const envPrefix = env.npm_config_prefix || env.NPM_CONFIG_PREFIX || env.PREFIX
+  if (envPrefix)
+    return envPrefix
+
+  const execPath = process.execPath
+  if (execPath) {
+    const binDir = dirname(execPath)
+    return dirname(binDir)
+  }
+
+  return null
+}
+
 export async function commandExists(command: string): Promise<boolean> {
   try {
     // First try standard which/where command
@@ -204,7 +253,7 @@ export async function commandExists(command: string): Promise<boolean> {
     ]
 
     for (const path of possiblePaths) {
-      if (existsSync(path)) {
+      if (nodeFs.existsSync(path)) {
         return true
       }
     }
@@ -220,7 +269,7 @@ export async function commandExists(command: string): Promise<boolean> {
     ]
 
     for (const path of commonPaths) {
-      if (existsSync(path)) {
+      if (nodeFs.existsSync(path)) {
         return true
       }
     }

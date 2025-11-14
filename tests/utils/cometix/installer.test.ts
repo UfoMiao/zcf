@@ -28,6 +28,14 @@ vi.mock('../../../src/i18n', async (importOriginal) => {
     ensureI18nInitialized: vi.fn(),
   }
 })
+const wrapCommandWithSudo = vi.hoisted(() => vi.fn((command: string, args: string[]) => ({
+  command,
+  args,
+  usedSudo: false,
+})))
+vi.mock('../../../src/utils/platform', () => ({
+  wrapCommandWithSudo,
+}))
 
 describe('cCometixLine installer', () => {
   let consoleLogSpy: any
@@ -37,6 +45,11 @@ describe('cCometixLine installer', () => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    wrapCommandWithSudo.mockImplementation((command, args) => ({
+      command,
+      args,
+      usedSudo: false,
+    }))
   })
 
   afterEach(() => {
@@ -139,6 +152,37 @@ describe('cCometixLine installer', () => {
       expect(mockExec).toHaveBeenNthCalledWith(1, 'npm list -g @cometix/ccline', expect.any(Function))
       expect(mockExec).toHaveBeenNthCalledWith(2, 'npm install -g @cometix/ccline', expect.any(Function))
       expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('CCometixLine is already installed'))
+    })
+
+    it('should use sudo when wrapCommandWithSudo indicates elevated install', async () => {
+      wrapCommandWithSudo.mockImplementation((command, args) => ({
+        command: 'sudo',
+        args: [command, ...args],
+        usedSudo: true,
+      }))
+
+      const mockExec = vi.mocked(exec)
+      mockExec
+        .mockImplementationOnce((_command, callback: any) => {
+          const error = new Error('Package not found')
+          callback(error, '', 'npm ERR! 404 Not Found')
+          return {} as any
+        })
+        .mockImplementationOnce((command, callback: any) => {
+          if (command === 'sudo npm install -g @cometix/ccline') {
+            callback(null, 'added 1 package', '')
+          }
+          else {
+            callback(new Error('Unexpected command'), '', '')
+          }
+          return {} as any
+        })
+
+      await installCometixLine()
+
+      expect(wrapCommandWithSudo).toHaveBeenCalledWith('npm', ['install', '-g', '@cometix/ccline'])
+      expect(mockExec).toHaveBeenCalledWith('sudo npm install -g @cometix/ccline', expect.any(Function))
+      expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('sudo'))
     })
   })
 })
