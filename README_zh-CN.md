@@ -24,8 +24,14 @@
 
 ## ♥️ 赞助商
 
-[![赞助商 AI API](./src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
+[![302.ai](./src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
 [302.AI](https://share.302.ai/gAT9VG) 是一个按用量付费的企业级AI资源平台，提供市场上最新、最全面的AI模型和API，以及多种开箱即用的在线AI应用。
+
+---
+
+[![GLM](./src/assets/GLM.png)](https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII)
+GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元，即可在十余款主流AI编码工具如Claude Code、Cline, Roo Code等中畅享智谱旗舰模型GLM-4.6，为开发者提供顶尖的编码体验。
+智谱AI为本软件提供了特别优惠，使用以下链接购买可以享受九折优惠：https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII
 
 ---
 
@@ -164,7 +170,7 @@ ZCF 现在支持 API 提供商预设，可自动配置 baseUrl 和模型，将�
 **支持的提供商：**
 - `302ai` - [302.AI](https://share.302.ai/gAT9VG) API 服务
 - `packycode` - [PackyCode](https://www.packyapi.com/register?aff=zcf) API 服务
-- `glm` - GLM（智谱AI）
+- `glm` - [GLM](https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII) API Service
 - `minimax` - MiniMax API 服务
 - `kimi` - Kimi（月之暗面）
 - `custom` - 自定义 API 端点（需要手动配置 URL）
@@ -954,6 +960,7 @@ ZCF 现已支持在 Android Termux 环境中运行：
 非常感谢所有赞助商的慷慨支持！
 
 - [302.AI](https://share.302.ai/gAT9VG) （第一个企业赞助商 🤠）
+- [GLM](https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII) （第一个 AI 模型赞助商 🤖）
 - [PackyCode](https://www.packyapi.com/register?aff=zcf) （第一个 API 中转服务商赞助商 🧝🏻‍♀️）
 - Tc (第一个赞助者)
 - Argolinhas (第一个 ko-fi 赞助者 ٩(•̤̀ᵕ•̤́๑))

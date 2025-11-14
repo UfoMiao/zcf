@@ -29,6 +29,13 @@
 
 ---
 
+[![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
+This project is sponsored by Z.ai, supporting us with their GLM CODING PLAN.
+GLM CODING PLAN is a subscription service designed for AI coding, starting at just $3/month. It provides access to their flagship GLM-4.6 model across 10+ popular AI coding tools (Claude Code, Cline, Roo Code, etc.), offering developers top-tier, fast, and stable coding experiences.
+Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
+
+---
+
 <table>
 <tr>
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
@@ -164,7 +171,7 @@ ZCF now supports API provider presets that automatically configure baseUrl and m
 **Supported Providers:**
 - `302ai` - [302.AI](https://share.302.ai/gAT9VG) API Service
 - `packycode` - [PackyCode](https://www.packyapi.com/register?aff=zcf) API Service
-- `glm` - GLM (z.ai)
+- `glm` - [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB) API Service
 - `minimax` - MiniMax API Service
 - `kimi` - Kimi (Moonshot AI)
 - `custom` - Custom API endpoint (requires manual URL configuration)
@@ -944,6 +951,7 @@ If you find this project helpful, please consider sponsoring its development. Yo
 
 A huge thank you to all our sponsors for their generous support!
 - [302.AI](https://share.302.ai/gAT9VG) (first corporate sponsorship 🤠)
+- [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB) (first AI model sponsorship 🤖)
 - [PackyCode](https://www.packyapi.com/register?aff=zcf) (first API proxy service sponsor 🧝🏻‍♀️)
 - Tc (first sponsor)
 - Argolinhas (first ko-fi sponsor ٩(•̤̀ᵕ•̤́๑))

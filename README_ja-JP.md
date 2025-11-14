@@ -29,6 +29,13 @@
 
 ---
 
+[![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
+このプロジェクトは Z.ai の GLM CODING PLAN によってスポンサーされています。
+GLM CODING PLAN はAIコーディング向けに設計されたサブスクリプションサービスで、月額わずか3ドルから利用できます。Z.aiのフラグシップであるGLM-4.6モデルをはじめ、Claude Code、Cline、Roo Code など10以上の人気AIコーディングツールで高速かつ安定した最先端のコーディング体験を開発者に提供します。
+GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSKB
+
+---
+
 <table>
 <tr>
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
@@ -164,7 +171,7 @@ ZCFはAPIプロバイダープリセットをサポートし、baseUrlとモデ�
 **サポートされているプロバイダー：**
 - `302ai` - [302.AI](https://share.302.ai/gAT9VG) APIサービス
 - `packycode` - [PackyCode](https://www.packyapi.com/register?aff=zcf) APIサービス
-- `glm` - GLM（z.ai）
+- `glm` - [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB) API Service
 - `minimax` - MiniMax APIサービス
 - `kimi` - Kimi（Moonshot AI）
 - `custom` - カスタムAPIエンドポイント（手動URL設定が必要）
@@ -821,6 +828,7 @@ ZCFはAndroid Termux環境での実行をサポート：
 すべてのスポンサーの寛大なサポートに感謝します！
 
 - [302.AI](https://share.302.ai/gAT9VG)（最初の企業スポンサー 🤠）
+- [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB)（最初のAIモデルスポンサー 🤖）
 - [PackyCode](https://www.packyapi.com/register?aff=zcf)（最初のAPIプロキシサービススポンサー 🧝🏻‍♀️）
 - Tc（最初のスポンサー）
 - Argolinhas（最初のko-fiスポンサー ٩(•̤̀ᵕ•̤́๑)）
