@@ -1,0 +1,310 @@
+---
+title: ZCF Six-Stage Workflow
+---
+
+# ZCF Six-Stage Workflow
+
+The six-stage workflow is ZCF's core development process, covering the complete software development lifecycle: **Research → Ideate → Plan → Execute → Optimize → Review**.
+
+## Features
+
+- 📊 **Structured Process**: Each stage has clear input/output and AI behavior specifications
+- ✅ **Mandatory Confirmation Mechanism**: User confirmation required after each stage to avoid missing user feedback
+- 📝 **Automatic Document Generation**: Automatically generates plan documents and requires saving in project directory
+- 🔄 **Iteration Support**: Supports multiple iterations and continuous improvement
+
+## Usage
+
+### Claude Code
+
+Use the following command in Claude Code:
+
+```
+/zcf:workflow <task description>
+```
+
+**Example**:
+```
+/zcf:workflow Implement user login functionality, supporting email and phone number login
+```
+
+### Codex
+
+Use the following command in Codex (note different prefix):
+
+```
+/prompts:workflow <task description>
+```
+
+**Example**:
+```
+/prompts:workflow Implement user login functionality, supporting email and phone number login
+```
+
+> 💡 **Tip**: Codex uses `/prompts:` prefix, while Claude Code uses `/zcf:` prefix.
+
+## Six Stages Explained
+
+### 1. Research
+
+**Goal**: Deeply understand task requirements and background
+
+**AI Behavior**:
+- Analyze task description and context
+- Collect relevant technical materials and best practices
+- Identify potential issues and risk points
+- Understand user needs and business scenarios
+
+**Output**:
+- Requirements analysis report
+- Technical research results
+- Risk assessment
+
+### 2. Ideate
+
+**Goal**: Generate multiple feasible solutions
+
+**AI Behavior**:
+- Propose multiple design solutions
+- Evaluate pros and cons of each solution
+- Consider technical feasibility and implementation complexity
+- Recommend best solution
+
+**Output**:
+- Multiple design solutions
+- Solution comparison analysis
+- Recommended solution and rationale
+
+### 3. Plan
+
+**Goal**: Create detailed implementation plan
+
+**AI Behavior**:
+- Break down tasks into specific steps
+- Determine technology selection and architecture design
+- Create time estimates and milestones
+- Identify dependencies and prerequisites
+
+**Output**:
+- Detailed task breakdown
+- Technical implementation plan
+- Development plan and timeline
+- Plan document (saved in `.claude/plan/` or `.codex/plan/`)
+
+### 4. Execute
+
+**Goal**: Implement development according to plan
+
+**AI Behavior**:
+- Implement features step by step according to plan
+- Write code and test cases
+- Handle issues during implementation
+- Maintain code quality and standards
+
+**Output**:
+- Implemented code
+- Test cases
+- Related documentation
+
+### 5. Optimize
+
+**Goal**: Improve code quality and performance
+
+**AI Behavior**:
+- Code refactoring and optimization
+- Performance optimization suggestions
+- Security checks
+- Code standard review
+
+**Output**:
+- Optimized code
+- Performance improvement suggestions
+- Security review report
+
+### 6. Review
+
+**Goal**: Final evaluation and summary
+
+**AI Behavior**:
+- Comprehensive review of implementation results
+- Generate test reports
+- Summarize experiences and lessons
+- Propose follow-up improvement suggestions
+
+**Output**:
+- Complete implementation summary
+- Test report
+- Experience summary
+- Improvement suggestions
+
+## Execution Flow
+
+### Basic Flow
+
+1. **Enter Command**: Enter `/zcf:workflow` or `/prompts:workflow` and describe task
+2. **Stage Execution**: AI executes six stages in order
+3. **User Confirmation**: Wait for user confirmation after each stage completes
+4. **Continue Next Step**: Enter next stage after user confirmation
+5. **Document Save**: Plan documents automatically saved to project directory
+
+### Document Save Location
+
+Workflow automatically generates plan documents and requires saving:
+
+- **Claude Code**: `.claude/plan/` directory
+- **Codex**: `.codex/plan/` directory
+
+Document naming format is usually: `Plan_TaskDescription_Timestamp.md`
+
+## Best Practices
+
+### 1. Task Breakdown
+
+For complex tasks, it's recommended to break down first then execute separately:
+
+```
+# Main task
+/zcf:workflow Build user management system
+
+# Sub-task 1
+/zcf:workflow Implement user registration functionality
+
+# Sub-task 2
+/zcf:workflow Implement user login functionality
+
+# Sub-task 3
+/zcf:workflow Implement user information management
+```
+
+### 2. Combine with Project Initialization
+
+Before starting workflow, it's recommended to initialize project configuration:
+
+```
+# 1. Initialize project (Claude Code)
+/init-project
+
+# 2. Or initialize project (Codex)
+# Codex doesn't support init-project yet, can directly use workflow
+
+# 3. Execute workflow
+/zcf:workflow <task description>
+```
+
+After initialization, will generate:
+- **Claude Code**: `CLAUDE.md` project configuration document
+- **Codex**: `AGENTS.md` agent configuration document
+
+These documents provide project context for workflow.
+
+### 3. Utilize Plan Documents
+
+Plan documents generated by workflow can:
+
+- 📖 **Reference and Review**: Reference plan documents in subsequent development
+- 🔄 **Iterative Updates**: Update plans based on actual situation
+- 👥 **Team Collaboration**: Share plans with team members
+- 📝 **Document Archiving**: Include in version control as project documentation
+
+### 4. Stage Confirmation Tips
+
+When confirming each stage, you can:
+
+- ✅ **Quick Pass**: If result is satisfactory, directly confirm to enter next stage
+- 🔄 **Request Adjustment**: If not satisfied, ask AI to adjust then confirm
+- 📝 **Add Requirements**: Add additional requirements or constraints when confirming
+- ⏸️ **Pause and Save**: Pause at key stages, save intermediate results
+
+### 5. Combine with Other Workflows
+
+Six-stage workflow can be combined with other workflows:
+
+```bash
+# 1. Use feature development workflow to plan features
+/zcf:feat User comment functionality
+
+# 2. Use six-stage workflow to implement details
+/zcf:workflow Implement comment CRUD operations and permission control
+
+# 3. Use Git workflow to commit code
+/git-commit
+```
+
+## Usage Examples
+
+### Example 1: Simple Feature Development
+
+```
+/zcf:workflow Add user avatar upload functionality
+```
+
+Workflow will:
+1. Research best practices for avatar upload
+2. Ideate multiple implementation solutions (local storage vs cloud storage)
+3. Create detailed implementation plan
+4. Implement upload functionality and preview
+5. Optimize image compression and caching
+6. Review complete functionality
+
+### Example 2: Complex System Development
+
+```
+/zcf:workflow Build microservice architecture user authentication system, supporting OAuth2 and JWT
+```
+
+Workflow will:
+1. Deeply research microservice authentication architecture
+2. Design OAuth2 and JWT integration solutions
+3. Create detailed architecture and implementation plan
+4. Gradually implement each component
+5. Optimize performance and security
+6. Comprehensively review system
+
+### Example 3: Code Refactoring
+
+```
+/zcf:workflow Refactor user module, improve code quality and maintainability
+```
+
+Workflow will:
+1. Analyze existing code structure and issues
+2. Design refactoring solutions
+3. Create progressive refactoring plan
+4. Gradually refactor code
+5. Optimize code structure
+6. Verify refactoring results
+
+## Notes
+
+### Plan Document Location
+
+- ⚠️ **Claude Code**: Plan documents saved in `.claude/plan/` directory
+- ⚠️ **Codex**: Plan documents saved in `.codex/plan/` directory
+- ✅ **Version Control**: It's recommended to include plan documents in Git version control
+
+### Stage Skipping
+
+It's not recommended to skip stage confirmation because:
+
+- Each stage has its importance
+- User feedback can help AI adjust direction
+- Skipping may lead to missing important steps
+
+### Long Tasks
+
+For very complex tasks:
+
+- Can execute workflow multiple times
+- Each time focus on one sub-task
+- Use plan documents as connection
+
+## Related Resources
+
+- [Feature Development Workflow](feat.md) - New feature design and implementation
+- [BMad Agile Process](bmad.md) - Enterprise-level agile development
+- [Git Smart Commands](git-commands.md) - Git operation automation
+- [Workflow System](../features/workflows.md) - Detailed workflow information
+
+> 💡 **Tip**: The six-stage workflow is ZCF's core functionality, suitable for most development tasks. It's recommended to start with small tasks to familiarize yourself with the process, then gradually apply to more complex projects. Proper use of stage confirmation mechanism can provide better development experience.
+
+
