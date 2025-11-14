@@ -37,10 +37,12 @@ GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSK
 ---
 
 <table>
+<tbody>
 <tr>
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
 <td>PackyCode がこのプロジェクトを支援してくれました！PackyCode は信頼性と効率性の高いAPI中継サービスプロバイダーで、Claude Code、Codex、Gemini などの中継サービスを提供します。PackyCode はこのソフトウェアのユーザーに特別な割引を提供します：<a href="https://www.packyapi.com/register?aff=zcf">このリンク</a> を使用して登録し、再課金時に "zcf" プロモーションコードを入力すると 10% 割引を享受できます。</td>
 </tr>
+<tbody>
 </table>
 
 ## 🚀 クイックスタート

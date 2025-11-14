@@ -19,6 +19,8 @@ title: 使用指南
 | **操作系统** | - | - | macOS、Linux、Windows PowerShell/WSL、Termux |
 
 > 💡 **提示**：如果您使用 WSL（Windows Subsystem for Linux），ZCF 会自动检测环境并提供相应的安装提示。
+>
+> 🔐 **Linux 用户**：在 Linux 系统上，ZCF 会自动检测您是否以非 root 用户运行，并在需要时使用 `sudo` 进行全局 npm 安装。在安装 Claude Code、Codex、CCR 或 CCometixLine 时，您可能需要输入密码。
 
 ### 检查环境
 

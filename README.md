@@ -37,10 +37,12 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 ---
 
 <table>
+<tbody>
 <tr>
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
 <td>Thanks to PackyCode for sponsoring this project! PackyCode is a reliable and efficient API relay service provider, offering relay services for Claude Code, Codex, Gemini, and more. PackyCode provides special discounts for our software users: register using  <a href="https://www.packyapi.com/register?aff=zcf">this link</a>  and enter the "zcf" promo code during recharge to get 10% off.</td>
 </tr>
+<tbody>
 </table>
 
 ## 🚀 Quick Start

@@ -29,6 +29,24 @@ title: ZCF - Zero-Config Code Flow
 [![Sponsor AI API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
 [302.AI](https://share.302.ai/gAT9VG) is a usage-based enterprise AI resource platform providing the latest and most comprehensive AI models and APIs in the market, along with various ready-to-use online AI applications.
 
+---
+
+[![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
+This project is sponsored by Z.ai, supporting us with their GLM CODING PLAN.
+GLM CODING PLAN is a subscription service designed for AI coding, starting at just $3/month. It provides access to their flagship GLM-4.6 model across 10+ popular AI coding tools (Claude Code, Cline, Roo Code, etc.), offering developers top-tier, fast, and stable coding experiences.
+Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
+
+---
+
+<table>
+<tbody>
+<tr>
+<td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
+<td>Thanks to PackyCode for sponsoring this project! PackyCode is a reliable and efficient API relay service provider, offering relay services for Claude Code, Codex, Gemini, and more. PackyCode provides special discounts for our software users: register using <a href="https://www.packyapi.com/register?aff=zcf">this link</a> and enter the "zcf" promo code during recharge to get 10% off.</td>
+</tr>
+</tbody>
+</table>
+
 ## Project Overview
 
 ZCF (Zero-Config Code Flow) is a CLI tool designed for professional developers, aiming to complete end-to-end environment initialization for Claude Code and Codex within minutes. Through `npx zcf`, you can complete configuration directory creation, API/proxy integration, MCP service integration, workflow import, output style and memory configuration, and common tool installation in one go.

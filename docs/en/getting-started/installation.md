@@ -19,6 +19,8 @@ Before starting, ensure your system meets the following requirements:
 | **Operating System** | - | - | macOS, Linux, Windows PowerShell/WSL, Termux |
 
 > 💡 **Tip**: If you use WSL (Windows Subsystem for Linux), ZCF will automatically detect the environment and provide corresponding installation prompts.
+>
+> 🔐 **Linux Users**: On Linux systems, ZCF automatically detects if you're running as a non-root user and will use `sudo` for global npm installations when needed. You may be prompted for your password during installation of Claude Code, Codex, CCR, or CCometixLine.
 
 ### Check Environment
 
