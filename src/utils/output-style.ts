@@ -9,6 +9,7 @@ import { ensureI18nInitialized, i18n } from '../i18n'
 import { copyFile, ensureDir, exists, removeFile } from './fs-operations'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { addNumbersToChoices } from './prompt-helpers'
+import { promptBoolean } from './toggle-prompt'
 import { updateZcfConfig } from './zcf-config'
 
 export interface OutputStyle {
@@ -160,11 +161,9 @@ export async function configureOutputStyle(
   if (hasLegacyPersonalityFiles() && !preselectedStyles) {
     console.log(ansis.yellow(`⚠️  ${i18n.t('configuration:legacyFilesDetected')}`))
 
-    const { cleanupLegacy } = await inquirer.prompt<{ cleanupLegacy: boolean }>({
-      type: 'confirm',
-      name: 'cleanupLegacy',
+    const cleanupLegacy = await promptBoolean({
       message: i18n.t('configuration:cleanupLegacyFiles'),
-      default: true,
+      defaultValue: true,
     })
 
     if (cleanupLegacy) {

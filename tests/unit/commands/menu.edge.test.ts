@@ -68,6 +68,10 @@ vi.mock('../../../src/utils/error-handler', () => ({
   handleGeneralError: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
+
 // Mock i18n system
 vi.mock('../../../src/i18n', () => ({
   initI18n: vi.fn().mockResolvedValue(undefined),
@@ -80,11 +84,19 @@ vi.mock('../../../src/i18n', () => ({
   ensureI18nInitialized: vi.fn(),
 }))
 
+const togglePromptModule = await import('../../../src/utils/toggle-prompt')
+const mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
+function queuePromptBooleans(...values: boolean[]) {
+  values.forEach(value => mockedPromptBoolean.mockResolvedValueOnce(value))
+}
+
 describe('menu command - Edge Cases', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
 
     // Reset displayBannerWithInfo to not throw errors by default
     const { displayBannerWithInfo } = await import('../../../src/utils/banner')
@@ -177,13 +189,13 @@ describe('menu command - Edge Cases', () => {
       const { init } = await import('../../../src/commands/init')
       const { handleExitPromptError, handleGeneralError } = await import('../../../src/utils/error-handler')
 
-      // Mock init to succeed, then inquirer to fail on continue prompt
+      // Mock init to succeed, then promptBoolean to fail on continue prompt
       vi.mocked(init).mockResolvedValue(undefined)
 
-      // First prompt succeeds (selects init), second prompt fails
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ choice: '1' }) // Select init option
-        .mockRejectedValueOnce(new Error('Continue prompt failed')) // Continue prompt fails
+        .mockResolvedValueOnce({ choice: '1' })
+
+      mockedPromptBoolean.mockRejectedValueOnce(new Error('Continue prompt failed'))
 
       vi.mocked(handleExitPromptError).mockReturnValue(false)
 
@@ -224,8 +236,8 @@ describe('menu command - Edge Cases', () => {
       const { uninstall } = await import('../../../src/commands/uninstall')
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ choice: '-' }) // Select uninstall option
-        .mockResolvedValueOnce({ continue: false })
+        .mockResolvedValueOnce({ choice: '-' })
+      queuePromptBooleans(false)
 
       vi.mocked(uninstall).mockResolvedValue(undefined)
 
@@ -239,8 +251,8 @@ describe('menu command - Edge Cases', () => {
       const { runCcrMenuFeature } = await import('../../../src/utils/tools')
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ choice: 'r' }) // Select CCR option
-        .mockResolvedValueOnce({ continue: false })
+        .mockResolvedValueOnce({ choice: 'r' })
+      queuePromptBooleans(false)
 
       vi.mocked(runCcrMenuFeature).mockResolvedValue(undefined)
 
@@ -254,8 +266,8 @@ describe('menu command - Edge Cases', () => {
       const { runCometixMenuFeature } = await import('../../../src/utils/tools')
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ choice: 'l' }) // Select Cometix option
-        .mockResolvedValueOnce({ continue: false })
+        .mockResolvedValueOnce({ choice: 'l' })
+      queuePromptBooleans(false)
 
       vi.mocked(runCometixMenuFeature).mockResolvedValue(undefined)
 
@@ -285,9 +297,11 @@ describe('menu command - Edge Cases', () => {
 
       for (const test of featureTests) {
         vi.clearAllMocks()
+        mockedPromptBoolean.mockReset()
+        mockedPromptBoolean.mockResolvedValue(false)
         vi.mocked(inquirer.prompt)
           .mockResolvedValueOnce({ choice: test.choice })
-          .mockResolvedValueOnce({ continue: false })
+        queuePromptBooleans(false)
 
         vi.mocked(test.feature).mockResolvedValue(undefined)
 

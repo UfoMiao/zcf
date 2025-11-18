@@ -8,6 +8,7 @@ import { version } from '../../package.json'
 import { AI_OUTPUT_LANGUAGES, getAiOutputLanguageLabel, LANG_LABELS, SUPPORTED_LANGS } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { addNumbersToChoices } from './prompt-helpers'
+import { promptBoolean } from './toggle-prompt'
 import { readZcfConfig, updateZcfConfig } from './zcf-config'
 
 /**
@@ -143,17 +144,10 @@ export async function resolveAiOutputLanguage(
     const currentLanguageLabel = getAiOutputLanguageLabel(savedConfig.aiOutputLang as AiOutputLanguage) || savedConfig.aiOutputLang
     console.log(ansis.blue(`${i18n.t('language:currentConfigFound')}: ${currentLanguageLabel}`))
 
-    const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
-      type: 'confirm',
-      name: 'shouldModify',
+    const shouldModify = await promptBoolean({
       message: i18n.t('language:modifyConfigPrompt'),
-      default: false,
+      defaultValue: false,
     })
-
-    if (shouldModify === undefined) {
-      console.log(ansis.yellow(i18n.t('common:cancelled')))
-      process.exit(0)
-    }
 
     if (!shouldModify) {
       console.log(ansis.gray(`✔ ${i18n.t('language:aiOutputLangHint')}: ${currentLanguageLabel}`))
@@ -233,17 +227,10 @@ export async function resolveTemplateLanguage(
     const currentLanguageLabel = LANG_LABELS[savedConfig.templateLang]
     console.log(ansis.blue(`${i18n.t('language:currentTemplateLanguageFound')}: ${currentLanguageLabel}`))
 
-    const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
-      type: 'confirm',
-      name: 'shouldModify',
+    const shouldModify = await promptBoolean({
       message: i18n.t('language:modifyTemplateLanguagePrompt'),
-      default: false,
+      defaultValue: false,
     })
-
-    if (shouldModify === undefined) {
-      console.log(ansis.yellow(i18n.t('common:cancelled')))
-      process.exit(0)
-    }
 
     if (!shouldModify) {
       console.log(ansis.gray(`✔ ${i18n.t('language:selectConfigLang')}: ${currentLanguageLabel}`))
@@ -264,17 +251,10 @@ export async function resolveTemplateLanguage(
     // Interactive mode: ask for modification
     console.log(ansis.yellow(`${i18n.t('language:usingFallbackTemplate')}: ${LANG_LABELS[savedConfig.preferredLang]}`))
 
-    const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
-      type: 'confirm',
-      name: 'shouldModify',
+    const shouldModify = await promptBoolean({
       message: i18n.t('language:modifyTemplateLanguagePrompt'),
-      default: false,
+      defaultValue: false,
     })
-
-    if (shouldModify === undefined) {
-      console.log(ansis.yellow(i18n.t('common:cancelled')))
-      process.exit(0)
-    }
 
     if (!shouldModify) {
       // First time migration - save the preferred language as template language
@@ -326,17 +306,10 @@ export async function resolveSystemPromptStyle(
       // Interactive mode: ask for modification
       console.log(ansis.blue(`${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))
 
-      const { shouldModify } = await inquirer.prompt<{ shouldModify: boolean }>({
-        type: 'confirm',
-        name: 'shouldModify',
+      const shouldModify = await promptBoolean({
         message: i18n.t('language:modifySystemPromptPrompt'),
-        default: false,
+        defaultValue: false,
       })
-
-      if (shouldModify === undefined) {
-        console.log(ansis.yellow(i18n.t('common:cancelled')))
-        process.exit(0)
-      }
 
       if (!shouldModify) {
         console.log(ansis.gray(`✔ ${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))

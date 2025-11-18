@@ -98,6 +98,9 @@ vi.mock('../../../src/i18n', async (importOriginal) => {
 vi.mock('../../../src/utils/mcp-selector', () => ({
   selectMcpServices: vi.fn(),
 }))
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 vi.mock('../../../src/utils/workflow-installer', () => ({
   selectAndInstallWorkflows: vi.fn(),
@@ -154,6 +157,7 @@ interface TestMocks {
   updateZcfConfig: any
   existsSync: any
   inquirerPrompt: any
+  promptBoolean: any
   readZcfConfig: any
   getExistingApiConfig: any
   switchToOfficialLogin: any
@@ -189,6 +193,7 @@ describe('init command', () => {
     const { configureApiCompletely, modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
     const { configureIncrementalManagement } = await import('../../../src/utils/claude-code-incremental-manager')
     const { existsSync } = await import('node:fs')
+    const { promptBoolean } = await import('../../../src/utils/toggle-prompt')
 
     testMocks = {
       resolveAiOutputLanguage: vi.mocked(resolveAiOutputLanguage),
@@ -215,7 +220,10 @@ describe('init command', () => {
       configureApiCompletely: vi.mocked(configureApiCompletely),
       modifyApiConfigPartially: vi.mocked(modifyApiConfigPartially),
       configureIncrementalManagement: vi.mocked(configureIncrementalManagement),
+      promptBoolean: vi.mocked(promptBoolean),
     }
+    // Default promptBoolean to return false to avoid hanging
+    testMocks.promptBoolean.mockResolvedValue(false)
   })
 
   it('should load init module', async () => {
@@ -324,8 +332,8 @@ describe('init command', () => {
         testMocks.existsSync.mockReturnValue(false)
         testMocks.resolveTemplateLanguage.mockResolvedValue('zh-CN')
         testMocks.inquirerPrompt
-          .mockResolvedValueOnce({ shouldInstall: true })
           .mockResolvedValueOnce({ shouldConfigureMcp: false })
+        testMocks.promptBoolean.mockResolvedValueOnce(true) // shouldInstall
         testMocks.resolveAiOutputLanguage.mockResolvedValue('chinese-simplified')
         testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
         testMocks.configureOutputStyle.mockResolvedValue(undefined)

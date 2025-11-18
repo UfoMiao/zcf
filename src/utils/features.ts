@@ -31,6 +31,7 @@ import { configureOutputStyle } from './output-style'
 import { isWindows } from './platform'
 import { addNumbersToChoices } from './prompt-helpers'
 import { importRecommendedEnv, importRecommendedPermissions, openSettingsJson } from './simple-config'
+import { promptBoolean } from './toggle-prompt'
 import { formatApiKeyDisplay, validateApiKey } from './validator'
 import { readZcfConfig, updateZcfConfig } from './zcf-config'
 
@@ -245,11 +246,9 @@ export async function configureMcpFeature(): Promise<void> {
 
   // Check if Windows needs fix
   if (isWindows()) {
-    const { fixWindows } = await inquirer.prompt<{ fixWindows: boolean }>({
-      type: 'confirm',
-      name: 'fixWindows',
+    const fixWindows = await promptBoolean({
       message: i18n.t('configuration:fixWindowsMcp') || 'Fix Windows MCP configuration?',
-      default: true,
+      defaultValue: true,
     })
 
     if (fixWindows) {
@@ -327,11 +326,9 @@ export async function configureDefaultModelFeature(): Promise<void> {
     console.log(ansis.gray(`  ${i18n.t('configuration:currentModel') || 'Current model'}: ${modelDisplay}\n`))
 
     // Ask user what to do with existing config
-    const { modify } = await inquirer.prompt<{ modify: boolean }>({
-      type: 'confirm',
-      name: 'modify',
+    const modify = await promptBoolean({
       message: i18n.t('configuration:modifyModel') || 'Modify model configuration?',
-      default: false,
+      defaultValue: false,
     })
 
     if (!modify) {
@@ -448,11 +445,9 @@ export async function configureAiMemoryFeature(): Promise<void> {
       )
       console.log(ansis.gray(`  ${i18n.t('configuration:currentLanguage') || 'Current language'}: ${existingLang}\n`))
 
-      const { modify } = await inquirer.prompt<{ modify: boolean }>({
-        type: 'confirm',
-        name: 'modify',
+      const modify = await promptBoolean({
         message: i18n.t('configuration:modifyLanguage') || 'Modify AI output language?',
-        default: false,
+        defaultValue: false,
       })
 
       if (!modify) {
@@ -525,11 +520,9 @@ export async function configureCodexDefaultModelFeature(): Promise<void> {
     console.log(ansis.gray(`  ${i18n.t('configuration:currentModel') || 'Current model'}: ${modelDisplay}\n`))
 
     // Ask user what to do with existing config
-    const { modify } = await inquirer.prompt<{ modify: boolean }>({
-      type: 'confirm',
-      name: 'modify',
+    const modify = await promptBoolean({
       message: i18n.t('configuration:modifyModel') || 'Modify model configuration?',
-      default: false,
+      defaultValue: false,
     })
 
     if (!modify) {
@@ -626,11 +619,9 @@ export async function configureCodexAiMemoryFeature(): Promise<void> {
       )
       console.log(ansis.gray(`  ${i18n.t('configuration:currentLanguage') || 'Current language'}: ${existingLang}\n`))
 
-      const { modify } = await inquirer.prompt<{ modify: boolean }>({
-        type: 'confirm',
-        name: 'modify',
+      const modify = await promptBoolean({
         message: i18n.t('configuration:modifyLanguage') || 'Modify AI output language?',
-        default: false,
+        defaultValue: false,
       })
 
       if (!modify) {

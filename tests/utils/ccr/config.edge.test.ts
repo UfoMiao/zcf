@@ -24,6 +24,9 @@ vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/config')
 vi.mock('../../../src/utils/ccr/presets')
 vi.mock('../../../src/utils/claude-config')
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 // Use real i18n system for better integration testing
 vi.mock('../../../src/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/i18n')>()
@@ -33,6 +36,9 @@ vi.mock('../../../src/i18n', async (importOriginal) => {
     ensureI18nInitialized: vi.fn(),
   }
 })
+
+const togglePromptModule = await import('../../../src/utils/toggle-prompt')
+const mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
 
 describe('cCR config - edge cases', () => {
   const CCR_CONFIG_DIR = join(homedir(), '.claude-code-router')
@@ -44,6 +50,8 @@ describe('cCR config - edge cases', () => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
   })
 
   afterEach(() => {
@@ -320,7 +328,7 @@ describe('cCR config - edge cases', () => {
 
       const error = new Error('User cancelled')
       error.name = 'ExitPromptError'
-      vi.mocked(inquirer.prompt).mockRejectedValue(error)
+      vi.mocked(inquirer.prompt).mockImplementationOnce((() => Promise.reject(error)) as any)
 
       await expect(configureCcrWithPreset(mockPreset)).rejects.toThrow(error)
     })
@@ -367,7 +375,7 @@ describe('cCR config - edge cases', () => {
 
       const error = new Error('User cancelled')
       error.name = 'ExitPromptError'
-      vi.mocked(inquirer.prompt).mockRejectedValue(error)
+      mockedPromptBoolean.mockRejectedValueOnce(error)
 
       const result = await setupCcrConfiguration()
 

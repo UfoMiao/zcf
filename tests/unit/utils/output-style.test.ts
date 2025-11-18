@@ -8,6 +8,7 @@ import {
   hasLegacyPersonalityFiles,
   setGlobalDefaultOutputStyle,
 } from '../../../src/utils/output-style'
+import { promptBoolean } from '../../../src/utils/toggle-prompt'
 
 // Mock dependencies
 vi.mock('../../../src/utils/fs-operations', () => ({
@@ -49,6 +50,10 @@ vi.mock('inquirer', async (importOriginal) => {
     },
   }
 })
+
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 // Declare mock types
 let mockFsOperations: any
@@ -309,7 +314,6 @@ describe('output-style', () => {
       })
       mockFsOperations.removeFile.mockImplementation(() => {})
       mockInquirer.default.prompt = vi.fn()
-        .mockResolvedValueOnce({ cleanupLegacy: true })
         .mockResolvedValueOnce({ selectedStyles: ['engineer-professional'] })
         .mockResolvedValueOnce({ defaultStyle: 'engineer-professional' })
       Object.assign(mockInquirer.default, {
@@ -318,6 +322,7 @@ describe('output-style', () => {
         registerPrompt: vi.fn(),
         restoreDefaultPrompts: vi.fn(),
       })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       mockFsOperations.ensureDir.mockImplementation(() => {})
       mockFsOperations.copyFile.mockImplementation(() => {})
@@ -328,12 +333,12 @@ describe('output-style', () => {
       await configureOutputStyle()
 
       expect(mockFsOperations.removeFile).toHaveBeenCalled()
-      expect(mockInquirer.default.prompt).toHaveBeenCalledWith(
-        expect.objectContaining({
-          name: 'cleanupLegacy',
-          type: 'confirm',
-        }),
-      )
+      // Use i18n to get the translated message instead of hardcoding
+      const { i18n } = await import('../../../src/i18n')
+      expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
+        message: i18n.t('configuration:cleanupLegacyFiles'),
+        defaultValue: true,
+      }))
     })
 
     it('should skip legacy cleanup if user declines', async () => {
@@ -344,7 +349,6 @@ describe('output-style', () => {
       })
       mockFsOperations.removeFile.mockImplementation(() => {})
       mockInquirer.default.prompt = vi.fn()
-        .mockResolvedValueOnce({ cleanupLegacy: false })
         .mockResolvedValueOnce({ selectedStyles: ['engineer-professional'] })
         .mockResolvedValueOnce({ defaultStyle: 'engineer-professional' })
       Object.assign(mockInquirer.default, {
@@ -353,6 +357,7 @@ describe('output-style', () => {
         registerPrompt: vi.fn(),
         restoreDefaultPrompts: vi.fn(),
       })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(false)
 
       mockFsOperations.ensureDir.mockImplementation(() => {})
       mockFsOperations.copyFile.mockImplementation(() => {})
@@ -363,6 +368,7 @@ describe('output-style', () => {
       await configureOutputStyle()
 
       expect(mockFsOperations.removeFile).not.toHaveBeenCalled()
+      expect(promptBoolean).toHaveBeenCalled()
     })
   })
 })

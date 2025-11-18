@@ -1,9 +1,9 @@
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
 import ansis from 'ansis'
-import inquirer from 'inquirer'
 import ora from 'ora'
 import { ensureI18nInitialized, format, i18n } from '../i18n'
+import { promptBoolean } from './toggle-prompt'
 import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion } from './version-checker'
 
 const execAsync = promisify(exec)
@@ -38,11 +38,9 @@ export async function updateCcr(force = false, skipPrompt = false): Promise<bool
     // Handle confirmation based on skipPrompt mode
     if (!skipPrompt) {
       // Interactive mode: Ask for confirmation
-      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-        type: 'confirm',
-        name: 'confirm',
+      const confirm = await promptBoolean({
         message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCR' }),
-        default: true,
+        defaultValue: true,
       })
 
       if (!confirm) {
@@ -107,11 +105,9 @@ export async function updateClaudeCode(force = false, skipPrompt = false): Promi
     // Handle confirmation based on skipPrompt mode
     if (!skipPrompt) {
       // Interactive mode: Ask for confirmation
-      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-        type: 'confirm',
-        name: 'confirm',
+      const confirm = await promptBoolean({
         message: format(i18n.t('updater:confirmUpdate'), { tool: 'Claude Code' }),
-        default: true,
+        defaultValue: true,
       })
 
       if (!confirm) {
@@ -175,11 +171,9 @@ export async function updateCometixLine(force = false, skipPrompt = false): Prom
     // Handle confirmation based on skipPrompt mode
     if (!skipPrompt) {
       // Interactive mode: Ask for confirmation
-      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-        type: 'confirm',
-        name: 'confirm',
+      const confirm = await promptBoolean({
         message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCometixLine' }),
-        default: true,
+        defaultValue: true,
       })
 
       if (!confirm) {

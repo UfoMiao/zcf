@@ -13,6 +13,7 @@ catalogs:
     ansis: ^4.1.0
     cac: ^6.7.14
     inquirer: ^12.9.6
+    inquirer-toggle: ^1.0.1
     ora: ^9.0.0
   runtime:
     dayjs: ^1.11.18

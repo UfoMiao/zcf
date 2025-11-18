@@ -5,6 +5,7 @@ import inquirer from 'inquirer'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
+import { promptBoolean } from '../utils/toggle-prompt'
 import { ZcfUninstaller } from '../utils/uninstaller'
 
 export interface UninstallOptions {
@@ -177,11 +178,9 @@ async function executeCompleteUninstall(uninstaller: ZcfUninstaller): Promise<vo
   console.log(ansis.yellow(i18n.t('uninstall:completeWarning')))
 
   // Final confirmation
-  const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-    type: 'confirm',
-    name: 'confirm',
+  const confirm = await promptBoolean({
     message: i18n.t('uninstall:confirmComplete'),
-    default: false,
+    defaultValue: false,
   })
 
   if (!confirm) {
@@ -210,11 +209,9 @@ async function executeCustomUninstall(uninstaller: ZcfUninstaller, items: Uninst
   })
 
   // Final confirmation
-  const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-    type: 'confirm',
-    name: 'confirm',
+  const confirm = await promptBoolean({
     message: i18n.t('uninstall:confirmCustom'),
-    default: false,
+    defaultValue: false,
   })
 
   if (!confirm) {

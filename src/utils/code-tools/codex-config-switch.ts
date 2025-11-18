@@ -5,6 +5,7 @@ import { CODEX_AUTH_FILE } from '../../constants'
 import { ensureI18nInitialized, i18n } from '../../i18n'
 import { readJsonConfig } from '../json-config'
 import { addNumbersToChoices } from '../prompt-helpers'
+import { promptBoolean } from '../toggle-prompt'
 import { detectConfigManagementMode } from './codex-config-detector'
 import { addProviderToExisting, deleteProviders, editExistingProvider } from './codex-provider-manager'
 
@@ -154,15 +155,13 @@ async function handleAddProvider(): Promise<void> {
   const existingProvider = managementMode.providers?.find((p: any) => p.id === providerId)
 
   if (existingProvider) {
-    const { shouldOverwrite } = await inquirer.prompt<{ shouldOverwrite: boolean }>([{
-      type: 'confirm',
-      name: 'shouldOverwrite',
+    const shouldOverwrite = await promptBoolean({
       message: i18n.t('codex:providerDuplicatePrompt', {
         name: existingProvider.name,
         source: i18n.t('codex:existingConfig'),
       }),
-      default: false,
-    }])
+      defaultValue: false,
+    })
 
     if (!shouldOverwrite) {
       console.log(ansis.yellow(i18n.t('codex:providerDuplicateSkipped')))
@@ -189,12 +188,10 @@ async function handleAddProvider(): Promise<void> {
     }
 
     // Ask if user wants to set this provider as default
-    const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([{
-      type: 'confirm',
-      name: 'setAsDefault',
+    const setAsDefault = await promptBoolean({
       message: i18n.t('multi-config:setAsDefaultPrompt'),
-      default: true,
-    }])
+      defaultValue: true,
+    })
 
     if (setAsDefault) {
       const { switchToProvider } = await import('./codex')
@@ -432,12 +429,10 @@ async function handleCopyProvider(providers: any[]): Promise<void> {
     }
 
     // Ask if user wants to set this provider as default
-    const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([{
-      type: 'confirm',
-      name: 'setAsDefault',
+    const setAsDefault = await promptBoolean({
       message: i18n.t('multi-config:setAsDefaultPrompt'),
-      default: false,
-    }])
+      defaultValue: false,
+    })
 
     if (setAsDefault) {
       const { switchToProvider } = await import('./codex')
@@ -488,12 +483,10 @@ async function handleDeleteProvider(providers: any[]): Promise<void> {
     providers.find(p => p.id === id)?.name || id,
   ).join(', ')
 
-  const { confirmDelete } = await inquirer.prompt<{ confirmDelete: boolean }>([{
-    type: 'confirm',
-    name: 'confirmDelete',
+  const confirmDelete = await promptBoolean({
     message: i18n.t('codex:confirmDeleteProviders', { providers: selectedNames }),
-    default: false,
-  }])
+    defaultValue: false,
+  })
 
   if (!confirmDelete) {
     console.log(ansis.yellow(i18n.t('common:cancelled')))

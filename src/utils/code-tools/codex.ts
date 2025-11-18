@@ -20,6 +20,7 @@ import { wrapCommandWithSudo } from '../platform'
 // Removed MCP selection and platform command imports from this module
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
+import { promptBoolean } from '../toggle-prompt'
 import { readZcfConfig, updateZcfConfig } from '../zcf-config'
 import { detectConfigManagementMode } from './codex-config-detector'
 import { configureCodexMcp } from './codex-configure'
@@ -1304,15 +1305,13 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
       const sourceType = existingProvider ? 'existing' : 'session'
       const sourceProvider = existingProvider || sessionProvider
 
-      const { shouldOverwrite } = await inquirer.prompt<{ shouldOverwrite: boolean }>([{
-        type: 'confirm',
-        name: 'shouldOverwrite',
+      const shouldOverwrite = await promptBoolean({
         message: i18n.t('codex:providerDuplicatePrompt', {
           name: sourceProvider!.name,
           source: sourceType === 'existing' ? i18n.t('codex:existingConfig') : i18n.t('codex:currentSession'),
         }),
-        default: false,
-      }])
+        defaultValue: false,
+      })
 
       if (!shouldOverwrite) {
         console.log(ansis.yellow(i18n.t('codex:providerDuplicateSkipped')))
@@ -1343,12 +1342,10 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
     currentSessionProviders.set(providerId, newProvider)
     authEntries[envKey] = answers.apiKey
 
-    const { addAnother } = await inquirer.prompt<{ addAnother: boolean }>([{
-      type: 'confirm',
-      name: 'addAnother',
+    const addAnother = await promptBoolean({
       message: i18n.t('codex:addProviderPrompt'),
-      default: false,
-    }])
+      defaultValue: false,
+    })
 
     addMore = addAnother
   }
@@ -1492,11 +1489,9 @@ export async function runCodexUpdate(force = false, skipPrompt = false): Promise
     // Handle confirmation based on skipPrompt mode
     if (!skipPrompt) {
       // Interactive mode: Ask for confirmation
-      const { confirm } = await inquirer.prompt<{ confirm: boolean }>({
-        type: 'confirm',
-        name: 'confirm',
+      const confirm = await promptBoolean({
         message: i18n.t('codex:confirmUpdate'),
-        default: true,
+        defaultValue: true,
       })
 
       if (!confirm) {
@@ -1563,12 +1558,10 @@ export async function runCodexUninstall(): Promise<void> {
   try {
     if (mode === 'complete') {
       // Step 2a: Complete uninstall
-      const { confirm } = await inquirer.prompt<{ confirm: boolean }>([{
-        type: 'confirm',
-        name: 'confirm',
+      const confirm = await promptBoolean({
         message: i18n.t('codex:uninstallPrompt'),
-        default: false,
-      }])
+        defaultValue: false,
+      })
 
       if (!confirm) {
         handleUninstallCancellation()

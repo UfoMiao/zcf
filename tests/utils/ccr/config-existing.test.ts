@@ -1,5 +1,4 @@
 import type { CcrConfig } from '../../../src/types/ccr'
-import inquirer from 'inquirer'
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -8,6 +7,7 @@ import {
   setupCcrConfiguration,
 } from '../../../src/utils/ccr/config'
 import { manageApiKeyApproval } from '../../../src/utils/claude-config'
+import { promptBoolean } from '../../../src/utils/toggle-prompt'
 
 // Mock dependencies
 vi.mock('../../../src/utils/json-config', () => ({
@@ -37,6 +37,10 @@ vi.mock('inquirer', () => {
     prompt: mockPrompt, // Also mock the named export
   }
 })
+
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 vi.mock('ansis', () => ({
   default: {
@@ -257,14 +261,12 @@ describe('cCR Configuration - Existing Config Scenarios', () => {
         const existingConfig = readCcrConfig()
         if (existingConfig) {
           // Simulate user choosing to reconfigure
-          const overwriteResponse = await inquirer.prompt({
-            type: 'confirm',
-            name: 'overwrite',
+          const overwrite = await promptBoolean({
             message: 'ccr:overwriteCcrConfig',
-            default: false,
+            defaultValue: false,
           })
 
-          if (overwriteResponse.overwrite) {
+          if (overwrite) {
             // Simulate rest of configuration flow - returns false when selectCcrPreset returns null
             return false
           }
@@ -273,18 +275,16 @@ describe('cCR Configuration - Existing Config Scenarios', () => {
       })
 
       vi.mocked(readCcrConfig).mockReturnValue(mockExistingConfig)
-      vi.mocked(inquirer.prompt).mockResolvedValue({ overwrite: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       // Execute
       const result = await setupCcrConfiguration()
 
       // Verify
       expect(result).toBe(false) // Returns false when selectCcrPreset returns null
-      expect(inquirer.prompt).toHaveBeenCalledWith({
-        type: 'confirm',
-        name: 'overwrite',
+      expect(promptBoolean).toHaveBeenCalledWith({
         message: 'ccr:overwriteCcrConfig',
-        default: false,
+        defaultValue: false,
       })
     })
   })
@@ -296,11 +296,9 @@ describe('cCR Configuration - Existing Config Scenarios', () => {
         const existingConfig = readCcrConfig()
         if (existingConfig) {
           try {
-            await inquirer.prompt({
-              type: 'confirm',
-              name: 'overwrite',
+            await promptBoolean({
               message: 'ccr:overwriteCcrConfig',
-              default: false,
+              defaultValue: false,
             })
           }
           catch (error: any) {
@@ -316,7 +314,7 @@ describe('cCR Configuration - Existing Config Scenarios', () => {
       vi.mocked(readCcrConfig).mockReturnValue(mockExistingConfig)
       const exitError = new Error('User cancelled')
       exitError.name = 'ExitPromptError'
-      vi.mocked(inquirer.prompt).mockRejectedValue(exitError)
+      vi.mocked(promptBoolean).mockRejectedValue(exitError)
 
       // Execute
       const result = await setupCcrConfiguration()

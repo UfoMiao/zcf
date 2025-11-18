@@ -10,6 +10,7 @@ import { configureApiCompletely } from '../../../src/utils/config-operations'
 import { getInstallationStatus, installClaudeCode, isClaudeCodeInstalled } from '../../../src/utils/installer'
 import { isTermux, isWindows } from '../../../src/utils/platform'
 import { resolveAiOutputLanguage, resolveTemplateLanguage } from '../../../src/utils/prompts'
+import { promptBoolean } from '../../../src/utils/toggle-prompt'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 import { readZcfConfig } from '../../../src/utils/zcf-config'
 
@@ -99,6 +100,10 @@ vi.mock('../../../src/utils/version-checker', () => ({
   checkClaudeCodeVersionAndPrompt: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
+
 vi.mock('../../../src/utils/error-handler', () => ({
   handleExitPromptError: vi.fn(),
   handleGeneralError: vi.fn(),
@@ -131,6 +136,7 @@ interface TestMocks {
   selectAndInstallWorkflows: any
   configureApiCompletely: any
   inquirerPrompt: any
+  promptBoolean: any
 }
 
 let testMocks: TestMocks
@@ -155,6 +161,7 @@ describe('init - Edge Cases', () => {
       selectAndInstallWorkflows: selectAndInstallWorkflows as any,
       configureApiCompletely: configureApiCompletely as any,
       inquirerPrompt: inquirer.prompt as any,
+      promptBoolean: promptBoolean as any,
     }
 
     // Set default mock values
@@ -168,6 +175,7 @@ describe('init - Edge Cases', () => {
     testMocks.resolveTemplateLanguage.mockResolvedValue('en')
     testMocks.isTermux.mockReturnValue(false)
     testMocks.isWindows.mockReturnValue(false)
+    testMocks.promptBoolean.mockResolvedValue(false)
   })
 
   describe('validateSkipPromptOptions function edge cases', () => {
@@ -231,8 +239,7 @@ describe('init - Edge Cases', () => {
         localPath: '/Users/test/.claude/local/claude',
       })
       testMocks.resolveTemplateLanguage.mockResolvedValue('en') // language selection
-      testMocks.inquirerPrompt
-        .mockResolvedValueOnce({ shouldInstall: false }) // decline installation
+      testMocks.promptBoolean.mockResolvedValueOnce(false)
 
       await init({ skipPrompt: false })
 

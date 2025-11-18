@@ -2,6 +2,7 @@ import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { ensureI18nInitialized, i18n } from '../../i18n'
 import { handleExitPromptError, handleGeneralError } from '../error-handler'
+import { promptBoolean } from '../toggle-prompt'
 import { runCometixPrintConfig, runCometixTuiConfig } from './commands'
 import { installCometixLine } from './installer'
 
@@ -54,11 +55,9 @@ export async function showCometixMenu(): Promise<boolean> {
     // Ask if user wants to continue in CCometixLine menu
     if (choice !== '0') {
       console.log(`\n${ansis.dim('─'.repeat(50))}\n`)
-      const { continueInCometix } = await inquirer.prompt<{ continueInCometix: boolean }>({
-        type: 'confirm',
-        name: 'continueInCometix',
+      const continueInCometix = await promptBoolean({
         message: i18n.t('common:returnToMenu'),
-        default: true,
+        defaultValue: true,
       })
 
       if (continueInCometix) {

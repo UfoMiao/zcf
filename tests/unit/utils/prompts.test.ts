@@ -1,11 +1,16 @@
 import inquirer from 'inquirer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resolveAiOutputLanguage, resolveSystemPromptStyle, resolveTemplateLanguage, selectAiOutputLanguage, selectScriptLanguage, selectTemplateLanguage } from '../../../src/utils/prompts'
+import { promptBoolean } from '../../../src/utils/toggle-prompt'
 
 vi.mock('inquirer', () => ({
   default: {
     prompt: vi.fn(),
   },
+}))
+
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
 }))
 
 vi.mock('ansis', () => ({
@@ -207,7 +212,7 @@ describe('prompts utilities', () => {
 
     it('should prompt for modification when saved config exists and user chooses not to modify', async () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ shouldModify: false })
+      vi.mocked(promptBoolean).mockResolvedValue(false)
 
       const result = await resolveAiOutputLanguage('zh-CN', undefined, {
         version: '2.3.0',
@@ -220,19 +225,16 @@ describe('prompts utilities', () => {
       expect(result).toBe('en')
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:currentConfigFound'))
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('English'))
-      expect(inquirer.prompt).toHaveBeenCalledWith({
-        type: 'confirm',
-        name: 'shouldModify',
+      expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('modify'),
-        default: false,
-      })
+        defaultValue: false,
+      }))
     })
 
     it('should prompt for language selection when saved config exists and user chooses to modify', async () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ shouldModify: true })
-        .mockResolvedValueOnce({ lang: 'zh-CN' })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ lang: 'zh-CN' })
 
       const result = await resolveAiOutputLanguage('zh-CN', undefined, {
         version: '2.3.0',
@@ -244,36 +246,14 @@ describe('prompts utilities', () => {
 
       expect(result).toBe('zh-CN')
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:currentConfigFound'))
-      expect(inquirer.prompt).toHaveBeenNthCalledWith(1, {
-        type: 'confirm',
-        name: 'shouldModify',
+      expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('modify'),
-        default: false,
-      })
-      expect(inquirer.prompt).toHaveBeenNthCalledWith(2, expect.objectContaining({
+        defaultValue: false,
+      }))
+      expect(inquirer.prompt).toHaveBeenCalledWith(expect.objectContaining({
         type: 'list',
         name: 'lang',
       }))
-    })
-
-    it('should handle cancellation when user cancels modification prompt', async () => {
-      const consoleSpy = vi.spyOn(console, 'log')
-      const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
-      vi.mocked(inquirer.prompt).mockResolvedValue({ shouldModify: undefined })
-
-      await resolveAiOutputLanguage('zh-CN', undefined, {
-        version: '2.3.0',
-        preferredLang: 'zh-CN',
-        aiOutputLang: 'en',
-        lastUpdated: '2024-01-01',
-        codeToolType: 'claude-code',
-      })
-
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:currentConfigFound'))
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('common:cancelled'))
-      expect(exitSpy).toHaveBeenCalledWith(0)
-
-      exitSpy.mockRestore()
     })
 
     it('should ask user when no command line option and no saved config', async () => {
@@ -478,7 +458,7 @@ describe('prompts utilities', () => {
 
     it('should prompt for modification when saved config exists with templateLang and user chooses not to modify', async () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ shouldModify: false })
+      vi.mocked(promptBoolean).mockResolvedValue(false)
 
       const result = await resolveTemplateLanguage(undefined, {
         version: '2.3.0',
@@ -490,17 +470,15 @@ describe('prompts utilities', () => {
 
       expect(result).toBe('zh-CN')
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:currentTemplateLanguageFound'))
-      expect(inquirer.prompt).toHaveBeenCalledWith({
-        type: 'confirm',
-        name: 'shouldModify',
+      expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('language:modifyTemplateLanguagePrompt'),
-        default: false,
-      })
+        defaultValue: false,
+      }))
     })
 
     it('should use fallback mode when saved config has no templateLang (backward compatibility)', async () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ shouldModify: false })
+      vi.mocked(promptBoolean).mockResolvedValue(false)
 
       const result = await resolveTemplateLanguage(undefined, {
         version: '2.3.0',
@@ -512,18 +490,15 @@ describe('prompts utilities', () => {
 
       expect(result).toBe('zh-CN')
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:usingFallbackTemplate'))
-      expect(inquirer.prompt).toHaveBeenCalledWith({
-        type: 'confirm',
-        name: 'shouldModify',
+      expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('language:modifyTemplateLanguagePrompt'),
-        default: false,
-      })
+        defaultValue: false,
+      }))
     })
 
     it('should prompt for language selection when user chooses to modify', async () => {
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ shouldModify: true })
-        .mockResolvedValueOnce({ lang: 'en' })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      vi.mocked(inquirer.prompt).mockResolvedValue({ lang: 'en' })
 
       const result = await resolveTemplateLanguage(undefined, {
         version: '2.3.0',
@@ -533,7 +508,8 @@ describe('prompts utilities', () => {
       }, false) // skipPrompt = false (interactive mode)
 
       expect(result).toBe('en')
-      expect(inquirer.prompt).toHaveBeenCalledTimes(2)
+      expect(promptBoolean).toHaveBeenCalled()
+      expect(inquirer.prompt).toHaveBeenCalledTimes(1)
     })
 
     it('should ask user when no saved config', async () => {
@@ -661,7 +637,7 @@ describe('prompts utilities', () => {
 
     it('should prompt for modification when saved config exists and user chooses not to modify', async () => {
       const consoleSpy = vi.spyOn(console, 'log')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ shouldModify: false })
+      vi.mocked(promptBoolean).mockResolvedValue(false)
 
       const result = await resolveSystemPromptStyle(
         availablePrompts,
@@ -677,18 +653,15 @@ describe('prompts utilities', () => {
 
       expect(result).toBe('nekomata-engineer')
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:currentSystemPromptFound'))
-      expect(inquirer.prompt).toHaveBeenCalledWith({
-        type: 'confirm',
-        name: 'shouldModify',
+      expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('language:modifySystemPromptPrompt'),
-        default: false,
-      })
+        defaultValue: false,
+      }))
     })
 
     it('should prompt for style selection when user chooses to modify', async () => {
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ shouldModify: true })
-        .mockResolvedValueOnce({ systemPrompt: 'laowang-engineer' })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ systemPrompt: 'laowang-engineer' })
 
       const result = await resolveSystemPromptStyle(
         availablePrompts,
@@ -703,7 +676,8 @@ describe('prompts utilities', () => {
       )
 
       expect(result).toBe('laowang-engineer')
-      expect(inquirer.prompt).toHaveBeenCalledTimes(2)
+      expect(promptBoolean).toHaveBeenCalled()
+      expect(inquirer.prompt).toHaveBeenCalledTimes(1)
     })
 
     it('should ask user when no saved config', async () => {

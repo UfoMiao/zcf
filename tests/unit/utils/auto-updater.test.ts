@@ -1,8 +1,8 @@
 import { promisify } from 'node:util'
-import inquirer from 'inquirer'
 import ora from 'ora'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { checkAndUpdateTools, updateCcr, updateClaudeCode, updateCometixLine } from '../../../src/utils/auto-updater'
+import { promptBoolean } from '../../../src/utils/toggle-prompt'
 import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion } from '../../../src/utils/version-checker'
 
 // Mock modules
@@ -24,12 +24,6 @@ vi.mock('ansis', () => ({
     bold: {
       cyan: vi.fn((text: string) => text),
     },
-  },
-}))
-
-vi.mock('inquirer', () => ({
-  default: {
-    prompt: vi.fn(),
   },
 }))
 
@@ -58,6 +52,10 @@ vi.mock('../../../src/utils/version-checker', () => ({
   checkCometixLineVersion: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
+
 // Mock console methods
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {})
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -71,7 +69,6 @@ interface MockSpinner {
 
 interface TestMocks {
   execAsync: any
-  inquirerPrompt: any
   oraSpinner: MockSpinner
   checkCcrVersion: any
   checkClaudeCodeVersion: any
@@ -103,7 +100,6 @@ describe('auto-updater', () => {
 
     testMocks = {
       execAsync,
-      inquirerPrompt: (inquirer.prompt as any),
       oraSpinner: mockSpinner,
       checkCcrVersion: (checkCcrVersion as any),
       checkClaudeCodeVersion: (checkClaudeCodeVersion as any),
@@ -168,7 +164,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: false })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(false)
 
       const result = await updateCcr()
 
@@ -185,7 +181,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
       testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
 
       // Test will execute the update flow
@@ -198,12 +194,9 @@ describe('auto-updater', () => {
         expect(error).toBeDefined()
       }
 
-      expect(testMocks.inquirerPrompt).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: 'confirm',
-          name: 'confirm',
-        }),
-      )
+      expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
+        message: expect.stringContaining('confirmUpdate'),
+      }))
     })
 
     it('should handle update execution errors gracefully', async () => {
@@ -213,7 +206,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
       testMocks.execAsync.mockRejectedValue(new Error('Update failed'))
 
       // The function should handle errors gracefully
@@ -242,7 +235,7 @@ describe('auto-updater', () => {
         latestVersion: '1.0.0',
         needsUpdate: false,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       // Force update should bypass version check
       try {
@@ -255,7 +248,7 @@ describe('auto-updater', () => {
       }
 
       // Should prompt for confirmation
-      expect(testMocks.inquirerPrompt).toHaveBeenCalled()
+      expect(promptBoolean).toHaveBeenCalled()
     })
 
     it('should skip prompt when skipPrompt is true', async () => {
@@ -278,7 +271,7 @@ describe('auto-updater', () => {
       }
 
       // Should NOT prompt for confirmation
-      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      expect(promptBoolean).not.toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('updater:autoUpdating'),
       )
@@ -325,7 +318,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       try {
         await updateClaudeCode()
@@ -335,7 +328,7 @@ describe('auto-updater', () => {
         expect(error).toBeDefined()
       }
 
-      expect(testMocks.inquirerPrompt).toHaveBeenCalled()
+      expect(promptBoolean).toHaveBeenCalled()
     })
 
     it('should handle Claude Code update errors gracefully', async () => {
@@ -345,7 +338,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       const result = await updateClaudeCode()
 
@@ -370,7 +363,7 @@ describe('auto-updater', () => {
       }
 
       // Should NOT prompt for confirmation in skip mode
-      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      expect(promptBoolean).not.toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('updater:autoUpdating'),
       )
@@ -417,7 +410,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       try {
         await updateCometixLine()
@@ -427,7 +420,7 @@ describe('auto-updater', () => {
         expect(error).toBeDefined()
       }
 
-      expect(testMocks.inquirerPrompt).toHaveBeenCalled()
+      expect(promptBoolean).toHaveBeenCalled()
     })
 
     it('should skip prompt in skip-prompt mode for CometixLine', async () => {
@@ -447,7 +440,7 @@ describe('auto-updater', () => {
       }
 
       // Should NOT prompt for confirmation in skip mode
-      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      expect(promptBoolean).not.toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('updater:autoUpdating'),
       )
@@ -475,7 +468,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.inquirerPrompt.mockResolvedValue({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValue(true)
       testMocks.execAsync.mockRejectedValue(new Error('Execution mock error'))
 
       // Should not throw error and handle all tools
@@ -511,7 +504,7 @@ describe('auto-updater', () => {
       await checkAndUpdateTools(true)
 
       // Should NOT prompt for any confirmations in skip mode
-      expect(testMocks.inquirerPrompt).not.toHaveBeenCalled()
+      expect(promptBoolean).not.toHaveBeenCalled()
       // Should show checking tools header
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('updater:checkingTools'),

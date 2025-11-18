@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '../../../src/i18n'
 import { ClaudeCodeConfigManager } from '../../../src/utils/claude-code-config-manager'
 import { configureIncrementalManagement } from '../../../src/utils/claude-code-incremental-manager'
+import { promptBoolean } from '../../../src/utils/toggle-prompt'
 import { validateApiKey } from '../../../src/utils/validator'
 // Mock dependencies
 vi.mock('inquirer')
@@ -10,6 +11,14 @@ vi.mock('../../../src/utils/claude-code-config-manager')
 vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/validator')
 vi.mock('../../../src/utils/claude-config')
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
+
+const mockedPromptBoolean = vi.mocked(promptBoolean)
+function queuePromptBooleans(...values: boolean[]) {
+  values.forEach(value => mockedPromptBoolean.mockResolvedValueOnce(value))
+}
 vi.mock('../../../src/utils/features', () => ({
   promptCustomModels: vi.fn().mockResolvedValue({
     primaryModel: 'claude-3-5-sonnet-20241022',
@@ -24,6 +33,8 @@ vi.mock('../../../src/constants', () => ({
 describe('claudeCode Incremental Configuration Manager', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
     // Mock i18n.t function using any type to avoid complex type issues
     vi.mocked(i18n).t = vi.fn((key: string, params?: any) => {
       if (params) {
@@ -50,8 +61,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: true }) // setAsDefault prompt
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(true, false)
 
       // Mock successful configuration addition
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -92,8 +102,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           profileName: minimaxPreset?.name || 'MiniMax',
           apiKey: 'sk-minimax-key',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(false, false)
 
       await configureIncrementalManagement()
 
@@ -135,8 +144,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any) // Detailed information for adding configuration
-        .mockResolvedValueOnce({ setAsDefault: true }) // setAsDefault prompt
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(true, false)
 
       // Mock necessary functions
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
@@ -151,7 +159,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       await configureIncrementalManagement()
 
       expect(ClaudeCodeConfigManager.readConfig).toHaveBeenCalled()
-      expect(inquirer.prompt).toHaveBeenCalledTimes(5)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
     })
     it('should handle user skip operation', async () => {
@@ -256,7 +264,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' }) // Select delete
         .mockResolvedValueOnce({ selectedProfileIds: ['profile-2'] }) // Select configurations to delete
-        .mockResolvedValueOnce({ confirmed: true }) // Confirm deletion
+      queuePromptBooleans(true)
       vi.mocked(ClaudeCodeConfigManager.deleteProfiles).mockResolvedValue({
         success: true,
         backupPath: '/test/backup.json',
@@ -314,8 +322,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         })
-        .mockResolvedValueOnce({ setAsDefault: true })
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(true, false)
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
         backupPath: '/test/backup.json',
@@ -371,7 +378,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           capturedChoices = prompt.choices
           return Promise.resolve({ selectedProfileIds: ['profile-1'] })
         }) as any)
-        .mockImplementationOnce((() => Promise.resolve({ confirmed: false })) as any)
+      queuePromptBooleans(false)
       await configureIncrementalManagement()
       expect(capturedChoices.some(choice => String(choice.name).includes('custom-auth'))).toBe(true)
     })
@@ -396,8 +403,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
         capturedQuestions = questions
         return Promise.resolve(answers)
       }) as any)
-      mockPrompt.mockResolvedValueOnce({ setAsDefault: false } as any)
-      mockPrompt.mockImplementationOnce((() => Promise.resolve({ continueAdding: false })) as any)
+      queuePromptBooleans(Boolean(answerOverride.setAsDefault), false)
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
@@ -460,7 +466,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           deletePrompt = Array.isArray(questions) ? questions[0] : questions
           return Promise.resolve({ selectedProfileIds: ['profile-1'] })
         }) as any)
-        .mockImplementationOnce((() => Promise.resolve({ confirmed: false })) as any)
+      queuePromptBooleans(false)
       await configureIncrementalManagement()
       expect(deletePrompt.validate([])).toBe('multi-config:selectAtLeastOne')
       expect(deletePrompt.validate(['profile-1', 'profile-2'])).toBe('multi-config:cannotDeleteAll')
@@ -486,9 +492,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         })) as any)
-        .mockImplementationOnce((() => Promise.resolve({ setAsDefault: false })) as any)
-        .mockImplementationOnce((() => Promise.resolve({ overwrite: false })) as any)
-        .mockImplementationOnce((() => Promise.resolve({ continueAdding: false })) as any)
+      queuePromptBooleans(false, false, false)
       await configureIncrementalManagement()
       expect(ClaudeCodeConfigManager.updateProfile).not.toHaveBeenCalled()
       expect(ClaudeCodeConfigManager.addProfile).not.toHaveBeenCalled()
@@ -511,9 +515,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         })) as any)
-        .mockImplementationOnce((() => Promise.resolve({ setAsDefault: true })) as any)
-        .mockImplementationOnce((() => Promise.resolve({ overwrite: true })) as any)
-        .mockImplementationOnce((() => Promise.resolve({ continueAdding: false })) as any)
+      queuePromptBooleans(true, true, false)
       vi.mocked(ClaudeCodeConfigManager.updateProfile).mockResolvedValue({
         success: true,
         backupPath: '/test/backup.json',
@@ -542,9 +544,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-
-        .mockResolvedValueOnce({ setAsDefault: true }) // setAsDefault prompt
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(true, false)
       // Mock profile addition failure
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: false,
@@ -615,7 +615,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' })
         .mockResolvedValueOnce({ selectedProfileIds: ['profile-2'] })
-        .mockResolvedValueOnce({ confirmed: true })
+      queuePromptBooleans(true)
       // Mock deletion failure
       vi.mocked(ClaudeCodeConfigManager.deleteProfiles).mockResolvedValue({
         success: false,
@@ -694,7 +694,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' })
         .mockResolvedValueOnce({ selectedProfileIds: ['profile-2'] })
-        .mockResolvedValueOnce({ confirmed: false }) // User cancels deletion
+      queuePromptBooleans(false)
       await configureIncrementalManagement()
       expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
     })
@@ -736,9 +736,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-auth-token',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-
-        .mockResolvedValueOnce({ setAsDefault: false }) // setAsDefault prompt
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(false, false)
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('auth-token-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
@@ -768,9 +766,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-
-        .mockResolvedValueOnce({ setAsDefault: false }) // setAsDefault prompt
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(false, false)
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('non-default-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
@@ -861,8 +857,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           profileName: '302.AI',
           apiKey: 'sk-302-test-key',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(false, false)
 
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
@@ -892,8 +887,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(false, false)
 
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
@@ -925,8 +919,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
-        .mockResolvedValueOnce({ continueAdding: false })
+      queuePromptBooleans(false, false)
 
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
@@ -954,8 +947,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-key-1',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: true })
-        .mockResolvedValueOnce({ continueAdding: true }) // Continue
         .mockResolvedValueOnce({ selectedProvider: 'custom' })
         .mockResolvedValueOnce({
           profileName: 'Profile 2',
@@ -963,8 +954,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-key-2',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
-        .mockResolvedValueOnce({ continueAdding: false }) // Stop
+      queuePromptBooleans(true, true, false, false)
 
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
@@ -1048,7 +1038,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-modified-key',
           baseUrl: 'https://api.modified.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
+      queuePromptBooleans(false)
 
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -1110,7 +1100,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
+      queuePromptBooleans(false)
 
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -1175,7 +1165,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
         .mockResolvedValueOnce({
           profileName: 'CCR Profile-copy',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
+      queuePromptBooleans(false)
 
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-ccr-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -1220,7 +1210,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: false })
+      queuePromptBooleans(false)
 
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('custom-copy-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
@@ -1264,7 +1254,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
           apiKey: 'sk-ant-test-key',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ setAsDefault: true }) // Set as default
+      queuePromptBooleans(true)
 
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('copied-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({

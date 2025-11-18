@@ -26,6 +26,9 @@ vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/config')
 vi.mock('../../../src/utils/ccr/presets')
 vi.mock('../../../src/utils/claude-config')
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 // Use real i18n system for better integration testing
 vi.mock('../../../src/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/i18n')>()
@@ -35,6 +38,12 @@ vi.mock('../../../src/i18n', async (importOriginal) => {
     ensureI18nInitialized: vi.fn(),
   }
 })
+
+const togglePromptModule = await import('../../../src/utils/toggle-prompt')
+const mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
+function queuePromptBooleans(...values: boolean[]) {
+  values.forEach(value => mockedPromptBoolean.mockResolvedValueOnce(value))
+}
 
 describe('cCR config', () => {
   const CCR_CONFIG_DIR = join(homedir(), '.claude-code-router')
@@ -46,6 +55,8 @@ describe('cCR config', () => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
   })
 
   afterEach(() => {
@@ -343,7 +354,7 @@ describe('cCR config', () => {
 
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(existingConfig)
-      vi.mocked(inquirer.prompt).mockResolvedValue({ overwrite: false })
+      queuePromptBooleans(false)
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})
 
       const result = await setupCcrConfiguration()

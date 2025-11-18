@@ -14,6 +14,7 @@ import {
 import { configureCcrFeature, readCcrConfig } from '../ccr/config'
 import { installCcr, isCcrInstalled } from '../ccr/installer'
 import { handleExitPromptError, handleGeneralError } from '../error-handler'
+import { promptBoolean } from '../toggle-prompt'
 
 // Helper function to check if CCR is properly configured
 function isCcrConfigured(): boolean {
@@ -138,11 +139,9 @@ export async function showCcrMenu(): Promise<boolean> {
     // Ask if user wants to continue in CCR menu
     if (choice !== '0') {
       console.log(`\n${ansis.dim('─'.repeat(50))}\n`)
-      const { continueInCcr } = await inquirer.prompt<{ continueInCcr: boolean }>({
-        type: 'confirm',
-        name: 'continueInCcr',
+      const continueInCcr = await promptBoolean({
         message: i18n.t('common:returnToMenu'),
-        default: true,
+        defaultValue: true,
       })
 
       if (continueInCcr) {

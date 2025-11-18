@@ -1,11 +1,15 @@
 import type { UninstallOptions } from '../../src/commands/uninstall'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { uninstall } from '../../src/commands/uninstall'
+import { promptBoolean } from '../../src/utils/toggle-prompt'
 
 // Mock dependencies
 vi.mock('inquirer')
 vi.mock('../../src/i18n')
 vi.mock('../../src/utils/uninstaller')
+vi.mock('../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 // Mock modules
 const mockInquirer = vi.hoisted(() => ({
@@ -23,6 +27,11 @@ const mockUninstaller = vi.hoisted(() => ({
   })),
 }))
 
+const mockedPromptBoolean = vi.mocked(promptBoolean)
+function queuePromptBooleans(...values: boolean[]) {
+  values.forEach(value => mockedPromptBoolean.mockResolvedValueOnce(value))
+}
+
 vi.mocked(await import('inquirer')).default = mockInquirer as any
 vi.mocked(await import('../../src/i18n')).i18n = mockI18n as any
 vi.mocked(await import('../../src/utils/uninstaller')).ZcfUninstaller = mockUninstaller.ZcfUninstaller
@@ -30,6 +39,13 @@ vi.mocked(await import('../../src/utils/uninstaller')).ZcfUninstaller = mockUnin
 describe('uninstall command', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
+    mockInquirer.prompt.mockReset()
+    mockUninstaller.ZcfUninstaller.mockImplementation(() => ({
+      completeUninstall: vi.fn().mockResolvedValue({ success: true, removed: [], errors: [], warnings: [] }),
+      customUninstall: vi.fn().mockResolvedValue([{ success: true, removed: [], errors: [], warnings: [] }]),
+    }))
   })
 
   describe('interactive mode', () => {
@@ -38,6 +54,7 @@ describe('uninstall command', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
         .mockResolvedValueOnce({ confirm: true }) // Mock confirmation
+      queuePromptBooleans(true)
 
       await uninstall()
 
@@ -68,6 +85,7 @@ describe('uninstall command', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
         .mockResolvedValueOnce({ confirm: true })
+      queuePromptBooleans(true)
 
       await uninstall()
 
@@ -79,6 +97,7 @@ describe('uninstall command', () => {
         .mockResolvedValueOnce({ mainChoice: 'custom' })
         .mockResolvedValueOnce({ customItems: ['output-styles', 'commands'] })
         .mockResolvedValueOnce({ confirm: true })
+      queuePromptBooleans(true)
 
       const mockCustomUninstall = vi.fn().mockResolvedValue([
         { success: true, removed: [], errors: [], warnings: [] },
@@ -147,6 +166,8 @@ describe('uninstall command', () => {
         mode: 'complete',
       }
 
+      queuePromptBooleans(true)
+
       await uninstall(options)
 
       expect(mockCompleteUninstall).toHaveBeenCalled()
@@ -168,6 +189,8 @@ describe('uninstall command', () => {
         mode: 'custom',
         items: ['output-styles', 'commands'],
       }
+
+      queuePromptBooleans(true)
 
       await uninstall(options)
 
@@ -195,6 +218,8 @@ describe('uninstall command', () => {
         mode: 'complete',
       }
 
+      queuePromptBooleans(true)
+
       await uninstall(options)
 
       expect(mockCompleteUninstall).toHaveBeenCalled()
@@ -204,6 +229,7 @@ describe('uninstall command', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
         .mockResolvedValueOnce({ confirm: true })
+      queuePromptBooleans(true)
 
       await uninstall()
 
@@ -252,6 +278,7 @@ describe('uninstall command', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
         .mockResolvedValueOnce({ confirm: true })
+      queuePromptBooleans(true)
 
       await uninstall()
 

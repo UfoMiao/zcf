@@ -1,5 +1,6 @@
 import inquirer from 'inquirer'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { addProviderToExisting } from '../../../../src/utils/code-tools/codex-provider-manager'
 // Mock all external dependencies
 vi.mock('inquirer', () => ({
   default: {
@@ -37,6 +38,21 @@ vi.mock('../../../../src/utils/code-tools/codex-provider-manager', () => ({
   deleteProviders: vi.fn(),
   editExistingProvider: vi.fn(),
 }))
+vi.mock('../../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
+vi.mock('../../../../src/utils/json-config', () => ({
+  readJsonConfig: vi.fn(() => ({})),
+}))
+vi.mock('../../../../src/constants', () => ({
+  CODEX_AUTH_FILE: '/home/test/.codex/auth.json',
+}))
+vi.mock('../../../../src/config/api-providers', () => ({
+  getApiProviders: vi.fn(() => []),
+}))
+vi.mock('../../../../src/utils/code-tools/codex', () => ({
+  switchToProvider: vi.fn(),
+}))
 // Helper function to create complete CodexProvider objects
 function createMockProvider(
   id: string,
@@ -55,10 +71,16 @@ function createMockProvider(
   }
 }
 describe('codex-config-switch', () => {
-  beforeEach(() => {
+  let mockedPromptBoolean: any
+
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    // Get mocked promptBoolean
+    const togglePromptModule = await import('../../../../src/utils/toggle-prompt')
+    mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
   })
   describe('configureIncrementalManagement', () => {
     it('should handle no existing providers case', async () => {
@@ -129,7 +151,9 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'test-key',
         })
-        .mockResolvedValueOnce({ setAsDefault: false }) // Set as default prompt
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
         addedProvider: createMockProvider('test-provider', 'Test Provider'),
@@ -172,6 +196,7 @@ describe('codex-config-switch', () => {
           apiKey: 'updated-key',
         })
         .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model configuration
+      // handleEditProvider doesn't call promptBoolean on success
       vi.mocked(editExistingProvider).mockResolvedValue({
         success: true,
         updatedProvider: createMockProvider('provider1', 'Updated Provider'),
@@ -200,10 +225,13 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      // Reset mocks to ensure clean state
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' })
         .mockResolvedValueOnce({ selectedProviderIds: ['provider1'] })
-        .mockResolvedValueOnce({ confirmDelete: true })
+      mockedPromptBoolean.mockReset()
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirmDelete
       vi.mocked(deleteProviders).mockResolvedValue({
         success: true,
         newDefaultProvider: 'Provider 2',
@@ -223,7 +251,7 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
-      vi.mocked(inquirer.prompt).mockResolvedValue({ action: undefined })
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ action: undefined })
       await configureIncrementalManagement()
       expect(console.log).toHaveBeenCalledWith('common:skip')
     })
@@ -249,10 +277,17 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'test-key',
         })
-        .mockResolvedValueOnce({ setAsDefault: false })
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
+      vi.mocked(addProviderToExisting).mockResolvedValue({
+        success: true,
+        addedProvider: createMockProvider('test-provider', 'Test Provider'),
+      })
       await configureIncrementalManagement()
-      // Verify the prompt was called for add action
-      expect(inquirer.prompt).toHaveBeenCalledTimes(4)
+      // Verify the prompt was called for add action (action + selectedProvider + provider details)
+      // handleAddProvider calls: 1) selectedProvider, 2) provider details (name, baseUrl, wireApi, apiKey)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3) // action + selectedProvider + provider details
     })
     it('should validate base URL input', async () => {
       const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
@@ -274,10 +309,17 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'test-key',
         })
-        .mockResolvedValueOnce({ setAsDefault: false })
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
+      vi.mocked(addProviderToExisting).mockResolvedValue({
+        success: true,
+        addedProvider: createMockProvider('test-provider', 'Test Provider'),
+      })
       await configureIncrementalManagement()
-      // Verify the prompt was called for add action
-      expect(inquirer.prompt).toHaveBeenCalledTimes(4)
+      // Verify the prompt was called for add action (action + selectedProvider + provider details)
+      // handleAddProvider calls: 1) selectedProvider, 2) provider details (name, baseUrl, wireApi, apiKey)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3) // action + selectedProvider + provider details
     })
     it('should validate API key input', async () => {
       const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
@@ -299,10 +341,17 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'test-key',
         })
-        .mockResolvedValueOnce({ setAsDefault: false })
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
+      vi.mocked(addProviderToExisting).mockResolvedValue({
+        success: true,
+        addedProvider: createMockProvider('test-provider', 'Test Provider'),
+      })
       await configureIncrementalManagement()
-      // Verify the prompt was called for add action
-      expect(inquirer.prompt).toHaveBeenCalledTimes(4)
+      // Verify the prompt was called for add action (action + selectedProvider + provider details)
+      // handleAddProvider calls: 1) selectedProvider, 2) provider details (name, baseUrl, wireApi, apiKey)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(3) // action + selectedProvider + provider details
     })
     it('should generate correct provider ID from name', async () => {
       const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
@@ -325,7 +374,9 @@ describe('codex-config-switch', () => {
           wireApi: 'chat',
           apiKey: 'test-key',
         })
-        .mockResolvedValueOnce({ setAsDefault: false })
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
         addedProvider: createMockProvider('my-test-provider-', 'My Test Provider @#$'),
@@ -336,6 +387,7 @@ describe('codex-config-switch', () => {
           id: 'my-test-provider-',
           name: 'My Test Provider @#$',
           envKey: 'MY_TEST_PROVIDER__API_KEY',
+          model: 'gpt-5-codex', // Default model
         }),
         'test-key',
         true,
@@ -362,7 +414,9 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'test-key',
         })
-        .mockResolvedValueOnce({ setAsDefault: false })
+        .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model selection
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
         addedProvider: createMockProvider('test-provider', 'Test Provider'),
@@ -384,6 +438,7 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'add' })
         .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
@@ -393,6 +448,9 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'test-key',
         })
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockReset()
+      // No promptBoolean needed for failure case (no duplicate check since provider name is different)
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: false,
         error: 'Provider already exists',
@@ -421,7 +479,9 @@ describe('codex-config-switch', () => {
           wireApi: 'responses',
           apiKey: 'test-key',
         })
-        .mockResolvedValueOnce({ setAsDefault: false })
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
         addedProvider: createMockProvider('test-provider', 'Test Provider'),
@@ -447,6 +507,7 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'edit' })
         .mockResolvedValueOnce({ selectedProviderId: undefined })
@@ -466,6 +527,7 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'edit' })
         .mockResolvedValueOnce({ selectedProviderId: 'nonexistent' })
@@ -486,6 +548,7 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'edit' })
         .mockResolvedValueOnce({ selectedProviderId: 'provider1' }) // Provider selection
@@ -496,6 +559,7 @@ describe('codex-config-switch', () => {
           apiKey: 'updated-key',
         })
         .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model configuration
+      // No promptBoolean needed for failure case
       vi.mocked(editExistingProvider).mockResolvedValue({
         success: false,
         error: 'Edit failed',
@@ -517,6 +581,7 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'edit' })
         .mockResolvedValueOnce({ selectedProviderId: 'provider1' }) // Provider selection
@@ -527,6 +592,7 @@ describe('codex-config-switch', () => {
           apiKey: 'updated-key',
         })
         .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model configuration
+      // handleEditProvider doesn't call promptBoolean on success
       vi.mocked(editExistingProvider).mockResolvedValue({
         success: true,
         updatedProvider: createMockProvider('provider1', 'Updated Provider'),
@@ -555,6 +621,7 @@ describe('codex-config-switch', () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' })
         .mockResolvedValueOnce({ selectedProviderIds: [] })
+      // No promptBoolean needed when no providers selected
       await configureIncrementalManagement()
       expect(console.log).toHaveBeenCalledWith('common:cancelled')
     })
@@ -575,7 +642,7 @@ describe('codex-config-switch', () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' })
         .mockResolvedValueOnce({ selectedProviderIds: ['provider1'] })
-        .mockResolvedValueOnce({ confirmDelete: false })
+      mockedPromptBoolean.mockResolvedValueOnce(false) // confirmDelete
       await configureIncrementalManagement()
       expect(console.log).toHaveBeenCalledWith('common:cancelled')
     })
@@ -594,10 +661,12 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' })
         .mockResolvedValueOnce({ selectedProviderIds: ['provider1'] })
-        .mockResolvedValueOnce({ confirmDelete: true })
+      mockedPromptBoolean.mockReset()
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirmDelete
       vi.mocked(deleteProviders).mockResolvedValue({
         success: true,
         newDefaultProvider: 'Provider 2',
@@ -623,10 +692,12 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'delete' })
         .mockResolvedValueOnce({ selectedProviderIds: ['provider1'] })
-        .mockResolvedValueOnce({ confirmDelete: true })
+      mockedPromptBoolean.mockReset()
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirmDelete
       vi.mocked(deleteProviders).mockResolvedValue({
         success: false,
         error: 'Delete failed',
@@ -700,7 +771,7 @@ describe('codex-config-switch', () => {
           apiKey: 'test-key',
         })
         .mockResolvedValueOnce({ model: 'gpt-5-codex' })
-        .mockResolvedValueOnce({ setAsDefault: false })
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
         addedProvider: createMockProvider('provider1-copy', 'Provider 1-copy'),
@@ -726,12 +797,7 @@ describe('codex-config-switch', () => {
         currentProvider: 'Provider 1',
       })
 
-      // Mock switchToProvider
-      const mockSwitchToProvider = vi.fn().mockResolvedValue(true)
-      vi.doMock('../../../../src/utils/code-tools/codex', () => ({
-        switchToProvider: mockSwitchToProvider,
-      }))
-
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'copy' })
         .mockResolvedValueOnce({ selectedProviderId: 'provider1' })
@@ -742,7 +808,11 @@ describe('codex-config-switch', () => {
           apiKey: 'test-key',
         })
         .mockResolvedValueOnce({ model: 'gpt-5-codex' })
-        .mockResolvedValueOnce({ setAsDefault: true })
+      mockedPromptBoolean.mockReset()
+      mockedPromptBoolean.mockResolvedValueOnce(true) // setAsDefault
+      // Mock switchToProvider
+      const { switchToProvider } = await import('../../../../src/utils/code-tools/codex')
+      vi.mocked(switchToProvider).mockResolvedValue(true)
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
         addedProvider: createMockProvider('provider1-copy', 'Provider 1-copy'),
@@ -777,6 +847,7 @@ describe('codex-config-switch', () => {
           apiKey: 'test-key',
         })
         .mockResolvedValueOnce({ model: 'gpt-5-codex' })
+      // No need to mock promptBoolean since failure case doesn't reach it
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: false,
         error: 'Copy failed',
@@ -809,7 +880,7 @@ describe('codex-config-switch', () => {
           apiKey: 'test-key',
         })
         .mockResolvedValueOnce({ model: 'gpt-5-codex' })
-        .mockResolvedValueOnce({ setAsDefault: false })
+      mockedPromptBoolean.mockResolvedValueOnce(false) // setAsDefault
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
         addedProvider: createMockProvider('my-test-provider--copy', 'My Test Provider @#$ Copy'),
@@ -839,16 +910,24 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
-      vi.mocked(inquirer.prompt).mockRejectedValue(new Error('User interrupted'))
+      // Mock the action prompt to reject - this is the first inquirer.prompt call in configureIncrementalManagement
+      vi.mocked(inquirer.prompt)
+        .mockRejectedValueOnce(new Error('User interrupted'))
       await expect(configureIncrementalManagement()).rejects.toThrow('User interrupted')
     })
     it('should handle detectConfigManagementMode throwing error', async () => {
       const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
       const { detectConfigManagementMode } = await import('../../../../src/utils/code-tools/codex-config-detector')
-      vi.mocked(detectConfigManagementMode).mockImplementation(() => {
-        throw new Error('Config detection failed')
+      // detectConfigManagementMode has try-catch, so it returns error in result, not throws
+      vi.mocked(detectConfigManagementMode).mockReturnValue({
+        mode: 'initial',
+        hasProviders: false,
+        providerCount: 0,
+        error: 'Config detection failed',
       })
-      await expect(configureIncrementalManagement()).rejects.toThrow('Config detection failed')
+      await configureIncrementalManagement()
+      // Should log no existing providers message
+      expect(console.log).toHaveBeenCalledWith('codex:noExistingProviders')
     })
     it('should handle addProviderToExisting throwing error', async () => {
       const { configureIncrementalManagement } = await import('../../../../src/utils/code-tools/codex-config-switch')
@@ -862,15 +941,21 @@ describe('codex-config-switch', () => {
         providers: mockProviders,
         currentProvider: 'Provider 1',
       })
+      // Reset inquirer.prompt mock to ensure clean state
+      vi.mocked(inquirer.prompt).mockReset()
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'add' })
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
+        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection in handleAddProvider
         .mockResolvedValueOnce({
           providerName: 'Test Provider',
           baseUrl: 'https://api.test.com/v1',
           wireApi: 'responses',
           apiKey: 'test-key',
         })
+      // No model prompt - model comes from prefilledModel or default 'gpt-5-codex'
+      mockedPromptBoolean.mockReset() // Reset to ensure clean state
+      mockedPromptBoolean.mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      // No setAsDefault promptBoolean needed since addProviderToExisting will throw
       vi.mocked(addProviderToExisting).mockRejectedValue(new Error('Provider addition failed'))
       await expect(configureIncrementalManagement()).rejects.toThrow('Provider addition failed')
     })

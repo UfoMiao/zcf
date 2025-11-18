@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as ccrCommands from '../../../src/utils/ccr/commands'
 import * as ccrConfig from '../../../src/utils/ccr/config'
 import * as ccrInstaller from '../../../src/utils/ccr/installer'
+import { promptBoolean } from '../../../src/utils/toggle-prompt'
 import { showCcrMenu } from '../../../src/utils/tools/ccr-menu'
 
 vi.mock('node:fs')
@@ -17,12 +18,18 @@ vi.mock('../../../src/utils/error-handler', () => ({
   }),
   handleExitPromptError: vi.fn(),
 }))
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 describe('cCR Menu', () => {
   let consoleLogSpy: any
+  const mockedPromptBoolean = vi.mocked(promptBoolean)
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -58,7 +65,6 @@ describe('cCR Menu', () => {
   it('should handle initialize CCR option', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '1' })
-      .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue({ isInstalled: false, hasCorrectPackage: false })
     vi.mocked(ccrInstaller.installCcr).mockResolvedValue()
     vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue()
@@ -73,7 +79,6 @@ describe('cCR Menu', () => {
   it('should skip CCR installation if already installed', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '1' })
-      .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrInstaller.isCcrInstalled).mockResolvedValue({ isInstalled: true, hasCorrectPackage: true })
     vi.mocked(ccrConfig.configureCcrFeature).mockResolvedValue()
 
@@ -87,7 +92,6 @@ describe('cCR Menu', () => {
   it('should handle start UI option', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '2' })
-      .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrUi).mockResolvedValue()
 
     await showCcrMenu()
@@ -98,7 +102,6 @@ describe('cCR Menu', () => {
   it('should handle check status option', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '3' })
-      .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrStatus).mockResolvedValue()
 
     await showCcrMenu()
@@ -109,7 +112,6 @@ describe('cCR Menu', () => {
   it('should handle restart option', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '4' })
-      .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrRestart).mockResolvedValue()
 
     await showCcrMenu()
@@ -120,7 +122,6 @@ describe('cCR Menu', () => {
   it('should handle start option', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '5' })
-      .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrStart).mockResolvedValue()
 
     await showCcrMenu()
@@ -131,7 +132,6 @@ describe('cCR Menu', () => {
   it('should handle stop option', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '6' })
-      .mockResolvedValueOnce({ continueInCcr: false })
     vi.mocked(ccrCommands.runCcrStop).mockResolvedValue()
 
     await showCcrMenu()
@@ -150,13 +150,14 @@ describe('cCR Menu', () => {
   it('should loop back to menu when continue is selected', async () => {
     vi.mocked(inquirer.prompt)
       .mockResolvedValueOnce({ choice: '3' })
-      .mockResolvedValueOnce({ continueInCcr: true })
       .mockResolvedValueOnce({ choice: '0' })
+    mockedPromptBoolean.mockResolvedValueOnce(true).mockResolvedValue(false)
     vi.mocked(ccrCommands.runCcrStatus).mockResolvedValue()
 
     await showCcrMenu()
 
     expect(ccrCommands.runCcrStatus).toHaveBeenCalledTimes(1)
-    expect(inquirer.prompt).toHaveBeenCalledTimes(3)
+    expect(mockedPromptBoolean).toHaveBeenCalledTimes(1)
+    expect(inquirer.prompt).toHaveBeenCalledTimes(2)
   })
 })

@@ -77,6 +77,7 @@
     "i18next": "catalog:runtime",
     "i18next-fs-backend": "catalog:runtime",
     "inquirer": "catalog:cli",
+    "inquirer-toggle": "catalog:cli",
     "ora": "catalog:cli",
     "pathe": "catalog:runtime",
     "semver": "catalog:runtime",

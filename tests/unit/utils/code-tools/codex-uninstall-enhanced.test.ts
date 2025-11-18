@@ -1,6 +1,7 @@
 import type { CodexUninstallItem } from '../../../../src/utils/code-tools/codex-uninstaller'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runCodexUninstall } from '../../../../src/utils/code-tools/codex'
+import { promptBoolean } from '../../../../src/utils/toggle-prompt'
 
 // Mock dependencies
 vi.mock('../../../../src/i18n', () => ({
@@ -45,6 +46,10 @@ const mockReadZcfConfig = vi.hoisted(() => vi.fn(() => ({
 } as any)))
 vi.mock('../../../../src/utils/zcf-config', () => ({
   readZcfConfig: mockReadZcfConfig,
+}))
+
+vi.mock('../../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
 }))
 
 // Import mocked functions
@@ -100,7 +105,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
     it('should prompt for uninstall mode selection', async () => {
       mockInquirerPrompt
         .mockResolvedValueOnce({ mode: 'complete' }) // Mode selection
-        .mockResolvedValueOnce({ confirm: true }) // Confirmation
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       mockUninstaller.completeUninstall.mockResolvedValue({
         success: true,
@@ -155,7 +160,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
     it('should perform complete uninstall with confirmation', async () => {
       mockInquirerPrompt
         .mockResolvedValueOnce({ mode: 'complete' }) // Mode selection
-        .mockResolvedValueOnce({ confirm: true }) // Confirmation
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       const mockResult = {
         success: true,
@@ -169,12 +174,10 @@ describe('runCodexUninstall - Enhanced Version', () => {
 
       await runCodexUninstall()
 
-      expect(mockInquirerPrompt).toHaveBeenCalledWith([{
-        type: 'confirm',
-        name: 'confirm',
+      expect(promptBoolean).toHaveBeenCalledWith({
         message: 'mocked_codex:uninstallPrompt',
-        default: false,
-      }])
+        defaultValue: false,
+      })
 
       expect(mockUninstaller.completeUninstall).toHaveBeenCalledTimes(1)
       expect(mockConsoleLog).toHaveBeenCalledWith('mocked_codex:uninstallSuccess')
@@ -183,7 +186,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
     it('should handle cancelled complete uninstall confirmation', async () => {
       mockInquirerPrompt
         .mockResolvedValueOnce({ mode: 'complete' }) // Mode selection
-        .mockResolvedValueOnce({ confirm: false }) // Cancelled confirmation
+      vi.mocked(promptBoolean).mockResolvedValueOnce(false)
 
       await runCodexUninstall()
 
@@ -194,7 +197,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
     it('should display warnings and errors from complete uninstall', async () => {
       mockInquirerPrompt
         .mockResolvedValueOnce({ mode: 'complete' })
-        .mockResolvedValueOnce({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       const mockResult = {
         success: false,
@@ -306,7 +309,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
     it('should handle complete uninstall execution failure', async () => {
       mockInquirerPrompt
         .mockResolvedValueOnce({ mode: 'complete' })
-        .mockResolvedValueOnce({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       mockUninstaller.completeUninstall.mockRejectedValue(new Error('Uninstall execution failed'))
 
@@ -328,7 +331,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
     it('should report successful removals', async () => {
       mockInquirerPrompt
         .mockResolvedValueOnce({ mode: 'complete' })
-        .mockResolvedValueOnce({ confirm: true })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
 
       const mockResult = {
         success: true,

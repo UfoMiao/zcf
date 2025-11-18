@@ -46,6 +46,7 @@ import { configureOutputStyle } from '../utils/output-style'
 import { isTermux, isWindows } from '../utils/platform'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
 import { resolveAiOutputLanguage } from '../utils/prompts'
+import { promptBoolean } from '../utils/toggle-prompt'
 import { formatApiKeyDisplay } from '../utils/validator'
 import { checkClaudeCodeVersionAndPrompt } from '../utils/version-checker'
 import { selectAndInstallWorkflows } from '../utils/workflow-installer'
@@ -511,17 +512,10 @@ export async function init(options: InitOptions = {}): Promise<void> {
         await installClaudeCode()
       }
       else {
-        const { shouldInstall } = await inquirer.prompt<{ shouldInstall: boolean }>({
-          type: 'confirm',
-          name: 'shouldInstall',
+        const shouldInstall = await promptBoolean({
           message: i18n.t('installation:installPrompt'),
-          default: true,
+          defaultValue: true,
         })
-
-        if (shouldInstall === undefined) {
-          console.log(ansis.yellow(i18n.t('common:cancelled')))
-          process.exit(0)
-        }
 
         if (shouldInstall) {
           await installClaudeCode()
@@ -816,17 +810,10 @@ export async function init(options: InitOptions = {}): Promise<void> {
         shouldConfigureMcp = options.mcpServices !== false
       }
       else {
-        const { shouldConfigureMcp: userChoice } = await inquirer.prompt<{ shouldConfigureMcp: boolean }>({
-          type: 'confirm',
-          name: 'shouldConfigureMcp',
+        const userChoice = await promptBoolean({
           message: i18n.t('mcp:configureMcp'),
-          default: true,
+          defaultValue: true,
         })
-
-        if (userChoice === undefined) {
-          console.log(ansis.yellow(i18n.t('common:cancelled')))
-          process.exit(0)
-        }
 
         shouldConfigureMcp = userChoice
       }
@@ -937,17 +924,10 @@ export async function init(options: InitOptions = {}): Promise<void> {
         shouldInstallCometix = options.installCometixLine !== false
       }
       else {
-        const { shouldInstallCometix: userChoice } = await inquirer.prompt<{ shouldInstallCometix: boolean }>({
-          type: 'confirm',
-          name: 'shouldInstallCometix',
+        const userChoice = await promptBoolean({
           message: i18n.t('cometix:installCometixPrompt'),
-          default: true,
+          defaultValue: true,
         })
-
-        if (userChoice === undefined) {
-          console.log(ansis.yellow(i18n.t('common:cancelled')))
-          process.exit(0)
-        }
 
         shouldInstallCometix = userChoice
       }

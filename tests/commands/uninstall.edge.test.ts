@@ -9,6 +9,9 @@ vi.mock('../../src/i18n')
 vi.mock('../../src/utils/uninstaller')
 vi.mock('../../src/utils/error-handler')
 vi.mock('../../src/utils/prompt-helpers')
+vi.mock('../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 // Enhanced mock modules for edge cases
 const mockInquirer = vi.hoisted(() => ({
@@ -77,8 +80,9 @@ vi.mocked(ansisModule).default = mockAnsis as any
 describe('uninstall command - Edge Cases', () => {
   let mockUninstallerInstance: any
   let consoleSpy: any
+  let mockedPromptBoolean: any
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockUninstallerInstance = {
       completeUninstall: vi.fn(),
       customUninstall: vi.fn(),
@@ -87,6 +91,12 @@ describe('uninstall command - Edge Cases', () => {
 
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.clearAllMocks()
+
+    // Get mocked promptBoolean
+    const togglePromptModule = await import('../../src/utils/toggle-prompt')
+    mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
+    // Default promptBoolean to return false to avoid hanging
+    mockedPromptBoolean.mockResolvedValue(false)
   })
 
   afterEach(() => {
@@ -98,7 +108,7 @@ describe('uninstall command - Edge Cases', () => {
       mockUninstallerInstance.customUninstall.mockResolvedValue([
         { success: true, removed: [], errors: [], warnings: [] },
       ])
-      mockInquirer.prompt.mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       const options: UninstallOptions = {
         mode: 'custom',
@@ -118,7 +128,7 @@ describe('uninstall command - Edge Cases', () => {
       mockUninstallerInstance.customUninstall.mockResolvedValue([
         { success: true, removed: [], errors: [], warnings: [] },
       ])
-      mockInquirer.prompt.mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       const options: UninstallOptions = {
         mode: 'custom',
@@ -146,7 +156,7 @@ describe('uninstall command - Edge Cases', () => {
       mockUninstallerInstance.customUninstall.mockResolvedValue([
         { success: true, removed: [], errors: [], warnings: [] },
       ])
-      mockInquirer.prompt.mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       const options: UninstallOptions = {
         mode: 'custom',
@@ -163,7 +173,7 @@ describe('uninstall command - Edge Cases', () => {
     it('should initialize with zh-CN language', async () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: false }) // User cancels
+        // promptBoolean will return false by default // User cancels
 
       const options: UninstallOptions = {
         lang: 'zh-CN',
@@ -177,7 +187,7 @@ describe('uninstall command - Edge Cases', () => {
     it('should handle default language when not specified', async () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: false })
+        // promptBoolean will return false by default
 
       await uninstall()
 
@@ -207,7 +217,7 @@ describe('uninstall command - Edge Cases', () => {
     it('should handle complete uninstall cancellation', async () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: false })
+        // promptBoolean will return false by default
 
       await uninstall()
 
@@ -241,7 +251,7 @@ describe('uninstall command - Edge Cases', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'custom' })
         .mockResolvedValueOnce({ customItems: ['output-styles'] })
-        .mockResolvedValueOnce({ confirm: false })
+        // promptBoolean will return false by default
 
       await uninstall()
 
@@ -266,7 +276,7 @@ describe('uninstall command - Edge Cases', () => {
     it('should handle invalid mode', async () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: false })
+        // promptBoolean will return false by default
 
       const options: UninstallOptions = {
         mode: 'invalid' as any,
@@ -319,7 +329,7 @@ describe('uninstall command - Edge Cases', () => {
       mockUninstallerInstance.completeUninstall.mockRejectedValue(new Error('Complete uninstall failed'))
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
       mockErrorHandler.handleExitPromptError.mockReturnValue(false)
 
       await uninstall()
@@ -334,7 +344,7 @@ describe('uninstall command - Edge Cases', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'custom' })
         .mockResolvedValueOnce({ customItems: ['output-styles'] })
-        .mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
       mockErrorHandler.handleExitPromptError.mockReturnValue(false)
 
       await uninstall()
@@ -355,7 +365,7 @@ describe('uninstall command - Edge Cases', () => {
       })
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       await uninstall()
 
@@ -374,7 +384,7 @@ describe('uninstall command - Edge Cases', () => {
       })
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       await uninstall()
 
@@ -402,7 +412,7 @@ describe('uninstall command - Edge Cases', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'custom' })
         .mockResolvedValueOnce({ customItems: ['output-styles', 'commands'] })
-        .mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       await uninstall()
 
@@ -424,7 +434,7 @@ describe('uninstall command - Edge Cases', () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'custom' })
         .mockResolvedValueOnce({ customItems: ['output-styles'] })
-        .mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       // Clear previous calls to i18n.t
       mockI18n.i18n.t.mockClear()
@@ -447,7 +457,7 @@ describe('uninstall command - Edge Cases', () => {
 
     it('should handle empty results gracefully', async () => {
       mockUninstallerInstance.customUninstall.mockResolvedValue([])
-      mockInquirer.prompt.mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       const options: UninstallOptions = {
         mode: 'custom',
@@ -465,7 +475,7 @@ describe('uninstall command - Edge Cases', () => {
     it('should use i18n for all user-facing messages', async () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       mockUninstallerInstance.completeUninstall.mockResolvedValue({
         success: true,
@@ -491,7 +501,7 @@ describe('uninstall command - Edge Cases', () => {
     it('should use addNumbersToChoices for main menu', async () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'complete' })
-        .mockResolvedValueOnce({ confirm: false })
+        // promptBoolean will return false by default
 
       await uninstall()
 

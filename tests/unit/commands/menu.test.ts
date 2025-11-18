@@ -70,6 +70,10 @@ vi.mock('../../../src/utils/error-handler', () => ({
   handleGeneralError: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
+
 // Mock i18n system
 vi.mock('../../../src/i18n', () => ({
   initI18n: vi.fn().mockResolvedValue(undefined),
@@ -83,11 +87,20 @@ vi.mock('../../../src/i18n', () => ({
 }))
 
 describe('menu command', () => {
+  let mockedPromptBoolean: ReturnType<typeof vi.fn>
+  const queuePromptBooleans = (...values: boolean[]) => {
+    values.forEach(value => mockedPromptBoolean.mockResolvedValueOnce(value))
+  }
+
   beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(process, 'exit').mockImplementation((() => {}) as any)
+    const togglePromptModule = await import('../../../src/utils/toggle-prompt')
+    mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
 
     // Initialize i18n for test environment
     const { initI18n } = await import('../../../src/i18n')
@@ -152,7 +165,7 @@ describe('menu command', () => {
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '1' })
-        .mockResolvedValueOnce({ continue: false })
+      queuePromptBooleans(false)
       vi.mocked(init).mockResolvedValue(undefined)
 
       await showMainMenu()
@@ -168,7 +181,7 @@ describe('menu command', () => {
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '3' })
-        .mockResolvedValueOnce({ continue: false })
+      queuePromptBooleans(false)
       vi.mocked(configureApiFeature).mockResolvedValue(undefined)
 
       await showMainMenu()
@@ -184,7 +197,7 @@ describe('menu command', () => {
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '4' })
-        .mockResolvedValueOnce({ continue: false })
+      queuePromptBooleans(false)
       vi.mocked(configureMcpFeature).mockResolvedValue(undefined)
 
       await showMainMenu()
@@ -216,7 +229,7 @@ describe('menu command', () => {
       vi.mocked(readZcfConfigAsync).mockResolvedValue({ preferredLang: 'zh-CN', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: 'u' })
-        .mockResolvedValueOnce({ continue: false })
+      queuePromptBooleans(false)
       vi.mocked(runCcusageFeature).mockResolvedValue(undefined)
 
       await showMainMenu()
@@ -232,7 +245,7 @@ describe('menu command', () => {
       vi.mocked(readZcfConfigAsync).mockResolvedValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: 'u' })
-        .mockResolvedValueOnce({ continue: false })
+      queuePromptBooleans(false)
       vi.mocked(runCcusageFeature).mockResolvedValue(undefined)
 
       await showMainMenu()
@@ -295,7 +308,7 @@ describe('menu command', () => {
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '1' })
-        .mockResolvedValueOnce({ continue: false })
+      queuePromptBooleans(false)
 
       await showMainMenu()
 
@@ -310,8 +323,7 @@ describe('menu command', () => {
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '-' })
-        .mockResolvedValueOnce({ confirm: true })
-        .mockResolvedValueOnce({ continue: false })
+      queuePromptBooleans(true, false)
 
       await showMainMenu()
 
@@ -462,8 +474,8 @@ describe('menu command', () => {
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ choice: '1' }) // Full initialization
-        .mockResolvedValueOnce({ continue: false }) // Don't continue after init
+        .mockResolvedValueOnce({ choice: '1' })
+      queuePromptBooleans(false)
 
       await showMainMenu()
 
@@ -477,8 +489,8 @@ describe('menu command', () => {
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ choice: '1' }) // Full initialization
-        .mockResolvedValueOnce({ continue: false }) // Don't continue after init
+        .mockResolvedValueOnce({ choice: '1' })
+      queuePromptBooleans(false)
 
       await showMainMenu()
 

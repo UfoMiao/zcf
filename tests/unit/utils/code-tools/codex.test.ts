@@ -52,6 +52,9 @@ vi.mock('inquirer', () => ({
   },
   prompt: vi.fn(),
 }))
+vi.mock('../../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 vi.mock('tinyexec', () => ({
   x: vi.fn(),
@@ -176,9 +179,13 @@ vi.mock('../../../../src/utils/prompts', () => ({
   resolveSystemPromptStyle: vi.fn(() => Promise.resolve('engineer-professional')),
 }))
 
+const togglePromptModule = await import('../../../../src/utils/toggle-prompt')
+const mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
+
 describe('codex code tool utilities', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
+    mockedPromptBoolean.mockReset()
 
     // Setup default inquirer mocks for all tests
     const inquirer = await import('inquirer')
@@ -256,8 +263,12 @@ describe('codex code tool utilities', () => {
         apiKey: 'secret',
       })
       .mockResolvedValueOnce({ model: 'gpt-5-codex' }) // Model selection for custom provider
-      .mockResolvedValueOnce({ addAnother: false })
       .mockResolvedValueOnce({ defaultProvider: 'packycode' })
+
+    // Mock promptBoolean for addAnother and shouldOverwrite
+    mockedPromptBoolean
+      .mockResolvedValueOnce(false) // shouldOverwrite (no duplicate)
+      .mockResolvedValueOnce(false) // addAnother
 
     const fsOps = await import('../../../../src/utils/fs-operations')
     vi.mocked(fsOps.exists).mockImplementation((path) => {
@@ -320,7 +331,13 @@ describe('codex code tool utilities', () => {
     writeFileMock.mockClear()
     copyDirMock.mockClear()
 
+    // Mock promptBoolean (not used in official mode, but clear any previous mocks)
+    mockedPromptBoolean.mockClear()
+
     await codexModule.configureCodexApi()
+
+    // Verify that writeJsonConfig was called
+    expect(jsonModule.writeJsonConfig).toHaveBeenCalled()
 
     // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
     // This test validates the core functionality but backup verification is handled by dedicated backup tests
@@ -582,8 +599,7 @@ describe('codex code tool utilities', () => {
   // TDD Tests for enhanced runCodexUpdate function
   describe('runCodexUpdate interactive functionality', () => {
     it('should display version information and prompt for confirmation', async () => {
-      const inquirer = await import('inquirer')
-      const mockedInquirer = vi.mocked(inquirer.default)
+      await import('inquirer')
       const { x } = await import('tinyexec')
       const mockedX = vi.mocked(x)
 
@@ -604,7 +620,7 @@ describe('codex code tool utilities', () => {
       })
 
       // Mock user confirmation
-      mockedInquirer.prompt.mockResolvedValueOnce({ confirm: true })
+      mockedPromptBoolean.mockResolvedValueOnce(true)
 
       // Mock successful npm install
       mockedX.mockResolvedValueOnce({
@@ -616,13 +632,11 @@ describe('codex code tool utilities', () => {
       const { runCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
       await runCodexUpdate()
 
-      // Verify that inquirer was called with correct default
-      expect(mockedInquirer.prompt).toHaveBeenCalledWith({
-        type: 'confirm',
-        name: 'confirm',
+      // Verify that toggle prompt was called with correct default
+      expect(mockedPromptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('Codex'),
-        default: true,
-      })
+        defaultValue: true,
+      }))
     })
 
     it('should skip update when user declines confirmation', async () => {
@@ -636,7 +650,7 @@ describe('codex code tool utilities', () => {
       mockedX.mockReset()
       mockedInquirer.prompt.mockReset()
 
-      // Mock getCodexVersion call
+      // Mock getCodexVersion call (npm list -g --depth=0)
       mockedX.mockResolvedValueOnce({
         exitCode: 0,
         stdout: '@openai/codex@1.0.0 /usr/local/lib/node_modules/@openai/codex',
@@ -653,7 +667,7 @@ describe('codex code tool utilities', () => {
       })
 
       // Mock user declining update
-      mockedInquirer.prompt.mockResolvedValueOnce({ confirm: false })
+      mockedPromptBoolean.mockResolvedValueOnce(false)
 
       const { runCodexUpdate } = await import('../../../../src/utils/code-tools/codex')
       const result = await runCodexUpdate()
@@ -661,6 +675,7 @@ describe('codex code tool utilities', () => {
       // Should return true (completed successfully) but not call install
       expect(result).toBe(true)
       // Should not attempt npm install after user declined
+      // getCodexVersion (npm list) + checkCodexUpdate (npm view) = 2 calls
       expect(mockedX).toHaveBeenCalledTimes(2) // Only version checks, no install
     })
 

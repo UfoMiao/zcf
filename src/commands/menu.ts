@@ -18,6 +18,7 @@ import {
   configureMcpFeature,
 } from '../utils/features'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
+import { promptBoolean } from '../utils/toggle-prompt'
 import { runCcrMenuFeature, runCcusageFeature, runCometixMenuFeature } from '../utils/tools'
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config'
 import { checkUpdates } from './check-updates'
@@ -234,11 +235,9 @@ async function showClaudeCodeMenu(): Promise<MenuResult> {
 
   printSeparator()
 
-  const { continue: shouldContinue } = await inquirer.prompt<{ continue: boolean }>({
-    type: 'confirm',
-    name: 'continue',
+  const shouldContinue = await promptBoolean({
     message: i18n.t('common:returnToMenu'),
-    default: true,
+    defaultValue: true,
   })
 
   if (!shouldContinue) {
@@ -345,11 +344,9 @@ async function showCodexMenu(): Promise<MenuResult> {
 
   printSeparator()
 
-  const { continue: shouldContinue } = await inquirer.prompt<{ continue: boolean }>({
-    type: 'confirm',
-    name: 'continue',
+  const shouldContinue = await promptBoolean({
     message: i18n.t('common:returnToMenu'),
-    default: true,
+    defaultValue: true,
   })
 
   if (!shouldContinue) {

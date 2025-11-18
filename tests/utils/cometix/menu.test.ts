@@ -32,13 +32,20 @@ vi.mock('../../../src/utils/error-handler', () => ({
   handleGeneralError: vi.fn(),
   handleExitPromptError: vi.fn(() => false),
 }))
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
 
 describe('cCometixLine menu', () => {
   let consoleLogSpy: any
+  let mockedPromptBoolean: any
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    // Get mocked promptBoolean
+    const togglePromptModule = await import('../../../src/utils/toggle-prompt')
+    mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
   })
 
   afterEach(() => {
@@ -67,7 +74,7 @@ describe('cCometixLine menu', () => {
     it('should handle install or update option (choice 1)', async () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '1' })
-        .mockResolvedValueOnce({ continueInCometix: false })
+      mockedPromptBoolean.mockResolvedValueOnce(false) // continueInCometix
 
       vi.mocked(installer.installCometixLine).mockResolvedValue()
 
@@ -80,7 +87,7 @@ describe('cCometixLine menu', () => {
     it('should handle print config option (choice 2)', async () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '2' })
-        .mockResolvedValueOnce({ continueInCometix: false })
+      mockedPromptBoolean.mockResolvedValueOnce(false) // continueInCometix
 
       vi.mocked(commands.runCometixPrintConfig).mockResolvedValue()
 
@@ -93,7 +100,7 @@ describe('cCometixLine menu', () => {
     it('should handle custom config TUI option (choice 3)', async () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '3' })
-        .mockResolvedValueOnce({ continueInCometix: false })
+      mockedPromptBoolean.mockResolvedValueOnce(false) // continueInCometix
 
       vi.mocked(commands.runCometixTuiConfig).mockResolvedValue()
 
@@ -139,14 +146,15 @@ describe('cCometixLine menu', () => {
     it('should handle continue in menu flow', async () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ choice: '1' })
-        .mockResolvedValueOnce({ continueInCometix: true })
         .mockResolvedValueOnce({ choice: '0' })
+      mockedPromptBoolean.mockResolvedValueOnce(true) // continueInCometix
 
       vi.mocked(installer.installCometixLine).mockResolvedValue()
 
       await showCometixMenu()
 
-      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(2)
+      expect(mockedPromptBoolean).toHaveBeenCalledTimes(1)
       expect(installer.installCometixLine).toHaveBeenCalledTimes(1)
     })
 

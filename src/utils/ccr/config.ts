@@ -13,6 +13,7 @@ import { ensureI18nInitialized, i18n } from '../../i18n'
 import { addCompletedOnboarding, setPrimaryApiKey } from '../claude-config'
 import { backupExistingConfig } from '../config'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
+import { promptBoolean } from '../toggle-prompt'
 import { fetchProviderPresets } from './presets'
 
 const execAsync = promisify(exec)
@@ -297,13 +298,10 @@ export async function setupCcrConfiguration(): Promise<boolean> {
       console.log(ansis.blue(`ℹ ${i18n.t('ccr:existingCcrConfig')}`))
       let shouldBackupAndReconfigure = false
       try {
-        const result = await inquirer.prompt<{ overwrite: boolean }>({
-          type: 'confirm',
-          name: 'overwrite',
+        shouldBackupAndReconfigure = await promptBoolean({
           message: i18n.t('ccr:overwriteCcrConfig'),
-          default: false,
+          defaultValue: false,
         })
-        shouldBackupAndReconfigure = result.overwrite
       }
       catch (error: any) {
         if (error.name === 'ExitPromptError') {

@@ -80,6 +80,10 @@ vi.mock('../../../src/utils/platform', () => ({
   isWindows: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/toggle-prompt', () => ({
+  promptBoolean: vi.fn(),
+}))
+
 // Mock Codex-related functions
 vi.mock('../../../src/utils/code-tools/codex', () => ({
   readCodexConfig: vi.fn(),
@@ -114,11 +118,20 @@ vi.mock('../../../src/utils/features', async (importOriginal) => {
   }
 })
 
+const togglePromptModule = await import('../../../src/utils/toggle-prompt')
+const mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
+function queuePromptBooleans(...values: boolean[]) {
+  values.forEach(value => mockedPromptBoolean.mockResolvedValueOnce(value))
+}
+
 describe('features utilities', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.mocked(inquirer.prompt).mockReset()
+    mockedPromptBoolean.mockReset()
+    mockedPromptBoolean.mockResolvedValue(false)
   })
 
   it('should load features module', async () => {
@@ -241,15 +254,14 @@ describe('features utilities', () => {
       const configModule = await import('../../../src/utils/config')
 
       vi.mocked(configModule.getExistingModelConfig).mockReturnValue('sonnet')
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ modify: true })
-        .mockResolvedValueOnce({ model: 'opus' })
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ model: 'opus' })
+      queuePromptBooleans(true)
       vi.mocked(configModule.updateDefaultModel).mockResolvedValue(undefined)
 
       await configureDefaultModelFeature()
 
       expect(configModule.getExistingModelConfig).toHaveBeenCalled()
-      expect(inquirer.prompt).toHaveBeenCalledTimes(2)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(1)
       expect(configModule.updateDefaultModel).toHaveBeenCalledWith('opus')
     })
 
@@ -258,12 +270,12 @@ describe('features utilities', () => {
       const { updateDefaultModel, getExistingModelConfig } = await import('../../../src/utils/config')
 
       vi.mocked(getExistingModelConfig).mockReturnValue('opus')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ modify: false })
+      queuePromptBooleans(false)
 
       await configureDefaultModelFeature()
 
       expect(getExistingModelConfig).toHaveBeenCalled()
-      expect(inquirer.prompt).toHaveBeenCalledTimes(1)
+      expect(inquirer.prompt).not.toHaveBeenCalled()
       expect(updateDefaultModel).not.toHaveBeenCalled()
     })
 
@@ -297,14 +309,13 @@ describe('features utilities', () => {
       const { getExistingModelConfig } = await import('../../../src/utils/config')
 
       vi.mocked(getExistingModelConfig).mockReturnValue('opus')
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ modify: true })
-        .mockResolvedValueOnce({ model: 'sonnet' })
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ model: 'sonnet' })
+      queuePromptBooleans(true)
 
       await configureDefaultModelFeature()
 
-      const secondCall = vi.mocked(inquirer.prompt).mock.calls[1][0] as any
-      expect(secondCall.default).toBe(1) // 'opus' is at index 1 in ['default', 'opus', 'custom']
+      const modelPrompt = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
+      expect(modelPrompt.default).toBe(1) // 'opus' is at index 1
     })
 
     it('should show custom model option in choices', async () => {
@@ -389,16 +400,15 @@ describe('features utilities', () => {
       const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
 
       vi.mocked(readZcfConfig).mockReturnValue({ aiOutputLang: 'en' } as any)
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ option: 'language' })
-        .mockResolvedValueOnce({ modify: true })
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ option: 'language' })
+      queuePromptBooleans(true)
       vi.mocked(selectAiOutputLanguage).mockResolvedValue('zh-CN')
       vi.mocked(applyAiLanguageDirective).mockResolvedValue(undefined)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
 
       await configureAiMemoryFeature()
 
-      expect(inquirer.prompt).toHaveBeenCalledTimes(2)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(1)
       expect(selectAiOutputLanguage).toHaveBeenCalled()
       expect(applyAiLanguageDirective).toHaveBeenCalledWith('zh-CN')
     })
@@ -410,9 +420,8 @@ describe('features utilities', () => {
       const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
 
       vi.mocked(readZcfConfig).mockReturnValue({ aiOutputLang: 'chinese-simplified' } as any)
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ option: 'language' })
-        .mockResolvedValueOnce({ modify: false })
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ option: 'language' })
+      queuePromptBooleans(false)
 
       await configureAiMemoryFeature()
 

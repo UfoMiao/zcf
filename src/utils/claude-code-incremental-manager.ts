@@ -4,6 +4,7 @@ import inquirer from 'inquirer'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { ClaudeCodeConfigManager } from './claude-code-config-manager'
 import { addNumbersToChoices } from './prompt-helpers'
+import { promptBoolean } from './toggle-prompt'
 import { validateApiKey } from './validator'
 // Inline i18n helper to avoid extra file
 function getAuthTypeLabel(authType: ClaudeCodeProfile['authType']): string {
@@ -81,14 +82,10 @@ export async function configureIncrementalManagement(): Promise<void> {
 }
 
 async function promptContinueAdding(): Promise<boolean> {
-  const { continueAdding } = await inquirer.prompt<{ continueAdding: boolean }>([{
-    type: 'confirm',
-    name: 'continueAdding',
+  return await promptBoolean({
     message: i18n.t('multi-config:addAnotherProfilePrompt'),
-    default: false,
-  }])
-
-  return continueAdding
+    defaultValue: false,
+  })
 }
 
 /**
@@ -215,14 +212,10 @@ async function handleAddProfile(): Promise<void> {
   }
 
   // Continue with setAsDefault prompt
-  const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([
-    {
-      type: 'confirm',
-      name: 'setAsDefault',
-      message: i18n.t('multi-config:setAsDefaultPrompt'),
-      default: true,
-    },
-  ])
+  const setAsDefault = await promptBoolean({
+    message: i18n.t('multi-config:setAsDefaultPrompt'),
+    defaultValue: true,
+  })
 
   // Create profile object
   const profileName = answers.profileName.trim()
@@ -258,15 +251,13 @@ async function handleAddProfile(): Promise<void> {
 
   const existingProfile = ClaudeCodeConfigManager.getProfileByName(profile.name)
   if (existingProfile) {
-    const { overwrite } = await inquirer.prompt<{ overwrite: boolean }>([{
-      type: 'confirm',
-      name: 'overwrite',
+    const overwrite = await promptBoolean({
       message: i18n.t('multi-config:profileDuplicatePrompt', {
         name: profile.name,
         source: i18n.t('multi-config:existingConfig'),
       }),
-      default: false,
-    }])
+      defaultValue: false,
+    })
 
     if (!overwrite) {
       console.log(ansis.yellow(i18n.t('multi-config:profileDuplicateSkipped', { name: profile.name })))
@@ -593,14 +584,10 @@ async function handleCopyProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
   }
 
   // Ask if set as default
-  const { setAsDefault } = await inquirer.prompt<{ setAsDefault: boolean }>([
-    {
-      type: 'confirm',
-      name: 'setAsDefault',
-      message: i18n.t('multi-config:setAsDefaultPrompt'),
-      default: false,
-    },
-  ])
+  const setAsDefault = await promptBoolean({
+    message: i18n.t('multi-config:setAsDefaultPrompt'),
+    defaultValue: false,
+  })
 
   // Create copied profile object
   const profileName = answers.profileName.trim()
@@ -688,12 +675,10 @@ async function handleDeleteProfile(profiles: ClaudeCodeProfile[]): Promise<void>
     profiles.find(p => p.id === id)?.name || id,
   )
 
-  const { confirmed } = await inquirer.prompt<{ confirmed: boolean }>([{
-    type: 'confirm',
-    name: 'confirmed',
+  const confirmed = await promptBoolean({
     message: i18n.t('multi-config:confirmDeleteProfiles', { providers: selectedNames.join(', ') }),
-    default: false,
-  }])
+    defaultValue: false,
+  })
 
   if (!confirmed) {
     console.log(ansis.yellow(i18n.t('common:cancelled')))
