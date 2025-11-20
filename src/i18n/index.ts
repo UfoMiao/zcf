@@ -12,6 +12,7 @@ export const i18n: I18nInstance = i18next.createInstance()
 
 // All available namespaces based on current project structure
 const NAMESPACES = [
+  'clear',
   'common',
   'api',
   'ccr',

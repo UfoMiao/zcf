@@ -5,6 +5,7 @@ import { version } from '../package.json'
 import { ccr } from './commands/ccr'
 import { executeCcusage } from './commands/ccu'
 import { checkUpdates } from './commands/check-updates'
+import { clearCommand } from './commands/clear'
 import { configSwitchCommand } from './commands/config-switch'
 import { init } from './commands/init'
 import { showMainMenu } from './commands/menu'
@@ -120,6 +121,7 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.cyan('zcf ccr')}          ${i18n.t('cli:help.commandDescriptions.configureCcrProxy')}`,
       `  ${ansis.cyan('zcf ccu')} [args]   ${i18n.t('cli:help.commandDescriptions.claudeCodeUsageAnalysis')}`,
       `  ${ansis.cyan('zcf uninstall')}     ${i18n.t('cli:help.commandDescriptions.uninstallConfigurations')}`,
+      `  ${ansis.cyan('zcf clear')}         ${i18n.t('cli:help.commandDescriptions.clearClaudeHistory')}`,
       `  ${ansis.cyan('zcf check-updates')} ${i18n.t('cli:help.commandDescriptions.checkUpdateVersions')}`,
       '',
       ansis.gray(`  ${i18n.t('cli:help.shortcuts')}`),
@@ -314,6 +316,22 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
     .action(await withLanguageResolution(async (options) => {
       await uninstall(options)
+    }))
+
+  // Clear command - Clear Claude history data
+  cli
+    .command('clear', 'Clear Claude history data and project conversations')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
+    .option('--mode, -m <mode>', 'Clear mode (conservative/thorough), default: conservative')
+    .option('--no-backup', 'Skip creating backup for ~/.claude.json')
+    .option('--no-interactive', 'Skip confirmation prompts')
+    .action(await withLanguageResolution(async (options) => {
+      await clearCommand({
+        mode: options.mode,
+        interactive: !options.noInteractive,
+        backup: !options.noBackup,
+      })
     }))
 
   // Check updates command
