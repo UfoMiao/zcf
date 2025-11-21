@@ -36,10 +36,12 @@ GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元
 ---
 
 <table>
+<tbody>
 <tr>
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
 <td>感谢 PackyCode 赞助了本项目！PackyCode 是一家稳定、高效的API中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务。PackyCode 为本软件的用户提供了特别优惠，使用<a href="https://www.packyapi.com/register?aff=zcf">此链接</a>注册并在充值时填写"zcf"优惠码，可以享受9折优惠。</td>
 </tr>
+<tbody>
 </table>
 
 ## 🚀 快速开始
