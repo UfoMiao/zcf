@@ -4,31 +4,34 @@ title: Config Switch
 
 # Config Switch
 
-`zcf config-switch` is used to quickly switch between multiple API configurations, suitable for users who need to separate work/personal environments, or use different API providers for different projects.
+`zcf config-switch` is used to quickly switch between multiple API configurations, suitable for users who use different API providers for different projects.
+
+> **Alias**: `zcf cs` provides the same functionality, so any example can be shortened (for example `npx zcf cs --list`).
 
 ## Command Format
 
 ```bash
 # Interactive switch (recommended)
-npx zcf config-switch
+npx zcf cs
 
 # List all available configurations
-npx zcf config-switch --list
+npx zcf cs --list
 
 # Directly switch to specified configuration (Claude Code)
-npx zcf config-switch provider1
+npx zcf cs provider1
 
-# Specify tool type
-npx zcf config-switch --code-type claude-code --list
-npx zcf config-switch provider1 --code-type codex
+# Specify tool type (Supports short alias -T cc/cx)
+npx zcf cs --list -T cc      # List Claude Code configs
+npx zcf cs --list -T cx      # List Codex configs
+npx zcf cs provider1 -T cx   # Switch Codex config
 ```
 
 ## Parameter Descriptions
 
 | Parameter | Description | Optional Values | Default |
 |------|------|--------|--------|
-| `--code-type` | Specify tool type | `claude-code`, `codex`, `cc`, `cx` | Read from ZCF configuration |
-| `--list` | Only list configurations, don't switch | None | No |
+| `--code-type`, `-T` | Specify tool type | `claude-code` (cc), `codex` (cx) | Read from ZCF configuration |
+| `--list`, `-l` | Only list configurations, don't switch | None | No |
 | `Target Config` | Directly specify configuration name to switch to | Configuration name or ID | None |
 
 ## Features
@@ -64,7 +67,7 @@ Supports switching Codex model providers:
 The most common method, select configuration through interactive menu:
 
 ```bash
-npx zcf config-switch
+npx zcf cs
 ```
 
 **Claude Code Interactive Interface**:
@@ -72,9 +75,9 @@ npx zcf config-switch
 ? Select Claude Code configuration:
   ❯ ● Use Official Login (current)
     CCR Proxy
-    Work Environment (glm-provider)
-    Personal Environment (anthropic-provider)
-    Test Environment (minimax-provider)
+    GLM Provider (glm-provider)
+    302.AI Provider (302ai-provider)
+    MiniMax Provider (minimax-provider)
 ```
 
 **Codex Interactive Interface**:
@@ -92,10 +95,10 @@ View all currently available configurations:
 
 ```bash
 # Claude Code configurations
-npx zcf config-switch --list --code-type claude-code
+npx zcf cs --list -T cc
 
 # Codex configurations
-npx zcf config-switch --list --code-type codex
+npx zcf cs --list -T cx
 ```
 
 **Output Example**:
@@ -104,8 +107,8 @@ Available Claude Code configurations:
 
 1. Official Login (current)
 2. CCR Proxy
-3. Work Environment - glm-provider
-4. Personal Environment - anthropic-provider
+3. GLM Provider - glm-provider
+4. 302.AI Provider - 302ai-provider
 ```
 
 ### Direct Switch
@@ -113,16 +116,16 @@ Available Claude Code configurations:
 If you know the configuration name, you can switch directly:
 
 ```bash
-# Switch to specified Profile
-npx zcf config-switch work-profile
+# Switch to specified Profile (using provider English name)
+npx zcf cs glm-provider
 
 # Codex switch provider
-npx zcf config-switch glm-provider --code-type codex
+npx zcf cs glm-provider -T cx
 ```
 
 **Supported Matching Methods**:
 - Configuration ID (like `glm-provider`)
-- Configuration name (like `Work Environment`)
+- Configuration name (like `GLM Provider`)
 
 ## Configuration Management
 
@@ -134,17 +137,17 @@ Create multiple API configurations during initialization:
 # Use multi-configuration parameters
 npx zcf init --api-configs '[
   {
-    "name": "Work Environment",
+    "name": "GLM Provider",
     "provider": "glm",
     "type": "api_key",
     "key": "sk-glm-xxx",
     "primaryModel": "glm-4"
   },
   {
-    "name": "Personal Environment",
-    "provider": "anthropic",
+    "name": "302.AI Provider",
+    "provider": "302ai",
     "type": "api_key",
-    "key": "sk-ant-xxx",
+    "key": "sk-302ai-xxx",
     "primaryModel": "claude-sonnet-4-5"
   }
 ]'
@@ -152,17 +155,19 @@ npx zcf init --api-configs '[
 
 ### Configuration Naming Recommendations
 
-Use concrete descriptive names for easy identification:
+Use provider English names for easy identification and management:
 
 ✅ **Recommended**:
-- `Work Environment`
-- `Personal Development`
-- `Test Project`
-- `Production Environment`
+- `glm-provider` - GLM Provider
+- `302ai-provider` - 302.AI Provider
+- `minimax-provider` - MiniMax Provider
+- `kimi-provider` - Kimi Provider
+- `packycode-provider` - PackyCode Provider
 
 ❌ **Not Recommended**:
-- `config1`, `config2`
-- `default`, `new`
+- `Work Environment`, `Personal Development` and other non-English names
+- `config1`, `config2` and other meaningless names
+- `default`, `new` and other generic names
 - Meaningless random strings
 
 ### Effects After Switch
@@ -180,53 +185,46 @@ After switching configuration:
 
 ## Usage Scenarios
 
-### 1. Separate Work and Personal Environments
-
-```bash
-# Use work environment on workdays
-npx zcf config-switch work-profile
-
-# Use personal environment on weekends
-npx zcf config-switch personal-profile
-```
-
-### 2. Different Projects Use Different APIs
+### 1. Different Projects Use Different API Providers
 
 ```bash
 # Project A uses GLM
-npx zcf config-switch glm-provider
+npx zcf cs glm-provider
 
-# Project B uses Anthropic
-npx zcf config-switch anthropic-provider
+# Project B uses 302.AI
+npx zcf cs 302ai-provider
+
+# Project C uses MiniMax
+npx zcf cs minimax-provider
 ```
 
-### 3. Test New Configuration
+### 2. Test New Configuration
 
 ```bash
 # Switch to test configuration
-npx zcf config-switch test-profile
+npx zcf cs kimi-provider
 
 # Switch back after testing
-npx zcf config-switch main-profile
+npx zcf cs glm-provider
 ```
 
-### 4. Switch Codex Provider
+### 3. Switch Codex Provider
 
 ```bash
 # List Codex providers
-npx zcf config-switch --code-type codex --list
+npx zcf cs -T cx --list
 
 # Switch to specified provider
-npx zcf config-switch glm-provider --code-type codex
+npx zcf cs glm-provider -T cx
 ```
 
 ## Best Practices
 
 ### Configuration Organization
 
-1. **Categorize by Purpose**: Work, Personal, Test
-2. **Categorize by Project**: Project A, Project B, Project C
-3. **Categorize by Provider**: Anthropic, GLM, MiniMax
+1. **Categorize by Provider**: GLM, 302.AI, MiniMax, Kimi, PackyCode
+2. **Use Standard Naming**: `{provider}-provider` format (e.g., `glm-provider`)
+3. **Maintain Consistency**: Keep the same configuration name for the same provider across different projects
 
 ### Preparation Before Switch
 
@@ -239,15 +237,15 @@ npx zcf config-switch glm-provider --code-type codex
 Use different configurations in different Worktrees:
 
 ```bash
-# Main branch uses work configuration
-npx zcf config-switch work-profile
+# Main branch uses GLM configuration
+npx zcf cs glm-provider
 
 # Create feature branch Worktree
 /git-worktree add feat/new-feature -o
 
 # Switch configuration in feature branch
 cd ../.zcf/project-name/feat/new-feature
-npx zcf config-switch test-profile
+npx zcf cs 302ai-provider
 ```
 
 ## Common Questions
@@ -259,13 +257,15 @@ A:
 2. Check if configuration file is correctly updated
 3. Verify if API key is valid
 
-### Q: How to add new configuration?
+### Q: How to add, edit or delete configurations?
 
-A: Use `zcf init` to create new configuration, or use `--api-configs` parameter during initialization to add multiple configurations.
+A: You can manage configurations through the ZCF Main Menu:
 
-### Q: Can I delete configuration?
+1. Run `npx zcf` to enter the main menu
+2. Select **"3. API Config"**
+3. Select **"Custom API Config"**
 
-A: Currently need to manually delete by editing configuration file. Future versions may support CLI delete functionality.
+In this menu, you can interactively **add**, **edit**, **delete**, and **copy** configurations.
 
 ### Q: Will switching configuration lose data?
 
@@ -280,5 +280,3 @@ A: Yes. They use different configuration files (`~/.codex/config.toml` and `~/.c
 - [Multi-Config and Backup](../features/multi-config.md) - Detailed multi-configuration system
 - [Initialization Guide](init.md) - Methods to create multiple configurations
 - [Worktree Parallel Development](../best-practices/worktree.md) - Use with Worktree
-
-

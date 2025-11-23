@@ -6,6 +6,8 @@ title: Version Check
 
 `zcf check-updates` is used to detect and update various components in the ZCF toolchain, including ZCF itself, Claude Code, CCR, CCometixLine, Codex, and other tools.
 
+> **Alias**: `zcf check` provides the same command with a shorter name (`npx zcf check --code-type codex`).
+
 ## Command Format
 
 ```bash
@@ -117,7 +119,7 @@ It's recommended to regularly check for updates to get latest features and fixes
 
 ```bash
 # Check once per week
-npx zcf check-updates
+npx zcf check
 ```
 
 ### Automated Updates
@@ -135,7 +137,7 @@ Only check updates for specific tool types:
 
 ```bash
 # Only check Codex related tools
-npx zcf check-updates --code-type codex
+npx zcf check --code-type codex
 ```
 
 ## Update Strategy
@@ -180,7 +182,7 @@ Common failure reasons:
   ```bash
   # Stop service first then update
   ccr stop
-  npx zcf check-updates
+  npx zcf check
   ```
 
 ## Version Compatibility
@@ -280,5 +282,4 @@ A: Select "No" in interactive mode, or disable auto-update in configuration file
 - [CCR Management](ccr.md) - CCR installation and configuration
 - [Troubleshooting](../advanced/troubleshooting.md) - Update-related problem troubleshooting
 - [Initialization Guide](init.md) - Configuration backup methods
-
 

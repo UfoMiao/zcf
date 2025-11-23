@@ -157,15 +157,11 @@ npx zcf ccr
 # Select 6
 ```
 
-## Configuration File
+## Route Rule Configuration
 
-CCR configuration file is located at `~/.claude-code-router/config.json`, containing:
+CCR supports flexible route rule configuration, which can be set through Web UI or configuration file. The configuration file is located at `~/.claude-code-router/config.json` and uses JSON format.
 
-- **Server Configuration**: Port (default 3456), host, API key
-- **Provider List**: Configurations for multiple AI model providers
-- **Route Rules**: Model routing strategies for different scenarios
-
-Configuration file format example:
+### Complete Configuration Example
 
 ```json
 {
@@ -173,52 +169,117 @@ Configuration file format example:
   "HOST": "127.0.0.1",
   "PORT": 3456,
   "APIKEY": "sk-zcf-x-ccr",
+  "API_TIMEOUT_MS": "600000",
+  "PROXY_URL": "",
   "Providers": [
     {
+      "name": "openrouter",
+      "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key": "sk-xxx",
+      "models": [
+        "google/gemini-2.5-pro-preview",
+        "anthropic/claude-sonnet-4",
+        "anthropic/claude-3.5-sonnet"
+      ],
+      "transformer": {
+        "use": ["openrouter"]
+      }
+    },
+    {
+      "name": "deepseek",
+      "api_base_url": "https://api.deepseek.com/v1/chat/completions",
+      "api_key": "sk-xxx",
+      "models": ["deepseek-chat", "deepseek-reasoner"],
+      "transformer": {
+        "use": ["deepseek"],
+        "deepseek-chat": {
+          "use": ["tooluse"]
+        }
+      }
+    },
+    {
+      "name": "ollama",
+      "api_base_url": "http://localhost:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": ["qwen2.5-coder:latest"],
+      "transformer": {
+        "use": ["ollama"]
+      }
+    },
+    {
       "name": "gemini",
-      "api_base_url": "https://generativelanguage.googleapis.com/v1beta",
-      "api_key": "sk-free",
-      "models": ["gemini-pro"]
+      "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
+      "api_key": "sk-xxx",
+      "models": ["gemini-2.5-flash", "gemini-2.5-pro"],
+      "transformer": {
+        "use": ["gemini"]
+      }
     }
   ],
   "Router": {
-    "default": "gemini,gemini-pro",
-    "background": "gemini,gemini-pro"
+    "default": "openrouter,google/gemini-2.5-pro-preview",
+    "background": "deepseek,deepseek-chat",
+    "think": "deepseek,deepseek-reasoner",
+    "longContext": "openrouter,anthropic/claude-sonnet-4",
+    "longContextThreshold": 60000,
+    "webSearch": "gemini,gemini-2.5-flash"
   }
 }
 ```
 
-## Usage Recommendations
+### Configuration Field Descriptions
 
-### First-Time Use
+#### Basic Configuration
 
-1. Run `npx zcf ccr` and select "Initialize CCR"
-2. Select appropriate provider preset
-3. After configuration is complete, start UI (Option 2) for advanced configuration
-4. Configure route rules and add more models in Web UI
+| Field | Type | Description | Default |
+|------|------|------|--------|
+| `LOG` | boolean | Enable logging | `true` |
+| `HOST` | string | Service listen address | `127.0.0.1` |
+| `PORT` | number | Service port | `3456` |
+| `APIKEY` | string | CCR API key | `sk-zcf-x-ccr` |
+| `API_TIMEOUT_MS` | string | API timeout (milliseconds) | `600000` |
+| `PROXY_URL` | string | Proxy URL (optional) | `""` |
 
-### Integration with Initialization Command
+#### Providers Configuration
 
-You can directly enable CCR during `zcf init`:
+`Providers` is an array, each Provider contains:
+
+| Field | Type | Description |
+|------|------|------|
+| `name` | string | Provider name (used for route rules) |
+| `api_base_url` | string | API base URL |
+| `api_key` | string | API key (free models can use `sk-free`) |
+| `models` | string[] | List of models supported by this provider |
+| `transformer` | object | Optional request transformer (for API compatibility) |
+
+#### Router Configuration
+
+`Router` defines model routing rules for different scenarios, format: `${providerName},${modelName}`
+
+| Field | Type | Description |
+|------|------|------|
+| `default` | string | Default route (format: `provider,model`) |
+| `background` | string | Background task route (optional) |
+| `think` | string | Thinking task route (optional) |
+| `longContext` | string | Long context task route (optional) |
+| `longContextThreshold` | number | Long context token threshold (optional) |
+| `webSearch` | string | Web search task route (optional) |
+
+## Provider Presets
+
+ZCF supports multiple CCR provider presets to simplify configuration:
 
 ```bash
-# Select CCR proxy during interactive initialization
-npx zcf init
-# Select "Configure CCR Proxy" when selecting API authentication method
-
-# Non-interactive initialization
-npx zcf init -s -t ccr_proxy
-```
-
-### Verify After Configuration
-
-```bash
-# Check CCR status
 npx zcf ccr
-# Select 3. Check Status
-
-# If status is normal, Claude Code should be able to connect normally
+# Select 1. Initialize CCR
+# Select provider preset
 ```
+
+Supported presets include:
+- **302.AI**: Enterprise-grade AI service
+- **GLM**: Zhipu AI
+- **MiniMax**: MiniMax AI service
+- **Custom**: Configure custom provider
 
 ## Common Questions
 
@@ -242,11 +303,14 @@ A: You can modify through Web UI or directly edit `~/.claude-code-router/config.
 A: 
 1. Check if configuration file format is correct
 2. Check if port is occupied: `lsof -i :3456` (macOS/Linux) or `netstat -ano | findstr :3456` (Windows)
-3. View error logs or use `ccr status` command
+3. Confirm `@musistudio/claude-code-router` is correctly installed
+4. View error logs or use `ccr status` command
+
+### Q: How to configure multiple models?
+
+A: Add multiple provider configurations in the `Providers` array, then specify models for different scenarios in `Router`.
 
 ## Related Documentation
 
-- [CCR Feature Details](../features/ccr.md) - Learn about CCR's complete features
+- [CCR Feature Overview](../features/ccr.md) - Learn about CCR's core benefits
 - [Troubleshooting](../advanced/troubleshooting.md) - Solve common problems
-
-

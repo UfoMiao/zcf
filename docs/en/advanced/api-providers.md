@@ -288,17 +288,17 @@ npx zcf init -s -p 302ai -k "production-key"
 
 ### 3. Multi-Provider Strategy
 
-Configure different providers for different scenarios:
+Configure different providers for different projects:
 
 ```bash
-# Work environment: Use enterprise-level service
-npx zcf config-switch 302ai-work
+# Project A: Use 302.AI provider
+npx zcf config-switch 302ai-provider
 
-# Personal projects: Use cost-effective service
-npx zcf config-switch glm-personal
+# Project B: Use GLM provider
+npx zcf config-switch glm-provider
 
-# Test environment: Use test account
-npx zcf config-switch minimax-test
+# Project C: Use MiniMax provider
+npx zcf config-switch minimax-provider
 ```
 
 ### 4. Key Security

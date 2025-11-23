@@ -62,8 +62,6 @@ ZCF (Zero-Config Code Flow) is a CLI tool designed for professional developers, 
 
 ## What You Get with ZCF
 
-> Complete content from `zcf-intr.md` combined with latest features.
-
 1. **Secure privacy and permission configuration**: Environment variables, permission templates, and backup strategies are automatically implemented, ensuring a minimal yet secure runtime environment.
 2. **API and proxy management**: Supports official login, API Key, and CCR proxy three modes, with built-in presets for 302.AI, GLM, MiniMax, Kimi, etc.
 3. **Global output style and language system**: Set AI output language, project-level/global output styles, and Codex memory instructions from the command line.
@@ -84,8 +82,6 @@ ZCF (Zero-Config Code Flow) is a CLI tool designed for professional developers, 
 - **GitHub**: <https://github.com/UfoMiao/zcf>
 - **npm**: <https://www.npmjs.com/package/zcf>
 - **Changelog**: [CHANGELOG.md](https://github.com/UfoMiao/zcf/blob/main/CHANGELOG.md)
-
-> For Japanese documentation, please check the Chinese documentation first and submit translation requests.
 
 <!-- Badges -->
 

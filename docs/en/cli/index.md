@@ -14,7 +14,7 @@ ZCF CLI is implemented based on `cac`, and all commands can be called via `npx z
 | `zcf ccr` | Manage Claude Code Router proxy |
 | `zcf ccu` | Claude Code usage analysis and statistics |
 | `zcf uninstall` | Uninstall configuration with option to keep backups |
-| `zcf config-switch` | Switch between multiple configurations |
-| `zcf check-updates` | Check and upgrade toolchain |
+| `zcf config-switch` / `zcf cs` | Switch between multiple configurations |
+| `zcf check-updates` / `zcf check` | Check and upgrade toolchain |
 
 Each command supports `--help` to view detailed parameters. The following chapters will explain each one.

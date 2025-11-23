@@ -157,15 +157,11 @@ npx zcf ccr
 # 选择 6
 ```
 
-## 配置文件
+## 路由规则配置
 
-CCR 配置文件位于 `~/.claude-code-router/config.json`，包含：
+CCR 支持灵活的路由规则配置，可以通过 Web UI 或配置文件设置。配置文件位于 `~/.claude-code-router/config.json`，使用 JSON 格式。
 
-- **服务器配置**：端口（默认 3456）、主机、API 密钥
-- **提供商列表**：多个 AI 模型提供商的配置
-- **路由规则**：不同场景下的模型路由策略
-
-配置文件格式示例：
+### 完整配置示例
 
 ```json
 {
@@ -173,52 +169,117 @@ CCR 配置文件位于 `~/.claude-code-router/config.json`，包含：
   "HOST": "127.0.0.1",
   "PORT": 3456,
   "APIKEY": "sk-zcf-x-ccr",
+  "API_TIMEOUT_MS": "600000",
+  "PROXY_URL": "",
   "Providers": [
     {
+      "name": "openrouter",
+      "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key": "sk-xxx",
+      "models": [
+        "google/gemini-2.5-pro-preview",
+        "anthropic/claude-sonnet-4",
+        "anthropic/claude-3.5-sonnet"
+      ],
+      "transformer": {
+        "use": ["openrouter"]
+      }
+    },
+    {
+      "name": "deepseek",
+      "api_base_url": "https://api.deepseek.com/v1/chat/completions",
+      "api_key": "sk-xxx",
+      "models": ["deepseek-chat", "deepseek-reasoner"],
+      "transformer": {
+        "use": ["deepseek"],
+        "deepseek-chat": {
+          "use": ["tooluse"]
+        }
+      }
+    },
+    {
+      "name": "ollama",
+      "api_base_url": "http://localhost:11434/v1/chat/completions",
+      "api_key": "ollama",
+      "models": ["qwen2.5-coder:latest"],
+      "transformer": {
+        "use": ["ollama"]
+      }
+    },
+    {
       "name": "gemini",
-      "api_base_url": "https://generativelanguage.googleapis.com/v1beta",
-      "api_key": "sk-free",
-      "models": ["gemini-pro"]
+      "api_base_url": "https://generativelanguage.googleapis.com/v1beta/models/",
+      "api_key": "sk-xxx",
+      "models": ["gemini-2.5-flash", "gemini-2.5-pro"],
+      "transformer": {
+        "use": ["gemini"]
+      }
     }
   ],
   "Router": {
-    "default": "gemini,gemini-pro",
-    "background": "gemini,gemini-pro"
+    "default": "openrouter,google/gemini-2.5-pro-preview",
+    "background": "deepseek,deepseek-chat",
+    "think": "deepseek,deepseek-reasoner",
+    "longContext": "openrouter,anthropic/claude-sonnet-4",
+    "longContextThreshold": 60000,
+    "webSearch": "gemini,gemini-2.5-flash"
   }
 }
 ```
 
-## 使用建议
+### 配置字段说明
 
-### 首次使用
+#### 基础配置
 
-1. 运行 `npx zcf ccr` 选择"初始化 CCR"
-2. 选择合适的提供商预设
-3. 完成配置后启动 UI（选项 2）进行高级配置
-4. 在 Web UI 中配置路由规则和添加更多模型
+| 字段 | 类型 | 说明 | 默认值 |
+|------|------|------|--------|
+| `LOG` | boolean | 是否启用日志 | `true` |
+| `HOST` | string | 服务监听地址 | `127.0.0.1` |
+| `PORT` | number | 服务端口 | `3456` |
+| `APIKEY` | string | CCR API 密钥 | `sk-zcf-x-ccr` |
+| `API_TIMEOUT_MS` | string | API 超时时间（毫秒） | `600000` |
+| `PROXY_URL` | string | 代理 URL（可选） | `""` |
 
-### 与初始化命令联动
+#### Providers 配置
 
-在 `zcf init` 时可以直接启用 CCR：
+`Providers` 是一个数组，每个 Provider 包含：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `name` | string | 提供商名称（用于路由规则） |
+| `api_base_url` | string | API 基础 URL |
+| `api_key` | string | API 密钥（免费模型可使用 `sk-free`） |
+| `models` | string[] | 该提供商支持的模型列表 |
+| `transformer` | object | 可选的请求转换器（用于 API 兼容性） |
+
+#### Router 配置
+
+`Router` 定义了不同场景下的模型路由规则，格式为：`${providerName},${modelName}`
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `default` | string | 默认路由（格式：`provider,model`） |
+| `background` | string | 后台任务路由（可选） |
+| `think` | string | 思考任务路由（可选） |
+| `longContext` | string | 长上下文任务路由（可选） |
+| `longContextThreshold` | number | 长上下文的 token 阈值（可选） |
+| `webSearch` | string | 网页搜索任务路由（可选） |
+
+## 提供商预设
+
+ZCF 支持多个 CCR 提供商预设，简化配置流程：
 
 ```bash
-# 交互式初始化时选择 CCR 代理
-npx zcf init
-# 选择 API 认证方式时选择"配置 CCR 代理"
-
-# 非交互式初始化
-npx zcf init -s -t ccr_proxy
-```
-
-### 配置完成后验证
-
-```bash
-# 检查 CCR 状态
 npx zcf ccr
-# 选择 3. 检查状态
-
-# 如果状态正常，Claude Code 应能正常连接
+# 选择 1. 初始化 CCR
+# 选择提供商预设
 ```
+
+支持的预设包括：
+- **302.AI**：企业级 AI 服务
+- **GLM**：智谱 AI
+- **MiniMax**：MiniMax AI 服务
+- **自定义**：配置自定义提供商
 
 ## 常见问题
 
@@ -242,9 +303,14 @@ A: 可以通过 Web UI 或直接编辑 `~/.claude-code-router/config.json` 文�
 A: 
 1. 检查配置文件格式是否正确
 2. 检查端口是否被占用：`lsof -i :3456`（macOS/Linux）或 `netstat -ano | findstr :3456`（Windows）
-3. 查看错误日志或使用 `ccr status` 命令
+3. 确认 `@musistudio/claude-code-router` 已正确安装
+4. 查看错误日志或使用 `ccr status` 命令
+
+### Q: 如何配置多个模型？
+
+A: 在 `Providers` 数组中添加多个提供商配置，然后在 `Router` 中指定不同场景使用的模型。
 
 ## 相关文档
 
-- [CCR 功能详解](../features/ccr.md) - 了解 CCR 的完整功能
+- [CCR 功能介绍](../features/ccr.md) - CCR 的核心优势
 - [故障排除](../advanced/troubleshooting.md) - 解决常见问题

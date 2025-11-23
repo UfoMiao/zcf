@@ -288,17 +288,17 @@ npx zcf init -s -p 302ai -k "production-key"
 
 ### 3. マルチプロバイダー戦略
 
-異なるシナリオに異なるプロバイダーを設定：
+異なるプロジェクトに異なるプロバイダーを設定：
 
 ```bash
-# 作業環境: エンタープライズレベルのサービスを使用
-npx zcf config-switch 302ai-work
+# プロジェクト A: 302.AI プロバイダーを使用
+npx zcf config-switch 302ai-provider
 
-# 個人プロジェクト: コストパフォーマンスの高いサービスを使用
-npx zcf config-switch glm-personal
+# プロジェクト B: GLM プロバイダーを使用
+npx zcf config-switch glm-provider
 
-# テスト環境: テストアカウントを使用
-npx zcf config-switch minimax-test
+# プロジェクト C: MiniMax プロバイダーを使用
+npx zcf config-switch minimax-provider
 ```
 
 ### 4. キーのセキュリティ
@@ -362,6 +362,8 @@ vim ~/.claude/settings.json
 - [設定切り替え](../cli/config-switch.md) - マルチ設定切り替えコマンド
 
 > 💡 **ヒント**: APIプロバイダープリセットを使用すると、設定プロセスを大幅に簡素化できます。可能な限りプリセットを優先し、必要な場合にのみカスタム設定を使用することを推奨します。最新の設定情報を取得するために、定期的にプロバイダーのドキュメントを確認してください。
+
+
 
 
 

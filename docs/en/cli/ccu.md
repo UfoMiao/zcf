@@ -36,7 +36,20 @@ npx zcf
 | `--json` | JSON format output | None | No |
 | `--csv` | CSV format output | None | No |
 
-## Features
+## Function Details
+
+ccusage is a powerful usage analysis tool with main features including:
+
+- 📊 **Multi-dimensional Reports**: Daily, weekly, monthly token usage and cost reports
+- 📅 **Flexible Periods**: Supports `daily`, `weekly`, `monthly` statistics periods
+- 📈 **Live Monitoring**: Real-time dashboard showing active session progress, token burn rate, and cost projections
+- 💬 **Session Analysis**: View usage grouped by conversation sessions
+- 🤖 **Model Breakdown**: View cost breakdown for each model (Opus, Sonnet, etc.)
+- 💰 **Cost Tracking**: Shows costs in USD for each day/month
+- 🔄 **Cache Statistics**: Tracks cache creation and cache read tokens separately
+- 📱 **Smart Display**: Automatically adapts table layout to terminal width (supports compact mode)
+- 🔌 **Multi-format Export**: Supports JSON and CSV export for secondary analysis
+- 🚀 **Statusline Integration**: Supports displaying summary in CCometixLine status bar
 
 ### Statistics Data Source
 
@@ -45,16 +58,14 @@ CCusage tool reads Claude Code's official usage database `usage.db`, containing:
 - **Call Count**: Total number of AI requests
 - **Usage Duration**: Cumulative AI usage time
 - **Time Range**: Data statistics for specified period
+- **Token Details**: Input/Output/Cache Token counts
 
 ### Statistics Periods
 
 #### Daily Statistics (`daily`)
 
-Display daily usage, suitable for:
-- Daily usage monitoring
-- Quick view of recent usage
+Display daily usage, suitable for daily monitoring.
 
-**Example Output**:
 ```
 📊 Claude Code Usage Statistics
 Period: Daily
@@ -63,16 +74,12 @@ Date       | Requests | Duration
 -----------|----------|----------
 2025-01-15 | 45       | 2h 30m
 2025-01-14 | 38       | 2h 15m
-2025-01-13 | 52       | 3h 10m
 ```
 
 #### Weekly Statistics (`weekly`)
 
-Display weekly usage, suitable for:
-- Periodic usage analysis
-- Team usage comparison
+Display weekly usage, suitable for periodic analysis.
 
-**Example Output**:
 ```
 📊 Claude Code Usage Statistics
 Period: Weekly
@@ -81,16 +88,12 @@ Week       | Requests | Duration
 -----------|----------|----------
 Week 3     | 315      | 18h 20m
 Week 2     | 298      | 17h 45m
-Week 1     | 342      | 19h 30m
 ```
 
 #### Monthly Statistics (`monthly`)
 
-Display monthly usage, suitable for:
-- Long-term trend analysis
-- Cost budget planning
+Display monthly usage, suitable for long-term trend analysis and cost budgeting.
 
-**Example Output**:
 ```
 📊 Claude Code Usage Statistics
 Period: Monthly
@@ -99,18 +102,13 @@ Month      | Requests | Duration
 -----------|----------|----------
 2025-01    | 1250     | 72h 15m
 2024-12    | 1180     | 68h 30m
-2024-11    | 1320     | 76h 45m
 ```
 
 ## Output Formats
 
 ### Default Format (Table)
 
-Suitable for terminal viewing, clear and readable format.
-
-```bash
-npx zcf ccu --period daily
-```
+Suitable for terminal viewing, clear and readable format. Automatically adapts to terminal width.
 
 ### JSON Format
 
@@ -199,44 +197,6 @@ CCometixLine status bar can also display usage statistics summary:
 2. View real-time usage in status bar
 3. Click status bar to view detailed statistics
 
-## Usage Recommendations
-
-### Regular Checks
-
-It's recommended to check usage once per week or month:
-
-```bash
-# Weekly check
-npx zcf ccu --period weekly
-
-# Monthly check
-npx zcf ccu --period monthly
-```
-
-### Data Archiving
-
-Regularly export data for long-term analysis:
-
-```bash
-# Export CSV monthly
-npx zcf ccu --csv --period monthly > $(date +%Y-%m)-usage.csv
-```
-
-### Anomaly Monitoring
-
-Set up automated scripts to monitor abnormal usage:
-
-```bash
-#!/bin/bash
-# Check daily usage
-DAILY_USAGE=$(npx zcf ccu --json --period daily | jq '.total.requests')
-
-if [ "$DAILY_USAGE" -gt 100 ]; then
-  echo "Warning: Daily usage exceeds 100 times!"
-  # Send notification...
-fi
-```
-
 ## Common Questions
 
 ### Q: No statistics data?
@@ -257,6 +217,4 @@ A: Statistics data is managed by Claude Code. Manual deletion is not recommended
 ## Related Documentation
 
 - [CCometixLine Status Bar](../features/cometix.md) - View usage in real-time
-- [Best Practices](../best-practices/tips.md) - More usage tips
-
-
+- [Usage Analysis Feature Overview](../features/ccusage.md) - Feature overview

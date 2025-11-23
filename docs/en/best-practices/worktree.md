@@ -226,12 +226,12 @@ Delete unneeded Worktrees promptly after completing features:
 Use different API configurations in different Worktrees:
 
 ```bash
-# Main branch uses work configuration
-npx zcf config-switch work-profile
+# Main branch uses GLM provider configuration
+npx zcf config-switch glm-provider
 
-# Worktree uses test configuration
+# Worktree uses 302.AI provider configuration
 cd ../.zcf/project-name/feat/test
-npx zcf config-switch test-profile
+npx zcf config-switch 302ai-provider
 ```
 
 ### 5. Project Progress Documents

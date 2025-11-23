@@ -4,31 +4,34 @@ title: 配置切换
 
 # 配置切换
 
-`zcf config-switch` 用于在多套 API 配置之间快速切换，适合需要区分工作/个人环境，或在不同项目使用不同 API 提供商的用户。
+`zcf config-switch` 用于在多套 API 配置之间快速切换，适合在不同项目使用不同 API 提供商的用户。
+
+> **别名**：可以使用 `zcf cs` 这一简写，所有示例都可改写为 `npx zcf cs --list` 等形式。
 
 ## 命令格式
 
 ```bash
 # 交互式切换（推荐）
-npx zcf config-switch
+npx zcf cs
 
 # 列出所有可用配置
-npx zcf config-switch --list
+npx zcf cs --list
 
 # 直接切换到指定配置（Claude Code）
-npx zcf config-switch provider1
+npx zcf cs provider1
 
-# 指定工具类型
-npx zcf config-switch --code-type claude-code --list
-npx zcf config-switch provider1 --code-type codex
+# 指定工具类型（支持简写 -T cc/cx）
+npx zcf cs --list -T cc      # 列出 Claude Code 配置
+npx zcf cs --list -T cx      # 列出 Codex 配置
+npx zcf cs provider1 -T cx   # 切换 Codex 配置
 ```
 
 ## 参数说明
 
 | 参数 | 说明 | 可选值 | 默认值 |
 |------|------|--------|--------|
-| `--code-type` | 指定工具类型 | `claude-code`, `codex`, `cc`, `cx` | 从 ZCF 配置读取 |
-| `--list` | 仅列出配置，不切换 | 无 | 否 |
+| `--code-type`, `-T` | 指定工具类型 | `claude-code` (cc), `codex` (cx) | 从 ZCF 配置读取 |
+| `--list`, `-l` | 仅列出配置，不切换 | 无 | 否 |
 | `目标配置` | 直接指定要切换的配置名称 | 配置名称或 ID | 无 |
 
 ## 功能特性
@@ -64,7 +67,7 @@ npx zcf config-switch provider1 --code-type codex
 最常用的方式，通过交互式菜单选择配置：
 
 ```bash
-npx zcf config-switch
+npx zcf cs
 ```
 
 **Claude Code 交互界面**：
@@ -72,9 +75,9 @@ npx zcf config-switch
 ? 选择 Claude Code 配置：
   ❯ ● 使用官方登录 (current)
     CCR 代理
-    工作环境 (glm-provider)
-    个人环境 (anthropic-provider)
-    测试环境 (minimax-provider)
+    GLM Provider (glm-provider)
+    302.AI Provider (302ai-provider)
+    MiniMax Provider (minimax-provider)
 ```
 
 **Codex 交互界面**：
@@ -92,10 +95,10 @@ npx zcf config-switch
 
 ```bash
 # Claude Code 配置
-npx zcf config-switch --list --code-type claude-code
+npx zcf cs --list -T cc
 
 # Codex 配置
-npx zcf config-switch --list --code-type codex
+npx zcf cs --list -T cx
 ```
 
 **输出示例**：
@@ -104,8 +107,8 @@ npx zcf config-switch --list --code-type codex
 
 1. 官方登录 (current)
 2. CCR 代理
-3. 工作环境 - glm-provider
-4. 个人环境 - anthropic-provider
+3. GLM Provider - glm-provider
+4. 302.AI Provider - 302ai-provider
 ```
 
 ### 直接切换
@@ -113,16 +116,16 @@ npx zcf config-switch --list --code-type codex
 如果知道配置名称，可以直接切换：
 
 ```bash
-# 切换到指定 Profile
-npx zcf config-switch work-profile
+# 切换到指定 Profile（使用渠道英文名）
+npx zcf cs glm-provider
 
 # Codex 切换提供商
-npx zcf config-switch glm-provider --code-type codex
+npx zcf cs glm-provider -T cx
 ```
 
 **支持匹配方式**：
 - 配置 ID（如 `glm-provider`）
-- 配置名称（如 `工作环境`）
+- 配置名称（如 `GLM Provider`）
 
 ## 配置管理
 
@@ -134,17 +137,17 @@ npx zcf config-switch glm-provider --code-type codex
 # 使用多配置参数
 npx zcf init --api-configs '[
   {
-    "name": "工作环境",
+    "name": "GLM Provider",
     "provider": "glm",
     "type": "api_key",
     "key": "sk-glm-xxx",
     "primaryModel": "glm-4"
   },
   {
-    "name": "个人环境",
-    "provider": "anthropic",
+    "name": "302.AI Provider",
+    "provider": "302ai",
     "type": "api_key",
-    "key": "sk-ant-xxx",
+    "key": "sk-302ai-xxx",
     "primaryModel": "claude-sonnet-4-5"
   }
 ]'
@@ -152,17 +155,19 @@ npx zcf init --api-configs '[
 
 ### 配置命名建议
 
-使用具象的描述性名称便于识别：
+推荐使用渠道（Provider）的英文名称，便于识别和管理：
 
 ✅ **推荐**：
-- `工作环境`
-- `个人开发`
-- `测试项目`
-- `生产环境`
+- `glm-provider` - GLM 提供商
+- `302ai-provider` - 302.AI 提供商
+- `minimax-provider` - MiniMax 提供商
+- `kimi-provider` - Kimi 提供商
+- `packycode-provider` - PackyCode 提供商
 
 ❌ **不推荐**：
-- `config1`, `config2`
-- `default`, `new`
+- `工作环境`、`个人开发` 等非英文名称
+- `config1`, `config2` 等无意义名称
+- `default`, `new` 等通用名称
 - 无意义的随机字符串
 
 ### 切换后的效果
@@ -180,53 +185,46 @@ npx zcf init --api-configs '[
 
 ## 使用场景
 
-### 1. 工作与个人环境分离
-
-```bash
-# 工作日使用工作环境
-npx zcf config-switch work-profile
-
-# 周末使用个人环境
-npx zcf config-switch personal-profile
-```
-
-### 2. 不同项目使用不同 API
+### 1. 不同项目使用不同 API 提供商
 
 ```bash
 # 项目 A 使用 GLM
-npx zcf config-switch glm-provider
+npx zcf cs glm-provider
 
-# 项目 B 使用 Anthropic
-npx zcf config-switch anthropic-provider
+# 项目 B 使用 302.AI
+npx zcf cs 302ai-provider
+
+# 项目 C 使用 MiniMax
+npx zcf cs minimax-provider
 ```
 
-### 3. 测试新配置
+### 2. 测试新配置
 
 ```bash
 # 切换到测试配置
-npx zcf config-switch test-profile
+npx zcf cs kimi-provider
 
 # 测试完成后切换回去
-npx zcf config-switch main-profile
+npx zcf cs glm-provider
 ```
 
-### 4. 切换 Codex 提供商
+### 3. 切换 Codex 提供商
 
 ```bash
 # 列出 Codex 提供商
-npx zcf config-switch --code-type codex --list
+npx zcf cs -T cx --list
 
 # 切换到指定提供商
-npx zcf config-switch glm-provider --code-type codex
+npx zcf cs glm-provider -T cx
 ```
 
 ## 最佳实践
 
 ### 配置组织
 
-1. **按用途分类**：工作、个人、测试
-2. **按项目分类**：项目A、项目B、项目C
-3. **按提供商分类**：Anthropic、GLM、MiniMax
+1. **按提供商分类**：GLM、302.AI、MiniMax、Kimi、PackyCode
+2. **使用标准命名**：`{provider}-provider` 格式（如 `glm-provider`）
+3. **保持一致性**：同一提供商在不同项目中保持相同的配置名称
 
 ### 切换前准备
 
@@ -239,15 +237,15 @@ npx zcf config-switch glm-provider --code-type codex
 在不同 Worktree 中使用不同配置：
 
 ```bash
-# 主分支使用工作配置
-npx zcf config-switch work-profile
+# 主分支使用 GLM 配置
+npx zcf cs glm-provider
 
 # 创建功能分支 Worktree
 /git-worktree add feat/new-feature -o
 
 # 在功能分支中切换配置
 cd ../.zcf/project-name/feat/new-feature
-npx zcf config-switch test-profile
+npx zcf cs 302ai-provider
 ```
 
 ## 常见问题
@@ -259,13 +257,15 @@ A:
 2. 检查配置文件是否正确更新
 3. 验证 API 密钥是否有效
 
-### Q: 如何添加新配置？
+### Q: 如何添加、编辑或删除配置？
 
-A: 使用 `zcf init` 创建新配置，或在初始化时使用 `--api-configs` 参数添加多个配置。
+A: 您可以通过 ZCF 主菜单进行全面管理：
 
-### Q: 可以删除配置吗？
+1. 运行 `npx zcf` 进入主菜单
+2. 选择 **"3. API 配置"**
+3. 选择 **"自定义 API 配置"**
 
-A: 目前需要通过编辑配置文件手动删除。未来版本可能支持 CLI 删除功能。
+在此菜单中，您可以直观地进行**添加**、**编辑**、**删除**和**复制**配置操作。
 
 ### Q: 切换配置会丢失数据吗？
 

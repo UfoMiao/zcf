@@ -6,6 +6,8 @@ title: 版本检查
 
 `zcf check-updates` 用于检测并更新 ZCF 工具链中的各个组件，包括 ZCF 本身、Claude Code、CCR、CCometixLine、Codex 等工具。
 
+> **别名**：可使用同等效果的 `zcf check`（如 `npx zcf check --code-type codex`）。
+
 ## 命令格式
 
 ```bash
@@ -117,7 +119,7 @@ CCometixLine
 
 ```bash
 # 每周检查一次
-npx zcf check-updates
+npx zcf check
 ```
 
 ### 自动化更新
@@ -126,7 +128,7 @@ npx zcf check-updates
 
 ```bash
 # 自动更新所有工具
-npx zcf check-updates --skip-prompt
+npx zcf check --skip-prompt
 ```
 
 ### 针对性更新
@@ -135,7 +137,7 @@ npx zcf check-updates --skip-prompt
 
 ```bash
 # 只检查 Codex 相关工具
-npx zcf check-updates --code-type codex
+npx zcf check --code-type codex
 ```
 
 ## 更新策略
@@ -173,14 +175,14 @@ npx zcf check-updates --code-type codex
 - **权限问题**：需要 sudo 权限（macOS/Linux）
   ```bash
   # 使用 sudo 执行
-  sudo npx zcf check-updates
+  sudo npx zcf check
   ```
 
 - **端口占用**：服务正在运行无法更新
   ```bash
   # 先停止服务再更新
   ccr stop
-  npx zcf check-updates
+  npx zcf check
   ```
 
 ## 版本兼容性

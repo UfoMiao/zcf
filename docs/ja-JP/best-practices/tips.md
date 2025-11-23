@@ -242,21 +242,21 @@ npx zcf init -s -p 302ai -k \"sk-xxx\"
 # 設定一覧
 npx zcf config-switch --list
 
-# work 設定へ
-npx zcf config-switch work
+# GLM プロバイダーに切替
+npx zcf config-switch glm-provider
 
-# personal 設定へ
-npx zcf config-switch personal
+# 302.AI プロバイダーに切替
+npx zcf config-switch 302ai-provider
 
 # Codex での切り替え
-npx zcf config-switch work --code-type codex
+npx zcf config-switch glm-provider --code-type codex
 ```
 
-**命名例**：
-- `work` - 業務用
-- `personal` - 個人用
-- `test` - テスト用
-- `demo` - デモ用
+**命名例**（プロバイダーの英語名を使用）：
+- `glm-provider` - GLM プロバイダー
+- `302ai-provider` - 302.AI プロバイダー
+- `minimax-provider` - MiniMax プロバイダー
+- `kimi-provider` - Kimi プロバイダー
 
 ### 9. ワークフローの組み合わせ
 

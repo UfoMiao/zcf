@@ -14,7 +14,7 @@ ZCF CLI 基于 `cac` 实现，所有命令均可通过 `npx zcf <command>` 调�
 | `zcf ccr` | 管理 Claude Code Router 代理 |
 | `zcf ccu` | Claude Code 使用分析与统计 |
 | `zcf uninstall` | 卸载配置并可选择保留备份 |
-| `zcf config-switch` | 在多套配置之间切换 |
-| `zcf check-updates` | 检查并升级工具链 |
+| `zcf config-switch` / `zcf cs` | 在多套配置之间切换 |
+| `zcf check-updates` / `zcf check` | 检查并升级工具链 |
 
 每个命令均支持 `--help` 查看详细参数。以下章节将逐一说明。

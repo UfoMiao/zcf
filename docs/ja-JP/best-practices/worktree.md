@@ -134,12 +134,12 @@ Project/
 ### 4. 設定切り替えと併用
 
 ```bash
-# メインは work 設定
-npx zcf config-switch work-profile
+# メインは GLM プロバイダー設定
+npx zcf config-switch glm-provider
 
-# Worktree では test 設定
+# Worktree では 302.AI プロバイダー設定
 cd ../.zcf/project-name/feat/test
-npx zcf config-switch test-profile
+npx zcf config-switch 302ai-provider
 ```
 
 ### 5. 進捗ドキュメント

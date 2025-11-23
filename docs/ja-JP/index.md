@@ -62,8 +62,6 @@ ZCF（Zero-Config Code Flow）は、専門開発者向けの CLI ツールで、
 
 ## ZCF で得られるもの
 
-> `zcf-intr.md` からの完全な内容と最新機能を組み合わせたものです。
-
 1. **安全なプライバシーと権限設定**：環境変数、権限テンプレート、バックアップ戦略が自動的に実装され、最小限でありながら安全な実行環境を確保します。
 2. **API とプロキシ管理**：公式ログイン、API Key、CCR プロキシの 3 つのモードをサポートし、302.AI、GLM、MiniMax、Kimi などの内蔵プリセットを提供します。
 3. **グローバル出力スタイルと言語システム**：コマンドラインから AI 出力言語、プロジェクトレベル/グローバル出力スタイル、Codex メモリ命令を設定できます。
@@ -84,8 +82,6 @@ ZCF（Zero-Config Code Flow）は、専門開発者向けの CLI ツールで、
 - **GitHub**：<https://github.com/UfoMiao/zcf>
 - **npm**：<https://www.npmjs.com/package/zcf>
 - **更新ログ**：[CHANGELOG.md](https://github.com/UfoMiao/zcf/blob/main/CHANGELOG.md)
-
-> 英語ドキュメントが必要な場合は、中国語ドキュメントを確認してから翻訳リクエストを提出してください。
 
 <!-- Badges -->
 

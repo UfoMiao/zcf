@@ -288,17 +288,17 @@ npx zcf init -s -p 302ai -k "production-key"
 
 ### 3. 多提供商策略
 
-为不同场景配置不同提供商：
+为不同项目配置不同提供商：
 
 ```bash
-# 工作环境：使用企业级服务
-npx zcf config-switch 302ai-work
+# 项目 A：使用 302.AI 提供商
+npx zcf config-switch 302ai-provider
 
-# 个人项目：使用成本较低的服务
-npx zcf config-switch glm-personal
+# 项目 B：使用 GLM 提供商
+npx zcf config-switch glm-provider
 
-# 测试环境：使用测试账户
-npx zcf config-switch minimax-test
+# 项目 C：使用 MiniMax 提供商
+npx zcf config-switch minimax-provider
 ```
 
 ### 4. 密钥安全

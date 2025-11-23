@@ -8,12 +8,16 @@ CCometixLine is a high-performance Rust-based terminal/IDE status bar plugin. ZC
 
 ## What is CCometixLine
 
-CCometixLine is a lightweight status bar tool that provides real-time status information display for Claude Code and Codex. It can:
+CCometixLine is a high-performance Rust-based statusline tool that provides real-time status information display for Claude Code. It can:
 
-- 📊 **Git Information Display**: Real-time display of current Git branch, changed file count, remote sync status
-- 📈 **Usage Statistics**: Display Claude Code / Codex usage, consistent with `ccusage` data
-- 🔄 **Workflow Status**: Display corresponding status prompts based on workflow stage
+- 📊 **Git Integration**: Display branch, status, and tracking info
+- 🎯 **Model Display**: Display simplified Claude model names
+- 📈 **Usage Tracking**: Usage tracking based on transcript analysis
+- 📁 **Directory Display**: Display current workspace
+- 🎨 **Interactive TUI**: Interactive configuration interface with real-time preview
+- 🌈 **Theme System**: Multiple built-in preset themes
 - ⚡ **High Performance**: Developed with Rust, low resource usage, fast response
+- 🔧 **Claude Code Enhancement**: Provides context warning disabler and verbose mode enabler
 
 ## Installation Process
 
@@ -78,38 +82,69 @@ Display corresponding status information based on different workflow stages:
 
 ### Configuration File Location
 
-CCometixLine configuration is written to the `statusLine` field in Claude Code's `settings.json`:
+CCometixLine configuration is saved in:
 
-```json
-{
-  "statusLine": {
-    "command": "ccline",
-    "args": ["--format", "default"]
-  }
-}
-```
+- **Configuration File**: `~/.claude/ccline/config.toml`
+- **Theme Files**: `~/.claude/ccline/themes/*.toml`
+- **Claude Code Integration**: Configuration is written to the `statusLine` field in Claude Code's `settings.json`
 
-### Custom Configuration
-
-You can customize the status bar through interactive configuration interface or by directly editing the configuration file:
+### Configuration Management
 
 ```bash
-# Use interactive configuration
-ccline -c
+# Initialize configuration file
+ccline --init
 
-# Or directly edit Claude Code settings.json
-# ~/.claude/settings.json
+# Check configuration validity
+ccline --check
+
+# Print current configuration
+ccline --print
+
+# Enter TUI configuration mode (interactive configuration interface)
+ccline --config
 ```
 
-### Configuration Options
+### Theme Configuration
 
-Configurable options include:
+CCometixLine supports multiple built-in themes:
 
-- **Display Format**: Choose preset format or custom format string
-- **Update Interval**: Status bar refresh frequency (default 3 seconds)
-- **Git Information**: Whether to display Git branch and change information
-- **Timestamp**: Whether to display timestamp
-- **Usage Statistics**: Whether to display usage statistics
+```bash
+# Temporarily use specific theme (overrides config file)
+ccline --theme cometix
+ccline --theme minimal
+ccline --theme gruvbox
+ccline --theme nord
+ccline --theme powerline-dark
+
+# Or use custom theme files
+ccline --theme my-custom-theme
+```
+
+### Claude Code Enhancement
+
+CCometixLine provides Claude Code enhancement features:
+
+```bash
+# Disable context warnings and enable verbose mode
+ccline --patch /path/to/claude-code/cli.js
+
+# Example for common installation
+ccline --patch ~/.local/share/fnm/node-versions/v24.4.1/installation/lib/node_modules/@anthropic-ai/claude-code/cli.js
+```
+
+### Configurable Segments
+
+All segments are configurable, including:
+
+- **Directory**: Directory display
+- **Git**: Git information display
+- **Model**: Model display
+- **Usage**: Usage statistics
+- **Time**: Time display
+- **Cost**: Cost display
+- **OutputStyle**: Output style display
+
+Each segment supports enable/disable toggle, custom separators and icons, color customization, and format options.
 
 ## Platform Support
 
@@ -227,9 +262,107 @@ In team environments:
 - For scenarios with frequent branch switching, you can increase update interval
 - In CI/CD environments, it's recommended to disable status bar to reduce resource consumption
 
+## Installation
+
+### Quick Install (Recommended)
+
+Install via npm (works on all platforms):
+
+```bash
+# Install globally
+npm install -g @cometix/ccline
+
+# Or using yarn
+yarn global add @cometix/ccline
+
+# Or using pnpm
+pnpm add -g @cometix/ccline
+```
+
+Use npm mirror for faster download:
+
+```bash
+npm install -g @cometix/ccline --registry https://registry.npmmirror.com
+```
+
+### Claude Code Configuration
+
+Add to your Claude Code `settings.json`:
+
+**Linux/macOS:**
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "~/.claude/ccline/ccline",
+    "padding": 0
+  }
+}
+```
+
+**Windows:**
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "%USERPROFILE%\\.claude\\ccline\\ccline.exe",
+    "padding": 0
+  }
+}
+```
+
+**Fallback (npm installation):**
+
+```json
+{
+  "statusLine": {
+    "type": "command",
+    "command": "ccline",
+    "padding": 0
+  }
+}
+```
+
+### Update
+
+```bash
+npm update -g @cometix/ccline
+```
+
+## Default Segments
+
+Displays: `Directory | Git Branch Status | Model | Context Window`
+
+### Git Status Indicators
+
+- Branch name with Nerd Font icon
+- Status: `✓` Clean, `●` Dirty, `⚠` Conflicts
+- Remote tracking: `↑n` Ahead, `↓n` Behind
+
+### Model Display
+
+Shows simplified Claude model names:
+
+- `claude-3-5-sonnet` → `Sonnet 3.5`
+- `claude-4-sonnet` → `Sonnet 4`
+
+### Context Window Display
+
+Token usage percentage based on transcript analysis with context limit tracking.
+
+## Requirements
+
+- **Git**: Version 1.5+ (Git 2.22+ recommended for better branch detection)
+- **Terminal**: Must support Nerd Fonts for proper icon display
+  - Install a [Nerd Font](https://www.nerdfonts.com/) (e.g., FiraCode Nerd Font, JetBrains Mono Nerd Font)
+  - Configure your terminal to use the Nerd Font
+- **Claude Code**: For statusline integration
+
 ## Related Resources
 
-- **GitHub Repository**: [@cometix/ccline](https://github.com/cometix/ccline)
+- **GitHub Repository**: [Haleclipse/CCometixLine](https://github.com/Haleclipse/CCometixLine)
 - **Documentation**: View CCometixLine official documentation for more information
 - **Issue Reporting**: If you encounter problems, you can report them in GitHub Issues
 
