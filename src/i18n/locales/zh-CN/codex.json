@@ -1,6 +1,4 @@
 {
-  "installingCli": "🚀 正在安装 Codex CLI...",
-  "installSuccess": "✔ Codex CLI 安装完成",
   "usingSudo": "⚠️ 检测到 Linux 非 root 用户，正在使用 sudo 安装 Codex CLI（可能需要输入密码）。",
   "alreadyInstalled": "⚠️ Codex CLI 已安装，跳过安装步骤",
   "updatingCli": "🔄 正在更新 Codex CLI...",
@@ -105,5 +103,17 @@
   "upToDate": "Codex 已是最新版本 (v{version})",
   "notInstalled": "Codex 未安装",
   "cannotCheckVersion": "无法检查最新版本",
-  "checkFailed": "版本检查失败"
+  "checkFailed": "版本检查失败",
+  "providerManager.noConfig": "未找到现有配置",
+  "providerManager.backupFailed": "创建备份失败",
+  "providerManager.providerExists": "ID 为 \"{{id}}\" 的提供商已存在",
+  "providerManager.providerNotFound": "ID 为 \"{{id}}\" 的提供商不存在",
+  "providerManager.noProvidersSpecified": "未指定要删除的提供商",
+  "providerManager.providersNotFound": "未找到以下提供商：{{providers}}",
+  "providerManager.cannotDeleteAll": "不能删除所有提供商，至少需要保留一个",
+  "providerManager.providerIdRequired": "提供商 ID 是必需的",
+  "providerManager.providerNameRequired": "提供商名称是必需的",
+  "providerManager.baseUrlRequired": "基础 URL 是必需的",
+  "providerManager.wireApiInvalid": "Wire API 必须是 \"responses\" 或 \"chat\"",
+  "providerManager.unknownError": "未知错误"
 }

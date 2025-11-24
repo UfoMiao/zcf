@@ -1,6 +1,4 @@
 {
-  "installingCli": "🚀 Installing Codex CLI...",
-  "installSuccess": "✔ Codex CLI installed",
   "usingSudo": "⚠️ Detected non-root Linux user. Using sudo for Codex CLI installation (password prompt may appear).",
   "alreadyInstalled": "⚠️ Codex CLI already installed, skipping installation",
   "updatingCli": "🔄 Updating Codex CLI...",
@@ -105,5 +103,17 @@
   "upToDate": "Codex is up to date (v{version})",
   "notInstalled": "Codex is not installed",
   "cannotCheckVersion": "Cannot check latest version",
-  "checkFailed": "Version check failed"
+  "checkFailed": "Version check failed",
+  "providerManager.noConfig": "No existing configuration found",
+  "providerManager.backupFailed": "Failed to create backup",
+  "providerManager.providerExists": "Provider with ID \"{{id}}\" already exists",
+  "providerManager.providerNotFound": "Provider with ID \"{{id}}\" not found",
+  "providerManager.noProvidersSpecified": "No providers specified for deletion",
+  "providerManager.providersNotFound": "Some providers not found: {{providers}}",
+  "providerManager.cannotDeleteAll": "Cannot delete all providers. At least one provider must remain.",
+  "providerManager.providerIdRequired": "Provider ID is required",
+  "providerManager.providerNameRequired": "Provider name is required",
+  "providerManager.baseUrlRequired": "Base URL is required",
+  "providerManager.wireApiInvalid": "Wire API must be either \"responses\" or \"chat\"",
+  "providerManager.unknownError": "Unknown error"
 }

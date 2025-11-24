@@ -1,16 +1,6 @@
 import type { CodexConfigData, CodexProvider } from './codex'
+import { ensureI18nInitialized, i18n } from '../../i18n'
 import { backupCodexComplete, readCodexConfig, writeAuthFile, writeCodexConfig } from './codex'
-
-// Constants for error messages
-const ERROR_MESSAGES = {
-  NO_CONFIG: 'No existing configuration found',
-  BACKUP_FAILED: 'Failed to create backup',
-  PROVIDER_EXISTS: (id: string) => `Provider with ID "${id}" already exists`,
-  PROVIDER_NOT_FOUND: (id: string) => `Provider with ID "${id}" not found`,
-  NO_PROVIDERS_SPECIFIED: 'No providers specified for deletion',
-  PROVIDERS_NOT_FOUND: (providers: string[]) => `Some providers not found: ${providers.join(', ')}`,
-  CANNOT_DELETE_ALL: 'Cannot delete all providers. At least one provider must remain.',
-} as const
 
 export interface ProviderOperationResult {
   success: boolean
@@ -43,13 +33,14 @@ export async function addProviderToExisting(
   apiKey: string,
   allowOverwrite = false,
 ): Promise<ProviderOperationResult> {
+  ensureI18nInitialized()
   try {
     const existingConfig = readCodexConfig()
 
     if (!existingConfig) {
       return {
         success: false,
-        error: ERROR_MESSAGES.NO_CONFIG,
+        error: i18n.t('codex:providerManager.noConfig'),
       }
     }
 
@@ -58,7 +49,7 @@ export async function addProviderToExisting(
     if (existingProviderIndex !== -1 && !allowOverwrite) {
       return {
         success: false,
-        error: ERROR_MESSAGES.PROVIDER_EXISTS(provider.id),
+        error: i18n.t('codex:providerManager.providerExists', { id: provider.id }),
       }
     }
 
@@ -67,7 +58,7 @@ export async function addProviderToExisting(
     if (!backupPath) {
       return {
         success: false,
-        error: ERROR_MESSAGES.BACKUP_FAILED,
+        error: i18n.t('codex:providerManager.backupFailed'),
       }
     }
 
@@ -107,7 +98,7 @@ export async function addProviderToExisting(
   catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : i18n.t('codex:providerManager.unknownError'),
     }
   }
 }
@@ -122,13 +113,14 @@ export async function editExistingProvider(
   providerId: string,
   updates: ProviderUpdateData,
 ): Promise<ProviderOperationResult> {
+  ensureI18nInitialized()
   try {
     const existingConfig = readCodexConfig()
 
     if (!existingConfig) {
       return {
         success: false,
-        error: ERROR_MESSAGES.NO_CONFIG,
+        error: i18n.t('codex:providerManager.noConfig'),
       }
     }
 
@@ -137,7 +129,7 @@ export async function editExistingProvider(
     if (providerIndex === -1) {
       return {
         success: false,
-        error: ERROR_MESSAGES.PROVIDER_NOT_FOUND(providerId),
+        error: i18n.t('codex:providerManager.providerNotFound', { id: providerId }),
       }
     }
 
@@ -146,7 +138,7 @@ export async function editExistingProvider(
     if (!backupPath) {
       return {
         success: false,
-        error: ERROR_MESSAGES.BACKUP_FAILED,
+        error: i18n.t('codex:providerManager.backupFailed'),
       }
     }
 
@@ -187,7 +179,7 @@ export async function editExistingProvider(
   catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : i18n.t('codex:providerManager.unknownError'),
     }
   }
 }
@@ -200,13 +192,14 @@ export async function editExistingProvider(
 export async function deleteProviders(
   providerIds: string[],
 ): Promise<ProviderOperationResult> {
+  ensureI18nInitialized()
   try {
     const existingConfig = readCodexConfig()
 
     if (!existingConfig) {
       return {
         success: false,
-        error: ERROR_MESSAGES.NO_CONFIG,
+        error: i18n.t('codex:providerManager.noConfig'),
       }
     }
 
@@ -214,7 +207,7 @@ export async function deleteProviders(
     if (!providerIds || providerIds.length === 0) {
       return {
         success: false,
-        error: ERROR_MESSAGES.NO_PROVIDERS_SPECIFIED,
+        error: i18n.t('codex:providerManager.noProvidersSpecified'),
       }
     }
 
@@ -225,7 +218,9 @@ export async function deleteProviders(
     if (notFoundProviders.length > 0) {
       return {
         success: false,
-        error: ERROR_MESSAGES.PROVIDERS_NOT_FOUND(notFoundProviders),
+        error: i18n.t('codex:providerManager.providersNotFound', {
+          providers: notFoundProviders.join(', '),
+        }),
       }
     }
 
@@ -236,7 +231,7 @@ export async function deleteProviders(
     if (remainingProviders.length === 0) {
       return {
         success: false,
-        error: ERROR_MESSAGES.CANNOT_DELETE_ALL,
+        error: i18n.t('codex:providerManager.cannotDeleteAll'),
       }
     }
 
@@ -245,7 +240,7 @@ export async function deleteProviders(
     if (!backupPath) {
       return {
         success: false,
-        error: ERROR_MESSAGES.BACKUP_FAILED,
+        error: i18n.t('codex:providerManager.backupFailed'),
       }
     }
 
@@ -282,7 +277,7 @@ export async function deleteProviders(
   catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
+      error: error instanceof Error ? error.message : i18n.t('codex:providerManager.unknownError'),
     }
   }
 }
@@ -296,22 +291,23 @@ export function validateProviderData(provider: Partial<CodexProvider>): {
   valid: boolean
   errors: string[]
 } {
+  ensureI18nInitialized()
   const errors: string[] = []
 
   if (!provider.id || typeof provider.id !== 'string' || provider.id.trim() === '') {
-    errors.push('Provider ID is required')
+    errors.push(i18n.t('codex:providerManager.providerIdRequired'))
   }
 
   if (!provider.name || typeof provider.name !== 'string' || provider.name.trim() === '') {
-    errors.push('Provider name is required')
+    errors.push(i18n.t('codex:providerManager.providerNameRequired'))
   }
 
   if (!provider.baseUrl || typeof provider.baseUrl !== 'string' || provider.baseUrl.trim() === '') {
-    errors.push('Base URL is required')
+    errors.push(i18n.t('codex:providerManager.baseUrlRequired'))
   }
 
   if (provider.wireApi && !['responses', 'chat'].includes(provider.wireApi)) {
-    errors.push('Wire API must be either "responses" or "chat"')
+    errors.push(i18n.t('codex:providerManager.wireApiInvalid'))
   }
 
   return {
