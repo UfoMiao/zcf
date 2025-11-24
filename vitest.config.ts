@@ -29,6 +29,7 @@ export default defineConfig({
         'src/types/**',
         '.claude',
         '.bmad-core',
+        'docs/**',
       ],
       thresholds: {
         branches: 80,
