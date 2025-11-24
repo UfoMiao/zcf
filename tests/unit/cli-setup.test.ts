@@ -16,6 +16,10 @@ vi.mock('../../src/commands/update', () => ({
   update: vi.fn().mockResolvedValue(undefined),
 }))
 
+vi.mock('../../src/commands/check-updates', () => ({
+  checkUpdates: vi.fn().mockResolvedValue(undefined),
+}))
+
 // Use real i18n system for better integration testing
 vi.mock('../../src/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../src/i18n')>()
@@ -50,6 +54,8 @@ vi.mock('../../src/utils/prompts', () => ({
 }))
 
 const { changeLanguage, i18n } = await import('../../src/i18n')
+const { checkUpdates } = await import('../../src/commands/check-updates')
+const mockedCheckUpdates = vi.mocked(checkUpdates)
 const { readZcfConfigAsync } = await import('../../src/utils/zcf-config')
 const { selectScriptLanguage } = await import('../../src/utils/prompts')
 const mockSelectScriptLanguage = vi.mocked(selectScriptLanguage)
@@ -61,6 +67,7 @@ describe('cli-setup', () => {
     await import('../../src/commands/init')
     await import('../../src/commands/menu')
     await import('../../src/commands/update')
+    await import('../../src/commands/check-updates')
   })
 
   afterEach(() => {
@@ -325,6 +332,22 @@ describe('cli-setup', () => {
         expect(optionsSection.body).toContain('--config-lang, -c')
         expect(optionsSection.body).toContain('--ai-output-lang, -a')
         expect(optionsSection.body).toContain('--code-type, -T')
+      })
+    })
+
+    describe('check command options', () => {
+      it('should recognize -s as shortcut for check command skip mode', () => {
+        const parsed = cli.parse(['node', 'test', 'check', '-s'], { run: false })
+        expect(parsed.options.skipPrompt).toBe(true)
+      })
+
+      it('should pass options to checkUpdates action', async () => {
+        const checkCommand = cli.commands.find((cmd: any) => cmd.name === 'check-updates')
+        expect(checkCommand).toBeDefined()
+        if (checkCommand?.commandAction) {
+          await checkCommand.commandAction({ skipPrompt: true, codeType: 'cc' })
+          expect(mockedCheckUpdates).toHaveBeenCalledWith({ skipPrompt: true, codeType: 'cc' })
+        }
       })
     })
 

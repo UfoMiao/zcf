@@ -159,6 +159,38 @@ describe('zcfUninstaller', () => {
       expect(result.success).toBe(true)
       expect(result.removed).toContain('agents/zcf/')
     })
+
+    it('should warn when agents directory is missing', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(false)
+
+      const result = await uninstaller.removeCustomAgents()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('agentsNotFound')
+    })
+  })
+
+  describe('removeClaudeMd', () => {
+    it('should remove CLAUDE.md file when present', async () => {
+      const claudeMdPath = '/home/user/.claude/CLAUDE.md'
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
+
+      const result = await uninstaller.removeClaudeMd()
+
+      expect(mockTrash.moveToTrash).toHaveBeenCalledWith(claudeMdPath)
+      expect(result.success).toBe(true)
+      expect(result.removed).toContain('CLAUDE.md')
+    })
+
+    it('should warn when CLAUDE.md file is missing', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(false)
+
+      const result = await uninstaller.removeClaudeMd()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('claudeMdNotFound')
+    })
   })
 
   describe('removeMcps', () => {

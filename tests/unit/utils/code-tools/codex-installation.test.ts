@@ -482,6 +482,44 @@ describe('codex installation checks', () => {
       expect(mockedInstallCodex).not.toHaveBeenCalled()
     })
 
+    it('should surface errors when the update command exits with a failure code', async () => {
+      mockExec
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: `
+/usr/local/lib
+├── @openai/codex@1.0.0
+└── other-package@1.0.0
+          `.trim(),
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: `
+/usr/local/lib
+├── @openai/codex@1.0.0
+          `.trim(),
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: JSON.stringify({
+            'dist-tags': { latest: '1.1.0' },
+          }),
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: 'permission denied',
+        })
+
+      const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
+
+      await expect(installCodexCli()).rejects.toThrow('Failed to update codex CLI: exit code 1')
+      expect(mockedInstallCodex).not.toHaveBeenCalled()
+    })
+
     it('should skip when already installed and no updates available', async () => {
       // Arrange - Mock isCodexInstalled to return true
       mockExec

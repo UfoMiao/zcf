@@ -324,6 +324,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
     .action(await withLanguageResolution(async (options) => {
       await checkUpdates(options)
     }))

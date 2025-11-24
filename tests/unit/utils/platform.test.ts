@@ -2,10 +2,12 @@ import { accessSync, existsSync, readFileSync } from 'node:fs'
 import { platform } from 'node:os'
 import { exec } from 'tinyexec'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as platformUtils from '../../../src/utils/platform'
 import {
   commandExists,
   getMcpCommand,
   getPlatform,
+  getRecommendedInstallMethods,
   getSystemRoot,
   getTermuxPrefix,
   getWSLDistro,
@@ -384,6 +386,20 @@ ID=ubuntu`)
       execPathSpy.mockRestore()
       expect(shouldUseSudoForGlobalInstall()).toBe(false)
     })
+
+    it('should return false when getuid throws error', () => {
+      execPathSpy.mockReturnValue('/usr/bin/node')
+      vi.mocked(accessSync).mockImplementation(() => {
+        const err = new Error('EACCES') as NodeJS.ErrnoException
+        err.code = 'EACCES'
+        throw err
+      })
+      ;(process as NodeJS.Process & { getuid?: () => number }).getuid = vi.fn(() => {
+        throw new Error('boom')
+      })
+
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
+    })
   })
 
   describe('commandExists', () => {
@@ -452,6 +468,44 @@ ID=ubuntu`)
 
       const result = await commandExists('claude')
       expect(result).toBe(false)
+    })
+  })
+
+  describe('getRecommendedInstallMethods', () => {
+    it('should prefer Homebrew then curl for Claude Code on macOS', () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      expect(getRecommendedInstallMethods('claude-code')).toEqual(['homebrew', 'curl', 'npm'])
+    })
+
+    it('should recommend Powershell first for Claude Code on Windows', () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      expect(getRecommendedInstallMethods('claude-code')).toEqual(['powershell', 'npm'])
+    })
+
+    it('should return npm only for Codex on non-mac platforms', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      vi.mocked(existsSync).mockReturnValue(false as any)
+      expect(getRecommendedInstallMethods('codex')).toEqual(['npm'])
+    })
+  })
+
+  describe('wrapCommandWithSudo', () => {
+    it('should wrap command with sudo when required', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      const originalHome = process.env.HOME
+      process.env.HOME = '/home/test'
+      vi.mocked(accessSync).mockImplementation(() => {
+        const err = new Error('EACCES') as NodeJS.ErrnoException
+        err.code = 'EACCES'
+        throw err
+      })
+      ;(process as NodeJS.Process & { getuid?: () => number }).getuid = vi.fn(() => 1000)
+      const result = platformUtils.wrapCommandWithSudo('npm', ['install'])
+      expect(result).toEqual({ command: 'sudo', args: ['npm', 'install'], usedSudo: true })
+      if (originalHome === undefined)
+        delete process.env.HOME
+      else
+        process.env.HOME = originalHome
     })
   })
 })

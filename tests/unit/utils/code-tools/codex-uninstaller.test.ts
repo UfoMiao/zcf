@@ -120,6 +120,15 @@ describe('codexUninstaller', () => {
       expect(result.success).toBe(true)
       expect(result.removed).toContain('auth.json')
     })
+
+    it('should warn when auth file does not exist', async () => {
+      mockPathExists.mockResolvedValue(false as any)
+
+      const result = await uninstaller.removeAuth()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('mocked_codex:authNotFound')
+    })
   })
 
   describe('removeSystemPrompt', () => {
@@ -459,6 +468,15 @@ key = "value"
       expect(result.success).toBe(false)
       expect(result.errors).toContain('Failed to remove MCP config: Write permission denied')
     })
+
+    it('should warn when MCP config file is missing', async () => {
+      mockPathExists.mockResolvedValue(false as any)
+
+      const result = await uninstaller.removeMcpConfig()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('mocked_codex:configNotFound')
+    })
   })
 
   describe('removeBackups', () => {
@@ -504,6 +522,31 @@ key = "value"
 
       expect(result.success).toBe(false)
       expect(result.errors).toContain('Failed to remove backups: Filesystem error')
+    })
+  })
+
+  describe('uninstallCliPackage error handling', () => {
+    it('should capture errors from cli uninstall and mark failure', async () => {
+      const failingUninstaller = new (await import('../../../../src/utils/code-tools/codex-uninstaller')).CodexUninstaller('en')
+      vi.spyOn(failingUninstaller, 'uninstallCliPackage').mockRejectedValue(new Error('boom'))
+      mockPathExists.mockResolvedValue(false as any)
+
+      const result = await failingUninstaller.completeUninstall()
+
+      expect(result.success).toBe(false)
+      expect(result.errors[0]).toContain('Complete uninstall failed')
+    })
+  })
+
+  describe('customUninstall error handling', () => {
+    it('should return error result when executeUninstallItem throws', async () => {
+      const failingUninstaller = new (await import('../../../../src/utils/code-tools/codex-uninstaller')).CodexUninstaller('en')
+      vi.spyOn(failingUninstaller as any, 'executeUninstallItem').mockRejectedValue(new Error('fail'))
+
+      const results = await failingUninstaller.customUninstall(['config'])
+
+      expect(results[0].success).toBe(false)
+      expect(results[0].errors[0]).toContain('Failed to execute config')
     })
   })
 

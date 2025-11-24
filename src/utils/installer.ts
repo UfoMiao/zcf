@@ -373,7 +373,9 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
             // Attempt to remove the binary
             const platform = getPlatform()
             if (platform === 'windows') {
-              await exec('del', [binaryPath])
+              // `del` is a shell builtin, so invoke through cmd
+              const quotedBinaryPath = `"${binaryPath}"`
+              await exec('cmd', ['/c', 'del', '/f', '/q', quotedBinaryPath])
             }
             else {
               const { command: rmCmd, args: rmArgs } = wrapCommandWithSudo('rm', ['-f', binaryPath])
