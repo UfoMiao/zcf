@@ -68,6 +68,18 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 
 - https://zcf.ufomiao.com/ja-JP/
 
+## 🙏 謝辞
+
+本プロジェクトは以下のオープンソースプロジェクトからインスピレーションを受け、さまざまな要素を取り入れています：
+
+- [LINUX DO - 新たな理想郷コミュニティ](https://linux.do)
+- [CCR](https://github.com/musistudio/claude-code-router)
+- [CCometixLine](https://github.com/Haleclipse/CCometixLine)
+- [ccusage](https://github.com/ryoppippi/ccusage)
+- [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD)
+
+これらのコミュニティ貢献者の皆さまに心より感謝いたします！
+
 
 ## ❤️ サポートとスポンサー
 

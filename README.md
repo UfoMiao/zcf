@@ -68,6 +68,19 @@ More usage, options, and workflows: see documentation.
 
 - https://zcf.ufomiao.com/
 
+## 🙏 Acknowledgments
+
+This project is inspired by and incorporates work from:
+
+- [LINUX DO - New Ideal Community](https://linux.do)
+- [CCR](https://github.com/musistudio/claude-code-router)
+- [CCometixLine](https://github.com/Haleclipse/CCometixLine)
+- [ccusage](https://github.com/ryoppippi/ccusage)
+- [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD)
+
+Thanks to these community contributors for sharing their amazing projects!
+
+## ❤️ Support & Sponsors
 
 If you find this project helpful, please consider sponsoring its development. Your support is greatly appreciated!
 
