@@ -13,5 +13,7 @@
   "back": "返回",
   "operationFailed": "操作失败",
   "backupCreated": "📁 已创建配置备份：{{path}}",
-  "current": "当前"
+  "current": "当前",
+  "claudeCode": "Claude Code",
+  "codex": "Codex"
 }

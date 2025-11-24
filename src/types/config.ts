@@ -42,3 +42,21 @@ export interface ApiConfig {
   key: string
   authType?: 'auth_token' | 'api_key'
 }
+
+/**
+ * Installation method types for code tools
+ */
+export type InstallMethod = 'npm' | 'homebrew' | 'curl' | 'powershell' | 'cmd'
+
+/**
+ * Installation method option with metadata
+ */
+export interface InstallMethodOption {
+  method: InstallMethod
+  label: string
+  description: string
+  command: string
+  args?: string[]
+  platforms: ('windows' | 'macos' | 'linux' | 'wsl')[]
+  recommended?: boolean
+}

@@ -1,6 +1,5 @@
 {
   "title": "ZCF 卸载工具",
-  "warning": "⚠️  这将永久删除您系统中的 Claude Code 配置和工具。",
   "selectMainOption": "选择卸载选项:",
   "completeUninstall": "完全卸载",
   "completeUninstallDesc": "删除所有 Claude Code 相关配置和工具",
@@ -52,5 +51,6 @@
   "claudeCodePackageNotFound": "未找到 Claude Code 包",
   "backupsNotFound": "未找到备份目录",
   "zcfConfigNotFound": "未找到 ZCF 配置文件",
-  "outputStylesDirectoryNotFound": "未找到输出风格目录"
+  "outputStylesDirectoryNotFound": "未找到输出风格目录",
+  "uninstallFailed": "卸载 {{codeType}} 失败{{message}}"
 }

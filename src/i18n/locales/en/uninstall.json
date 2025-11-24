@@ -1,6 +1,5 @@
 {
   "title": "ZCF Uninstaller",
-  "warning": "⚠️  This will permanently remove Claude Code configurations and tools from your system.",
   "selectMainOption": "Select uninstall option:",
   "completeUninstall": "Complete Uninstall",
   "completeUninstallDesc": "Remove all Claude Code related configurations and tools",
@@ -52,5 +51,6 @@
   "claudeCodePackageNotFound": "Claude Code package not found",
   "backupsNotFound": "Backup directory not found",
   "zcfConfigNotFound": "ZCF configuration file not found",
-  "outputStylesDirectoryNotFound": "Output styles directory not found"
+  "outputStylesDirectoryNotFound": "Output styles directory not found",
+  "uninstallFailed": "Failed to uninstall {{codeType}}{{message}}"
 }

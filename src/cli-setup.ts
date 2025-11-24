@@ -310,6 +310,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .command('uninstall', 'Remove ZCF configurations and tools')
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .option('--mode, -m <mode>', 'Uninstall mode (complete/custom/interactive), default: interactive')
     .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
     .action(await withLanguageResolution(async (options) => {

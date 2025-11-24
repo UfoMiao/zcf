@@ -11,6 +11,9 @@ vi.mock('node:os')
 vi.mock('../../src/utils/json-config')
 vi.mock('../../src/i18n')
 vi.mock('../../src/utils/trash')
+vi.mock('../../src/utils/installer', () => ({
+  uninstallCodeTool: vi.fn(),
+}))
 
 // Mock modules
 const mockFs = vi.hoisted(() => ({
@@ -50,6 +53,8 @@ const mockI18n = vi.hoisted(() => ({
 const mockTrash = vi.hoisted(() => ({
   moveToTrash: vi.fn().mockResolvedValue([{ success: true }]),
 }))
+const installerModule = await import('../../src/utils/installer')
+const mockUninstallCodeTool = vi.mocked(installerModule.uninstallCodeTool)
 
 vi.mocked(await import('node:fs')).existsSync = mockFs.existsSync
 vi.mocked(await import('node:fs')).readFileSync = mockFs.readFileSync
@@ -70,6 +75,7 @@ describe('zcfUninstaller', () => {
   beforeEach(() => {
     uninstaller = new ZcfUninstaller()
     vi.clearAllMocks()
+    mockUninstallCodeTool.mockReset()
   })
 
   describe('removeOutputStyles', () => {
@@ -192,33 +198,27 @@ describe('zcfUninstaller', () => {
       const claudeJsonPath = '/home/user/.claude.json'
       mockFsExtra.pathExists.mockResolvedValue(true)
       mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
-      mockExec.exec.mockResolvedValue({ stdout: 'uninstalled', stderr: '' })
+      mockUninstallCodeTool.mockResolvedValue(true)
 
       const result = await uninstaller.uninstallClaudeCode()
 
       expect(mockTrash.moveToTrash).toHaveBeenCalledWith(claudeJsonPath)
-      expect(mockExec.exec).toHaveBeenCalledWith('npm', ['uninstall', '-g', '@anthropic-ai/claude-code'])
+      expect(mockUninstallCodeTool).toHaveBeenCalledWith('claude-code')
       expect(result.success).toBe(true)
       expect(result.removed).toContain('.claude.json (includes MCP configuration)')
-      expect(result.removed).toContain('@anthropic-ai/claude-code package')
+      expect(result.removed).toContain('@anthropic-ai/claude-code')
     })
 
     it('should handle npm uninstall failures gracefully', async () => {
       mockFsExtra.pathExists.mockResolvedValue(true)
       mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
-      mockExec.exec.mockRejectedValue(new Error('npm not found'))
+      mockUninstallCodeTool.mockRejectedValue(new Error('npm not found'))
 
       const result = await uninstaller.uninstallClaudeCode()
 
-      expect(result.success).toBe(true) // Method returns true even when npm fails
-      // When npm fails with 'not found', it goes to warnings; otherwise to errors
-      expect(result.warnings.length > 0 || result.errors.length > 0).toBe(true)
-      if (result.warnings.length > 0) {
-        expect(result.warnings[0]).toMatch(/claudeCodePackageNotFound/)
-      }
-      else {
-        expect(result.errors[0]).toMatch(/Failed to uninstall Claude Code package/)
-      }
+      expect(mockUninstallCodeTool).toHaveBeenCalledWith('claude-code')
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('claudeCodePackageNotFound')
     })
   })
 

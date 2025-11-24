@@ -8,10 +8,6 @@ vi.mock('fs-extra', () => ({
   pathExists: vi.fn(),
 }))
 
-vi.mock('tinyexec', () => ({
-  exec: vi.fn(),
-}))
-
 vi.mock('../../../../src/utils/trash', () => ({
   moveToTrash: vi.fn(),
 }))
@@ -27,19 +23,25 @@ vi.mock('../../../../src/i18n', () => ({
   },
 }))
 
+const installerMock = vi.hoisted(() => ({
+  uninstallCodeTool: vi.fn(),
+}))
+
+vi.mock('../../../../src/utils/installer', () => installerMock)
+
 // Import mocked functions
 const { pathExists } = await import('fs-extra')
-const { exec } = await import('tinyexec')
 const { moveToTrash } = await import('../../../../src/utils/trash')
 const { readJsonConfig, writeJsonConfig } = await import('../../../../src/utils/json-config')
 const { i18n } = await import('../../../../src/i18n')
+const { uninstallCodeTool } = await import('../../../../src/utils/installer')
 
 // Get mock functions
 const mockPathExists = vi.mocked(pathExists)
-const mockExec = vi.mocked(exec)
 const mockMoveToTrash = vi.mocked(moveToTrash)
 const _mockReadJsonConfig = vi.mocked(readJsonConfig)
 const _mockWriteJsonConfig = vi.mocked(writeJsonConfig)
+const mockUninstallCodeTool = vi.mocked(uninstallCodeTool)
 
 // Suppress unused variable warnings - these are intentionally unused in tests
 void _mockReadJsonConfig
@@ -59,7 +61,7 @@ describe('codexUninstaller', () => {
     mockI18nT.mockImplementation(((key: string) => `mocked_${key}`) as any)
     mockMoveToTrash.mockResolvedValue([{ success: true, path: 'test' }])
     mockPathExists.mockResolvedValue(true as any)
-    mockExec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' } as any)
+    mockUninstallCodeTool.mockResolvedValue(true)
 
     // Import the actual class after mocks are setup
     const { CodexUninstaller: ActualCodexUninstaller } = await import('../../../../src/utils/code-tools/codex-uninstaller')
@@ -148,19 +150,19 @@ describe('codexUninstaller', () => {
 
   describe('uninstallCliPackage', () => {
     it('should successfully uninstall npm package', async () => {
-      mockExec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' } as any)
+      mockUninstallCodeTool.mockResolvedValue(true)
 
       const result = await uninstaller.uninstallCliPackage()
 
-      expect(mockExec).toHaveBeenCalledWith('npm', ['uninstall', '-g', '@openai/codex'])
+      expect(mockUninstallCodeTool).toHaveBeenCalledWith('codex')
       expect(result.success).toBe(true)
-      expect(result.removed).toContain('@openai/codex package')
+      expect(result.removed).toContain('@openai/codex')
     })
 
     it('should handle package not found scenario', async () => {
       const notFoundError = new Error('Package not found')
       notFoundError.message = 'not found'
-      mockExec.mockRejectedValue(notFoundError)
+      mockUninstallCodeTool.mockRejectedValue(notFoundError)
 
       const result = await uninstaller.uninstallCliPackage()
 
@@ -170,42 +172,42 @@ describe('codexUninstaller', () => {
 
     it('should handle npm uninstall failure', async () => {
       const error = new Error('Network error')
-      mockExec.mockRejectedValue(error)
+      mockUninstallCodeTool.mockRejectedValue(error)
 
       const result = await uninstaller.uninstallCliPackage()
 
       expect(result.success).toBe(false)
-      expect(result.errors).toContain('Failed to uninstall Codex package: Network error')
+      expect(result.errors).toContain('mocked_uninstall:uninstallFailed')
     })
   })
 
   describe('completeUninstall', () => {
     it('should perform complete uninstall of all components', async () => {
       mockPathExists.mockResolvedValue(true as any)
-      mockExec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' } as any)
+      mockUninstallCodeTool.mockResolvedValue(true)
 
       const result = await uninstaller.completeUninstall()
 
       // Should remove entire .codex directory
       expect(mockMoveToTrash).toHaveBeenCalledWith(CODEX_DIR)
       // Should uninstall npm package
-      expect(mockExec).toHaveBeenCalledWith('npm', ['uninstall', '-g', '@openai/codex'])
+      expect(mockUninstallCodeTool).toHaveBeenCalledWith('codex')
 
       expect(result.success).toBe(true)
       expect(result.removed).toContain('~/.codex/')
-      expect(result.removed).toContain('@openai/codex package')
+      expect(result.removed).toContain('@openai/codex')
     })
 
     it('should handle partial failures gracefully', async () => {
       mockPathExists.mockResolvedValue(true as any)
       mockMoveToTrash.mockResolvedValue([{ success: false, path: CODEX_DIR, error: 'Permission denied' }])
-      mockExec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' } as any)
+      mockUninstallCodeTool.mockResolvedValue(true)
 
       const result = await uninstaller.completeUninstall()
 
       expect(result.success).toBe(true)
       expect(result.warnings).toContain('Failed to move ~/.codex/ to trash: Permission denied')
-      expect(result.removed).toContain('@openai/codex package')
+      expect(result.removed).toContain('@openai/codex')
     })
   })
 
@@ -225,13 +227,13 @@ describe('codexUninstaller', () => {
       // cli-package should include config removal
       const selectedItems: CodexUninstallItem[] = ['cli-package', 'config']
       mockPathExists.mockResolvedValue(true as any)
-      mockExec.mockResolvedValue({ exitCode: 0, stdout: '', stderr: '' } as any)
+      mockUninstallCodeTool.mockResolvedValue(true)
 
       const results = await uninstaller.customUninstall(selectedItems)
 
       // Should remove config conflict since cli-package uninstall includes it
       expect(results).toHaveLength(1) // Only cli-package uninstall
-      expect(mockExec).toHaveBeenCalledWith('npm', ['uninstall', '-g', '@openai/codex'])
+      expect(mockUninstallCodeTool).toHaveBeenCalledWith('codex')
     })
 
     it('should handle errors in individual uninstall items', async () => {

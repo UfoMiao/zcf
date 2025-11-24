@@ -1,7 +1,6 @@
 import type { SupportedLang } from '../../constants'
 import { pathExists } from 'fs-extra'
 import { join } from 'pathe'
-import { exec } from 'tinyexec'
 import { CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR } from '../../constants'
 import { i18n } from '../../i18n'
 import { moveToTrash } from '../trash'
@@ -185,9 +184,17 @@ export class CodexUninstaller {
     }
 
     try {
-      await exec('npm', ['uninstall', '-g', '@openai/codex'])
-      result.removed.push('@openai/codex package')
-      result.success = true
+      // Use the unified uninstallCodeTool function which handles different install methods
+      const { uninstallCodeTool } = await import('../installer')
+      const success = await uninstallCodeTool('codex')
+
+      if (success) {
+        result.removed.push('@openai/codex')
+        result.success = true
+      }
+      else {
+        result.errors.push(i18n.t('uninstall:uninstallFailed', { codeType: i18n.t('common:codex'), message: '' }))
+      }
     }
     catch (error: any) {
       if (error.message.includes('not found') || error.message.includes('not installed')) {
@@ -195,7 +202,7 @@ export class CodexUninstaller {
         result.success = true
       }
       else {
-        result.errors.push(`Failed to uninstall Codex package: ${error.message}`)
+        result.errors.push(i18n.t('uninstall:uninstallFailed', { codeType: i18n.t('common:codex'), message: `: ${error.message}` }))
       }
     }
 

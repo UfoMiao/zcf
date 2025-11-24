@@ -13,5 +13,7 @@
   "back": "Back",
   "operationFailed": "Operation failed",
   "backupCreated": "📁 Configuration backup created: {{path}}",
-  "current": "current"
+  "current": "current",
+  "claudeCode": "Claude Code",
+  "codex": "Codex"
 }

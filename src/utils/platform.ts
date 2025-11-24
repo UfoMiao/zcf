@@ -277,3 +277,41 @@ export async function commandExists(command: string): Promise<boolean> {
 
   return false
 }
+
+/**
+ * Get recommended install methods for a code tool based on current platform
+ * Returns methods in priority order (most recommended first)
+ */
+export type CodeType = 'claude-code' | 'codex'
+export type InstallMethod = 'npm' | 'homebrew' | 'curl' | 'powershell' | 'cmd'
+
+export function getRecommendedInstallMethods(codeType: CodeType): InstallMethod[] {
+  const platform = getPlatform()
+  const wsl = isWSL()
+
+  // Claude Code recommendations
+  if (codeType === 'claude-code') {
+    if (platform === 'macos') {
+      return ['homebrew', 'curl', 'npm']
+    }
+    if (platform === 'linux' || wsl) {
+      return ['curl', 'npm']
+    }
+    if (platform === 'windows') {
+      return ['powershell', 'npm']
+    }
+  }
+
+  // Codex recommendations
+  if (codeType === 'codex') {
+    if (platform === 'macos') {
+      return ['homebrew', 'npm']
+    }
+    if (platform === 'linux' || wsl || platform === 'windows') {
+      return ['npm']
+    }
+  }
+
+  // Default fallback
+  return ['npm']
+}

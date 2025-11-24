@@ -82,30 +82,24 @@ function getRootDir(): string {
  * Core function to install/update Codex CLI via npm
  * @param isUpdate - Whether this is an update (true) or fresh install (false)
  */
-async function executeCodexInstallation(isUpdate: boolean): Promise<void> {
-  const action = isUpdate ? 'update' : 'install'
-
+async function executeCodexInstallation(isUpdate: boolean, skipMethodSelection: boolean = false): Promise<void> {
   if (isUpdate) {
     console.log(ansis.cyan(i18n.t('codex:updatingCli')))
-  }
-  else {
-    console.log(ansis.cyan(i18n.t('codex:installingCli')))
-  }
+    // Update still uses npm directly
+    const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex@latest'])
+    if (usedSudo)
+      console.log(ansis.yellow(i18n.t('codex:usingSudo')))
 
-  const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex'])
-  if (usedSudo)
-    console.log(ansis.yellow(i18n.t('codex:usingSudo')))
-
-  const result = await x(command, args)
-  if (result.exitCode !== 0) {
-    throw new Error(`Failed to ${action} codex CLI: exit code ${result.exitCode}`)
-  }
-
-  if (isUpdate) {
+    const result = await x(command, args)
+    if (result.exitCode !== 0) {
+      throw new Error(`Failed to update codex CLI: exit code ${result.exitCode}`)
+    }
     console.log(ansis.green(i18n.t('codex:updateSuccess')))
   }
   else {
-    console.log(ansis.green(i18n.t('codex:installSuccess')))
+    // Use the new installCodex function for installation
+    const { installCodex } = await import('../installer')
+    await installCodex(skipMethodSelection)
   }
 }
 
@@ -656,7 +650,7 @@ export async function checkCodexUpdate(): Promise<CodexVersionInfo> {
   }
 }
 
-export async function installCodexCli(): Promise<void> {
+export async function installCodexCli(skipMethodSelection: boolean = false): Promise<void> {
   ensureI18nInitialized()
 
   // Check if already installed
@@ -665,7 +659,7 @@ export async function installCodexCli(): Promise<void> {
     const { needsUpdate } = await checkCodexUpdate()
     if (needsUpdate) {
       // Update available - install new version
-      await executeCodexInstallation(true)
+      await executeCodexInstallation(true, skipMethodSelection)
       return
     }
     else {
@@ -676,7 +670,7 @@ export async function installCodexCli(): Promise<void> {
   }
 
   // Not installed - install new
-  await executeCodexInstallation(false)
+  await executeCodexInstallation(false, skipMethodSelection)
 }
 
 export async function runCodexWorkflowImport(): Promise<void> {
@@ -1407,7 +1401,7 @@ export async function runCodexFullInit(
 ): Promise<AiOutputLanguage | string> {
   ensureI18nInitialized()
 
-  await installCodexCli()
+  await installCodexCli(options?.skipPrompt || false)
   const aiOutputLang = await runCodexWorkflowImportWithLanguageSelection(options)
   await configureCodexApi(options)
   await configureCodexMcp(options)

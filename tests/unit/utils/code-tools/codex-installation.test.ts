@@ -3,14 +3,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as platform from '../../../../src/utils/platform'
 
 // Mock dependencies
-vi.mock('tinyexec')
 vi.mock('../../i18n')
+
+const installerMock = vi.hoisted(() => ({
+  installCodex: vi.fn(),
+}))
+
+vi.mock('../../../../src/utils/installer', () => installerMock)
 
 const platformMock = vi.hoisted(() => {
   const shouldUseSudoForGlobalInstall = vi.fn(() => false)
   return {
     getPlatform: vi.fn(() => 'macos'),
     isTermux: vi.fn(() => false),
+    isWSL: vi.fn(() => false),
+    getWSLInfo: vi.fn(() => null),
+    getTermuxPrefix: vi.fn(() => '/data/data/com.termux/files/usr'),
+    getRecommendedInstallMethods: vi.fn(() => ['npm']),
+    commandExists: vi.fn(async () => false),
     shouldUseSudoForGlobalInstall,
     wrapCommandWithSudo: vi.fn((command: string, args: string[]) => {
       if (shouldUseSudoForGlobalInstall()) {
@@ -32,16 +42,29 @@ const platformMock = vi.hoisted(() => {
 
 vi.mock('../../../../src/utils/platform', () => platformMock)
 
-const mockExec = vi.fn()
-vi.mocked(vi.doMock('tinyexec', () => ({
+const mockExec = vi.hoisted(() => vi.fn())
+const mockTinyexec = vi.hoisted(() => ({
   x: mockExec,
-})))
+  exec: mockExec,
+}))
+
+vi.mock('tinyexec', () => ({
+  __esModule: true,
+  ...mockTinyexec,
+  default: mockTinyexec,
+}))
+
+const installerModule = await import('../../../../src/utils/installer')
+const mockedInstallCodex = vi.mocked(installerModule.installCodex)
 
 describe('codex installation checks', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockExec.mockReset()
     vi.mocked(platform.getPlatform).mockReturnValue('macos')
     vi.mocked(platform.shouldUseSudoForGlobalInstall).mockReturnValue(false)
+    mockedInstallCodex.mockReset()
+    mockedInstallCodex.mockResolvedValue(undefined)
   })
 
   describe('isCodexInstalled', () => {
@@ -364,7 +387,7 @@ describe('codex installation checks', () => {
 
       // Assert
       expect(mockExec).toHaveBeenCalledWith('npm', ['list', '-g', '--depth=0'])
-      expect(mockExec).not.toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex'])
+      expect(mockedInstallCodex).not.toHaveBeenCalled()
     })
 
     it('should install codex when not already installed', async () => {
@@ -390,48 +413,24 @@ describe('codex installation checks', () => {
 
       // Assert
       expect(mockExec).toHaveBeenCalledWith('npm', ['list', '-g', '--depth=0'])
-      expect(mockExec).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex'])
+      expect(mockedInstallCodex).toHaveBeenCalledWith(false)
     })
 
-    it('should use sudo when installing on linux as non-root user', async () => {
-      mockExec
-        .mockResolvedValueOnce({
-          exitCode: 0,
-          stdout: `
+    it('should pass skipMethodSelection flag to installCodex when requested', async () => {
+      mockExec.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: `
 /usr/local/lib
 └── other-package@1.0.0
-          `.trim(),
-          stderr: '',
-        })
-        .mockResolvedValueOnce({
-          exitCode: 0,
-          stdout: 'installed successfully',
-          stderr: '',
-        })
-
-      vi.mocked(platform.getPlatform).mockReturnValue('linux')
-      vi.mocked(platform.shouldUseSudoForGlobalInstall).mockReturnValue(true)
-
-      const originalGetuid = (process as any).getuid
-      let getuidSpy: any
-      if (typeof originalGetuid === 'function') {
-        getuidSpy = vi.spyOn(process as any, 'getuid').mockReturnValue(1000)
-      }
-      else {
-        getuidSpy = vi.fn().mockReturnValue(1000)
-        ;(process as any).getuid = getuidSpy
-      }
+        `.trim(),
+        stderr: '',
+      })
 
       const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
-      await installCodexCli()
+      await installCodexCli(true)
 
-      expect(mockExec).toHaveBeenNthCalledWith(1, 'npm', ['list', '-g', '--depth=0'])
-      expect(mockExec).toHaveBeenNthCalledWith(2, 'sudo', ['npm', 'install', '-g', '@openai/codex'])
-
-      if (typeof originalGetuid === 'function')
-        getuidSpy.mockRestore()
-      else
-        delete (process as NodeJS.Process & { getuid?: () => number }).getuid
+      expect(mockExec).toHaveBeenCalledWith('npm', ['list', '-g', '--depth=0'])
+      expect(mockedInstallCodex).toHaveBeenCalledWith(true)
     })
 
     it('should check for updates when already installed and update if available', async () => {
@@ -479,7 +478,8 @@ describe('codex installation checks', () => {
       // Assert
       expect(mockExec).toHaveBeenCalledWith('npm', ['list', '-g', '--depth=0'])
       expect(mockExec).toHaveBeenCalledWith('npm', ['view', '@openai/codex', '--json'])
-      expect(mockExec).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex'])
+      expect(mockExec).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex@latest'])
+      expect(mockedInstallCodex).not.toHaveBeenCalled()
     })
 
     it('should skip when already installed and no updates available', async () => {
@@ -522,7 +522,8 @@ describe('codex installation checks', () => {
       expect(mockExec).toHaveBeenCalledWith('npm', ['list', '-g', '--depth=0'])
       expect(mockExec).toHaveBeenCalledWith('npm', ['view', '@openai/codex', '--json'])
       // Should NOT call install when no update is needed
-      expect(mockExec).not.toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex'])
+      expect(mockExec).not.toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex@latest'])
+      expect(mockedInstallCodex).not.toHaveBeenCalled()
     })
   })
 })

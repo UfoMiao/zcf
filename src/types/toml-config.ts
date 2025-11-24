@@ -10,6 +10,7 @@ export interface ClaudeCodeConfig {
   outputStyles: string[]
   defaultOutputStyle?: string
   installType: 'global' | 'local'
+  installMethod?: 'npm' | 'homebrew' | 'curl' | 'powershell' | 'cmd' | 'native'
   currentProfile?: string
   profiles?: Record<string, ClaudeCodeProfile>
   version?: string
@@ -18,11 +19,12 @@ export interface ClaudeCodeConfig {
 /**
  * Codex specific configuration
  * Features: Single system prompt style selection
- * Note: Codex only supports global installation, so no installType field
+ * Note: Codex only supports global installation
  */
 export interface CodexConfig {
   enabled: boolean
   systemPromptStyle: string
+  installMethod?: 'npm' | 'homebrew' | 'native'
 }
 
 /**

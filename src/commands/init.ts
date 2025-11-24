@@ -489,7 +489,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
           // If local installation exists, we prefer global - install global if needed, then remove local
           if (!installationStatus.hasGlobal) {
             console.log(ansis.blue(`${i18n.t('installation:installingGlobalClaudeCode')}...`))
-            await installClaudeCode()
+            await installClaudeCode(true) // Skip method selection in non-interactive mode
             console.log(ansis.green(`✔ ${i18n.t('installation:globalInstallationCompleted')}`))
           }
 
@@ -508,8 +508,8 @@ export async function init(options: InitOptions = {}): Promise<void> {
     else {
       // No installation found - install Claude Code
       if (options.skipPrompt) {
-        // In skip-prompt mode, auto-install Claude Code
-        await installClaudeCode()
+        // In skip-prompt mode, auto-install Claude Code with npm (skip method selection)
+        await installClaudeCode(true)
       }
       else {
         const shouldInstall = await promptBoolean({
@@ -518,7 +518,8 @@ export async function init(options: InitOptions = {}): Promise<void> {
         })
 
         if (shouldInstall) {
-          await installClaudeCode()
+          // In interactive mode, allow method selection
+          await installClaudeCode(false)
         }
         else {
           console.log(ansis.yellow(i18n.t('common:skip')))

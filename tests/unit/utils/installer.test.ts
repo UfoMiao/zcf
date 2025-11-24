@@ -31,6 +31,10 @@ describe('installer utilities', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(platform.isTermux).mockReturnValue(false)
     vi.mocked(platform.getPlatform).mockReturnValue('macos')
+    vi.mocked(platform.getRecommendedInstallMethods).mockReturnValue(['npm'])
+    vi.mocked(platform.isWSL).mockReturnValue(false)
+    vi.mocked(platform.getWSLInfo).mockReturnValue(null)
+    vi.mocked(platform.getTermuxPrefix).mockReturnValue('/data/data/com.termux/files/usr')
     vi.mocked(platform.wrapCommandWithSudo).mockImplementation((command, args) => ({
       command,
       args,
@@ -186,7 +190,7 @@ describe('installer utilities', () => {
         stderr: '',
       } as any)
 
-      await installClaudeCode()
+      await installClaudeCode(true)
 
       expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@anthropic-ai/claude-code'])
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✔'))
@@ -216,7 +220,7 @@ describe('installer utilities', () => {
         stderr: '',
       } as any)
 
-      await installClaudeCode()
+      await installClaudeCode(true)
 
       expect(exec).toHaveBeenCalledWith('sudo', ['npm', 'install', '-g', '@anthropic-ai/claude-code'])
 
@@ -237,7 +241,7 @@ describe('installer utilities', () => {
         stderr: '',
       } as any)
 
-      await installClaudeCode()
+      await installClaudeCode(true)
 
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Termux environment detected'))
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('/data/data/com.termux/files/usr'))
@@ -247,7 +251,7 @@ describe('installer utilities', () => {
       vi.mocked(platform.isTermux).mockReturnValue(false)
       vi.mocked(exec).mockRejectedValue(new Error('Installation failed'))
 
-      await expect(installClaudeCode()).rejects.toThrow('Installation failed')
+      await expect(installClaudeCode(true)).rejects.toThrow('Installation failed')
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('✖'))
     })
@@ -256,7 +260,7 @@ describe('installer utilities', () => {
       vi.mocked(platform.isTermux).mockReturnValue(true)
       vi.mocked(exec).mockRejectedValue(new Error('Installation failed'))
 
-      await expect(installClaudeCode()).rejects.toThrow('Installation failed')
+      await expect(installClaudeCode(true)).rejects.toThrow('Installation failed')
 
       expect(console.error).toHaveBeenCalledWith(expect.stringContaining('✖'))
       expect(console.error).toHaveBeenCalledTimes(2) // Error message + Termux hint
@@ -270,7 +274,7 @@ describe('installer utilities', () => {
         stderr: '',
       } as any)
 
-      await installClaudeCode()
+      await installClaudeCode(true)
 
       expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@anthropic-ai/claude-code'])
       expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✔'))

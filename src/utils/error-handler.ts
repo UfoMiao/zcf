@@ -7,7 +7,15 @@ import { ensureI18nInitialized, i18n } from '../i18n'
  * @returns true if error was ExitPromptError and handled, false otherwise
  */
 export function handleExitPromptError(error: unknown): boolean {
-  if (error instanceof Error && error.name === 'ExitPromptError') {
+  // Check for ExitPromptError by name or message
+  const isExitError = error instanceof Error && (
+    error.name === 'ExitPromptError'
+    || error.message?.includes('ExitPromptError')
+    || error.message?.includes('User force closed the prompt')
+  )
+
+  if (isExitError) {
+    ensureI18nInitialized()
     console.log(ansis.cyan(`\n${i18n.t('common:goodbye')}\n`))
     process.exit(0)
   }

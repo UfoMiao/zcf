@@ -10,6 +10,13 @@ vi.mock('../../src/utils/uninstaller')
 vi.mock('../../src/utils/toggle-prompt', () => ({
   promptBoolean: vi.fn(),
 }))
+vi.mock('../../src/utils/zcf-config', () => ({
+  readZcfConfig: vi.fn(() => ({ codeToolType: 'claude-code' })),
+  readZcfConfigAsync: vi.fn(async () => ({ codeToolType: 'claude-code' })),
+}))
+vi.mock('../../src/utils/code-type-resolver', () => ({
+  resolveCodeType: vi.fn(async () => 'claude-code'),
+}))
 
 // Mock modules
 const mockInquirer = vi.hoisted(() => ({
@@ -59,15 +66,20 @@ describe('uninstall command', () => {
       await uninstall()
 
       // Should call prompt with numbered choices and descriptions
-      expect(mockInquirer.prompt).toHaveBeenCalledWith({
+      expect(mockInquirer.prompt).toHaveBeenCalled()
+
+      const firstPromptArg = mockInquirer.prompt.mock.calls[0][0]
+      const firstPrompt = Array.isArray(firstPromptArg) ? firstPromptArg[0] : firstPromptArg
+
+      expect(firstPrompt).toEqual(expect.objectContaining({
         type: 'list',
         name: 'mainChoice',
         message: 'uninstall:selectMainOption',
-        choices: expect.arrayContaining([
-          expect.objectContaining({ value: 'complete', short: 'uninstall:completeUninstall' }),
-          expect.objectContaining({ value: 'custom', short: 'uninstall:customUninstall' }),
-        ]),
-      })
+      }))
+      expect(firstPrompt.choices).toEqual(expect.arrayContaining([
+        expect.objectContaining({ value: 'complete' }),
+        expect.objectContaining({ value: 'custom' }),
+      ]))
     })
 
     it('should execute complete uninstall when selected', async () => {
@@ -110,25 +122,27 @@ describe('uninstall command', () => {
       await uninstall()
 
       // Should show custom options menu with checkbox type
-      expect(mockInquirer.prompt).toHaveBeenCalledWith({
+      const secondPromptArg = mockInquirer.prompt.mock.calls[1][0]
+      const secondPrompt = Array.isArray(secondPromptArg) ? secondPromptArg[0] : secondPromptArg
+      expect(secondPrompt).toEqual(expect.objectContaining({
         type: 'checkbox',
         name: 'customItems',
         message: 'uninstall:selectItemsToRemove common:multiSelectHint',
-        choices: expect.arrayContaining([
-          expect.objectContaining({ value: 'output-styles' }),
-          expect.objectContaining({ value: 'commands' }),
-          expect.objectContaining({ value: 'agents' }),
-          expect.objectContaining({ value: 'claude-md' }),
-          expect.objectContaining({ value: 'permissions-envs' }),
-          expect.objectContaining({ value: 'mcps' }),
-          expect.objectContaining({ value: 'ccr' }),
-          expect.objectContaining({ value: 'ccline' }),
-          expect.objectContaining({ value: 'claude-code' }),
-          expect.objectContaining({ value: 'backups' }),
-          expect.objectContaining({ value: 'zcf-config' }),
-        ]),
         validate: expect.any(Function),
-      })
+      }))
+      expect(secondPrompt.choices).toEqual(expect.arrayContaining([
+        expect.objectContaining({ value: 'output-styles' }),
+        expect.objectContaining({ value: 'commands' }),
+        expect.objectContaining({ value: 'agents' }),
+        expect.objectContaining({ value: 'claude-md' }),
+        expect.objectContaining({ value: 'permissions-envs' }),
+        expect.objectContaining({ value: 'mcps' }),
+        expect.objectContaining({ value: 'ccr' }),
+        expect.objectContaining({ value: 'ccline' }),
+        expect.objectContaining({ value: 'claude-code' }),
+        expect.objectContaining({ value: 'backups' }),
+        expect.objectContaining({ value: 'zcf-config' }),
+      ]))
 
       expect(mockCustomUninstall).toHaveBeenCalledWith(['output-styles', 'commands'])
     })
@@ -140,7 +154,8 @@ describe('uninstall command', () => {
 
       await uninstall()
 
-      const validateFn = vi.mocked(mockInquirer.prompt).mock.calls[1][0].validate
+      const secondPromptArg = vi.mocked(mockInquirer.prompt).mock.calls[1][0]
+      const validateFn = (Array.isArray(secondPromptArg) ? secondPromptArg[0] : secondPromptArg).validate
       expect(validateFn([])).toBe('uninstall:selectAtLeastOne')
       expect(validateFn(['output-styles'])).toBe(true)
     })

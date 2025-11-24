@@ -390,11 +390,18 @@ export class ZcfUninstaller {
         result.removed.push('.claude.json (includes MCP configuration)')
       }
 
-      // Uninstall npm package
+      // Use the unified uninstallCodeTool function which handles different install methods
       try {
-        await exec('npm', ['uninstall', '-g', '@anthropic-ai/claude-code'])
-        result.removed.push('@anthropic-ai/claude-code package')
-        result.success = true
+        const { uninstallCodeTool } = await import('./installer')
+        const success = await uninstallCodeTool('claude-code')
+
+        if (success) {
+          result.removed.push('@anthropic-ai/claude-code')
+          result.success = true
+        }
+        else {
+          result.errors.push(i18n.t('uninstall:uninstallFailed', { codeType: i18n.t('common:claudeCode'), message: '' }))
+        }
       }
       catch (npmError: any) {
         if (npmError.message.includes('not found') || npmError.message.includes('not installed')) {
@@ -402,12 +409,12 @@ export class ZcfUninstaller {
           result.success = true
         }
         else {
-          result.errors.push(`Failed to uninstall Claude Code package: ${npmError.message}`)
+          result.errors.push(i18n.t('uninstall:uninstallFailed', { codeType: i18n.t('common:claudeCode'), message: `: ${npmError.message}` }))
         }
       }
     }
     catch (error: any) {
-      result.errors.push(`Failed to uninstall Claude Code: ${error.message}`)
+      result.errors.push(i18n.t('uninstall:uninstallFailed', { codeType: i18n.t('common:claudeCode'), message: `: ${error.message}` }))
     }
 
     return result

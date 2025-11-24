@@ -11,6 +11,9 @@ vi.mock('node:os')
 vi.mock('../../src/utils/json-config')
 vi.mock('../../src/i18n')
 vi.mock('../../src/utils/trash')
+vi.mock('../../src/utils/installer', () => ({
+  uninstallCodeTool: vi.fn(),
+}))
 
 // Enhanced mock modules with edge case behaviors
 const mockFsExtra = vi.hoisted(() => ({
@@ -59,6 +62,8 @@ vi.mocked(await import('node:os')).homedir = mockOs.homedir
 vi.mocked(await import('pathe')).join = vi.fn().mockImplementation((...parts) => parts.join('/'))
 vi.mocked(await import('../../src/i18n')).i18n = mockI18n.i18n
 vi.mocked(await import('../../src/utils/trash')).moveToTrash = mockTrash.moveToTrash
+const installerModule = await import('../../src/utils/installer')
+const mockUninstallCodeTool = vi.mocked(installerModule.uninstallCodeTool)
 
 // Mock constants
 vi.mock('../../src/constants', () => ({
@@ -82,6 +87,7 @@ describe('zcfUninstaller - Edge Cases', () => {
     mockJsonConfig.readJsonConfig.mockReturnValue({})
     mockJsonConfig.writeJsonConfig.mockReturnValue(undefined)
     mockExec.exec.mockResolvedValue({ stdout: '', stderr: '' })
+    mockUninstallCodeTool.mockReset()
   })
 
   describe('constructor edge cases', () => {
@@ -349,24 +355,24 @@ describe('zcfUninstaller - Edge Cases', () => {
   describe('uninstallClaudeCode edge cases', () => {
     it('should handle .claude.json not existing but package existing', async () => {
       mockFsExtra.pathExists.mockResolvedValue(false)
-      mockExec.exec.mockResolvedValue({ stdout: 'uninstalled', stderr: '' })
+      mockUninstallCodeTool.mockResolvedValue(true)
 
       const result = await uninstaller.uninstallClaudeCode()
 
       expect(result.success).toBe(true)
       expect(result.removed).not.toContain('.claude.json (includes MCP configuration)')
-      expect(result.removed).toContain('@anthropic-ai/claude-code package')
+      expect(result.removed).toContain('@anthropic-ai/claude-code')
     })
 
     it('should handle npm network errors', async () => {
       mockFsExtra.pathExists.mockResolvedValue(true)
       mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
-      mockExec.exec.mockRejectedValue(new Error('network error'))
+      mockUninstallCodeTool.mockRejectedValue(new Error('network error'))
 
       const result = await uninstaller.uninstallClaudeCode()
 
       expect(result.success).toBe(false)
-      expect(result.errors[0]).toContain('network error')
+      expect(result.errors[0]).toBe('uninstallFailed')
     })
   })
 

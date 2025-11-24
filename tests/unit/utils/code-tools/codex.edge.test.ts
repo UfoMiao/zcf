@@ -170,6 +170,15 @@ vi.mock('../../../../src/utils/prompts', () => ({
   resolveTemplateLanguage: vi.fn(),
 }))
 
+const installerMock = vi.hoisted(() => ({
+  installCodex: vi.fn(),
+}))
+
+vi.mock('../../../../src/utils/installer', () => installerMock)
+
+const installerModule = await import('../../../../src/utils/installer')
+const mockedInstallCodex = vi.mocked(installerModule.installCodex)
+
 // Partially mock codex module to allow real imports while mocking specific functions
 vi.mock('../../../../src/utils/code-tools/codex', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../src/utils/code-tools/codex')>()
@@ -183,6 +192,8 @@ describe('codex utilities - edge cases', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     vi.resetAllMocks()
+    mockedInstallCodex.mockReset()
+    mockedInstallCodex.mockResolvedValue(undefined)
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
 
@@ -393,12 +404,10 @@ describe('codex utilities - edge cases', () => {
   describe('installation edge cases', () => {
     it('should handle CLI installation failures', async () => {
       const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
-      const { x } = await import('tinyexec')
+      const error = new Error('Installation failed')
+      mockedInstallCodex.mockRejectedValue(error)
 
-      // Mock installation failure
-      vi.mocked(x).mockResolvedValue({ exitCode: 1, stdout: '', stderr: 'npm install failed' })
-
-      await expect(installCodexCli()).rejects.toThrow('Failed to install codex CLI: exit code 1')
+      await expect(installCodexCli()).rejects.toThrow('Installation failed')
     })
   })
 

@@ -1,15 +1,19 @@
-import type { SupportedLang } from '../constants'
+import type { CodeToolType, SupportedLang } from '../constants'
 import type { UninstallItem } from '../utils/uninstaller'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
+import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
+import { resolveCodeType } from '../utils/code-type-resolver'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
 import { promptBoolean } from '../utils/toggle-prompt'
 import { ZcfUninstaller } from '../utils/uninstaller'
+import { readZcfConfig } from '../utils/zcf-config'
 
 export interface UninstallOptions {
   lang?: SupportedLang
+  codeType?: CodeToolType | string
   mode?: 'complete' | 'custom' | 'interactive'
   items?: UninstallItem[] | string // Can be array or comma-separated string from CLI
 }
@@ -23,9 +27,41 @@ export async function uninstall(options: UninstallOptions = {}): Promise<void> {
     // Initialize i18n system
     ensureI18nInitialized()
 
+    // Determine code tool type (from option or config)
+    let codeType: CodeToolType
+    if (options.codeType) {
+      try {
+        codeType = await resolveCodeType(options.codeType)
+      }
+      catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.error(ansis.red(`${i18n.t('errors:generalError')} ${errorMessage}`))
+        // Fallback to config
+        const config = readZcfConfig()
+        codeType = config?.codeToolType && isCodeToolType(config.codeToolType)
+          ? config.codeToolType
+          : DEFAULT_CODE_TOOL_TYPE
+      }
+    }
+    else {
+      // Read from config
+      const config = readZcfConfig()
+      codeType = config?.codeToolType && isCodeToolType(config.codeToolType)
+        ? config.codeToolType
+        : DEFAULT_CODE_TOOL_TYPE
+    }
+
     // Initialize uninstaller
     const uninstaller = new ZcfUninstaller(options.lang || 'en')
 
+    // For Codex, use Codex-specific uninstaller
+    if (codeType === 'codex') {
+      const { runCodexUninstall } = await import('../utils/code-tools/codex')
+      await runCodexUninstall()
+      return
+    }
+
+    // For Claude Code, continue with existing logic
     // Handle non-interactive mode
     if (options.mode && options.mode !== 'interactive') {
       if (options.mode === 'complete') {
@@ -61,7 +97,6 @@ export async function uninstall(options: UninstallOptions = {}): Promise<void> {
  */
 async function showInteractiveUninstall(uninstaller: ZcfUninstaller): Promise<void> {
   console.log(ansis.cyan.bold(i18n.t('uninstall:title')))
-  console.log(ansis.yellow(i18n.t('uninstall:warning')))
   console.log('')
 
   // Main choice: complete vs custom

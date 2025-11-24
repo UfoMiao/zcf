@@ -56,8 +56,15 @@ vi.mock('../../../../src/utils/toggle-prompt', () => ({
   promptBoolean: vi.fn(),
 }))
 
-vi.mock('tinyexec', () => ({
+const mockTinyexec = vi.hoisted(() => ({
   x: vi.fn(),
+  exec: vi.fn(),
+}))
+
+vi.mock('tinyexec', () => ({
+  __esModule: true,
+  ...mockTinyexec,
+  default: mockTinyexec,
 }))
 
 vi.mock('ora', () => ({
@@ -157,6 +164,12 @@ vi.mock('../../../../src/utils/trash', () => ({
   moveToTrash: vi.fn(),
 }))
 
+const installerMock = vi.hoisted(() => ({
+  installCodex: vi.fn(),
+}))
+
+vi.mock('../../../../src/utils/installer', () => installerMock)
+
 const mockWrapCommandWithSudo = vi.hoisted(() => vi.fn((command: string, args: string[]) => ({
   command,
   args,
@@ -181,11 +194,15 @@ vi.mock('../../../../src/utils/prompts', () => ({
 
 const togglePromptModule = await import('../../../../src/utils/toggle-prompt')
 const mockedPromptBoolean = vi.mocked(togglePromptModule.promptBoolean)
+const installerModule = await import('../../../../src/utils/installer')
+const mockedInstallCodex = vi.mocked(installerModule.installCodex)
 
 describe('codex code tool utilities', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     mockedPromptBoolean.mockReset()
+    mockedInstallCodex.mockReset()
+    mockedInstallCodex.mockResolvedValue(undefined)
 
     // Setup default inquirer mocks for all tests
     const inquirer = await import('inquirer')
@@ -222,16 +239,14 @@ describe('codex code tool utilities', () => {
   })
 
   it('runCodexFullInit should execute installation and configuration flow', async () => {
-    const { x } = await import('tinyexec')
-    vi.mocked(x).mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
-
+    mockedInstallCodex.mockResolvedValue(undefined)
     const codexModule = await import('../../../../src/utils/code-tools/codex')
 
     // Test that the function executes without throwing errors
     await expect(codexModule.runCodexFullInit()).resolves.toBe('zh-CN')
 
-    // Test that npm install is called for CLI installation
-    expect(x).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex'])
+    // Ensure installCodex is invoked for CLI installation
+    expect(mockedInstallCodex).toHaveBeenCalledWith(false)
   })
 
   it('runCodexWorkflowImport should copy templates for current language', async () => {

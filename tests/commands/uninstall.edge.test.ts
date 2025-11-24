@@ -12,6 +12,13 @@ vi.mock('../../src/utils/prompt-helpers')
 vi.mock('../../src/utils/toggle-prompt', () => ({
   promptBoolean: vi.fn(),
 }))
+vi.mock('../../src/utils/zcf-config', () => ({
+  readZcfConfig: vi.fn(() => ({ codeToolType: 'claude-code' })),
+  readZcfConfigAsync: vi.fn(async () => ({ codeToolType: 'claude-code' })),
+}))
+vi.mock('../../src/utils/code-type-resolver', () => ({
+  resolveCodeType: vi.fn(async () => 'claude-code'),
+}))
 
 // Enhanced mock modules for edge cases
 const mockInquirer = vi.hoisted(() => ({
@@ -487,13 +494,19 @@ describe('uninstall command - Edge Cases', () => {
       await uninstall()
 
       // Should call i18n.t for various message keys during complete uninstall
-      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:title')
-      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:warning')
-      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:selectMainOption')
-      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:completeUninstall')
-      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:completeUninstallDesc')
-      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:executingComplete')
-      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:confirmComplete')
+      const expectedKeys = [
+        'uninstall:title',
+        'uninstall:selectMainOption',
+        'uninstall:completeUninstall',
+        'uninstall:completeUninstallDesc',
+        'uninstall:executingComplete',
+        'uninstall:completeWarning',
+        'uninstall:confirmComplete',
+        'uninstall:processingComplete',
+        'uninstall:completeSuccess',
+      ]
+      for (const key of expectedKeys)
+        expect(mockI18n.i18n.t).toHaveBeenCalledWith(key)
     })
   })
 
