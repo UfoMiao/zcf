@@ -8,6 +8,7 @@ export default antfu({
     '.bmad-core/**',
     '.claude/**',
     '**/**.md',
+    '.cunzhi-memory/**',
   ],
   rules: {
     'no-console': 'off',

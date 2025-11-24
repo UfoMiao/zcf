@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-**Last Updated**: Mon Oct 27 19:39:26 CST 2025
+**Last Updated**: Tue Nov 25 02:33:24 CST 2025
 
 ## Project Overview
 
-ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v3.3.0 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, sophisticated uninstallation capabilities with advanced conflict resolution, and API provider preset system for simplified configuration. The project also integrates dual code tool support, enabling both Claude Code and Codex environment configuration.
+ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v3.3.3 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, sophisticated uninstallation capabilities with advanced conflict resolution, and API provider preset system for simplified configuration. The project also integrates dual code tool support, enabling both Claude Code and Codex environment configuration.
 
 ## Architecture Overview
 
@@ -14,7 +14,7 @@ ZCF follows a modular CLI architecture with strict TypeScript typing, comprehens
 
 ```mermaid
 graph TD
-    A["🚀 ZCF Root (v3.3.0)"] --> B["src/commands"];
+    A["🚀 ZCF Root (v3.3.3)"] --> B["src/commands"];
     A --> C["src/utils"];
     A --> D["src/i18n"];
     A --> E["src/types"];
@@ -155,6 +155,19 @@ pnpm lint
 
 # Fix ESLint issues automatically
 pnpm lint:fix
+```
+
+### Documentation
+
+```bash
+# Start VitePress documentation development server
+pnpm docs:dev
+
+# Build documentation for production
+pnpm docs:build
+
+# Preview built documentation
+pnpm docs:preview
 ```
 
 ### Testing Strategy
@@ -313,7 +326,7 @@ graph TD
 
 1. **Advanced Windows Compatibility**: MCP configurations require sophisticated Windows path handling with proper escaping and validation
 2. **Comprehensive Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/` with full recovery capabilities
-3. **Enhanced API Configuration**: Supports Auth Token (OAuth), API Key, and CCR Proxy authentication with comprehensive validation and API provider preset system (v3.3.0+)
+3. **Enhanced API Configuration**: Supports Auth Token (OAuth), API Key, and CCR Proxy authentication with comprehensive validation and API provider preset system (v3.3.3+)
 4. **API Provider Preset System**: Pre-configured settings for popular providers (302.AI, GLM, MiniMax, Kimi) simplifying configuration from 5+ prompts to just 2 (provider + API key)
 5. **Advanced Workflow System**: Modular workflow installation with sophisticated dependency resolution and conflict management
 6. **Advanced CCR Integration**: Claude Code Router proxy management with configuration validation and preset management

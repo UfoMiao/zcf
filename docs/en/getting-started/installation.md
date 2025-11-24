@@ -124,10 +124,23 @@ When selecting `1` to perform complete initialization, ZCF will guide you throug
 **Step 3: Detect and Install Claude Code**
 ```
 ? Claude Code not detected, automatically install? (Y/n)
-✔ Claude Code installed successfully
 ```
 
-> ✅ **Automatic Processing**: If Claude Code is already installed, ZCF will detect and prompt, and can also automatically upgrade to the latest version.
+If you choose to install, ZCF will prompt you to select an installation method:
+
+```
+? Select installation method for Claude Code:
+  ❯ npm [Recommended] - Install via npm (works on all platforms)
+    homebrew [Recommended] - Install via Homebrew (macOS/Linux)
+    curl - Install via curl script (Linux/macOS/WSL)
+    powershell - Install via PowerShell script (Windows)
+    cmd - Install via CMD script (Windows)
+```
+
+> ✅ **Automatic Processing**: 
+> - ZCF automatically detects your platform and recommends the best installation method
+> - If Claude Code is already installed, ZCF will detect the version and can automatically upgrade to the latest version
+> - The installation method is saved for future reference
 
 **Step 4: Handle Existing Configuration**
 

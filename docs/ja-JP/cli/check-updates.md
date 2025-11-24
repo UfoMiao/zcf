@@ -6,19 +6,19 @@ title: バージョン確認
 
 `zcf check-updates` は、ZCF ツールチェーン内の各コンポーネント（ZCF 自体、Claude Code、CCR、CCometixLine、Codex など）を検出して更新するために使用されます。
 
-> **別名**：同等の効果を持つ `zcf check` を使用できます（例：`npx zcf check --code-type codex`）。
+> **別名**：同等の効果を持つ `zcf check` を使用できます（例：`npx zcf check -T cx`）。
 
 ## コマンド形式
 
 ```bash
 # すべてのツール更新を確認（Claude Code モード）
-npx zcf check-updates
+npx zcf check
 
 # Codex 関連ツール更新を確認
-npx zcf check-updates --code-type codex
+npx zcf check -T cx
 
 # 非対話モード（自動更新、確認をスキップ）
-npx zcf check-updates --skip-prompt
+npx zcf check -s
 
 # メインメニューからアクセス
 npx zcf
@@ -27,16 +27,16 @@ npx zcf
 
 ## パラメータ説明
 
-| パラメータ | 説明 | オプション値 | デフォルト値 |
-|------|------|--------|--------|
-| `--code-type` | ツールタイプを指定 | `claude-code`, `codex`, `cc`, `cx` | ZCF 設定から読み取り |
-| `--skip-prompt` | 対話確認をスキップ | なし | いいえ |
+| パラメータ | 略称 | 説明 | オプション値 | デフォルト値 |
+|------|------|------|--------|--------|
+| `--code-type, -T` | `-T` | ツールタイプを指定 | `claude-code`, `codex`, `cc`, `cx` | ZCF 設定から読み取り |
+| `--skip-prompt, -s` | `-s` | 対話確認をスキップ（非対話モード） | なし | いいえ（対話モード） |
 
 ## 確認するツール
 
 ### Claude Code モード
 
-`--code-type` が `claude-code` または未指定の場合、以下のツールを確認します：
+`-T` が `cc`（または `claude-code`）または未指定の場合、以下のツールを確認します：
 
 1. **CCR (Claude Code Router)**
    - パッケージ名：`@musistudio/claude-code-router`
@@ -52,7 +52,7 @@ npx zcf
 
 ### Codex モード
 
-`--code-type` が `codex` の場合、以下を確認します：
+`-T` が `cx`（または `codex`）の場合、以下を確認します：
 
 1. **Codex CLI**
    - 確認方法：Codex 公式 API
@@ -100,7 +100,7 @@ CCometixLine
 ? CCR を更新しますか？ (Y/n) 
 ```
 
-`--skip-prompt` モードでは、すべての更新を自動実行します。
+`-s` モードでは、すべての更新を自動実行します。
 
 ### 4. 更新実行
 
@@ -128,7 +128,7 @@ CI/CD または自動化スクリプトで非対話モードを使用します�
 
 ```bash
 # すべてのツールを自動更新
-npx zcf check --skip-prompt
+npx zcf check -s
 ```
 
 ### 対象を絞った更新
@@ -137,7 +137,7 @@ npx zcf check --skip-prompt
 
 ```bash
 # Codex 関連ツールのみを確認
-npx zcf check --code-type codex
+npx zcf check -T cx
 ```
 
 ## 更新戦略
@@ -243,7 +243,7 @@ codex --version
 # 更新前に初期化（設定をバックアップ）
 npx zcf init
 # または手動でバックアップ機能を使用
-npx zcf init --skip-prompt --config-action backup
+npx zcf i -s -r backup
 ```
 
 ## よくある質問

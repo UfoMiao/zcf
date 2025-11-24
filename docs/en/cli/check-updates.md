@@ -6,19 +6,19 @@ title: Version Check
 
 `zcf check-updates` is used to detect and update various components in the ZCF toolchain, including ZCF itself, Claude Code, CCR, CCometixLine, Codex, and other tools.
 
-> **Alias**: `zcf check` provides the same command with a shorter name (`npx zcf check --code-type codex`).
+> **Alias**: `zcf check` provides the same command with a shorter name (`npx zcf check -T cx`).
 
 ## Command Format
 
 ```bash
 # Check all tool updates (Claude Code mode)
-npx zcf check-updates
+npx zcf check
 
 # Check Codex related tool updates
-npx zcf check-updates --code-type codex
+npx zcf check -T cx
 
 # Non-interactive mode (auto update, skip confirmation)
-npx zcf check-updates --skip-prompt
+npx zcf check -s
 
 # Access through main menu
 npx zcf
@@ -27,16 +27,16 @@ npx zcf
 
 ## Parameter Descriptions
 
-| Parameter | Description | Optional Values | Default |
-|------|------|--------|--------|
-| `--code-type` | Specify tool type | `claude-code`, `codex`, `cc`, `cx` | Read from ZCF configuration |
-| `--skip-prompt` | Skip interactive confirmation | None | No |
+| Parameter | Abbreviation | Description | Optional Values | Default |
+|------|------|------|--------|--------|
+| `--code-type, -T` | `-T` | Specify tool type | `claude-code`, `codex`, `cc`, `cx` | Read from ZCF configuration |
+| `--skip-prompt, -s` | `-s` | Skip interactive confirmation (non-interactive mode) | None | No (interactive mode) |
 
 ## Tools Checked
 
 ### Claude Code Mode
 
-When `--code-type` is `claude-code` or not specified, checks the following tools:
+When `-T` is `cc` (or `claude-code`) or not specified, checks the following tools:
 
 1. **CCR (Claude Code Router)**
    - Package name: `@musistudio/claude-code-router`
@@ -52,7 +52,7 @@ When `--code-type` is `claude-code` or not specified, checks the following tools
 
 ### Codex Mode
 
-When `--code-type` is `codex`, checks:
+When `-T` is `cx` (or `codex`), checks:
 
 1. **Codex CLI**
    - Check method: Codex official API
@@ -100,7 +100,7 @@ In interactive mode, will ask whether to update each tool that needs update:
 ? Update CCR? (Y/n) 
 ```
 
-In `--skip-prompt` mode, automatically execute all updates.
+In `-s` mode, automatically execute all updates.
 
 ### 4. Execute Update
 
@@ -128,7 +128,7 @@ Use non-interactive mode in CI/CD or automation scripts:
 
 ```bash
 # Automatically update all tools
-npx zcf check-updates --skip-prompt
+npx zcf check -s
 ```
 
 ### Targeted Updates
@@ -137,7 +137,7 @@ Only check updates for specific tool types:
 
 ```bash
 # Only check Codex related tools
-npx zcf check --code-type codex
+npx zcf check -T cx
 ```
 
 ## Update Strategy
@@ -175,7 +175,7 @@ Common failure reasons:
 - **Permission Issues**: Need sudo permissions (macOS/Linux)
   ```bash
   # Execute with sudo
-  sudo npx zcf check-updates
+  sudo npx zcf check
   ```
 
 - **Port Occupied**: Service is running and cannot update
@@ -243,7 +243,7 @@ codex --version
 # Initialize before updating (will backup configuration)
 npx zcf init
 # Or manually use backup functionality
-npx zcf init --skip-prompt --config-action backup
+npx zcf i -s -r backup
 ```
 
 ## Common Questions

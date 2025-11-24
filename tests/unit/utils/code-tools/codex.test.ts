@@ -1323,8 +1323,9 @@ env = {}
       const result = codexModule.renderCodexConfig(testData)
 
       // Verify single quotes are used for env values to avoid escaping Windows paths
+      // Note: normalizeTomlPath converts backslashes to forward slashes
       expect(result).toContain('[mcp_servers.mcp-router]')
-      expect(result).toContain('command = "D:\\node\\nodejs\\npx.cmd"')
+      expect(result).toContain('command = "D:/node/nodejs/npx.cmd"')
       expect(result).toContain('args = ["-y", "@mcp_router/cli@latest", "connect"]')
 
       // Single quotes preserve backslashes without escaping

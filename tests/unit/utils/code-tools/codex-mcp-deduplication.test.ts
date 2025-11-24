@@ -109,6 +109,7 @@ vi.mock('../../../../src/utils/platform', () => ({
   isWindows: vi.fn(() => false),
   getMcpCommand: vi.fn(() => ['npx']), // Mock command for non-Windows
   applyCodexPlatformCommand: vi.fn(config => config), // Mock identity function
+  normalizeTomlPath: vi.fn((str: string) => str.replace(/\\+/g, '/').replace(/\/+/g, '/')), // Normalize Windows paths
 }))
 
 vi.mock('../../../../src/utils/zcf-config', () => ({

@@ -6,19 +6,19 @@ title: 版本检查
 
 `zcf check-updates` 用于检测并更新 ZCF 工具链中的各个组件，包括 ZCF 本身、Claude Code、CCR、CCometixLine、Codex 等工具。
 
-> **别名**：可使用同等效果的 `zcf check`（如 `npx zcf check --code-type codex`）。
+> **别名**：可使用同等效果的 `zcf check`（如 `npx zcf check -T cx`）。
 
 ## 命令格式
 
 ```bash
 # 检查所有工具更新（Claude Code 模式）
-npx zcf check-updates
+npx zcf check
 
 # 检查 Codex 相关工具更新
-npx zcf check-updates --code-type codex
+npx zcf check -T cx
 
 # 非交互模式（自动更新，跳过确认）
-npx zcf check-updates --skip-prompt
+npx zcf check -s
 
 # 通过主菜单访问
 npx zcf
@@ -27,16 +27,16 @@ npx zcf
 
 ## 参数说明
 
-| 参数 | 说明 | 可选值 | 默认值 |
-|------|------|--------|--------|
-| `--code-type` | 指定工具类型 | `claude-code`, `codex`, `cc`, `cx` | 从 ZCF 配置读取 |
-| `--skip-prompt` | 跳过交互确认 | 无 | 否 |
+| 参数 | 简写 | 说明 | 可选值 | 默认值 |
+|------|------|------|--------|--------|
+| `--code-type, -T` | `-T` | 指定工具类型 | `claude-code`, `codex`, `cc`, `cx` | 从 ZCF 配置读取 |
+| `--skip-prompt, -s` | `-s` | 跳过交互确认（非交互模式） | 无 | 否（交互模式） |
 
 ## 检查的工具
 
 ### Claude Code 模式
 
-当 `--code-type` 为 `claude-code` 或未指定时，检查以下工具：
+当 `-T` 为 `cc`（或 `claude-code`）或未指定时，检查以下工具：
 
 1. **CCR (Claude Code Router)**
    - 包名：`@musistudio/claude-code-router`
@@ -52,7 +52,7 @@ npx zcf
 
 ### Codex 模式
 
-当 `--code-type` 为 `codex` 时，检查：
+当 `-T` 为 `cx`（或 `codex`）时，检查：
 
 1. **Codex CLI**
    - 检查方式：Codex 官方 API
@@ -100,7 +100,7 @@ CCometixLine
 ? 是否更新 CCR？ (Y/n) 
 ```
 
-在 `--skip-prompt` 模式下，自动执行所有更新。
+在 `-s` 模式下，自动执行所有更新。
 
 ### 4. 执行更新
 
@@ -128,7 +128,7 @@ npx zcf check
 
 ```bash
 # 自动更新所有工具
-npx zcf check --skip-prompt
+npx zcf check -s
 ```
 
 ### 针对性更新
@@ -137,7 +137,7 @@ npx zcf check --skip-prompt
 
 ```bash
 # 只检查 Codex 相关工具
-npx zcf check --code-type codex
+npx zcf check -T cx
 ```
 
 ## 更新策略
@@ -243,7 +243,7 @@ codex --version
 # 更新前先初始化（会备份配置）
 npx zcf init
 # 或手动使用备份功能
-npx zcf init --skip-prompt --config-action backup
+npx zcf i -s -r backup
 ```
 
 ## 常见问题

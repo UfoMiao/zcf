@@ -124,10 +124,23 @@ ZCF - Zero-Config Code Flow
 **步骤 3：检测并安装 Claude Code**
 ```
 ? 检测到 Claude Code 未安装，是否自动安装？(Y/n)
-✔ Claude Code 安装成功
 ```
 
-> ✅ **自动处理**：如果 Claude Code 已安装，ZCF 会检测并提示，还可以自动升级到最新版本。
+如果选择安装，ZCF 会提示您选择安装方法：
+
+```
+? 选择 Claude Code 的安装方法：
+  ❯ npm [推荐] - 通过 npm 安装（适用于所有平台）
+    homebrew [推荐] - 通过 Homebrew 安装（macOS/Linux）
+    curl - 通过 curl 脚本安装（Linux/macOS/WSL）
+    powershell - 通过 PowerShell 脚本安装（Windows）
+    cmd - 通过 CMD 脚本安装（Windows）
+```
+
+> ✅ **自动处理**：
+> - ZCF 会自动检测您的平台并推荐最佳的安装方法
+> - 如果 Claude Code 已安装，ZCF 会检测版本并可以自动升级到最新版本
+> - 安装方法会被保存以供将来参考
 
 **步骤 4：处理现有配置**
 

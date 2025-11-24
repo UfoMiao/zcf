@@ -243,7 +243,7 @@ describe('codex-incremental-config integration', () => {
       readCodexConfig.mockReturnValue(null)
       const addResult1 = await addProviderToExisting(newProvider, 'api-key')
       expect(addResult1.success).toBe(false)
-      expect(addResult1.error).toBe('No existing configuration found')
+      expect(addResult1.error).toBe('codex:providerManager.noConfig')
 
       // Test 2: Duplicate provider
       readCodexConfig.mockReturnValue(initialConfig)
@@ -253,19 +253,17 @@ describe('codex-incremental-config integration', () => {
       }
       const addResult2 = await addProviderToExisting(duplicateProvider, 'api-key')
       expect(addResult2.success).toBe(false)
-      expect(addResult2.error).toBe('Provider with ID "provider-1" already exists')
+      expect(addResult2.error).toBe('codex:providerManager.providerExists')
 
       // Test 3: Edit non-existent provider
       const editResult = await editExistingProvider('non-existent', { name: 'Test' })
       expect(editResult.success).toBe(false)
-      expect(editResult.error).toBe('Provider with ID "non-existent" not found')
+      expect(editResult.error).toBe('codex:providerManager.providerNotFound')
 
       // Test 4: Delete all providers
       const deleteResult = await deleteProviders(['provider-1'])
       expect(deleteResult.success).toBe(false)
-      expect(deleteResult.error).toBe(
-        'Cannot delete all providers. At least one provider must remain.',
-      )
+      expect(deleteResult.error).toBe('codex:providerManager.cannotDeleteAll')
     })
 
     it('should handle default provider switching during deletion', async () => {

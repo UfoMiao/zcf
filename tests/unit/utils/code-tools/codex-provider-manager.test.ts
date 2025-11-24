@@ -105,7 +105,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: 'Provider with ID "existing-provider" already exists',
+        error: 'codex:providerManager.providerExists',
       })
     })
 
@@ -120,7 +120,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: 'No existing configuration found',
+        error: 'codex:providerManager.noConfig',
       })
     })
 
@@ -140,7 +140,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: 'Failed to create backup',
+        error: 'codex:providerManager.backupFailed',
       })
     })
   })
@@ -209,7 +209,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: 'Provider with ID "non-existent-provider" not found',
+        error: 'codex:providerManager.providerNotFound',
       })
     })
 
@@ -354,7 +354,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: 'Cannot delete all providers. At least one provider must remain.',
+        error: 'codex:providerManager.cannotDeleteAll',
       })
     })
 
@@ -369,7 +369,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: 'Some providers not found: non-existent-provider',
+        error: 'codex:providerManager.providersNotFound',
       })
     })
 
@@ -384,7 +384,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result).toEqual({
         success: false,
-        error: 'No providers specified for deletion',
+        error: 'codex:providerManager.noProvidersSpecified',
       })
     })
   })
@@ -415,9 +415,9 @@ describe('codex-provider-manager', () => {
 
       expect(result.valid).toBe(false)
       expect(result.errors).toEqual([
-        'Provider ID is required',
-        'Provider name is required',
-        'Base URL is required',
+        'codex:providerManager.providerIdRequired',
+        'codex:providerManager.providerNameRequired',
+        'codex:providerManager.baseUrlRequired',
       ])
     })
 
@@ -432,9 +432,9 @@ describe('codex-provider-manager', () => {
 
       expect(result.valid).toBe(false)
       expect(result.errors).toEqual([
-        'Provider ID is required',
-        'Provider name is required',
-        'Base URL is required',
+        'codex:providerManager.providerIdRequired',
+        'codex:providerManager.providerNameRequired',
+        'codex:providerManager.baseUrlRequired',
       ])
     })
 
@@ -450,7 +450,7 @@ describe('codex-provider-manager', () => {
 
       expect(result.valid).toBe(false)
       expect(result.errors).toEqual([
-        'Wire API must be either "responses" or "chat"',
+        'codex:providerManager.wireApiInvalid',
       ])
     })
 
@@ -483,7 +483,7 @@ describe('codex-provider-manager', () => {
       const result = validateProviderData(partialProvider)
 
       expect(result.valid).toBe(false)
-      expect(result.errors).toEqual(['Provider name is required'])
+      expect(result.errors).toEqual(['codex:providerManager.providerNameRequired'])
     })
   })
 })
