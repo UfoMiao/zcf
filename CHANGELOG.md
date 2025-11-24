@@ -1,5 +1,67 @@
 # Changelog
 
+## 3.4.0
+
+### Minor Changes
+
+- ## New Features
+  - Add path normalization utility for Windows compatibility
+  - Enhance internationalization support for provider management
+  - Improve CLI uninstall and installation processes with better error handling
+  - Integrate inquirer-toggle package for enhanced interactive prompts
+  - Add comprehensive VitePress documentation system with multilingual support (zh-CN, en, ja-JP)
+  - Migrate and enhance GitBook documentation structure
+
+  ## 新功能
+  - 添加路径规范化工具，提升 Windows 兼容性
+  - 增强 provider 管理的国际化支持
+  - 改进 CLI 卸载和安装流程，优化错误处理
+  - 集成 inquirer-toggle 包，增强交互式提示体验
+  - 新增完整的 VitePress 文档系统，支持多语言（中文、英文、日文）
+  - 迁移并增强 GitBook 文档结构
+
+  ## Fixes
+  - Fix environment variable formatting in renderCodexConfig
+  - Update Codex configuration handling for better reliability
+
+  ## 修复
+  - 修复 renderCodexConfig 中的环境变量格式化问题
+  - 更新 Codex 配置处理逻辑，提升可靠性
+
+  ## Documentation
+  - Add comprehensive VitePress documentation covering features, workflows, CLI commands, and best practices
+  - Significantly expand zh-CN documentation with comprehensive guides
+  - Update README files with streamlined structure and quick links to documentation
+  - Add acknowledgments section to README files
+  - Update CLAUDE.md and installation documentation for versioning and installation methods
+
+  ## 文档更新
+  - 新增完整的 VitePress 文档，涵盖功能、工作流、CLI 命令和最佳实践
+  - 大幅扩展中文文档，添加全面的使用指南
+  - 更新 README 文件，优化结构并添加文档快速链接
+  - 在 README 文件中添加致谢部分
+  - 更新 CLAUDE.md 和安装文档，完善版本管理和安装方法说明
+
+  ## Optimization
+  - Update documentation deployment workflow to trigger on main branch
+  - Improve Node.js setup in CI/CD workflows
+  - Enhance test coverage configuration to include docs directory
+  - Refactor GitBook document structure for better organization
+
+  ## 优化
+  - 更新文档部署工作流，在 main 分支触发
+  - 改进 CI/CD 工作流中的 Node.js 设置
+  - 增强测试覆盖配置，包含 docs 目录
+  - 重构 GitBook 文档结构，提升组织性
+
+  ## Testing
+  - Add comprehensive test coverage for new features
+  - Enhance existing test suites for better reliability
+
+  ## 测试优化
+  - 为新功能添加全面的测试覆盖
+  - 增强现有测试套件，提升可靠性
+
 ## 3.3.3
 
 ### Patch Changes

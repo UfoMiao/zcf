@@ -1,7 +1,7 @@
 {
   "name": "zcf",
   "type": "module",
-  "version": "3.3.3",
+  "version": "3.4.0",
   "packageManager": "pnpm@10.17.1",
   "description": "Zero-Config Code Flow - One-click configuration tool for Code Cli",
   "author": {
