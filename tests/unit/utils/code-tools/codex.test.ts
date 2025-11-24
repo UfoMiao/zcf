@@ -1282,8 +1282,44 @@ env = {}
       expect(result).toContain('[mcp_servers.exa]')
       expect(result).toContain('command = "npx"')
       expect(result).toContain('args = ["-y", "exa-mcp-server"]')
-      expect(result).toContain('env = {EXA_API_KEY = "test-key", DEBUG = "true"}')
+      expect(result).toContain('env = {EXA_API_KEY = \'test-key\', DEBUG = \'true\'}')
       expect(result).toContain('startup_timeout_ms = 30000')
+    })
+
+    it('renderCodexConfig should use single quotes for env values with Windows paths', async () => {
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      const testData = {
+        model: null,
+        modelProvider: null,
+        providers: [],
+        mcpServices: [{
+          id: 'mcp-router',
+          command: 'D:\\node\\nodejs\\npx.cmd',
+          args: ['-y', '@mcp_router/cli@latest', 'connect'],
+          env: {
+            SystemRoot: 'C:\\WINDOWS',
+            COMSPEC: 'C:\\WINDOWS\\system32\\cmd.exe',
+            MCPR_TOKEN: 'mcpr_test_token_123',
+          },
+        }],
+        managed: true,
+        otherConfig: [],
+      }
+      const result = codexModule.renderCodexConfig(testData)
+
+      // Verify single quotes are used for env values to avoid escaping Windows paths
+      expect(result).toContain('[mcp_servers.mcp-router]')
+      expect(result).toContain('command = "D:\\node\\nodejs\\npx.cmd"')
+      expect(result).toContain('args = ["-y", "@mcp_router/cli@latest", "connect"]')
+
+      // Single quotes preserve backslashes without escaping
+      expect(result).toContain('SystemRoot = \'C:\\WINDOWS\'')
+      expect(result).toContain('COMSPEC = \'C:\\WINDOWS\\system32\\cmd.exe\'')
+      expect(result).toContain('MCPR_TOKEN = \'mcpr_test_token_123\'')
+
+      // Verify the config can be parsed back without errors
+      const { parse: parseToml } = await import('smol-toml')
+      expect(() => parseToml(result)).not.toThrow()
     })
 
     it('renderCodexConfig should preserve otherConfig and add proper spacing', async () => {

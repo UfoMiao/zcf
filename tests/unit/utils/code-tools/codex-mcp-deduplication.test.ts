@@ -344,11 +344,11 @@ env = {CUSTOM_VAR = "value"}
 
       // Check that SYSTEMROOT is added to both services
       const content = vi.mocked(writeFile).mock.calls[0][1] as string
-      expect(content).toContain('SYSTEMROOT = "C:/Windows"')
+      expect(content).toContain('SYSTEMROOT = \'C:/Windows\'')
 
       // Verify custom service preserves its original env vars and adds SYSTEMROOT
-      expect(content).toContain('CUSTOM_VAR = "value"')
-      expect(content).toContain('SYSTEMROOT = "C:/Windows"')
+      expect(content).toContain('CUSTOM_VAR = \'value\'')
+      expect(content).toContain('SYSTEMROOT = \'C:/Windows\'')
     })
 
     it('should handle service selection with mixed custom and predefined services', async () => {
@@ -435,8 +435,8 @@ args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
 
       // Verify exa service was updated with new API key
       const content = vi.mocked(writeFile).mock.calls[0][1] as string
-      expect(content).toContain('EXA_API_KEY = "updated-exa-key"')
-      expect(content).not.toContain('EXA_API_KEY = "old-key"')
+      expect(content).toContain('EXA_API_KEY = \'updated-exa-key\'')
+      expect(content).not.toContain('EXA_API_KEY = \'old-key\'')
     })
   })
 })

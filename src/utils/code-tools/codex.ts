@@ -533,8 +533,10 @@ export function renderCodexConfig(data: CodexConfigData): string {
 
       // Add environment variables if present
       if (service.env && Object.keys(service.env).length > 0) {
+        // Use single quotes for env values to avoid escaping Windows paths
+        // TOML single-quoted strings are literal and don't require backslash escaping
         const envEntries = Object.entries(service.env)
-          .map(([key, value]) => `${key} = "${value}"`)
+          .map(([key, value]) => `${key} = '${value}'`)
           .join(', ')
         lines.push(`env = {${envEntries}}`)
       }
