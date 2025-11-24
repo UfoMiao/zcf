@@ -1,5 +1,5 @@
 ---
-description: Automatically check code changes since last tag and update documentation (README.md, README_zh-CN.md, README_ja.md, CLAUDE.md) to ensure consistency with actual code implementation
+description: Automatically check code changes since last tag and update documentation in docs/ directory (en, zh-CN, ja-JP) and CLAUDE.md to ensure consistency with actual code implementation
 allowed-tools: Read(**), Exec(git, cat, grep, diff)
 argument-hint: [--check-only]
 # examples:
@@ -9,7 +9,7 @@ argument-hint: [--check-only]
 
 # ZCF Update Docs - Documentation Synchronization
 
-Automatically check code changes since last tag and update documentation (README.md, README_zh-CN.md, README_ja.md, CLAUDE.md) to ensure consistency with actual code implementation.
+Automatically check code changes since last tag and update documentation in `docs/` directory (multilingual: en, zh-CN, ja-JP) and CLAUDE.md to ensure consistency with actual code implementation.
 
 ## Usage
 
@@ -24,9 +24,10 @@ Automatically check code changes since last tag and update documentation (README
 ## Context
 
 - Analyze all code changes since the last Git tag
-- Check if documentation needs updates for each module
-- Ensure menu and initialization flow descriptions match actual code
-- Maintain multilingual documentation consistency
+- Check if documentation needs updates in docs/ directory structure
+- Ensure CLI commands, features, and workflows documentation match actual code
+- Maintain multilingual documentation consistency across en, zh-CN, ja-JP
+- Update CLAUDE.md for development-related changes
 
 ## Your Role
 
@@ -86,115 +87,135 @@ echo -e "\n📁 Analyzing changed files..."
 
 ### 3. Identify Documentation Update Areas
 
-Based on file changes, determine which documentation sections need updates:
+Based on file changes, determine which documentation files in `docs/` need updates:
 
-**Critical Areas to Check:**
+**Code Changes → Documentation Mapping:**
 
-1. **Menu System** (`src/commands/menu.ts`, `src/menu/`, `src/i18n/locales/*/menu.ts`)
-   - Main menu options and descriptions
-   - Submenu structure and navigation
-   - Menu item translations
+1. **CLI Commands** (`src/commands/*.ts`) → `docs/{lang}/cli/`
+   - `src/commands/init.ts` → `cli/init.md` - Installation and initialization
+   - `src/commands/menu.ts` → `cli/menu.md` - Interactive menu system
+   - `src/commands/update.ts` → `cli/update.md` - Update workflows
+   - `src/commands/ccr.ts` → `cli/ccr.md` - CCR proxy management
+   - `src/commands/ccu.ts` → `cli/ccu.md` - Usage analysis
+   - `src/commands/uninstall.ts` → `cli/uninstall.md` - Uninstallation
+   - `src/commands/config-switch.ts` → `cli/config-switch.md` - Config switching
+   - `src/commands/check-updates.ts` → `cli/check-updates.md` - Version check
 
-2. **Initialization Flow** (`src/commands/init.ts`, `src/utils/installer.ts`)
-   - Installation steps
-   - Configuration prompts
-   - API setup process
-   - MCP service selection
+2. **Features** → `docs/{lang}/features/`
+   - `src/utils/installer.ts`, `src/utils/claude-config.ts` → `features/claude-code.md`
+   - `src/utils/code-tools/codex*` → `features/codex.md`
+   - `src/config/workflows.ts` → `features/workflows.md`
+   - `src/config/mcp-services.ts` → `features/mcp.md`
+   - `src/utils/ccr/` → `features/ccr.md`
+   - `src/utils/cometix/` → `features/cometix.md`
+   - `src/utils/config.ts` → `features/multi-config.md`
 
-3. **Commands** (`src/commands/*.ts`)
-   - Available commands
-   - Command options and parameters
-   - Usage examples
+3. **Workflows** (`src/config/workflows.ts`, `templates/*/workflow/`) → `docs/{lang}/workflows/`
+   - Workflow definitions → `workflows/index.md`
+   - Specific workflow templates → `workflows/{workflow-name}.md`
 
-4. **Workflows** (`src/config/workflows.ts`, `templates/*/workflow/`)
-   - Available workflows
-   - Workflow descriptions
-   - Installation instructions
+4. **Advanced Configuration** → `docs/{lang}/advanced/`
+   - `src/types/config.ts`, `src/utils/config.ts` → `advanced/configuration.md`
+   - `src/config/api-providers.ts` → `advanced/api-providers.md`
+   - `templates/` → `advanced/templates.md`
+   - `src/i18n/` → `advanced/i18n.md`
 
-5. **Configuration** (`src/utils/config.ts`, `src/types.ts`)
-   - Configuration file structure
-   - Environment variables
-   - Settings options
+5. **Getting Started** → `docs/{lang}/getting-started/`
+   - `src/commands/init.ts`, `src/utils/installer.ts` → `getting-started/installation.md`
+   - General introduction → `getting-started/index.md`
 
-6. **MCP Services** (`src/constants.ts`, `src/utils/claude-config.ts`)
-   - Available MCP services
-   - Service descriptions
-   - Configuration requirements
-
-7. **Codex Integration** (`src/utils/code-tools/codex*`, `templates/codex/`, `src/i18n/locales/*/codex.json`)
-   - Codex CLI installation and configuration
-   - API providers and authentication
-   - System prompts and workflows
-   - MCP service integration
-   - Multi-language template support
+6. **Development** → `docs/{lang}/development/` and `CLAUDE.md`
+   - Architecture changes → `development/architecture.md` + `CLAUDE.md`
+   - Testing changes → `development/testing.md` + `CLAUDE.md`
+   - Contributing guidelines → `development/contributing.md`
+   - Package.json scripts → `CLAUDE.md`
 
 ### 4. Check Current Documentation
 
-Read and analyze current documentation files:
+Read and analyze current documentation structure:
 
 ```bash
-# Check if documentation files exist
-DOCS_TO_CHECK=(
-  "README.md"
-  "README_zh-CN.md"
-  "README_ja.md"
-  "CLAUDE.md"
+# Check if documentation directories exist
+DOCS_LANGS=("en" "zh-CN" "ja-JP")
+DOCS_CATEGORIES=(
+  "getting-started"
+  "cli"
+  "features"
+  "workflows"
+  "advanced"
+  "best-practices"
+  "development"
 )
 
-for DOC in "${DOCS_TO_CHECK[@]}"; do
-  if [ ! -f "$DOC" ]; then
-    echo "❌ Warning: $DOC not found"
+echo "📁 Checking documentation structure..."
+
+for LANG in "${DOCS_LANGS[@]}"; do
+  if [ ! -d "docs/$LANG" ]; then
+    echo "❌ Warning: docs/$LANG directory not found"
   else
-    echo "✅ Found: $DOC"
+    echo "✅ Found: docs/$LANG/"
+    for CATEGORY in "${DOCS_CATEGORIES[@]}"; do
+      if [ ! -d "docs/$LANG/$CATEGORY" ]; then
+        echo "  ⚠️  Missing category: $CATEGORY"
+      else
+        echo "  ✅ Category: $CATEGORY"
+      fi
+    done
   fi
 done
+
+# Check CLAUDE.md
+if [ ! -f "CLAUDE.md" ]; then
+  echo "❌ Warning: CLAUDE.md not found"
+else
+  echo "✅ Found: CLAUDE.md"
+fi
 ```
 
-### 5. Verify Menu Consistency
+### 5. Verify CLI Commands Consistency
 
-Compare menu structure in code with documentation:
-
-**Check Points:**
-- Menu option names and order
-- Menu descriptions and help text
-- Keyboard shortcuts
-- Navigation flow
-- Exit options
-- Codex menu integration and options
-- Codex configuration workflows
-
-**Code Sources:**
-- `src/commands/menu.ts` - Main menu implementation
-- `src/menu/*.ts` - Submenu implementations
-- `src/i18n/locales/*/menu.ts` - Menu translations
-- `src/utils/code-tools/codex.ts` - Codex integration logic
-- `src/i18n/locales/*/codex.json` - Codex translations
-
-### 6. Verify Initialization Flow
-
-Ensure initialization steps in documentation match actual implementation:
+Compare CLI commands implementation with documentation:
 
 **Check Points:**
-1. Installation detection and prompts
-2. API configuration steps
-3. MCP service selection
-4. Workflow installation options
-5. Configuration file generation
-6. Success/error messages
-7. Codex CLI installation and setup
-8. Codex API provider configuration
-9. Codex system prompt selection
-10. Codex workflow template installation
+- Command names, options, and parameters
+- Command descriptions and usage examples
+- Interactive menu options and flow
+- Keyboard shortcuts and navigation
+- Exit and back options
+- Multilingual prompt translations
 
-**Code Sources:**
-- `src/commands/init.ts` - Main initialization logic
-- `src/utils/installer.ts` - Installation process
-- `src/utils/config.ts` - Configuration setup
-- `src/utils/mcp-selector.ts` - MCP selection
-- `src/utils/code-tools/codex.ts` - Codex installation logic
-- `src/utils/code-tools/codex-provider-manager.ts` - Codex API providers
-- `src/utils/code-tools/codex-config-switch.ts` - Codex configuration
-- `templates/codex/` - Codex template files
+**Code Sources → Documentation Files:**
+- `src/commands/menu.ts`, `src/i18n/locales/*/menu.json` → `docs/{lang}/cli/menu.md`
+- `src/commands/init.ts`, `src/i18n/locales/*/cli.json` → `docs/{lang}/cli/init.md`
+- `src/commands/update.ts` → `docs/{lang}/cli/update.md`
+- `src/commands/ccr.ts` → `docs/{lang}/cli/ccr.md`
+- `src/commands/ccu.ts` → `docs/{lang}/cli/ccu.md`
+- `src/commands/uninstall.ts` → `docs/{lang}/cli/uninstall.md`
+- `src/commands/config-switch.ts` → `docs/{lang}/cli/config-switch.md`
+- `src/commands/check-updates.ts` → `docs/{lang}/cli/check-updates.md`
+
+### 6. Verify Features Documentation
+
+Ensure features documentation matches actual implementation:
+
+**Check Points:**
+1. Claude Code configuration capabilities
+2. Codex CLI integration and setup
+3. Workflow system and categories
+4. MCP service integration
+5. CCR proxy management
+6. Cometix status line
+7. Multi-config and backup system
+8. API provider presets
+
+**Code Sources → Documentation Files:**
+- `src/utils/installer.ts`, `src/utils/claude-config.ts` → `docs/{lang}/features/claude-code.md`
+- `src/utils/code-tools/codex*.ts`, `templates/codex/` → `docs/{lang}/features/codex.md`
+- `src/config/workflows.ts` → `docs/{lang}/features/workflows.md`
+- `src/config/mcp-services.ts` → `docs/{lang}/features/mcp.md`
+- `src/utils/ccr/` → `docs/{lang}/features/ccr.md`
+- `src/utils/cometix/` → `docs/{lang}/features/cometix.md`
+- `src/utils/config.ts` → `docs/{lang}/features/multi-config.md`
 
 ### 7. Generate Update Report
 
@@ -204,44 +225,43 @@ Create a detailed report of findings:
 ## Documentation Update Report
 
 ### Files Changed Since $LAST_TAG
-- [List of relevant changed files]
+- [List of relevant changed files categorized by module]
 
-### Documentation Sections Requiring Updates
+### Documentation Files Requiring Updates
 
-#### README.md
-- [ ] Menu structure
-- [ ] Installation steps
-- [ ] Command usage
-- [ ] Configuration options
-- [ ] Codex integration features
-- [ ] Codex CLI usage and examples
+#### docs/en/ (English Documentation)
+- [ ] getting-started/installation.md - Installation and setup
+- [ ] cli/*.md - CLI command documentation
+- [ ] features/*.md - Feature descriptions
+- [ ] workflows/*.md - Workflow guides
+- [ ] advanced/*.md - Advanced configuration
+- [ ] development/*.md - Development documentation
 
-#### README_zh-CN.md
-- [ ] 菜单结构
-- [ ] 安装步骤
-- [ ] 命令使用
-- [ ] 配置选项
-- [ ] Codex 集成功能
-- [ ] Codex CLI 使用和示例
+#### docs/zh-CN/ (Chinese Documentation)
+- [ ] getting-started/installation.md - 安装和设置
+- [ ] cli/*.md - CLI 命令文档
+- [ ] features/*.md - 功能说明
+- [ ] workflows/*.md - 工作流指南
+- [ ] advanced/*.md - 高级配置
+- [ ] development/*.md - 开发文档
 
-#### README_ja.md
-- [ ] メニュー構造
-- [ ] インストール手順
-- [ ] コマンド使用方法
-- [ ] 設定オプション
-- [ ] Codex 統合機能
-- [ ] Codex CLI の使用と例
+#### docs/ja-JP/ (Japanese Documentation)
+- [ ] getting-started/installation.md - インストールとセットアップ
+- [ ] cli/*.md - CLI コマンドドキュメント
+- [ ] features/*.md - 機能説明
+- [ ] workflows/*.md - ワークフローガイド
+- [ ] advanced/*.md - 高度な設定
+- [ ] development/*.md - 開発ドキュメント
 
-#### CLAUDE.md
-- [ ] Development commands
-- [ ] Architecture updates
-- [ ] Testing guidelines
-- [ ] Workflow system
-- [ ] Codex integration documentation
-- [ ] Codex development guidelines
+#### CLAUDE.md (Root Development Documentation)
+- [ ] Development commands (package.json scripts)
+- [ ] Architecture and module structure
+- [ ] Testing guidelines and coverage
+- [ ] Workflow system implementation
+- [ ] Code standards and conventions
 
 ### Specific Inconsistencies Found
-[Detailed list of mismatches between code and documentation]
+[Detailed list of mismatches between code and documentation, organized by file]
 ```
 
 ### 8. Update Documentation Files
@@ -250,39 +270,43 @@ If not in check-only mode, update the documentation:
 
 ```bash
 if [ "$CHECK_ONLY" = false ]; then
-  echo "📝 Updating documentation files..."
+  echo "📝 Updating documentation files in docs/ directory..."
   
-  # Update README.md
-  # - Update menu structure based on src/commands/menu.ts
-  # - Update initialization flow based on src/commands/init.ts
-  # - Update command list based on src/commands/*.ts
-  # - Update configuration section based on types and constants
-  # - Update Codex integration features based on src/utils/code-tools/codex.ts
-  # - Update Codex CLI usage based on src/i18n/locales/en/codex.json
+  # Update docs/en/ (English Documentation)
+  # - CLI commands: Update docs/en/cli/*.md based on src/commands/*.ts
+  # - Features: Update docs/en/features/*.md based on feature implementations
+  # - Workflows: Update docs/en/workflows/*.md based on src/config/workflows.ts
+  # - Getting Started: Update docs/en/getting-started/*.md based on installation flow
+  # - Advanced: Update docs/en/advanced/*.md based on configuration and templates
+  # - Development: Update docs/en/development/*.md based on architecture changes
+  # - Use translations from src/i18n/locales/en/*.json
   
-  # Update README_zh-CN.md
-  # - Ensure consistency with README.md content
-  # - Use proper Chinese translations from i18n files
-  # - Maintain the same structure as English version
-  # - Update Codex features using src/i18n/locales/zh-CN/codex.json
-  # - Sync Codex CLI usage examples with Chinese translations
+  # Update docs/zh-CN/ (Chinese Documentation)
+  # - Maintain same structure and sections as English version
+  # - Use proper Chinese translations from src/i18n/locales/zh-CN/*.json
+  # - Update all corresponding CLI, features, workflows, etc.
+  # - Ensure technical terms and examples are properly localized
   
-  # Update README_ja.md
-  # - Ensure consistency with README.md content
-  # - Use proper Japanese translations from i18n files
-  # - Maintain the same structure as English version
-  # - Update Codex features with Japanese translations (maintain structure consistency)
-  # - Sync Codex CLI usage examples with proper Japanese formatting
-
-  # Update CLAUDE.md
+  # Update docs/ja-JP/ (Japanese Documentation)
+  # - Maintain same structure and sections as English version
+  # - Use proper Japanese translations (maintain consistency with project style)
+  # - Update all corresponding CLI, features, workflows, etc.
+  # - Ensure proper Japanese formatting and terminology
+  
+  # Update CLAUDE.md (Root Development Documentation)
   # - Update development commands if package.json scripts changed
   # - Update architecture section if new modules added
   # - Update testing section if test structure changed
-  # - Update workflow documentation if workflows modified
-  # - Update Codex integration documentation and development guidelines
-  # - Add Codex module documentation if templates/codex/ structure changed
+  # - Update workflow system if src/config/workflows.ts changed
+  # - Update module index if directory structure changed
+  # - Maintain English-only for development documentation
   
-  echo "✅ Documentation files updated"
+  # Update SUMMARY.md for each language
+  # - Ensure table of contents matches actual file structure
+  # - Update links if files were added/removed/renamed
+  # - Maintain consistent ordering across all languages
+  
+  echo "✅ Documentation files updated in docs/ directory"
 else
   echo "ℹ️ Check-only mode: No files were modified"
 fi
@@ -295,26 +319,29 @@ Perform final validation checks:
 ```bash
 echo -e "\n🔍 Performing validation checks..."
 
-# Check for broken internal links
-echo "Checking internal links..."
+# Check for broken internal links in all language versions
+echo "Checking internal links in docs/en/, docs/zh-CN/, docs/ja-JP/..."
+
+# Verify SUMMARY.md matches actual file structure
+echo "Validating SUMMARY.md table of contents..."
+
+# Ensure structure consistency across languages
+echo "Checking structural consistency across en, zh-CN, ja-JP..."
 
 # Verify code examples still work
-echo "Verifying code examples..."
-
-# Ensure translations are synchronized
-echo "Checking multilingual translation consistency..."
+echo "Verifying code examples and command syntax..."
 
 # Validate markdown formatting
 echo "Validating markdown format..."
 
-# Validate Codex configuration files
-echo "Validating Codex template files..."
+# Check translation completeness
+echo "Checking multilingual translation completeness..."
 
-# Check Codex i18n translations completeness
-echo "Checking Codex multilingual translation completeness..."
+# Verify CLI command documentation matches implementation
+echo "Verifying CLI command documentation accuracy..."
 
-# Verify Codex CLI integration consistency
-echo "Verifying Codex CLI integration consistency..."
+# Validate feature documentation completeness
+echo "Checking feature documentation coverage..."
 
 echo "✅ Validation complete"
 ```
@@ -343,60 +370,85 @@ fi
 
 ## Documentation Structure Reference
 
-### README.md / README_zh-CN.md / README_ja.md Structure
+### docs/{lang}/ Directory Structure (en, zh-CN, ja-JP)
 
-1. **Project Description**
-2. **Features**
-3. **Installation** (Must match `src/commands/init.ts`)
-4. **Usage** 
-   - Menu system (Must match `src/commands/menu.ts`)
-   - Commands (Must match `src/commands/*.ts`)
-5. **Configuration** (Must match types and constants)
-6. **MCP Services** (Must match `src/constants.ts`)
-7. **Workflows** (Must match `src/config/workflows.ts`)
-8. **Development**
-9. **License**
+Each language directory contains the following categories:
 
-### CLAUDE.md Structure
+1. **getting-started/** - Installation and quick start
+   - `index.md` - Quick start guide
+   - `installation.md` - Installation guide (Must match `src/commands/init.ts`)
+
+2. **cli/** - CLI command documentation
+   - `index.md` - Commands overview
+   - `init.md`, `update.md`, `menu.md`, etc. (Must match `src/commands/*.ts`)
+
+3. **features/** - Feature descriptions
+   - `index.md` - Features overview
+   - `claude-code.md`, `codex.md`, `workflows.md`, etc. (Must match implementations)
+
+4. **workflows/** - Workflow guides
+   - `index.md` - Workflow overview
+   - Specific workflow documentation (Must match `src/config/workflows.ts`)
+
+5. **advanced/** - Advanced configuration
+   - `configuration.md`, `api-providers.md`, `templates.md`, etc.
+
+6. **best-practices/** - Best practices and tips
+   - Usage tips and optimization strategies
+
+7. **development/** - Development documentation
+   - `architecture.md`, `contributing.md`, `testing.md`
+
+8. **SUMMARY.md** - Table of contents for each language
+
+### CLAUDE.md Structure (Root Development Documentation)
 
 1. **Project Overview**
-2. **Development Guidelines**
-3. **Development Commands** (Must match `package.json` scripts)
-4. **Architecture & Code Organization**
-5. **Testing Strategy**
-6. **Common Development Tasks**
+2. **Architecture Overview** (Must match actual module structure)
+3. **Module Index** (Must match src/ directory structure)
+4. **CLI Usage**
+5. **Running and Development** (Must match `package.json` scripts)
+6. **Development Guidelines**
+7. **Testing Strategy**
+8. **AI Team Configuration**
 
 ## Important Notes
 
 ⚠️ **Critical Requirements:**
-- **ALWAYS** ensure menu descriptions match actual menu implementation
-- **ALWAYS** verify initialization flow steps are in correct order
-- **ALWAYS** maintain multilingual consistency between README files
+- **ALWAYS** ensure CLI command documentation matches actual implementation in `src/commands/`
+- **ALWAYS** verify feature descriptions match actual code behavior
+- **ALWAYS** maintain structural consistency across all language versions (en, zh-CN, ja-JP)
+- **ALWAYS** update SUMMARY.md when file structure changes
 - **NEVER** remove existing content without verification
-- **NEVER** break markdown formatting or links
+- **NEVER** break markdown formatting or internal links
+- **NEVER** create inconsistency between language versions
 
 📌 **Best Practices:**
-- Use actual i18n translations from the codebase (zh-CN, ja-JP, en)
-- Preserve existing formatting and style
-- Update examples to reflect current implementation
+- Use actual i18n translations from `src/i18n/locales/{lang}/*.json`
+- Preserve existing formatting and style conventions
+- Update code examples to reflect current implementation
 - Include new features and commands added since last tag
-- Remove deprecated features that no longer exist
+- Remove or mark deprecated features that no longer exist
+- Maintain parallel structure across en, zh-CN, ja-JP directories
+- Keep CLAUDE.md focused on development-specific information
 
 🔍 **Validation Checklist:**
-- [ ] Menu options match `src/commands/menu.ts`
-- [ ] Init flow matches `src/commands/init.ts`
-- [ ] Commands match files in `src/commands/`
-- [ ] Workflows match `src/config/workflows.ts`
-- [ ] MCP services match `src/constants.ts`
-- [ ] Translations are consistent between all languages (zh-CN, ja-JP, en)
-- [ ] All code examples are executable
-- [ ] No broken internal links
-- [ ] Markdown formatting is valid
-- [ ] Codex features match `src/utils/code-tools/codex.ts`
-- [ ] Codex CLI usage matches `src/i18n/locales/*/codex.json`
-- [ ] Codex templates match `templates/codex/` structure
+- [ ] CLI command docs match `src/commands/*.ts` implementation
+- [ ] Feature docs match actual feature implementations
+- [ ] Workflow docs match `src/config/workflows.ts` definitions
+- [ ] Installation guide matches `src/commands/init.ts` flow
+- [ ] Configuration docs match types in `src/types/*.ts`
+- [ ] MCP service docs match `src/config/mcp-services.ts`
+- [ ] Structure consistency across en, zh-CN, ja-JP directories
+- [ ] SUMMARY.md matches actual file structure for each language
+- [ ] All internal links are valid and not broken
+- [ ] Code examples and command syntax are correct
+- [ ] Translations use proper i18n strings from codebase
+- [ ] Markdown formatting is valid in all files
 - [ ] Codex integration documentation is comprehensive
-- [ ] Codex multilingual translations are complete and consistent
+- [ ] CCR, Cometix, CCusage features are accurately documented
+- [ ] API provider presets documentation is up-to-date
+- [ ] CLAUDE.md reflects current architecture and development practices
 
 ---
 
