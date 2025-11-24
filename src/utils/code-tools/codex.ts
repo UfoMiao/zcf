@@ -16,7 +16,7 @@ import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
-import { wrapCommandWithSudo } from '../platform'
+import { normalizeTomlPath, wrapCommandWithSudo } from '../platform'
 // Removed MCP selection and platform command imports from this module
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
@@ -517,7 +517,10 @@ export function renderCodexConfig(data: CodexConfigData): string {
     lines.push('# --- MCP servers added by ZCF ---')
     for (const service of data.mcpServices) {
       lines.push(`[mcp_servers.${service.id}]`)
-      lines.push(`command = "${service.command}"`)
+      // Normalize Windows paths: convert backslashes to forward slashes
+      // Same approach as getSystemRoot() for consistency
+      const normalizedCommand = normalizeTomlPath(service.command)
+      lines.push(`command = "${normalizedCommand}"`)
 
       // Format args array
       const argsString = service.args.length > 0

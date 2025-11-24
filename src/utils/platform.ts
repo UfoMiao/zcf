@@ -123,6 +123,21 @@ export function getMcpCommand(command: string = 'npx'): string[] {
   return [command]
 }
 
+/**
+ * Normalize Windows paths by converting backslashes to forward slashes
+ * This ensures Windows paths like "C:\Program Files\nodejs\npx.cmd" are correctly
+ * written as "C:/Program Files/nodejs/npx.cmd" in TOML format, avoiding escape issues
+ * Unified function used by getSystemRoot() and normalizePath() to avoid code duplication
+ * @param str - The string to normalize (typically a Windows path)
+ * @returns The normalized string with backslashes replaced by forward slashes
+ */
+export function normalizeTomlPath(str: string): string {
+  // Normalize: convert backslashes to forward slashes and collapse duplicates
+  return str
+    .replace(/\\+/g, '/')
+    .replace(/\/+/g, '/')
+}
+
 export function getSystemRoot(): string | null {
   // For Windows environments, prefer exact 'SYSTEMROOT' over 'SystemRoot'.
   // On Windows, env keys are case-insensitive and the last write wins, so
@@ -138,10 +153,8 @@ export function getSystemRoot(): string | null {
   else if (Object.prototype.hasOwnProperty.call(env, 'SystemRoot') && env.SystemRoot)
     systemRoot = env.SystemRoot
 
-  // Normalize: convert backslashes to forward slashes and collapse duplicates
-  return systemRoot
-    .replace(/\\+/g, '/')
-    .replace(/\/+/g, '/')
+  // Use unified normalization function
+  return normalizeTomlPath(systemRoot)
 }
 
 export function shouldUseSudoForGlobalInstall(): boolean {
@@ -192,7 +205,8 @@ export function wrapCommandWithSudo(
 const WRITE_CHECK_FLAG = 0o2
 
 function normalizePath(path: string): string {
-  return path.replace(/\\/g, '/').replace(/\/+$/, '')
+  // Use unified normalization function, then remove trailing slashes
+  return normalizeTomlPath(path).replace(/\/+$/, '')
 }
 
 function isPathInsideHome(path: string): boolean {
