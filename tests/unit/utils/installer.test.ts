@@ -649,6 +649,21 @@ describe('installer utilities', () => {
       expect(exec).toHaveBeenCalledWith('npm', ['uninstall', '-g', '@anthropic-ai/claude-code'])
     })
 
+    it('should uninstall Claude Code via npm when installMethod is npm-global', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'npm-global' })
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'npm',
+        args: ['uninstall', '-g', '@anthropic-ai/claude-code'],
+        usedSudo: false,
+      })
+
+      const success = await uninstallCodeTool('claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('npm', ['uninstall', '-g', '@anthropic-ai/claude-code'])
+    })
+
     it('should remove binaries manually on Windows native installs', async () => {
       claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'native' })
       vi.mocked(platform.getPlatform).mockReturnValue('windows')

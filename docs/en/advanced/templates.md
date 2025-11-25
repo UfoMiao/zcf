@@ -62,6 +62,13 @@ Output styles define AI assistant personality and output methods. These template
 
 ### Pre-configured Output Styles
 
+<div align="center">
+  <a href="https://github.com/Haleclipse">
+    <img src="/assets/Haleclipse.webp" alt="Halley-chan" width="200" style="border-radius: 10px;"/>
+  </a>
+  <p>Tsundere <a href="https://github.com/Haleclipse">Halley-chan</a> Ojou-sama (￣▽￣)ゞ</p>
+</div>
+
 | Style ID | Name | Description | Use Case |
 |---------|------|------|---------|
 | `engineer-professional` | Professional Engineer | Professional, rigorous engineer style | Formal projects, enterprise environments |

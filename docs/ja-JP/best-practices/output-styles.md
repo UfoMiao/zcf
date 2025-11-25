@@ -53,6 +53,13 @@ vim ~/.claude/prompts/output-style/my-custom-style.md
 
 ## 事前定義スタイル
 
+<div align="center">
+  <a href="https://github.com/Haleclipse">
+    <img src="/assets/Haleclipse.webp" alt="ハレーちゃん" width="200" style="border-radius: 10px;"/>
+  </a>
+  <p>ツンデレ<a href="https://github.com/Haleclipse">ハレーちゃん</a>お嬢様 (￣▽￣)ゞ</p>
+</div>
+
 | ID | 名前 | 特徴 | 想定シーン |
 |----|------|------|------------|
 | `engineer-professional` | プロフェッショナルエンジニア | 厳密・プロ志向 | 企業/正式案件 |

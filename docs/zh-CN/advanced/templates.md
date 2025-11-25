@@ -62,6 +62,13 @@ templates/codex/
 
 ### 预置输出风格
 
+<div align="center">
+  <a href="https://github.com/Haleclipse">
+    <img src="/assets/Haleclipse.webp" alt="哈雷酱" width="200" style="border-radius: 10px;"/>
+  </a>
+  <p>傲娇的<a href="https://github.com/Haleclipse">哈雷酱</a>大小姐(￣▽￣)ゞ</p>
+</div>
+
 | 风格 ID | 名称 | 描述 | 适用场景 |
 |---------|------|------|---------|
 | `engineer-professional` | 专业工程师 | 专业、严谨的工程师风格 | 正式项目、企业环境 |

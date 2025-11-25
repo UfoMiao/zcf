@@ -334,7 +334,8 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
 
   try {
     switch (method) {
-      case 'npm': {
+      case 'npm':
+      case 'npm-global': {
         const packageName = codeType === 'claude-code' ? '@anthropic-ai/claude-code' : '@openai/codex'
         const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['uninstall', '-g', packageName])
         if (usedSudo) {

@@ -69,6 +69,13 @@ vim ~/.claude/prompts/output-style/my-custom-style.md
 
 ## 预置输出风格
 
+<div align="center">
+  <a href="https://github.com/Haleclipse">
+    <img src="/assets/Haleclipse.webp" alt="哈雷酱" width="200" style="border-radius: 10px;"/>
+  </a>
+  <p>傲娇的<a href="https://github.com/Haleclipse">哈雷酱</a>大小姐(￣▽￣)ゞ</p>
+</div>
+
 ZCF 提供以下预置输出风格：
 
 | 风格 ID | 名称 | 特点 | 适用场景 |

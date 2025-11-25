@@ -62,6 +62,13 @@ templates/codex/
 
 ### 事前設定された出力スタイル
 
+<div align="center">
+  <a href="https://github.com/Haleclipse">
+    <img src="/assets/Haleclipse.webp" alt="ハレーちゃん" width="200" style="border-radius: 10px;"/>
+  </a>
+  <p>ツンデレ<a href="https://github.com/Haleclipse">ハレーちゃん</a>お嬢様 (￣▽￣)ゞ</p>
+</div>
+
 | スタイルID | 名前 | 説明 | 使用ケース |
 |---------|------|------|---------|
 | `engineer-professional` | プロフェッショナルエンジニア | プロフェッショナルで厳格なエンジニアスタイル | 正式なプロジェクト、エンタープライズ環境 |
