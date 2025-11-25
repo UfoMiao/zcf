@@ -494,7 +494,7 @@ describe('installer utilities', () => {
 
       expect(success).toBe(true)
       expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@anthropic-ai/claude-code'])
-      expect(claudeConfigMock.writeMcpConfig).toHaveBeenCalledWith({ installMethod: 'npm' })
+      expect(claudeConfigMock.writeMcpConfig).toHaveBeenCalledWith({ installMethod: 'npm-global' })
     })
 
     it('should install Codex via Homebrew', async () => {
@@ -611,11 +611,11 @@ describe('installer utilities', () => {
 
       await setInstallMethod('npm', 'claude-code')
 
-      expect(claudeConfigMock.writeMcpConfig).toHaveBeenCalledWith({ installMethod: 'npm' })
+      expect(claudeConfigMock.writeMcpConfig).toHaveBeenCalledWith({ installMethod: 'npm-global' })
     })
 
     it('should mark non-npm installs as native', async () => {
-      claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'npm' })
+      claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'npm-global' })
 
       await setInstallMethod('homebrew', 'claude-code')
 

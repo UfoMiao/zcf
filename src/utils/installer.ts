@@ -246,7 +246,7 @@ export async function removeLocalClaudeCode(): Promise<void> {
 /**
  * Get install method from config
  */
-async function getInstallMethodFromConfig(codeType: CodeType): Promise<InstallMethod | 'native' | null> {
+async function getInstallMethodFromConfig(codeType: CodeType): Promise<InstallMethod | 'npm-global' | 'native' | null> {
   try {
     if (codeType === 'claude-code') {
       const { readMcpConfig } = await import('./claude-config')
@@ -271,7 +271,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
   const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
 
   // Try to detect install method from config
-  type ExtendedInstallMethod = InstallMethod | 'native' | 'manual' | null
+  type ExtendedInstallMethod = InstallMethod | 'npm-global' | 'native' | 'manual' | null
   let method: ExtendedInstallMethod = await getInstallMethodFromConfig(codeType)
 
   // If method not in config, try to detect from system
@@ -420,7 +420,7 @@ export async function setInstallMethod(method: InstallMethod | 'native' = 'npm',
       if (!config) {
         config = { mcpServers: {} }
       }
-      config.installMethod = method === 'npm' ? 'npm' : 'native'
+      config.installMethod = method === 'npm' ? 'npm-global' : 'native'
       writeMcpConfig(config)
     }
 
