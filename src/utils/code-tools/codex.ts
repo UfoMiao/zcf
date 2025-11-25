@@ -45,6 +45,8 @@ export interface CodexMcpService {
   args: string[]
   env?: Record<string, string>
   startup_timeout_ms?: number
+  // Preserve all extra configuration fields not directly managed by ZCF
+  extraFields?: Record<string, any>
 }
 
 export interface CodexConfigData {
@@ -267,14 +269,28 @@ export function parseCodexConfig(content: string): CodexConfigData {
     // Extract MCP services from [mcp_servers.*] sections
     const mcpServices: CodexMcpService[] = []
     if (tomlData.mcp_servers) {
+      // Define known fields that ZCF directly manages
+      const KNOWN_MCP_FIELDS = new Set(['command', 'args', 'env', 'startup_timeout_ms'])
+
       for (const [id, mcpData] of Object.entries(tomlData.mcp_servers)) {
         const mcp = mcpData as any
+
+        // Collect extra fields not directly managed by ZCF
+        const extraFields: Record<string, any> = {}
+        for (const [key, value] of Object.entries(mcp)) {
+          if (!KNOWN_MCP_FIELDS.has(key)) {
+            extraFields[key] = value
+          }
+        }
+
         mcpServices.push({
           id,
           command: mcp.command || id,
           args: mcp.args || [],
           env: Object.keys(mcp.env || {}).length > 0 ? mcp.env : undefined,
           startup_timeout_ms: mcp.startup_timeout_ms,
+          // Only add extraFields if there are any extra fields
+          extraFields: Object.keys(extraFields).length > 0 ? extraFields : undefined,
         })
       }
     }
@@ -427,6 +443,117 @@ export function parseCodexConfig(content: string): CodexConfigData {
   }
 }
 
+/**
+ * Format a value for use within an inline TOML table (recursive helper)
+ * @param value - Value to format
+ * @returns Formatted string representation of the value
+ */
+function formatInlineTableValue(value: any): string {
+  // Handle null/undefined - return empty string (caller should skip)
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  // Handle string type
+  if (typeof value === 'string') {
+    const normalized = normalizeTomlPath(value)
+    // Use single quotes for inline table string values to avoid escaping issues
+    return `'${normalized}'`
+  }
+
+  // Handle number and boolean types
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+
+  // Handle array type
+  if (Array.isArray(value)) {
+    const items = value.map((item) => {
+      if (typeof item === 'string') {
+        const normalized = normalizeTomlPath(item)
+        return `'${normalized}'`
+      }
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        return formatInlineTable(item)
+      }
+      return String(item)
+    }).join(', ')
+    return `[${items}]`
+  }
+
+  // Handle nested object type (inline table) - recursive call
+  if (typeof value === 'object') {
+    return formatInlineTable(value)
+  }
+
+  return String(value)
+}
+
+/**
+ * Format an object as a TOML inline table
+ * @param obj - Object to format as inline table
+ * @returns Formatted inline table string like {key1 = value1, key2 = value2}
+ */
+function formatInlineTable(obj: Record<string, any>): string {
+  const entries = Object.entries(obj)
+    .filter(([_, v]) => v !== null && v !== undefined)
+    .map(([k, v]) => `${k} = ${formatInlineTableValue(v)}`)
+    .join(', ')
+  return `{${entries}}`
+}
+
+/**
+ * Format a TOML field value based on its type
+ * @param key - Field name
+ * @param value - Field value (can be string, number, boolean, array, object)
+ * @returns Formatted TOML string, or empty string if value should be skipped
+ */
+function formatTomlField(key: string, value: any): string {
+  // Skip null/undefined values
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  // Handle string type
+  if (typeof value === 'string') {
+    // Use normalizeTomlPath to handle path normalization (backslashes to forward slashes)
+    const normalized = normalizeTomlPath(value)
+    // Escape quotes for TOML string format
+    const escaped = normalized.replace(/"/g, '\\"')
+    return `${key} = "${escaped}"`
+  }
+
+  // Handle number and boolean types
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return `${key} = ${value}`
+  }
+
+  // Handle array type
+  if (Array.isArray(value)) {
+    const items = value.map((item) => {
+      if (typeof item === 'string') {
+        // Use normalizeTomlPath for array string items
+        const normalized = normalizeTomlPath(item)
+        const escaped = normalized.replace(/"/g, '\\"')
+        return `"${escaped}"`
+      }
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        return formatInlineTable(item)
+      }
+      return String(item)
+    }).join(', ')
+    return `${key} = [${items}]`
+  }
+
+  // Handle object type (inline table)
+  if (typeof value === 'object') {
+    return `${key} = ${formatInlineTable(value)}`
+  }
+
+  // Unknown type, skip
+  return ''
+}
+
 export function readCodexConfig(): CodexConfigData | null {
   if (!exists(CODEX_CONFIG_FILE))
     return null
@@ -541,6 +668,16 @@ export function renderCodexConfig(data: CodexConfigData): string {
       // Add startup timeout if present
       if (service.startup_timeout_ms) {
         lines.push(`startup_timeout_ms = ${service.startup_timeout_ms}`)
+      }
+
+      // Add extra fields if present
+      if (service.extraFields) {
+        for (const [key, value] of Object.entries(service.extraFields)) {
+          const formatted = formatTomlField(key, value)
+          if (formatted) {
+            lines.push(formatted)
+          }
+        }
       }
 
       lines.push('')
