@@ -8,12 +8,13 @@ import { ToolUpdateScheduler } from '../utils/tool-update-scheduler'
 export interface CheckUpdatesOptions {
   lang?: string
   skipPrompt?: boolean
+  force?: boolean
   codeType?: string
 }
 
 export async function checkUpdates(options: CheckUpdatesOptions = {}): Promise<void> {
   try {
-    const skipPrompt = options.skipPrompt || false
+    const skipPrompt = options.skipPrompt || options.force || false
 
     // Resolve code type using the new resolver
     let codeType: CodeToolType

@@ -49,5 +49,7 @@
   "help.defaults.dailyUsage": "Daily usage (default)",
   "help.defaults.interactiveUninstall": "Interactive uninstall menu",
   "help.defaults.updateTools": "Update Claude Code, CCR and CCometixLine",
-  "help.defaults.prefix": "default:"
+  "help.defaults.forceUpdate": "Force update without prompts",
+  "help.defaults.prefix": "default:",
+  "help.optionDescriptions.forceUpdateWithoutPrompts": "Force update without confirmation prompts"
 }

@@ -141,6 +141,7 @@ export function customizeHelp(sections: any[]): any[] {
       '',
       ansis.gray(`  ${i18n.t('cli:help.nonInteractiveMode')}`),
       `  ${ansis.green('--skip-prompt, -s')}         ${i18n.t('cli:help.optionDescriptions.skipAllPrompts')}`,
+      `  ${ansis.green('--force, -f')}               ${i18n.t('cli:help.optionDescriptions.forceUpdateWithoutPrompts')}`,
       `  ${ansis.green('--api-type, -t')} <type>      ${i18n.t('cli:help.optionDescriptions.apiType')} (auth_token, api_key, ccr_proxy, skip)`,
       `  ${ansis.green('--api-key, -k')} <key>       ${i18n.t('cli:help.optionDescriptions.apiKey')}`,
       `  ${ansis.green('--api-url, -u')} <url>       ${i18n.t('cli:help.optionDescriptions.customApiUrl')}`,
@@ -184,7 +185,9 @@ export function customizeHelp(sections: any[]): any[] {
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkAndUpdateTools')}`),
       `  ${ansis.cyan('npx zcf check-updates')}     ${ansis.gray(`# ${i18n.t('cli:help.defaults.updateTools')}`)}`,
-      `  ${ansis.cyan('npx zcf check')}`,
+      `  ${ansis.cyan('npx zcf check')}           ${ansis.gray(`# ${i18n.t('cli:help.defaults.updateTools')}`)}`,
+      `  ${ansis.cyan('npx zcf check-updates --force')}  ${ansis.gray(`# ${i18n.t('cli:help.defaults.forceUpdate')}`)}`,
+      `  ${ansis.cyan('npx zcf check -f')}`,
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkClaudeCode')}`),
       `  ${ansis.cyan('npx zcf check --code-type claude-code')}`,
@@ -325,8 +328,14 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
+    .option('--force, -f', 'Force update without confirmation prompts')
     .action(await withLanguageResolution(async (options) => {
-      await checkUpdates(options)
+      // Map force option to skipPrompt for consistency
+      const updatedOptions = {
+        ...options,
+        skipPrompt: options.skipPrompt || options.force || false,
+      }
+      await checkUpdates(updatedOptions)
     }))
 
   // Custom help

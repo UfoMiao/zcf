@@ -49,5 +49,7 @@
   "help.defaults.dailyUsage": "每日用量（默认）",
   "help.defaults.interactiveUninstall": "交互式卸载菜单",
   "help.defaults.updateTools": "更新 Claude Code、CCR 和 CCometixLine",
-  "help.defaults.prefix": "默认:"
+  "help.defaults.forceUpdate": "强制更新（跳过提示）",
+  "help.defaults.prefix": "默认:",
+  "help.optionDescriptions.forceUpdateWithoutPrompts": "强制更新而不显示确认提示"
 }
