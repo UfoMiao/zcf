@@ -20,5 +20,11 @@
   "updateSkipped": "Update skipped",
   "updateSuccess": "{tool} updated successfully!",
   "updateSummary": "Update Summary",
-  "updating": "Updating {tool}..."
+  "updating": "Updating {tool}...",
+  "updateVerifyFailed": "{tool} update verification failed",
+  "detectingInstallMethod": "Detecting Claude Code installation method...",
+  "installMethodDetected": "Installation method detected: {method}",
+  "installMethodUnknown": "Unable to detect installation method, using npm update as fallback",
+  "usingNativeUpdate": "Using native update command (claude update)",
+  "usingNpmUpdate": "Using npm update command"
 }

@@ -1,4 +1,5 @@
 import { exec } from 'node:child_process'
+import process from 'node:process'
 import { promisify } from 'node:util'
 import semver from 'semver'
 
@@ -9,23 +10,57 @@ export async function getInstalledVersion(command: string, maxRetries = 3): Prom
     try {
       // Try -v first (more universal), then --version
       let stdout: string
+      let stderr: string
+
       try {
-        const result = await execAsync(`${command} -v`)
+        const result = await execAsync(`${command} -v`, {
+          timeout: 5000,
+          env: {
+            ...process.env,
+            CI: 'true',
+            NO_COLOR: '1',
+          },
+        })
         stdout = result.stdout
+        stderr = result.stderr
       }
       catch {
         // Fallback to --version if -v doesn't work
-        const result = await execAsync(`${command} --version`)
+        const result = await execAsync(`${command} --version`, {
+          timeout: 5000,
+          env: {
+            ...process.env,
+            CI: 'true',
+            NO_COLOR: '1',
+          },
+        })
         stdout = result.stdout
+        stderr = result.stderr
       }
 
-      // Extract version from output
-      const versionMatch = stdout.match(/(\d+\.\d+\.\d+(?:-[\w.]+)?)/)
-      return versionMatch ? versionMatch[1] : null
+      // Combine stdout and stderr for version extraction (some tools output to stderr)
+      const combinedOutput = (`${stdout} ${stderr}`).trim()
+
+      // Extract version from output - support more version formats
+      const versionMatch = combinedOutput.match(/(\d+\.\d+\.\d+(?:-[\w.]+)?)/)
+      if (versionMatch) {
+        return versionMatch[1]
+      }
+
+      // Try alternative patterns for different version formats
+      const altVersionMatch = combinedOutput.match(/v?(\d+\.\d+(?:\.\d+)?)/)
+      if (altVersionMatch) {
+        return altVersionMatch[1]
+      }
+
+      // If we can't extract version but command executed, log the output for debugging
+      console.log(`Version output for ${command}:`, combinedOutput)
+      console.log(`Version extraction attempts - stdout: "${stdout}", stderr: "${stderr}"`)
     }
-    catch {
+    catch (error) {
       if (attempt === maxRetries) {
-        // Final attempt failed, return null
+        // Final attempt failed, log error and return null
+        console.warn(`Failed to get version for ${command} after ${maxRetries} attempts:`, error instanceof Error ? error.message : String(error))
         return null
       }
       // Wait briefly before retry (100ms * attempt number)

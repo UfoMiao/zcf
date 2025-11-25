@@ -20,5 +20,11 @@
   "updateSkipped": "跳过更新",
   "updateSuccess": "{tool} 更新成功！",
   "updateSummary": "更新摘要",
-  "updating": "正在更新 {tool}..."
+  "updating": "正在更新 {tool}...",
+  "updateVerifyFailed": "{tool} 更新验证失败",
+  "detectingInstallMethod": "正在检测 Claude Code 安装方式...",
+  "installMethodDetected": "检测到安装方式: {method}",
+  "installMethodUnknown": "无法检测安装方式，将使用 npm 更新作为备用方案",
+  "usingNativeUpdate": "使用原生更新命令 (claude update)",
+  "usingNpmUpdate": "使用 npm 更新命令"
 }

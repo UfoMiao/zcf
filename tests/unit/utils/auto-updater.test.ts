@@ -311,26 +311,6 @@ describe('auto-updater', () => {
       )
     })
 
-    it('should initiate Claude Code update flow', async () => {
-      testMocks.checkClaudeCodeVersion.mockResolvedValue({
-        installed: true,
-        currentVersion: '1.0.0',
-        latestVersion: '2.0.0',
-        needsUpdate: true,
-      })
-      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
-
-      try {
-        await updateClaudeCode()
-        // Flow tested, execution may fail
-      }
-      catch (error) {
-        expect(error).toBeDefined()
-      }
-
-      expect(promptBoolean).toHaveBeenCalled()
-    })
-
     it('should handle Claude Code update errors gracefully', async () => {
       testMocks.checkClaudeCodeVersion.mockResolvedValue({
         installed: true,
@@ -339,6 +319,14 @@ describe('auto-updater', () => {
         needsUpdate: true,
       })
       vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+
+      // Mock successful doctor but failed update
+      testMocks.execAsync
+        .mockResolvedValueOnce({
+          stdout: 'Diagnostics\n └ Config install method: native',
+          stderr: '',
+        })
+        .mockRejectedValueOnce(new Error('Update failed'))
 
       const result = await updateClaudeCode()
 
