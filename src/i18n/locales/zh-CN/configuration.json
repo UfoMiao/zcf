@@ -62,6 +62,8 @@
   "selectMemoryOption": "选择配置选项",
   "selectOutputStyles": "选择要安装的输出风格",
   "selectedStyles": "已选择风格",
+  "singleConfigSaved": "配置 {{name}} 已保存",
+  "singleConfigSaveFailed": "配置保存失败",
   "updateDocsOnly": "仅更新工作流相关md并备份旧配置",
   "updatingPrompts": "正在更新 Claude Code 记忆文档...",
   "enterCustomModel": "请输入自定义模型名称",

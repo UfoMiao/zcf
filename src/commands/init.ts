@@ -604,20 +604,29 @@ export async function init(options: InitOptions = {}): Promise<void> {
             options.apiModel = options.apiModel || preset.claudeCode.defaultModels[0]
             options.apiFastModel = options.apiFastModel || preset.claudeCode.defaultModels[1]
           }
+
+          // Save configuration to ZCF TOML config for persistence and switching
+          await saveSingleConfigToToml(apiConfig, options.provider, options)
         }
         else if (options.apiType === 'auth_token' && options.apiKey) {
           apiConfig = {
-            authType: 'auth_token',
+            authType: 'auth_token' as const,
             key: options.apiKey,
             url: options.apiUrl || API_DEFAULT_URL,
           }
+
+          // Save configuration to ZCF TOML config for persistence and switching
+          await saveSingleConfigToToml(apiConfig, undefined, options)
         }
         else if (options.apiType === 'api_key' && options.apiKey) {
           apiConfig = {
-            authType: 'api_key',
+            authType: 'api_key' as const,
             key: options.apiKey,
             url: options.apiUrl || API_DEFAULT_URL,
           }
+
+          // Save configuration to ZCF TOML config for persistence and switching
+          await saveSingleConfigToToml(apiConfig, undefined, options)
         }
         else if (options.apiType === 'ccr_proxy') {
           // Handle CCR proxy configuration in skip-prompt mode
@@ -1170,6 +1179,93 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
  * Convert API config definition to Claude Code profile
  * @param config - API configuration definition
  */
+/**
+ * Convert single API configuration to Claude Code profile
+ * Used in skip-prompt mode for provider-based or traditional API configurations
+ * @param apiConfig - Basic API configuration object
+ * @param provider - Optional provider name
+ * @param options - Command line options for models
+ */
+/**
+ * Save single API configuration to ZCF TOML config
+ * Handles profile creation, switching, and error reporting
+ * @param apiConfig - API configuration object
+ * @param provider - Optional provider name
+ * @param options - Command line options for models
+ */
+async function saveSingleConfigToToml(
+  apiConfig: { authType: 'api_key' | 'auth_token', key: string, url?: string },
+  provider?: string,
+  options?: { apiModel?: string, apiFastModel?: string },
+): Promise<void> {
+  try {
+    const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+    const profile = await convertSingleConfigToProfile(apiConfig, provider, options)
+    const result = await ClaudeCodeConfigManager.addProfile(profile)
+
+    if (result.success) {
+      const savedProfile = result.addedProfile || ClaudeCodeConfigManager.getProfileByName(profile.name) || profile
+      // Set as default and apply settings
+      if (savedProfile.id) {
+        await ClaudeCodeConfigManager.switchProfile(savedProfile.id)
+        await ClaudeCodeConfigManager.applyProfileSettings(savedProfile)
+      }
+      console.log(ansis.green(`✔ ${i18n.t('configuration:singleConfigSaved', { name: profile.name })}`))
+    }
+    else {
+      console.warn(ansis.yellow(`${i18n.t('configuration:singleConfigSaveFailed')}: ${result.error}`))
+    }
+  }
+  catch (error) {
+    console.warn(ansis.yellow(`${i18n.t('configuration:singleConfigSaveFailed')}: ${error instanceof Error ? error.message : String(error)}`))
+  }
+}
+
+async function convertSingleConfigToProfile(
+  apiConfig: { authType: 'api_key' | 'auth_token', key: string, url?: string },
+  provider?: string,
+  options?: { apiModel?: string, apiFastModel?: string },
+): Promise<ClaudeCodeProfile> {
+  const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+
+  // Generate configuration name based on provider or use default
+  const configName = provider && provider !== 'custom'
+    ? provider
+    : 'custom-config'
+
+  // Apply provider preset if specified
+  let baseUrl = apiConfig.url || API_DEFAULT_URL
+  let primaryModel = options?.apiModel
+  let fastModel = options?.apiFastModel
+  let authType = apiConfig.authType
+
+  if (provider && provider !== 'custom') {
+    const { getProviderPreset } = await import('../config/api-providers')
+    const preset = getProviderPreset(provider)
+
+    if (preset?.claudeCode) {
+      baseUrl = apiConfig.url || preset.claudeCode.baseUrl
+      authType = preset.claudeCode.authType
+      if (preset.claudeCode.defaultModels && preset.claudeCode.defaultModels.length >= 2) {
+        primaryModel = primaryModel || preset.claudeCode.defaultModels[0]
+        fastModel = fastModel || preset.claudeCode.defaultModels[1]
+      }
+    }
+  }
+
+  const profile: ClaudeCodeProfile = {
+    name: configName,
+    authType,
+    apiKey: apiConfig.key,
+    baseUrl,
+    primaryModel,
+    fastModel,
+    id: ClaudeCodeConfigManager.generateProfileId(configName),
+  }
+
+  return profile
+}
+
 async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<ClaudeCodeProfile> {
   const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
 

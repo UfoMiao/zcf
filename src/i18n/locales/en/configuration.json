@@ -62,6 +62,8 @@
   "selectMemoryOption": "Select configuration option",
   "selectOutputStyles": "Select output styles to install",
   "selectedStyles": "Selected styles",
+  "singleConfigSaved": "Configuration {{name}} saved",
+  "singleConfigSaveFailed": "Failed to save configuration",
   "updateDocsOnly": "Update workflow-related md files only with backup",
   "updatingPrompts": "Updating Claude Code memory documents...",
   "enterCustomModel": "Enter custom model name",
