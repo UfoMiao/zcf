@@ -77,7 +77,6 @@ export async function configureCcrProxy(ccrConfig: CcrConfig): Promise<void> {
   // Extract CCR server info
   const host = ccrConfig.HOST || '127.0.0.1'
   const port = ccrConfig.PORT || 3456
-  const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
 
   // Update environment variables in settings
   if (!settings.env) {
@@ -85,7 +84,13 @@ export async function configureCcrProxy(ccrConfig: CcrConfig): Promise<void> {
   }
 
   settings.env.ANTHROPIC_BASE_URL = `http://${host}:${port}`
-  settings.env.ANTHROPIC_API_KEY = apiKey
+  // Only set APIKEY if configured, otherwise let Claude Code use OAuth
+  if (ccrConfig.APIKEY) {
+    settings.env.ANTHROPIC_API_KEY = ccrConfig.APIKEY
+  }
+  else {
+    delete settings.env.ANTHROPIC_API_KEY
+  }
 
   // Write back to settings
   writeJsonConfig(SETTINGS_FILE, settings)

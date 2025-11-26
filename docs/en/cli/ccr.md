@@ -240,6 +240,16 @@ CCR supports flexible route rule configuration, which can be set through Web UI 
 | `API_TIMEOUT_MS` | string | API timeout (milliseconds) | `600000` |
 | `PROXY_URL` | string | Proxy URL (optional) | `""` |
 
+::: tip OAuth Authentication Mode
+To use Anthropic's official OAuth authentication instead of an API Key, remove the `APIKEY` field from the configuration file. Claude Code will then automatically display the official login window, and authenticated requests will be transparently forwarded to the Anthropic API.
+
+This mode is suitable for:
+
+- Users without an API Key but with an Anthropic account
+- Scenarios requiring official billing and quotas
+- Users who need CCR routing features while using official authentication
+:::
+
 #### Providers Configuration
 
 `Providers` is an array, each Provider contains:
@@ -289,7 +299,7 @@ A: Need to run Option 1 (Initialize CCR) first to complete configuration.
 
 ### Q: Web UI cannot be accessed?
 
-A: 
+A:
 1. Ensure UI is started (Option 2)
 2. Check if port 3456 is occupied
 3. Use API key `sk-zcf-x-ccr` to log in (or check `APIKEY` in configuration)
@@ -300,7 +310,7 @@ A: You can modify through Web UI or directly edit `~/.claude-code-router/config.
 
 ### Q: Service failed to start?
 
-A: 
+A:
 1. Check if configuration file format is correct
 2. Check if port is occupied: `lsof -i :3456` (macOS/Linux) or `netstat -ano | findstr :3456` (Windows)
 3. Confirm `@musistudio/claude-code-router` is correctly installed

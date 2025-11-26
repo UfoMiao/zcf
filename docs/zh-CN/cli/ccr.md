@@ -240,6 +240,16 @@ CCR 支持灵活的路由规则配置，可以通过 Web UI 或配置文件设�
 | `API_TIMEOUT_MS` | string | API 超时时间（毫秒） | `600000` |
 | `PROXY_URL` | string | 代理 URL（可选） | `""` |
 
+::: tip OAuth 认证模式
+如果希望使用 Anthropic 官方 OAuth 认证而非 API Key，可以删除配置文件中的 `APIKEY` 字段。此时 Claude Code 将自动弹出官方登录窗口，使用 OAuth 认证后的请求会透明转发到 Anthropic API。
+
+这种模式适合：
+
+- 没有 API Key 但有 Anthropic 账号的用户
+- 希望使用官方计费和配额的场景
+- 需要 CCR 路由功能同时使用官方认证的用户
+:::
+
 #### Providers 配置
 
 `Providers` 是一个数组，每个 Provider 包含：
@@ -289,7 +299,7 @@ A: 需要先运行选项 1（初始化 CCR）完成配置。
 
 ### Q: Web UI 无法访问？
 
-A: 
+A:
 1. 确保已启动 UI（选项 2）
 2. 检查端口 3456 是否被占用
 3. 使用 API 密钥 `sk-zcf-x-ccr` 登录（或查看配置中的 `APIKEY`）
@@ -300,7 +310,7 @@ A: 可以通过 Web UI 或直接编辑 `~/.claude-code-router/config.json` 文�
 
 ### Q: 服务启动失败？
 
-A: 
+A:
 1. 检查配置文件格式是否正确
 2. 检查端口是否被占用：`lsof -i :3456`（macOS/Linux）或 `netstat -ano | findstr :3456`（Windows）
 3. 确认 `@musistudio/claude-code-router` 已正确安装

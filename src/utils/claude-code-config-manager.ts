@@ -237,10 +237,15 @@ export class ClaudeCodeConfigManager {
 
         const host = ccrConfig.HOST || '127.0.0.1'
         const port = ccrConfig.PORT || 3456
-        const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
 
         settings.env.ANTHROPIC_BASE_URL = `http://${host}:${port}`
-        settings.env.ANTHROPIC_API_KEY = apiKey
+        // Only set APIKEY if configured, otherwise let Claude Code use OAuth
+        if (ccrConfig.APIKEY) {
+          settings.env.ANTHROPIC_API_KEY = ccrConfig.APIKEY
+        }
+        else {
+          delete settings.env.ANTHROPIC_API_KEY
+        }
         delete settings.env.ANTHROPIC_AUTH_TOKEN
         shouldRestartCcr = true
       }
@@ -763,7 +768,6 @@ export class ClaudeCodeConfigManager {
 
     const host = ccrConfig.HOST || '127.0.0.1'
     const port = ccrConfig.PORT || 3456
-    const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
     const baseUrl = `http://${host}:${port}`
 
     // 创建或更新CCR配置
@@ -771,7 +775,8 @@ export class ClaudeCodeConfigManager {
       name: 'CCR Proxy',
       authType: 'ccr_proxy',
       baseUrl,
-      apiKey,
+      // Only set apiKey if configured, otherwise let Claude Code use OAuth
+      ...(ccrConfig.APIKEY && { apiKey: ccrConfig.APIKEY }),
     }
 
     config.profiles[ccrProfileId] = {
