@@ -381,7 +381,7 @@ gitbook/
 - **状态**: ⏳ 待执行
 - **文件**: `/Users/miaoda/Documents/code/zcf/README.md`
 - **保留**: Banner、徽章、赞助商、Star 图
-- **添加**: 文档链接 (https://zcf.ufomiao.top)
+- **添加**: 文档链接 (https://zcf.ufomiao.com)
 - **添加**: 项目简述
 - **添加**: "安装后获得什么" 章节
 - **移除**: 详细功能介绍、命令说明
@@ -391,14 +391,14 @@ gitbook/
 - **状态**: ⏳ 待执行
 - **文件**: `/Users/miaoda/Documents/code/zcf/README_zh-CN.md`
 - **操作**: 同步骤 5.1
-- **文档链接**: https://zcf.ufomiao.top/docs/zh-cn
+- **文档链接**: https://zcf.ufomiao.com/docs/zh-cn
 - **预期结果**: 简洁的中文 README
 
 ### 步骤 5.3: 简化 README_ja-JP.md (日文)
 - **状态**: ⏳ 待执行
 - **文件**: `/Users/miaoda/Documents/code/zcf/README_ja-JP.md`
 - **操作**: 同步骤 5.1
-- **文档链接**: https://zcf.ufomiao.top/docs/ja-jp
+- **文档链接**: https://zcf.ufomiao.com/docs/ja-jp
 - **预期结果**: 简洁的日文 README
 
 ---

@@ -77,11 +77,15 @@ ZCF (Zero-Config Code Flow) is a CLI tool designed for professional developers, 
 
 ## Related Links
 
-- **Official Documentation Site**: <https://zcf.ufomiao.top>
-- **English Documentation**: <https://zcf.ufomiao.top/docs/en>
 - **GitHub**: <https://github.com/UfoMiao/zcf>
 - **npm**: <https://www.npmjs.com/package/zcf>
 - **Changelog**: [CHANGELOG.md](https://github.com/UfoMiao/zcf/blob/main/CHANGELOG.md)
+
+## 💬 Community
+
+Join our Telegram group for support, discussions, and updates:
+
+[![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue?style=flat&logo=telegram)](https://t.me/ufomiao_zcf)
 
 <!-- Badges -->
 

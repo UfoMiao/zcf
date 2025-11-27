@@ -68,6 +68,12 @@ More usage, options, and workflows: see documentation.
 
 - https://zcf.ufomiao.com/
 
+## 💬 Community
+
+Join our Telegram group for support, discussions, and updates:
+
+[![Telegram](https://img.shields.io/badge/Telegram-Join%20Chat-blue?style=flat&logo=telegram)](https://t.me/ufomiao_zcf)
+
 ## 🙏 Acknowledgments
 
 This project is inspired by and incorporates work from:

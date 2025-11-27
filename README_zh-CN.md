@@ -67,6 +67,12 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 
 - https://zcf.ufomiao.com/zh-CN/
 
+## 💬 社区
+
+加入我们的 Telegram 群组，获取支持、参与讨论和接收更新：
+
+[![Telegram](https://img.shields.io/badge/Telegram-加入群组-blue?style=flat&logo=telegram)](https://t.me/ufomiao_zcf)
+
 ## 🙏 鸣谢
 
 本项目的灵感来源和引入的开源项目：

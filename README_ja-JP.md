@@ -68,6 +68,12 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 
 - https://zcf.ufomiao.com/ja-JP/
 
+## 💬 コミュニティ
+
+Telegramグループに参加して、サポートやディスカッション、アップデート情報を入手しましょう：
+
+[![Telegram](https://img.shields.io/badge/Telegram-参加-blue?style=flat&logo=telegram)](https://t.me/ufomiao_zcf)
+
 ## 🙏 謝辞
 
 本プロジェクトは以下のオープンソースプロジェクトからインスピレーションを受け、さまざまな要素を取り入れています：
