@@ -299,6 +299,9 @@ export default defineConfig({
   lang: 'en-US',
   lastUpdated: true,
   cleanUrls: true,
+  head: [
+    ['link', { rel: 'icon', type: 'image/x-icon', href: '/assets/favicon.ico' }],
+  ],
 
   themeConfig: {
     search: {
