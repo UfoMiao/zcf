@@ -1,5 +1,51 @@
 # Changelog
 
+## 3.4.1
+
+### Patch Changes
+
+- ## New Features
+  - Implement extra fields preservation in Codex MCP configuration
+  - Support saving single API configuration to TOML for easy profile switching
+  - Add community section with Telegram group links across documentation
+
+  ## 新功能
+  - 实现 Codex MCP 配置中的额外字段保留功能
+  - 支持将单个 API 配置保存到 TOML 以便轻松切换配置文件
+  - 在文档中添加社区板块，包含 Telegram 群组链接
+
+  ## Optimization
+  - Improve update logic to support multiple installation methods
+  - Use Claude Code's built-in 'claude update' command for better compatibility
+  - Implement smart installation method detection for Codex
+  - Refactor installMethod type for improved consistency
+
+  ## 优化
+  - 改进更新逻辑以支持多种安装方式
+  - 使用 Claude Code 内置的 'claude update' 命令提升兼容性
+  - 为 Codex 实现智能安装方式检测
+  - 重构 installMethod 类型以提高一致性
+
+  ## Fixes
+  - Update Homebrew cask version retrieval to support v2 JSON format
+  - Correct installMethod to 'npm-global' for configuration consistency
+
+  ## 修复
+  - 更新 Homebrew cask 版本获取以支持 v2 JSON 格式
+  - 修正 installMethod 为 'npm-global' 以保持配置一致性
+
+  ## Documentation
+  - Add favicon to site configuration for improved branding
+  - Simplify sidebar text by removing emojis for clarity
+  - Add Halley-chan image and description to output styles documentation
+  - Update documentation domain links
+
+  ## 文档
+  - 为站点配置添加 favicon 图标以改进品牌形象
+  - 简化侧边栏文本，移除表情符号以提升清晰度
+  - 为输出样式文档添加 Halley-chan 角色图片和说明
+  - 更新文档域名链接
+
 ## 3.4.0
 
 ### Minor Changes
