@@ -202,12 +202,15 @@ describe('codex installation checks', () => {
         stdout: '/usr/local/lib\n└── other-package@1.0.0',
         stderr: '',
       })
-      // Homebrew info check succeeds
+      // Homebrew info check succeeds with v2 JSON format
       mockExec.mockResolvedValueOnce({
         exitCode: 0,
-        stdout: JSON.stringify([{
-          installed: [{ version: '2.0.0' }],
-        }]),
+        stdout: JSON.stringify({
+          casks: [{
+            token: 'codex',
+            installed: '2.0.0', // v2 format: installed is a string
+          }],
+        }),
         stderr: '',
       })
 
@@ -217,7 +220,7 @@ describe('codex installation checks', () => {
 
       // Assert
       expect(result).toBe('2.0.0')
-      expect(mockExec).toHaveBeenCalledWith('brew', ['info', '--cask', 'codex', '--json'], expect.objectContaining({ throwOnError: false }))
+      expect(mockExec).toHaveBeenCalledWith('brew', ['info', '--cask', 'codex', '--json=v2'], expect.objectContaining({ throwOnError: false }))
     })
 
     it('should return null when codex is not installed', async () => {
@@ -235,6 +238,34 @@ describe('codex installation checks', () => {
         exitCode: 1,
         stdout: '',
         stderr: 'Error: No available formula with the name "codex"',
+      })
+
+      // Act
+      const { getCodexVersion } = await import('../../../../src/utils/code-tools/codex')
+      const result = await getCodexVersion()
+
+      // Assert
+      expect(result).toBeNull()
+    })
+
+    it('should return null when Homebrew cask is known but not installed', async () => {
+      // Arrange - npm check fails
+      mockExec.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '/usr/local/lib\n└── other-package@1.0.0',
+        stderr: '',
+      })
+      // Homebrew info succeeds but shows not installed (installed: null)
+      mockExec.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify({
+          casks: [{
+            token: 'codex',
+            installed: null, // v2 format: null when not installed
+            version: '2.0.0',
+          }],
+        }),
+        stderr: '',
       })
 
       // Act

@@ -813,15 +813,15 @@ export async function getCodexVersion(): Promise<string | null> {
 
   // Try Homebrew
   try {
-    const brewResult = await x('brew', ['info', '--cask', 'codex', '--json'], { throwOnError: false })
+    const brewResult = await x('brew', ['info', '--cask', 'codex', '--json=v2'], { throwOnError: false })
     if (brewResult.exitCode === 0) {
       const info = JSON.parse(brewResult.stdout)
-      // Homebrew cask info returns an array
-      if (Array.isArray(info) && info.length > 0 && info[0].installed) {
-        // Get the installed version from the first installed entry
-        const installedVersions = info[0].installed
-        if (Array.isArray(installedVersions) && installedVersions.length > 0) {
-          return installedVersions[0].version
+      // Homebrew cask info v2 format: { "casks": [...] }
+      if (info.casks && Array.isArray(info.casks) && info.casks.length > 0) {
+        const cask = info.casks[0]
+        // In v2 format, 'installed' is a string (version) or null if not installed
+        if (cask.installed && typeof cask.installed === 'string') {
+          return cask.installed
         }
       }
     }
