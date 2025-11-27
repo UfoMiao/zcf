@@ -637,6 +637,20 @@ describe('codex code tool utilities', () => {
       // Mock user confirmation
       mockedPromptBoolean.mockResolvedValueOnce(true)
 
+      // Mock detectCodexInstallMethod - brew check (fails)
+      mockedX.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Error: No available formula with the name "codex"',
+      })
+
+      // Mock detectCodexInstallMethod - npm check (succeeds)
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '/usr/local/lib\n└── @openai/codex@1.0.0',
+        stderr: '',
+      })
+
       // Mock successful npm install
       mockedX.mockResolvedValueOnce({
         exitCode: 0,
@@ -714,6 +728,20 @@ describe('codex code tool utilities', () => {
         stderr: '',
       })
 
+      // Mock detectCodexInstallMethod - brew check (fails)
+      mockedX.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Error: No available formula with the name "codex"',
+      })
+
+      // Mock detectCodexInstallMethod - npm check (succeeds)
+      mockedX.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '/usr/local/lib\n└── @openai/codex@1.0.0',
+        stderr: '',
+      })
+
       // Mock successful npm install
       mockedX.mockResolvedValueOnce({
         exitCode: 0,
@@ -730,7 +758,8 @@ describe('codex code tool utilities', () => {
       // Should not prompt user when skipPrompt is true
       expect(mockedInquirer.prompt).not.toHaveBeenCalled()
       // Should proceed with install automatically
-      expect(mockedX).toHaveBeenCalledTimes(3) // version checks + install
+      // Calls: getCodexVersion, npm view, brew check (detectCodexInstallMethod), npm check (detectCodexInstallMethod), npm install
+      expect(mockedX).toHaveBeenCalledTimes(5)
     })
 
     it('should show up-to-date message when no update is needed', async () => {

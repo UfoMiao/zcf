@@ -4,6 +4,16 @@ import semver from 'semver'
 
 const execAsync = promisify(exec)
 
+/**
+ * Get installed version of a command-line tool
+ *
+ * This function detects the version regardless of installation method (npm, Homebrew, etc.)
+ * by executing the command and parsing its version output.
+ *
+ * @param command - Command name (e.g., 'claude', 'ccr', 'codex')
+ * @param maxRetries - Maximum number of retry attempts (default: 3)
+ * @returns Version string or null if command is not installed
+ */
 export async function getInstalledVersion(command: string, maxRetries = 3): Promise<string | null> {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -84,6 +94,14 @@ export async function checkCcrVersion(): Promise<{
   }
 }
 
+/**
+ * Check Claude Code version and compare with latest npm version
+ *
+ * This function works for all installation methods (npm, Homebrew, etc.)
+ * because it checks the installed version via command execution.
+ *
+ * @returns Version information including update availability
+ */
 export async function checkClaudeCodeVersion(): Promise<{
   installed: boolean
   currentVersion: string | null

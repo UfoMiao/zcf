@@ -25,7 +25,7 @@ import { readZcfConfig, updateZcfConfig } from '../zcf-config'
 import { detectConfigManagementMode } from './codex-config-detector'
 import { configureCodexMcp } from './codex-configure'
 
-// 公共化导出，便于复用和测试
+// Public export for easy reuse and testing
 export { applyCodexPlatformCommand } from './codex-platform'
 export { CODEX_DIR }
 
@@ -81,21 +81,82 @@ function getRootDir(): string {
 }
 
 /**
- * Core function to install/update Codex CLI via npm
+ * Detect Codex installation method
+ * @returns Installation method: 'npm', 'homebrew', or 'unknown'
+ */
+async function detectCodexInstallMethod(): Promise<'npm' | 'homebrew' | 'unknown'> {
+  try {
+    // Check if installed via Homebrew (macOS/Linux)
+    // Codex is distributed as a Homebrew cask, so we need to use --cask flag
+    const brewResult = await x('brew', ['list', '--cask', 'codex'], { throwOnError: false })
+    if (brewResult.exitCode === 0) {
+      return 'homebrew'
+    }
+  }
+  catch {
+    // Homebrew not available or codex not installed via brew
+  }
+
+  try {
+    // Check if installed via npm
+    const npmResult = await x('npm', ['list', '-g', '@openai/codex'], { throwOnError: false })
+    if (npmResult.exitCode === 0 && npmResult.stdout.includes('@openai/codex')) {
+      return 'npm'
+    }
+  }
+  catch {
+    // npm not available or codex not installed via npm
+  }
+
+  return 'unknown'
+}
+
+/**
+ * Core function to install/update Codex CLI via npm or Homebrew
  * @param isUpdate - Whether this is an update (true) or fresh install (false)
  */
 async function executeCodexInstallation(isUpdate: boolean, skipMethodSelection: boolean = false): Promise<void> {
   if (isUpdate) {
     console.log(ansis.cyan(i18n.t('codex:updatingCli')))
-    // Update still uses npm directly
-    const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex@latest'])
-    if (usedSudo)
-      console.log(ansis.yellow(i18n.t('codex:usingSudo')))
 
-    const result = await x(command, args)
-    if (result.exitCode !== 0) {
-      throw new Error(`Failed to update codex CLI: exit code ${result.exitCode}`)
+    // Detect installation method for updates
+    const installMethod = await detectCodexInstallMethod()
+
+    if (installMethod === 'homebrew') {
+      // Update via Homebrew
+      // Codex is distributed as a Homebrew cask, so we need to use --cask flag
+      console.log(ansis.gray(i18n.t('codex:detectedHomebrew')))
+      const result = await x('brew', ['upgrade', '--cask', 'codex'])
+      if (result.exitCode !== 0) {
+        throw new Error(`Failed to update codex via Homebrew: exit code ${result.exitCode}`)
+      }
     }
+    else if (installMethod === 'npm') {
+      // Update via npm
+      console.log(ansis.gray(i18n.t('codex:detectedNpm')))
+      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex@latest'])
+      if (usedSudo)
+        console.log(ansis.yellow(i18n.t('codex:usingSudo')))
+
+      const result = await x(command, args)
+      if (result.exitCode !== 0) {
+        throw new Error(`Failed to update codex CLI: exit code ${result.exitCode}`)
+      }
+    }
+    else {
+      // Unknown installation method - fall back to npm
+      console.log(ansis.yellow(i18n.t('codex:unknownInstallMethod')))
+      console.log(ansis.gray(i18n.t('codex:fallingBackToNpm')))
+      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex@latest'])
+      if (usedSudo)
+        console.log(ansis.yellow(i18n.t('codex:usingSudo')))
+
+      const result = await x(command, args)
+      if (result.exitCode !== 0) {
+        throw new Error(`Failed to update codex CLI: exit code ${result.exitCode}`)
+      }
+    }
+
     console.log(ansis.green(i18n.t('codex:updateSuccess')))
   }
   else {
@@ -710,31 +771,66 @@ export function writeAuthFile(newEntries: Record<string, string>): void {
 }
 
 export async function isCodexInstalled(): Promise<boolean> {
+  // Check npm installation
   try {
-    const result = await x('npm', ['list', '-g', '--depth=0'])
-    if (result.exitCode !== 0) {
-      return false
+    const npmResult = await x('npm', ['list', '-g', '--depth=0'])
+    if (npmResult.exitCode === 0 && npmResult.stdout.includes('@openai/codex@')) {
+      return true
     }
-    return result.stdout.includes('@openai/codex@')
   }
   catch {
-    return false
+    // npm check failed, continue to Homebrew check
   }
+
+  // Check Homebrew installation
+  try {
+    const brewResult = await x('brew', ['list', '--cask', 'codex'], { throwOnError: false })
+    if (brewResult.exitCode === 0) {
+      return true
+    }
+  }
+  catch {
+    // Homebrew check failed
+  }
+
+  return false
 }
 
 export async function getCodexVersion(): Promise<string | null> {
+  // Try npm first
   try {
-    const result = await x('npm', ['list', '-g', '--depth=0'])
-    if (result.exitCode !== 0) {
-      return null
+    const npmResult = await x('npm', ['list', '-g', '--depth=0'])
+    if (npmResult.exitCode === 0) {
+      const match = npmResult.stdout.match(/@openai\/codex@(\S+)/)
+      if (match) {
+        return match[1]
+      }
     }
-
-    const match = result.stdout.match(/@openai\/codex@(\S+)/)
-    return match ? match[1] : null
   }
   catch {
-    return null
+    // npm check failed, continue to Homebrew check
   }
+
+  // Try Homebrew
+  try {
+    const brewResult = await x('brew', ['info', '--cask', 'codex', '--json'], { throwOnError: false })
+    if (brewResult.exitCode === 0) {
+      const info = JSON.parse(brewResult.stdout)
+      // Homebrew cask info returns an array
+      if (Array.isArray(info) && info.length > 0 && info[0].installed) {
+        // Get the installed version from the first installed entry
+        const installedVersions = info[0].installed
+        if (Array.isArray(installedVersions) && installedVersions.length > 0) {
+          return installedVersions[0].version
+        }
+      }
+    }
+  }
+  catch {
+    // Homebrew check failed
+  }
+
+  return null
 }
 
 export async function checkCodexUpdate(): Promise<CodexVersionInfo> {

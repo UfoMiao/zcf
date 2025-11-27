@@ -120,11 +120,12 @@ export async function updateClaudeCode(force = false, skipPrompt = false): Promi
       console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'Claude Code' })))
     }
 
-    // Perform update
+    // Perform update using Claude Code's built-in update command
+    // This works for all installation methods (npm, Homebrew, etc.)
     const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: 'Claude Code' })).start()
 
     try {
-      await execAsync('npm update -g @anthropic-ai/claude-code')
+      await execAsync('claude update')
       updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'Claude Code' }))
       return true
     }

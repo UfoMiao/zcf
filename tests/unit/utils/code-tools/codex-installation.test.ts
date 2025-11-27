@@ -68,7 +68,7 @@ describe('codex installation checks', () => {
   })
 
   describe('isCodexInstalled', () => {
-    it('should return true when codex is installed globally', async () => {
+    it('should return true when codex is installed globally via npm', async () => {
       // Arrange
       mockExec.mockResolvedValueOnce({
         exitCode: 0,
@@ -89,8 +89,31 @@ describe('codex installation checks', () => {
       expect(mockExec).toHaveBeenCalledWith('npm', ['list', '-g', '--depth=0'])
     })
 
+    it('should return true when codex is installed via Homebrew', async () => {
+      // Arrange - npm check fails
+      mockExec.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '/usr/local/lib\n└── other-package@1.0.0',
+        stderr: '',
+      })
+      // Homebrew check succeeds
+      mockExec.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: 'codex 1.0.0',
+        stderr: '',
+      })
+
+      // Act
+      const { isCodexInstalled } = await import('../../../../src/utils/code-tools/codex')
+      const result = await isCodexInstalled()
+
+      // Assert
+      expect(result).toBe(true)
+      expect(mockExec).toHaveBeenCalledWith('brew', ['list', '--cask', 'codex'], expect.objectContaining({ throwOnError: false }))
+    })
+
     it('should return false when codex is not installed', async () => {
-      // Arrange
+      // Arrange - npm check fails
       mockExec.mockResolvedValueOnce({
         exitCode: 0,
         stdout: `
@@ -98,6 +121,12 @@ describe('codex installation checks', () => {
 └── other-package@1.0.0
         `.trim(),
         stderr: '',
+      })
+      // Homebrew check fails
+      mockExec.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Error: No available formula with the name "codex"',
       })
 
       // Act
@@ -111,6 +140,8 @@ describe('codex installation checks', () => {
     it('should return false when npm command fails', async () => {
       // Arrange
       mockExec.mockRejectedValueOnce(new Error('npm not found'))
+      // Homebrew check also fails
+      mockExec.mockRejectedValueOnce(new Error('brew not found'))
 
       // Act
       const { isCodexInstalled } = await import('../../../../src/utils/code-tools/codex')
@@ -127,6 +158,12 @@ describe('codex installation checks', () => {
         stdout: '',
         stderr: 'some error',
       })
+      // Homebrew check also fails
+      mockExec.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'brew error',
+      })
 
       // Act
       const { isCodexInstalled } = await import('../../../../src/utils/code-tools/codex')
@@ -138,7 +175,7 @@ describe('codex installation checks', () => {
   })
 
   describe('getCodexVersion', () => {
-    it('should return version when codex is installed', async () => {
+    it('should return version when codex is installed via npm', async () => {
       // Arrange
       mockExec.mockResolvedValueOnce({
         exitCode: 0,
@@ -158,8 +195,33 @@ describe('codex installation checks', () => {
       expect(result).toBe('1.2.3')
     })
 
+    it('should return version when codex is installed via Homebrew', async () => {
+      // Arrange - npm check fails
+      mockExec.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: '/usr/local/lib\n└── other-package@1.0.0',
+        stderr: '',
+      })
+      // Homebrew info check succeeds
+      mockExec.mockResolvedValueOnce({
+        exitCode: 0,
+        stdout: JSON.stringify([{
+          installed: [{ version: '2.0.0' }],
+        }]),
+        stderr: '',
+      })
+
+      // Act
+      const { getCodexVersion } = await import('../../../../src/utils/code-tools/codex')
+      const result = await getCodexVersion()
+
+      // Assert
+      expect(result).toBe('2.0.0')
+      expect(mockExec).toHaveBeenCalledWith('brew', ['info', '--cask', 'codex', '--json'], expect.objectContaining({ throwOnError: false }))
+    })
+
     it('should return null when codex is not installed', async () => {
-      // Arrange
+      // Arrange - npm check fails
       mockExec.mockResolvedValueOnce({
         exitCode: 0,
         stdout: `
@@ -167,6 +229,12 @@ describe('codex installation checks', () => {
 └── other-package@1.0.0
         `.trim(),
         stderr: '',
+      })
+      // Homebrew check fails
+      mockExec.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Error: No available formula with the name "codex"',
       })
 
       // Act
@@ -178,11 +246,17 @@ describe('codex installation checks', () => {
     })
 
     it('should handle parsing errors gracefully', async () => {
-      // Arrange
+      // Arrange - npm parsing fails
       mockExec.mockResolvedValueOnce({
         exitCode: 0,
         stdout: 'invalid output format',
         stderr: '',
+      })
+      // Homebrew check also fails
+      mockExec.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'error',
       })
 
       // Act
@@ -196,6 +270,8 @@ describe('codex installation checks', () => {
     it('should return null when npm command fails', async () => {
       // Arrange
       mockExec.mockRejectedValueOnce(new Error('npm not found'))
+      // Homebrew also fails
+      mockExec.mockRejectedValueOnce(new Error('brew not found'))
 
       // Act
       const { getCodexVersion } = await import('../../../../src/utils/code-tools/codex')
@@ -301,7 +377,8 @@ describe('codex installation checks', () => {
         latestVersion: null,
         needsUpdate: false,
       })
-      expect(mockExec).toHaveBeenCalledTimes(1) // Should not check npm view if not installed
+      // getCodexVersion now checks both npm and Homebrew
+      expect(mockExec).toHaveBeenCalledTimes(2) // npm check + brew check
     })
 
     it('should return false when npm view fails', async () => {
@@ -401,10 +478,11 @@ describe('codex installation checks', () => {
           `.trim(),
           stderr: '',
         })
+        // Mock Homebrew check (also fails)
         .mockResolvedValueOnce({
-          exitCode: 0,
-          stdout: 'installed successfully',
-          stderr: '',
+          exitCode: 1,
+          stdout: '',
+          stderr: 'Error: No available formula with the name "codex"',
         })
 
       // Act
@@ -424,6 +502,12 @@ describe('codex installation checks', () => {
 └── other-package@1.0.0
         `.trim(),
         stderr: '',
+      })
+      // Mock Homebrew check (fails)
+      mockExec.mockResolvedValueOnce({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'Error: No available formula with the name "codex"',
       })
 
       const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
@@ -462,6 +546,18 @@ describe('codex installation checks', () => {
               latest: '1.1.0',
             },
           }),
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - brew check (fails)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: 'Error: No available formula with the name "codex"',
+        })
+        // Mock detectCodexInstallMethod - npm check (succeeds)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/local/lib\n└── @openai/codex@1.0.0',
           stderr: '',
         })
         // Mock the actual update installation
@@ -508,6 +604,19 @@ describe('codex installation checks', () => {
           }),
           stderr: '',
         })
+        // Mock detectCodexInstallMethod - brew check (fails)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: 'Error: No available formula with the name "codex"',
+        })
+        // Mock detectCodexInstallMethod - npm check (succeeds)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/local/lib\n└── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        // Mock actual update command (fails)
         .mockResolvedValueOnce({
           exitCode: 1,
           stdout: '',
@@ -562,6 +671,243 @@ describe('codex installation checks', () => {
       // Should NOT call install when no update is needed
       expect(mockExec).not.toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex@latest'])
       expect(mockedInstallCodex).not.toHaveBeenCalled()
+    })
+
+    it('should update via Homebrew when detected', async () => {
+      // Arrange - Mock isCodexInstalled to return true
+      mockExec
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: `
+/usr/local/lib
+├── @openai/codex@1.0.0
+└── other-package@1.0.0
+          `.trim(),
+          stderr: '',
+        })
+        // Mock getCodexVersion (inside checkCodexUpdate)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: `
+/usr/local/lib
+├── @openai/codex@1.0.0
+          `.trim(),
+          stderr: '',
+        })
+        // Mock npm view for latest version
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: JSON.stringify({
+            'dist-tags': {
+              latest: '1.1.0',
+            },
+          }),
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - brew check (succeeds)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: 'codex 1.0.0',
+          stderr: '',
+        })
+        // Mock Homebrew upgrade
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: 'upgraded successfully',
+          stderr: '',
+        })
+
+      // Act
+      const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
+      await installCodexCli()
+
+      // Assert
+      expect(mockExec).toHaveBeenCalledWith('brew', ['list', '--cask', 'codex'], expect.objectContaining({ throwOnError: false }))
+      expect(mockExec).toHaveBeenCalledWith('brew', ['upgrade', '--cask', 'codex'])
+      expect(mockedInstallCodex).not.toHaveBeenCalled()
+    })
+
+    it('should handle Homebrew upgrade failure', async () => {
+      // Arrange
+      mockExec
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/local/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/local/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: JSON.stringify({ 'dist-tags': { latest: '1.1.0' } }),
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - brew check (succeeds)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: 'codex 1.0.0',
+          stderr: '',
+        })
+        // Mock Homebrew upgrade (fails)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: 'permission denied',
+        })
+
+      const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
+
+      await expect(installCodexCli()).rejects.toThrow('Failed to update codex via Homebrew: exit code 1')
+    })
+
+    it('should fallback to npm when install method is unknown', async () => {
+      // Arrange
+      mockExec
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/local/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/local/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: JSON.stringify({ 'dist-tags': { latest: '1.1.0' } }),
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - brew check (fails)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: 'brew not found',
+        })
+        // Mock detectCodexInstallMethod - npm check (fails)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: 'not found',
+        })
+        // Mock npm install (fallback)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: 'installed successfully',
+          stderr: '',
+        })
+
+      // Act
+      const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
+      await installCodexCli()
+
+      // Assert - Should fallback to npm install
+      expect(mockExec).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex@latest'])
+    })
+
+    it('should use sudo when needed for npm install', async () => {
+      // Mock platform to return Linux (needs sudo)
+      vi.mocked(platform.getPlatform).mockReturnValue('linux')
+      vi.mocked(platform.shouldUseSudoForGlobalInstall).mockReturnValue(true)
+
+      mockExec
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: JSON.stringify({ 'dist-tags': { latest: '1.1.0' } }),
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - brew check (fails)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - npm check (succeeds)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/lib\n└── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        // Mock sudo npm install
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: 'installed successfully',
+          stderr: '',
+        })
+
+      const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
+      await installCodexCli()
+
+      // Assert - Should use sudo
+      expect(mockExec).toHaveBeenCalledWith('sudo', ['npm', 'install', '-g', '@openai/codex@latest'])
+
+      // Restore platform mock
+      vi.mocked(platform.getPlatform).mockReturnValue('macos')
+      vi.mocked(platform.shouldUseSudoForGlobalInstall).mockReturnValue(false)
+    })
+
+    it('should handle unknown install method fallback with sudo', async () => {
+      // Mock platform to return Linux (needs sudo)
+      vi.mocked(platform.getPlatform).mockReturnValue('linux')
+      vi.mocked(platform.shouldUseSudoForGlobalInstall).mockReturnValue(true)
+
+      mockExec
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: '/usr/lib\n├── @openai/codex@1.0.0',
+          stderr: '',
+        })
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: JSON.stringify({ 'dist-tags': { latest: '1.1.0' } }),
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - brew check (fails)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: '',
+        })
+        // Mock detectCodexInstallMethod - npm check (fails - unknown method)
+        .mockResolvedValueOnce({
+          exitCode: 1,
+          stdout: '',
+          stderr: '',
+        })
+        // Mock sudo npm install (fallback)
+        .mockResolvedValueOnce({
+          exitCode: 0,
+          stdout: 'installed successfully',
+          stderr: '',
+        })
+
+      const { installCodexCli } = await import('../../../../src/utils/code-tools/codex')
+      await installCodexCli()
+
+      // Assert - Should use sudo for fallback
+      expect(mockExec).toHaveBeenCalledWith('sudo', ['npm', 'install', '-g', '@openai/codex@latest'])
+
+      // Restore platform mock
+      vi.mocked(platform.getPlatform).mockReturnValue('macos')
+      vi.mocked(platform.shouldUseSudoForGlobalInstall).mockReturnValue(false)
     })
   })
 })
