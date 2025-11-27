@@ -297,7 +297,7 @@ export async function commandExists(command: string): Promise<boolean> {
  * Returns methods in priority order (most recommended first)
  */
 export type CodeType = 'claude-code' | 'codex'
-export type InstallMethod = 'npm' | 'homebrew' | 'curl' | 'powershell' | 'cmd'
+export type InstallMethod = 'npm' | 'homebrew' | 'curl' | 'powershell' | 'cmd' | 'npm-global' | 'native'
 
 export function getRecommendedInstallMethods(codeType: CodeType): InstallMethod[] {
   const platform = getPlatform()

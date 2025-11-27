@@ -1,3 +1,5 @@
+import type { InstallMethod } from './utils/platform'
+
 export interface McpService {
   id: string
   name: string
@@ -27,5 +29,5 @@ export interface ClaudeConfiguration {
   }
   env?: Record<string, string>
   primaryApiKey?: string
-  installMethod?: 'npm-global' | 'native'
+  installMethod?: InstallMethod
 }

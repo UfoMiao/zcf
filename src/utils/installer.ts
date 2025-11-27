@@ -412,7 +412,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
  * Set installMethod in both ~/.claude.json and zcf-config
  * This ensures Claude Code knows it was installed via npm for proper auto-updates
  */
-export async function setInstallMethod(method: InstallMethod | 'native' = 'npm', codeType: CodeType = 'claude-code'): Promise<void> {
+export async function setInstallMethod(method: InstallMethod, codeType: CodeType = 'claude-code'): Promise<void> {
   try {
     // Save to Claude Code config for auto-update compatibility
     if (codeType === 'claude-code') {
@@ -421,7 +421,7 @@ export async function setInstallMethod(method: InstallMethod | 'native' = 'npm',
       if (!config) {
         config = { mcpServers: {} }
       }
-      config.installMethod = method === 'npm' ? 'npm-global' : 'native'
+      config.installMethod = method === 'npm' ? 'npm-global' : method
       writeMcpConfig(config)
     }
 
@@ -503,7 +503,7 @@ export async function selectInstallMethod(codeType: CodeType, excludeMethods: In
   ensureI18nInitialized()
 
   const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
-  const recommendedMethods = getRecommendedInstallMethods(codeType)
+  const recommendedMethods = getRecommendedInstallMethods(codeType) as InstallMethod[]
   const methodOptions = getInstallMethodOptions(codeType, recommendedMethods)
     .filter(option => !excludeMethods.includes(option.value))
 

@@ -619,7 +619,7 @@ describe('installer utilities', () => {
 
       await setInstallMethod('homebrew', 'claude-code')
 
-      expect(claudeConfigMock.writeMcpConfig).toHaveBeenCalledWith({ installMethod: 'native' })
+      expect(claudeConfigMock.writeMcpConfig).toHaveBeenCalledWith({ installMethod: 'homebrew' })
     })
 
     it('should ignore codex install method persistence', async () => {
