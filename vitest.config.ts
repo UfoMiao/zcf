@@ -9,7 +9,7 @@ export default defineConfig({
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/gitbook/**',
+      '**/docs/**',
     ],
     coverage: {
       provider: 'v8',

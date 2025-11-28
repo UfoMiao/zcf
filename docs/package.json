@@ -9,6 +9,10 @@
     "preview": "vitepress preview"
   },
   "dependencies": {
-    "vitepress": "catalog:docs"
+    "@iconify-json/carbon": "catalog:docs",
+    "@unocss/reset": "catalog:docs",
+    "unocss": "catalog:docs",
+    "vitepress": "catalog:docs",
+    "vue": "catalog:docs"
   }
 }

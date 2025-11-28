@@ -1190,8 +1190,13 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
  * Save single API configuration to ZCF TOML config
  * Handles profile creation, switching, and error reporting
  * @param apiConfig - API configuration object
+ * @param apiConfig.authType - API authentication type
+ * @param apiConfig.key - API key
+ * @param apiConfig.url - API URL
  * @param provider - Optional provider name
  * @param options - Command line options for models
+ * @param options.apiModel - Primary API model
+ * @param options.apiFastModel - Fast API model
  */
 async function saveSingleConfigToToml(
   apiConfig: { authType: 'api_key' | 'auth_token', key: string, url?: string },

@@ -1,4 +1,5 @@
 import type { DefaultTheme } from 'vitepress'
+import UnoCSS from 'unocss/vite'
 import { defineConfig } from 'vitepress'
 
 const githubRepo = 'UfoMiao/zcf'
@@ -302,6 +303,12 @@ export default defineConfig({
   head: [
     ['link', { rel: 'icon', type: 'image/x-icon', href: '/assets/favicon.ico' }],
   ],
+
+  vite: {
+    plugins: [
+      UnoCSS(),
+    ],
+  },
 
   themeConfig: {
     search: {

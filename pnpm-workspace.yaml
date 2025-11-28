@@ -17,7 +17,11 @@ catalogs:
     inquirer-toggle: ^1.0.1
     ora: ^9.0.0
   docs:
+    '@iconify-json/carbon': ^1.2.14
+    '@unocss/reset': ^66.5.9
+    unocss: ^66.5.9
     vitepress: ^1.6.4
+    vue: ^3.5.25
   runtime:
     dayjs: ^1.11.18
     find-up-simple: ^1.0.1

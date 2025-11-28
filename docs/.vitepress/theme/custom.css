@@ -1,0 +1,6 @@
+/* VitePress layout adjustments for top banner */
+
+/* Use VitePress built-in --vp-layout-top-height for proper layout adjustments */
+.has-top-banner {
+  --vp-layout-top-height: 40px; /* h-10 = 2.5rem = 40px - consistent across all screen sizes */
+}
