@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useData } from 'vitepress'
 
 const { lang } = useData()
@@ -47,9 +47,16 @@ const bannerContent = {
   },
 }
 
-// Determine current language content (default to en if not found)
-const currentLang = lang.value === 'zh-CN' ? 'zh-CN' : lang.value === 'ja-JP' ? 'ja-JP' : 'en'
-const content = bannerContent[currentLang]
+// Reactive content based on current language
+const content = computed(() => {
+  const currentLang = lang.value === 'zh-CN' ? 'zh-CN' : lang.value === 'ja-JP' ? 'ja-JP' : 'en'
+  return bannerContent[currentLang]
+})
+
+// Computed close button aria-label
+const closeLabel = computed(() => {
+  return lang.value === 'zh-CN' ? '关闭' : lang.value === 'ja-JP' ? '閉じる' : 'Close'
+})
 </script>
 
 <template>
@@ -58,7 +65,7 @@ const content = bannerContent[currentLang]
       <p class="m-0 text-center leading-relaxed absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap pr-8 <sm:pr-6 <sm:max-w-[calc(100%-3rem)]">
         <strong class="text-gray-900 dark:text-white">{{ content.text }}</strong> • <a :href="content.linkUrl" target="_blank" rel="noopener noreferrer" class="text-gray-800 dark:text-white/90 underline underline-offset-2 transition-colors hover:text-gray-900 dark:hover:text-white">{{ content.linkText }}</a>
       </p>
-      <button class="bg-transparent border-none text-gray-600 dark:text-white/70 cursor-pointer p-1 flex items-center justify-center transition-colors hover:text-gray-900 dark:hover:text-white absolute right-0 shrink-0 z-10" @click="closeBanner" :aria-label="currentLang === 'zh-CN' ? '关闭' : 'Close'">
+      <button class="bg-transparent border-none text-gray-600 dark:text-white/70 cursor-pointer p-1 flex items-center justify-center transition-colors hover:text-gray-900 dark:hover:text-white absolute right-0 shrink-0 z-10" @click="closeBanner" :aria-label="closeLabel">
         <div class="i-carbon-close w-3.5 h-3.5" />
       </button>
     </div>
