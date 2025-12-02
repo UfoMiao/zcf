@@ -1,15 +1,16 @@
 import type { InstallMethod } from '../types/config'
 import type { CodeType } from './platform'
+import * as nodeFs from 'node:fs'
 import { homedir } from 'node:os'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import ora from 'ora'
-import { join } from 'pathe'
+import { dirname, join } from 'pathe'
 import { exec } from 'tinyexec'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { updateClaudeCode } from './auto-updater'
 import { exists, isExecutable, remove } from './fs-operations'
-import { commandExists, getPlatform, getRecommendedInstallMethods, getTermuxPrefix, getWSLInfo, isTermux, isWSL, wrapCommandWithSudo } from './platform'
+import { commandExists, findCommandPath, getHomebrewCommandPaths, getPlatform, getRecommendedInstallMethods, getTermuxPrefix, getWSLInfo, isTermux, isWSL, wrapCommandWithSudo } from './platform'
 
 export async function isClaudeCodeInstalled(): Promise<boolean> {
   return await commandExists('claude')
@@ -66,13 +67,18 @@ export async function installClaudeCode(skipMethodSelection: boolean = false): P
     console.log(i18n.t('installation:installing'))
 
     try {
-      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@anthropic-ai/claude-code'])
+      // Use --force to handle EEXIST errors when files already exist
+      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@anthropic-ai/claude-code', '--force'])
       if (usedSudo) {
         console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
       }
       await exec(command, args)
       console.log(`✔ ${i18n.t('installation:installSuccess')}`)
       await setInstallMethod('npm')
+
+      // Verify installation and create symlink if needed
+      const verification = await verifyInstallation(codeType)
+      displayVerificationResult(verification, codeType)
 
       if (isTermux()) {
         console.log(ansis.gray(`\nClaude Code installed to: ${getTermuxPrefix()}/bin/claude`))
@@ -154,12 +160,17 @@ export async function installCodex(skipMethodSelection: boolean = false): Promis
     console.log(i18n.t('installation:installingWith', { method: 'npm', codeType: codeTypeName }))
 
     try {
-      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex'])
+      // Use --force to handle EEXIST errors when files already exist
+      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex', '--force'])
       if (usedSudo) {
         console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
       }
       await exec(command, args)
       console.log(ansis.green(`✔ ${codeTypeName} ${i18n.t('installation:installSuccess')}`))
+
+      // Verify installation and create symlink if needed
+      const verification = await verifyInstallation(codeType)
+      displayVerificationResult(verification, codeType)
     }
     catch (error) {
       console.error(ansis.red(`✖ ${codeTypeName} ${i18n.t('installation:installFailed')}`))
@@ -290,6 +301,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
     }
     else if (codeType === 'codex') {
       try {
+        // Codex is installed as a cask
         const result = await exec('brew', ['list', '--cask', 'codex'])
         if (result.exitCode === 0) {
           method = 'homebrew'
@@ -312,6 +324,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
     if (platform === 'macos' || platform === 'linux') {
       // Try Homebrew first, then fall back to manual removal
       try {
+        // Both Claude Code and Codex are installed as casks
         const testResult = codeType === 'claude-code'
           ? await exec('brew', ['list', '--cask', 'claude-code'])
           : await exec('brew', ['list', '--cask', 'codex'])
@@ -351,6 +364,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
           await exec('brew', ['uninstall', '--cask', 'claude-code'])
         }
         else {
+          // Codex is also installed as a cask
           await exec('brew', ['uninstall', '--cask', 'codex'])
         }
         break
@@ -538,7 +552,8 @@ export async function executeInstallMethod(method: InstallMethod, codeType: Code
     switch (method) {
       case 'npm': {
         const packageName = codeType === 'claude-code' ? '@anthropic-ai/claude-code' : '@openai/codex'
-        const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', packageName])
+        // Use --force to handle EEXIST errors when files already exist
+        const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', packageName, '--force'])
         if (usedSudo) {
           spinner.info(i18n.t('installation:usingSudo'))
           spinner.start()
@@ -553,7 +568,8 @@ export async function executeInstallMethod(method: InstallMethod, codeType: Code
           await exec('brew', ['install', '--cask', 'claude-code'])
         }
         else {
-          await exec('brew', ['install', 'codex'])
+          // Codex is also installed as a cask
+          await exec('brew', ['install', '--cask', 'codex'])
         }
         await setInstallMethod('homebrew', codeType)
         break
@@ -601,7 +617,12 @@ export async function executeInstallMethod(method: InstallMethod, codeType: Code
     }
 
     spinner.succeed(i18n.t('installation:installMethodSuccess', { method }))
-    return true
+
+    // Verify installation and create symlink if needed
+    const verification = await verifyInstallation(codeType)
+    displayVerificationResult(verification, codeType)
+
+    return verification.success
   }
   catch (error) {
     spinner.fail(i18n.t('installation:installMethodFailed', { method }))
@@ -642,4 +663,238 @@ export async function handleInstallFailure(codeType: CodeType, failedMethods: In
 
   // Recursively handle failure until success or user gives up
   return await handleInstallFailure(codeType, [...failedMethods, newMethod])
+}
+
+/**
+ * Installation verification result
+ */
+export interface VerificationResult {
+  success: boolean
+  commandPath: string | null
+  version: string | null
+  needsSymlink: boolean
+  symlinkCreated: boolean
+  error?: string
+}
+
+/**
+ * Verify installation by checking command availability and version
+ * If command is not in PATH but found in Homebrew paths, attempt to create symlink
+ */
+export async function verifyInstallation(codeType: CodeType): Promise<VerificationResult> {
+  const command = codeType === 'claude-code' ? 'claude' : 'codex'
+
+  // Step 1: Check if command is accessible via which
+  const commandInPath = await commandExists(command)
+
+  if (commandInPath) {
+    // Command found in PATH, verify it works
+    const version = await detectInstalledVersion(codeType)
+    return {
+      success: true,
+      commandPath: await findCommandPath(command),
+      version,
+      needsSymlink: false,
+      symlinkCreated: false,
+    }
+  }
+
+  // Step 2: Command not in PATH, look for it in Homebrew paths
+  if (getPlatform() === 'macos') {
+    const homebrewPaths = await getHomebrewCommandPaths(command)
+    let foundPath: string | null = null
+
+    for (const path of homebrewPaths) {
+      if (exists(path)) {
+        foundPath = path
+        break
+      }
+    }
+
+    if (foundPath) {
+      // Found in Homebrew path, try to create symlink
+      const symlinkResult = await createHomebrewSymlink(command, foundPath)
+
+      if (symlinkResult.success) {
+        // Symlink created, verify it works
+        const version = await detectInstalledVersion(codeType)
+        return {
+          success: true,
+          commandPath: symlinkResult.symlinkPath,
+          version,
+          needsSymlink: true,
+          symlinkCreated: true,
+        }
+      }
+
+      return {
+        success: false,
+        commandPath: foundPath,
+        version: null,
+        needsSymlink: true,
+        symlinkCreated: false,
+        error: symlinkResult.error,
+      }
+    }
+  }
+
+  // Step 3: Check Termux paths
+  if (isTermux()) {
+    const termuxPrefix = getTermuxPrefix()
+    const termuxPaths = [
+      `${termuxPrefix}/bin/${command}`,
+      `${termuxPrefix}/usr/bin/${command}`,
+    ]
+
+    for (const path of termuxPaths) {
+      if (exists(path)) {
+        const version = await detectInstalledVersion(codeType)
+        return {
+          success: true,
+          commandPath: path,
+          version,
+          needsSymlink: false,
+          symlinkCreated: false,
+        }
+      }
+    }
+  }
+
+  return {
+    success: false,
+    commandPath: null,
+    version: null,
+    needsSymlink: false,
+    symlinkCreated: false,
+    error: 'Command not found in any known location',
+  }
+}
+
+/**
+ * Symlink creation result
+ */
+interface SymlinkResult {
+  success: boolean
+  symlinkPath: string | null
+  error?: string
+}
+
+/**
+ * Create symlink in Homebrew bin directory for commands installed via npm
+ * This handles the case where npm global packages are installed to
+ * /opt/homebrew/Cellar/node/{version}/bin/ but that path is not in the user's PATH
+ */
+export async function createHomebrewSymlink(command: string, sourcePath: string): Promise<SymlinkResult> {
+  // Determine the appropriate Homebrew bin directory
+  const homebrewBinPaths = [
+    '/opt/homebrew/bin', // Apple Silicon (M1/M2)
+    '/usr/local/bin', // Intel Mac
+  ]
+
+  let targetDir: string | null = null
+  for (const binPath of homebrewBinPaths) {
+    if (nodeFs.existsSync(dirname(binPath))) {
+      targetDir = binPath
+      break
+    }
+  }
+
+  if (!targetDir) {
+    return {
+      success: false,
+      symlinkPath: null,
+      error: 'No suitable Homebrew bin directory found',
+    }
+  }
+
+  const symlinkPath = join(targetDir, command)
+
+  // Check if symlink already exists
+  if (nodeFs.existsSync(symlinkPath)) {
+    try {
+      const stats = nodeFs.lstatSync(symlinkPath)
+      if (stats.isSymbolicLink()) {
+        const existingTarget = nodeFs.readlinkSync(symlinkPath)
+        if (existingTarget === sourcePath) {
+          // Symlink already points to correct location
+          return {
+            success: true,
+            symlinkPath,
+          }
+        }
+        // Remove existing symlink pointing to wrong location
+        nodeFs.unlinkSync(symlinkPath)
+      }
+      else {
+        // File exists but is not a symlink, don't overwrite
+        return {
+          success: false,
+          symlinkPath: null,
+          error: `File already exists at ${symlinkPath} and is not a symlink`,
+        }
+      }
+    }
+    catch (error) {
+      return {
+        success: false,
+        symlinkPath: null,
+        error: `Failed to check existing file: ${error}`,
+      }
+    }
+  }
+
+  // Create the symlink
+  try {
+    nodeFs.symlinkSync(sourcePath, symlinkPath)
+    return {
+      success: true,
+      symlinkPath,
+    }
+  }
+  catch (error: any) {
+    // If permission denied, suggest manual command
+    if (error.code === 'EACCES') {
+      return {
+        success: false,
+        symlinkPath: null,
+        error: `Permission denied. Try running: sudo ln -sf ${sourcePath} ${symlinkPath}`,
+      }
+    }
+    return {
+      success: false,
+      symlinkPath: null,
+      error: `Failed to create symlink: ${error.message}`,
+    }
+  }
+}
+
+/**
+ * Display verification result to user with appropriate messages
+ */
+export function displayVerificationResult(result: VerificationResult, codeType: CodeType): void {
+  ensureI18nInitialized()
+
+  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+
+  if (result.success) {
+    if (result.symlinkCreated) {
+      console.log(ansis.green(`✔ ${codeTypeName} ${i18n.t('installation:verificationSuccess')}`))
+      console.log(ansis.gray(`  ${i18n.t('installation:symlinkCreated', { path: result.commandPath })}`))
+    }
+    if (result.version) {
+      console.log(ansis.gray(`  ${i18n.t('installation:detectedVersion', { version: result.version })}`))
+    }
+  }
+  else {
+    console.log(ansis.yellow(`⚠ ${codeTypeName} ${i18n.t('installation:verificationFailed')}`))
+    if (result.commandPath) {
+      console.log(ansis.gray(`  ${i18n.t('installation:foundAtPath', { path: result.commandPath })}`))
+    }
+    if (result.error) {
+      console.log(ansis.gray(`  ${result.error}`))
+    }
+    if (result.needsSymlink && !result.symlinkCreated) {
+      console.log(ansis.yellow(`  ${i18n.t('installation:manualSymlinkHint')}`))
+    }
+  }
 }

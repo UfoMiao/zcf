@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compareVersions, shouldUpdate } from '../../../src/utils/version-checker'
 
+// Create hoisted mock for execAsync
+const mockExecAsync = vi.hoisted(() => vi.fn())
+
+// Mock node:child_process with the promisify result
+vi.mock('node:child_process', () => ({
+  exec: vi.fn(),
+}))
+
+vi.mock('node:util', () => ({
+  promisify: () => mockExecAsync,
+}))
+
 // Mock console.warn
 const mockConsoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
@@ -79,6 +91,61 @@ describe('version-checker', () => {
       // This test serves as documentation - the actual testing is done
       // in integration tests where the full context is available
       expect(true).toBe(true)
+    })
+  })
+
+  describe('isClaudeCodeInstalledViaHomebrew', () => {
+    beforeEach(() => {
+      mockExecAsync.mockReset()
+    })
+
+    it('should return true when claude-code is listed by brew', async () => {
+      mockExecAsync.mockResolvedValue({
+        stdout: 'claude-code',
+        stderr: '',
+      })
+
+      // Dynamic import to ensure mocks are applied
+      const { isClaudeCodeInstalledViaHomebrew } = await import('../../../src/utils/version-checker')
+      const result = await isClaudeCodeInstalledViaHomebrew()
+
+      expect(result).toBe(true)
+      expect(mockExecAsync).toHaveBeenCalledWith('brew list --cask claude-code')
+    })
+
+    it('should return false when brew command fails', async () => {
+      mockExecAsync.mockRejectedValue(new Error('Error: Cask claude-code is not installed'))
+
+      const { isClaudeCodeInstalledViaHomebrew } = await import('../../../src/utils/version-checker')
+      const result = await isClaudeCodeInstalledViaHomebrew()
+
+      expect(result).toBe(false)
+    })
+
+    it('should return false when brew output does not contain claude-code', async () => {
+      mockExecAsync.mockResolvedValue({
+        stdout: '',
+        stderr: '',
+      })
+
+      const { isClaudeCodeInstalledViaHomebrew } = await import('../../../src/utils/version-checker')
+      const result = await isClaudeCodeInstalledViaHomebrew()
+
+      expect(result).toBe(false)
+    })
+
+    it('should use brew list --cask instead of claude update to avoid side effects', async () => {
+      mockExecAsync.mockResolvedValue({
+        stdout: 'claude-code',
+        stderr: '',
+      })
+
+      const { isClaudeCodeInstalledViaHomebrew } = await import('../../../src/utils/version-checker')
+      await isClaudeCodeInstalledViaHomebrew()
+
+      // Verify we're using brew list --cask, not claude update
+      expect(mockExecAsync).toHaveBeenCalledWith('brew list --cask claude-code')
+      expect(mockExecAsync).not.toHaveBeenCalledWith('claude update')
     })
   })
 })

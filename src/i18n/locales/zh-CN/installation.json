@@ -32,6 +32,11 @@
   "wslInstallSuccess": "Claude Code 已成功安装在 WSL 环境中",
   "selectInstallMethod": "请选择 {{codeType}} 的安装方式：",
   "recommendedMethod": "推荐",
+  "installMethodNpm": "npm",
+  "installMethodHomebrew": "homebrew",
+  "installMethodCurl": "curl",
+  "installMethodPowershell": "powershell",
+  "installMethodCmd": "cmd",
   "installingWith": "正在使用 {{method}} 安装 {{codeType}}...",
   "installMethodSuccess": "使用 {{method}} 安装成功",
   "installMethodFailed": "使用 {{method}} 安装失败",
@@ -43,5 +48,10 @@
   "uninstallFailed": "使用 {{method}} 卸载失败",
   "manualUninstallRequired": "{{codeType}} 需要手动卸载",
   "binaryLocation": "可执行文件位置：{{path}}",
-  "failedToLocateBinary": "无法定位 {{command}} 可执行文件"
+  "failedToLocateBinary": "无法定位 {{command}} 可执行文件",
+  "verificationSuccess": "安装验证成功",
+  "verificationFailed": "安装验证失败",
+  "symlinkCreated": "已在 {{path}} 创建符号链接",
+  "foundAtPath": "在此路径找到: {{path}}",
+  "manualSymlinkHint": "您可能需要手动将工具添加到 PATH 或创建符号链接"
 }

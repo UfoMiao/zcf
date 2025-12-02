@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as platformUtils from '../../../src/utils/platform'
 import {
   commandExists,
+  findCommandPath,
+  getHomebrewCommandPaths,
   getMcpCommand,
   getPlatform,
   getRecommendedInstallMethods,
@@ -506,6 +508,101 @@ ID=ubuntu`)
         delete process.env.HOME
       else
         process.env.HOME = originalHome
+    })
+  })
+
+  describe('getHomebrewCommandPaths', () => {
+    it('should return standard Homebrew bin paths', async () => {
+      vi.mocked(existsSync).mockReturnValue(false)
+
+      const paths = await getHomebrewCommandPaths('claude')
+
+      expect(paths).toContain('/opt/homebrew/bin/claude')
+      expect(paths).toContain('/usr/local/bin/claude')
+    })
+
+    it('should include Homebrew Cellar node bin paths when they exist', async () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        return path === '/opt/homebrew/Cellar/node'
+      })
+      vi.mocked(readFileSync).mockImplementation(() => {
+        throw new Error('Not a file')
+      })
+      // Mock readdirSync to return version directories
+      const mockReaddirSync = vi.fn().mockReturnValue(['20.0.0', '22.0.0'])
+      vi.stubGlobal('readdirSync', mockReaddirSync)
+
+      const paths = await getHomebrewCommandPaths('claude')
+
+      // Should include standard paths
+      expect(paths).toContain('/opt/homebrew/bin/claude')
+      expect(paths).toContain('/usr/local/bin/claude')
+    })
+  })
+
+  describe('findCommandPath', () => {
+    it('should return path from which command when successful', async () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: '/usr/local/bin/claude',
+        stderr: '',
+      } as any)
+
+      const result = await findCommandPath('claude')
+
+      expect(result).toBe('/usr/local/bin/claude')
+      expect(exec).toHaveBeenCalledWith('which', ['claude'])
+    })
+
+    it('should check common paths when which fails', async () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      vi.mocked(exec).mockRejectedValue(new Error('not found'))
+      vi.mocked(existsSync).mockImplementation((path) => {
+        return path === '/usr/local/bin/claude'
+      })
+
+      const result = await findCommandPath('claude')
+
+      expect(result).toBe('/usr/local/bin/claude')
+    })
+
+    it('should return null when command is not found anywhere', async () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      vi.mocked(exec).mockRejectedValue(new Error('not found'))
+      vi.mocked(existsSync).mockReturnValue(false)
+
+      const result = await findCommandPath('nonexistent')
+
+      expect(result).toBeNull()
+    })
+
+    it('should check Termux paths when in Termux environment', async () => {
+      process.env.PREFIX = '/data/data/com.termux/files/usr'
+      vi.mocked(platform).mockReturnValue('linux')
+      vi.mocked(exec).mockRejectedValue(new Error('not found'))
+      vi.mocked(existsSync).mockImplementation((path) => {
+        return path === '/data/data/com.termux/files/usr/bin/claude'
+      })
+
+      const result = await findCommandPath('claude')
+
+      expect(result).toBe('/data/data/com.termux/files/usr/bin/claude')
+    })
+  })
+
+  describe('commandExists with Homebrew paths', () => {
+    it('should check Homebrew paths on macOS when standard which fails', async () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      vi.mocked(exec).mockRejectedValue(new Error('not found'))
+      vi.mocked(existsSync).mockImplementation((path) => {
+        // Return true for Homebrew path
+        return path === '/opt/homebrew/bin/claude'
+      })
+
+      const result = await commandExists('claude')
+
+      expect(result).toBe(true)
     })
   })
 })

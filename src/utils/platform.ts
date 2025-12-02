@@ -287,9 +287,116 @@ export async function commandExists(command: string): Promise<boolean> {
         return true
       }
     }
+
+    // Check Homebrew paths on macOS (M1/M2 Apple Silicon and Intel)
+    if (getPlatform() === 'macos') {
+      const homebrewPaths = await getHomebrewCommandPaths(command)
+      for (const path of homebrewPaths) {
+        if (nodeFs.existsSync(path)) {
+          return true
+        }
+      }
+    }
   }
 
   return false
+}
+
+/**
+ * Get possible Homebrew paths for a command on macOS
+ * Handles both Apple Silicon (/opt/homebrew) and Intel (/usr/local) installations
+ * Also checks npm global paths within Homebrew's node installation
+ */
+export async function getHomebrewCommandPaths(command: string): Promise<string[]> {
+  const paths: string[] = []
+
+  // Standard Homebrew bin paths
+  const homebrewPrefixes = [
+    '/opt/homebrew', // Apple Silicon (M1/M2)
+    '/usr/local', // Intel Mac
+  ]
+
+  for (const prefix of homebrewPrefixes) {
+    paths.push(`${prefix}/bin/${command}`)
+  }
+
+  // Check npm global packages installed via Homebrew's Node.js
+  // This handles the case where npm installs to /opt/homebrew/Cellar/node/*/bin/
+  for (const prefix of homebrewPrefixes) {
+    const cellarNodePath = `${prefix}/Cellar/node`
+    if (nodeFs.existsSync(cellarNodePath)) {
+      try {
+        const versions = nodeFs.readdirSync(cellarNodePath)
+        for (const version of versions) {
+          const binPath = `${cellarNodePath}/${version}/bin/${command}`
+          paths.push(binPath)
+        }
+      }
+      catch {
+        // Ignore read errors
+      }
+    }
+  }
+
+  return paths
+}
+
+/**
+ * Find the actual path of a command, checking standard PATH and Homebrew locations
+ * Returns null if command is not found
+ */
+export async function findCommandPath(command: string): Promise<string | null> {
+  // First try which/where
+  try {
+    const cmd = getPlatform() === 'windows' ? 'where' : 'which'
+    const res = await exec(cmd, [command])
+    if (res.exitCode === 0 && res.stdout) {
+      return res.stdout.trim().split('\n')[0]
+    }
+  }
+  catch {
+    // Continue to fallback checks
+  }
+
+  // Check common paths
+  const commonPaths = [
+    `/usr/local/bin/${command}`,
+    `/usr/bin/${command}`,
+    `/bin/${command}`,
+    `${process.env.HOME}/.local/bin/${command}`,
+  ]
+
+  for (const path of commonPaths) {
+    if (nodeFs.existsSync(path)) {
+      return path
+    }
+  }
+
+  // Check Homebrew paths on macOS
+  if (getPlatform() === 'macos') {
+    const homebrewPaths = await getHomebrewCommandPaths(command)
+    for (const path of homebrewPaths) {
+      if (nodeFs.existsSync(path)) {
+        return path
+      }
+    }
+  }
+
+  // Check Termux paths
+  if (isTermux()) {
+    const termuxPrefix = getTermuxPrefix()
+    const termuxPaths = [
+      `${termuxPrefix}/bin/${command}`,
+      `${termuxPrefix}/usr/bin/${command}`,
+    ]
+    for (const path of termuxPaths) {
+      if (nodeFs.existsSync(path)) {
+        return path
+      }
+    }
+  }
+
+  return null
 }
 
 /**

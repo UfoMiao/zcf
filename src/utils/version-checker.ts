@@ -66,14 +66,20 @@ export async function getLatestVersion(packageName: string, maxRetries = 3): Pro
 /**
  * Check if Claude Code is installed via Homebrew
  *
+ * Uses `brew list --cask` to detect Homebrew installation without side effects.
+ * This is safer than running `claude update` which would trigger actual updates.
+ *
  * @returns true if Claude Code is managed by Homebrew
  */
 export async function isClaudeCodeInstalledViaHomebrew(): Promise<boolean> {
   try {
-    const { stdout } = await execAsync('claude update')
-    return stdout.includes('managed by Homebrew')
+    // Use brew list --cask to check if claude-code is installed via Homebrew
+    // This avoids the side effect of running claude update
+    const result = await execAsync('brew list --cask claude-code')
+    return result.stdout.includes('claude-code')
   }
   catch {
+    // If brew command fails, it's not installed via Homebrew
     return false
   }
 }

@@ -32,6 +32,11 @@
   "wslInstallSuccess": "Claude Code successfully installed in WSL environment",
   "selectInstallMethod": "Please select installation method for {{codeType}}:",
   "recommendedMethod": "Recommended",
+  "installMethodNpm": "npm",
+  "installMethodHomebrew": "homebrew",
+  "installMethodCurl": "curl",
+  "installMethodPowershell": "powershell",
+  "installMethodCmd": "cmd",
   "installingWith": "Installing {{codeType}} using {{method}}...",
   "installMethodSuccess": "Successfully installed using {{method}}",
   "installMethodFailed": "Failed to install using {{method}}",
@@ -43,5 +48,10 @@
   "uninstallFailed": "Failed to uninstall using {{method}}",
   "manualUninstallRequired": "{{codeType}} requires manual uninstallation",
   "binaryLocation": "Binary location: {{path}}",
-  "failedToLocateBinary": "Failed to locate {{command}} binary"
+  "failedToLocateBinary": "Failed to locate {{command}} binary",
+  "verificationSuccess": "installation verified successfully",
+  "verificationFailed": "installation verification failed",
+  "symlinkCreated": "Symlink created at {{path}}",
+  "foundAtPath": "Found at: {{path}}",
+  "manualSymlinkHint": "You may need to manually add the tool to your PATH or create a symlink"
 }
