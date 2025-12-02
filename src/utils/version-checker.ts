@@ -63,6 +63,41 @@ export async function getLatestVersion(packageName: string, maxRetries = 3): Pro
   return null
 }
 
+/**
+ * Check if Claude Code is installed via Homebrew
+ *
+ * @returns true if Claude Code is managed by Homebrew
+ */
+export async function isClaudeCodeInstalledViaHomebrew(): Promise<boolean> {
+  try {
+    const { stdout } = await execAsync('claude update')
+    return stdout.includes('managed by Homebrew')
+  }
+  catch {
+    return false
+  }
+}
+
+/**
+ * Get the latest Claude Code version from Homebrew cask
+ *
+ * @returns Version string or null if unable to fetch
+ */
+export async function getHomebrewClaudeCodeVersion(): Promise<string | null> {
+  try {
+    const { stdout } = await execAsync('brew info --cask claude-code --json=v2')
+    const info = JSON.parse(stdout)
+    // For casks, the structure is different
+    if (info.casks && info.casks.length > 0) {
+      return info.casks[0].version
+    }
+    return null
+  }
+  catch {
+    return null
+  }
+}
+
 export function compareVersions(current: string, latest: string): number {
   // Returns: -1 if current < latest, 0 if equal, 1 if current > latest
   if (!semver.valid(current) || !semver.valid(latest)) {
@@ -95,27 +130,40 @@ export async function checkCcrVersion(): Promise<{
 }
 
 /**
- * Check Claude Code version and compare with latest npm version
+ * Check Claude Code version and compare with latest version from appropriate source
  *
- * This function works for all installation methods (npm, Homebrew, etc.)
- * because it checks the installed version via command execution.
+ * This function detects the installation method (npm vs Homebrew) and uses
+ * the corresponding version source for accurate update detection.
  *
- * @returns Version information including update availability
+ * @returns Version information including update availability and installation method
  */
 export async function checkClaudeCodeVersion(): Promise<{
   installed: boolean
   currentVersion: string | null
   latestVersion: string | null
   needsUpdate: boolean
+  isHomebrew: boolean
 }> {
   const currentVersion = await getInstalledVersion('claude')
-  const latestVersion = await getLatestVersion('@anthropic-ai/claude-code')
+
+  // Check if installed via Homebrew
+  const isHomebrew = await isClaudeCodeInstalledViaHomebrew()
+
+  // Use appropriate version source based on installation method
+  let latestVersion: string | null
+  if (isHomebrew) {
+    latestVersion = await getHomebrewClaudeCodeVersion()
+  }
+  else {
+    latestVersion = await getLatestVersion('@anthropic-ai/claude-code')
+  }
 
   return {
     installed: currentVersion !== null,
     currentVersion,
     latestVersion,
     needsUpdate: currentVersion && latestVersion ? shouldUpdate(currentVersion, latestVersion) : false,
+    isHomebrew,
   }
 }
 

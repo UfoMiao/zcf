@@ -290,7 +290,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
     }
     else if (codeType === 'codex') {
       try {
-        const result = await exec('brew', ['list', 'codex'])
+        const result = await exec('brew', ['list', '--cask', 'codex'])
         if (result.exitCode === 0) {
           method = 'homebrew'
         }
@@ -314,7 +314,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
       try {
         const testResult = codeType === 'claude-code'
           ? await exec('brew', ['list', '--cask', 'claude-code'])
-          : await exec('brew', ['list', 'codex'])
+          : await exec('brew', ['list', '--cask', 'codex'])
         if (testResult.exitCode === 0) {
           method = 'homebrew'
         }
@@ -351,7 +351,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
           await exec('brew', ['uninstall', '--cask', 'claude-code'])
         }
         else {
-          await exec('brew', ['uninstall', 'codex'])
+          await exec('brew', ['uninstall', '--cask', 'codex'])
         }
         break
       }

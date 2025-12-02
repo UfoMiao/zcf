@@ -80,7 +80,7 @@ export async function updateClaudeCode(force = false, skipPrompt = false): Promi
   const spinner = ora(i18n.t('updater:checkingVersion')).start()
 
   try {
-    const { installed, currentVersion, latestVersion, needsUpdate } = await checkClaudeCodeVersion()
+    const { installed, currentVersion, latestVersion, needsUpdate, isHomebrew } = await checkClaudeCodeVersion()
     spinner.stop()
 
     if (!installed) {
@@ -120,12 +120,19 @@ export async function updateClaudeCode(force = false, skipPrompt = false): Promi
       console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'Claude Code' })))
     }
 
-    // Perform update using Claude Code's built-in update command
-    // This works for all installation methods (npm, Homebrew, etc.)
-    const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: 'Claude Code' })).start()
+    // Perform update using appropriate method based on installation type
+    const toolName = isHomebrew ? 'Claude Code (Homebrew)' : 'Claude Code'
+    const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: toolName })).start()
 
     try {
-      await execAsync('claude update')
+      if (isHomebrew) {
+        // Homebrew installation - use brew upgrade (cask)
+        await execAsync('brew upgrade --cask claude-code')
+      }
+      else {
+        // npm or other installation - use claude update
+        await execAsync('claude update')
+      }
       updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'Claude Code' }))
       return true
     }
