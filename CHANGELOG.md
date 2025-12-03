@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.4.2
+
+### Patch Changes
+
+- ## Improvements
+  - Enhance Codex backup message handling and env_key migration logic
+  - Change Codex startup timeout from milliseconds to seconds for better usability
+  - Migrate env_key to temp_env_key across the codebase for cleaner configuration
+  - Enhance installation verification and symlink handling for Claude Code
+  - Support Homebrew installations for Claude Code update logic
+  - Enhance localization for installation and common messages
+
+  ## 优化
+  - 增强 Codex 备份消息处理和 env_key 迁移逻辑
+  - 将 Codex 启动超时从毫秒改为秒，提升易用性
+  - 在代码库中将 env_key 迁移至 temp_env_key，配置更清晰
+  - 增强 Claude Code 安装验证和符号链接处理
+  - 支持 Homebrew 安装的 Claude Code 更新逻辑
+  - 增强安装和通用消息的国际化支持
+
+  ## Documentation
+  - Enhance documentation with UnoCSS integration and new components
+  - Fix TopBanner component with reactive language support
+
+  ## 文档
+  - 增强文档，集成 UnoCSS 和新组件
+  - 修复 TopBanner 组件的响应式语言支持
+
 ## 3.4.1
 
 ### Patch Changes
