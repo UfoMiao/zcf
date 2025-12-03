@@ -290,10 +290,10 @@ export function needsEnvKeyMigration(): boolean {
     const content = readFile(CODEX_CONFIG_FILE)
     // Check if any provider section has old env_key field (not temp_env_key)
     const hasOldEnvKey = /^\s*env_key\s*=/m.test(content)
-    const hasNewTempEnvKey = /^\s*temp_env_key\s*=/m.test(content)
 
-    // Migration needed if has old env_key but no temp_env_key
-    return hasOldEnvKey && !hasNewTempEnvKey
+    // Migration needed if has any old env_key (regardless of temp_env_key presence)
+    // This ensures all providers are migrated even if some already use temp_env_key
+    return hasOldEnvKey
   }
   catch {
     return false

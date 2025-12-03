@@ -93,7 +93,7 @@ requires_openai_auth = true
       expect(result).toBe(false)
     })
 
-    it('should return false when config has both env_key and temp_env_key', async () => {
+    it('should return true when config has both env_key and temp_env_key (mixed state needs migration)', async () => {
       const fsOps = await import('../../../../src/utils/fs-operations')
       vi.mocked(fsOps.exists).mockReturnValue(true)
       vi.mocked(fsOps.readFile).mockReturnValue(`
@@ -101,12 +101,17 @@ requires_openai_auth = true
 name = "Test Provider"
 env_key = "OLD_KEY"
 temp_env_key = "NEW_KEY"
+
+[model_providers.another]
+name = "Another Provider"
+env_key = "ANOTHER_OLD_KEY"
 `)
 
       const { needsEnvKeyMigration } = await import('../../../../src/utils/code-tools/codex')
       const result = needsEnvKeyMigration()
 
-      expect(result).toBe(false)
+      // Should return true because there are still env_key entries that need migration
+      expect(result).toBe(true)
     })
 
     it('should handle file read errors gracefully', async () => {
@@ -248,6 +253,45 @@ env_key = "PROVIDER3_API_KEY"
       expect(writtenContent).toContain('temp_env_key = "PROVIDER1_API_KEY"')
       expect(writtenContent).toContain('temp_env_key = "PROVIDER2_API_KEY"')
       expect(writtenContent).toContain('temp_env_key = "PROVIDER3_API_KEY"')
+      expect(writtenContent).not.toMatch(/^env_key\s*=/m)
+    })
+
+    it('should migrate all env_key entries even when some providers already use temp_env_key', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.readFile).mockReturnValue(`
+[model_providers.migrated]
+name = "Migrated Provider"
+temp_env_key = "MIGRATED_API_KEY"
+
+[model_providers.old1]
+name = "Old Provider 1"
+env_key = "OLD1_API_KEY"
+
+[model_providers.old2]
+name = "Old Provider 2"
+env_key = "OLD2_API_KEY"
+`)
+      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
+      vi.mocked(fsOps.copyFile).mockImplementation(() => {})
+
+      const writeFileMock = vi.mocked(fsOps.writeFile)
+      writeFileMock.mockImplementation(() => {})
+
+      const zcfConfig = await import('../../../../src/utils/zcf-config')
+      vi.mocked(zcfConfig.updateTomlConfig).mockImplementation(() => ({} as any))
+
+      const { migrateEnvKeyToTempEnvKey } = await import('../../../../src/utils/code-tools/codex')
+      const result = migrateEnvKeyToTempEnvKey()
+
+      expect(result).toBe(true)
+
+      // Verify all env_key fields were migrated to temp_env_key
+      const writtenContent = writeFileMock.mock.calls[0][1] as string
+      expect(writtenContent).toContain('temp_env_key = "MIGRATED_API_KEY"') // Already migrated, should remain
+      expect(writtenContent).toContain('temp_env_key = "OLD1_API_KEY"') // Should be migrated
+      expect(writtenContent).toContain('temp_env_key = "OLD2_API_KEY"') // Should be migrated
+      // Verify no env_key entries remain
       expect(writtenContent).not.toMatch(/^env_key\s*=/m)
     })
   })
