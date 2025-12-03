@@ -1163,7 +1163,7 @@ env = {}
 command = "npx"
 args = ["-y", "exa-mcp-server"]
 env = {EXA_API_KEY = "test-key"}
-startup_timeout_ms = 30000
+startup_timeout_sec = 30
 `
       const result = codexModule.parseCodexConfig(complexToml)
       expect(result.model).toBe('gpt-4')
@@ -1183,7 +1183,7 @@ startup_timeout_ms = 30000
       const exaService = result.mcpServices.find(s => s.id === 'exa')
       expect(exaService).toBeDefined()
       expect(exaService!.env).toEqual({ EXA_API_KEY: 'test-key' })
-      expect(exaService!.startup_timeout_ms).toBe(30000)
+      expect(exaService!.startup_timeout_sec).toBe(30)
     })
 
     it('parseCodexConfig should preserve otherConfig sections', async () => {
@@ -1317,7 +1317,7 @@ env = {}
           command: 'npx',
           args: ['-y', 'exa-mcp-server'],
           env: { EXA_API_KEY: 'test-key', DEBUG: 'true' },
-          startup_timeout_ms: 30000,
+          startup_timeout_sec: 30,
         }],
         managed: true,
         otherConfig: [],
@@ -1327,7 +1327,7 @@ env = {}
       expect(result).toContain('command = "npx"')
       expect(result).toContain('args = ["-y", "exa-mcp-server"]')
       expect(result).toContain('env = {EXA_API_KEY = \'test-key\', DEBUG = \'true\'}')
-      expect(result).toContain('startup_timeout_ms = 30000')
+      expect(result).toContain('startup_timeout_sec = 30')
     })
 
     it('renderCodexConfig should use single quotes for env values with Windows paths', async () => {

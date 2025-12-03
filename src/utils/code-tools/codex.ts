@@ -44,7 +44,7 @@ export interface CodexMcpService {
   command: string
   args: string[]
   env?: Record<string, string>
-  startup_timeout_ms?: number
+  startup_timeout_sec?: number
   // Preserve all extra configuration fields not directly managed by ZCF
   extraFields?: Record<string, any>
 }
@@ -415,7 +415,7 @@ export function parseCodexConfig(content: string): CodexConfigData {
     const mcpServices: CodexMcpService[] = []
     if (tomlData.mcp_servers) {
       // Define known fields that ZCF directly manages
-      const KNOWN_MCP_FIELDS = new Set(['command', 'args', 'env', 'startup_timeout_ms'])
+      const KNOWN_MCP_FIELDS = new Set(['command', 'args', 'env', 'startup_timeout_sec'])
 
       for (const [id, mcpData] of Object.entries(tomlData.mcp_servers)) {
         const mcp = mcpData as any
@@ -433,7 +433,7 @@ export function parseCodexConfig(content: string): CodexConfigData {
           command: mcp.command || id,
           args: mcp.args || [],
           env: Object.keys(mcp.env || {}).length > 0 ? mcp.env : undefined,
-          startup_timeout_ms: mcp.startup_timeout_ms,
+          startup_timeout_sec: mcp.startup_timeout_sec,
           // Only add extraFields if there are any extra fields
           extraFields: Object.keys(extraFields).length > 0 ? extraFields : undefined,
         })
@@ -814,8 +814,8 @@ export function renderCodexConfig(data: CodexConfigData): string {
       }
 
       // Add startup timeout if present
-      if (service.startup_timeout_ms) {
-        lines.push(`startup_timeout_ms = ${service.startup_timeout_ms}`)
+      if (service.startup_timeout_sec) {
+        lines.push(`startup_timeout_sec = ${service.startup_timeout_sec}`)
       }
 
       // Add extra fields if present

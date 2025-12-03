@@ -16,8 +16,10 @@ max_connections = 100
       const config = parseCodexConfig(toml)
 
       expect(config.mcpServices).toHaveLength(1)
+      // startup_timeout_sec is a known field, should be on the service directly
+      expect(config.mcpServices[0].startup_timeout_sec).toBe(30)
+      // Extra fields should only contain unknown fields
       expect(config.mcpServices[0].extraFields).toBeDefined()
-      expect(config.mcpServices[0].extraFields?.startup_timeout_sec).toBe(30)
       expect(config.mcpServices[0].extraFields?.retries).toBe(3)
       expect(config.mcpServices[0].extraFields?.max_connections).toBe(100)
     })
@@ -27,7 +29,7 @@ max_connections = 100
 [mcp_servers.test]
 command = "node"
 args = []
-startup_timeout_ms = 5000
+startup_timeout_sec = 30
 `
       const config = parseCodexConfig(toml)
 
@@ -172,7 +174,7 @@ object_field = {key1 = "value1", key2 = 42}
 [mcp_servers.test]
 command = "node"
 args = ["server.js"]
-startup_timeout_ms = 5000
+startup_timeout_sec = 30
 custom_field = "value"
 numeric_field = 42
 boolean_field = true
@@ -216,8 +218,9 @@ custom_setting = "important"
       const rendered = renderCodexConfig(updated)
       const final = parseCodexConfig(rendered)
 
+      // Verify known field (startup_timeout_sec) not lost
+      expect(final.mcpServices[0].startup_timeout_sec).toBe(30)
       // Verify extra fields not lost
-      expect(final.mcpServices[0].extraFields?.startup_timeout_sec).toBe(30)
       expect(final.mcpServices[0].extraFields?.custom_setting).toBe('important')
     })
 
@@ -259,9 +262,9 @@ startup_timeout_sec = 30
 
       expect(rendered).toContain('startup_timeout_sec = 30')
 
-      // Verify it survives round-trip
+      // Verify it survives round-trip - startup_timeout_sec is now a known field
       const reparsed = parseCodexConfig(rendered)
-      expect(reparsed.mcpServices[0].extraFields?.startup_timeout_sec).toBe(30)
+      expect(reparsed.mcpServices[0].startup_timeout_sec).toBe(30)
     })
 
     it('should handle mixed known and extra fields', () => {
@@ -270,7 +273,6 @@ startup_timeout_sec = 30
 command = "node"
 args = ["server.js"]
 env = {PATH = "/usr/bin", HOME = "/home/user"}
-startup_timeout_ms = 5000
 startup_timeout_sec = 30
 retries = 3
 max_connections = 100
@@ -282,10 +284,9 @@ custom_config = "value"
       expect(config.mcpServices[0].command).toBe('node')
       expect(config.mcpServices[0].args).toEqual(['server.js'])
       expect(config.mcpServices[0].env).toEqual({ PATH: '/usr/bin', HOME: '/home/user' })
-      expect(config.mcpServices[0].startup_timeout_ms).toBe(5000)
+      expect(config.mcpServices[0].startup_timeout_sec).toBe(30)
 
       // Extra fields should be in extraFields
-      expect(config.mcpServices[0].extraFields?.startup_timeout_sec).toBe(30)
       expect(config.mcpServices[0].extraFields?.retries).toBe(3)
       expect(config.mcpServices[0].extraFields?.max_connections).toBe(100)
       expect(config.mcpServices[0].extraFields?.custom_config).toBe('value')

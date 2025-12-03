@@ -115,7 +115,7 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
       command: serviceConfig.command,
       args: serviceConfig.args,
       env: Object.keys(env).length > 0 ? env : undefined,
-      startup_timeout_ms: configInfo.config.startup_timeout_ms,
+      startup_timeout_sec: 30,
     })
   }
 

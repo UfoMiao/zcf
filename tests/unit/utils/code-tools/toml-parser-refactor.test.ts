@@ -92,7 +92,7 @@ args = ["-y", "context7"]
 command = "npx"
 args = ["-y", "exa-mcp-server"]
 env = {EXA_API_KEY = "test-key"}
-startup_timeout_ms = 5000
+startup_timeout_sec = 30
 `
 
       const result = parseCodexConfig(mcpToml)
@@ -106,7 +106,7 @@ startup_timeout_ms = 5000
         command: 'npx',
         args: ['-y', 'context7'],
         env: undefined,
-        startup_timeout_ms: undefined,
+        startup_timeout_sec: undefined,
       })
 
       const exaService = result.mcpServices.find(s => s.id === 'exa')
@@ -115,7 +115,7 @@ startup_timeout_ms = 5000
         command: 'npx',
         args: ['-y', 'exa-mcp-server'],
         env: { EXA_API_KEY: 'test-key' },
-        startup_timeout_ms: 5000,
+        startup_timeout_sec: 30,
       })
     })
 
