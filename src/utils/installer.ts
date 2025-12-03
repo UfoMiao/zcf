@@ -5,7 +5,7 @@ import { homedir } from 'node:os'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import ora from 'ora'
-import { dirname, join } from 'pathe'
+import { join } from 'pathe'
 import { exec } from 'tinyexec'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { updateClaudeCode } from './auto-updater'
@@ -619,10 +619,13 @@ export async function executeInstallMethod(method: InstallMethod, codeType: Code
     spinner.succeed(i18n.t('installation:installMethodSuccess', { method }))
 
     // Verify installation and create symlink if needed
+    // Verification is informational only - don't fail the installation if verification fails
+    // The installation command succeeded, so we should return true even if the command
+    // isn't immediately accessible (e.g., PATH not updated, symlink creation failed)
     const verification = await verifyInstallation(codeType)
     displayVerificationResult(verification, codeType)
 
-    return verification.success
+    return true
   }
   catch (error) {
     spinner.fail(i18n.t('installation:installMethodFailed', { method }))
@@ -793,7 +796,10 @@ export async function createHomebrewSymlink(command: string, sourcePath: string)
 
   let targetDir: string | null = null
   for (const binPath of homebrewBinPaths) {
-    if (nodeFs.existsSync(dirname(binPath))) {
+    // Check if the bin directory itself exists, not just its parent
+    // This ensures we only create symlinks in directories that actually exist
+    // (e.g., /usr/local always exists on macOS but /usr/local/bin may not)
+    if (nodeFs.existsSync(binPath)) {
       targetDir = binPath
       break
     }
