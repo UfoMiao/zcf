@@ -36,7 +36,7 @@ describe('codex-provider-manager', () => {
         name: 'Existing Provider',
         baseUrl: 'https://api.existing.com/v1',
         wireApi: 'responses',
-        envKey: 'EXISTING_API_KEY',
+        tempEnvKey: 'EXISTING_API_KEY',
         requiresOpenaiAuth: true,
       },
     ],
@@ -50,7 +50,7 @@ describe('codex-provider-manager', () => {
     name: 'New Provider',
     baseUrl: 'https://api.new.com/v1',
     wireApi: 'chat',
-    envKey: 'NEW_API_KEY',
+    tempEnvKey: 'NEW_API_KEY',
     requiresOpenaiAuth: true,
   }
 
@@ -77,7 +77,7 @@ describe('codex-provider-manager', () => {
         providers: [mockExistingConfig.providers[0], mockNewProvider],
       })
       expect(writeAuthFile).toHaveBeenCalledWith({
-        [mockNewProvider.envKey]: 'new-api-key-value',
+        [mockNewProvider.tempEnvKey]: 'new-api-key-value',
       })
       expect(result).toEqual({
         success: true,
@@ -182,7 +182,7 @@ describe('codex-provider-manager', () => {
         ],
       })
       expect(writeAuthFile).toHaveBeenCalledWith({
-        [mockExistingConfig.providers[0].envKey]: updates.apiKey,
+        [mockExistingConfig.providers[0].tempEnvKey]: updates.apiKey,
       })
       expect(result).toEqual({
         success: true,
@@ -255,7 +255,7 @@ describe('codex-provider-manager', () => {
           name: 'Provider 1',
           baseUrl: 'https://api.provider1.com/v1',
           wireApi: 'responses',
-          envKey: 'PROVIDER1_API_KEY',
+          tempEnvKey: 'PROVIDER1_API_KEY',
           requiresOpenaiAuth: true,
         },
         {
@@ -263,7 +263,7 @@ describe('codex-provider-manager', () => {
           name: 'Provider 2',
           baseUrl: 'https://api.provider2.com/v1',
           wireApi: 'chat',
-          envKey: 'PROVIDER2_API_KEY',
+          tempEnvKey: 'PROVIDER2_API_KEY',
           requiresOpenaiAuth: true,
         },
         {
@@ -271,7 +271,7 @@ describe('codex-provider-manager', () => {
           name: 'Provider 3',
           baseUrl: 'https://api.provider3.com/v1',
           wireApi: 'responses',
-          envKey: 'PROVIDER3_API_KEY',
+          tempEnvKey: 'PROVIDER3_API_KEY',
           requiresOpenaiAuth: true,
         },
       ],
@@ -396,7 +396,7 @@ describe('codex-provider-manager', () => {
         name: 'Test Provider',
         baseUrl: 'https://api.test.com/v1',
         wireApi: 'responses',
-        envKey: 'TEST_API_KEY',
+        tempEnvKey: 'TEST_API_KEY',
         requiresOpenaiAuth: true,
       }
 

@@ -174,7 +174,7 @@ async function handleAddProvider(): Promise<void> {
     name: answers.providerName.trim(),
     baseUrl: selectedProvider === 'custom' ? answers.baseUrl.trim() : prefilledBaseUrl!,
     wireApi: (selectedProvider === 'custom' ? answers.wireApi : prefilledWireApi) as 'responses' | 'chat',
-    envKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
+    tempEnvKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
     requiresOpenaiAuth: true,
     model: prefilledModel || 'gpt-5-codex', // Use provider's default model or fallback
   }
@@ -235,7 +235,7 @@ async function handleEditProvider(providers: any[]): Promise<void> {
 
   // Read existing API key from auth.json
   const existingAuth = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
-  const existingApiKey = existingAuth[provider.envKey] || ''
+  const existingApiKey = existingAuth[provider.tempEnvKey] || ''
 
   const answers = await inquirer.prompt<{
     providerName: string
@@ -346,7 +346,7 @@ async function handleCopyProvider(providers: any[]): Promise<void> {
 
   // Read existing API key from auth.json
   const existingAuth = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
-  const existingApiKey = existingAuth[provider.envKey] || ''
+  const existingApiKey = existingAuth[provider.tempEnvKey] || ''
 
   // Prepare copied provider with -copy suffix
   const copiedName = `${provider.name}-copy`
@@ -415,7 +415,7 @@ async function handleCopyProvider(providers: any[]): Promise<void> {
     name: answers.providerName.trim(),
     baseUrl: answers.baseUrl.trim(),
     wireApi: answers.wireApi as 'responses' | 'chat',
-    envKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
+    tempEnvKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
     requiresOpenaiAuth: provider.requiresOpenaiAuth ?? true,
     model: model.trim(),
   }

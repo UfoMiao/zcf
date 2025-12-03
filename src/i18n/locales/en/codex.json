@@ -119,5 +119,6 @@
   "providerManager.providerNameRequired": "Provider name is required",
   "providerManager.baseUrlRequired": "Base URL is required",
   "providerManager.wireApiInvalid": "Wire API must be either \"responses\" or \"chat\"",
-  "providerManager.unknownError": "Unknown error"
+  "providerManager.unknownError": "Unknown error",
+  "envKeyMigrationComplete": "✔ env_key to temp_env_key migration completed"
 }

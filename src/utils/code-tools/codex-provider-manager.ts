@@ -86,7 +86,7 @@ export async function addProviderToExisting(
 
     // Write API key to auth file
     const authEntries: Record<string, string> = {}
-    authEntries[provider.envKey] = apiKey
+    authEntries[provider.tempEnvKey] = apiKey
     writeAuthFile(authEntries)
 
     return {
@@ -166,7 +166,7 @@ export async function editExistingProvider(
     // Update API key if provided
     if (updates.apiKey) {
       const authEntries: Record<string, string> = {}
-      authEntries[updatedProvider.envKey] = updates.apiKey
+      authEntries[updatedProvider.tempEnvKey] = updates.apiKey
       writeAuthFile(authEntries)
     }
 

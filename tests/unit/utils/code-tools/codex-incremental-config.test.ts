@@ -36,7 +36,7 @@ describe('codex-incremental-config integration', () => {
         name: 'Provider 1',
         baseUrl: 'https://api.provider1.com/v1',
         wireApi: 'responses',
-        envKey: 'PROVIDER1_API_KEY',
+        tempEnvKey: 'PROVIDER1_API_KEY',
         requiresOpenaiAuth: true,
       },
     ],
@@ -50,7 +50,7 @@ describe('codex-incremental-config integration', () => {
     name: 'Provider 2',
     baseUrl: 'https://api.provider2.com/v1',
     wireApi: 'chat',
-    envKey: 'PROVIDER2_API_KEY',
+    tempEnvKey: 'PROVIDER2_API_KEY',
     requiresOpenaiAuth: true,
   }
 
@@ -89,7 +89,7 @@ describe('codex-incremental-config integration', () => {
         providers: [initialConfig.providers[0], newProvider],
       })
       expect(writeAuthFile).toHaveBeenCalledWith({
-        [newProvider.envKey]: 'api-key-2',
+        [newProvider.tempEnvKey]: 'api-key-2',
       })
 
       // Step 3: Edit existing provider
@@ -170,7 +170,7 @@ describe('codex-incremental-config integration', () => {
             name: 'Provider 1',
             baseUrl: 'https://api.provider1.com/v1',
             wireApi: 'responses',
-            envKey: 'PROVIDER1_API_KEY',
+            tempEnvKey: 'PROVIDER1_API_KEY',
             requiresOpenaiAuth: true,
           },
           {
@@ -178,7 +178,7 @@ describe('codex-incremental-config integration', () => {
             name: 'Provider 2',
             baseUrl: 'https://api.provider2.com/v1',
             wireApi: 'chat',
-            envKey: 'PROVIDER2_API_KEY',
+            tempEnvKey: 'PROVIDER2_API_KEY',
             requiresOpenaiAuth: true,
           },
         ],
@@ -203,7 +203,7 @@ describe('codex-incremental-config integration', () => {
           name: 'Provider 3',
           baseUrl: 'https://api.provider3.com/v1',
           wireApi: 'responses',
-          envKey: 'PROVIDER3_API_KEY',
+          tempEnvKey: 'PROVIDER3_API_KEY',
           requiresOpenaiAuth: true,
         },
         'api-key-3',
@@ -220,7 +220,7 @@ describe('codex-incremental-config integration', () => {
             name: 'Provider 3',
             baseUrl: 'https://api.provider3.com/v1',
             wireApi: 'responses',
-            envKey: 'PROVIDER3_API_KEY',
+            tempEnvKey: 'PROVIDER3_API_KEY',
             requiresOpenaiAuth: true,
           },
         ],
@@ -283,7 +283,7 @@ describe('codex-incremental-config integration', () => {
             name: 'Provider 1',
             baseUrl: 'https://api.provider1.com/v1',
             wireApi: 'responses',
-            envKey: 'PROVIDER1_API_KEY',
+            tempEnvKey: 'PROVIDER1_API_KEY',
             requiresOpenaiAuth: true,
           },
           {
@@ -291,7 +291,7 @@ describe('codex-incremental-config integration', () => {
             name: 'Provider 2',
             baseUrl: 'https://api.provider2.com/v1',
             wireApi: 'chat',
-            envKey: 'PROVIDER2_API_KEY',
+            tempEnvKey: 'PROVIDER2_API_KEY',
             requiresOpenaiAuth: true,
           },
         ],

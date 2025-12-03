@@ -127,6 +127,25 @@ vi.mock('../../../../src/utils/zcf-config', () => ({
     },
   })),
   updateZcfConfig: vi.fn(),
+  readDefaultTomlConfig: vi.fn(() => ({
+    version: '1.0.0',
+    lastUpdated: new Date().toISOString(),
+    general: {
+      preferredLang: 'en',
+      currentTool: 'codex',
+    },
+    claudeCode: {
+      enabled: false,
+      outputStyles: [],
+      installType: 'global',
+    },
+    codex: {
+      enabled: true,
+      systemPromptStyle: 'engineer-professional',
+      envKeyMigrated: true,
+    },
+  })),
+  updateTomlConfig: vi.fn(),
   readZcfConfigAsync: vi.fn().mockResolvedValue({
     preferredLang: 'en',
     templateLang: 'en',
@@ -164,7 +183,7 @@ model_provider = "openai"
 name = "OpenAI"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "OPENAI_API_KEY"
+temp_env_key = "OPENAI_API_KEY"
 requires_openai_auth = true
 
 # --- MCP servers added by ZCF ---
@@ -239,7 +258,7 @@ model_provider = "openai"
 name = "OpenAI"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "OPENAI_API_KEY"
+temp_env_key = "OPENAI_API_KEY"
 requires_openai_auth = true
 
 # --- MCP servers added by ZCF ---
@@ -311,7 +330,7 @@ model_provider = "openai"
 name = "OpenAI"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "OPENAI_API_KEY"
+temp_env_key = "OPENAI_API_KEY"
 requires_openai_auth = true
 
 # --- User custom MCP services ---
@@ -362,7 +381,7 @@ model_provider = "openai"
 name = "OpenAI"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "OPENAI_API_KEY"
+temp_env_key = "OPENAI_API_KEY"
 requires_openai_auth = true
 
 # --- Existing predefined services ---

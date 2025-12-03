@@ -119,5 +119,6 @@
   "providerManager.providerNameRequired": "提供商名称是必需的",
   "providerManager.baseUrlRequired": "基础 URL 是必需的",
   "providerManager.wireApiInvalid": "Wire API 必须是 \"responses\" 或 \"chat\"",
-  "providerManager.unknownError": "未知错误"
+  "providerManager.unknownError": "未知错误",
+  "envKeyMigrationComplete": "✔ 已完成 env_key 到 temp_env_key 的迁移"
 }

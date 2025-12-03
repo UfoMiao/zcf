@@ -307,7 +307,7 @@ describe('codex code tool utilities', () => {
     expect(configContent).toContain('model_provider = "packycode"')
     expect(configContent).toContain('[model_providers.packycode]')
     expect(configContent).toContain('base_url = "https://api.example.com/v1"')
-    expect(configContent).toContain('env_key = "PACKYCODE_API_KEY"')
+    expect(configContent).toContain('temp_env_key = "PACKYCODE_API_KEY"')
 
     const jsonConfigModule = await import('../../../../src/utils/json-config')
     expect(jsonConfigModule.writeJsonConfig).toHaveBeenCalledWith(
@@ -370,7 +370,7 @@ describe('codex code tool utilities', () => {
   })
 
   it('configureCodexMcp should update MCP services while preserving providers', async () => {
-    const managedConfig = `# Managed by ZCF\nmodel_provider = "packycode"\n\n[model_providers.packycode]\nname = "PackyCode"\nbase_url = "https://api.example.com"\nwire_api = "responses"\nenv_key = "OPENAI_API_KEY"\n`
+    const managedConfig = `# Managed by ZCF\nmodel_provider = "packycode"\n\n[model_providers.packycode]\nname = "PackyCode"\nbase_url = "https://api.example.com"\nwire_api = "responses"\ntemp_env_key = "OPENAI_API_KEY"\n`
 
     const selectMcpServices = (await import('../../../../src/utils/mcp-selector')).selectMcpServices
     vi.mocked(selectMcpServices).mockResolvedValue(['context7'])
@@ -1092,7 +1092,7 @@ describe('codex code tool utilities', () => {
           name: 'Test Provider',
           baseUrl: 'https://api.test.com',
           wireApi: 'responses',
-          envKey: 'TEST_API_KEY',
+          tempEnvKey: 'TEST_API_KEY',
           requiresOpenaiAuth: true,
         }],
         mcpServices: [],
@@ -1121,7 +1121,7 @@ model = "gpt-4"
 name = "Claude API"
 base_url = "https://api.anthropic.com"
 wire_api = "responses"
-env_key = "ANTHROPIC_API_KEY"
+temp_env_key = "ANTHROPIC_API_KEY"
 requires_openai_auth = true
 `
       const result = codexModule.parseCodexConfig(tomlWithCommentedProvider)
@@ -1143,14 +1143,14 @@ model_provider = "claude-api"
 name = "Claude API"
 base_url = "https://api.anthropic.com"
 wire_api = "responses"
-env_key = "ANTHROPIC_API_KEY"
+temp_env_key = "ANTHROPIC_API_KEY"
 requires_openai_auth = true
 
 [model_providers.openai]
 name = "OpenAI API"
 base_url = "https://api.openai.com/v1"
 wire_api = "chat"
-env_key = "OPENAI_API_KEY"
+temp_env_key = "OPENAI_API_KEY"
 requires_openai_auth = false
 
 # --- MCP servers added by ZCF ---
@@ -1204,7 +1204,7 @@ custom_key = "custom_value"
 name = "Test"
 base_url = "https://test.com"
 wire_api = "responses"
-env_key = "TEST_KEY"
+temp_env_key = "TEST_KEY"
 requires_openai_auth = true
 `
       const result = codexModule.parseCodexConfig(tomlWithCustomConfig)
@@ -1231,7 +1231,7 @@ model_provider = "claude"
 name = "Claude"
 base_url = "https://api.anthropic.com"
 wire_api = "responses"
-env_key = "ANTHROPIC_API_KEY"
+temp_env_key = "ANTHROPIC_API_KEY"
 requires_openai_auth = true
 `
       const result = codexModule.parseCodexConfig(tomlWithZcfComments)
@@ -1293,7 +1293,7 @@ env = {}
           name: 'Claude API',
           baseUrl: 'https://api.anthropic.com',
           wireApi: 'responses',
-          envKey: 'ANTHROPIC_API_KEY',
+          tempEnvKey: 'ANTHROPIC_API_KEY',
           requiresOpenaiAuth: true,
         }],
         mcpServices: [],
@@ -1377,7 +1377,7 @@ env = {}
           name: 'Test',
           baseUrl: 'https://test.com',
           wireApi: 'responses',
-          envKey: 'TEST_KEY',
+          tempEnvKey: 'TEST_KEY',
           requiresOpenaiAuth: true,
         }],
         mcpServices: [],
@@ -1571,7 +1571,7 @@ base_url = "https://api.anthropic.com"
           name: 'Claude API',
           baseUrl: 'https://api.anthropic.com',
           wireApi: 'responses',
-          envKey: 'ANTHROPIC_API_KEY',
+          tempEnvKey: 'ANTHROPIC_API_KEY',
           requiresOpenaiAuth: true,
         }],
         mcpServices: [],
@@ -1676,7 +1676,7 @@ model_provider = ""
           name = "Test Provider"
           base_url = "https://test.com"
           wire_api = "responses"
-          env_key = "TEST_KEY"
+          temp_env_key = "TEST_KEY"
           requires_openai_auth = true
         `)
         vi.mocked(fsOps.copyDir).mockImplementation(() => {})
@@ -1715,7 +1715,7 @@ model_provider = ""
           name = "Test Provider"
           base_url = "https://test.com"
           wire_api = "responses"
-          env_key = "TEST_KEY"
+          temp_env_key = "TEST_KEY"
           requires_openai_auth = true
         `)
         vi.mocked(fsOps.copyDir).mockImplementation(() => {})
@@ -1739,7 +1739,7 @@ model_provider = ""
             name: 'Test Provider',
             baseUrl: 'https://test.com',
             wireApi: 'responses',
-            envKey: 'TEST_KEY',
+            tempEnvKey: 'TEST_KEY',
             requiresOpenaiAuth: true,
           }],
           mcpServices: [],
@@ -1814,7 +1814,7 @@ model_provider = ""
           name = "Test Provider"
           base_url = "https://test.com"
           wire_api = "responses"
-          env_key = "TEST_KEY"
+          temp_env_key = "TEST_KEY"
           requires_openai_auth = true
         `)
         vi.mocked(fsOps.copyDir).mockImplementation(() => {})
@@ -1836,7 +1836,7 @@ model_provider = ""
             name: 'Test Provider',
             baseUrl: 'https://test.com',
             wireApi: 'responses',
-            envKey: 'TEST_KEY',
+            tempEnvKey: 'TEST_KEY',
             requiresOpenaiAuth: true,
           }],
           mcpServices: [],
@@ -1881,7 +1881,7 @@ model_provider = ""
             name: 'Existing Provider',
             baseUrl: 'https://existing.com',
             wireApi: 'responses',
-            envKey: 'EXISTING_KEY',
+            tempEnvKey: 'EXISTING_KEY',
             requiresOpenaiAuth: true,
           }],
           mcpServices: [],
@@ -1906,7 +1906,7 @@ model_provider = ""
           name = "Test Provider"
           base_url = "https://test.com"
           wire_api = "responses"
-          env_key = "TEST_KEY"
+          temp_env_key = "TEST_KEY"
           requires_openai_auth = true
         `)
         vi.mocked(fsOps.copyDir).mockImplementation(() => {})
@@ -1926,7 +1926,7 @@ model_provider = ""
             name: 'Test Provider',
             baseUrl: 'https://test.com',
             wireApi: 'responses',
-            envKey: 'TEST_KEY',
+            tempEnvKey: 'TEST_KEY',
             requiresOpenaiAuth: true,
           }],
           mcpServices: [],

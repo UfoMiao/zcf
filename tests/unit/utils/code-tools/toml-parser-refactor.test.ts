@@ -55,7 +55,7 @@ model_provider = "gpt-4"
 name = "GPT-4"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "OPENAI_API_KEY"
+temp_env_key = "OPENAI_API_KEY"
 requires_openai_auth = true`
 
       const result = parseCodexConfig(complexToml)
@@ -68,7 +68,7 @@ requires_openai_auth = true`
         name: 'GPT-4',
         baseUrl: 'https://api.openai.com/v1',
         wireApi: 'responses',
-        envKey: 'OPENAI_API_KEY',
+        tempEnvKey: 'OPENAI_API_KEY',
         requiresOpenaiAuth: true,
       })
       expect(result.managed).toBe(true)
@@ -150,7 +150,7 @@ base_url = "https://api.anthropic.com"
           name: 'GPT-4',
           baseUrl: 'https://api.openai.com/v1',
           wireApi: 'responses',
-          envKey: 'OPENAI_API_KEY',
+          tempEnvKey: 'OPENAI_API_KEY',
           requiresOpenaiAuth: true,
         }],
         mcpServices: [],

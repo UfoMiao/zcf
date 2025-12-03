@@ -25,6 +25,7 @@ export interface CodexConfig {
   enabled: boolean
   systemPromptStyle: string
   installMethod?: 'npm' | 'homebrew' | 'native'
+  envKeyMigrated?: boolean // Whether env_key to temp_env_key migration has been completed
 }
 
 /**

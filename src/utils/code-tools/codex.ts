@@ -11,7 +11,7 @@ import semver from 'semver'
 import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
 // Removed MCP config imports; MCP configuration moved to codex-configure.ts
-import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS } from '../../constants'
+import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
@@ -21,7 +21,7 @@ import { normalizeTomlPath, wrapCommandWithSudo } from '../platform'
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
 import { promptBoolean } from '../toggle-prompt'
-import { readZcfConfig, updateZcfConfig } from '../zcf-config'
+import { readDefaultTomlConfig, readZcfConfig, updateTomlConfig, updateZcfConfig } from '../zcf-config'
 import { detectConfigManagementMode } from './codex-config-detector'
 import { configureCodexMcp } from './codex-configure'
 
@@ -34,7 +34,7 @@ export interface CodexProvider {
   name: string
   baseUrl: string
   wireApi: string
-  envKey: string
+  tempEnvKey: string
   requiresOpenaiAuth: boolean
   model?: string // Default model for this provider
 }
@@ -278,6 +278,90 @@ export function getBackupMessage(path: string | null): string {
   return i18n.t('codex:backupSuccess', { path })
 }
 
+/**
+ * Check if the Codex config needs env_key to temp_env_key migration
+ * @returns true if migration is needed, false otherwise
+ */
+export function needsEnvKeyMigration(): boolean {
+  if (!exists(CODEX_CONFIG_FILE))
+    return false
+
+  try {
+    const content = readFile(CODEX_CONFIG_FILE)
+    // Check if any provider section has old env_key field (not temp_env_key)
+    const hasOldEnvKey = /^\s*env_key\s*=/m.test(content)
+    const hasNewTempEnvKey = /^\s*temp_env_key\s*=/m.test(content)
+
+    // Migration needed if has old env_key but no temp_env_key
+    return hasOldEnvKey && !hasNewTempEnvKey
+  }
+  catch {
+    return false
+  }
+}
+
+/**
+ * Migrate env_key to temp_env_key in Codex config file
+ * This performs an in-place migration of the TOML config file
+ * @returns true if migration was performed, false otherwise
+ */
+export function migrateEnvKeyToTempEnvKey(): boolean {
+  if (!exists(CODEX_CONFIG_FILE))
+    return false
+
+  try {
+    const content = readFile(CODEX_CONFIG_FILE)
+
+    // Check if migration is needed
+    if (!needsEnvKeyMigration())
+      return false
+
+    // Create backup before migration
+    const backupPath = backupCodexConfig()
+    if (backupPath) {
+      console.log(ansis.gray(getBackupMessage(backupPath)))
+    }
+
+    // Replace env_key with temp_env_key
+    const migratedContent = content.replace(/^(\s*)env_key(\s*=)/gm, '$1temp_env_key$2')
+
+    // Write migrated content
+    writeFile(CODEX_CONFIG_FILE, migratedContent)
+
+    // Update ZCF config to mark migration as complete
+    updateTomlConfig(ZCF_CONFIG_FILE, {
+      codex: {
+        envKeyMigrated: true,
+      },
+    } as any)
+
+    console.log(ansis.green(i18n.t('codex:envKeyMigrationComplete')))
+    return true
+  }
+  catch (error) {
+    console.error(ansis.yellow(`env_key migration warning: ${(error as Error).message}`))
+    return false
+  }
+}
+
+/**
+ * Ensure env_key migration is performed if needed
+ * This should be called before any Codex config modification operation
+ */
+export function ensureEnvKeyMigration(): void {
+  // Check ZCF config to see if migration has already been done
+  const tomlConfig = readDefaultTomlConfig()
+
+  // Skip if already migrated
+  if (tomlConfig?.codex?.envKeyMigrated)
+    return
+
+  // Perform migration if needed
+  if (needsEnvKeyMigration()) {
+    migrateEnvKeyToTempEnvKey()
+  }
+}
+
 function sanitizeProviderName(input: string): string {
   const cleaned = input.trim()
   if (!cleaned)
@@ -320,7 +404,7 @@ export function parseCodexConfig(content: string): CodexConfigData {
           name: provider.name || id,
           baseUrl: provider.base_url || '',
           wireApi: provider.wire_api || 'responses',
-          envKey: provider.env_key || 'OPENAI_API_KEY',
+          tempEnvKey: provider.temp_env_key || 'OPENAI_API_KEY',
           requiresOpenaiAuth: provider.requires_openai_auth !== false,
           model: provider.model || undefined, // Parse model field from provider
         })
@@ -619,6 +703,9 @@ export function readCodexConfig(): CodexConfigData | null {
   if (!exists(CODEX_CONFIG_FILE))
     return null
 
+  // Ensure env_key migration is performed before reading config
+  ensureEnvKeyMigration()
+
   try {
     const content = readFile(CODEX_CONFIG_FILE)
     return parseCodexConfig(content)
@@ -690,7 +777,7 @@ export function renderCodexConfig(data: CodexConfigData): string {
       lines.push(`name = "${provider.name}"`)
       lines.push(`base_url = "${provider.baseUrl}"`)
       lines.push(`wire_api = "${provider.wireApi}"`)
-      lines.push(`env_key = "${provider.envKey}"`)
+      lines.push(`temp_env_key = "${provider.tempEnvKey}"`)
       lines.push(`requires_openai_auth = ${provider.requiresOpenaiAuth}`)
       // Add model field if present
       if (provider.model) {
@@ -759,6 +846,9 @@ export function renderCodexConfig(data: CodexConfigData): string {
 }
 
 export function writeCodexConfig(data: CodexConfigData): void {
+  // Ensure env_key migration is performed before any config modification
+  ensureEnvKeyMigration()
+
   ensureDir(CODEX_DIR)
   writeFile(CODEX_CONFIG_FILE, renderCodexConfig(data))
 }
@@ -1281,7 +1371,7 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
     name: providerName,
     baseUrl: baseUrl || 'https://api.anthropic.com',
     wireApi: 'claude',
-    envKey: `${providerId.toUpperCase()}_API_KEY`,
+    tempEnvKey: `${providerId.toUpperCase()}_API_KEY`,
     requiresOpenaiAuth: false,
   })
 
@@ -1527,7 +1617,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
     }
 
     const providerId = sanitizeProviderName(answers.providerName)
-    const envKey = `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`
+    const tempEnvKey = `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`
 
     // Check for duplicate names
     const existingProvider = existingMap.get(providerId)
@@ -1565,14 +1655,14 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
       name: answers.providerName,
       baseUrl: selectedProvider === 'custom' ? answers.baseUrl : prefilledBaseUrl!,
       wireApi: selectedProvider === 'custom' ? (answers.wireApi || 'responses') : prefilledWireApi!,
-      envKey,
+      tempEnvKey,
       requiresOpenaiAuth: true,
       model: customModel || prefilledModel || 'gpt-5-codex', // Use custom model, provider's default model, or fallback
     }
 
     providers.push(newProvider)
     currentSessionProviders.set(providerId, newProvider)
-    authEntries[envKey] = answers.apiKey
+    authEntries[tempEnvKey] = answers.apiKey
 
     const addAnother = await promptBoolean({
       message: i18n.t('codex:addProviderPrompt'),
@@ -1597,8 +1687,8 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
 
   const selectedProvider = providers.find(provider => provider.id === defaultProvider)
   if (selectedProvider) {
-    const envKey = selectedProvider.envKey
-    const defaultApiKey = authEntries[envKey] ?? existingAuth[envKey] ?? null
+    const tempEnvKey = selectedProvider.tempEnvKey
+    const defaultApiKey = authEntries[tempEnvKey] ?? existingAuth[tempEnvKey] ?? null
     if (defaultApiKey)
       authEntries.OPENAI_API_KEY = defaultApiKey
   }
@@ -2035,7 +2125,7 @@ export async function switchToProvider(providerId: string): Promise<boolean> {
 
     // Set OPENAI_API_KEY to the provider's environment variable value for VSCode
     const auth = readJsonConfig<Record<string, string | null>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
-    const envValue = auth[provider.envKey] || null
+    const envValue = auth[provider.tempEnvKey] || null
     auth.OPENAI_API_KEY = envValue
     writeJsonConfig(CODEX_AUTH_FILE, auth, { pretty: true })
 

@@ -1349,7 +1349,7 @@ async function convertToCodexProvider(config: ApiConfigDefinition): Promise<Code
     name: config.name!,
     baseUrl,
     wireApi,
-    envKey: API_ENV_KEY,
+    tempEnvKey: API_ENV_KEY,
     requiresOpenaiAuth: false,
     model,
   }

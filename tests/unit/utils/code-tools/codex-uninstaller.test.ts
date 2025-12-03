@@ -282,7 +282,7 @@ model_provider = "custom-provider"
 name = "Custom Provider"
 base_url = "https://api.example.com/v1"
 wire_api = "responses"
-env_key = "CUSTOM_API_KEY"
+temp_env_key = "CUSTOM_API_KEY"
 
 [mcp_servers.context7]
 command = "npx"

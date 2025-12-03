@@ -112,8 +112,8 @@ async function listCodexProvidersWithDisplay(): Promise<void> {
 
     console.log(`${status}${ansis.white(provider.name)}${current}`)
     console.log(`    ${ansis.cyan(`ID: ${provider.id}`)} ${ansis.gray(`(${provider.baseUrl})`)}`)
-    if (provider.envKey) {
-      console.log(`    ${ansis.gray(`Env: ${provider.envKey}`)}`)
+    if (provider.tempEnvKey) {
+      console.log(`    ${ansis.gray(`Env: ${provider.tempEnvKey}`)}`)
     }
     console.log()
   })

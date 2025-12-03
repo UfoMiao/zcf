@@ -206,7 +206,7 @@ custom_setting = "important"
             name: 'New',
             baseUrl: 'https://api.example.com',
             wireApi: 'responses',
-            envKey: 'NEW_KEY',
+            tempEnvKey: 'NEW_KEY',
             requiresOpenaiAuth: true,
           },
         ],

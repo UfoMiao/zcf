@@ -59,14 +59,14 @@ function createMockProvider(
   name: string,
   baseUrl?: string,
   wireApi?: 'responses' | 'chat',
-  envKey?: string,
+  tempEnvKey?: string,
 ): any {
   return {
     id,
     name,
     baseUrl: baseUrl || 'https://api.example.com/v1',
     wireApi: wireApi || 'responses',
-    envKey: envKey || `${id.toUpperCase().replace(/-/g, '_')}_API_KEY`,
+    tempEnvKey: tempEnvKey || `${id.toUpperCase().replace(/-/g, '_')}_API_KEY`,
     requiresOpenaiAuth: true,
   }
 }
@@ -386,7 +386,7 @@ describe('codex-config-switch', () => {
         expect.objectContaining({
           id: 'my-test-provider-',
           name: 'My Test Provider @#$',
-          envKey: 'MY_TEST_PROVIDER__API_KEY',
+          tempEnvKey: 'MY_TEST_PROVIDER__API_KEY',
           model: 'gpt-5-codex', // Default model
         }),
         'test-key',
@@ -890,7 +890,7 @@ describe('codex-config-switch', () => {
         expect.objectContaining({
           id: 'my-test-provider--copy',
           name: 'My Test Provider @#$ Copy',
-          envKey: 'MY_TEST_PROVIDER__COPY_API_KEY',
+          tempEnvKey: 'MY_TEST_PROVIDER__COPY_API_KEY',
         }),
         'test-key',
         false,

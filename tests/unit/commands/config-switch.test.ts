@@ -95,7 +95,7 @@ describe('config-switch command', () => {
         name: 'OpenAI Custom',
         baseUrl: 'https://api.openai.com/v1',
         wireApi: 'responses',
-        envKey: 'OPENAI_CUSTOM_API_KEY',
+        tempEnvKey: 'OPENAI_CUSTOM_API_KEY',
         requiresOpenaiAuth: true,
       },
       {
@@ -103,7 +103,7 @@ describe('config-switch command', () => {
         name: 'Claude API',
         baseUrl: 'https://api.anthropic.com',
         wireApi: 'responses',
-        envKey: 'CLAUDE_API_API_KEY',
+        tempEnvKey: 'CLAUDE_API_API_KEY',
         requiresOpenaiAuth: true,
       },
     ])
@@ -117,7 +117,7 @@ describe('config-switch command', () => {
           name: 'OpenAI Custom',
           baseUrl: 'https://api.openai.com/v1',
           wireApi: 'responses',
-          envKey: 'OPENAI_CUSTOM_API_KEY',
+          tempEnvKey: 'OPENAI_CUSTOM_API_KEY',
           requiresOpenaiAuth: true,
         },
         {
@@ -125,7 +125,7 @@ describe('config-switch command', () => {
           name: 'Claude API',
           baseUrl: 'https://api.anthropic.com',
           wireApi: 'responses',
-          envKey: 'CLAUDE_API_API_KEY',
+          tempEnvKey: 'CLAUDE_API_API_KEY',
           requiresOpenaiAuth: true,
         },
       ],

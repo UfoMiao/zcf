@@ -47,13 +47,13 @@ model_provider = "custom-openai"
 name = "Custom OpenAI"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "CUSTOM_OPENAI_API_KEY"
+temp_env_key = "CUSTOM_OPENAI_API_KEY"
 
 [model_providers.claude-api]
 name = "Claude API"
 base_url = "https://api.anthropic.com"
 wire_api = "responses"
-env_key = "CLAUDE_API_API_KEY"
+temp_env_key = "CLAUDE_API_API_KEY"
 `
 
       mockFs.exists.mockReturnValue(true)
@@ -101,13 +101,13 @@ model_provider = "custom-openai"
 name = "Custom OpenAI"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "CUSTOM_OPENAI_API_KEY"
+temp_env_key = "CUSTOM_OPENAI_API_KEY"
 
 [model_providers.claude-api]
 name = "Claude API"
 base_url = "https://api.anthropic.com"
 wire_api = "responses"
-env_key = "CLAUDE_API_API_KEY"
+temp_env_key = "CLAUDE_API_API_KEY"
 `
 
       mockFs.exists.mockReturnValue(true)
@@ -121,7 +121,7 @@ env_key = "CLAUDE_API_API_KEY"
         name: 'Custom OpenAI',
         baseUrl: 'https://api.openai.com/v1',
         wireApi: 'responses',
-        envKey: 'CUSTOM_OPENAI_API_KEY',
+        tempEnvKey: 'CUSTOM_OPENAI_API_KEY',
         requiresOpenaiAuth: true,
       })
       expect(result[1]).toEqual({
@@ -129,7 +129,7 @@ env_key = "CLAUDE_API_API_KEY"
         name: 'Claude API',
         baseUrl: 'https://api.anthropic.com',
         wireApi: 'responses',
-        envKey: 'CLAUDE_API_API_KEY',
+        tempEnvKey: 'CLAUDE_API_API_KEY',
         requiresOpenaiAuth: true,
       })
     })
@@ -162,13 +162,13 @@ model_provider = "custom-openai"
 name = "Custom OpenAI"
 base_url = "https://api.openai.com/v1"
 wire_api = "responses"
-env_key = "CUSTOM_OPENAI_API_KEY"
+temp_env_key = "CUSTOM_OPENAI_API_KEY"
 
 [model_providers.claude-api]
 name = "Claude API"
 base_url = "https://api.anthropic.com"
 wire_api = "responses"
-env_key = "CLAUDE_API_API_KEY"
+temp_env_key = "CLAUDE_API_API_KEY"
 `
 
     beforeEach(() => {
@@ -221,7 +221,7 @@ model_provider = "custom-openai"
 name = "Test Provider 123"
 base_url = "https://api.test.com/v1"
 wire_api = "responses"
-env_key = "TEST_PROVIDER_123_API_KEY"
+temp_env_key = "TEST_PROVIDER_123_API_KEY"
 `
 
       mockFs.readFile.mockReturnValue(specialConfig)

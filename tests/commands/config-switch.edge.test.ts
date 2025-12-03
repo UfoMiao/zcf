@@ -91,7 +91,7 @@ describe('config-switch command - Edge Cases', () => {
           name: 'Test Provider',
           baseUrl: 'https://api.test.com',
           wireApi: 'responses',
-          envKey: 'TEST_API_KEY',
+          tempEnvKey: 'TEST_API_KEY',
           requiresOpenaiAuth: true,
         },
       ],
@@ -156,7 +156,7 @@ describe('config-switch command - Edge Cases', () => {
           name: 'Test Provider',
           baseUrl: 'https://api.test.com',
           wireApi: 'responses',
-          envKey: 'TEST_API_KEY',
+          tempEnvKey: 'TEST_API_KEY',
           requiresOpenaiAuth: true,
         },
       ])
@@ -208,7 +208,7 @@ describe('config-switch command - Edge Cases', () => {
           name: 'Provider 1',
           baseUrl: 'https://api1.com',
           wireApi: 'responses',
-          envKey: 'PROVIDER1_API_KEY',
+          tempEnvKey: 'PROVIDER1_API_KEY',
           requiresOpenaiAuth: true,
         },
       ])
@@ -271,7 +271,7 @@ describe('config-switch command - Edge Cases', () => {
           name: 'Provider 1',
           baseUrl: 'https://api1.com',
           wireApi: 'responses',
-          envKey: 'PROVIDER1_API_KEY',
+          tempEnvKey: 'PROVIDER1_API_KEY',
           requiresOpenaiAuth: true,
         },
       ])
@@ -295,7 +295,7 @@ describe('config-switch command - Edge Cases', () => {
           name: 'Provider 1',
           baseUrl: 'https://api1.com',
           wireApi: 'responses',
-          envKey: 'PROVIDER1_API_KEY',
+          tempEnvKey: 'PROVIDER1_API_KEY',
           requiresOpenaiAuth: true,
         },
       ])
