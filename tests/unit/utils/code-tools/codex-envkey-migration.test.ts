@@ -294,6 +294,149 @@ env_key = "OLD2_API_KEY"
       // Verify no env_key entries remain
       expect(writtenContent).not.toMatch(/^env_key\s*=/m)
     })
+
+    it('should remove env_key without creating duplicate when provider already has temp_env_key (mixed state)', async () => {
+      const fsOps = await import('../../../../src/utils/fs-operations')
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+      // This simulates a manually edited config with both old and new keys in the same section
+      vi.mocked(fsOps.readFile).mockReturnValue(`
+[model_providers.mixed]
+name = "Mixed Provider"
+env_key = "OLD_KEY"
+temp_env_key = "NEW_KEY"
+
+[model_providers.old_only]
+name = "Old Only Provider"
+env_key = "OLD_ONLY_KEY"
+
+[model_providers.new_only]
+name = "New Only Provider"
+temp_env_key = "NEW_ONLY_KEY"
+`)
+      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
+      vi.mocked(fsOps.copyFile).mockImplementation(() => {})
+
+      const writeFileMock = vi.mocked(fsOps.writeFile)
+      writeFileMock.mockImplementation(() => {})
+
+      const zcfConfig = await import('../../../../src/utils/zcf-config')
+      vi.mocked(zcfConfig.updateTomlConfig).mockImplementation(() => ({} as any))
+
+      const { migrateEnvKeyToTempEnvKey } = await import('../../../../src/utils/code-tools/codex')
+      const result = migrateEnvKeyToTempEnvKey()
+
+      expect(result).toBe(true)
+
+      const writtenContent = writeFileMock.mock.calls[0][1] as string
+
+      // Mixed provider: env_key should be removed, temp_env_key should remain (no duplicates)
+      expect(writtenContent).toContain('temp_env_key = "NEW_KEY"')
+      // Ensure there's only ONE temp_env_key in the mixed section (no duplicate from env_key conversion)
+      const mixedSectionMatch = writtenContent.match(/\[model_providers\.mixed\][\s\S]*?(?=\[|$)/)
+      expect(mixedSectionMatch).not.toBeNull()
+      const mixedSection = mixedSectionMatch![0]
+      const tempEnvKeyCount = (mixedSection.match(/temp_env_key/g) || []).length
+      expect(tempEnvKeyCount).toBe(1) // Only one temp_env_key, not two
+
+      // Old only provider: env_key should be converted to temp_env_key
+      expect(writtenContent).toContain('temp_env_key = "OLD_ONLY_KEY"')
+
+      // New only provider: should remain unchanged
+      expect(writtenContent).toContain('temp_env_key = "NEW_ONLY_KEY"')
+
+      // Verify no env_key entries remain anywhere
+      expect(writtenContent).not.toMatch(/^\s*env_key\s*=/m)
+    })
+  })
+
+  describe('migrateEnvKeyInContent', () => {
+    it('should handle empty content', async () => {
+      const { migrateEnvKeyInContent } = await import('../../../../src/utils/code-tools/codex')
+      const result = migrateEnvKeyInContent('')
+      expect(result).toBe('')
+    })
+
+    it('should handle content without any env_key', async () => {
+      const { migrateEnvKeyInContent } = await import('../../../../src/utils/code-tools/codex')
+      const content = `
+[model_providers.test]
+name = "Test"
+temp_env_key = "TEST_KEY"
+`
+      const result = migrateEnvKeyInContent(content)
+      expect(result).toBe(content)
+    })
+
+    it('should convert env_key to temp_env_key when no temp_env_key exists', async () => {
+      const { migrateEnvKeyInContent } = await import('../../../../src/utils/code-tools/codex')
+      const content = `
+[model_providers.test]
+name = "Test"
+env_key = "TEST_KEY"
+`
+      const result = migrateEnvKeyInContent(content)
+      expect(result).toContain('temp_env_key = "TEST_KEY"')
+      expect(result).not.toMatch(/^\s*env_key\s*=/m)
+    })
+
+    it('should remove env_key line when temp_env_key already exists in same section', async () => {
+      const { migrateEnvKeyInContent } = await import('../../../../src/utils/code-tools/codex')
+      const content = `
+[model_providers.test]
+name = "Test"
+env_key = "OLD_KEY"
+temp_env_key = "NEW_KEY"
+`
+      const result = migrateEnvKeyInContent(content)
+      // Should have only one temp_env_key line, the existing one
+      expect(result).toContain('temp_env_key = "NEW_KEY"')
+      expect(result).not.toContain('env_key = "OLD_KEY"')
+      const tempEnvKeyCount = (result.match(/temp_env_key/g) || []).length
+      expect(tempEnvKeyCount).toBe(1)
+    })
+
+    it('should handle multiple sections with different states', async () => {
+      const { migrateEnvKeyInContent } = await import('../../../../src/utils/code-tools/codex')
+      const content = `
+[model_providers.section1]
+name = "Section 1"
+env_key = "OLD1"
+temp_env_key = "NEW1"
+
+[model_providers.section2]
+name = "Section 2"
+env_key = "OLD2"
+
+[model_providers.section3]
+name = "Section 3"
+temp_env_key = "NEW3"
+`
+      const result = migrateEnvKeyInContent(content)
+
+      // Section 1: env_key removed, temp_env_key preserved
+      expect(result).toContain('temp_env_key = "NEW1"')
+      expect(result).not.toContain('env_key = "OLD1"')
+
+      // Section 2: env_key converted to temp_env_key
+      expect(result).toContain('temp_env_key = "OLD2"')
+
+      // Section 3: unchanged
+      expect(result).toContain('temp_env_key = "NEW3"')
+
+      // No env_key should remain
+      expect(result).not.toMatch(/^\s*env_key\s*=/m)
+    })
+
+    it('should preserve indentation when converting env_key', async () => {
+      const { migrateEnvKeyInContent } = await import('../../../../src/utils/code-tools/codex')
+      const content = `
+[model_providers.test]
+name = "Test"
+  env_key = "TEST_KEY"
+`
+      const result = migrateEnvKeyInContent(content)
+      expect(result).toContain('  temp_env_key = "TEST_KEY"')
+    })
   })
 
   describe('ensureEnvKeyMigration', () => {
@@ -557,6 +700,117 @@ env_key = "TEST_API_KEY"
           }),
         }),
       )
+    })
+  })
+
+  describe('getBackupMessage', () => {
+    it('should return fallback message when i18n is not initialized', async () => {
+      // Clear module cache to re-import with new mock
+      vi.resetModules()
+
+      // Mock i18n as not initialized
+      vi.doMock('../../../../src/i18n', () => ({
+        i18n: {
+          t: (key: string) => key,
+          isInitialized: false,
+          language: 'en',
+        },
+        ensureI18nInitialized: vi.fn(),
+      }))
+
+      vi.doMock('../../../../src/utils/fs-operations', () => ({
+        ensureDir: vi.fn(),
+        copyDir: vi.fn(),
+        copyFile: vi.fn(),
+        exists: vi.fn(),
+        readFile: vi.fn(),
+        writeFile: vi.fn(),
+      }))
+
+      vi.doMock('../../../../src/utils/json-config', () => ({
+        readJsonConfig: vi.fn(),
+        writeJsonConfig: vi.fn(),
+      }))
+
+      vi.doMock('../../../../src/utils/zcf-config', () => ({
+        readZcfConfig: vi.fn(),
+        updateZcfConfig: vi.fn(),
+        updateTomlConfig: vi.fn(),
+        readDefaultTomlConfig: vi.fn(),
+      }))
+
+      vi.doMock('node:os', () => ({
+        homedir: () => '/home/test',
+        platform: () => 'linux',
+      }))
+
+      const { getBackupMessage } = await import('../../../../src/utils/code-tools/codex')
+
+      const result = getBackupMessage('/test/backup/path')
+
+      // Should return fallback message without throwing
+      expect(result).toBe('Backup created: /test/backup/path')
+    })
+
+    it('should return empty string for null path regardless of i18n state', async () => {
+      const { getBackupMessage } = await import('../../../../src/utils/code-tools/codex')
+
+      const result = getBackupMessage(null)
+
+      expect(result).toBe('')
+    })
+
+    it('should return translated message when i18n is initialized', async () => {
+      // Clear module cache to re-import with new mock
+      vi.resetModules()
+
+      // Mock i18n as initialized
+      vi.doMock('../../../../src/i18n', () => ({
+        i18n: {
+          t: (key: string, params?: Record<string, string>) => {
+            if (key === 'codex:backupSuccess' && params?.path) {
+              return `✔ Backup created at ${params.path}`
+            }
+            return key
+          },
+          isInitialized: true,
+          language: 'en',
+        },
+        ensureI18nInitialized: vi.fn(),
+      }))
+
+      vi.doMock('../../../../src/utils/fs-operations', () => ({
+        ensureDir: vi.fn(),
+        copyDir: vi.fn(),
+        copyFile: vi.fn(),
+        exists: vi.fn(),
+        readFile: vi.fn(),
+        writeFile: vi.fn(),
+      }))
+
+      vi.doMock('../../../../src/utils/json-config', () => ({
+        readJsonConfig: vi.fn(),
+        writeJsonConfig: vi.fn(),
+      }))
+
+      vi.doMock('../../../../src/utils/zcf-config', () => ({
+        readZcfConfig: vi.fn(),
+        updateZcfConfig: vi.fn(),
+        updateTomlConfig: vi.fn(),
+        readDefaultTomlConfig: vi.fn(),
+      }))
+
+      vi.doMock('node:os', () => ({
+        homedir: () => '/home/test',
+        platform: () => 'linux',
+      }))
+
+      const { getBackupMessage } = await import('../../../../src/utils/code-tools/codex')
+
+      const result = getBackupMessage('/test/backup/path')
+
+      // Should return translated message
+      expect(result).toBe('✔ Backup created at /test/backup/path')
     })
   })
 })

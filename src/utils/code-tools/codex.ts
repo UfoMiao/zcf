@@ -274,7 +274,13 @@ export function getBackupMessage(path: string | null): string {
   if (!path)
     return ''
 
-  ensureI18nInitialized()
+  // Provide fallback message when i18n is not initialized
+  // This prevents migration failures when called before initI18n()
+  // (e.g., programmatic calls to getCurrentCodexProvider/listCodexProviders)
+  if (!i18n.isInitialized) {
+    return `Backup created: ${path}`
+  }
+
   return i18n.t('codex:backupSuccess', { path })
 }
 
@@ -303,6 +309,11 @@ export function needsEnvKeyMigration(): boolean {
 /**
  * Migrate env_key to temp_env_key in Codex config file
  * This performs an in-place migration of the TOML config file
+ *
+ * For provider sections that already have temp_env_key, the env_key line is removed.
+ * For provider sections that only have env_key, it is converted to temp_env_key.
+ * This prevents duplicate keys in TOML which would cause parse errors.
+ *
  * @returns true if migration was performed, false otherwise
  */
 export function migrateEnvKeyToTempEnvKey(): boolean {
@@ -322,8 +333,9 @@ export function migrateEnvKeyToTempEnvKey(): boolean {
       console.log(ansis.gray(getBackupMessage(backupPath)))
     }
 
-    // Replace env_key with temp_env_key
-    const migratedContent = content.replace(/^(\s*)env_key(\s*=)/gm, '$1temp_env_key$2')
+    // Perform smart migration that handles mixed state
+    // Split content into provider sections and process each separately
+    const migratedContent = migrateEnvKeyInContent(content)
 
     // Write migrated content
     writeFile(CODEX_CONFIG_FILE, migratedContent)
@@ -335,13 +347,80 @@ export function migrateEnvKeyToTempEnvKey(): boolean {
       },
     } as any)
 
-    console.log(ansis.green(i18n.t('codex:envKeyMigrationComplete')))
+    // Provide fallback message when i18n is not initialized
+    // This prevents migration failures when called before initI18n()
+    const message = i18n.isInitialized
+      ? i18n.t('codex:envKeyMigrationComplete')
+      : '✔ env_key to temp_env_key migration completed'
+    console.log(ansis.green(message))
     return true
   }
   catch (error) {
     console.error(ansis.yellow(`env_key migration warning: ${(error as Error).message}`))
     return false
   }
+}
+
+/**
+ * Migrate env_key to temp_env_key in TOML content
+ * Handles mixed state where both env_key and temp_env_key may exist in the same section
+ *
+ * @param content - The TOML content to migrate
+ * @returns The migrated content
+ */
+export function migrateEnvKeyInContent(content: string): string {
+  const lines = content.split('\n')
+  const result: string[] = []
+
+  // Track if current section already has temp_env_key
+  let currentSectionHasTempEnvKey = false
+  let currentSection = ''
+
+  // First pass: identify sections and their temp_env_key presence
+  const sectionHasTempEnvKey = new Map<string, boolean>()
+  let tempSection = ''
+
+  for (const line of lines) {
+    // Check if this is a section header
+    const sectionMatch = line.match(/^\s*\[([^\]]+)\]/)
+    if (sectionMatch) {
+      tempSection = sectionMatch[1]
+    }
+
+    // Check if this section has temp_env_key
+    if (tempSection && /^\s*temp_env_key\s*=/.test(line)) {
+      sectionHasTempEnvKey.set(tempSection, true)
+    }
+  }
+
+  // Second pass: process lines
+  for (const line of lines) {
+    // Check if this is a section header
+    const sectionMatch = line.match(/^\s*\[([^\]]+)\]/)
+    if (sectionMatch) {
+      currentSection = sectionMatch[1]
+      currentSectionHasTempEnvKey = sectionHasTempEnvKey.get(currentSection) || false
+    }
+
+    // Check if this line has env_key
+    const envKeyMatch = line.match(/^(\s*)env_key(\s*=.*)$/)
+    if (envKeyMatch) {
+      if (currentSectionHasTempEnvKey) {
+        // Section already has temp_env_key, remove the env_key line entirely
+        // Skip adding this line to result
+        continue
+      }
+      else {
+        // Section doesn't have temp_env_key, convert env_key to temp_env_key
+        result.push(`${envKeyMatch[1]}temp_env_key${envKeyMatch[2]}`)
+        continue
+      }
+    }
+
+    result.push(line)
+  }
+
+  return result.join('\n')
 }
 
 /**

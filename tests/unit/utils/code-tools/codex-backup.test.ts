@@ -242,11 +242,11 @@ describe('codex backup mechanism', () => {
   })
 
   describe('getBackupMessage', () => {
-    it('should return i18n formatted backup message', async () => {
+    it('should return i18n formatted backup message when i18n is initialized', async () => {
       // Reset modules to ensure fresh import
       vi.resetModules()
 
-      // Mock i18n properly before import
+      // Mock i18n properly before import with isInitialized: true
       const mockI18n = {
         t: vi.fn((key: string, options?: any) => {
           if (key === 'codex:backupSuccess' && options?.path) {
@@ -254,6 +254,7 @@ describe('codex backup mechanism', () => {
           }
           return `mocked_${key}`
         }),
+        isInitialized: true, // Mark as initialized so it uses i18n.t()
       }
 
       vi.doMock('../../../../src/i18n', () => ({
@@ -268,6 +269,27 @@ describe('codex backup mechanism', () => {
       // Assert
       expect(mockI18n.t).toHaveBeenCalledWith('codex:backupSuccess', { path: '/path/to/backup' })
       expect(result).toBe('✔ Backup created at /path/to/backup')
+    })
+
+    it('should return fallback message when i18n is not initialized', async () => {
+      // Reset modules to ensure fresh import
+      vi.resetModules()
+
+      // Mock i18n as not initialized
+      vi.doMock('../../../../src/i18n', () => ({
+        ensureI18nInitialized: vi.fn(),
+        i18n: {
+          t: vi.fn(),
+          isInitialized: false, // Mark as not initialized
+        },
+      }))
+
+      // Act
+      const { getBackupMessage } = await import('../../../../src/utils/code-tools/codex')
+      const result = getBackupMessage('/path/to/backup')
+
+      // Assert - should return fallback English message
+      expect(result).toBe('Backup created: /path/to/backup')
     })
 
     it('should handle null path gracefully', async () => {
