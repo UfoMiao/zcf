@@ -1,4 +1,4 @@
-import { accessSync, existsSync, readFileSync } from 'node:fs'
+import { accessSync, existsSync, readdirSync, readFileSync } from 'node:fs'
 import { platform } from 'node:os'
 import { exec } from 'tinyexec'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -471,6 +471,17 @@ ID=ubuntu`)
       const result = await commandExists('claude')
       expect(result).toBe(false)
     })
+
+    it('should detect commands via Termux-specific paths', async () => {
+      process.env.PREFIX = '/data/data/com.termux/files/usr'
+      vi.mocked(platform).mockReturnValue('linux')
+      vi.mocked(exec).mockRejectedValue(new Error('not found'))
+      vi.mocked(existsSync).mockImplementation(path => path === '/data/data/com.termux/files/usr/bin/claude')
+
+      const result = await commandExists('claude')
+
+      expect(result).toBe(true)
+    })
   })
 
   describe('getRecommendedInstallMethods', () => {
@@ -509,6 +520,12 @@ ID=ubuntu`)
       else
         process.env.HOME = originalHome
     })
+
+    it('should leave command unchanged when sudo is not required', () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      const result = platformUtils.wrapCommandWithSudo('npm', ['install'])
+      expect(result).toEqual({ command: 'npm', args: ['install'], usedSudo: false })
+    })
   })
 
   describe('getHomebrewCommandPaths', () => {
@@ -529,14 +546,49 @@ ID=ubuntu`)
         throw new Error('Not a file')
       })
       // Mock readdirSync to return version directories
-      const mockReaddirSync = vi.fn().mockReturnValue(['20.0.0', '22.0.0'])
-      vi.stubGlobal('readdirSync', mockReaddirSync)
+      ;(readdirSync as unknown as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
+        if (path === '/opt/homebrew/Cellar/node')
+          return ['20.0.0', '22.0.0']
+        return []
+      })
 
       const paths = await getHomebrewCommandPaths('claude')
 
       // Should include standard paths
       expect(paths).toContain('/opt/homebrew/bin/claude')
       expect(paths).toContain('/usr/local/bin/claude')
+    })
+
+    it('should append cellar binaries when specific versions are present', async () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        return path === '/opt/homebrew/Cellar/node'
+          || path === '/opt/homebrew/Cellar/node/22.0.0/bin/claude'
+      })
+      ;(readdirSync as unknown as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
+        if (path === '/opt/homebrew/Cellar/node')
+          return ['22.0.0']
+        return []
+      })
+
+      const paths = await getHomebrewCommandPaths('claude')
+
+      expect(paths).toContain('/opt/homebrew/Cellar/node/22.0.0/bin/claude')
+    })
+
+    it('should include cask binaries when cask directories exist', async () => {
+      vi.mocked(existsSync).mockImplementation((path) => {
+        return path === '/opt/homebrew/Caskroom/claude-code'
+          || path === '/opt/homebrew/Caskroom/claude-code/3.0.0/claude'
+      })
+      ;(readdirSync as unknown as ReturnType<typeof vi.fn>).mockImplementation((path: string) => {
+        if (path === '/opt/homebrew/Caskroom/claude-code')
+          return ['3.0.0']
+        return []
+      })
+
+      const paths = await getHomebrewCommandPaths('claude')
+
+      expect(paths).toContain('/opt/homebrew/Caskroom/claude-code/3.0.0/claude')
     })
   })
 
@@ -588,6 +640,16 @@ ID=ubuntu`)
       const result = await findCommandPath('claude')
 
       expect(result).toBe('/data/data/com.termux/files/usr/bin/claude')
+    })
+
+    it('should return Homebrew path when command exists only there', async () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      vi.mocked(exec).mockRejectedValue(new Error('not found'))
+      vi.mocked(existsSync).mockImplementation(path => path === '/opt/homebrew/bin/claude')
+
+      const result = await findCommandPath('claude')
+
+      expect(result).toBe('/opt/homebrew/bin/claude')
     })
   })
 

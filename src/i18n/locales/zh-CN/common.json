@@ -15,5 +15,6 @@
   "backupCreated": "📁 已创建配置备份：{{path}}",
   "current": "当前",
   "claudeCode": "Claude Code",
-  "codex": "Codex"
+  "codex": "Codex",
+  "yes": "是"
 }

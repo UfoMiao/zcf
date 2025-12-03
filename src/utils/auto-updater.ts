@@ -4,7 +4,7 @@ import ansis from 'ansis'
 import ora from 'ora'
 import { ensureI18nInitialized, format, i18n } from '../i18n'
 import { promptBoolean } from './toggle-prompt'
-import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion } from './version-checker'
+import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion, handleDuplicateInstallations } from './version-checker'
 
 const execAsync = promisify(exec)
 
@@ -219,6 +219,19 @@ export async function updateCometixLine(force = false, skipPrompt = false): Prom
 export async function checkAndUpdateTools(skipPrompt = false): Promise<void> {
   ensureI18nInitialized()
   console.log(ansis.bold.cyan(`\n🔍 ${i18n.t('updater:checkingTools')}\n`))
+
+  // Check for duplicate Claude Code installations first
+  try {
+    const duplicateResult = await handleDuplicateInstallations(skipPrompt)
+    if (duplicateResult.hadDuplicates) {
+      console.log() // Empty line after duplicate handling
+    }
+  }
+  catch (error) {
+    // Don't fail the entire update process if duplicate detection fails
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.warn(ansis.yellow(`⚠ Duplicate installation check failed: ${errorMessage}`))
+  }
 
   const results: Array<{ tool: string, success: boolean, error?: string }> = []
 

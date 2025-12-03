@@ -479,6 +479,27 @@ export async function detectInstalledVersion(codeType: CodeType): Promise<string
 }
 
 /**
+ * Get localized label for install method
+ * Uses explicit i18n keys instead of dynamic string concatenation for better i18n plugin support
+ */
+function getInstallMethodLabel(method: InstallMethod): string {
+  switch (method) {
+    case 'npm':
+      return i18n.t('installation:installMethodNpm')
+    case 'homebrew':
+      return i18n.t('installation:installMethodHomebrew')
+    case 'curl':
+      return i18n.t('installation:installMethodCurl')
+    case 'powershell':
+      return i18n.t('installation:installMethodPowershell')
+    case 'cmd':
+      return i18n.t('installation:installMethodCmd')
+    default:
+      return method
+  }
+}
+
+/**
  * Get install method options with localized labels
  */
 function getInstallMethodOptions(codeType: CodeType, recommendedMethods: InstallMethod[]): Array<{ title: string, value: InstallMethod, description?: string }> {
@@ -506,9 +527,10 @@ function getInstallMethodOptions(codeType: CodeType, recommendedMethods: Install
 
   return availableMethods.map((method) => {
     const isTopRecommended = method === topRecommended
+    const methodLabel = getInstallMethodLabel(method)
     const title = isTopRecommended
-      ? `${i18n.t(`installation:installMethod${method.charAt(0).toUpperCase() + method.slice(1)}`)} ${ansis.green(`[${i18n.t('installation:recommendedMethod')}]`)}`
-      : i18n.t(`installation:installMethod${method.charAt(0).toUpperCase() + method.slice(1)}`)
+      ? `${methodLabel} ${ansis.green(`[${i18n.t('installation:recommendedMethod')}]`)}`
+      : methodLabel
 
     return {
       title,

@@ -397,6 +397,26 @@ describe('installer utilities', () => {
 
       await expect(installClaudeCode()).rejects.toThrow('Failed to install Claude Code')
     })
+
+    it('should show Termux and WSL hints after interactive installation flow', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(false)
+      vi.mocked(platform.isTermux).mockReturnValue(true)
+      vi.mocked(platform.getTermuxPrefix).mockReturnValue('/data/data/com.termux/files/usr')
+      vi.mocked(platform.isWSL).mockReturnValue(true)
+      vi.mocked(platform.getWSLInfo).mockReturnValue({ distro: 'Ubuntu' } as any)
+      mockInquirer.prompt.mockResolvedValueOnce({ method: 'npm' })
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: '',
+        stderr: '',
+      } as any)
+
+      await installClaudeCode()
+
+      const logCalls = vi.mocked(console.log).mock.calls.map(call => String(call[0]))
+      expect(logCalls.some(message => message.includes('/data/data/com.termux/files/usr'))).toBe(true)
+      expect(logCalls.some(message => message.includes('Claude Code successfully installed in WSL environment'))).toBe(true)
+    })
   })
 
   describe('installCodex', () => {

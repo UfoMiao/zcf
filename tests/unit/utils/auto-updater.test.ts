@@ -1,5 +1,3 @@
-import { promisify } from 'node:util'
-import ora from 'ora'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { checkAndUpdateTools, updateCcr, updateClaudeCode, updateCometixLine } from '../../../src/utils/auto-updater'
 import { promptBoolean } from '../../../src/utils/toggle-prompt'
@@ -10,8 +8,10 @@ vi.mock('node:child_process', () => ({
   exec: vi.fn(),
 }))
 
+const execAsyncMock = vi.hoisted(() => vi.fn())
+
 vi.mock('node:util', () => ({
-  promisify: vi.fn(),
+  promisify: vi.fn(() => execAsyncMock),
 }))
 
 vi.mock('ansis', () => ({
@@ -27,13 +27,15 @@ vi.mock('ansis', () => ({
   },
 }))
 
+const oraMock = vi.hoisted(() => vi.fn(() => ({
+  start: vi.fn().mockReturnThis(),
+  stop: vi.fn(),
+  succeed: vi.fn(),
+  fail: vi.fn(),
+})))
+
 vi.mock('ora', () => ({
-  default: vi.fn(() => ({
-    start: vi.fn().mockReturnThis(),
-    stop: vi.fn(),
-    succeed: vi.fn(),
-    fail: vi.fn(),
-  })),
+  default: oraMock,
 }))
 
 vi.mock('../../../src/i18n', () => ({
@@ -50,6 +52,11 @@ vi.mock('../../../src/utils/version-checker', () => ({
   checkCcrVersion: vi.fn(),
   checkClaudeCodeVersion: vi.fn(),
   checkCometixLineVersion: vi.fn(),
+  handleDuplicateInstallations: vi.fn().mockResolvedValue({
+    hadDuplicates: false,
+    resolved: true,
+    action: 'no-duplicates',
+  }),
 }))
 
 vi.mock('../../../src/utils/toggle-prompt', () => ({
@@ -59,6 +66,7 @@ vi.mock('../../../src/utils/toggle-prompt', () => ({
 // Mock console methods
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(() => {})
 const mockConsoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+const mockConsoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
 interface MockSpinner {
   start: any
@@ -91,15 +99,13 @@ describe('auto-updater', () => {
       fail: vi.fn(),
     }
 
-    const execAsync = vi.fn();
-    // Mock promisify to return our mock
-    (promisify as any).mockReturnValue(execAsync);
+    execAsyncMock.mockReset()
 
     // Setup ora mock to return our controlled spinner
-    (ora as any).mockReturnValue(mockSpinner)
+    oraMock.mockReturnValue(mockSpinner)
 
     testMocks = {
-      execAsync,
+      execAsync: execAsyncMock,
       oraSpinner: mockSpinner,
       checkCcrVersion: (checkCcrVersion as any),
       checkClaudeCodeVersion: (checkClaudeCodeVersion as any),
@@ -197,6 +203,21 @@ describe('auto-updater', () => {
       expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('confirmUpdate'),
       }))
+    })
+
+    it('should update CCR automatically when skipPrompt is enabled', async () => {
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+
+      const result = await updateCcr(false, true)
+
+      expect(result).toBe(true)
+      expect(testMocks.execAsync).toHaveBeenCalledWith('npm update -g @musistudio/claude-code-router')
     })
 
     it('should handle update execution errors gracefully', async () => {
@@ -630,6 +651,34 @@ describe('auto-updater', () => {
       )
       expect(summaryLogCalled).toBe(false)
     })
+
+    it('should warn when duplicate installation detection fails', async () => {
+      const versionCheckerModule = await import('../../../src/utils/version-checker')
+      vi.mocked(versionCheckerModule.handleDuplicateInstallations).mockRejectedValueOnce(new Error('duplicate failure'))
+
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+
+      await checkAndUpdateTools(false)
+
+      expect(mockConsoleWarn).toHaveBeenCalledWith(expect.stringContaining('Duplicate installation check failed'))
+    })
   })
 
   describe('error handling edge cases', () => {
@@ -700,6 +749,38 @@ describe('auto-updater', () => {
       expect(result).toBe(false)
       expect(testMocks.oraSpinner.fail).toHaveBeenCalledWith('updater:checkFailed')
     })
+
+    it('should use brew upgrade for Homebrew installations', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: true,
+      })
+      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+
+      const result = await updateClaudeCode(false, true)
+
+      expect(result).toBe(true)
+      expect(testMocks.execAsync).toHaveBeenCalledWith('brew upgrade --cask claude-code')
+    })
+
+    it('should run claude update for npm installations', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: false,
+      })
+      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+
+      const result = await updateClaudeCode(false, true)
+
+      expect(result).toBe(true)
+      expect(testMocks.execAsync).toHaveBeenCalledWith('claude update')
+    })
   })
 
   describe('updateCometixLine - additional branches', () => {
@@ -743,6 +824,21 @@ describe('auto-updater', () => {
 
       expect(result).toBe(false)
       expect(testMocks.oraSpinner.fail).toHaveBeenCalledWith('updater:checkFailed')
+    })
+
+    it('should perform CometixLine update automatically when skipPrompt is true', async () => {
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+
+      const result = await updateCometixLine(false, true)
+
+      expect(result).toBe(true)
+      expect(testMocks.execAsync).toHaveBeenCalledWith('npm update -g @cometix/ccline')
     })
   })
 })

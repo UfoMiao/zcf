@@ -355,6 +355,53 @@ describe('init command', () => {
         expect(testMocks.getInstallationStatus).toHaveBeenCalled()
         expect(testMocks.installClaudeCode).toHaveBeenCalled()
       })
+
+      it('should invoke version check when Claude Code is already installed', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: true,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({})
+        testMocks.existsSync.mockReturnValue(false)
+        testMocks.resolveTemplateLanguage.mockResolvedValue('en')
+        testMocks.resolveAiOutputLanguage.mockResolvedValue('english')
+        testMocks.selectMcpServices.mockResolvedValue([])
+        testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+
+        await init({ skipBanner: true, skipPrompt: true })
+
+        expect(testMocks.checkClaudeCodeVersionAndPrompt).toHaveBeenCalledWith(true)
+      })
+
+      it('should skip version check when no installation exists', async () => {
+        const { init } = await import('../../../src/commands/init')
+
+        testMocks.getInstallationStatus.mockResolvedValue({
+          hasGlobal: false,
+          hasLocal: false,
+          localPath: '/Users/test/.claude/local/claude',
+        })
+        testMocks.readZcfConfig.mockReturnValue({})
+        testMocks.existsSync.mockReturnValue(false)
+        testMocks.resolveTemplateLanguage.mockResolvedValue('en')
+        testMocks.resolveAiOutputLanguage.mockResolvedValue('english')
+        testMocks.promptBoolean.mockResolvedValueOnce(true)
+        testMocks.selectMcpServices.mockResolvedValue([])
+        testMocks.selectAndInstallWorkflows.mockResolvedValue(undefined)
+        testMocks.configureOutputStyle.mockResolvedValue(undefined)
+        testMocks.updateZcfConfig.mockResolvedValue(undefined)
+        testMocks.installClaudeCode.mockResolvedValue(undefined)
+        testMocks.handleMultipleInstallations.mockResolvedValue('none')
+
+        await init({ skipBanner: true })
+
+        expect(testMocks.checkClaudeCodeVersionAndPrompt).not.toHaveBeenCalled()
+      })
     })
 
     describe('configuration handling', () => {

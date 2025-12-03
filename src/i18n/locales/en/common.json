@@ -15,5 +15,6 @@
   "backupCreated": "📁 Configuration backup created: {{path}}",
   "current": "current",
   "claudeCode": "Claude Code",
-  "codex": "Codex"
+  "codex": "Codex",
+  "yes": "Yes"
 }
