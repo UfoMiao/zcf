@@ -10,6 +10,14 @@ vi.mock('inquirer', () => ({
 vi.mock('../../../src/utils/installer', () => ({
   getInstallationStatus: vi.fn(),
   installClaudeCode: vi.fn(),
+  verifyInstallation: vi.fn(() => ({
+    success: true,
+    commandPath: '/usr/local/bin/claude',
+    version: '2.0.56',
+    needsSymlink: false,
+    symlinkCreated: false,
+  })),
+  displayVerificationResult: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/config', () => ({
@@ -60,6 +68,8 @@ vi.mock('../../../src/constants', () => ({
   CLAUDE_DIR: '/test/.claude',
   DEFAULT_CODE_TOOL_TYPE: 'claude-code',
   SETTINGS_FILE: '/test/.claude/settings.json',
+  ZCF_CONFIG_DIR: '/test/.ufomiao/zcf',
+  ZCF_CONFIG_FILE: '/test/.ufomiao/zcf/config.toml',
   CODE_TOOL_BANNERS: {
     'claude-code': 'ZCF',
   },

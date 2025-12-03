@@ -14,6 +14,14 @@ vi.mock('../../../src/utils/installer', () => ({
   isClaudeCodeInstalled: vi.fn(),
   getInstallationStatus: vi.fn(),
   removeLocalClaudeCode: vi.fn(),
+  verifyInstallation: vi.fn(() => ({
+    success: true,
+    commandPath: '/usr/local/bin/claude',
+    version: '2.0.56',
+    needsSymlink: false,
+    symlinkCreated: false,
+  })),
+  displayVerificationResult: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/installation-manager', () => ({

@@ -605,4 +605,152 @@ ID=ubuntu`)
       expect(result).toBe(true)
     })
   })
+
+  describe('normalizeTomlPath', () => {
+    it('should convert backslashes to forward slashes', () => {
+      const { normalizeTomlPath } = platformUtils
+      expect(normalizeTomlPath('C:\\Windows\\System32')).toBe('C:/Windows/System32')
+    })
+
+    it('should collapse multiple backslashes', () => {
+      const { normalizeTomlPath } = platformUtils
+      expect(normalizeTomlPath('C:\\\\Windows\\\\System32')).toBe('C:/Windows/System32')
+    })
+
+    it('should collapse multiple forward slashes', () => {
+      const { normalizeTomlPath } = platformUtils
+      expect(normalizeTomlPath('C://Windows//System32')).toBe('C:/Windows/System32')
+    })
+
+    it('should handle mixed slashes', () => {
+      const { normalizeTomlPath } = platformUtils
+      expect(normalizeTomlPath('C:\\Windows/System32\\test')).toBe('C:/Windows/System32/test')
+    })
+
+    it('should handle already normalized paths', () => {
+      const { normalizeTomlPath } = platformUtils
+      expect(normalizeTomlPath('/usr/local/bin')).toBe('/usr/local/bin')
+    })
+  })
+
+  describe('getRecommendedInstallMethods - comprehensive', () => {
+    it('should recommend curl then npm for Claude Code on Linux', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      vi.mocked(existsSync).mockReturnValue(false)
+      expect(getRecommendedInstallMethods('claude-code')).toEqual(['curl', 'npm'])
+    })
+
+    it('should recommend curl then npm for Claude Code in WSL', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      process.env.WSL_DISTRO_NAME = 'Ubuntu'
+      expect(getRecommendedInstallMethods('claude-code')).toEqual(['curl', 'npm'])
+      delete process.env.WSL_DISTRO_NAME
+    })
+
+    it('should recommend homebrew then npm for Codex on macOS', () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+      expect(getRecommendedInstallMethods('codex')).toEqual(['homebrew', 'npm'])
+    })
+
+    it('should recommend npm only for Codex on Windows', () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      expect(getRecommendedInstallMethods('codex')).toEqual(['npm'])
+    })
+
+    it('should recommend npm only for Codex in WSL', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      process.env.WSL_DISTRO_NAME = 'Ubuntu'
+      vi.mocked(existsSync).mockReturnValue(false)
+      expect(getRecommendedInstallMethods('codex')).toEqual(['npm'])
+      delete process.env.WSL_DISTRO_NAME
+    })
+
+    it('should default to npm for unknown code types', () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      vi.mocked(existsSync).mockReturnValue(false)
+      // @ts-expect-error testing unknown type
+      expect(getRecommendedInstallMethods('unknown')).toEqual(['npm'])
+    })
+  })
+
+  describe('findCommandPath - additional scenarios', () => {
+    it('should return first line when multiple paths returned by where', async () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: 'C:\\path\\to\\claude.exe\nC:\\another\\path\\claude.exe',
+        stderr: '',
+      } as any)
+
+      const result = await findCommandPath('claude')
+
+      expect(result).toBe('C:\\path\\to\\claude.exe')
+    })
+
+    it('should check user local bin path', async () => {
+      vi.mocked(platform).mockReturnValue('linux')
+      vi.mocked(exec).mockRejectedValue(new Error('not found'))
+      process.env.HOME = '/home/testuser'
+      vi.mocked(existsSync).mockImplementation((path) => {
+        return path === '/home/testuser/.local/bin/claude'
+      })
+
+      const result = await findCommandPath('claude')
+
+      expect(result).toBe('/home/testuser/.local/bin/claude')
+    })
+  })
+
+  describe('shouldUseSudoForGlobalInstall - edge cases', () => {
+    let originalGetuid: typeof process.getuid | undefined
+
+    beforeEach(() => {
+      originalGetuid = (process as any).getuid
+      vi.mocked(platform).mockReturnValue('linux')
+    })
+
+    afterEach(() => {
+      if (originalGetuid)
+        (process as any).getuid = originalGetuid
+      else
+        delete (process as any).getuid
+    })
+
+    it('should return false in Termux environment', () => {
+      process.env.PREFIX = '/data/data/com.termux/files/usr'
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
+      delete process.env.PREFIX
+    })
+
+    it('should return false when getuid is not a function', () => {
+      delete (process as any).getuid
+      vi.mocked(accessSync).mockImplementation(() => {
+        const err = new Error('EACCES') as NodeJS.ErrnoException
+        err.code = 'EACCES'
+        throw err
+      })
+
+      expect(shouldUseSudoForGlobalInstall()).toBe(false)
+    })
+  })
+
+  describe('getWSLInfo - edge cases', () => {
+    it('should handle /proc/version read errors and return partial info', () => {
+      process.env.WSL_DISTRO_NAME = 'Ubuntu'
+      vi.mocked(existsSync).mockImplementation((path) => {
+        return path === '/proc/version'
+      })
+      vi.mocked(readFileSync).mockImplementation(() => {
+        throw new Error('Permission denied')
+      })
+
+      const info = getWSLInfo()
+
+      expect(info).toEqual({
+        isWSL: true,
+        distro: 'Ubuntu',
+        version: null,
+      })
+    })
+  })
 })

@@ -36,6 +36,13 @@ export async function installClaudeCode(skipMethodSelection: boolean = false): P
       console.log(ansis.gray(`  ${i18n.t('installation:detectedVersion', { version })}`))
     }
 
+    // Verify installation and ensure symlink exists
+    // This handles the case where claude is installed via cask but symlink is missing/broken
+    const verification = await verifyInstallation(codeType)
+    if (verification.symlinkCreated) {
+      displayVerificationResult(verification, codeType)
+    }
+
     // Check for updates after confirming installation
     await updateClaudeCode()
     return
@@ -681,14 +688,31 @@ export interface VerificationResult {
 }
 
 /**
+ * Check if command is directly accessible via which/where (in standard PATH)
+ * This is different from commandExists which also checks Homebrew Caskroom paths
+ */
+async function isCommandInPath(command: string): Promise<boolean> {
+  try {
+    const cmd = getPlatform() === 'windows' ? 'where' : 'which'
+    const res = await exec(cmd, [command])
+    return res.exitCode === 0
+  }
+  catch {
+    return false
+  }
+}
+
+/**
  * Verify installation by checking command availability and version
  * If command is not in PATH but found in Homebrew paths, attempt to create symlink
  */
 export async function verifyInstallation(codeType: CodeType): Promise<VerificationResult> {
   const command = codeType === 'claude-code' ? 'claude' : 'codex'
 
-  // Step 1: Check if command is accessible via which
-  const commandInPath = await commandExists(command)
+  // Step 1: Check if command is accessible via which (directly in PATH)
+  // Use isCommandInPath instead of commandExists to avoid detecting Caskroom paths
+  // which would skip symlink creation
+  const commandInPath = await isCommandInPath(command)
 
   if (commandInPath) {
     // Command found in PATH, verify it works
@@ -702,7 +726,7 @@ export async function verifyInstallation(codeType: CodeType): Promise<Verificati
     }
   }
 
-  // Step 2: Command not in PATH, look for it in Homebrew paths
+  // Step 2: Command not in PATH, look for it in Homebrew paths (including Caskroom)
   if (getPlatform() === 'macos') {
     const homebrewPaths = await getHomebrewCommandPaths(command)
     let foundPath: string | null = null
@@ -815,32 +839,34 @@ export async function createHomebrewSymlink(command: string, sourcePath: string)
 
   const symlinkPath = join(targetDir, command)
 
-  // Check if symlink already exists
-  if (nodeFs.existsSync(symlinkPath)) {
-    try {
-      const stats = nodeFs.lstatSync(symlinkPath)
-      if (stats.isSymbolicLink()) {
-        const existingTarget = nodeFs.readlinkSync(symlinkPath)
-        if (existingTarget === sourcePath) {
-          // Symlink already points to correct location
-          return {
-            success: true,
-            symlinkPath,
-          }
-        }
-        // Remove existing symlink pointing to wrong location
-        nodeFs.unlinkSync(symlinkPath)
-      }
-      else {
-        // File exists but is not a symlink, don't overwrite
+  // Check if symlink already exists using lstat to detect broken symlinks
+  // Note: existsSync returns false for broken symlinks, so we need lstat
+  try {
+    const stats = nodeFs.lstatSync(symlinkPath)
+    if (stats.isSymbolicLink()) {
+      const existingTarget = nodeFs.readlinkSync(symlinkPath)
+      if (existingTarget === sourcePath) {
+        // Symlink already points to correct location
         return {
-          success: false,
-          symlinkPath: null,
-          error: `File already exists at ${symlinkPath} and is not a symlink`,
+          success: true,
+          symlinkPath,
         }
+      }
+      // Remove existing symlink pointing to wrong location (including broken symlinks)
+      nodeFs.unlinkSync(symlinkPath)
+    }
+    else {
+      // File exists but is not a symlink, don't overwrite
+      return {
+        success: false,
+        symlinkPath: null,
+        error: `File already exists at ${symlinkPath} and is not a symlink`,
       }
     }
-    catch (error) {
+  }
+  catch (error: any) {
+    // ENOENT means file doesn't exist, which is fine - we'll create it
+    if (error.code !== 'ENOENT') {
       return {
         success: false,
         symlinkPath: null,

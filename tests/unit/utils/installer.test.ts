@@ -787,4 +787,425 @@ describe('installer utilities', () => {
       expect(typeof createHomebrewSymlink).toBe('function')
     })
   })
+
+  describe('displayVerificationResult', () => {
+    it('should display success message with symlink created', () => {
+      const { displayVerificationResult } = installerModule
+      const result = {
+        success: true,
+        commandPath: '/opt/homebrew/bin/claude',
+        version: '1.0.0',
+        needsSymlink: true,
+        symlinkCreated: true,
+      }
+
+      displayVerificationResult(result, 'claude-code')
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('✔'))
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('/opt/homebrew/bin/claude'))
+    })
+
+    it('should display success message with version only', () => {
+      const { displayVerificationResult } = installerModule
+      const result = {
+        success: true,
+        commandPath: '/usr/local/bin/claude',
+        version: '2.0.0',
+        needsSymlink: false,
+        symlinkCreated: false,
+      }
+
+      displayVerificationResult(result, 'claude-code')
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('2.0.0'))
+    })
+
+    it('should display failure message with command path when available', () => {
+      const { displayVerificationResult } = installerModule
+      const result = {
+        success: false,
+        commandPath: '/opt/homebrew/Cellar/node/20.0.0/bin/claude',
+        version: null,
+        needsSymlink: true,
+        symlinkCreated: false,
+        error: 'Failed to create symlink',
+      }
+
+      displayVerificationResult(result, 'claude-code')
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('⚠'))
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('/opt/homebrew/Cellar'))
+    })
+
+    it('should display failure message with manual symlink hint', () => {
+      const { displayVerificationResult } = installerModule
+      const result = {
+        success: false,
+        commandPath: null,
+        version: null,
+        needsSymlink: true,
+        symlinkCreated: false,
+      }
+
+      displayVerificationResult(result, 'codex')
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('⚠'))
+    })
+
+    it('should display failure message with error', () => {
+      const { displayVerificationResult } = installerModule
+      const result = {
+        success: false,
+        commandPath: null,
+        version: null,
+        needsSymlink: false,
+        symlinkCreated: false,
+        error: 'Command not found in any known location',
+      }
+
+      displayVerificationResult(result, 'codex')
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Command not found'))
+    })
+  })
+
+  describe('installClaudeCode - WSL branches', () => {
+    it('should show generic WSL message when distro is not available', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValueOnce(false)
+      vi.mocked(platform.isWSL).mockReturnValue(true)
+      vi.mocked(platform.getWSLInfo).mockReturnValue({ isWSL: true, distro: null, version: '1.0' } as any)
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+
+      await installClaudeCode(true)
+
+      expect(platform.getWSLInfo).toHaveBeenCalled()
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('ℹ'))
+    })
+
+    it('should show WSL success message after installation', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValueOnce(false)
+      vi.mocked(platform.isWSL).mockReturnValue(true)
+      vi.mocked(platform.getWSLInfo).mockReturnValue(null)
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+
+      await installClaudeCode(true)
+
+      // WSL success message should be shown
+      expect(console.log).toHaveBeenCalled()
+    })
+  })
+
+  describe('installClaudeCode - method selection flow', () => {
+    it('should cancel installation when no method selected', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValueOnce(false)
+      mockInquirer.prompt.mockResolvedValueOnce({ method: null })
+
+      await installClaudeCode()
+
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('cancelled'))
+    })
+  })
+
+  describe('uninstallCodeTool - additional scenarios', () => {
+    it('should detect Homebrew installation for Claude Code when method not in config', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue(null)
+      vi.mocked(exec)
+        .mockResolvedValueOnce({ exitCode: 0, stdout: 'claude-code' } as any) // brew list --cask
+        .mockResolvedValueOnce({ exitCode: 0 } as any) // brew uninstall
+
+      const success = await uninstallCodeTool('claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('brew', ['list', '--cask', 'claude-code'])
+      expect(exec).toHaveBeenCalledWith('brew', ['uninstall', '--cask', 'claude-code'])
+    })
+
+    it('should detect Homebrew installation for Codex when method not in config', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue(null)
+      vi.mocked(exec)
+        .mockRejectedValueOnce(new Error('not homebrew')) // brew list --cask codex fails
+        .mockResolvedValue({ exitCode: 0 } as any) // npm uninstall
+
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'npm',
+        args: ['uninstall', '-g', '@openai/codex'],
+        usedSudo: false,
+      })
+
+      const success = await uninstallCodeTool('codex')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('npm', ['uninstall', '-g', '@openai/codex'])
+    })
+
+    it('should handle native method on macOS with Homebrew fallback', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'native' })
+      vi.mocked(platform.getPlatform).mockReturnValue('macos')
+      vi.mocked(exec)
+        .mockResolvedValueOnce({ exitCode: 0, stdout: 'claude-code' } as any) // brew list --cask
+        .mockResolvedValueOnce({ exitCode: 0 } as any) // brew uninstall
+
+      const success = await uninstallCodeTool('claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('brew', ['uninstall', '--cask', 'claude-code'])
+    })
+
+    it('should handle native method on macOS without Homebrew', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'native' })
+      vi.mocked(platform.getPlatform).mockReturnValue('macos')
+      vi.mocked(exec)
+        .mockRejectedValueOnce(new Error('not homebrew')) // brew list fails
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '/usr/local/bin/claude\n' } as any) // which
+        .mockResolvedValueOnce({ exitCode: 0 } as any) // rm
+
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'rm',
+        args: ['-f', '/usr/local/bin/claude'],
+        usedSudo: false,
+      })
+
+      const success = await uninstallCodeTool('claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('which', ['claude'])
+      expect(exec).toHaveBeenCalledWith('rm', ['-f', '/usr/local/bin/claude'])
+    })
+
+    it('should use sudo when removing binary on Linux', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'manual' })
+      vi.mocked(platform.getPlatform).mockReturnValue('linux')
+      vi.mocked(exec)
+        .mockResolvedValueOnce({ exitCode: 0, stdout: '/usr/local/bin/claude\n' } as any) // which
+        .mockResolvedValueOnce({ exitCode: 0 } as any) // sudo rm
+
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'sudo',
+        args: ['rm', '-f', '/usr/local/bin/claude'],
+        usedSudo: true,
+      })
+
+      const success = await uninstallCodeTool('claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('sudo', ['rm', '-f', '/usr/local/bin/claude'])
+    })
+
+    it('should handle uninstall failure with error message', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue({ installMethod: 'npm' })
+      vi.mocked(exec).mockRejectedValue(new Error('npm uninstall failed'))
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'npm',
+        args: ['uninstall', '-g', '@anthropic-ai/claude-code'],
+        usedSudo: false,
+      })
+
+      const success = await uninstallCodeTool('claude-code')
+
+      expect(success).toBe(false)
+      expect(console.error).toHaveBeenCalledWith(expect.stringContaining('npm uninstall failed'))
+    })
+  })
+
+  describe('verifyInstallation - additional scenarios', () => {
+    it('should find command in Homebrew paths and attempt symlink creation', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(false)
+      vi.mocked(platform.getPlatform).mockReturnValue('macos')
+      vi.mocked(platform.getHomebrewCommandPaths).mockResolvedValue([
+        '/opt/homebrew/bin/claude',
+        '/opt/homebrew/Cellar/node/20.0.0/bin/claude',
+      ])
+      vi.mocked(fsOps.exists)
+        .mockReturnValueOnce(false) // first path
+        .mockReturnValueOnce(true) // second path - found
+
+      // Mock the actual node:fs operations for symlink
+      const nodeFs = await import('node:fs')
+      vi.mocked(nodeFs.existsSync).mockReturnValue(true) // /opt/homebrew/bin exists
+      vi.mocked(nodeFs.symlinkSync).mockImplementation(() => {})
+      // which command should fail to trigger Homebrew path check
+      vi.mocked(exec).mockResolvedValue({ exitCode: 1, stdout: '', stderr: '' } as any)
+
+      const result = await verifyInstallation('claude-code')
+
+      expect(platform.getHomebrewCommandPaths).toHaveBeenCalledWith('claude')
+      expect(result.needsSymlink).toBe(true)
+    })
+
+    it('should check Termux paths when in Termux environment', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(false)
+      vi.mocked(platform.getPlatform).mockReturnValue('linux')
+      vi.mocked(platform.isTermux).mockReturnValue(true)
+      vi.mocked(platform.getTermuxPrefix).mockReturnValue('/data/data/com.termux/files/usr')
+      vi.mocked(platform.getHomebrewCommandPaths).mockResolvedValue([])
+      vi.mocked(fsOps.exists)
+        .mockReturnValueOnce(true) // Termux path found
+      // First call is `which codex` - should fail to trigger Termux path check
+      // Second call is `codex --version` - should succeed for version detection
+      vi.mocked(exec)
+        .mockResolvedValueOnce({ exitCode: 1, stdout: '', stderr: '' } as any) // which fails
+        .mockResolvedValueOnce({ exitCode: 0, stdout: 'codex 0.1.0', stderr: '' } as any) // version check
+
+      const result = await verifyInstallation('codex')
+
+      expect(result.success).toBe(true)
+      expect(result.commandPath).toBe('/data/data/com.termux/files/usr/bin/codex')
+    })
+
+    it('should return failure when command not found anywhere', async () => {
+      vi.mocked(platform.commandExists).mockResolvedValue(false)
+      vi.mocked(platform.getPlatform).mockReturnValue('linux')
+      vi.mocked(platform.isTermux).mockReturnValue(false)
+      vi.mocked(platform.getHomebrewCommandPaths).mockResolvedValue([])
+      vi.mocked(fsOps.exists).mockReturnValue(false)
+      // which command should fail
+      vi.mocked(exec).mockResolvedValue({ exitCode: 1, stdout: '', stderr: '' } as any)
+
+      const result = await verifyInstallation('codex')
+
+      expect(result.success).toBe(false)
+      expect(result.commandPath).toBeNull()
+      expect(result.error).toBe('Command not found in any known location')
+    })
+  })
+
+  describe('executeInstallMethod - additional scenarios', () => {
+    it('should install Claude Code via curl', async () => {
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+      claudeConfigMock.readMcpConfig.mockReturnValue({})
+
+      const success = await executeInstallMethod('curl', 'claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('bash', ['-c', 'curl -fsSL https://claude.ai/install.sh | bash'])
+    })
+
+    it('should install Claude Code via powershell', async () => {
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+      claudeConfigMock.readMcpConfig.mockReturnValue({})
+
+      const success = await executeInstallMethod('powershell', 'claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('powershell', ['-Command', 'irm https://claude.ai/install.ps1 | iex'])
+    })
+
+    it('should install Claude Code via cmd', async () => {
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+      claudeConfigMock.readMcpConfig.mockReturnValue({})
+
+      const success = await executeInstallMethod('cmd', 'claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('cmd', ['/c', 'curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd'])
+    })
+
+    it('should fall back to npm for Codex with powershell method', async () => {
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'npm',
+        args: ['install', '-g', '@openai/codex', '--force'],
+        usedSudo: false,
+      })
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+
+      const success = await executeInstallMethod('powershell', 'codex')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex', '--force'])
+    })
+
+    it('should fall back to npm for Codex with cmd method', async () => {
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'npm',
+        args: ['install', '-g', '@openai/codex', '--force'],
+        usedSudo: false,
+      })
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+
+      const success = await executeInstallMethod('cmd', 'codex')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex', '--force'])
+    })
+
+    it('should handle unsupported install method', async () => {
+      vi.mocked(exec).mockRejectedValue(new Error('Unsupported install method: unknown'))
+
+      const success = await executeInstallMethod('unknown' as any, 'claude-code')
+
+      expect(success).toBe(false)
+    })
+
+    it('should use sudo for npm installation when needed', async () => {
+      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
+      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
+        command: 'sudo',
+        args: ['npm', 'install', '-g', '@anthropic-ai/claude-code', '--force'],
+        usedSudo: true,
+      })
+      vi.mocked(platform.commandExists).mockResolvedValue(true)
+      claudeConfigMock.readMcpConfig.mockReturnValue({})
+
+      const success = await executeInstallMethod('npm', 'claude-code')
+
+      expect(success).toBe(true)
+      expect(exec).toHaveBeenCalledWith('sudo', ['npm', 'install', '-g', '@anthropic-ai/claude-code', '--force'])
+    })
+  })
+
+  describe('detectInstalledVersion - additional scenarios', () => {
+    it('should return null when command exits with non-zero code', async () => {
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 1,
+        stdout: '',
+        stderr: 'command not found',
+      } as any)
+
+      const version = await detectInstalledVersion('claude-code')
+
+      expect(version).toBeNull()
+    })
+
+    it('should return null when stdout is empty', async () => {
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: '',
+        stderr: '',
+      } as any)
+
+      const version = await detectInstalledVersion('codex')
+
+      expect(version).toBeNull()
+    })
+  })
+
+  describe('setInstallMethod - additional scenarios', () => {
+    it('should create new config when none exists', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue(null)
+
+      await setInstallMethod('npm', 'claude-code')
+
+      expect(claudeConfigMock.writeMcpConfig).toHaveBeenCalledWith({
+        mcpServers: {},
+        installMethod: 'npm-global',
+      })
+    })
+
+    it('should handle config write errors gracefully', async () => {
+      claudeConfigMock.readMcpConfig.mockReturnValue({})
+      claudeConfigMock.writeMcpConfig.mockImplementation(() => {
+        throw new Error('Write failed')
+      })
+
+      // Should not throw, just log error
+      await setInstallMethod('npm', 'claude-code')
+
+      expect(console.error).toHaveBeenCalledWith('Failed to set installMethod:', expect.any(Error))
+    })
+  })
 })

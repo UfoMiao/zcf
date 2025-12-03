@@ -504,6 +504,22 @@ export async function init(options: InitOptions = {}): Promise<void> {
         }
         // If only global exists, no action needed
       }
+
+      // Verify installation and ensure symlink exists (handles cask installations without symlink)
+      // This runs regardless of skipPrompt mode to fix broken/missing symlinks
+      const { verifyInstallation, displayVerificationResult } = await import('../utils/installer')
+      const verification = await verifyInstallation('claude-code')
+      if (verification.symlinkCreated) {
+        console.log(ansis.green(`✔ ${i18n.t('installation:alreadyInstalled')}`))
+        displayVerificationResult(verification, 'claude-code')
+      }
+      else if (!verification.success) {
+        // If verification failed, try to install
+        console.log(ansis.yellow(`⚠ ${i18n.t('installation:verificationFailed')}`))
+        if (verification.error) {
+          console.log(ansis.gray(`  ${verification.error}`))
+        }
+      }
     }
     else {
       // No installation found - install Claude Code

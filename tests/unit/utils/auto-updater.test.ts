@@ -540,6 +540,96 @@ describe('auto-updater', () => {
         expect.stringContaining('CCR check failed'),
       )
     })
+
+    it('should show update summary with successful tools', async () => {
+      // All tools up to date (success)
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+
+      await checkAndUpdateTools(true)
+
+      // Should show update summary in skip-prompt mode
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:updateSummary'),
+      )
+      // Should show success for each tool
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:success'),
+      )
+    })
+
+    it('should show update summary with failed tools', async () => {
+      // CCR fails, others succeed
+      testMocks.checkCcrVersion.mockRejectedValue(new Error('CCR check failed'))
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+
+      await checkAndUpdateTools(true)
+
+      // Should show update summary
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:updateSummary'),
+      )
+      // Should show failed status for CCR
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:failed'),
+      )
+    })
+
+    it('should not show update summary in interactive mode', async () => {
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '1.0.0',
+        needsUpdate: false,
+      })
+
+      await checkAndUpdateTools(false)
+
+      // Should NOT show update summary in interactive mode
+      const summaryLogCalled = mockConsoleLog.mock.calls.some(
+        call => call[0] && call[0].includes('updater:updateSummary'),
+      )
+      expect(summaryLogCalled).toBe(false)
+    })
   })
 
   describe('error handling edge cases', () => {
@@ -563,6 +653,96 @@ describe('auto-updater', () => {
       expect(mockConsoleError).toHaveBeenCalledWith(
         expect.stringContaining('null'),
       )
+    })
+  })
+
+  describe('updateClaudeCode - additional branches', () => {
+    it('should return false when cannot check latest version', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: null,
+        needsUpdate: true,
+        isHomebrew: false,
+      })
+
+      const result = await updateClaudeCode()
+
+      expect(result).toBe(false)
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:cannotCheckVersion'),
+      )
+    })
+
+    it('should return true when user declines update', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: false,
+      })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(false)
+
+      const result = await updateClaudeCode()
+
+      expect(result).toBe(true)
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:updateSkipped'),
+      )
+    })
+
+    it('should handle version check failure', async () => {
+      testMocks.checkClaudeCodeVersion.mockRejectedValue(new Error('Version check failed'))
+
+      const result = await updateClaudeCode()
+
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalledWith('updater:checkFailed')
+    })
+  })
+
+  describe('updateCometixLine - additional branches', () => {
+    it('should return true when user declines update', async () => {
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(false)
+
+      const result = await updateCometixLine()
+
+      expect(result).toBe(true)
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:updateSkipped'),
+      )
+    })
+
+    it('should return false when cannot check latest version', async () => {
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: null,
+        needsUpdate: true,
+      })
+
+      const result = await updateCometixLine()
+
+      expect(result).toBe(false)
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:cannotCheckVersion'),
+      )
+    })
+
+    it('should handle version check failure', async () => {
+      testMocks.checkCometixLineVersion.mockRejectedValue(new Error('Version check failed'))
+
+      const result = await updateCometixLine()
+
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalledWith('updater:checkFailed')
     })
   })
 })

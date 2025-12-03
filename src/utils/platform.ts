@@ -306,6 +306,7 @@ export async function commandExists(command: string): Promise<boolean> {
  * Get possible Homebrew paths for a command on macOS
  * Handles both Apple Silicon (/opt/homebrew) and Intel (/usr/local) installations
  * Also checks npm global paths within Homebrew's node installation
+ * and Homebrew cask installations in Caskroom
  */
 export async function getHomebrewCommandPaths(command: string): Promise<string[]> {
   const paths: string[] = []
@@ -334,6 +335,34 @@ export async function getHomebrewCommandPaths(command: string): Promise<string[]
       }
       catch {
         // Ignore read errors
+      }
+    }
+  }
+
+  // Check Homebrew Caskroom for cask-installed applications
+  // This handles the case where apps are installed via `brew install --cask`
+  // e.g., /opt/homebrew/Caskroom/claude-code/2.0.56/claude
+  const caskNameMap: Record<string, string> = {
+    claude: 'claude-code',
+    codex: 'codex',
+  }
+
+  const caskName = caskNameMap[command]
+  if (caskName) {
+    for (const prefix of homebrewPrefixes) {
+      const caskroomPath = `${prefix}/Caskroom/${caskName}`
+      if (nodeFs.existsSync(caskroomPath)) {
+        try {
+          const versions = nodeFs.readdirSync(caskroomPath)
+            .filter(v => !v.startsWith('.')) // Exclude hidden files like .metadata
+          for (const version of versions) {
+            const binPath = `${caskroomPath}/${version}/${command}`
+            paths.push(binPath)
+          }
+        }
+        catch {
+          // Ignore read errors
+        }
       }
     }
   }
