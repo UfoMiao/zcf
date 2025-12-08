@@ -66,7 +66,16 @@ This command works **without any package manager/build tools**, using only **Git
 4. **Commit Message Generation (Conventional with Optional Emoji)**
    - Auto-infer `type` (`feat`/`fix`/`docs`/`refactor`/`test`/`chore`/`perf`/`style`/`ci`/`revert`...) and optional `scope`.
    - Generate message header: `[<emoji>] <type>(<scope>)?: <subject>` (first line ≤ 72 chars, imperative mood, emoji included only with `--emoji` flag).
-   - Generate message body: bullet points (motivation, implementation details, impact scope, BREAKING CHANGE if any).
+   - Generate message body:
+     - Must have a blank line after the subject.
+     - Use list format, each item starts with `-`.
+     - Each item **must use imperative verb-first sentences** (e.g., "add…", "fix…", "update…").
+     - **Colon-separated formats are prohibited** (e.g., ~~"Feature: description"~~, ~~"Impl: content"~~).
+     - Describe the motivation, implementation details, or impact scope (3 items or fewer recommended).
+   - Generate message footer (if any):
+     - Must have a blank line after the Body.
+     - **BREAKING CHANGE**: If there are breaking changes, must include `BREAKING CHANGE: <description>`, or add exclamation mark after type (e.g., `feat!:`).
+     - Other footers use git trailer format (e.g., `Closes #123`, `Refs: #456`, `Reviewed-by: Name`).
    - Select message language to match the predominant language in Git history. Inspect recent commit subjects (e.g., `git log -n 50 --pretty=%s`) to decide Chinese vs English; if unclear, fall back to the repository's primary locale or English.
    - Write draft to `.git/COMMIT_EDITMSG` for use with `git commit`.
 
@@ -83,8 +92,8 @@ This command works **without any package manager/build tools**, using only **Git
 
 - **Atomic commits**: One commit does one thing, easier to trace and review.
 - **Group before committing**: Split by directory/module/feature.
-- **Clear subject**: First line ≤ 72 chars, imperative mood (e.g., "add... / fix...").
-- **Body with context**: Explain motivation, solution, impact scope, risks, and next steps.
+- **Clear subject**: First line ≤ 72 chars, imperative mood.
+- **Body with context**: Explain motivation, solution, and impact scope (colon-separated formats prohibited).
 - **Follow Conventional Commits**: `<type>(<scope>): <subject>`.
 
 ---
@@ -122,6 +131,7 @@ This command works **without any package manager/build tools**, using only **Git
 
 **Good (with --emoji)**
 
+```text
 - ✨ feat(ui): add user authentication flow
 - 🐛 fix(api): handle token refresh race condition
 - 📝 docs: update API usage examples
@@ -129,9 +139,11 @@ This command works **without any package manager/build tools**, using only **Git
 - ✅ test: add unit tests for rate limiter
 - 🔧 chore: update git hooks and repository settings
 - ⏪️ revert: revert "feat(core): introduce streaming API"
+```
 
 **Good (without --emoji)**
 
+```text
 - feat(ui): add user authentication flow
 - fix(api): handle token refresh race condition
 - docs: update API usage examples
@@ -139,13 +151,48 @@ This command works **without any package manager/build tools**, using only **Git
 - test: add unit tests for rate limiter
 - chore: update git hooks and repository settings
 - revert: revert "feat(core): introduce streaming API"
+```
+
+**Good (with Body)**
+
+```text
+feat(auth): add OAuth2 login flow
+
+- implement Google and GitHub third-party login
+- add user authorization callback handling
+- improve login state persistence logic
+
+Closes #42
+```
+
+```text
+fix(ui): fix button spacing on mobile devices
+
+- adjust button padding to fit small screens
+- fix styling issues on iOS Safari
+- optimize touch target size
+```
+
+**Good (with BREAKING CHANGE)**
+
+```text
+feat(api)!: redesign authentication API
+
+- migrate from session-based to JWT authentication
+- update all endpoint signatures
+- remove deprecated login methods
+
+BREAKING CHANGE: authentication API has been completely redesigned, all clients must update their integration
+```
 
 **Split Example**
 
+```text
 - `feat(types): add new type defs for payment method`
 - `docs: update API docs for new types`
 - `test: add unit tests for payment types`
 - `fix: address linter warnings in new files` ← (if your repo has hook errors)
+```
 
 ---
 

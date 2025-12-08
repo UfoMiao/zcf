@@ -66,7 +66,16 @@ argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <s
 4. **提交信息生成（Conventional 规范，可选 Emoji）**
    - 自动推断 `type`（`feat`/`fix`/`docs`/`refactor`/`test`/`chore`/`perf`/`style`/`ci`/`revert` …）与可选 `scope`。
    - 生成消息头：`[<emoji>] <type>(<scope>)?: <subject>`（首行 ≤ 72 字符，祈使语气，仅在使用 `--emoji` 时包含 emoji）。
-   - 生成消息体：要点列表（动机、实现要点、影响范围、BREAKING CHANGE 如有）。
+   - 生成消息体：
+     - 必须在 subject 之后空一行。
+     - 使用列表格式，每项以 `-` 开头。
+     - 每项**必须使用动词开头的祈使句**（如 "add…"、"fix…"、"update…"）。
+     - **禁止使用冒号分隔的格式**（如 ~~"Feature: description"~~、~~"Impl: content"~~）。
+     - 说明变更的动机、实现要点或影响范围（3 项以内为宜）。
+   - 生成消息脚注（如有）：
+     - 必须在 Body 之后空一行。
+     - **BREAKING CHANGE**：若存在破坏性变更，必须包含 `BREAKING CHANGE: <description>`，或在类型后添加感叹号（如 `feat!:`）。
+     - 其它脚注采用 git trailer 格式（如 `Closes #123`、`Refs: #456`、`Reviewed-by: Name`）。
    - 根据 Git 历史提交的主要语言选择提交信息语言。优先检查最近提交主题（例如 `git log -n 50 --pretty=%s`）判断中文/英文；若无法判断，则回退到仓库主要语言或英文。
    - 将草稿写入 `.git/COMMIT_EDITMSG`，并用于 `git commit`。
 
@@ -83,8 +92,8 @@ argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <s
 
 - **Atomic commits**：一次提交只做一件事，便于回溯与审阅。
 - **先分组再提交**：按目录/模块/功能点拆分。
-- **清晰主题**：首行 ≤ 72 字符，祈使语气（如 “add… / fix…”）。
-- **正文含上下文**：说明动机、方案、影响范围、风险与后续工作。
+- **清晰主题**：首行 ≤ 72 字符，祈使语气。
+- **正文含上下文**：说明动机、方案、影响范围（禁止冒号分隔格式）。
 - **遵循 Conventional Commits**：`<type>(<scope>): <subject>`。
 
 ---
@@ -122,6 +131,7 @@ argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <s
 
 **Good (使用 --emoji)**
 
+```text
 - ✨ feat(ui): add user authentication flow
 - 🐛 fix(api): handle token refresh race condition
 - 📝 docs: update API usage examples
@@ -129,9 +139,11 @@ argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <s
 - ✅ test: add unit tests for rate limiter
 - 🔧 chore: update git hooks and repository settings
 - ⏪️ revert: revert "feat(core): introduce streaming API"
+```
 
 **Good (不使用 --emoji)**
 
+```text
 - feat(ui): add user authentication flow
 - fix(api): handle token refresh race condition
 - docs: update API usage examples
@@ -139,13 +151,48 @@ argument-hint: [--no-verify] [--all] [--amend] [--signoff] [--emoji] [--scope <s
 - test: add unit tests for rate limiter
 - chore: update git hooks and repository settings
 - revert: revert "feat(core): introduce streaming API"
+```
+
+**Good (包含 Body)**
+
+```text
+feat(auth): add OAuth2 login flow
+
+- implement Google and GitHub third-party login
+- add user authorization callback handling
+- improve login state persistence logic
+
+Closes #42
+```
+
+```text
+fix(ui): fix button spacing on mobile devices
+
+- adjust button padding to fit small screens
+- fix styling issues on iOS Safari
+- optimize touch target size
+```
+
+**Good (包含 BREAKING CHANGE)**
+
+```text
+feat(api)!: redesign authentication API
+
+- migrate from session-based to JWT authentication
+- update all endpoint signatures
+- remove deprecated login methods
+
+BREAKING CHANGE: authentication API has been completely redesigned, all clients must update their integration
+```
 
 **Split Example**
 
+```text
 - `feat(types): add new type defs for payment method`
 - `docs: update API docs for new types`
 - `test: add unit tests for payment types`
 - `fix: address linter warnings in new files` ←（如你的仓库有钩子报错）
+```
 
 ---
 
