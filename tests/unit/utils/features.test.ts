@@ -343,12 +343,19 @@ describe('features utilities', () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ model: 'custom' })
         .mockResolvedValueOnce({ primaryModel: 'claude-3-5-sonnet-20241022' })
-        .mockResolvedValueOnce({ fastModel: 'claude-3-haiku-20240307' })
+        .mockResolvedValueOnce({ haikuModel: 'claude-3-haiku-20240307' })
+        .mockResolvedValueOnce({ sonnetModel: 'claude-3.5-sonnet-20241022' })
+        .mockResolvedValueOnce({ opusModel: 'claude-opus-4-5' })
 
       await configureDefaultModelFeature()
 
-      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
-      expect(updateCustomModel).toHaveBeenCalledWith('claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307')
+      expect(inquirer.prompt).toHaveBeenCalledTimes(5)
+      expect(updateCustomModel).toHaveBeenCalledWith(
+        'claude-3-5-sonnet-20241022',
+        'claude-3-haiku-20240307',
+        'claude-3.5-sonnet-20241022',
+        'claude-opus-4-5',
+      )
     })
 
     it('should handle custom model with empty inputs (skip both)', async () => {
@@ -360,13 +367,15 @@ describe('features utilities', () => {
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ model: 'custom' })
         .mockResolvedValueOnce({ primaryModel: '' })
-        .mockResolvedValueOnce({ fastModel: '' })
+        .mockResolvedValueOnce({ haikuModel: '' })
+        .mockResolvedValueOnce({ sonnetModel: '' })
+        .mockResolvedValueOnce({ opusModel: '' })
 
       // This should not modify configuration when both are skipped
       await configureDefaultModelFeature()
 
       // Should show skip message but not call updateDefaultModel
-      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(5)
     })
   })
 

@@ -7,8 +7,11 @@ export interface ClaudeCodeProfile {
   authType: 'api_key' | 'auth_token' | 'ccr_proxy'
   apiKey?: string // API key (stored in plain text)
   baseUrl?: string // Custom API URL
-  primaryModel?: string // Primary model (e.g., claude-sonnet-4-5)
-  fastModel?: string // Fast model (e.g., claude-haiku-4-5)
+  // Model configuration
+  primaryModel?: string // Default model (maps to ANTHROPIC_MODEL)
+  defaultHaikuModel?: string // Maps to ANTHROPIC_DEFAULT_HAIKU_MODEL
+  defaultSonnetModel?: string // Maps to ANTHROPIC_DEFAULT_SONNET_MODEL
+  defaultOpusModel?: string // Maps to ANTHROPIC_DEFAULT_OPUS_MODEL
   /**
    * Derived at runtime, not persisted to config file
    */
@@ -27,7 +30,9 @@ export interface ApiConfigDefinition {
   url?: string // Custom URL (optional - auto-filled from provider preset)
   default?: boolean // Set as default profile (optional)
   primaryModel?: string // Primary model (optional - auto-filled from provider preset, e.g., claude-sonnet-4-5)
-  fastModel?: string // Fast model (optional - auto-filled from provider preset, e.g., claude-haiku-4-5)
+  defaultHaikuModel?: string // Maps to ANTHROPIC_DEFAULT_HAIKU_MODEL
+  defaultSonnetModel?: string // Maps to ANTHROPIC_DEFAULT_SONNET_MODEL
+  defaultOpusModel?: string // Maps to ANTHROPIC_DEFAULT_OPUS_MODEL
   provider?: string // API provider preset name (optional - 302ai, packycode, glm, minimax, kimi, custom)
 }
 

@@ -4,7 +4,9 @@ describe('custom Model i18n Translations', () => {
   const requiredTranslationKeys = [
     'configuration:customModelOption',
     'configuration:enterPrimaryModel',
-    'configuration:enterFastModel',
+    'configuration:enterHaikuModel',
+    'configuration:enterSonnetModel',
+    'configuration:enterOpusModel',
     'configuration:customModelSkipped',
     'configuration:customModelConfigured',
   ]

@@ -205,7 +205,7 @@ async function handleAddProfile(): Promise<void> {
   ])
 
   // For custom provider, prompt for model configuration
-  let modelConfig: { primaryModel: string, fastModel: string } | null = null
+  let modelConfig: { primaryModel: string, haikuModel: string, sonnetModel: string, opusModel: string } | null = null
   if (selectedProvider === 'custom') {
     const { promptCustomModels } = await import('./features')
     modelConfig = await promptCustomModels()
@@ -236,17 +236,19 @@ async function handleAddProfile(): Promise<void> {
     if (modelConfig.primaryModel.trim()) {
       profile.primaryModel = modelConfig.primaryModel.trim()
     }
-    if (modelConfig.fastModel.trim()) {
-      profile.fastModel = modelConfig.fastModel.trim()
-    }
+    if (modelConfig.haikuModel.trim())
+      profile.defaultHaikuModel = modelConfig.haikuModel.trim()
+    if (modelConfig.sonnetModel.trim())
+      profile.defaultSonnetModel = modelConfig.sonnetModel.trim()
+    if (modelConfig.opusModel.trim())
+      profile.defaultOpusModel = modelConfig.opusModel.trim()
   }
   else if (prefilledDefaultModels?.length) {
     if (prefilledDefaultModels[0]?.trim()) {
       profile.primaryModel = prefilledDefaultModels[0].trim()
     }
-    if (prefilledDefaultModels[1]?.trim()) {
-      profile.fastModel = prefilledDefaultModels[1].trim()
-    }
+    if (prefilledDefaultModels[1]?.trim())
+      profile.defaultHaikuModel = prefilledDefaultModels[1].trim()
   }
 
   const existingProfile = ClaudeCodeConfigManager.getProfileByName(profile.name)
@@ -274,7 +276,9 @@ async function handleAddProfile(): Promise<void> {
       apiKey: profile.apiKey,
       baseUrl: profile.baseUrl,
       primaryModel: profile.primaryModel,
-      fastModel: profile.fastModel,
+      defaultHaikuModel: profile.defaultHaikuModel,
+      defaultSonnetModel: profile.defaultSonnetModel,
+      defaultOpusModel: profile.defaultOpusModel,
     })
 
     if (updateResult.success) {
@@ -418,12 +422,14 @@ async function handleEditProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
   ])
 
   // Prompt for model configuration (for non-CCR profiles)
-  let modelConfig: { primaryModel: string, fastModel: string } | null = null
+  let modelConfig: { primaryModel: string, haikuModel: string, sonnetModel: string, opusModel: string } | null = null
   if (selectedProfile.authType !== 'ccr_proxy') {
     const { promptCustomModels } = await import('./features')
     modelConfig = await promptCustomModels(
       selectedProfile.primaryModel,
-      selectedProfile.fastModel,
+      selectedProfile.defaultHaikuModel,
+      selectedProfile.defaultSonnetModel,
+      selectedProfile.defaultOpusModel,
     )
   }
 
@@ -441,9 +447,12 @@ async function handleEditProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
       if (modelConfig.primaryModel.trim()) {
         updateData.primaryModel = modelConfig.primaryModel.trim()
       }
-      if (modelConfig.fastModel.trim()) {
-        updateData.fastModel = modelConfig.fastModel.trim()
-      }
+      if (modelConfig.haikuModel.trim())
+        updateData.defaultHaikuModel = modelConfig.haikuModel.trim()
+      if (modelConfig.sonnetModel.trim())
+        updateData.defaultSonnetModel = modelConfig.sonnetModel.trim()
+      if (modelConfig.opusModel.trim())
+        updateData.defaultOpusModel = modelConfig.opusModel.trim()
     }
   }
 
@@ -574,12 +583,14 @@ async function handleCopyProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
   }>(questions)
 
   // Prompt for model configuration (for non-CCR profiles)
-  let modelConfig: { primaryModel: string, fastModel: string } | null = null
+  let modelConfig: { primaryModel: string, haikuModel: string, sonnetModel: string, opusModel: string } | null = null
   if (selectedProfile.authType !== 'ccr_proxy') {
     const { promptCustomModels } = await import('./features')
     modelConfig = await promptCustomModels(
       selectedProfile.primaryModel,
-      selectedProfile.fastModel,
+      selectedProfile.defaultHaikuModel,
+      selectedProfile.defaultSonnetModel,
+      selectedProfile.defaultOpusModel,
     )
   }
 
@@ -607,9 +618,12 @@ async function handleCopyProfile(profiles: ClaudeCodeProfile[]): Promise<void> {
       if (modelConfig.primaryModel.trim()) {
         copiedProfile.primaryModel = modelConfig.primaryModel.trim()
       }
-      if (modelConfig.fastModel.trim()) {
-        copiedProfile.fastModel = modelConfig.fastModel.trim()
-      }
+      if (modelConfig.haikuModel.trim())
+        copiedProfile.defaultHaikuModel = modelConfig.haikuModel.trim()
+      if (modelConfig.sonnetModel.trim())
+        copiedProfile.defaultSonnetModel = modelConfig.sonnetModel.trim()
+      if (modelConfig.opusModel.trim())
+        copiedProfile.defaultOpusModel = modelConfig.opusModel.trim()
     }
   }
 

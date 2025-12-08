@@ -4,6 +4,7 @@ import type { ZcfTomlConfig } from '../types/toml-config'
 import dayjs from 'dayjs'
 import { join } from 'pathe'
 import { SETTINGS_FILE, ZCF_CONFIG_DIR, ZCF_CONFIG_FILE } from '../constants'
+import { clearModelEnv } from './config.model-keys'
 import { copyFile, ensureDir, exists } from './fs-operations'
 import { readJsonConfig } from './json-config'
 import { createDefaultTomlConfig, readDefaultTomlConfig, writeTomlConfig } from './zcf-config'
@@ -218,6 +219,9 @@ export class ClaudeCodeConfigManager {
       if (!settings.env)
         settings.env = {}
 
+      // Clean model variables upfront; will re-set based on profile below
+      clearModelEnv(settings.env)
+
       let shouldRestartCcr = false
 
       if (profile.authType === 'api_key') {
@@ -253,18 +257,26 @@ export class ClaudeCodeConfigManager {
       }
 
       // Apply model configuration if provided
-      if (profile.primaryModel) {
-        settings.env.ANTHROPIC_MODEL = profile.primaryModel
-      }
-      else {
-        delete settings.env.ANTHROPIC_MODEL
-      }
+      const hasModelConfig = Boolean(
+        profile.primaryModel
+        || profile.defaultHaikuModel
+        || profile.defaultSonnetModel
+        || profile.defaultOpusModel,
+      )
 
-      if (profile.fastModel) {
-        settings.env.ANTHROPIC_SMALL_FAST_MODEL = profile.fastModel
+      if (hasModelConfig) {
+        if (profile.primaryModel)
+          settings.env.ANTHROPIC_MODEL = profile.primaryModel
+        if (profile.defaultHaikuModel)
+          settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = profile.defaultHaikuModel
+        if (profile.defaultSonnetModel)
+          settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL = profile.defaultSonnetModel
+        if (profile.defaultOpusModel)
+          settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL = profile.defaultOpusModel
       }
       else {
-        delete settings.env.ANTHROPIC_SMALL_FAST_MODEL
+        // No model config in profile, ensure all model envs are removed
+        clearModelEnv(settings.env)
       }
 
       writeJsonConfig(SETTINGS_FILE, settings)
@@ -304,8 +316,12 @@ export class ClaudeCodeConfigManager {
       sanitized.baseUrl = profile.baseUrl
     if (profile.primaryModel)
       sanitized.primaryModel = profile.primaryModel
-    if (profile.fastModel)
-      sanitized.fastModel = profile.fastModel
+    if (profile.defaultHaikuModel)
+      sanitized.defaultHaikuModel = profile.defaultHaikuModel
+    if (profile.defaultSonnetModel)
+      sanitized.defaultSonnetModel = profile.defaultSonnetModel
+    if (profile.defaultOpusModel)
+      sanitized.defaultOpusModel = profile.defaultOpusModel
 
     return sanitized
   }

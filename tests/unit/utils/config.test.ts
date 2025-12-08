@@ -274,9 +274,7 @@ describe('config utilities', () => {
 
       expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
         SETTINGS_FILE,
-        expect.not.objectContaining({
-          model: expect.anything(),
-        }),
+        expect.not.objectContaining({ model: expect.anything() }),
       )
     })
 
@@ -284,7 +282,9 @@ describe('config utilities', () => {
       const mockSettings = {
         env: {
           ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
-          ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-3-haiku-20240307',
+          ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-3.5-sonnet',
+          ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-3-opus',
           ANTHROPIC_API_KEY: 'keep-this-key',
         },
       }
@@ -304,34 +304,9 @@ describe('config utilities', () => {
       const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
       expect(writtenConfig).not.toHaveProperty('model')
       expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
-      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
-    })
-
-    it('should clean environment variables when switching from custom to opus', () => {
-      const mockSettings = {
-        env: {
-          ANTHROPIC_MODEL: 'custom-model',
-          ANTHROPIC_SMALL_FAST_MODEL: 'custom-fast-model',
-          ANTHROPIC_API_KEY: 'keep-this',
-        },
-      }
-      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
-
-      updateDefaultModel('opus')
-
-      expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
-        SETTINGS_FILE,
-        expect.objectContaining({
-          model: 'opus',
-          env: expect.objectContaining({
-            ANTHROPIC_API_KEY: 'keep-this',
-          }),
-        }),
-      )
-
-      const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
-      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
-      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_DEFAULT_HAIKU_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_DEFAULT_SONNET_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_DEFAULT_OPUS_MODEL')
     })
 
     it('should not modify configuration when no custom environment variables exist', () => {
@@ -391,7 +366,7 @@ describe('config utilities', () => {
         model: 'custom',
         env: {
           ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
-          ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-3-haiku-20240307',
           ANTHROPIC_API_KEY: 'keep-this-key',
         },
       }
@@ -401,7 +376,9 @@ describe('config utilities', () => {
 
       const writtenConfig = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
       expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_MODEL')
-      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_SMALL_FAST_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_DEFAULT_HAIKU_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_DEFAULT_SONNET_MODEL')
+      expect(writtenConfig.env).not.toHaveProperty('ANTHROPIC_DEFAULT_OPUS_MODEL')
       expect(writtenConfig.env).toHaveProperty('ANTHROPIC_API_KEY', 'keep-this-key')
     })
   })
@@ -412,14 +389,16 @@ describe('config utilities', () => {
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
 
       // This test should fail initially (Red phase) - function doesn't exist yet
-      updateCustomModel('claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307')
+      updateCustomModel('claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20241022')
 
       expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
         SETTINGS_FILE,
         expect.objectContaining({
           env: expect.objectContaining({
             ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
-            ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+            ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-3-haiku-20240307',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-3-5-sonnet-20241022',
+            ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-3-opus-20241022',
           }),
         }),
       )
@@ -435,7 +414,7 @@ describe('config utilities', () => {
       const mockSettings = { model: 'opus' }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
 
-      updateCustomModel('claude-3-5-sonnet-20241022', '')
+      updateCustomModel('claude-3-5-sonnet-20241022', '', '', '')
 
       expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
         SETTINGS_FILE,
@@ -451,7 +430,7 @@ describe('config utilities', () => {
       const mockSettings = { model: 'opus' }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
 
-      updateCustomModel('', '')
+      updateCustomModel('', '', '', '')
 
       expect(jsonConfig.writeJsonConfig).not.toHaveBeenCalled()
     })
@@ -466,7 +445,7 @@ describe('config utilities', () => {
       }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
 
-      updateCustomModel('new-model', 'new-fast-model')
+      updateCustomModel('new-model', 'new-haiku', 'new-sonnet', 'new-opus')
 
       expect(jsonConfig.writeJsonConfig).toHaveBeenCalledWith(
         SETTINGS_FILE,
@@ -475,7 +454,9 @@ describe('config utilities', () => {
             ANTHROPIC_API_KEY: 'existing-key',
             CUSTOM_VAR: 'keep-this',
             ANTHROPIC_MODEL: 'new-model',
-            ANTHROPIC_SMALL_FAST_MODEL: 'new-fast-model',
+            ANTHROPIC_DEFAULT_HAIKU_MODEL: 'new-haiku',
+            ANTHROPIC_DEFAULT_SONNET_MODEL: 'new-sonnet',
+            ANTHROPIC_DEFAULT_OPUS_MODEL: 'new-opus',
           }),
         }),
       )
@@ -670,7 +651,7 @@ describe('config utilities', () => {
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({
         env: {
           ANTHROPIC_MODEL: 'claude-3-5-sonnet-20241022',
-          ANTHROPIC_SMALL_FAST_MODEL: 'claude-3-haiku-20240307',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-3-haiku-20240307',
         },
       })
 

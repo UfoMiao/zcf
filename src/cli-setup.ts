@@ -27,7 +27,9 @@ export interface CliOptions {
   apiKey?: string // Used for both API key and auth token
   apiUrl?: string
   apiModel?: string // Primary API model (e.g., claude-sonnet-4-5)
-  apiFastModel?: string // Fast API model (e.g., claude-haiku-4-5)
+  apiHaikuModel?: string // Default Haiku model
+  apiSonnetModel?: string // Default Sonnet model
+  apiOpusModel?: string // Default Opus model
   mcpServices?: string // default: all non-key services, "skip" to skip all
   workflows?: string // default: all workflows, "skip" to skip all
   outputStyles?: string // default: all custom styles
@@ -145,7 +147,9 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.green('--api-key, -k')} <key>       ${i18n.t('cli:help.optionDescriptions.apiKey')}`,
       `  ${ansis.green('--api-url, -u')} <url>       ${i18n.t('cli:help.optionDescriptions.customApiUrl')}`,
       `  ${ansis.green('--api-model, -M')} <model>   ${i18n.t('cli:help.optionDescriptions.apiModel')} (e.g., claude-sonnet-4-5)`,
-      `  ${ansis.green('--api-fast-model, -F')} <model> ${i18n.t('cli:help.optionDescriptions.apiFastModel')} (e.g., claude-haiku-4-5)`,
+      `  ${ansis.green('--api-haiku-model, -H')} <model> ${i18n.t('cli:help.optionDescriptions.apiHaikuModel')} (e.g., claude-haiku-4-5)`,
+      `  ${ansis.green('--api-sonnet-model, -S')} <model> ${i18n.t('cli:help.optionDescriptions.apiSonnetModel')} (e.g., claude-sonnet-4-5)`,
+      `  ${ansis.green('--api-opus-model, -O')} <model> ${i18n.t('cli:help.optionDescriptions.apiOpusModel')} (e.g., claude-opus-4-5)`,
       `  ${ansis.green('--ai-output-lang, -a')} <lang> ${i18n.t('cli:help.optionDescriptions.aiOutputLanguage')}`,
       `  ${ansis.green('--all-lang, -g')} <lang>     ${i18n.t('cli:help.optionDescriptions.setAllLanguageParams')}`,
       `  ${ansis.green('--config-action, -r')} <action> ${i18n.t('cli:help.optionDescriptions.configHandling')} (${i18n.t('cli:help.defaults.prefix')} backup)`,
@@ -244,7 +248,9 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--api-key, -k <key>', 'API key (used for both API key and auth token types)')
     .option('--api-url, -u <url>', 'Custom API URL')
     .option('--api-model, -M <model>', 'Primary API model (e.g., claude-sonnet-4-5)')
-    .option('--api-fast-model, -F <model>', 'Fast API model (e.g., claude-haiku-4-5)')
+    .option('--api-haiku-model, -H <model>', 'Default Haiku model (e.g., claude-haiku-4-5)')
+    .option('--api-sonnet-model, -S <model>', 'Default Sonnet model (e.g., claude-sonnet-4-5)')
+    .option('--api-opus-model, -O <model>', 'Default Opus model (e.g., claude-opus-4-5)')
     .option('--provider, -p <provider>', 'API provider preset (302ai, glm, minimax, kimi, custom)')
     .option('--mcp-services, -m <services>', `Comma-separated MCP services to install (context7,mcp-deepwiki,Playwright,exa), "skip" to skip all, "all" for all non-key services, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--workflows, -w <workflows>', `Comma-separated workflows to install (sixStepsWorkflow,featPlanUx,gitWorkflow,bmadWorkflow), "skip" to skip all, "all" for all workflows, ${i18n.t('cli:help.defaults.prefix')} all`)

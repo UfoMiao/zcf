@@ -12,7 +12,7 @@
   "invalidWorkflow": "Invalid workflow: {workflow}. Available workflows: {validWorkflows}",
   "invalidModel": "Invalid model: {model}. Expected 'opus', 'sonnet', or 'sonnet[1m]'",
   "invalidApiModel": "Invalid API model parameter: {value}",
-  "invalidApiFastModel": "Invalid fast model parameter: {value}",
+  "invalidModelParam": "Invalid model parameter {key}: {value}",
   "invalidEnvConfig": "Invalid env configuration: expected object",
   "invalidBaseUrl": "Invalid ANTHROPIC_BASE_URL: expected string",
   "invalidApiKeyConfig": "Invalid ANTHROPIC_API_KEY: expected string",

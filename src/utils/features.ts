@@ -369,16 +369,16 @@ export async function configureDefaultModelFeature(): Promise<void> {
 
   if (model === 'custom') {
     // Handle custom model input
-    const { primaryModel, fastModel } = await promptCustomModels()
+    const { primaryModel, haikuModel, sonnetModel, opusModel } = await promptCustomModels()
 
-    // Check if both inputs are skipped
-    if (!primaryModel.trim() && !fastModel.trim()) {
+    // Check if all inputs are skipped
+    if (!primaryModel.trim() && !haikuModel.trim() && !sonnetModel.trim() && !opusModel.trim()) {
       console.log(ansis.yellow(`⚠ ${i18n.t('configuration:customModelSkipped') || 'Custom model configuration skipped'}`))
       return
     }
 
     // Use the new updateCustomModel function to handle environment variables
-    updateCustomModel(primaryModel, fastModel)
+    updateCustomModel(primaryModel, haikuModel, sonnetModel, opusModel)
     console.log(ansis.green(`✔ ${i18n.t('configuration:customModelConfigured') || 'Custom model configuration completed'}`))
     return
   }
@@ -389,9 +389,14 @@ export async function configureDefaultModelFeature(): Promise<void> {
 
 /**
  * Prompt user for custom model names
- * @returns Object containing primaryModel and fastModel strings (may be empty for skip)
+ * @returns Object containing primaryModel and default model strings (may be empty for skip)
  */
-export async function promptCustomModels(defaultPrimaryModel?: string, defaultFastModel?: string): Promise<{ primaryModel: string, fastModel: string }> {
+export async function promptCustomModels(
+  defaultPrimaryModel?: string,
+  defaultHaikuModel?: string,
+  defaultSonnetModel?: string,
+  defaultOpusModel?: string,
+): Promise<{ primaryModel: string, haikuModel: string, sonnetModel: string, opusModel: string }> {
   const { primaryModel } = await inquirer.prompt<{ primaryModel: string }>({
     type: 'input',
     name: 'primaryModel',
@@ -399,14 +404,28 @@ export async function promptCustomModels(defaultPrimaryModel?: string, defaultFa
     default: defaultPrimaryModel || '',
   })
 
-  const { fastModel } = await inquirer.prompt<{ fastModel: string }>({
+  const { haikuModel } = await inquirer.prompt<{ haikuModel: string }>({
     type: 'input',
-    name: 'fastModel',
-    message: `${i18n.t('configuration:enterFastModel')}${i18n.t('common:emptyToSkip')}`,
-    default: defaultFastModel || '',
+    name: 'haikuModel',
+    message: `${i18n.t('configuration:enterHaikuModel')}${i18n.t('common:emptyToSkip')}`,
+    default: defaultHaikuModel || '',
   })
 
-  return { primaryModel, fastModel }
+  const { sonnetModel } = await inquirer.prompt<{ sonnetModel: string }>({
+    type: 'input',
+    name: 'sonnetModel',
+    message: `${i18n.t('configuration:enterSonnetModel')}${i18n.t('common:emptyToSkip')}`,
+    default: defaultSonnetModel || '',
+  })
+
+  const { opusModel } = await inquirer.prompt<{ opusModel: string }>({
+    type: 'input',
+    name: 'opusModel',
+    message: `${i18n.t('configuration:enterOpusModel')}${i18n.t('common:emptyToSkip')}`,
+    default: defaultOpusModel || '',
+  })
+
+  return { primaryModel, haikuModel, sonnetModel, opusModel }
 }
 
 // Configure AI memory

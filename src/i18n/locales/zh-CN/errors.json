@@ -12,7 +12,7 @@
   "invalidWorkflow": "无效的工作流：{workflow}。可用的工作流：{validWorkflows}",
   "invalidModel": "无效的模型：{model}。期望的值：'opus', 'sonnet', 或 'sonnet[1m]'",
   "invalidApiModel": "无效的 API 模型参数：{value}",
-  "invalidApiFastModel": "无效的快速模型参数：{value}",
+  "invalidModelParam": "无效的模型参数 {key}：{value}",
   "invalidEnvConfig": "无效的环境配置：期望对象类型",
   "invalidBaseUrl": "无效的 ANTHROPIC_BASE_URL：期望字符串类型",
   "invalidApiKeyConfig": "无效的 ANTHROPIC_API_KEY：期望字符串类型",

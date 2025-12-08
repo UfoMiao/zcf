@@ -65,7 +65,9 @@ export interface InitOptions {
   apiKey?: string // Used for both API key and auth token
   apiUrl?: string
   apiModel?: string // Primary API model (e.g., claude-sonnet-4-5)
-  apiFastModel?: string // Fast API model (e.g., claude-haiku-4-5)
+  apiHaikuModel?: string // Default Haiku model
+  apiSonnetModel?: string // Default Sonnet model
+  apiOpusModel?: string // Default Opus model
   provider?: string // API provider preset (302ai, glm, minimax, kimi, custom)
   mcpServices?: string[] | string | boolean
   workflows?: string[] | string | boolean
@@ -166,16 +168,18 @@ export async function validateSkipPromptOptions(options: InitOptions): Promise<v
   }
 
   // Validate API model parameters
-  if (options.apiModel && typeof options.apiModel !== 'string') {
-    throw new Error(
-      i18n.t('errors:invalidApiModel', { value: options.apiModel }),
-    )
-  }
-
-  if (options.apiFastModel && typeof options.apiFastModel !== 'string') {
-    throw new Error(
-      i18n.t('errors:invalidApiFastModel', { value: options.apiFastModel }),
-    )
+  const modelParams: Array<[string, unknown]> = [
+    ['apiModel', options.apiModel],
+    ['apiHaikuModel', options.apiHaikuModel],
+    ['apiSonnetModel', options.apiSonnetModel],
+    ['apiOpusModel', options.apiOpusModel],
+  ]
+  for (const [key, value] of modelParams) {
+    if (value !== undefined && typeof value !== 'string') {
+      if (key === 'apiModel')
+        throw new Error(i18n.t('errors:invalidApiModel', { value }))
+      throw new Error(i18n.t('errors:invalidModelParam', { key, value }))
+    }
   }
 
   // Validate required API parameters (both use apiKey now)
@@ -616,9 +620,12 @@ export async function init(options: InitOptions = {}): Promise<void> {
           }
 
           // Apply provider preset models if available
-          if (preset?.claudeCode?.defaultModels && preset.claudeCode.defaultModels.length >= 2) {
-            options.apiModel = options.apiModel || preset.claudeCode.defaultModels[0]
-            options.apiFastModel = options.apiFastModel || preset.claudeCode.defaultModels[1]
+          if (preset?.claudeCode?.defaultModels && preset.claudeCode.defaultModels.length > 0) {
+            const [primary, haiku, sonnet, opus] = preset.claudeCode.defaultModels
+            options.apiModel = options.apiModel || primary
+            options.apiHaikuModel = options.apiHaikuModel || haiku
+            options.apiSonnetModel = options.apiSonnetModel || sonnet
+            options.apiOpusModel = options.apiOpusModel || opus
           }
 
           // Save configuration to ZCF TOML config for persistence and switching
@@ -809,21 +816,27 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 9.5: Configure API models if provided (Claude Code only)
-    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+    const hasModelParams = options.apiModel || options.apiHaikuModel || options.apiSonnetModel || options.apiOpusModel
+    if (hasModelParams && action !== 'docs-only' && codeToolType === 'claude-code') {
       if (options.skipPrompt) {
         // In skip-prompt mode, configure models
         const { updateCustomModel } = await import('../utils/config')
         updateCustomModel(
           options.apiModel || undefined,
-          options.apiFastModel || undefined,
+          options.apiHaikuModel || undefined,
+          options.apiSonnetModel || undefined,
+          options.apiOpusModel || undefined,
         )
         console.log(ansis.green(`✔ ${i18n.t('api:modelConfigSuccess')}`))
         if (options.apiModel) {
           console.log(ansis.gray(`  ${i18n.t('api:primaryModel')}: ${options.apiModel}`))
         }
-        if (options.apiFastModel) {
-          console.log(ansis.gray(`  ${i18n.t('api:fastModel')}: ${options.apiFastModel}`))
-        }
+        if (options.apiHaikuModel)
+          console.log(ansis.gray(`  Haiku: ${options.apiHaikuModel}`))
+        if (options.apiSonnetModel)
+          console.log(ansis.gray(`  Sonnet: ${options.apiSonnetModel}`))
+        if (options.apiOpusModel)
+          console.log(ansis.gray(`  Opus: ${options.apiOpusModel}`))
       }
     }
 
@@ -1212,12 +1225,14 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
  * @param provider - Optional provider name
  * @param options - Command line options for models
  * @param options.apiModel - Primary API model
- * @param options.apiFastModel - Fast API model
+ * @param options.apiHaikuModel - Default Haiku model
+ * @param options.apiSonnetModel - Default Sonnet model
+ * @param options.apiOpusModel - Default Opus model
  */
 async function saveSingleConfigToToml(
   apiConfig: { authType: 'api_key' | 'auth_token', key: string, url?: string },
   provider?: string,
-  options?: { apiModel?: string, apiFastModel?: string },
+  options?: { apiModel?: string, apiHaikuModel?: string, apiSonnetModel?: string, apiOpusModel?: string },
 ): Promise<void> {
   try {
     const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
@@ -1245,7 +1260,7 @@ async function saveSingleConfigToToml(
 async function convertSingleConfigToProfile(
   apiConfig: { authType: 'api_key' | 'auth_token', key: string, url?: string },
   provider?: string,
-  options?: { apiModel?: string, apiFastModel?: string },
+  options?: { apiModel?: string, apiHaikuModel?: string, apiSonnetModel?: string, apiOpusModel?: string },
 ): Promise<ClaudeCodeProfile> {
   const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
 
@@ -1257,7 +1272,9 @@ async function convertSingleConfigToProfile(
   // Apply provider preset if specified
   let baseUrl = apiConfig.url || API_DEFAULT_URL
   let primaryModel = options?.apiModel
-  let fastModel = options?.apiFastModel
+  let defaultHaikuModel = options?.apiHaikuModel
+  let defaultSonnetModel = options?.apiSonnetModel
+  let defaultOpusModel = options?.apiOpusModel
   let authType = apiConfig.authType
 
   if (provider && provider !== 'custom') {
@@ -1267,9 +1284,12 @@ async function convertSingleConfigToProfile(
     if (preset?.claudeCode) {
       baseUrl = apiConfig.url || preset.claudeCode.baseUrl
       authType = preset.claudeCode.authType
-      if (preset.claudeCode.defaultModels && preset.claudeCode.defaultModels.length >= 2) {
-        primaryModel = primaryModel || preset.claudeCode.defaultModels[0]
-        fastModel = fastModel || preset.claudeCode.defaultModels[1]
+      if (preset.claudeCode.defaultModels && preset.claudeCode.defaultModels.length > 0) {
+        const [p, h, s, o] = preset.claudeCode.defaultModels
+        primaryModel = primaryModel || p
+        defaultHaikuModel = defaultHaikuModel || h
+        defaultSonnetModel = defaultSonnetModel || s
+        defaultOpusModel = defaultOpusModel || o
       }
     }
   }
@@ -1280,7 +1300,9 @@ async function convertSingleConfigToProfile(
     apiKey: apiConfig.key,
     baseUrl,
     primaryModel,
-    fastModel,
+    defaultHaikuModel,
+    defaultSonnetModel,
+    defaultOpusModel,
     id: ClaudeCodeConfigManager.generateProfileId(configName),
   }
 
@@ -1293,7 +1315,9 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
   // Apply provider preset if specified
   let baseUrl = config.url
   let primaryModel = config.primaryModel
-  let fastModel = config.fastModel
+  let defaultHaikuModel = config.defaultHaikuModel
+  let defaultSonnetModel = config.defaultSonnetModel
+  let defaultOpusModel = config.defaultOpusModel
   let authType = config.type || 'api_key'
 
   if (config.provider && config.provider !== 'custom') {
@@ -1303,9 +1327,12 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
     if (preset?.claudeCode) {
       baseUrl = baseUrl || preset.claudeCode.baseUrl
       authType = preset.claudeCode.authType
-      if (preset.claudeCode.defaultModels && preset.claudeCode.defaultModels.length >= 2) {
-        primaryModel = primaryModel || preset.claudeCode.defaultModels[0]
-        fastModel = fastModel || preset.claudeCode.defaultModels[1]
+      if (preset.claudeCode.defaultModels && preset.claudeCode.defaultModels.length > 0) {
+        const [p, h, s, o] = preset.claudeCode.defaultModels
+        primaryModel = primaryModel || p
+        defaultHaikuModel = defaultHaikuModel || h
+        defaultSonnetModel = defaultSonnetModel || s
+        defaultOpusModel = defaultOpusModel || o
       }
     }
   }
@@ -1316,7 +1343,9 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
     apiKey: config.key,
     baseUrl,
     primaryModel,
-    fastModel,
+    defaultHaikuModel,
+    defaultSonnetModel,
+    defaultOpusModel,
     id: ClaudeCodeConfigManager.generateProfileId(config.name!),
   }
 

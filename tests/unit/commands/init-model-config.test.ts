@@ -23,7 +23,9 @@ vi.mock('ansis', () => ({
 interface TestOptions {
   skipPrompt: boolean
   apiModel?: string
-  apiFastModel?: string
+  apiHaikuModel?: string
+  apiSonnetModel?: string
+  apiOpusModel?: string
 }
 
 type ActionType = 'new' | 'backup' | 'merge' | 'docs-only' | 'skip'
@@ -43,23 +45,32 @@ describe('init command - API model configuration logic', () => {
     const options: TestOptions = {
       skipPrompt: true,
       apiModel: 'claude-sonnet-4-5',
-      apiFastModel: 'claude-haiku-4-5',
+      apiHaikuModel: 'claude-haiku-4-5',
+      apiSonnetModel: 'claude-sonnet-4-5',
+      apiOpusModel: 'claude-opus-4-5',
     }
     const action: ActionType = 'new'
     const codeToolType: CodeToolType = 'claude-code'
 
     // This is the exact condition from line 753-754
     // @ts-expect-error - Testing runtime behavior with literal types
-    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+    if ((options.apiModel || options.apiHaikuModel || options.apiSonnetModel || options.apiOpusModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
       if (options.skipPrompt) {
         updateCustomModel(
           options.apiModel || undefined,
-          options.apiFastModel || undefined,
+          options.apiHaikuModel || undefined,
+          options.apiSonnetModel || undefined,
+          options.apiOpusModel || undefined,
         )
       }
     }
 
-    expect(updateCustomModelSpy).toHaveBeenCalledWith('claude-sonnet-4-5', 'claude-haiku-4-5')
+    expect(updateCustomModelSpy).toHaveBeenCalledWith(
+      'claude-sonnet-4-5',
+      'claude-haiku-4-5',
+      'claude-sonnet-4-5',
+      'claude-opus-4-5',
+    )
   })
 
   it('should call updateCustomModel with only primary model', async () => {
@@ -74,40 +85,44 @@ describe('init command - API model configuration logic', () => {
     const codeToolType: CodeToolType = 'claude-code'
 
     // @ts-expect-error - Testing runtime behavior with literal types
-    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+    if ((options.apiModel || options.apiHaikuModel || options.apiSonnetModel || options.apiOpusModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
       if (options.skipPrompt) {
         updateCustomModel(
           options.apiModel || undefined,
-          options.apiFastModel || undefined,
+          options.apiHaikuModel || undefined,
+          options.apiSonnetModel || undefined,
+          options.apiOpusModel || undefined,
         )
       }
     }
 
-    expect(updateCustomModelSpy).toHaveBeenCalledWith('claude-sonnet-4-5', undefined)
+    expect(updateCustomModelSpy).toHaveBeenCalledWith('claude-sonnet-4-5', undefined, undefined, undefined)
   })
 
-  it('should call updateCustomModel with only fast model', async () => {
+  it('should call updateCustomModel with only haiku model', async () => {
     const { updateCustomModel } = await import('../../../src/utils/config')
     const updateCustomModelSpy = vi.mocked(updateCustomModel)
 
     const options: TestOptions = {
       skipPrompt: true,
-      apiFastModel: 'claude-haiku-4-5',
+      apiHaikuModel: 'claude-haiku-4-5',
     }
     const action: ActionType = 'new'
     const codeToolType: CodeToolType = 'claude-code'
 
     // @ts-expect-error - Testing runtime behavior with literal types
-    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+    if ((options.apiModel || options.apiHaikuModel || options.apiSonnetModel || options.apiOpusModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
       if (options.skipPrompt) {
         updateCustomModel(
           options.apiModel || undefined,
-          options.apiFastModel || undefined,
+          options.apiHaikuModel || undefined,
+          options.apiSonnetModel || undefined,
+          options.apiOpusModel || undefined,
         )
       }
     }
 
-    expect(updateCustomModelSpy).toHaveBeenCalledWith(undefined, 'claude-haiku-4-5')
+    expect(updateCustomModelSpy).toHaveBeenCalledWith(undefined, 'claude-haiku-4-5', undefined, undefined)
   })
 
   it('should not call updateCustomModel when action is docs-only', async () => {
@@ -121,11 +136,13 @@ describe('init command - API model configuration logic', () => {
     const action: ActionType = 'docs-only'
     const codeToolType: CodeToolType = 'claude-code'
 
-    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+    if ((options.apiModel || options.apiHaikuModel || options.apiSonnetModel || options.apiOpusModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
       if (options.skipPrompt) {
         updateCustomModel(
           options.apiModel || undefined,
-          options.apiFastModel || undefined,
+          options.apiHaikuModel || undefined,
+          options.apiSonnetModel || undefined,
+          options.apiOpusModel || undefined,
         )
       }
     }
@@ -145,11 +162,13 @@ describe('init command - API model configuration logic', () => {
     const codeToolType: CodeToolType = 'codex'
 
     // @ts-expect-error - Testing runtime behavior with literal types
-    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+    if ((options.apiModel || options.apiHaikuModel || options.apiSonnetModel || options.apiOpusModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
       if (options.skipPrompt) {
         updateCustomModel(
           options.apiModel || undefined,
-          options.apiFastModel || undefined,
+          options.apiHaikuModel || undefined,
+          options.apiSonnetModel || undefined,
+          options.apiOpusModel || undefined,
         )
       }
     }
@@ -169,11 +188,13 @@ describe('init command - API model configuration logic', () => {
     const codeToolType: CodeToolType = 'claude-code'
 
     // @ts-expect-error - Testing runtime behavior with literal types
-    if ((options.apiModel || options.apiFastModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
+    if ((options.apiModel || options.apiHaikuModel || options.apiSonnetModel || options.apiOpusModel) && action !== 'docs-only' && codeToolType === 'claude-code') {
       if (options.skipPrompt) {
         updateCustomModel(
           options.apiModel || undefined,
-          options.apiFastModel || undefined,
+          options.apiHaikuModel || undefined,
+          options.apiSonnetModel || undefined,
+          options.apiOpusModel || undefined,
         )
       }
     }

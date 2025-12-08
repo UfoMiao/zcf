@@ -22,7 +22,9 @@ function queuePromptBooleans(...values: boolean[]) {
 vi.mock('../../../src/utils/features', () => ({
   promptCustomModels: vi.fn().mockResolvedValue({
     primaryModel: 'claude-3-5-sonnet-20241022',
-    fastModel: 'claude-3-5-haiku-20241022',
+    haikuModel: 'claude-3-5-haiku-20241022',
+    sonnetModel: 'claude-3-5-sonnet-20241022',
+    opusModel: 'claude-3-opus-20241022',
   }),
 }))
 vi.mock('../../../src/constants', () => ({
@@ -108,7 +110,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
 
       const addedProfileArg = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls.at(-1)?.[0] as Record<string, any>
       expect(addedProfileArg.primaryModel).toBe(minimaxPreset?.claudeCode?.defaultModels?.[0])
-      expect(addedProfileArg.fastModel).toBe(minimaxPreset?.claudeCode?.defaultModels?.[1])
+      expect(addedProfileArg.defaultHaikuModel).toBe(minimaxPreset?.claudeCode?.defaultModels?.[1])
     })
     it('should show management menu when existing configurations are present', async () => {
       // Mock configuration situation
@@ -876,7 +878,9 @@ describe('claudeCode Incremental Configuration Manager', () => {
       const { promptCustomModels } = await import('../../../src/utils/features')
       vi.mocked(promptCustomModels).mockResolvedValue({
         primaryModel: '',
-        fastModel: '',
+        haikuModel: '',
+        sonnetModel: '',
+        opusModel: '',
       })
 
       vi.mocked(inquirer.prompt)
@@ -898,7 +902,9 @@ describe('claudeCode Incremental Configuration Manager', () => {
 
       const addProfileCall = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls[0][0]
       expect(addProfileCall).not.toHaveProperty('primaryModel')
-      expect(addProfileCall).not.toHaveProperty('fastModel')
+      expect(addProfileCall).not.toHaveProperty('defaultHaikuModel')
+      expect(addProfileCall).not.toHaveProperty('defaultSonnetModel')
+      expect(addProfileCall).not.toHaveProperty('defaultOpusModel')
     })
 
     it('should handle model configuration with only primary model', async () => {
@@ -908,7 +914,9 @@ describe('claudeCode Incremental Configuration Manager', () => {
       const { promptCustomModels } = await import('../../../src/utils/features')
       vi.mocked(promptCustomModels).mockResolvedValue({
         primaryModel: 'claude-3-5-sonnet-20241022',
-        fastModel: '',
+        haikuModel: '',
+        sonnetModel: '',
+        opusModel: '',
       })
 
       vi.mocked(inquirer.prompt)
@@ -930,7 +938,9 @@ describe('claudeCode Incremental Configuration Manager', () => {
 
       const addProfileCall = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls[0][0]
       expect(addProfileCall).toHaveProperty('primaryModel', 'claude-3-5-sonnet-20241022')
-      expect(addProfileCall).not.toHaveProperty('fastModel')
+      expect(addProfileCall).not.toHaveProperty('defaultHaikuModel')
+      expect(addProfileCall).not.toHaveProperty('defaultSonnetModel')
+      expect(addProfileCall).not.toHaveProperty('defaultOpusModel')
     })
 
     it('should continue adding profiles when user confirms', async () => {
@@ -1020,7 +1030,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
             apiKey: 'sk-ant-original-key',
             baseUrl: 'https://api.original.com',
             primaryModel: 'claude-3-5-sonnet-20241022',
-            fastModel: 'claude-3-5-haiku-20241022',
+            defaultHaikuModel: 'claude-3-5-haiku-20241022',
             createdAt: '2025-01-01T00:00:00Z',
             updatedAt: '2025-01-01T00:00:00Z',
           },
@@ -1076,7 +1086,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
             apiKey: 'sk-ant-test-key',
             baseUrl: 'https://api.anthropic.com',
             primaryModel: 'claude-3-opus-20240229',
-            fastModel: 'claude-3-haiku-20240307',
+            defaultHaikuModel: 'claude-3-haiku-20240307',
             createdAt: '2025-01-01T00:00:00Z',
             updatedAt: '2025-01-01T00:00:00Z',
           },
@@ -1088,7 +1098,9 @@ describe('claudeCode Incremental Configuration Manager', () => {
       const { promptCustomModels } = await import('../../../src/utils/features')
       vi.mocked(promptCustomModels).mockResolvedValue({
         primaryModel: 'claude-3-opus-20240229',
-        fastModel: 'claude-3-haiku-20240307',
+        haikuModel: 'claude-3-haiku-20240307',
+        sonnetModel: '',
+        opusModel: '',
       })
 
       vi.mocked(inquirer.prompt)
@@ -1113,7 +1125,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalledWith(
         expect.objectContaining({
           primaryModel: 'claude-3-opus-20240229',
-          fastModel: 'claude-3-haiku-20240307',
+          defaultHaikuModel: 'claude-3-haiku-20240307',
         }),
       )
     })

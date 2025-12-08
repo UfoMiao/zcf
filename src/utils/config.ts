@@ -1,5 +1,6 @@
 import type { AiOutputLanguage } from '../constants'
 import type { ApiConfig, ClaudeSettings } from '../types/config'
+import type { ModelEnvKey } from './config.model-keys'
 import type { CopyDirOptions } from './fs-operations'
 import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
@@ -9,6 +10,7 @@ import { dirname, join } from 'pathe'
 import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, CLAUDE_VSC_CONFIG_FILE, SETTINGS_FILE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { addCompletedOnboarding, setPrimaryApiKey } from './claude-config'
+import { clearModelEnv, MODEL_ENV_KEYS } from './config.model-keys'
 import {
   copyDir,
   copyFile,
@@ -104,6 +106,10 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
     settings.env = {}
   }
 
+  // Always clear model-related environment variables when applying API config
+  // to avoid stale model selections lingering between profiles/configs
+  clearModelEnv(settings.env)
+
   // Update API configuration based on auth type
   if (apiConfig.authType === 'api_key') {
     settings.env.ANTHROPIC_API_KEY = apiConfig.key
@@ -163,11 +169,18 @@ export function mergeConfigs(sourceFile: string, targetFile: string): void {
 /**
  * Update custom model configuration using environment variables
  * @param primaryModel - Primary model name for general tasks
- * @param fastModel - Fast model name for background tasks (optional)
+ * @param haikuModel - Default Haiku model (optional)
+ * @param sonnetModel - Default Sonnet model (optional)
+ * @param opusModel - Default Opus model (optional)
  */
-export function updateCustomModel(primaryModel?: string, fastModel?: string): void {
+export function updateCustomModel(
+  primaryModel?: string,
+  haikuModel?: string,
+  sonnetModel?: string,
+  opusModel?: string,
+): void {
   // Skip if both models are empty
-  if (!primaryModel?.trim() && !fastModel?.trim()) {
+  if (!primaryModel?.trim() && !haikuModel?.trim() && !sonnetModel?.trim() && !opusModel?.trim()) {
     return
   }
 
@@ -184,13 +197,19 @@ export function updateCustomModel(primaryModel?: string, fastModel?: string): vo
   // Initialize env object if it doesn't exist
   settings.env = settings.env || {}
 
+  // Clean existing model-related environment variables
+  clearModelEnv(settings.env)
+
   // Set environment variables only if values are provided
   if (primaryModel?.trim()) {
     settings.env.ANTHROPIC_MODEL = primaryModel.trim()
   }
-  if (fastModel?.trim()) {
-    settings.env.ANTHROPIC_SMALL_FAST_MODEL = fastModel.trim()
-  }
+  if (haikuModel?.trim())
+    settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = haikuModel.trim()
+  if (sonnetModel?.trim())
+    settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL = sonnetModel.trim()
+  if (opusModel?.trim())
+    settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL = opusModel.trim()
 
   writeJsonConfig(SETTINGS_FILE, settings)
 }
@@ -213,22 +232,23 @@ export function updateDefaultModel(model: 'opus' | 'sonnet' | 'sonnet[1m]' | 'de
     settings.env = {}
   }
 
-  // Clean custom model environment variables when switching away from custom
-  if (model !== 'custom' && settings.env) {
-    delete settings.env.ANTHROPIC_MODEL
-    delete settings.env.ANTHROPIC_SMALL_FAST_MODEL
+  // Custom mode: leave environment variables untouched for caller to manage
+  if (model === 'custom') {
+    // Clear legacy model field to avoid conflicts
+    delete settings.model
+    writeJsonConfig(SETTINGS_FILE, settings)
+    return
   }
 
-  // Update model in settings
+  // Clean model-related environment variables when switching away from custom
+  clearModelEnv(settings.env)
+
   if (model === 'default') {
     // Remove model field to let Claude Code auto-select
     delete settings.model
   }
-  else if (model === 'custom') {
-    // For custom model, remove model field (environment variables should be set via updateCustomModel)
-    delete settings.model
-  }
   else {
+    // Restore legacy behavior: set model field for built-in options
     settings.model = model
   }
 
@@ -307,7 +327,8 @@ export function getExistingModelConfig(): 'opus' | 'sonnet' | 'sonnet[1m]' | 'de
   }
 
   // Check if using custom model configuration via environment variables
-  if (settings.env && (settings.env.ANTHROPIC_MODEL || settings.env.ANTHROPIC_SMALL_FAST_MODEL)) {
+  const hasModelEnv = MODEL_ENV_KEYS.some((key: ModelEnvKey) => settings.env?.[key])
+  if (hasModelEnv) {
     return 'custom'
   }
 

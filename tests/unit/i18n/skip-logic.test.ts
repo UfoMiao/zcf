@@ -12,7 +12,9 @@ import { i18n, initI18n } from '../../../src/i18n'
 describe('i18n reusable skip logic', () => {
   const INPUT_PROMPT_KEYS = [
     'configuration:enterPrimaryModel',
-    'configuration:enterFastModel',
+    'configuration:enterHaikuModel',
+    'configuration:enterSonnetModel',
+    'configuration:enterOpusModel',
   ] as const
 
   beforeAll(async () => {

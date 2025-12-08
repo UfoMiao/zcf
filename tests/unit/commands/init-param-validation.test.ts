@@ -16,7 +16,7 @@ vi.mock('../../../src/i18n', () => ({
         'mcp:invalidId': 'Invalid MCP service ID: {{id}}',
         'output:invalidStyle': 'Invalid output style: {{style}}',
         'errors:invalidApiModel': 'Invalid API model parameter: {{value}}',
-        'errors:invalidApiFastModel': 'Invalid fast model parameter: {{value}}',
+        'errors:invalidModelParam': 'Invalid model parameter {{key}}: {{value}}',
       }
 
       const translation = translations[key] || key
@@ -226,24 +226,28 @@ describe('validateSkipPromptOptions', () => {
       expect(options.apiModel).toBe('claude-sonnet-4-5')
     })
 
-    it('should accept valid apiFastModel parameter', () => {
+    it('should accept valid apiHaikuModel parameter', () => {
       options.apiType = 'api_key'
       options.apiKey = 'sk-test'
-      options.apiFastModel = 'claude-haiku-4-5'
+      options.apiHaikuModel = 'claude-haiku-4-5'
 
       expect(() => validateSkipPromptOptions(options)).not.toThrow()
-      expect(options.apiFastModel).toBe('claude-haiku-4-5')
+      expect(options.apiHaikuModel).toBe('claude-haiku-4-5')
     })
 
-    it('should accept both apiModel and apiFastModel together', () => {
+    it('should accept multiple model parameters together', () => {
       options.apiType = 'api_key'
       options.apiKey = 'sk-test'
       options.apiModel = 'claude-sonnet-4-5'
-      options.apiFastModel = 'claude-haiku-4-5'
+      options.apiHaikuModel = 'claude-haiku-4-5'
+      options.apiSonnetModel = 'claude-3.5-sonnet'
+      options.apiOpusModel = 'claude-opus-4-5'
 
       expect(() => validateSkipPromptOptions(options)).not.toThrow()
       expect(options.apiModel).toBe('claude-sonnet-4-5')
-      expect(options.apiFastModel).toBe('claude-haiku-4-5')
+      expect(options.apiHaikuModel).toBe('claude-haiku-4-5')
+      expect(options.apiSonnetModel).toBe('claude-3.5-sonnet')
+      expect(options.apiOpusModel).toBe('claude-opus-4-5')
     })
 
     it('should throw when apiModel is not a string', async () => {
@@ -254,12 +258,12 @@ describe('validateSkipPromptOptions', () => {
       await expect(validateSkipPromptOptions(options)).rejects.toThrow('Invalid API model parameter')
     })
 
-    it('should throw when apiFastModel is not a string', async () => {
+    it('should throw when apiHaikuModel is not a string', async () => {
       options.apiType = 'api_key'
       options.apiKey = 'sk-test'
-      options.apiFastModel = true as any
+      options.apiHaikuModel = true as any
 
-      await expect(validateSkipPromptOptions(options)).rejects.toThrow('Invalid fast model parameter')
+      await expect(validateSkipPromptOptions(options)).rejects.toThrow('Invalid model parameter')
     })
 
     it('should allow model parameters without apiType in non-skip-prompt mode', () => {

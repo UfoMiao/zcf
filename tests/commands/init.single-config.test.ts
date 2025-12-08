@@ -195,7 +195,7 @@ describe('init command - Single Config Save', () => {
         provider: '302ai',
         apiKey: 'sk-test-key',
         apiModel: 'claude-sonnet-4-5',
-        apiFastModel: 'claude-haiku-4-5',
+        apiHaikuModel: 'claude-haiku-4-5',
         configAction: 'new',
         workflows: false,
         mcpServices: false,
@@ -206,7 +206,7 @@ describe('init command - Single Config Save', () => {
       expect(mockAddProfile).toHaveBeenCalledWith(
         expect.objectContaining({
           primaryModel: 'claude-sonnet-4-5',
-          fastModel: 'claude-haiku-4-5',
+          defaultHaikuModel: 'claude-haiku-4-5',
         }),
       )
     })
