@@ -9,7 +9,7 @@ import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
 import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
-import { API_DEFAULT_URL, API_ENV_KEY, CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, SETTINGS_FILE } from '../constants'
+import { API_DEFAULT_URL, CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, SETTINGS_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
@@ -424,16 +424,23 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     if (codeToolType === 'codex') {
-      // Map InitOptions to CodexFullInitOptions
-      const apiMode = options.apiType === 'auth_token'
-        ? 'official'
-        : options.apiType === 'api_key'
-          ? 'custom'
-          : options.apiType === 'skip'
-            ? 'skip'
-            : options.skipPrompt ? 'skip' : undefined
+      if (options.skipPrompt)
+        process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP = 'true'
 
-      const customApiConfig = options.apiType === 'api_key' && options.apiKey
+      const hasApiConfigs = Boolean(options.apiConfigs || options.apiConfigsFile)
+
+      // Map InitOptions to CodexFullInitOptions
+      const apiMode = hasApiConfigs
+        ? 'skip' // Multi-config already handles providers; skip built-in API setup
+        : options.apiType === 'auth_token'
+          ? 'official'
+          : options.apiType === 'api_key'
+            ? 'custom'
+            : options.apiType === 'skip'
+              ? 'skip'
+              : options.skipPrompt ? 'skip' : undefined
+
+      const customApiConfig = (!hasApiConfigs && options.apiType === 'api_key' && options.apiKey)
         ? {
             type: 'api_key' as const,
             token: options.apiKey,
@@ -452,6 +459,11 @@ export async function init(options: InitOptions = {}): Promise<void> {
       }
       else if (options.workflows === true) {
         selectedWorkflows = [] // Empty array means install all workflows
+      }
+
+      // Handle multi-config providers before running full init
+      if (hasApiConfigs) {
+        await handleMultiConfigurations(options, 'codex')
       }
 
       const resolvedAiOutputLang = await runCodexFullInit({
@@ -1174,6 +1186,7 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
   // Import Codex provider management functions
   const { addProviderToExisting } = await import('../utils/code-tools/codex-provider-manager')
 
+  const addedProviderIds: string[] = []
   for (const config of configs) {
     try {
       const provider = await convertToCodexProvider(config)
@@ -1183,6 +1196,7 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
         throw new Error(i18n.t('multi-config:providerAddFailed', { name: config.name, error: result.error }))
       }
 
+      addedProviderIds.push(provider.id)
       console.log(ansis.green(`✔ ${i18n.t('multi-config:providerAdded', { name: config.name })}`))
     }
     catch (error) {
@@ -1199,8 +1213,15 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
   if (defaultConfig) {
     // Import and call Codex provider switching function
     const { switchCodexProvider } = await import('../utils/code-tools/codex')
-    await switchCodexProvider(defaultConfig.name!)
-    console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProviderSet', { name: defaultConfig.name })}`))
+    const displayName = defaultConfig.name || defaultConfig.provider || 'custom'
+    const providerId = displayName.toLowerCase().replace(/[^a-z0-9]/g, '-')
+    if (addedProviderIds.includes(providerId)) {
+      await switchCodexProvider(providerId)
+      console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProviderSet', { name: displayName })}`))
+    }
+    else {
+      console.log(ansis.red(i18n.t('multi-config:providerAddFailed', { name: displayName, error: 'provider not added' })))
+    }
   }
 }
 
@@ -1358,9 +1379,12 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
  */
 async function convertToCodexProvider(config: ApiConfigDefinition): Promise<CodexProvider> {
   // Apply provider preset if specified
+  const displayName = config.name || config.provider || 'custom'
+  const providerId = displayName.toLowerCase().replace(/[^a-z0-9]/g, '-')
+
   let baseUrl = config.url || API_DEFAULT_URL
   let model = config.primaryModel || 'gpt-5-codex'
-  let wireApi: 'responses' | 'chat' = 'chat'
+  let wireApi: 'responses' | 'chat' = 'responses'
 
   if (config.provider && config.provider !== 'custom') {
     const { getProviderPreset } = await import('../config/api-providers')
@@ -1374,11 +1398,11 @@ async function convertToCodexProvider(config: ApiConfigDefinition): Promise<Code
   }
 
   return {
-    id: config.name!.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-    name: config.name!,
+    id: providerId,
+    name: displayName,
     baseUrl,
     wireApi,
-    tempEnvKey: API_ENV_KEY,
+    tempEnvKey: `${displayName}_API_KEY`.replace(/\W/g, '_').toUpperCase(),
     requiresOpenaiAuth: false,
     model,
   }

@@ -172,12 +172,27 @@ model_provider = "official"
         skipPrompt: true,
       }
 
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      vi.mocked(writeFile).mockClear()
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+        model: 'test-model',
+        modelProvider: 'test-provider',
+        providers: [],
+        mcpServices: [],
+        managed: false,
+        otherConfig: [],
+      } as any)
+
       // Act & Assert
       await expect(configureCodexMcp(options)).resolves.toBeUndefined()
       // Should not prompt for MCP configuration
       expect(inquirer.prompt).not.toHaveBeenCalled()
-      // Should not write any files in skip mode
-      expect(vi.mocked(writeFile)).not.toHaveBeenCalled()
+      // Should write MCP defaults in skip mode
+      expect(vi.mocked(writeFile)).toHaveBeenCalled()
+      const writeCall = vi.mocked(writeFile).mock.calls.find(call => call[0].includes('config.toml'))
+      expect(writeCall?.[1]).toContain('[mcp_servers.context7]')
+      // Should also install workflows/prompts in skip mode
+      expect(vi.mocked(writeFile).mock.calls.some(call => call[0].includes('prompts'))).toBe(true)
     })
 
     it('should allow MCP prompts when skipPrompt is false', async () => {

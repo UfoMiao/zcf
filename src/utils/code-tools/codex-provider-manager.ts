@@ -37,15 +37,8 @@ export async function addProviderToExisting(
   try {
     const existingConfig = readCodexConfig()
 
-    if (!existingConfig) {
-      return {
-        success: false,
-        error: i18n.t('codex:providerManager.noConfig'),
-      }
-    }
-
     // Check for duplicate provider IDs
-    const existingProviderIndex = existingConfig.providers.findIndex(p => p.id === provider.id)
+    const existingProviderIndex = existingConfig?.providers.findIndex(p => p.id === provider.id) ?? -1
     if (existingProviderIndex !== -1 && !allowOverwrite) {
       return {
         success: false,
@@ -53,24 +46,27 @@ export async function addProviderToExisting(
       }
     }
 
-    // Create backup
-    const backupPath = backupCodexComplete()
-    if (!backupPath) {
-      return {
-        success: false,
-        error: i18n.t('codex:providerManager.backupFailed'),
-      }
-    }
-
     // Add or update provider in configuration
     let updatedConfig: CodexConfigData
-    if (existingProviderIndex !== -1) {
+    if (!existingConfig) {
+      // No existing config: create a new one without backup noise
+      updatedConfig = {
+        model: provider.model || null,
+        modelProvider: provider.id,
+        providers: [provider],
+        mcpServices: [],
+        managed: true,
+        otherConfig: [],
+      }
+    }
+    else if (existingProviderIndex !== -1) {
       // Overwrite existing provider
       const updatedProviders = [...existingConfig.providers]
       updatedProviders[existingProviderIndex] = provider
       updatedConfig = {
         ...existingConfig,
         providers: updatedProviders,
+        modelProvider: existingConfig.modelProvider || provider.id,
       }
     }
     else {
@@ -78,7 +74,21 @@ export async function addProviderToExisting(
       updatedConfig = {
         ...existingConfig,
         providers: [...existingConfig.providers, provider],
+        modelProvider: existingConfig.modelProvider || provider.id,
       }
+    }
+
+    // Create backup only when config already exists
+    let backupPath: string | undefined
+    if (existingConfig) {
+      const backup = backupCodexComplete()
+      if (!backup) {
+        return {
+          success: false,
+          error: i18n.t('codex:providerManager.backupFailed'),
+        }
+      }
+      backupPath = backup || undefined
     }
 
     // Write updated configuration

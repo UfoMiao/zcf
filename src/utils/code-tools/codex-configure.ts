@@ -14,13 +14,96 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
 
   const { skipPrompt = false } = options ?? {}
   const existingConfig = readCodexConfig()
-
-  if (skipPrompt)
-    return
-
   const backupPath = backupCodexComplete()
   if (backupPath)
     console.log(ansis.gray(getBackupMessage(backupPath)))
+
+  // Skip-prompt 模式：自动安装无 API Key 的默认 MCP
+  if (skipPrompt) {
+    // Ensure workflows/prompts are installed in non-interactive mode
+    const { runCodexWorkflowSelection } = await import('./codex')
+    await runCodexWorkflowSelection({ skipPrompt: true, workflows: [] })
+
+    const defaultServiceIds = MCP_SERVICE_CONFIGS
+      .filter(service => !service.requiresApiKey)
+      .map(service => service.id)
+
+    const baseProviders = existingConfig?.providers || []
+    const existingServices = existingConfig?.mcpServices || []
+    const selection: CodexMcpService[] = []
+
+    for (const id of defaultServiceIds) {
+      const configInfo = MCP_SERVICE_CONFIGS.find(service => service.id === id)
+      if (!configInfo)
+        continue
+
+      let command = configInfo.config.command || id
+      let args = (configInfo.config.args || []).map(arg => String(arg))
+
+      // Special handling: serena context should be "codex" for Codex
+      if (id === 'serena') {
+        const idx = args.indexOf('--context')
+        if (idx >= 0 && idx + 1 < args.length)
+          args[idx + 1] = 'codex'
+        else
+          args.push('--context', 'codex')
+      }
+
+      const serviceConfig: CodexMcpService = { id: id.toLowerCase(), command, args }
+      applyCodexPlatformCommand(serviceConfig)
+      command = serviceConfig.command
+      args = serviceConfig.args || []
+
+      const env = { ...(configInfo.config.env || {}) }
+      if (isWindows()) {
+        const systemRoot = getSystemRoot()
+        if (systemRoot)
+          env.SYSTEMROOT = systemRoot
+      }
+
+      selection.push({
+        id: id.toLowerCase(),
+        command,
+        args,
+        env: Object.keys(env).length > 0 ? env : undefined,
+        startup_timeout_sec: 30,
+      })
+    }
+
+    const mergedMap = new Map<string, CodexMcpService>()
+    for (const svc of existingServices)
+      mergedMap.set(svc.id.toLowerCase(), { ...svc })
+    for (const svc of selection)
+      mergedMap.set(svc.id.toLowerCase(), { ...svc })
+
+    const finalServices = Array.from(mergedMap.values()).map((svc) => {
+      if (isWindows()) {
+        const systemRoot = getSystemRoot()
+        if (systemRoot) {
+          return {
+            ...svc,
+            env: {
+              ...(svc.env || {}),
+              SYSTEMROOT: systemRoot,
+            },
+          }
+        }
+      }
+      return svc
+    })
+
+    writeCodexConfig({
+      model: existingConfig?.model || null,
+      modelProvider: existingConfig?.modelProvider || null,
+      providers: baseProviders,
+      mcpServices: finalServices,
+      managed: true,
+      otherConfig: existingConfig?.otherConfig || [],
+    })
+    updateZcfConfig({ codeToolType: 'codex' })
+    console.log(ansis.green(i18n.t('codex:mcpConfigured')))
+    return
+  }
 
   const selectedIds = await selectMcpServices()
   if (!selectedIds)

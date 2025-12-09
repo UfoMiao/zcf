@@ -25,6 +25,9 @@ import { readDefaultTomlConfig, readZcfConfig, updateTomlConfig, updateZcfConfig
 import { detectConfigManagementMode } from './codex-config-detector'
 import { configureCodexMcp } from './codex-configure'
 
+// Cache to avoid repeated backups in skip-prompt mode
+let cachedSkipPromptBackup: string | null = null
+
 // Public export for easy reuse and testing
 export { applyCodexPlatformCommand } from './codex-platform'
 export { CODEX_DIR }
@@ -200,6 +203,10 @@ export function backupCodexFiles(): string | null {
   if (!exists(CODEX_DIR))
     return null
 
+  // Skip-prompt模式：只在首次调用时创建备份，其余复用
+  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true' && cachedSkipPromptBackup)
+    return cachedSkipPromptBackup
+
   const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
   const backupDir = createBackupDirectory(timestamp)
 
@@ -208,6 +215,9 @@ export function backupCodexFiles(): string | null {
   }
 
   copyDir(CODEX_DIR, backupDir, { filter })
+  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true')
+    cachedSkipPromptBackup = backupDir
+
   return backupDir
 }
 
@@ -239,6 +249,8 @@ export function backupCodexConfig(): string | null {
 }
 
 export function backupCodexAgents(): string | null {
+  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true' && cachedSkipPromptBackup)
+    return cachedSkipPromptBackup
   if (!exists(CODEX_AGENTS_FILE))
     return null
 
@@ -255,6 +267,8 @@ export function backupCodexAgents(): string | null {
 }
 
 export function backupCodexPrompts(): string | null {
+  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true' && cachedSkipPromptBackup)
+    return cachedSkipPromptBackup
   if (!exists(CODEX_PROMPTS_DIR))
     return null
 
@@ -1438,39 +1452,51 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
 
+  const existingConfig = readCodexConfig()
+  const existingAuth = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
   const providers: CodexProvider[] = []
-  const authEntries: Record<string, string> = {}
+  const authEntries: Record<string, string> = { ...existingAuth }
 
   // Create provider based on configuration
   const providerId = type === 'auth_token' ? 'official-auth-token' : 'custom-api-key'
   const providerName = type === 'auth_token' ? 'Official Auth Token' : 'Custom API Key'
+  const existingProvider = existingConfig?.providers.find(p => p.id === providerId)
 
   providers.push({
     id: providerId,
     name: providerName,
-    baseUrl: baseUrl || 'https://api.anthropic.com',
-    wireApi: 'claude',
-    tempEnvKey: `${providerId.toUpperCase()}_API_KEY`,
-    requiresOpenaiAuth: false,
+    baseUrl: baseUrl || existingProvider?.baseUrl || 'https://api.anthropic.com',
+    wireApi: existingProvider?.wireApi || 'responses',
+    tempEnvKey: existingProvider?.tempEnvKey || `${providerId.toUpperCase()}_API_KEY`,
+    requiresOpenaiAuth: existingProvider?.requiresOpenaiAuth ?? false,
+    model: model || existingProvider?.model,
   })
+
+  // Preserve other providers (without duplicating current one)
+  if (existingConfig?.providers) {
+    providers.push(...existingConfig.providers.filter(p => p.id !== providerId))
+  }
 
   // Store auth entry if token provided
   if (token) {
     authEntries[providerId] = token
+    // Also write OPENAI_API_KEY for compatibility with Codex CLI expectations
+    authEntries.OPENAI_API_KEY = token
   }
 
   // Write configuration files
   const configData: CodexConfigData = {
-    model: model || 'claude-3-5-sonnet-20241022', // Use provided model or default
+    model: model || existingConfig?.model || 'claude-3-5-sonnet-20241022', // Prefer provided model, then existing, fallback default
     modelProvider: providerId,
     modelProviderCommented: false,
     providers,
-    mcpServices: [],
+    mcpServices: existingConfig?.mcpServices || [],
     managed: true,
+    otherConfig: existingConfig?.otherConfig || [],
   }
 
-  // Write TOML format for config file
-  writeFile(CODEX_CONFIG_FILE, renderCodexConfig(configData))
+  // Write TOML format for config file using managed renderer
+  writeCodexConfig(configData)
   // Auth file remains JSON format
   writeJsonConfig(CODEX_AUTH_FILE, authEntries)
 
