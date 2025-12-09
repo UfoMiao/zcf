@@ -13,8 +13,9 @@ ZCF's configuration for Claude Code includes the following core capabilities:
 | Feature Module | Description | Configuration File Location |
 |---------|------|------------|
 | **API Configuration** | Supports three modes: official login, API Key, and CCR proxy | `~/.claude/settings.json` |
-| **Workflow System** | Pre-configured six-stage workflow, Feat workflow, BMad, etc. | `~/.claude/workflows/` |
-| **Output Styles** | Multiple AI personalized output styles | `~/.claude/prompts/output-style/` |
+| **Workflow Commands** | Six-step, Feat, Git, BMAD commands | `~/.claude/commands/zcf/` |
+| **Workflow Agents** | Planner, UX, common helper agents | `~/.claude/agents/zcf/` |
+| **Output Styles** | Multiple AI personalized output styles | `~/.claude/output-styles/` |
 | **MCP Services** | Integrates Context7, Open Web Search, etc. | `~/.claude/settings.json` |
 | **System Prompts** | Global AI memory and instruction configuration | `~/.claude/CLAUDE.md` |
 
@@ -26,18 +27,29 @@ After executing `zcf init`, ZCF will automatically create the following director
 
 ```
 ~/.claude/
-├── CLAUDE.md              # System prompts and AI memory configuration
-├── settings.json          # Claude Code main configuration file
-├── workflows/            # Workflow directory
-│   ├── zcf/
-│   │   ├── workflow.md    # Six-stage workflow
-│   │   ├── feat.md        # Feature development workflow
-│   │   └── ...
-│   └── ...
-├── prompts/              # Prompt directory
-│   └── output-style/     # Output style templates
-└── backup/               # Configuration backup directory
-    └── YYYY-MM-DD_HH-mm-ss/
+├── settings.json                # Main configuration (API, MCP, permissions, etc.)
+├── CLAUDE.md                    # System prompts and AI memory
+├── commands/                    # Workflow commands
+│   └── zcf/
+│       ├── init-project.md
+│       ├── workflow.md          # Six-step workflow command
+│       ├── feat.md              # Feature development workflow command
+│       ├── git-commit.md
+│       ├── git-rollback.md
+│       ├── git-cleanBranches.md
+│       ├── git-worktree.md
+│       └── bmad-init.md
+├── agents/                      # Workflow agents
+│   └── zcf/
+│       ├── common/
+│       │   ├── init-architect.md
+│       │   └── get-current-datetime.md
+│       └── plan/
+│           ├── planner.md
+│           └── ui-ux-designer.md
+├── output-styles/               # Output style templates
+└── backup/                      # Configuration backup directory
+    └── backup_YYYY-MM-DD_HH-mm-ss/
 ```
 
 ### Backup Mechanism

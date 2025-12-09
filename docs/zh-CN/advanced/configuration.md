@@ -101,6 +101,89 @@ npx zcf init -s --config-action docs-only
 - ⚠️ **API 配置**：可能需要手动确认
 - ⚠️ **输出风格**：新风格会添加到现有风格
 
+## API 模型配置
+
+### 四模型架构
+
+ZCF 采用四模型架构,提供细粒度的 AI 模型选择控制:
+
+| 模型类型 | 环境变量 | 默认值 | 用途 |
+|---------|---------|-------|------|
+| **主模型** | `ANTHROPIC_MODEL` | `claude-sonnet-4-5-20250929` | 通用任务的默认模型 |
+| **Haiku 模型** | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | `claude-haiku-4-5-20250910` | 快速、经济的简单任务模型 |
+| **Sonnet 模型** | `ANTHROPIC_DEFAULT_SONNET_MODEL` | `claude-sonnet-4-5-20250929` | 适用于大多数工作流的平衡模型 |
+| **Opus 模型** | `ANTHROPIC_DEFAULT_OPUS_MODEL` | `claude-opus-4-5-20251101` | 复杂任务的最强模型 |
+
+### 模型配置参数
+
+配置 API 设置时,您可以单独指定每个模型:
+
+```bash
+# 配置全部四个模型
+npx zcf i -s \
+  --api-key "sk-xxx" \
+  --api-model "claude-sonnet-4-5" \
+  --api-haiku-model "claude-haiku-4-5" \
+  --api-sonnet-model "claude-sonnet-4-5" \
+  --api-opus-model "claude-opus-4-5"
+```
+
+### 多配置文件的模型配置
+
+使用多个 API 配置文件时,每个配置文件可以有自己的模型配置:
+
+```json
+{
+  "name": "production",
+  "type": "api_key",
+  "key": "sk-prod-xxx",
+  "primaryModel": "claude-sonnet-4-5",
+  "defaultHaikuModel": "claude-haiku-4-5",
+  "defaultSonnetModel": "claude-sonnet-4-5",
+  "defaultOpusModel": "claude-opus-4-5"
+}
+```
+
+### 环境变量映射
+
+配置系统将配置文件中的模型设置映射到环境变量:
+
+- `primaryModel` → `ANTHROPIC_MODEL`
+- `defaultHaikuModel` → `ANTHROPIC_DEFAULT_HAIKU_MODEL`
+- `defaultSonnetModel` → `ANTHROPIC_DEFAULT_SONNET_MODEL`
+- `defaultOpusModel` → `ANTHROPIC_DEFAULT_OPUS_MODEL`
+
+### 从旧配置迁移
+
+如果您正在从旧的双模型系统升级:
+
+**旧配置** (已弃用):
+```json
+{
+  "primaryModel": "claude-sonnet-4-5",
+  "fastModel": "claude-haiku-4-5"
+}
+```
+
+**新配置** (推荐):
+```json
+{
+  "primaryModel": "claude-sonnet-4-5",
+  "defaultHaikuModel": "claude-haiku-4-5",
+  "defaultSonnetModel": "claude-sonnet-4-5",
+  "defaultOpusModel": "claude-opus-4-5"
+}
+```
+
+> 💡 **注意**: 旧的 `fastModel` 参数仍支持向后兼容,但已弃用。系统在切换配置文件时会自动清理遗留的 `ANTHROPIC_SMALL_FAST_MODEL` 环境变量。
+
+### 模型选择最佳实践
+
+1. **Haiku**: 用于简单任务,如格式化、基本转换、快速响应
+2. **Sonnet**: 大多数开发工作流和常规编码任务的默认选择
+3. **Opus**: 保留用于复杂推理、架构决策和关键代码生成
+4. **主模型**: 作为未请求特定模型时的后备选项
+
 ## AI 输出语言指令
 
 ### 配置机制

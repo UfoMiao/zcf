@@ -101,6 +101,89 @@ npx zcf init -s --config-action docs-only
 - ⚠️ **API 設定**: 手動確認が必要な場合があります
 - ⚠️ **出力スタイル**: 新しいスタイルは既存のスタイルに追加されます
 
+## API モデル設定
+
+### 4モデルアーキテクチャ
+
+ZCF は、AI モデル選択をきめ細かく制御するための4モデルアーキテクチャを使用しています：
+
+| モデルタイプ | 環境変数 | デフォルト値 | 用途 |
+|------------|---------|------------|------|
+| **メインモデル** | `ANTHROPIC_MODEL` | `claude-sonnet-4-5-20250929` | 一般的なタスクのデフォルトモデル |
+| **Haiku モデル** | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | `claude-haiku-4-5-20250910` | 高速で経済的な単純タスク用モデル |
+| **Sonnet モデル** | `ANTHROPIC_DEFAULT_SONNET_MODEL` | `claude-sonnet-4-5-20250929` | ほとんどのワークフローに適したバランス型モデル |
+| **Opus モデル** | `ANTHROPIC_DEFAULT_OPUS_MODEL` | `claude-opus-4-5-20251101` | 複雑なタスク用の最も強力なモデル |
+
+### モデル設定パラメータ
+
+API 設定を構成する際、各モデルを個別に指定できます：
+
+```bash
+# 4つすべてのモデルを設定
+npx zcf i -s \
+  --api-key "sk-xxx" \
+  --api-model "claude-sonnet-4-5" \
+  --api-haiku-model "claude-haiku-4-5" \
+  --api-sonnet-model "claude-sonnet-4-5" \
+  --api-opus-model "claude-opus-4-5"
+```
+
+### 複数プロファイルのモデル設定
+
+複数の API プロファイルを使用する場合、各プロファイルは独自のモデル設定を持つことができます：
+
+```json
+{
+  "name": "production",
+  "type": "api_key",
+  "key": "sk-prod-xxx",
+  "primaryModel": "claude-sonnet-4-5",
+  "defaultHaikuModel": "claude-haiku-4-5",
+  "defaultSonnetModel": "claude-sonnet-4-5",
+  "defaultOpusModel": "claude-opus-4-5"
+}
+```
+
+### 環境変数マッピング
+
+設定システムは、プロファイルのモデル設定を環境変数にマッピングします：
+
+- `primaryModel` → `ANTHROPIC_MODEL`
+- `defaultHaikuModel` → `ANTHROPIC_DEFAULT_HAIKU_MODEL`
+- `defaultSonnetModel` → `ANTHROPIC_DEFAULT_SONNET_MODEL`
+- `defaultOpusModel` → `ANTHROPIC_DEFAULT_OPUS_MODEL`
+
+### レガシー設定からの移行
+
+古い2モデルシステムからアップグレードする場合：
+
+**旧設定** (非推奨):
+```json
+{
+  "primaryModel": "claude-sonnet-4-5",
+  "fastModel": "claude-haiku-4-5"
+}
+```
+
+**新設定** (推奨):
+```json
+{
+  "primaryModel": "claude-sonnet-4-5",
+  "defaultHaikuModel": "claude-haiku-4-5",
+  "defaultSonnetModel": "claude-sonnet-4-5",
+  "defaultOpusModel": "claude-opus-4-5"
+}
+```
+
+> 💡 **注意**: 古い `fastModel` パラメータは後方互換性のためにまだサポートされていますが、非推奨です。システムは、プロファイル切り替え時に、レガシーの `ANTHROPIC_SMALL_FAST_MODEL` 環境変数を自動的にクリーンアップします。
+
+### モデル選択のベストプラクティス
+
+1. **Haiku**: フォーマット、基本変換、クイックレスポンスなどの単純なタスクに使用
+2. **Sonnet**: ほとんどの開発ワークフローと一般的なコーディングタスクのデフォルト選択
+3. **Opus**: 複雑な推論、アーキテクチャの決定、重要なコード生成用に予約
+4. **メインモデル**: 特定のモデルが要求されていない場合のフォールバックとして機能
+
 ## AI 出力言語指令
 
 ### 設定メカニズム

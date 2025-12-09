@@ -11,8 +11,9 @@ title: Claude Code 設定
 | 機能 | 説明 | 設定ファイル |
 |---|---|---|
 | API 設定 | 公式ログイン / API Key / CCR プロキシに対応 | `~/.claude/settings.json` |
-| ワークフロー | 6 段階 / Feat / BMad など | `~/.claude/workflows/` |
-| 出力スタイル | 複数のスタイルを同梱 | `~/.claude/prompts/output-style/` |
+| ワークフローコマンド | 6 段階 / Feat / Git / BMAD コマンド | `~/.claude/commands/zcf/` |
+| ワークフローエージェント | プランナー / UX など | `~/.claude/agents/zcf/` |
+| 出力スタイル | 複数のスタイルを同梱 | `~/.claude/output-styles/` |
 | MCP | Context7, Open Web Search など | `~/.claude/settings.json` |
 | システムプロンプト | AI メモリ設定 | `~/.claude/CLAUDE.md` |
 
@@ -22,11 +23,29 @@ title: Claude Code 設定
 
 ```
 ~/.claude/
-├─ CLAUDE.md
-├─ settings.json
-├─ workflows/
-├─ prompts/output-style/
-└─ backup/YYY-MM-DD_HH-mm-ss/
+├─ settings.json                  # API・MCP・権限などの設定
+├─ CLAUDE.md                      # システムプロンプト / メモリ
+├─ commands/
+│  └─ zcf/
+│      ├─ init-project.md
+│      ├─ workflow.md             # 6 段階ワークフローコマンド
+│      ├─ feat.md                 # 機能開発ワークフローコマンド
+│      ├─ git-commit.md
+│      ├─ git-rollback.md
+│      ├─ git-cleanBranches.md
+│      ├─ git-worktree.md
+│      └─ bmad-init.md
+├─ agents/
+│  └─ zcf/
+│      ├─ common/
+│      │   ├─ init-architect.md
+│      │   └─ get-current-datetime.md
+│      └─ plan/
+│          ├─ planner.md
+│          └─ ui-ux-designer.md
+├─ output-styles/
+└─ backup/
+    └─ backup_YYYY-MM-DD_HH-mm-ss/
 ```
 
 - 変更時に自動バックアップを作成  
@@ -41,9 +60,9 @@ title: Claude Code 設定
 
 ## ワークフロー・テンプレート
 
-- `/zcf:workflow` ほか各種ワークフローを `~/.claude/workflows/` に配置
+- `/zcf:workflow` などのコマンドは `~/.claude/commands/zcf/` に配置
+- エージェントは `~/.claude/agents/zcf/` 配下に配置
 - `--workflows all/skip` で導入を制御
-- プロジェクト固有のテンプレートも `workflows/custom/` に配置可能
 
 ## 出力スタイルと AI メモリ
 

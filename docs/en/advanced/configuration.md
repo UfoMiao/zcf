@@ -101,6 +101,89 @@ npx zcf init -s --config-action docs-only
 - ⚠️ **API Configuration**: May require manual confirmation
 - ⚠️ **Output Styles**: New styles will be added to existing styles
 
+## API Model Configuration
+
+### Four-Model Architecture
+
+ZCF uses a four-model architecture to provide granular control over AI model selection:
+
+| Model Type | Environment Variable | Default Value | Purpose |
+|-----------|---------------------|---------------|---------|
+| **Primary Model** | `ANTHROPIC_MODEL` | `claude-sonnet-4-5-20250929` | Default model for general tasks |
+| **Haiku Model** | `ANTHROPIC_DEFAULT_HAIKU_MODEL` | `claude-haiku-4-5-20250910` | Fast, cost-effective model for simple tasks |
+| **Sonnet Model** | `ANTHROPIC_DEFAULT_SONNET_MODEL` | `claude-sonnet-4-5-20250929` | Balanced model for most workflows |
+| **Opus Model** | `ANTHROPIC_DEFAULT_OPUS_MODEL` | `claude-opus-4-5-20251101` | Most capable model for complex tasks |
+
+### Model Configuration Parameters
+
+When configuring API settings, you can specify each model individually:
+
+```bash
+# Configure all four models
+npx zcf i -s \
+  --api-key "sk-xxx" \
+  --api-model "claude-sonnet-4-5" \
+  --api-haiku-model "claude-haiku-4-5" \
+  --api-sonnet-model "claude-sonnet-4-5" \
+  --api-opus-model "claude-opus-4-5"
+```
+
+### Multi-Profile Model Configuration
+
+When using multiple API profiles, each profile can have its own model configuration:
+
+```json
+{
+  "name": "production",
+  "type": "api_key",
+  "key": "sk-prod-xxx",
+  "primaryModel": "claude-sonnet-4-5",
+  "defaultHaikuModel": "claude-haiku-4-5",
+  "defaultSonnetModel": "claude-sonnet-4-5",
+  "defaultOpusModel": "claude-opus-4-5"
+}
+```
+
+### Environment Variable Mapping
+
+The configuration system maps profile model settings to environment variables:
+
+- `primaryModel` → `ANTHROPIC_MODEL`
+- `defaultHaikuModel` → `ANTHROPIC_DEFAULT_HAIKU_MODEL`
+- `defaultSonnetModel` → `ANTHROPIC_DEFAULT_SONNET_MODEL`
+- `defaultOpusModel` → `ANTHROPIC_DEFAULT_OPUS_MODEL`
+
+### Migration from Legacy Configuration
+
+If you're upgrading from the old two-model system:
+
+**Old Configuration** (Deprecated):
+```json
+{
+  "primaryModel": "claude-sonnet-4-5",
+  "fastModel": "claude-haiku-4-5"
+}
+```
+
+**New Configuration** (Recommended):
+```json
+{
+  "primaryModel": "claude-sonnet-4-5",
+  "defaultHaikuModel": "claude-haiku-4-5",
+  "defaultSonnetModel": "claude-sonnet-4-5",
+  "defaultOpusModel": "claude-opus-4-5"
+}
+```
+
+> 💡 **Note**: The old `fastModel` parameter is still supported for backward compatibility but is deprecated. The system will automatically clean up the legacy `ANTHROPIC_SMALL_FAST_MODEL` environment variable when switching profiles.
+
+### Model Selection Best Practices
+
+1. **Haiku**: Use for simple tasks like formatting, basic transformations, quick responses
+2. **Sonnet**: Default choice for most development workflows and general coding tasks
+3. **Opus**: Reserve for complex reasoning, architectural decisions, and critical code generation
+4. **Primary**: Acts as the fallback when no specific model is requested
+
 ## AI Output Language Directives
 
 ### Configuration Mechanism

@@ -136,7 +136,9 @@ npx zcf i -s -p custom -k "sk-xxx" -u "https://api.example.com"
 | `--api-key, -k` | `-k` | API 密钥或认证令牌 | `sk-ant-xxx` |
 | `--api-url, -u` | `-u` | 自定义 API URL | `https://api.example.com/v1` |
 | `--api-model, -M` | `-M` | 主 API 模型 | `claude-sonnet-4-5` |
-| `--api-fast-model, -F` | `-F` | 快速 API 模型（仅 Claude Code） | `claude-haiku-4-5` |
+| `--api-haiku-model, -H` | `-H` | 默认 Haiku 模型 | `claude-haiku-4-5` |
+| `--api-sonnet-model, -S` | `-S` | 默认 Sonnet 模型 | `claude-sonnet-4-5` |
+| `--api-opus-model, -O` | `-O` | 默认 Opus 模型 | `claude-opus-4-5` |
 
 ```bash
 # 使用 API Key
@@ -152,7 +154,7 @@ npx zcf i -s -t ccr_proxy
 npx zcf i -s -t skip
 
 # 配置自定义模型
-npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
+npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -H "claude-haiku-4-5" -S "claude-sonnet-4-5" -O "claude-opus-4-5"
 ```
 
 #### 多 API 配置
@@ -177,7 +179,9 @@ npx zcf i -s --api-configs '[
     "key": "sk-zzz",
     "url": "https://custom.api.com",
     "primaryModel": "claude-sonnet-4-5",
-    "fastModel": "claude-haiku-4-5"
+    "defaultHaikuModel": "claude-haiku-4-5",
+    "defaultSonnetModel": "claude-sonnet-4-5",
+    "defaultOpusModel": "claude-opus-4-5"
   }
 ]'
 

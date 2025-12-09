@@ -136,7 +136,9 @@ npx zcf i -s -p custom -k "sk-xxx" -u "https://api.example.com"
 | `--api-key, -k` | `-k` | API キーまたは認証トークン | `sk-ant-xxx` |
 | `--api-url, -u` | `-u` | カスタム API URL | `https://api.example.com/v1` |
 | `--api-model, -M` | `-M` | メイン API モデル | `claude-sonnet-4-5` |
-| `--api-fast-model, -F` | `-F` | 高速 API モデル（Claude Code のみ） | `claude-haiku-4-5` |
+| `--api-haiku-model, -H` | `-H` | デフォルト Haiku モデル | `claude-haiku-4-5` |
+| `--api-sonnet-model, -S` | `-S` | デフォルト Sonnet モデル | `claude-sonnet-4-5` |
+| `--api-opus-model, -O` | `-O` | デフォルト Opus モデル | `claude-opus-4-5` |
 
 ```bash
 # API Key を使用
@@ -152,7 +154,7 @@ npx zcf i -s -t ccr_proxy
 npx zcf i -s -t skip
 
 # カスタムモデルを設定
-npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -F "claude-haiku-4-5"
+npx zcf i -s -t api_key -k "sk-xxx" -M "claude-sonnet-4-5" -H "claude-haiku-4-5" -S "claude-sonnet-4-5" -O "claude-opus-4-5"
 ```
 
 #### 複数 API 設定
@@ -177,7 +179,9 @@ npx zcf i -s --api-configs '[
     "key": "sk-zzz",
     "url": "https://custom.api.com",
     "primaryModel": "claude-sonnet-4-5",
-    "fastModel": "claude-haiku-4-5"
+    "defaultHaikuModel": "claude-haiku-4-5",
+    "defaultSonnetModel": "claude-sonnet-4-5",
+    "defaultOpusModel": "claude-opus-4-5"
   }
 ]'
 
