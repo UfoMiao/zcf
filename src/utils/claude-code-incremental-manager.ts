@@ -244,11 +244,14 @@ async function handleAddProfile(): Promise<void> {
       profile.defaultOpusModel = modelConfig.opusModel.trim()
   }
   else if (prefilledDefaultModels?.length) {
-    if (prefilledDefaultModels[0]?.trim()) {
+    if (prefilledDefaultModels[0]?.trim())
       profile.primaryModel = prefilledDefaultModels[0].trim()
-    }
     if (prefilledDefaultModels[1]?.trim())
       profile.defaultHaikuModel = prefilledDefaultModels[1].trim()
+    if (prefilledDefaultModels[2]?.trim())
+      profile.defaultSonnetModel = prefilledDefaultModels[2].trim()
+    if (prefilledDefaultModels[3]?.trim())
+      profile.defaultOpusModel = prefilledDefaultModels[3].trim()
   }
 
   const existingProfile = ClaudeCodeConfigManager.getProfileByName(profile.name)

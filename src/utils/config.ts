@@ -228,23 +228,17 @@ export function updateDefaultModel(model: 'opus' | 'sonnet' | 'sonnet[1m]' | 'de
     settings.env = {}
   }
 
-  // Custom mode: leave environment variables untouched for caller to manage
-  if (model === 'custom') {
-    // Clear legacy model field to avoid conflicts
-    delete settings.model
-    writeJsonConfig(SETTINGS_FILE, settings)
-    return
+  // Clean model-related environment variables unless caller manages custom values
+  if (model !== 'custom') {
+    clearModelEnv(settings.env)
   }
 
-  // Clean model-related environment variables when switching away from custom
-  clearModelEnv(settings.env)
-
-  if (model === 'default') {
-    // Remove model field to let Claude Code auto-select
+  if (model === 'default' || model === 'custom') {
+    // Remove model field to let Claude Code auto-select or use custom env
     delete settings.model
   }
   else {
-    // Restore legacy behavior: set model field for built-in options
+    // Set explicit model for built-in options
     settings.model = model
   }
 
@@ -333,7 +327,13 @@ export function getExistingModelConfig(): 'opus' | 'sonnet' | 'sonnet[1m]' | 'de
     return 'default'
   }
 
-  return settings.model
+  const validModels: Array<'opus' | 'sonnet' | 'sonnet[1m]'> = ['opus', 'sonnet', 'sonnet[1m]']
+  if (validModels.includes(settings.model as any)) {
+    return settings.model as 'opus' | 'sonnet' | 'sonnet[1m]'
+  }
+
+  // Fallback to default if value is invalid
+  return 'default'
 }
 
 /**

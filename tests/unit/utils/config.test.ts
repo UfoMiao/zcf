@@ -300,8 +300,14 @@ describe('config utilities', () => {
       )
     })
 
-    it('should handle custom model type by not setting model field', () => {
-      const mockSettings = { model: 'opus' }
+    it('should handle custom model type by not setting model field and preserving env', () => {
+      const mockSettings = {
+        model: 'opus',
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-opus',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-3-haiku',
+        },
+      }
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(mockSettings)
 
       updateDefaultModel('custom')
@@ -310,6 +316,9 @@ describe('config utilities', () => {
         SETTINGS_FILE,
         expect.not.objectContaining({ model: expect.anything() }),
       )
+      const written = vi.mocked(jsonConfig.writeJsonConfig).mock.calls.at(-1)?.[1] as any
+      expect(written.env.ANTHROPIC_MODEL).toBe('claude-3-opus')
+      expect(written.env.ANTHROPIC_DEFAULT_HAIKU_MODEL).toBe('claude-3-haiku')
     })
 
     it('should clean environment variables when switching from custom to default', () => {
@@ -717,6 +726,14 @@ describe('config utilities', () => {
       const result = getExistingModelConfig()
 
       expect(result).toBe('custom')
+    })
+
+    it('should fall back to default when model value is invalid', () => {
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ model: 'invalid-model' })
+
+      const result = getExistingModelConfig()
+
+      expect(result).toBe('default')
     })
   })
 

@@ -100,37 +100,53 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
     })
     it('should apply provider default models when adding preset profile', async () => {
-      const { getProviderPreset } = await import('../../../src/config/api-providers')
-      const minimaxPreset = getProviderPreset('minimax')
+      const apiProviders = await import('../../../src/config/api-providers')
+      const providerPreset = {
+        id: 'four-model-provider',
+        name: 'Four Model Provider',
+        supportedCodeTools: ['claude-code'] as const,
+        claudeCode: {
+          baseUrl: 'https://api.four-models.com',
+          authType: 'api_key' as const,
+          defaultModels: [
+            'primary-model',
+            'haiku-model',
+            'sonnet-model',
+            'opus-model',
+          ],
+        },
+      }
 
-      expect(minimaxPreset?.claudeCode?.defaultModels?.length).toBeGreaterThan(0)
+      vi.spyOn(apiProviders, 'getApiProviders').mockReturnValue([providerPreset] as any)
 
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
-      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('minimax-profile-id')
+      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('four-model-profile-id')
       vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
         success: true,
         addedProfile: {
-          id: 'minimax-profile-id',
-          name: minimaxPreset?.name || 'MiniMax',
-          authType: minimaxPreset?.claudeCode?.authType || 'auth_token',
+          id: 'four-model-profile-id',
+          name: providerPreset.name,
+          authType: providerPreset.claudeCode.authType,
         },
       })
       vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({ success: true })
       vi.mocked(validateApiKey).mockImplementationOnce(() => ({ isValid: true }))
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'minimax' })
+        .mockResolvedValueOnce({ selectedProvider: providerPreset.id })
         .mockResolvedValueOnce({
-          profileName: minimaxPreset?.name || 'MiniMax',
-          apiKey: 'sk-minimax-key',
+          profileName: providerPreset.name,
+          apiKey: 'sk-four-models-key',
         } as any)
       queuePromptBooleans(false, false)
 
       await configureIncrementalManagement()
 
       const addedProfileArg = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls.at(-1)?.[0] as Record<string, any>
-      expect(addedProfileArg.primaryModel).toBe(minimaxPreset?.claudeCode?.defaultModels?.[0])
-      expect(addedProfileArg.defaultHaikuModel).toBe(minimaxPreset?.claudeCode?.defaultModels?.[1])
+      expect(addedProfileArg.primaryModel).toBe(providerPreset.claudeCode.defaultModels?.[0])
+      expect(addedProfileArg.defaultHaikuModel).toBe(providerPreset.claudeCode.defaultModels?.[1])
+      expect(addedProfileArg.defaultSonnetModel).toBe(providerPreset.claudeCode.defaultModels?.[2])
+      expect(addedProfileArg.defaultOpusModel).toBe(providerPreset.claudeCode.defaultModels?.[3])
     })
     it('should show management menu when existing configurations are present', async () => {
       // Mock configuration situation
