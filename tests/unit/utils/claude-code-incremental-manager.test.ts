@@ -2,9 +2,29 @@ import inquirer from 'inquirer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { i18n } from '../../../src/i18n'
 import { ClaudeCodeConfigManager } from '../../../src/utils/claude-code-config-manager'
-import { configureIncrementalManagement } from '../../../src/utils/claude-code-incremental-manager'
+import { configureIncrementalManagement, getAuthTypeLabel } from '../../../src/utils/claude-code-incremental-manager'
 import { promptBoolean } from '../../../src/utils/toggle-prompt'
 import { validateApiKey } from '../../../src/utils/validator'
+
+vi.mock('../../../src/i18n', () => ({
+  ensureI18nInitialized: vi.fn(),
+  i18n: {
+    t: vi.fn((key: string) => key),
+  },
+}))
+
+describe('getAuthTypeLabel', () => {
+  it('should map known auth types to i18n keys', () => {
+    expect(getAuthTypeLabel('api_key')).toBe('multi-config:authType.api_key')
+    expect(getAuthTypeLabel('auth_token')).toBe('multi-config:authType.auth_token')
+    expect(getAuthTypeLabel('ccr_proxy')).toBe('multi-config:authType.ccr_proxy')
+  })
+
+  it('should return raw value for unknown type', () => {
+    // @ts-expect-error - testing defensive branch
+    expect(getAuthTypeLabel('custom_unknown')).toBe('custom_unknown')
+  })
+})
 // Mock dependencies
 vi.mock('inquirer')
 vi.mock('../../../src/utils/claude-code-config-manager')

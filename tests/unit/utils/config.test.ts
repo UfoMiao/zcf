@@ -161,6 +161,40 @@ describe('config utilities', () => {
       )
     })
 
+    it('should preserve custom model env when rotating API credentials', () => {
+      const defaultSettings = { env: {} }
+      const existingSettings = {
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-opus',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-3-haiku-20241022',
+          ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-3-5-sonnet-latest',
+          ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-3-opus-202412',
+          ANTHROPIC_API_KEY: 'old-key',
+          OTHER_ENV: 'keep-me',
+        },
+      }
+
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce(defaultSettings)
+        .mockReturnValueOnce(existingSettings)
+
+      const apiConfig = {
+        authType: 'api_key' as const,
+        key: 'new-api-key',
+        url: 'https://api.test.com',
+      }
+
+      configureApi(apiConfig)
+
+      const writtenSettings = vi.mocked(jsonConfig.writeJsonConfig).mock.calls[0][1] as any
+      expect(writtenSettings.env.ANTHROPIC_MODEL).toBe('claude-3-opus')
+      expect(writtenSettings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL).toBe('claude-3-haiku-20241022')
+      expect(writtenSettings.env.ANTHROPIC_DEFAULT_SONNET_MODEL).toBe('claude-3-5-sonnet-latest')
+      expect(writtenSettings.env.ANTHROPIC_DEFAULT_OPUS_MODEL).toBe('claude-3-opus-202412')
+      expect(writtenSettings.env.ANTHROPIC_API_KEY).toBe('new-api-key')
+      expect(writtenSettings.env.OTHER_ENV).toBe('keep-me')
+    })
+
     describe('claude Code 2.0 API enhancements', () => {
       beforeEach(() => {
         vi.clearAllMocks()

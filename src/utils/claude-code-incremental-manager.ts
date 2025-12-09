@@ -7,7 +7,7 @@ import { addNumbersToChoices } from './prompt-helpers'
 import { promptBoolean } from './toggle-prompt'
 import { validateApiKey } from './validator'
 // Inline i18n helper to avoid extra file
-function getAuthTypeLabel(authType: ClaudeCodeProfile['authType']): string {
+export function getAuthTypeLabel(authType: ClaudeCodeProfile['authType']): string {
   ensureI18nInitialized()
   switch (authType) {
     case 'api_key':

@@ -363,6 +363,38 @@ describe('claudeCodeConfigManager', () => {
         apiKey: 'sk-error',
       })).rejects.toThrow('multi-config:failedToApplySettings: write failed')
     })
+
+    it('没有模型配置时应清理模型变量但保留其他环境值', async () => {
+      const settings = {
+        env: {
+          ANTHROPIC_MODEL: 'claude-3-opus',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-3-haiku',
+          ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-3-sonnet',
+          ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-3-opus',
+          ANTHROPIC_API_KEY: 'keep-key',
+          CUSTOM_ENV: 'keep',
+        },
+      }
+      mockReadJsonConfig.mockImplementationOnce(() => settings)
+      let writtenSettings: any
+      mockWriteJsonConfig.mockImplementationOnce((_path, data) => {
+        writtenSettings = data
+      })
+
+      await ClaudeCodeConfigManager.applyProfileSettings({
+        id: 'test',
+        name: 'Test',
+        authType: 'api_key',
+        apiKey: 'sk-new',
+      })
+
+      expect(writtenSettings.env.ANTHROPIC_API_KEY).toBe('sk-new')
+      expect(writtenSettings.env.CUSTOM_ENV).toBe('keep')
+      expect(writtenSettings.env.ANTHROPIC_MODEL).toBeUndefined()
+      expect(writtenSettings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL).toBeUndefined()
+      expect(writtenSettings.env.ANTHROPIC_DEFAULT_SONNET_MODEL).toBeUndefined()
+      expect(writtenSettings.env.ANTHROPIC_DEFAULT_OPUS_MODEL).toBeUndefined()
+    })
   })
 
   describe('addProfile', () => {

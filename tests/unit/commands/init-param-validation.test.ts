@@ -47,6 +47,22 @@ vi.mock('../../../src/config/workflows', () => ({
   ],
 }))
 
+vi.mock('../../../src/config/api-providers', () => ({
+  getValidProviderIds: () => ['302ai', 'kimi'],
+  getProviderPreset: (provider: string) => {
+    if (provider === '302ai') {
+      return {
+        claudeCode: {
+          authType: 'auth_token',
+          baseUrl: 'https://302.ai',
+          defaultModels: ['p', 'h', 's', 'o'],
+        },
+      }
+    }
+    return null
+  },
+}))
+
 describe('validateSkipPromptOptions', () => {
   let options: InitOptions
 
@@ -214,6 +230,21 @@ describe('validateSkipPromptOptions', () => {
     validateSkipPromptOptions(options)
 
     expect(options.installCometixLine).toBe(false)
+  })
+
+  it('should set apiType from provider preset when not provided', async () => {
+    options.provider = '302ai'
+    options.apiKey = 'sk-provider'
+
+    await validateSkipPromptOptions(options)
+
+    expect(options.apiType).toBe('auth_token')
+  })
+
+  it('should throw when provider is invalid', async () => {
+    options.provider = 'unknown'
+
+    await expect(validateSkipPromptOptions(options)).rejects.toThrow('errors:invalidProvider')
   })
 
   describe('aPI model validation', () => {

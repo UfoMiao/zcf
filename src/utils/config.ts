@@ -106,10 +106,6 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
     settings.env = {}
   }
 
-  // Always clear model-related environment variables when applying API config
-  // to avoid stale model selections lingering between profiles/configs
-  clearModelEnv(settings.env)
-
   // Update API configuration based on auth type
   if (apiConfig.authType === 'api_key') {
     settings.env.ANTHROPIC_API_KEY = apiConfig.key
