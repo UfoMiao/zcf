@@ -466,6 +466,21 @@ describe('tools', () => {
       expect(result).toBe(false) // When skipPrompt is true, should return false even if up to date
     })
 
+    it('should return false when latestVersion cannot be fetched', async () => {
+      const { runCodexUpdate, checkCodexUpdate } = await import('../../src/utils/code-tools/codex')
+
+      vi.mocked(checkCodexUpdate).mockResolvedValueOnce({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: null, // Cannot fetch latest version
+        needsUpdate: true,
+      })
+
+      const result = await runCodexUpdate(false, true)
+
+      expect(result).toBe(false) // Should return false when latestVersion is null
+    })
+
     it('should handle update errors gracefully', async () => {
       const { runCodexUpdate } = await import('../../src/utils/code-tools/codex')
 

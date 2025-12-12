@@ -24,7 +24,7 @@ vi.mock('../../../../src/i18n', () => ({
 
 describe('codex-provider-manager', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   const mockExistingConfig: CodexConfigData = {
@@ -109,6 +109,82 @@ describe('codex-provider-manager', () => {
       })
     })
 
+    it('should overwrite existing provider when allowOverwrite is true', async () => {
+      // Arrange
+      const {
+        readCodexConfig,
+        writeCodexConfig,
+        backupCodexComplete,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+
+      readCodexConfig.mockReturnValue(mockExistingConfig)
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
+
+      const duplicateProvider: CodexProvider = {
+        ...mockNewProvider,
+        id: 'existing-provider', // Same as existing
+        name: 'Updated Provider Name',
+      }
+
+      // Act
+      const result = await addProviderToExisting(duplicateProvider, 'api-key', true)
+
+      // Assert
+      expect(result.success).toBe(true)
+      expect(writeCodexConfig).toHaveBeenCalledWith(expect.objectContaining({
+        providers: [duplicateProvider],
+        modelProvider: 'existing-provider',
+      }))
+    })
+
+    it('should use provider.id as modelProvider when existingConfig.modelProvider is null during overwrite', async () => {
+      // Arrange
+      const {
+        readCodexConfig,
+        writeCodexConfig,
+        backupCodexComplete,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+
+      // Config with null modelProvider
+      const configWithNullModelProvider: CodexConfigData = {
+        model: null,
+        modelProvider: null, // null modelProvider
+        providers: [
+          {
+            id: 'existing-provider',
+            name: 'Existing Provider',
+            baseUrl: 'https://api.existing.com/v1',
+            wireApi: 'responses',
+            tempEnvKey: 'EXISTING_API_KEY',
+            requiresOpenaiAuth: true,
+          },
+        ],
+        mcpServices: [],
+        managed: true,
+        otherConfig: [],
+      }
+
+      readCodexConfig.mockReturnValue(configWithNullModelProvider)
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
+
+      const duplicateProvider: CodexProvider = {
+        ...mockNewProvider,
+        id: 'existing-provider', // Same as existing
+        name: 'Updated Provider Name',
+      }
+
+      // Act
+      const result = await addProviderToExisting(duplicateProvider, 'api-key', true)
+
+      // Assert
+      expect(result.success).toBe(true)
+      expect(writeCodexConfig).toHaveBeenCalledWith(expect.objectContaining({
+        providers: [duplicateProvider],
+        // When existingConfig.modelProvider is null, should use provider.id
+        modelProvider: 'existing-provider',
+      }))
+    })
+
     it('should create new configuration when none exists', async () => {
       // Arrange
       const { readCodexConfig, writeCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
@@ -147,6 +223,28 @@ describe('codex-provider-manager', () => {
         success: false,
         error: 'codex:providerManager.backupFailed',
       })
+    })
+
+    it('should handle exceptions during operation', async () => {
+      // Arrange
+      const {
+        readCodexConfig,
+        backupCodexComplete,
+        writeCodexConfig,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+
+      readCodexConfig.mockReturnValue(mockExistingConfig)
+      backupCodexComplete.mockReturnValue('/backup/path')
+      writeCodexConfig.mockImplementation(() => {
+        throw new Error('Write failed')
+      })
+
+      // Act
+      const result = await addProviderToExisting(mockNewProvider, 'api-key')
+
+      // Assert
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Write failed')
     })
   })
 
@@ -247,6 +345,84 @@ describe('codex-provider-manager', () => {
         ],
       })
       expect(result.success).toBe(true)
+    })
+
+    it('should return error when no config exists', async () => {
+      // Arrange
+      const { readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      readCodexConfig.mockReturnValue(null)
+
+      // Act
+      const result = await editExistingProvider('existing-provider', { name: 'New Name' })
+
+      // Assert
+      expect(result).toEqual({
+        success: false,
+        error: 'codex:providerManager.noConfig',
+      })
+    })
+
+    it('should return error when backup fails', async () => {
+      // Arrange
+      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      readCodexConfig.mockReturnValue(mockExistingConfig)
+      backupCodexComplete.mockReturnValue(null)
+
+      // Act
+      const result = await editExistingProvider('existing-provider', { name: 'New Name' })
+
+      // Assert
+      expect(result).toEqual({
+        success: false,
+        error: 'codex:providerManager.backupFailed',
+      })
+    })
+
+    it('should update model field when provided', async () => {
+      // Arrange
+      const {
+        readCodexConfig,
+        writeCodexConfig,
+        backupCodexComplete,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+
+      readCodexConfig.mockReturnValue(mockExistingConfig)
+      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
+
+      const updates = {
+        model: 'gpt-5-turbo',
+      }
+
+      // Act
+      const result = await editExistingProvider('existing-provider', updates)
+
+      // Assert
+      expect(result.success).toBe(true)
+      expect(writeCodexConfig).toHaveBeenCalledWith(expect.objectContaining({
+        providers: [expect.objectContaining({ model: 'gpt-5-turbo' })],
+      }))
+    })
+
+    it('should handle exceptions during operation', async () => {
+      // Arrange
+      const {
+        readCodexConfig,
+        backupCodexComplete,
+        writeCodexConfig,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+
+      readCodexConfig.mockReturnValue(mockExistingConfig)
+      backupCodexComplete.mockReturnValue('/backup/path')
+      writeCodexConfig.mockImplementation(() => {
+        throw new Error('Write operation failed')
+      })
+
+      // Act
+      const result = await editExistingProvider('existing-provider', { name: 'New Name' })
+
+      // Assert
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Write operation failed')
     })
   })
 
@@ -391,6 +567,59 @@ describe('codex-provider-manager', () => {
         success: false,
         error: 'codex:providerManager.noProvidersSpecified',
       })
+    })
+
+    it('should return error when no config exists', async () => {
+      // Arrange
+      const { readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      readCodexConfig.mockReturnValue(null)
+
+      // Act
+      const result = await deleteProviders(['provider-1'])
+
+      // Assert
+      expect(result).toEqual({
+        success: false,
+        error: 'codex:providerManager.noConfig',
+      })
+    })
+
+    it('should return error when backup fails', async () => {
+      // Arrange
+      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      readCodexConfig.mockReturnValue(multiProviderConfig)
+      backupCodexComplete.mockReturnValue(null)
+
+      // Act
+      const result = await deleteProviders(['provider-2'])
+
+      // Assert
+      expect(result).toEqual({
+        success: false,
+        error: 'codex:providerManager.backupFailed',
+      })
+    })
+
+    it('should handle exceptions during operation', async () => {
+      // Arrange
+      const {
+        readCodexConfig,
+        backupCodexComplete,
+        writeCodexConfig,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+
+      readCodexConfig.mockReturnValue(multiProviderConfig)
+      backupCodexComplete.mockReturnValue('/backup/path')
+      writeCodexConfig.mockImplementation(() => {
+        throw new Error('Delete operation failed')
+      })
+
+      // Act
+      const result = await deleteProviders(['provider-2'])
+
+      // Assert
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('Delete operation failed')
     })
   })
 

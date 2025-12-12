@@ -195,6 +195,86 @@ model_provider = "official"
       expect(writeCall?.[1]).toContain('[mcp_servers.context7]')
     })
 
+    it('should skip MCP installation entirely when mcpServices is false', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        mcpServices: false as const,
+      }
+
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      vi.mocked(writeFile).mockClear()
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+        model: 'test-model',
+        modelProvider: 'test-provider',
+        providers: [],
+        mcpServices: [],
+        managed: false,
+        otherConfig: [],
+      } as any)
+
+      // Act
+      await configureCodexMcp(options)
+
+      // Assert - should not write config.toml with MCP servers
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+      // Verify workflow selection was still called
+      const zcfConfig = await import('../../../../src/utils/zcf-config')
+      expect(vi.mocked(zcfConfig.updateZcfConfig)).toHaveBeenCalled()
+    })
+
+    it('should use provided mcpServices array when specified', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        mcpServices: ['context7'] as string[],
+      }
+
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      vi.mocked(writeFile).mockClear()
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+        model: 'test-model',
+        modelProvider: 'test-provider',
+        providers: [],
+        mcpServices: [],
+        managed: false,
+        otherConfig: [],
+      } as any)
+
+      // Act
+      await configureCodexMcp(options)
+
+      // Assert
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+      const writeCall = vi.mocked(writeFile).mock.calls.find(call => call[0].includes('config.toml'))
+      expect(writeCall?.[1]).toContain('[mcp_servers.context7]')
+    })
+
+    it('should pass workflows option to runCodexWorkflowSelection', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: ['test-workflow'],
+      }
+
+      const codexModule = await import('../../../../src/utils/code-tools/codex')
+      vi.mocked(writeFile).mockClear()
+      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+        model: 'test-model',
+        modelProvider: 'test-provider',
+        providers: [],
+        mcpServices: [],
+        managed: false,
+        otherConfig: [],
+      } as any)
+
+      // Act
+      await configureCodexMcp(options)
+
+      // Assert - should complete without prompts
+      expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
+
     it('should allow MCP prompts when skipPrompt is false', async () => {
       // Arrange
       const options = {
