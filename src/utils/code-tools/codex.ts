@@ -1817,6 +1817,8 @@ export { configureCodexMcp }
 export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {
   // Workflow selection options
   workflows?: string[] // Specific workflows to install, empty means all
+  // MCP service options
+  mcpServices?: string[] | false // Specific MCP services to install, false means skip
   // API configuration options
   apiMode?: 'official' | 'custom' | 'skip' // API mode selection
   customApiConfig?: {

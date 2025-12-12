@@ -21,12 +21,24 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
   // Skip-prompt 模式：自动安装无 API Key 的默认 MCP
   if (skipPrompt) {
     // Ensure workflows/prompts are installed in non-interactive mode
+    // Respect options.workflows if provided
     const { runCodexWorkflowSelection } = await import('./codex')
-    await runCodexWorkflowSelection({ skipPrompt: true, workflows: [] })
+    await runCodexWorkflowSelection({ skipPrompt: true, workflows: options?.workflows ?? [] })
 
-    const defaultServiceIds = MCP_SERVICE_CONFIGS
-      .filter(service => !service.requiresApiKey)
-      .map(service => service.id)
+    // Respect options.mcpServices if provided
+    // If mcpServices is false, skip MCP installation entirely
+    if (options?.mcpServices === false) {
+      updateZcfConfig({ codeToolType: 'codex' })
+      console.log(ansis.green(i18n.t('codex:mcpConfigured')))
+      return
+    }
+
+    // Use provided mcpServices list or default to all non-API-key services
+    const defaultServiceIds = Array.isArray(options?.mcpServices)
+      ? options.mcpServices
+      : MCP_SERVICE_CONFIGS
+          .filter(service => !service.requiresApiKey)
+          .map(service => service.id)
 
     const baseProviders = existingConfig?.providers || []
     const existingServices = existingConfig?.mcpServices || []
