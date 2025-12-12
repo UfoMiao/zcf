@@ -235,15 +235,16 @@ describe('codex-incremental-config integration', () => {
 
     it('should handle error scenarios gracefully', async () => {
       // Arrange
-      const { readCodexConfig } = vi.mocked(
+      const { readCodexConfig, writeCodexConfig } = vi.mocked(
         await import('../../../../src/utils/code-tools/codex'),
       )
 
-      // Test 1: Missing configuration
+      // Test 1: Missing configuration - PR #251 changed: creates new config instead of error
       readCodexConfig.mockReturnValue(null)
       const addResult1 = await addProviderToExisting(newProvider, 'api-key')
-      expect(addResult1.success).toBe(false)
-      expect(addResult1.error).toBe('codex:providerManager.noConfig')
+      expect(addResult1.success).toBe(true)
+      expect(addResult1.addedProvider).toEqual(newProvider)
+      expect(writeCodexConfig).toHaveBeenCalled()
 
       // Test 2: Duplicate provider
       readCodexConfig.mockReturnValue(initialConfig)

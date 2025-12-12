@@ -109,19 +109,24 @@ describe('codex-provider-manager', () => {
       })
     })
 
-    it('should handle missing configuration gracefully', async () => {
+    it('should create new configuration when none exists', async () => {
       // Arrange
-      const { readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { readCodexConfig, writeCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       readCodexConfig.mockReturnValue(null)
+      backupCodexComplete.mockReturnValue(null) // No backup needed for new config
 
       // Act
       const result = await addProviderToExisting(mockNewProvider, 'api-key')
 
-      // Assert
-      expect(result).toEqual({
-        success: false,
-        error: 'codex:providerManager.noConfig',
-      })
+      // Assert - PR #251 changed behavior: creates new config when none exists
+      expect(result.success).toBe(true)
+      expect(result.addedProvider).toEqual(mockNewProvider)
+      expect(result.backupPath).toBeUndefined() // No backup for new config
+      expect(writeCodexConfig).toHaveBeenCalledWith(expect.objectContaining({
+        providers: [mockNewProvider],
+        modelProvider: mockNewProvider.id,
+        managed: true,
+      }))
     })
 
     it('should handle backup creation failure', async () => {

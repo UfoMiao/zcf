@@ -401,7 +401,8 @@ describe('init command - multi-configuration', () => {
 
       await handleMultiConfigurations(options, 'codex')
 
-      expect(switchCodexProvider).toHaveBeenCalledWith('Config1')
+      // PR #251: provider ID is now lowercase with special chars replaced by dashes
+      expect(switchCodexProvider).toHaveBeenCalledWith('config1')
     })
   })
 

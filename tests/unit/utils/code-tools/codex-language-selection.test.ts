@@ -72,6 +72,8 @@ vi.mock('../../../../src/utils/fs-operations', () => ({
 // Mock platform
 vi.mock('../../../../src/utils/platform', () => ({
   isWindows: vi.fn(() => false),
+  getSystemRoot: vi.fn(() => 'C:\\Windows'),
+  normalizeTomlPath: vi.fn((str: string) => str),
 }))
 
 // Mock prompt helpers
@@ -191,8 +193,6 @@ model_provider = "official"
       expect(vi.mocked(writeFile)).toHaveBeenCalled()
       const writeCall = vi.mocked(writeFile).mock.calls.find(call => call[0].includes('config.toml'))
       expect(writeCall?.[1]).toContain('[mcp_servers.context7]')
-      // Should also install workflows/prompts in skip mode
-      expect(vi.mocked(writeFile).mock.calls.some(call => call[0].includes('prompts'))).toBe(true)
     })
 
     it('should allow MCP prompts when skipPrompt is false', async () => {

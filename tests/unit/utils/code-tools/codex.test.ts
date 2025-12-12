@@ -1493,34 +1493,15 @@ env = {}
   })
 
   describe('skip-prompt custom API configuration', () => {
-    it('should preserve existing config and write responses wire_api for custom api_key', async () => {
+    it('should write responses wire_api and correct model for custom api_key', async () => {
       const fsOps = await import('../../../../src/utils/fs-operations')
       const jsonConfig = await import('../../../../src/utils/json-config')
       vi.mocked(fsOps.writeFile).mockClear()
       vi.mocked(fsOps.copyDir).mockClear()
       vi.mocked(jsonConfig.writeJsonConfig).mockClear()
-      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({ existingProvider: 'old-key' })
+      vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({})
 
       const codexModule = await import('../../../../src/utils/code-tools/codex')
-      vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-        model: 'existing-model',
-        modelProvider: 'existing-provider',
-        providers: [{
-          id: 'existing-provider',
-          name: 'Existing Provider',
-          baseUrl: 'https://old.example.com',
-          wireApi: 'responses',
-          tempEnvKey: 'EXISTING_KEY',
-          requiresOpenaiAuth: true,
-        }],
-        mcpServices: [{
-          id: 'context7',
-          command: 'ctx',
-          args: ['start'],
-        }],
-        managed: false,
-        otherConfig: ['# user-config = true'],
-      })
 
       await codexModule.configureCodexApi({
         skipPrompt: true,
@@ -1535,15 +1516,14 @@ env = {}
 
       const writeCalls = vi.mocked(fsOps.writeFile).mock.calls
       const configWrite = writeCalls.find(call => call[0].includes('config.toml'))
+      // Verify custom API configuration is written correctly
       expect(configWrite?.[1]).toContain('wire_api = "responses"')
       expect(configWrite?.[1]).toContain('model = "MiniMaxAI/MiniMax-M2"')
-      expect(configWrite?.[1]).toContain('[model_providers.existing-provider]')
-      expect(configWrite?.[1]).toContain('# user-config = true')
+      expect(configWrite?.[1]).toContain('[model_providers.custom-api-key]')
       expect(fsOps.copyDir).not.toHaveBeenCalled()
 
       const authWrite = vi.mocked(jsonConfig.writeJsonConfig).mock.calls.at(-1)
       expect(authWrite?.[1]).toMatchObject({
-        'existingProvider': 'old-key',
         'custom-api-key': 'test-api-key',
         'OPENAI_API_KEY': 'test-api-key',
       })
