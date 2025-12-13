@@ -1,5 +1,6 @@
 {
   "autoUpdating": "正在自动更新 {tool}...",
+  "usingSudo": "检测到 Linux 非 root 用户，正在使用 sudo 提升权限进行更新（可能需要输入密码）。",
   "cannotCheckVersion": "无法检查最新版本",
   "ccrNotInstalled": "CCR 未安装",
   "ccrUpToDate": "CCR 已是最新版本 (v{version})",

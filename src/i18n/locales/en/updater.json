@@ -1,5 +1,6 @@
 {
   "autoUpdating": "Auto-updating {tool}...",
+  "usingSudo": "Detected non-root Linux user. Using sudo for update (password prompt may appear).",
   "cannotCheckVersion": "Cannot check latest version",
   "ccrNotInstalled": "CCR is not installed",
   "ccrUpToDate": "CCR is up to date (v{version})",

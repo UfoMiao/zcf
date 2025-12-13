@@ -1,17 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { checkAndUpdateTools, updateCcr, updateClaudeCode, updateCometixLine } from '../../../src/utils/auto-updater'
+import { checkAndUpdateTools, execWithSudoIfNeeded, updateCcr, updateClaudeCode, updateCometixLine } from '../../../src/utils/auto-updater'
 import { promptBoolean } from '../../../src/utils/toggle-prompt'
 import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion } from '../../../src/utils/version-checker'
 
-// Mock modules
-vi.mock('node:child_process', () => ({
-  exec: vi.fn(),
+// Mock tinyexec
+const execMock = vi.hoisted(() => vi.fn())
+
+vi.mock('tinyexec', () => ({
+  exec: execMock,
 }))
 
-const execAsyncMock = vi.hoisted(() => vi.fn())
+// Mock platform module for sudo detection
+const shouldUseSudoMock = vi.hoisted(() => vi.fn(() => false))
 
-vi.mock('node:util', () => ({
-  promisify: vi.fn(() => execAsyncMock),
+vi.mock('../../../src/utils/platform', () => ({
+  shouldUseSudoForGlobalInstall: shouldUseSudoMock,
 }))
 
 vi.mock('ansis', () => ({
@@ -76,11 +79,12 @@ interface MockSpinner {
 }
 
 interface TestMocks {
-  execAsync: any
+  exec: any
   oraSpinner: MockSpinner
   checkCcrVersion: any
   checkClaudeCodeVersion: any
   checkCometixLineVersion: any
+  shouldUseSudo: any
 }
 
 let testMocks: TestMocks
@@ -99,17 +103,20 @@ describe('auto-updater', () => {
       fail: vi.fn(),
     }
 
-    execAsyncMock.mockReset()
+    execMock.mockReset()
+    shouldUseSudoMock.mockReset()
+    shouldUseSudoMock.mockReturnValue(false)
 
     // Setup ora mock to return our controlled spinner
     oraMock.mockReturnValue(mockSpinner)
 
     testMocks = {
-      execAsync: execAsyncMock,
+      exec: execMock,
       oraSpinner: mockSpinner,
       checkCcrVersion: (checkCcrVersion as any),
       checkClaudeCodeVersion: (checkClaudeCodeVersion as any),
       checkCometixLineVersion: (checkCometixLineVersion as any),
+      shouldUseSudo: shouldUseSudoMock,
     }
   })
 
@@ -188,21 +195,15 @@ describe('auto-updater', () => {
         needsUpdate: true,
       })
       vi.mocked(promptBoolean).mockResolvedValueOnce(true)
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-      // Test will execute the update flow
-      try {
-        await updateCcr()
-        // Should attempt to update (may fail due to execution, but flow is covered)
-      }
-      catch (error) {
-        // Expected since we can't fully mock exec
-        expect(error).toBeDefined()
-      }
+      const result = await updateCcr()
 
+      expect(result).toBe(true)
       expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('confirmUpdate'),
       }))
+      expect(testMocks.exec).toHaveBeenCalledWith('npm', ['update', '-g', '@musistudio/claude-code-router'])
     })
 
     it('should update CCR automatically when skipPrompt is enabled', async () => {
@@ -212,12 +213,12 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
       const result = await updateCcr(false, true)
 
       expect(result).toBe(true)
-      expect(testMocks.execAsync).toHaveBeenCalledWith('npm update -g @musistudio/claude-code-router')
+      expect(testMocks.exec).toHaveBeenCalledWith('npm', ['update', '-g', '@musistudio/claude-code-router'])
     })
 
     it('should handle update execution errors gracefully', async () => {
@@ -228,13 +229,13 @@ describe('auto-updater', () => {
         needsUpdate: true,
       })
       vi.mocked(promptBoolean).mockResolvedValueOnce(true)
-      testMocks.execAsync.mockRejectedValue(new Error('Update failed'))
+      testMocks.exec.mockRejectedValue(new Error('Update failed'))
 
       // The function should handle errors gracefully
       const result = await updateCcr()
 
-      // May return false due to execution issues, but should not crash
-      expect(typeof result).toBe('boolean')
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalled()
     })
 
     it('should handle version check errors', async () => {
@@ -257,17 +258,11 @@ describe('auto-updater', () => {
         needsUpdate: false,
       })
       vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-      // Force update should bypass version check
-      try {
-        await updateCcr(true)
-        // Should proceed to update flow
-      }
-      catch (error) {
-        // Expected execution error, but flow is tested
-        expect(error).toBeDefined()
-      }
+      const result = await updateCcr(true)
 
+      expect(result).toBe(true)
       // Should prompt for confirmation
       expect(promptBoolean).toHaveBeenCalled()
     })
@@ -279,22 +274,52 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-      // Skip prompt should bypass user confirmation
-      try {
-        await updateCcr(false, true)
-        // Should proceed to update flow without prompt
-      }
-      catch (error) {
-        // Expected execution error, but flow is tested
-        expect(error).toBeDefined()
-      }
+      const result = await updateCcr(false, true)
 
+      expect(result).toBe(true)
       // Should NOT prompt for confirmation
       expect(promptBoolean).not.toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('updater:autoUpdating'),
+      )
+    })
+
+    it('should use sudo when shouldUseSudoForGlobalInstall returns true', async () => {
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+      testMocks.shouldUseSudo.mockReturnValue(true)
+
+      const result = await updateCcr(false, true)
+
+      expect(result).toBe(true)
+      expect(testMocks.exec).toHaveBeenCalledWith('sudo', ['npm', 'update', '-g', '@musistudio/claude-code-router'])
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:usingSudo'),
+      )
+    })
+
+    it('should fail when command exits with non-zero code', async () => {
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: 'Permission denied', exitCode: 1 })
+
+      const result = await updateCcr(false, true)
+
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalled()
+      expect(mockConsoleError).toHaveBeenCalledWith(
+        expect.stringContaining('Permission denied'),
       )
     })
   })
@@ -338,18 +363,16 @@ describe('auto-updater', () => {
         currentVersion: '1.0.0',
         latestVersion: '2.0.0',
         needsUpdate: true,
+        isHomebrew: false,
       })
       vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-      try {
-        await updateClaudeCode()
-        // Flow tested, execution may fail
-      }
-      catch (error) {
-        expect(error).toBeDefined()
-      }
+      const result = await updateClaudeCode()
 
+      expect(result).toBe(true)
       expect(promptBoolean).toHaveBeenCalled()
+      expect(testMocks.exec).toHaveBeenCalledWith('claude', ['update'])
     })
 
     it('should handle Claude Code update errors gracefully', async () => {
@@ -358,13 +381,15 @@ describe('auto-updater', () => {
         currentVersion: '1.0.0',
         latestVersion: '2.0.0',
         needsUpdate: true,
+        isHomebrew: false,
       })
       vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      testMocks.exec.mockRejectedValue(new Error('Update failed'))
 
       const result = await updateClaudeCode()
 
-      // Should handle errors without crashing
-      expect(typeof result).toBe('boolean')
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalled()
     })
 
     it('should skip prompt in skip-prompt mode for Claude Code', async () => {
@@ -373,21 +398,54 @@ describe('auto-updater', () => {
         currentVersion: '1.0.0',
         latestVersion: '2.0.0',
         needsUpdate: true,
+        isHomebrew: false,
       })
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-      try {
-        await updateClaudeCode(false, true)
-      }
-      catch (error) {
-        expect(error).toBeDefined()
-      }
+      const result = await updateClaudeCode(false, true)
 
+      expect(result).toBe(true)
       // Should NOT prompt for confirmation in skip mode
       expect(promptBoolean).not.toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('updater:autoUpdating'),
       )
+    })
+
+    it('should use sudo for Claude Code update when needed on Linux', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: false,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+      testMocks.shouldUseSudo.mockReturnValue(true)
+
+      const result = await updateClaudeCode(false, true)
+
+      expect(result).toBe(true)
+      expect(testMocks.exec).toHaveBeenCalledWith('sudo', ['claude', 'update'])
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:usingSudo'),
+      )
+    })
+
+    it('should fail when Claude Code update exits with non-zero code', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: false,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: 'Network error', exitCode: 1 })
+
+      const result = await updateClaudeCode(false, true)
+
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalled()
     })
   })
 
@@ -432,16 +490,13 @@ describe('auto-updater', () => {
         needsUpdate: true,
       })
       vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-      try {
-        await updateCometixLine()
-        // Flow tested, execution may fail
-      }
-      catch (error) {
-        expect(error).toBeDefined()
-      }
+      const result = await updateCometixLine()
 
+      expect(result).toBe(true)
       expect(promptBoolean).toHaveBeenCalled()
+      expect(testMocks.exec).toHaveBeenCalledWith('npm', ['update', '-g', '@cometix/ccline'])
     })
 
     it('should skip prompt in skip-prompt mode for CometixLine', async () => {
@@ -451,20 +506,50 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
-      try {
-        await updateCometixLine(false, true)
-      }
-      catch (error) {
-        expect(error).toBeDefined()
-      }
+      const result = await updateCometixLine(false, true)
 
+      expect(result).toBe(true)
       // Should NOT prompt for confirmation in skip mode
       expect(promptBoolean).not.toHaveBeenCalled()
       expect(mockConsoleLog).toHaveBeenCalledWith(
         expect.stringContaining('updater:autoUpdating'),
       )
+    })
+
+    it('should use sudo for CometixLine update when needed on Linux', async () => {
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+      testMocks.shouldUseSudo.mockReturnValue(true)
+
+      const result = await updateCometixLine(false, true)
+
+      expect(result).toBe(true)
+      expect(testMocks.exec).toHaveBeenCalledWith('sudo', ['npm', 'update', '-g', '@cometix/ccline'])
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:usingSudo'),
+      )
+    })
+
+    it('should fail when CometixLine update exits with non-zero code', async () => {
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: 'Registry timeout', exitCode: 1 })
+
+      const result = await updateCometixLine(false, true)
+
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalled()
     })
   })
 
@@ -482,6 +567,7 @@ describe('auto-updater', () => {
         currentVersion: '1.0.0',
         latestVersion: '2.0.0',
         needsUpdate: true,
+        isHomebrew: false,
       })
       testMocks.checkCometixLineVersion.mockResolvedValue({
         installed: true,
@@ -490,7 +576,7 @@ describe('auto-updater', () => {
         needsUpdate: true,
       })
       vi.mocked(promptBoolean).mockResolvedValue(true)
-      testMocks.execAsync.mockRejectedValue(new Error('Execution mock error'))
+      testMocks.exec.mockRejectedValue(new Error('Execution mock error'))
 
       // Should not throw error and handle all tools
       await checkAndUpdateTools(false)
@@ -513,6 +599,7 @@ describe('auto-updater', () => {
         currentVersion: '1.0.0',
         latestVersion: '2.0.0',
         needsUpdate: true,
+        isHomebrew: false,
       })
       testMocks.checkCometixLineVersion.mockResolvedValue({
         installed: true,
@@ -520,7 +607,7 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.execAsync.mockRejectedValue(new Error('Execution mock error'))
+      testMocks.exec.mockRejectedValue(new Error('Execution mock error'))
 
       await checkAndUpdateTools(true)
 
@@ -758,12 +845,12 @@ describe('auto-updater', () => {
         needsUpdate: true,
         isHomebrew: true,
       })
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
       const result = await updateClaudeCode(false, true)
 
       expect(result).toBe(true)
-      expect(testMocks.execAsync).toHaveBeenCalledWith('brew upgrade --cask claude-code')
+      expect(testMocks.exec).toHaveBeenCalledWith('brew', ['upgrade', '--cask', 'claude-code'])
     })
 
     it('should run claude update for npm installations', async () => {
@@ -774,12 +861,46 @@ describe('auto-updater', () => {
         needsUpdate: true,
         isHomebrew: false,
       })
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
       const result = await updateClaudeCode(false, true)
 
       expect(result).toBe(true)
-      expect(testMocks.execAsync).toHaveBeenCalledWith('claude update')
+      expect(testMocks.exec).toHaveBeenCalledWith('claude', ['update'])
+    })
+
+    it('should not use sudo for Homebrew installations even when shouldUseSudo is true', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: true,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+      testMocks.shouldUseSudo.mockReturnValue(true)
+
+      const result = await updateClaudeCode(false, true)
+
+      expect(result).toBe(true)
+      // Should use brew without sudo
+      expect(testMocks.exec).toHaveBeenCalledWith('brew', ['upgrade', '--cask', 'claude-code'])
+    })
+
+    it('should fail when Homebrew upgrade exits with non-zero code', async () => {
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: true,
+      })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: 'Homebrew error', exitCode: 1 })
+
+      const result = await updateClaudeCode(false, true)
+
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalled()
     })
   })
 
@@ -833,12 +954,176 @@ describe('auto-updater', () => {
         latestVersion: '2.0.0',
         needsUpdate: true,
       })
-      testMocks.execAsync.mockResolvedValue({ stdout: '', stderr: '' })
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
 
       const result = await updateCometixLine(false, true)
 
       expect(result).toBe(true)
-      expect(testMocks.execAsync).toHaveBeenCalledWith('npm update -g @cometix/ccline')
+      expect(testMocks.exec).toHaveBeenCalledWith('npm', ['update', '-g', '@cometix/ccline'])
+    })
+
+    it('should handle update failure for CometixLine', async () => {
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      testMocks.exec.mockRejectedValue(new Error('Update failed'))
+
+      const result = await updateCometixLine()
+
+      expect(result).toBe(false)
+      expect(testMocks.oraSpinner.fail).toHaveBeenCalled()
+    })
+  })
+
+  describe('sudo support for Linux non-root users', () => {
+    it('should use sudo for all tools when shouldUseSudoForGlobalInstall returns true', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(true)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+
+      // Test CCR update with sudo
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      await updateCcr(false, true)
+      expect(testMocks.exec).toHaveBeenCalledWith('sudo', ['npm', 'update', '-g', '@musistudio/claude-code-router'])
+
+      testMocks.exec.mockClear()
+
+      // Test Claude Code update with sudo
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: false,
+      })
+      await updateClaudeCode(false, true)
+      expect(testMocks.exec).toHaveBeenCalledWith('sudo', ['claude', 'update'])
+
+      testMocks.exec.mockClear()
+
+      // Test CometixLine update with sudo
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      await updateCometixLine(false, true)
+      expect(testMocks.exec).toHaveBeenCalledWith('sudo', ['npm', 'update', '-g', '@cometix/ccline'])
+    })
+
+    it('should not use sudo when shouldUseSudoForGlobalInstall returns false', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(false)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+
+      // Test CCR update without sudo
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      await updateCcr(false, true)
+      expect(testMocks.exec).toHaveBeenCalledWith('npm', ['update', '-g', '@musistudio/claude-code-router'])
+
+      testMocks.exec.mockClear()
+
+      // Test Claude Code update without sudo
+      testMocks.checkClaudeCodeVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+        isHomebrew: false,
+      })
+      await updateClaudeCode(false, true)
+      expect(testMocks.exec).toHaveBeenCalledWith('claude', ['update'])
+
+      testMocks.exec.mockClear()
+
+      // Test CometixLine update without sudo
+      testMocks.checkCometixLineVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+      await updateCometixLine(false, true)
+      expect(testMocks.exec).toHaveBeenCalledWith('npm', ['update', '-g', '@cometix/ccline'])
+    })
+
+    it('should show usingSudo message when sudo is used', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(true)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+      testMocks.checkCcrVersion.mockResolvedValue({
+        installed: true,
+        currentVersion: '1.0.0',
+        latestVersion: '2.0.0',
+        needsUpdate: true,
+      })
+
+      await updateCcr(false, true)
+
+      expect(mockConsoleLog).toHaveBeenCalledWith(
+        expect.stringContaining('updater:usingSudo'),
+      )
+    })
+  })
+
+  describe('execWithSudoIfNeeded helper function', () => {
+    it('should execute command without sudo when not needed', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(false)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+
+      const result = await execWithSudoIfNeeded('npm', ['update', '-g', 'test-package'])
+
+      expect(result.usedSudo).toBe(false)
+      expect(testMocks.exec).toHaveBeenCalledWith('npm', ['update', '-g', 'test-package'])
+    })
+
+    it('should execute command with sudo when needed', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(true)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 0 })
+
+      const result = await execWithSudoIfNeeded('npm', ['update', '-g', 'test-package'])
+
+      expect(result.usedSudo).toBe(true)
+      expect(testMocks.exec).toHaveBeenCalledWith('sudo', ['npm', 'update', '-g', 'test-package'])
+    })
+
+    it('should throw error when command exits with non-zero code', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(false)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: 'Permission denied', exitCode: 1 })
+
+      await expect(execWithSudoIfNeeded('npm', ['update', '-g', 'test-package']))
+        .rejects
+        .toThrow('Permission denied')
+    })
+
+    it('should throw error with default message when stderr is empty', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(false)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: '', exitCode: 127 })
+
+      await expect(execWithSudoIfNeeded('npm', ['update', '-g', 'test-package']))
+        .rejects
+        .toThrow('Command failed with exit code 127')
+    })
+
+    it('should throw error when sudo command exits with non-zero code', async () => {
+      testMocks.shouldUseSudo.mockReturnValue(true)
+      testMocks.exec.mockResolvedValue({ stdout: '', stderr: 'sudo: password required', exitCode: 1 })
+
+      await expect(execWithSudoIfNeeded('npm', ['update', '-g', 'test-package']))
+        .rejects
+        .toThrow('sudo: password required')
     })
   })
 })

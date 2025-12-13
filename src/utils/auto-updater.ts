@@ -1,12 +1,37 @@
-import { exec } from 'node:child_process'
-import { promisify } from 'node:util'
 import ansis from 'ansis'
 import ora from 'ora'
+import { exec } from 'tinyexec'
 import { ensureI18nInitialized, format, i18n } from '../i18n'
+import { shouldUseSudoForGlobalInstall } from './platform'
 import { promptBoolean } from './toggle-prompt'
 import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion, handleDuplicateInstallations } from './version-checker'
 
-const execAsync = promisify(exec)
+/**
+ * Execute a command with sudo support for Linux non-root users.
+ * Checks exit code and throws an error if the command fails.
+ * @param command - The command to execute
+ * @param args - Command arguments
+ * @returns Whether sudo was used
+ */
+export async function execWithSudoIfNeeded(command: string, args: string[]): Promise<{ usedSudo: boolean }> {
+  const needsSudo = shouldUseSudoForGlobalInstall()
+
+  if (needsSudo) {
+    console.log(ansis.yellow(`\n${i18n.t('updater:usingSudo')}`))
+    const result = await exec('sudo', [command, ...args])
+    if (result.exitCode !== 0) {
+      throw new Error(result.stderr || `Command failed with exit code ${result.exitCode}`)
+    }
+    return { usedSudo: true }
+  }
+  else {
+    const result = await exec(command, args)
+    if (result.exitCode !== 0) {
+      throw new Error(result.stderr || `Command failed with exit code ${result.exitCode}`)
+    }
+    return { usedSudo: false }
+  }
+}
 
 export async function updateCcr(force = false, skipPrompt = false): Promise<boolean> {
   ensureI18nInitialized()
@@ -57,8 +82,7 @@ export async function updateCcr(force = false, skipPrompt = false): Promise<bool
     const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: 'CCR' })).start()
 
     try {
-      // Update the package
-      await execAsync('npm update -g @musistudio/claude-code-router')
+      await execWithSudoIfNeeded('npm', ['update', '-g', '@musistudio/claude-code-router'])
       updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'CCR' }))
       return true
     }
@@ -126,12 +150,15 @@ export async function updateClaudeCode(force = false, skipPrompt = false): Promi
 
     try {
       if (isHomebrew) {
-        // Homebrew installation - use brew upgrade (cask)
-        await execAsync('brew upgrade --cask claude-code')
+        // Homebrew installation - use brew upgrade (cask), check exit code
+        const result = await exec('brew', ['upgrade', '--cask', 'claude-code'])
+        if (result.exitCode !== 0) {
+          throw new Error(result.stderr || `Command failed with exit code ${result.exitCode}`)
+        }
       }
       else {
-        // npm or other installation - use claude update
-        await execAsync('claude update')
+        // npm or other installation - use claude update with sudo support for Linux non-root users
+        await execWithSudoIfNeeded('claude', ['update'])
       }
       updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'Claude Code' }))
       return true
@@ -198,8 +225,7 @@ export async function updateCometixLine(force = false, skipPrompt = false): Prom
     const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: 'CCometixLine' })).start()
 
     try {
-      // Update the package
-      await execAsync('npm update -g @cometix/ccline')
+      await execWithSudoIfNeeded('npm', ['update', '-g', '@cometix/ccline'])
       updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'CCometixLine' }))
       return true
     }
