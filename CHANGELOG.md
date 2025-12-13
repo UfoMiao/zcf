@@ -1,5 +1,45 @@
 # Changelog
 
+## 3.4.3
+
+### Patch Changes
+
+- ## Fixes
+  - Add sudo support for Linux non-root users in auto-updater
+  - Respect workflows and mcpServices options in Codex skip-prompt mode
+  - Update tests to match PR #251 behavior changes
+
+  ## 修复
+  - 为 Linux 非 root 用户在自动更新器中添加 sudo 支持
+  - 在 Codex skip-prompt 模式下正确处理 workflows 和 mcpServices 选项
+  - 更新测试以匹配 PR #251 行为变更
+
+  ## Improvements
+  - Migrate from dual-model to four-model API configuration architecture
+  - Optimize Codex skip-prompt mode initialization flow
+  - Enhance model handling in profile management
+  - Export getAuthTypeLabel function for better API
+  - Enhance commit message body and footer guidelines
+
+  ## 优化
+  - 从双模型迁移到四模型 API 配置架构
+  - 优化 Codex skip-prompt 模式初始化流程
+  - 增强配置文件管理中的模型处理
+  - 导出 getAuthTypeLabel 函数以提供更好的 API
+  - 增强提交消息 body 和 footer 指南
+
+  ## Documentation
+  - Enhance API model configuration documentation with four-model architecture
+
+  ## 文档
+  - 增强 API 模型配置文档，支持四模型架构
+
+  ## Tests
+  - Improve test coverage for skip-prompt mode and multi-config handling
+
+  ## 测试
+  - 改进 skip-prompt 模式和多配置处理的测试覆盖率
+
 ## 3.4.2
 
 ### Patch Changes
