@@ -1140,7 +1140,6 @@ export async function runCodexWorkflowImportWithLanguageSelection(
 export async function runCodexSystemPromptSelection(skipPrompt = false): Promise<void> {
   ensureI18nInitialized()
   const rootDir = getRootDir()
-  const templateRoot = join(rootDir, 'templates', 'codex')
 
   // Read both legacy and new config formats
   const zcfConfig = readZcfConfig()
@@ -1157,12 +1156,12 @@ export async function runCodexSystemPromptSelection(skipPrompt = false): Promise
 
   updateZcfConfig({ templateLang: preferredLang })
 
-  let langDir = join(templateRoot, preferredLang)
+  // Use shared output-styles from common directory
+  let systemPromptSrc = join(rootDir, 'templates', 'common', 'output-styles', preferredLang)
 
-  if (!exists(langDir))
-    langDir = join(templateRoot, 'zh-CN')
+  if (!exists(systemPromptSrc))
+    systemPromptSrc = join(rootDir, 'templates', 'common', 'output-styles', 'zh-CN')
 
-  const systemPromptSrc = join(langDir, 'system-prompt')
   if (!exists(systemPromptSrc))
     return
 
@@ -1243,18 +1242,14 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 
   const { skipPrompt = false, workflows: presetWorkflows = [] } = options ?? {}
   const rootDir = getRootDir()
-  const templateRoot = join(rootDir, 'templates', 'codex')
 
   const zcfConfig = readZcfConfig()
   // Use templateLang with fallback to preferredLang for backward compatibility
   const templateLang = zcfConfig?.templateLang || zcfConfig?.preferredLang || 'en'
   const preferredLang = templateLang === 'en' ? 'en' : 'zh-CN'
-  let langDir = join(templateRoot, preferredLang)
 
-  if (!exists(langDir))
-    langDir = join(templateRoot, 'zh-CN')
-
-  const workflowSrc = join(langDir, 'workflow')
+  // Workflows are now in templates/common/workflow/{lang}
+  const workflowSrc = join(rootDir, 'templates', 'common', 'workflow', preferredLang)
   if (!exists(workflowSrc))
     return
 
@@ -1292,7 +1287,10 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 
     // Copy selected workflow files to prompts directory (flattened)
     for (const workflowPath of workflowsToInstall) {
-      const content = readFile(workflowPath)
+      let content = readFile(workflowPath)
+      // Process template variables for sixStep workflow
+      if (workflowPath.includes('sixStep'))
+        content = processTemplateVariables(content)
       const filename = workflowPath.split('/').pop() || 'workflow.md'
       const targetPath = join(CODEX_PROMPTS_DIR, filename)
       writeFile(targetPath, content)
@@ -1330,7 +1328,10 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 
   // Copy selected workflow files to prompts directory (flattened)
   for (const workflowPath of finalWorkflowPaths) {
-    const content = readFile(workflowPath)
+    let content = readFile(workflowPath)
+    // Process template variables for sixStep workflow
+    if (workflowPath.includes('sixStep'))
+      content = processTemplateVariables(content)
     const filename = workflowPath.split('/').pop() || 'workflow.md'
     const targetPath = join(CODEX_PROMPTS_DIR, filename)
     writeFile(targetPath, content)
@@ -1340,24 +1341,30 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 // Sentinel value for grouped Git workflow option
 const GIT_GROUP_SENTINEL = '::gitGroup'
 
-function getAllWorkflowFiles(dirPath: string): Array<{ name: string, path: string }> {
+/**
+ * Process template variables in content for Codex
+ * @param content - Template content with variables
+ * @returns Content with variables replaced
+ */
+function processTemplateVariables(content: string): string {
+  return content.replace(/\$CONFIG_DIR/g, '.codex')
+}
+
+function getAllWorkflowFiles(workflowSrc: string): Array<{ name: string, path: string }> {
   const workflows: Array<{ name: string, path: string }> = []
 
-  // This is a simplified implementation for TDD
-  // In production, we would recursively scan directories
-  const sixStepDir = join(dirPath, 'sixStep', 'prompts')
-  if (exists(sixStepDir)) {
-    const workflowFile = join(sixStepDir, 'workflow.md')
-    if (exists(workflowFile)) {
-      workflows.push({
-        name: i18n.t('workflow:workflowOption.sixStepsWorkflow'),
-        path: workflowFile,
-      })
-    }
+  // workflowSrc is already templates/common/workflow/{lang}
+  // Check for sixStep workflow (single file, use real path directly)
+  const sixStepFile = join(workflowSrc, 'sixStep', 'workflow.md')
+  if (exists(sixStepFile)) {
+    workflows.push({
+      name: i18n.t('workflow:workflowOption.sixStepsWorkflow'),
+      path: sixStepFile,
+    })
   }
 
   // Add Git workflow as a grouped option mirroring Claude Code's description
-  const gitPromptsDir = join(dirPath, 'git', 'prompts')
+  const gitPromptsDir = join(workflowSrc, 'git')
   if (exists(gitPromptsDir)) {
     workflows.push({
       name: i18n.t('workflow:workflowOption.gitWorkflow'),
@@ -1385,7 +1392,7 @@ function expandSelectedWorkflowPaths(paths: string[], workflowSrc: string): stri
 
 // Resolve actual Git prompt files from templates
 function getGitPromptFiles(workflowSrc: string): string[] {
-  const gitDir = join(workflowSrc, 'git', 'prompts')
+  const gitPromptsDir = join(workflowSrc, 'git')
   const files = [
     'git-commit.md',
     'git-rollback.md',
@@ -1395,7 +1402,7 @@ function getGitPromptFiles(workflowSrc: string): string[] {
 
   const resolved: string[] = []
   for (const f of files) {
-    const full = join(gitDir, f)
+    const full = join(gitPromptsDir, f)
     if (exists(full))
       resolved.push(full)
   }

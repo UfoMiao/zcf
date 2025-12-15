@@ -69,7 +69,8 @@ export async function copyOutputStyles(selectedStyles: string[], lang: Supported
   const currentFilePath = fileURLToPath(import.meta.url)
   const distDir = dirname(dirname(currentFilePath))
   const rootDir = dirname(distDir)
-  const templateDir = join(rootDir, 'templates', 'claude-code', lang, 'output-styles')
+  // Use shared output-styles from common directory
+  const templateDir = join(rootDir, 'templates', 'common', 'output-styles', lang)
 
   for (const styleId of selectedStyles) {
     const style = OUTPUT_STYLES.find(s => s.id === styleId)
