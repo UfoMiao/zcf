@@ -1246,15 +1246,21 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
   const zcfConfig = readZcfConfig()
   // Use templateLang with fallback to preferredLang for backward compatibility
   const templateLang = zcfConfig?.templateLang || zcfConfig?.preferredLang || 'en'
-  const preferredLang = templateLang === 'en' ? 'en' : 'zh-CN'
+  let preferredLang = templateLang === 'en' ? 'en' : 'zh-CN'
 
-  // Workflows are now in templates/common/workflow/{lang}
-  const workflowSrc = join(rootDir, 'templates', 'common', 'workflow', preferredLang)
+  // Workflows are now in templates/common/workflow/{category}/{lang}
+  const workflowSrc = join(rootDir, 'templates', 'common', 'workflow')
   if (!exists(workflowSrc))
     return
 
   // Get available workflow files (recursively)
-  const allWorkflows = getAllWorkflowFiles(workflowSrc)
+  let allWorkflows = getAllWorkflowFiles(workflowSrc, preferredLang)
+
+  // If no workflows found for preferred language, fallback to zh-CN
+  if (allWorkflows.length === 0 && preferredLang === 'en') {
+    preferredLang = 'zh-CN'
+    allWorkflows = getAllWorkflowFiles(workflowSrc, preferredLang)
+  }
 
   if (allWorkflows.length === 0)
     return
@@ -1278,11 +1284,11 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
         presetWorkflows.includes(workflow.name),
       )
       // Expand grouped selections (e.g., Git) to concrete files
-      workflowsToInstall = expandSelectedWorkflowPaths(selectedWorkflows.map(w => w.path), workflowSrc)
+      workflowsToInstall = expandSelectedWorkflowPaths(selectedWorkflows.map(w => w.path), workflowSrc, preferredLang)
     }
     else {
       // If no specific workflows provided, install all available workflows
-      workflowsToInstall = expandSelectedWorkflowPaths(allWorkflows.map(w => w.path), workflowSrc)
+      workflowsToInstall = expandSelectedWorkflowPaths(allWorkflows.map(w => w.path), workflowSrc, preferredLang)
     }
 
     // Copy selected workflow files to prompts directory (flattened)
@@ -1324,7 +1330,7 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
   }
 
   // Expand grouped selections (e.g., Git) to concrete files
-  const finalWorkflowPaths = expandSelectedWorkflowPaths(workflows, workflowSrc)
+  const finalWorkflowPaths = expandSelectedWorkflowPaths(workflows, workflowSrc, preferredLang)
 
   // Copy selected workflow files to prompts directory (flattened)
   for (const workflowPath of finalWorkflowPaths) {
@@ -1350,12 +1356,12 @@ function processTemplateVariables(content: string): string {
   return content.replace(/\$CONFIG_DIR/g, '.codex')
 }
 
-function getAllWorkflowFiles(workflowSrc: string): Array<{ name: string, path: string }> {
+function getAllWorkflowFiles(workflowSrc: string, preferredLang: string): Array<{ name: string, path: string }> {
   const workflows: Array<{ name: string, path: string }> = []
 
-  // workflowSrc is already templates/common/workflow/{lang}
+  // workflowSrc is templates/common/workflow/
   // Check for sixStep workflow (single file, use real path directly)
-  const sixStepFile = join(workflowSrc, 'sixStep', 'workflow.md')
+  const sixStepFile = join(workflowSrc, 'sixStep', preferredLang, 'workflow.md')
   if (exists(sixStepFile)) {
     workflows.push({
       name: i18n.t('workflow:workflowOption.sixStepsWorkflow'),
@@ -1364,7 +1370,7 @@ function getAllWorkflowFiles(workflowSrc: string): Array<{ name: string, path: s
   }
 
   // Add Git workflow as a grouped option mirroring Claude Code's description
-  const gitPromptsDir = join(workflowSrc, 'git')
+  const gitPromptsDir = join(workflowSrc, 'git', preferredLang)
   if (exists(gitPromptsDir)) {
     workflows.push({
       name: i18n.t('workflow:workflowOption.gitWorkflow'),
@@ -1377,11 +1383,11 @@ function getAllWorkflowFiles(workflowSrc: string): Array<{ name: string, path: s
 }
 
 // Expand grouped selections to actual file paths
-function expandSelectedWorkflowPaths(paths: string[], workflowSrc: string): string[] {
+function expandSelectedWorkflowPaths(paths: string[], workflowSrc: string, preferredLang: string): string[] {
   const expanded: string[] = []
   for (const p of paths) {
     if (p === GIT_GROUP_SENTINEL) {
-      expanded.push(...getGitPromptFiles(workflowSrc))
+      expanded.push(...getGitPromptFiles(workflowSrc, preferredLang))
     }
     else {
       expanded.push(p)
@@ -1391,8 +1397,8 @@ function expandSelectedWorkflowPaths(paths: string[], workflowSrc: string): stri
 }
 
 // Resolve actual Git prompt files from templates
-function getGitPromptFiles(workflowSrc: string): string[] {
-  const gitPromptsDir = join(workflowSrc, 'git')
+function getGitPromptFiles(workflowSrc: string, preferredLang: string): string[] {
+  const gitPromptsDir = join(workflowSrc, 'git', preferredLang)
   const files = [
     'git-commit.md',
     'git-rollback.md',

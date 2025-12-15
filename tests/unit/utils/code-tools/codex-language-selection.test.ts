@@ -435,8 +435,13 @@ model_provider = "official"
       await runCodexWorkflowImportWithLanguageSelection()
 
       // Assert
-      // Check that English template directory was checked
-      expect(exists).toHaveBeenCalledWith(expect.stringContaining('/codex/en'))
+      // Check that English template paths were checked (common workflow templates)
+      const existsCalls = vi.mocked(exists).mock.calls.map(call => call[0])
+      const hasEnglishWorkflowPath = existsCalls.some(path =>
+        (path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
+        && (path.includes('/en/') || path.includes('\\en\\')),
+      )
+      expect(hasEnglishWorkflowPath).toBe(true)
     })
 
     it('should fallback to zh-CN template if preferred language template does not exist', async () => {
@@ -451,10 +456,18 @@ model_provider = "official"
       vi.mocked(readZcfConfig).mockReturnValue(mockZcfConfig)
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('en')
       vi.mocked(exists).mockImplementation((path: string) => {
-        if (path.includes('/codex/en') && !path.includes('system-prompt') && !path.includes('workflow'))
-          return false // English template directory doesn't exist
-        if (path.includes('/zh-CN/') || path.includes('system-prompt') || path.includes('workflow'))
-          return true // Fallback to Chinese or specific files exist
+        // Base workflow directory exists
+        if (path.endsWith('/common/workflow') || path.endsWith('\\common\\workflow'))
+          return true
+        // English common workflow templates don't exist
+        if ((path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
+          && (path.includes('/en/') || path.includes('\\en\\'))
+          && !path.includes('system-prompt')) {
+          return false
+        }
+        // Chinese templates and system prompts exist
+        if (path.includes('/zh-CN/') || path.includes('\\zh-CN\\') || path.includes('system-prompt'))
+          return true
         return false
       })
       vi.mocked(readFile).mockReturnValue('# System prompt content')
@@ -464,8 +477,18 @@ model_provider = "official"
       await runCodexWorkflowImportWithLanguageSelection()
 
       // Assert
-      expect(exists).toHaveBeenCalledWith(expect.stringContaining('/codex/en'))
-      expect(exists).toHaveBeenCalledWith(expect.stringContaining('/zh-CN/'))
+      // Check that both English and Chinese template paths were checked (fallback behavior)
+      const existsCalls = vi.mocked(exists).mock.calls.map(call => call[0])
+      const hasEnglishPath = existsCalls.some(path =>
+        (path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
+        && (path.includes('/en/') || path.includes('\\en\\')),
+      )
+      const hasChinesePath = existsCalls.some(path =>
+        (path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
+        && (path.includes('/zh-CN/') || path.includes('\\zh-CN\\')),
+      )
+      expect(hasEnglishPath).toBe(true)
+      expect(hasChinesePath).toBe(true)
     })
 
     it('should handle error when AI output language selection fails', async () => {
