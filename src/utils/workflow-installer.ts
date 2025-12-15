@@ -1,7 +1,7 @@
 import type { SupportedLang } from '../constants'
 import type { WorkflowConfig, WorkflowInstallResult, WorkflowType } from '../types/workflow'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
@@ -20,15 +20,6 @@ const DEFAULT_CODE_TOOL_TEMPLATE = 'claude-code'
 
 // Categories that use shared templates from common directory
 const COMMON_TEMPLATE_CATEGORIES = ['git', 'sixStep']
-
-/**
- * Process template variables in content for Claude Code
- * @param content - Template content with variables
- * @returns Content with variables replaced
- */
-function processTemplateVariables(content: string): string {
-  return content.replace(/\$CONFIG_DIR/g, '.claude')
-}
 
 export async function selectAndInstallWorkflows(
   configLang: SupportedLang,
@@ -140,15 +131,7 @@ async function installWorkflowWithDependencies(
 
     if (existsSync(commandSource)) {
       try {
-        // For templates with variables (like sixStep), read content, replace variables, then write
-        if (isCommonTemplate && config.category === 'sixStep') {
-          const content = await readFile(commandSource, 'utf-8')
-          const processedContent = processTemplateVariables(content)
-          await writeFile(commandDest, processedContent, 'utf-8')
-        }
-        else {
-          await copyFile(commandSource, commandDest)
-        }
+        await copyFile(commandSource, commandDest)
         result.installedCommands.push(destFileName)
         console.log(ansis.gray(`  ✔ ${i18n.t('workflow:installedCommand')}: zcf/${destFileName}`))
       }

@@ -1,6 +1,6 @@
 import type { WorkflowConfig, WorkflowType } from '../../../src/types/workflow'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
@@ -345,15 +345,14 @@ describe('workflow-installer utilities', () => {
         selectedWorkflows: ['sixStepsWorkflow'],
       })
       vi.mocked(existsSync).mockReturnValue(true)
-      vi.mocked(readFile).mockResolvedValue('Content with $CONFIG_DIR variable')
-      vi.mocked(writeFile).mockResolvedValue(undefined)
+      vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
       await selectAndInstallWorkflows('zh-CN')
 
       // Verify sixStep workflow uses shared templates from common directory
-      const readFileCalls = vi.mocked(readFile).mock.calls
-      const sixStepCall = readFileCalls.find(call =>
+      const copyFileCalls = vi.mocked(copyFile).mock.calls
+      const sixStepCall = copyFileCalls.find(call =>
         String(call[0]).includes('workflow.md'),
       )
 
@@ -362,44 +361,6 @@ describe('workflow-installer utilities', () => {
       expect(String(sixStepCall![0])).toMatch(/templates[/\\]common[/\\]workflow[/\\]sixStep[/\\]zh-CN/)
       // Verify it does NOT use the old claude-code specific path
       expect(String(sixStepCall![0])).not.toMatch(/templates[/\\]claude-code[/\\]zh-CN[/\\]workflow[/\\]sixStep/)
-    })
-
-    it('should process template variables for sixStep workflow ($CONFIG_DIR -> .claude)', async () => {
-      const sixStepWorkflow = {
-        id: 'sixStepsWorkflow',
-        name: 'Six Steps Workflow',
-        category: 'sixStep',
-        defaultSelected: true,
-        autoInstallAgents: false,
-        commands: ['workflow.md'],
-        agents: [],
-        order: 2,
-        outputDir: 'sixStep',
-      } as WorkflowConfig
-
-      vi.mocked(workflowConfig.getOrderedWorkflows).mockReturnValue([sixStepWorkflow])
-      vi.mocked(workflowConfig.getWorkflowConfig).mockReturnValue(sixStepWorkflow)
-      vi.mocked(inquirer.prompt).mockResolvedValue({
-        selectedWorkflows: ['sixStepsWorkflow'],
-      })
-      vi.mocked(existsSync).mockReturnValue(true)
-      vi.mocked(readFile).mockResolvedValue('Use $CONFIG_DIR for config directory. Path: $CONFIG_DIR/file.md')
-      vi.mocked(writeFile).mockResolvedValue(undefined)
-      vi.mocked(mkdir).mockResolvedValue(undefined)
-
-      await selectAndInstallWorkflows('zh-CN')
-
-      // Verify template variables are replaced
-      const writeFileCalls = vi.mocked(writeFile).mock.calls
-      const sixStepWriteCall = writeFileCalls.find(call =>
-        String(call[0]).includes('workflow.md'),
-      )
-
-      expect(sixStepWriteCall).toBeDefined()
-      // Verify $CONFIG_DIR was replaced with .claude
-      expect(sixStepWriteCall![1]).toContain('.claude')
-      expect(sixStepWriteCall![1]).not.toContain('$CONFIG_DIR')
-      expect(sixStepWriteCall![1]).toBe('Use .claude for config directory. Path: .claude/file.md')
     })
 
     it('should verify both git and sixStep use common template directories', async () => {
@@ -445,8 +406,6 @@ describe('workflow-installer utilities', () => {
 
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(copyFile).mockResolvedValue(undefined)
-      vi.mocked(readFile).mockResolvedValue('$CONFIG_DIR template')
-      vi.mocked(writeFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
 
       await selectAndInstallWorkflows('zh-CN')
@@ -460,8 +419,7 @@ describe('workflow-installer utilities', () => {
       expect(String(gitCall![0])).toMatch(/templates[/\\]common[/\\]workflow[/\\]git/)
 
       // Verify sixStep uses common template
-      const readFileCalls = vi.mocked(readFile).mock.calls
-      const sixStepCall = readFileCalls.find(call =>
+      const sixStepCall = copyFileCalls.find(call =>
         String(call[0]).includes('workflow.md'),
       )
       expect(sixStepCall).toBeDefined()

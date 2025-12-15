@@ -2226,30 +2226,6 @@ model_provider = ""
       )
     })
 
-    it('should process template variables for sixStep workflow', async () => {
-      // Arrange
-      const options = {
-        skipPrompt: true,
-        workflows: ['六步工作流 (workflow)'],
-      }
-
-      // Mock readFile to return content with $CONFIG_DIR variable
-      vi.mocked(fsOps.readFile).mockReturnValue('Use $CONFIG_DIR for config directory')
-
-      // Spy on writeFile to capture the processed content
-      const writeFileSpy = vi.mocked(fsOps.writeFile)
-
-      // Act
-      await codexModule.runCodexWorkflowSelection(options)
-
-      // Assert
-      // Verify $CONFIG_DIR was replaced with .codex
-      expect(writeFileSpy).toHaveBeenCalledWith(
-        expect.stringContaining('workflow.md'),
-        'Use .codex for config directory',
-      )
-    })
-
     it('should not install any workflows when all presetWorkflows are invalid', async () => {
       // Arrange
       const options = {

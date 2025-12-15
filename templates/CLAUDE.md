@@ -178,7 +178,7 @@ interface OutputStyle {
 
 ### Recent Updates
 
-- Consolidated sixStep workflow templates to `templates/common/workflow/sixStep/` with `$CONFIG_DIR` variable support
+- Consolidated sixStep workflow templates to `templates/common/workflow/sixStep/` with unified `.zcf` plan directory for both Claude Code and Codex
 - Consolidated output-styles/system-prompt templates to `templates/common/output-styles/`
 - Consolidated git workflow templates to `templates/common/workflow/git/`
 - Added Codex template support for dual code tool architecture

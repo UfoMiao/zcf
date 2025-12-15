@@ -1293,10 +1293,7 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 
     // Copy selected workflow files to prompts directory (flattened)
     for (const workflowPath of workflowsToInstall) {
-      let content = readFile(workflowPath)
-      // Process template variables for sixStep workflow
-      if (workflowPath.includes('sixStep'))
-        content = processTemplateVariables(content)
+      const content = readFile(workflowPath)
       const filename = workflowPath.split('/').pop() || 'workflow.md'
       const targetPath = join(CODEX_PROMPTS_DIR, filename)
       writeFile(targetPath, content)
@@ -1334,10 +1331,7 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 
   // Copy selected workflow files to prompts directory (flattened)
   for (const workflowPath of finalWorkflowPaths) {
-    let content = readFile(workflowPath)
-    // Process template variables for sixStep workflow
-    if (workflowPath.includes('sixStep'))
-      content = processTemplateVariables(content)
+    const content = readFile(workflowPath)
     const filename = workflowPath.split('/').pop() || 'workflow.md'
     const targetPath = join(CODEX_PROMPTS_DIR, filename)
     writeFile(targetPath, content)
@@ -1346,15 +1340,6 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 
 // Sentinel value for grouped Git workflow option
 const GIT_GROUP_SENTINEL = '::gitGroup'
-
-/**
- * Process template variables in content for Codex
- * @param content - Template content with variables
- * @returns Content with variables replaced
- */
-function processTemplateVariables(content: string): string {
-  return content.replace(/\$CONFIG_DIR/g, '.codex')
-}
 
 function getAllWorkflowFiles(workflowSrc: string, preferredLang: string): Array<{ name: string, path: string }> {
   const workflows: Array<{ name: string, path: string }> = []

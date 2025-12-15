@@ -191,36 +191,6 @@ describe('codex - common templates usage', () => {
       }
     })
 
-    it('should process template variables for sixStep workflow ($CONFIG_DIR -> .codex)', async () => {
-      const codex = await import('../../../../src/utils/code-tools/codex')
-
-      // Mock sixStep workflow selection
-      mockInquirer.default.prompt.mockResolvedValue({
-        workflows: ['/project/templates/common/workflow/zh-CN/sixStep/workflow.md'],
-      })
-
-      mockFsOperations.readFile.mockImplementation((path: string) => {
-        if (path.includes('sixStep')) {
-          return 'Use $CONFIG_DIR for config. Path: $CONFIG_DIR/file.md'
-        }
-        return 'Mock content'
-      })
-
-      const capturedWriteContent: string[] = []
-      mockFsOperations.writeFile.mockImplementation((_path: string, content: string) => {
-        capturedWriteContent.push(content)
-      })
-
-      await codex.runCodexWorkflowSelection()
-
-      // Verify template variables were replaced
-      const sixStepContent = capturedWriteContent.find(c => c.includes('.codex'))
-      expect(sixStepContent).toBeDefined()
-      expect(sixStepContent).toContain('.codex')
-      expect(sixStepContent).not.toContain('$CONFIG_DIR')
-      expect(sixStepContent).toBe('Use .codex for config. Path: .codex/file.md')
-    })
-
     it('should ensure prompts directory exists before writing', async () => {
       const codex = await import('../../../../src/utils/code-tools/codex')
 
@@ -346,83 +316,6 @@ describe('codex - common templates usage', () => {
     })
   })
 
-  describe('processTemplateVariables - Codex-specific replacement', () => {
-    it('should replace $CONFIG_DIR with .codex (not .claude)', async () => {
-      const codex = await import('../../../../src/utils/code-tools/codex')
-
-      mockInquirer.default.prompt.mockResolvedValue({
-        workflows: ['/project/templates/common/workflow/zh-CN/sixStep/workflow.md'],
-      })
-
-      mockFsOperations.readFile.mockImplementation((path: string) => {
-        if (path.includes('sixStep')) {
-          return 'Config dir: $CONFIG_DIR\nAnother: $CONFIG_DIR/agents'
-        }
-        return 'Mock content'
-      })
-
-      const capturedContent: string[] = []
-      mockFsOperations.writeFile.mockImplementation((_path: string, content: string) => {
-        capturedContent.push(content)
-      })
-
-      await codex.runCodexWorkflowSelection()
-
-      // Verify all $CONFIG_DIR occurrences were replaced with .codex
-      const processedContent = capturedContent.find(c => c.includes('.codex'))
-      expect(processedContent).toBeDefined()
-      expect(processedContent).toContain('.codex')
-      expect(processedContent).not.toContain('.claude')
-      expect(processedContent).not.toContain('$CONFIG_DIR')
-      expect(processedContent).toBe('Config dir: .codex\nAnother: .codex/agents')
-    })
-
-    it('should only process sixStep workflows (not git workflows)', async () => {
-      const codex = await import('../../../../src/utils/code-tools/codex')
-
-      mockInquirer.default.prompt.mockResolvedValue({
-        workflows: [
-          '/project/templates/common/workflow/zh-CN/git/git-commit.md',
-          '/project/templates/common/workflow/zh-CN/sixStep/workflow.md',
-        ],
-      })
-
-      const fileContents: Record<string, string> = {
-        'git-commit.md': 'Git content with $CONFIG_DIR',
-        'workflow.md': 'SixStep content with $CONFIG_DIR',
-      }
-
-      mockFsOperations.readFile.mockImplementation((path: string) => {
-        if (path.includes('git-commit')) {
-          return fileContents['git-commit.md']
-        }
-        if (path.includes('workflow.md')) {
-          return fileContents['workflow.md']
-        }
-        return 'Mock content'
-      })
-
-      const writeOperations: Array<{ path: string, content: string }> = []
-      mockFsOperations.writeFile.mockImplementation((path: string, content: string) => {
-        writeOperations.push({ path, content })
-      })
-
-      await codex.runCodexWorkflowSelection()
-
-      // Git workflow should NOT have variables replaced
-      const gitWrite = writeOperations.find(op => op.path.includes('git-commit'))
-      if (gitWrite) {
-        expect(gitWrite.content).toBe('Git content with $CONFIG_DIR')
-      }
-
-      // SixStep workflow SHOULD have variables replaced
-      const sixStepWrite = writeOperations.find(op => op.path.includes('workflow.md'))
-      if (sixStepWrite) {
-        expect(sixStepWrite.content).toBe('SixStep content with .codex')
-      }
-    })
-  })
-
   describe('skip-prompt mode compatibility', () => {
     it('should use common templates in skip-prompt mode', async () => {
       const codex = await import('../../../../src/utils/code-tools/codex')
@@ -441,30 +334,6 @@ describe('codex - common templates usage', () => {
       // Should still use common templates
       const commonTemplatePath = capturedPaths.find(p => p.includes('common/workflow'))
       expect(commonTemplatePath).toBeDefined()
-    })
-
-    it('should process sixStep variables in skip-prompt mode', async () => {
-      const codex = await import('../../../../src/utils/code-tools/codex')
-
-      mockFsOperations.readFile.mockImplementation((path: string) => {
-        if (path.includes('sixStep')) {
-          return '$CONFIG_DIR placeholder'
-        }
-        return 'Mock content'
-      })
-
-      const capturedContent: string[] = []
-      mockFsOperations.writeFile.mockImplementation((_path: string, content: string) => {
-        capturedContent.push(content)
-      })
-
-      await codex.runCodexWorkflowSelection({
-        workflows: ['Six Steps Workflow'],
-      })
-
-      const processedContent = capturedContent.find(c => c.includes('.codex'))
-      expect(processedContent).toBeDefined()
-      expect(processedContent).toBe('.codex placeholder')
     })
   })
 })
