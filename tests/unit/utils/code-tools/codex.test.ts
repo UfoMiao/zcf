@@ -13,6 +13,7 @@ vi.mock('../../../../src/i18n', () => ({
         'configuration:outputStyles.ojousama-engineer.name': '傲娇大小姐工程师',
         'configuration:outputStyles.ojousama-engineer.description': '傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质',
         'workflow:workflowOption.sixStepsWorkflow': '六步工作流 (workflow)',
+        'workflow:workflowOption.gitWorkflow': 'Git 指令 (commit + rollback + cleanBranches + worktree)',
         'codex:systemPromptPrompt': '请选择系统提示词风格',
         'codex:workflowSelectionPrompt': '选择要安装的工作流类型（多选）',
         'codex:workflowInstall': '✔ 已安装 Codex 工作流模板',
@@ -1989,6 +1990,327 @@ model_provider = ""
           { pretty: true },
         )
       })
+    })
+  })
+
+  describe('runCodexWorkflowSelection - presetWorkflows filtering', () => {
+    let codexModule: typeof import('../../../../src/utils/code-tools/codex')
+    let fsOps: typeof import('../../../../src/utils/fs-operations')
+    let zcfConfig: typeof import('../../../../src/utils/zcf-config')
+
+    beforeEach(async () => {
+      vi.clearAllMocks()
+
+      // Import modules
+      codexModule = await import('../../../../src/utils/code-tools/codex')
+      fsOps = await import('../../../../src/utils/fs-operations')
+      zcfConfig = await import('../../../../src/utils/zcf-config')
+
+      // Setup default mocks
+      vi.mocked(zcfConfig.readZcfConfig).mockReturnValue({
+        preferredLang: 'zh-CN',
+        templateLang: 'zh-CN',
+        version: '3.4.3',
+        codeToolType: 'codex',
+        lastUpdated: '2025-12-15',
+      })
+
+      // Mock file system operations
+      vi.mocked(fsOps.exists).mockImplementation((path: string) => {
+        // Mock workflow source directory exists
+        if (path.includes('templates/common/workflow'))
+          return true
+        // Mock sixStep workflow file exists
+        if (path.includes('sixStep') && path.includes('workflow.md'))
+          return true
+        // Mock git workflow directory exists
+        if (path.includes('git') && path.includes('zh-CN'))
+          return true
+        // Mock git workflow files exist
+        if (path.includes('git-commit.md') || path.includes('git-rollback.md')
+          || path.includes('git-cleanBranches.md') || path.includes('git-worktree.md')) {
+          return true
+        }
+        return false
+      })
+
+      vi.mocked(fsOps.readFile).mockReturnValue('# Mock workflow content')
+      vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
+    })
+
+    it('should install all workflows when presetWorkflows is empty array', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: [], // Empty array means install all workflows
+      }
+
+      // Spy on writeFile to capture what workflows are installed
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Should install both sixStep and all git workflows (5 files total)
+      expect(writeFileSpy).toHaveBeenCalledTimes(5)
+
+      // Verify sixStep workflow was installed
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('workflow.md'),
+        expect.any(String),
+      )
+
+      // Verify git workflows were installed
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-commit.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-rollback.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-cleanBranches.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-worktree.md'),
+        expect.any(String),
+      )
+    })
+
+    it('should install only specified workflows when presetWorkflows contains valid names', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: ['六步工作流 (workflow)'], // Only install sixStep workflow
+      }
+
+      // Spy on writeFile to capture what workflows are installed
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Should only install sixStep workflow (1 file)
+      expect(writeFileSpy).toHaveBeenCalledTimes(1)
+
+      // Verify only sixStep workflow was installed
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('workflow.md'),
+        expect.any(String),
+      )
+
+      // Verify git workflows were NOT installed
+      expect(writeFileSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('git-commit.md'),
+        expect.any(String),
+      )
+    })
+
+    it('should filter out invalid workflow names and install only valid ones', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: [
+          '六步工作流 (workflow)', // Valid
+          'NonExistentWorkflow', // Invalid
+          'AnotherInvalidWorkflow', // Invalid
+        ],
+      }
+
+      // Spy on writeFile to capture what workflows are installed
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Should only install the valid sixStep workflow (1 file)
+      expect(writeFileSpy).toHaveBeenCalledTimes(1)
+
+      // Verify only sixStep workflow was installed
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('workflow.md'),
+        expect.any(String),
+      )
+    })
+
+    it('should correctly expand Git grouped workflow to individual files', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: ['Git 指令 (commit + rollback + cleanBranches + worktree)'], // Git grouped workflow
+      }
+
+      // Spy on writeFile to capture what workflows are installed
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Should install all 4 git workflow files
+      expect(writeFileSpy).toHaveBeenCalledTimes(4)
+
+      // Verify all git workflows were installed
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-commit.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-rollback.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-cleanBranches.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-worktree.md'),
+        expect.any(String),
+      )
+
+      // Verify sixStep workflow was NOT installed
+      expect(writeFileSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('workflow.md'),
+        expect.any(String),
+      )
+    })
+
+    it('should install multiple workflows when presetWorkflows contains multiple valid names', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: [
+          '六步工作流 (workflow)',
+          'Git 指令 (commit + rollback + cleanBranches + worktree)',
+        ],
+      }
+
+      // Spy on writeFile to capture what workflows are installed
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Should install sixStep (1 file) + git workflows (4 files) = 5 files total
+      expect(writeFileSpy).toHaveBeenCalledTimes(5)
+
+      // Verify sixStep workflow was installed
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('workflow.md'),
+        expect.any(String),
+      )
+
+      // Verify all git workflows were installed
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-commit.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-rollback.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-cleanBranches.md'),
+        expect.any(String),
+      )
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git-worktree.md'),
+        expect.any(String),
+      )
+    })
+
+    it('should process template variables for sixStep workflow', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: ['六步工作流 (workflow)'],
+      }
+
+      // Mock readFile to return content with $CONFIG_DIR variable
+      vi.mocked(fsOps.readFile).mockReturnValue('Use $CONFIG_DIR for config directory')
+
+      // Spy on writeFile to capture the processed content
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Verify $CONFIG_DIR was replaced with .codex
+      expect(writeFileSpy).toHaveBeenCalledWith(
+        expect.stringContaining('workflow.md'),
+        'Use .codex for config directory',
+      )
+    })
+
+    it('should not install any workflows when all presetWorkflows are invalid', async () => {
+      // Arrange
+      const options = {
+        skipPrompt: true,
+        workflows: [
+          'InvalidWorkflow1',
+          'InvalidWorkflow2',
+          'InvalidWorkflow3',
+        ],
+      }
+
+      // Spy on writeFile to capture what workflows are installed
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Should not install any workflows
+      expect(writeFileSpy).not.toHaveBeenCalled()
+    })
+
+    it('should handle English locale correctly', async () => {
+      // Arrange
+      vi.mocked(zcfConfig.readZcfConfig).mockReturnValue({
+        preferredLang: 'en',
+        templateLang: 'en',
+        version: '3.4.3',
+        codeToolType: 'codex',
+        lastUpdated: '2025-12-15',
+      })
+
+      // Mock English workflow files exist
+      vi.mocked(fsOps.exists).mockImplementation((path: string) => {
+        if (path.includes('templates/common/workflow'))
+          return true
+        if (path.includes('sixStep') && path.includes('en') && path.includes('workflow.md'))
+          return true
+        if (path.includes('git') && path.includes('en'))
+          return true
+        if (path.includes('git-commit.md') || path.includes('git-rollback.md')
+          || path.includes('git-cleanBranches.md') || path.includes('git-worktree.md')) {
+          return true
+        }
+        return false
+      })
+
+      const options = {
+        skipPrompt: true,
+        workflows: [], // Install all workflows
+      }
+
+      // Spy on writeFile
+      const writeFileSpy = vi.mocked(fsOps.writeFile)
+
+      // Act
+      await codexModule.runCodexWorkflowSelection(options)
+
+      // Assert
+      // Should install all workflows (5 files total)
+      expect(writeFileSpy).toHaveBeenCalledTimes(5)
     })
   })
 })
