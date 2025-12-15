@@ -1,6 +1,6 @@
 # Utils Module
 
-**Last Updated**: Mon Oct 27 19:39:26 CST 2025
+**Last Updated**: Mon Dec 15 09:46:14 CST 2025
 
 [Root](../../CLAUDE.md) > [src](../) > **utils**
 
@@ -262,6 +262,7 @@ interface McpServiceSystem {
 
 ### Recent Updates
 
+- Updated workflow-installer to use shared git workflow templates from `templates/common/workflow/git/`
 - Enhanced cross-platform support with improved Termux detection
 - Added comprehensive CCR integration with proxy configuration
 - Implemented Cometix status line tool support

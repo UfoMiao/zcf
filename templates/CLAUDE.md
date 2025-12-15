@@ -1,6 +1,6 @@
 # Templates Module
 
-**Last Updated**: Mon Oct 27 19:39:26 CST 2025
+**Last Updated**: Sun Dec 15 09:15:34 CST 2025
 [Root](../CLAUDE.md) > **templates**
 
 ## Module Responsibilities
@@ -20,18 +20,43 @@ Template system module providing multilingual configuration templates, AI person
 
 ```
 templates/
+├── common/                   # Shared templates (cross code-tool)
+│   ├── output-styles/       # AI personality styles
+│   │   ├── en/              # English output styles
+│   │   │   ├── engineer-professional.md
+│   │   │   ├── laowang-engineer.md
+│   │   │   ├── nekomata-engineer.md
+│   │   │   └── ojousama-engineer.md
+│   │   └── zh-CN/           # Chinese output styles
+│   │       ├── engineer-professional.md
+│   │       ├── laowang-engineer.md
+│   │       ├── nekomata-engineer.md
+│   │       └── ojousama-engineer.md
+│   └── workflow/
+│       ├── git/             # Git workflow
+│       │   ├── en/          # English git commands
+│       │   │   ├── git-commit.md
+│       │   │   ├── git-worktree.md
+│       │   │   ├── git-cleanBranches.md
+│       │   │   └── git-rollback.md
+│       │   └── zh-CN/       # Chinese git commands
+│       │       ├── git-commit.md
+│       │       ├── git-worktree.md
+│       │       ├── git-cleanBranches.md
+│       │       └── git-rollback.md
+│       └── sixStep/         # Six-step workflow
+│           ├── en/          # English workflow
+│           │   └── workflow.md
+│           └── zh-CN/       # Chinese workflow
+│               └── workflow.md
 ├── claude-code/              # Claude Code templates
 │   ├── common/              # Common configurations
 │   ├── zh-CN/               # Chinese templates
-│   │   ├── output-styles/   # AI personality styles
 │   │   └── workflow/        # Workflow templates
 │   │       ├── common/      # Common tools workflow
 │   │       ├── plan/        # Planning workflow
-│   │       ├── sixStep/     # Six-step workflow
-│   │       ├── bmad/        # BMAD workflow
-│   │       └── git/         # Git workflow
+│   │       └── bmad/        # BMAD workflow
 │   └── en/                  # English templates
-│       ├── output-styles/   # AI personality styles
 │       └── workflow/        # Workflow templates
 └── codex/                   # Codex templates
     ├── common/              # Common configurations
@@ -55,9 +80,9 @@ templates/
 #### 2. Workflow Templates
 
 ##### Common Tools Workflow
-- **Commands**: `init-project`, `git-commit`, `git-rollback`, `git-cleanBranches`, `git-worktree`
+- **Commands**: `init-project`
 - **Agents**: `init-architect`, `get-current-datetime`
-- **Purpose**: Essential development tools and Git operations
+- **Purpose**: Essential development tools and project initialization
 
 ##### Planning Workflow (Plan)
 - **Commands**: `feat`, `workflow`
@@ -73,8 +98,8 @@ templates/
 - **Purpose**: Business model and architecture design
 
 ##### Git Workflow
-- **Commands**: Advanced Git operations
-- **Purpose**: Version control management
+- **Commands**: `git-commit`, `git-worktree`, `git-cleanBranches`, `git-rollback`
+- **Purpose**: Version control management with conventional commits, worktree management, branch cleanup, and rollback operations
 
 ## Key Dependencies and Configuration
 
@@ -153,6 +178,9 @@ interface OutputStyle {
 
 ### Recent Updates
 
+- Consolidated sixStep workflow templates to `templates/common/workflow/sixStep/` with `$CONFIG_DIR` variable support
+- Consolidated output-styles/system-prompt templates to `templates/common/output-styles/`
+- Consolidated git workflow templates to `templates/common/workflow/git/`
 - Added Codex template support for dual code tool architecture
 - Enhanced workflow templates with comprehensive command coverage
 - Improved AI personality styles with professional variations
@@ -171,7 +199,7 @@ interface OutputStyle {
 
 ### Q: How to add a new output style?
 
-1. Create style file in `templates/{code-tool}/{locale}/output-styles/`
+1. Create style file in `templates/common/output-styles/{locale}/`
 2. Define style configuration with name and description
 3. Add style to available options in configuration
 4. Test style rendering with sample content

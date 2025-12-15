@@ -1,9 +1,7 @@
 # Code Tools Module (Codex Integration)
 
-**Last Updated**: Mon Oct 27 19:39:26 CST 2025
+**Last Updated**: Sun Dec 15 09:18:56 CST 2025
 [Root](../../../CLAUDE.md) > [src](../../) > [utils](../) > **code-tools**
-
-**Last Updated**: Mon Oct 27 09:30:54 CST 2025
 
 ## Module Responsibilities
 
@@ -425,6 +423,10 @@ const tomlString = stringify(config)
 - `templates/codex/` - Codex templates
 
 ## Changelog
+
+### 2025-12-15
+
+- **Git Workflow Shared Templates**: Updated `getGitPromptFiles()` in `codex.ts` to use shared templates from `templates/common/workflow/git/`
 
 ### 2025-10-27
 
