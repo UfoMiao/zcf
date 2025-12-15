@@ -131,6 +131,46 @@ describe('output-style', () => {
       expect(mockFsOperations.copyFile).toHaveBeenCalledTimes(2)
     })
 
+    it('should use shared common/output-styles path for templates', async () => {
+      const selectedStyles = ['engineer-professional']
+      const lang: SupportedLang = 'zh-CN'
+
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      let capturedSourcePath: string | undefined
+      mockFsOperations.copyFile.mockImplementation((source: string) => {
+        capturedSourcePath = source
+      })
+      mockFsOperations.exists.mockImplementation(() => true)
+
+      await copyOutputStyles(selectedStyles, lang)
+
+      expect(capturedSourcePath).toBeDefined()
+      // Verify the source path uses common/output-styles (shared directory)
+      expect(capturedSourcePath).toMatch(/templates[/\\]common[/\\]output-styles[/\\]zh-CN/)
+      // Verify it does NOT use the old claude-code specific path
+      expect(capturedSourcePath).not.toMatch(/templates[/\\]claude-code[/\\]zh-CN[/\\]output-styles/)
+    })
+
+    it('should use shared common/output-styles path for English locale', async () => {
+      const selectedStyles = ['engineer-professional']
+      const lang: SupportedLang = 'en'
+
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      let capturedSourcePath: string | undefined
+      mockFsOperations.copyFile.mockImplementation((source: string) => {
+        capturedSourcePath = source
+      })
+      mockFsOperations.exists.mockImplementation(() => true)
+
+      await copyOutputStyles(selectedStyles, lang)
+
+      expect(capturedSourcePath).toBeDefined()
+      // Verify the source path uses common/output-styles/en (shared directory)
+      expect(capturedSourcePath).toMatch(/templates[/\\]common[/\\]output-styles[/\\]en/)
+      // Verify it does NOT use the old claude-code path
+      expect(capturedSourcePath).not.toMatch(/templates[/\\]claude-code[/\\]en[/\\]output-styles/)
+    })
+
     it('should skip non-existent template files', async () => {
       const selectedStyles = ['engineer-professional']
       const lang: SupportedLang = 'zh-CN'

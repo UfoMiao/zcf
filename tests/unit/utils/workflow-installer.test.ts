@@ -1,6 +1,6 @@
 import type { WorkflowConfig, WorkflowType } from '../../../src/types/workflow'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, rm } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
@@ -10,7 +10,13 @@ import { CLAUDE_DIR } from '../../../src/constants'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
 vi.mock('node:fs')
-vi.mock('node:fs/promises')
+vi.mock('node:fs/promises', () => ({
+  copyFile: vi.fn(),
+  mkdir: vi.fn(),
+  rm: vi.fn(),
+  readFile: vi.fn(),
+  writeFile: vi.fn(),
+}))
 vi.mock('node:url')
 vi.mock('inquirer')
 vi.mock('../../../src/config/workflows', () => ({
@@ -238,6 +244,52 @@ describe('workflow-installer utilities', () => {
       )
     })
 
+    it('should use shared common template path for git workflow', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['gitWorkflow'],
+      })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(copyFile).mockResolvedValue(undefined)
+      vi.mocked(mkdir).mockResolvedValue(undefined)
+
+      await selectAndInstallWorkflows('zh-CN')
+
+      // Verify git workflow uses shared templates from common directory
+      // Source path should be: templates/common/workflow/git/{lang}/
+      // NOT: templates/claude-code/{lang}/workflow/git/commands/
+      const copyFileCalls = vi.mocked(copyFile).mock.calls
+      const gitCommitCall = copyFileCalls.find(call =>
+        String(call[0]).includes('git-commit.md'),
+      )
+
+      expect(gitCommitCall).toBeDefined()
+      // Verify the source path contains 'common/workflow/git' (shared directory)
+      expect(String(gitCommitCall![0])).toMatch(/templates[/\\]common[/\\]workflow[/\\]git[/\\]zh-CN/)
+      // Verify it does NOT use the old claude-code specific path
+      expect(String(gitCommitCall![0])).not.toMatch(/templates[/\\]claude-code[/\\]zh-CN[/\\]workflow[/\\]git/)
+    })
+
+    it('should use shared common template path for git workflow with English locale', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['gitWorkflow'],
+      })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(copyFile).mockResolvedValue(undefined)
+      vi.mocked(mkdir).mockResolvedValue(undefined)
+
+      await selectAndInstallWorkflows('en')
+
+      // Verify git workflow uses shared templates from common directory for English
+      const copyFileCalls = vi.mocked(copyFile).mock.calls
+      const gitCommitCall = copyFileCalls.find(call =>
+        String(call[0]).includes('git-commit.md'),
+      )
+
+      expect(gitCommitCall).toBeDefined()
+      // Verify the source path contains 'common/workflow/git/en' (shared directory)
+      expect(String(gitCommitCall![0])).toMatch(/templates[/\\]common[/\\]workflow[/\\]git[/\\]en/)
+    })
+
     it('should handle gitWorkflow with no agents correctly', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({
         selectedWorkflows: ['gitWorkflow'],
@@ -272,6 +324,148 @@ describe('workflow-installer utilities', () => {
       expect(workflowConfig.getWorkflowConfig).toHaveBeenCalledWith('gitWorkflow')
       // Should copy files for both workflows (1 + 4 = 5)
       expect(copyFile).toHaveBeenCalledTimes(5)
+    })
+
+    it('should use shared common template path for sixStep workflow', async () => {
+      const sixStepWorkflow = {
+        id: 'sixStepsWorkflow',
+        name: 'Six Steps Workflow',
+        category: 'sixStep',
+        defaultSelected: true,
+        autoInstallAgents: false,
+        commands: ['workflow.md'],
+        agents: [],
+        order: 2,
+        outputDir: 'sixStep',
+      } as WorkflowConfig
+
+      vi.mocked(workflowConfig.getOrderedWorkflows).mockReturnValue([sixStepWorkflow])
+      vi.mocked(workflowConfig.getWorkflowConfig).mockReturnValue(sixStepWorkflow)
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['sixStepsWorkflow'],
+      })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(readFile).mockResolvedValue('Content with $CONFIG_DIR variable')
+      vi.mocked(writeFile).mockResolvedValue(undefined)
+      vi.mocked(mkdir).mockResolvedValue(undefined)
+
+      await selectAndInstallWorkflows('zh-CN')
+
+      // Verify sixStep workflow uses shared templates from common directory
+      const readFileCalls = vi.mocked(readFile).mock.calls
+      const sixStepCall = readFileCalls.find(call =>
+        String(call[0]).includes('workflow.md'),
+      )
+
+      expect(sixStepCall).toBeDefined()
+      // Verify the source path contains 'common/workflow/sixStep' (shared directory)
+      expect(String(sixStepCall![0])).toMatch(/templates[/\\]common[/\\]workflow[/\\]sixStep[/\\]zh-CN/)
+      // Verify it does NOT use the old claude-code specific path
+      expect(String(sixStepCall![0])).not.toMatch(/templates[/\\]claude-code[/\\]zh-CN[/\\]workflow[/\\]sixStep/)
+    })
+
+    it('should process template variables for sixStep workflow ($CONFIG_DIR -> .claude)', async () => {
+      const sixStepWorkflow = {
+        id: 'sixStepsWorkflow',
+        name: 'Six Steps Workflow',
+        category: 'sixStep',
+        defaultSelected: true,
+        autoInstallAgents: false,
+        commands: ['workflow.md'],
+        agents: [],
+        order: 2,
+        outputDir: 'sixStep',
+      } as WorkflowConfig
+
+      vi.mocked(workflowConfig.getOrderedWorkflows).mockReturnValue([sixStepWorkflow])
+      vi.mocked(workflowConfig.getWorkflowConfig).mockReturnValue(sixStepWorkflow)
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['sixStepsWorkflow'],
+      })
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(readFile).mockResolvedValue('Use $CONFIG_DIR for config directory. Path: $CONFIG_DIR/file.md')
+      vi.mocked(writeFile).mockResolvedValue(undefined)
+      vi.mocked(mkdir).mockResolvedValue(undefined)
+
+      await selectAndInstallWorkflows('zh-CN')
+
+      // Verify template variables are replaced
+      const writeFileCalls = vi.mocked(writeFile).mock.calls
+      const sixStepWriteCall = writeFileCalls.find(call =>
+        String(call[0]).includes('workflow.md'),
+      )
+
+      expect(sixStepWriteCall).toBeDefined()
+      // Verify $CONFIG_DIR was replaced with .claude
+      expect(sixStepWriteCall![1]).toContain('.claude')
+      expect(sixStepWriteCall![1]).not.toContain('$CONFIG_DIR')
+      expect(sixStepWriteCall![1]).toBe('Use .claude for config directory. Path: .claude/file.md')
+    })
+
+    it('should verify both git and sixStep use common template directories', async () => {
+      // Test that both git and sixStep workflows use common templates
+      // by verifying the path patterns in the actual file operations
+
+      const gitWorkflow = {
+        id: 'gitWorkflow',
+        name: 'Git Workflow',
+        category: 'git',
+        defaultSelected: true,
+        autoInstallAgents: false,
+        commands: ['git-commit.md'],
+        agents: [],
+        order: 4,
+        outputDir: 'git',
+      } as WorkflowConfig
+
+      const sixStepWorkflow = {
+        id: 'sixStepsWorkflow',
+        name: 'Six Steps Workflow',
+        category: 'sixStep',
+        defaultSelected: true,
+        autoInstallAgents: false,
+        commands: ['workflow.md'],
+        agents: [],
+        order: 2,
+        outputDir: 'sixStep',
+      } as WorkflowConfig
+
+      vi.mocked(workflowConfig.getOrderedWorkflows).mockReturnValue([gitWorkflow, sixStepWorkflow])
+      vi.mocked(workflowConfig.getWorkflowConfig).mockImplementation((id) => {
+        if (id === 'gitWorkflow')
+          return gitWorkflow
+        if (id === 'sixStepsWorkflow')
+          return sixStepWorkflow
+        return undefined
+      })
+
+      vi.mocked(inquirer.prompt).mockResolvedValue({
+        selectedWorkflows: ['gitWorkflow', 'sixStepsWorkflow'],
+      })
+
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(copyFile).mockResolvedValue(undefined)
+      vi.mocked(readFile).mockResolvedValue('$CONFIG_DIR template')
+      vi.mocked(writeFile).mockResolvedValue(undefined)
+      vi.mocked(mkdir).mockResolvedValue(undefined)
+
+      await selectAndInstallWorkflows('zh-CN')
+
+      // Verify git uses common template
+      const copyFileCalls = vi.mocked(copyFile).mock.calls
+      const gitCall = copyFileCalls.find(call =>
+        String(call[0]).includes('git-commit.md'),
+      )
+      expect(gitCall).toBeDefined()
+      expect(String(gitCall![0])).toMatch(/templates[/\\]common[/\\]workflow[/\\]git/)
+
+      // Verify sixStep uses common template
+      const readFileCalls = vi.mocked(readFile).mock.calls
+      const sixStepCall = readFileCalls.find(call =>
+        String(call[0]).includes('workflow.md'),
+      )
+      expect(sixStepCall).toBeDefined()
+      expect(String(sixStepCall![0])).toMatch(/templates[/\\]common[/\\]workflow[/\\]sixStep/)
     })
   })
 
