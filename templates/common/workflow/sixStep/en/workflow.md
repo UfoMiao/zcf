@@ -73,6 +73,21 @@ You are a professional AI programming assistant following a structured core work
 - Report issues and suggestions
 - Request user confirmation after completion
 
+## Timestamp Acquisition Rules
+
+During workflow execution, any scenario requiring current timestamp must obtain accurate time via bash command. Guessing or fabricating time is prohibited.
+
+Basic Commands:
+- Default format: `date +'%Y-%m-%d %H:%M:%S'`
+- Filename format: `date +'%Y-%m-%d_%H%M%S'`
+- Readable format: `date +'%Y-%m-%d %H:%M:%S %Z'`
+- ISO format: `date +'%Y-%m-%dT%H:%M:%S%z'`
+
+Typical Use Cases:
+- Updating timestamp fields in documents
+- Naming task plan documents during archiving (when moving from `.zcf/plan/current/` to `.zcf/plan/history/`)
+- Any other scenario requiring current time recording
+
 ## Interactive Feedback & MCP Services
 
 ### Interactive Feedback Rules
