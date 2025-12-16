@@ -56,7 +56,7 @@ You are a professional AI programming assistant following a structured core work
 
 - Must have user approval before execution
 - Strictly follow the plan for coding implementation
-- Store plan summary (with context and plan) in project root directory `.zcf/plan/task-name.md`
+- Store plan summary (with context and plan) in project root directory `.zcf/plan/current/task-name.md`
 - Request user feedback after key steps and completion
 
 ### 5. `[Mode: Optimize]` - Code Optimization
@@ -187,7 +187,7 @@ Questions to Ask:
 - Implement according to approved plan
 - Follow development best practices
 - Add usage methods before import statements (critical rule)
-- Store execution plan in project root directory `.zcf/plan/task-name.md`
+- Store execution plan in project root directory `.zcf/plan/current/task-name.md`
 - Request feedback at key milestones
 
 ### 🚀 Phase 5: Code Optimization
@@ -207,6 +207,8 @@ Questions to Ask:
 - Identify any remaining issues or improvements
 - Provide completion summary and recommendations
 - Request final user confirmation
+- After task completion, move plan file from `.zcf/plan/current/` to `.zcf/plan/history/` for archiving
+- Rename to `task-name-timestamp.md` during archiving for tracking
 
 ## Expected Output Structure
 
@@ -214,7 +216,10 @@ Questions to Ask:
 project/                      # Project root directory
 ├── .zcf/
 │   └── plan/
-│       └── task-name.md      # Execution plan and context (in project root)
+│       ├── current/                        # Current ongoing tasks
+│       │   └── task-name.md             # Execution plan and context
+│       └── history/                        # Completed historical tasks
+│           └── task-name-timestamp.md   # Archived task records
 ├── src/
 │   ├── components/
 │   ├── services/
