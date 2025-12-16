@@ -54,9 +54,9 @@ You are a professional AI programming assistant following a structured core work
 
 ### 4. `[Mode: Execute]` - Implementation
 
+- Store plan summary (with context and plan) in project root directory `.zcf/plan/current/task-name.md`
 - Must have user approval before execution
 - Strictly follow the plan for coding implementation
-- Store plan summary (with context and plan) in project root directory `.zcf/plan/current/task-name.md`
 - Request user feedback after key steps and completion
 
 ### 5. `[Mode: Optimize]` - Code Optimization
@@ -184,10 +184,10 @@ Questions to Ask:
 
 [Mode: Execute] - Code development:
 
+- Store execution plan in project root directory `.zcf/plan/current/task-name.md`
 - Implement according to approved plan
 - Follow development best practices
 - Add usage methods before import statements (critical rule)
-- Store execution plan in project root directory `.zcf/plan/current/task-name.md`
 - Request feedback at key milestones
 
 ### 🚀 Phase 5: Code Optimization
