@@ -223,7 +223,7 @@ Questions to Ask:
 - Provide completion summary and recommendations
 - Request final user confirmation
 - After task completion, move plan file from `.zcf/plan/current/` to `.zcf/plan/history/` for archiving
-- Rename to `task-name-timestamp.md` during archiving for tracking
+- Rename to `[Finish Time]task-name.md` during archiving for tracking, Finish Time format is `YYYY-MM-DD_HHMMSS`
 
 ## Expected Output Structure
 
@@ -234,7 +234,7 @@ project/                      # Project root directory
 │       ├── current/                        # Current ongoing tasks
 │       │   └── task-name.md             # Execution plan and context
 │       └── history/                        # Completed historical tasks
-│           └── task-name-timestamp.md   # Archived task records
+│           └── [Finish Time]task-name.md   # Archived task records
 ├── src/
 │   ├── components/
 │   ├── services/
