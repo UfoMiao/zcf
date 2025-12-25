@@ -64,7 +64,7 @@ Output styles define AI assistant personality and output methods. These template
 
 <div align="center">
   <a href="https://github.com/Haleclipse">
-    <img src="/assets/Haleclipse.webp" alt="Halley-chan" width="200" style="border-radius: 10px;"/>
+    <img src="/assets/Haleclipse.webp" alt="Halley-chan"/>
   </a>
   <p>Tsundere <a href="https://github.com/Haleclipse">Halley-chan</a> Ojou-sama (￣▽￣)ゞ</p>
 </div>

@@ -71,7 +71,7 @@ vim ~/.claude/prompts/output-style/my-custom-style.md
 
 <div align="center">
   <a href="https://github.com/Haleclipse">
-    <img src="/assets/Haleclipse.webp" alt="哈雷酱" width="200" style="border-radius: 10px;"/>
+    <img src="/assets/Haleclipse.webp" alt="哈雷酱"/>
   </a>
   <p>傲娇的<a href="https://github.com/Haleclipse">哈雷酱</a>大小姐(￣▽￣)ゞ</p>
 </div>
