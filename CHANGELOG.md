@@ -1,5 +1,49 @@
 # Changelog
 
+## 3.5.0
+
+### Minor Changes
+
+- ## Refactoring
+  - Consolidate templates into common directory for better code reuse
+  - Unify output-styles, git workflows, and sixStep workflows to `templates/common/`
+  - Remove duplicate Codex templates (now sharing with Claude Code)
+  - Standardize sixStep plan directory to `.zcf` for consistency
+
+  ## 重构
+  - 将模板整合到 common 目录以提高代码复用
+  - 统一 output-styles、git workflows 和 sixStep workflows 到 `templates/common/`
+  - 移除重复的 Codex 模板（现与 Claude Code 共享）
+  - 统一 sixStep 计划目录为 `.zcf` 以保持一致性
+
+  ## Fixes
+  - Remove ANTHROPIC_AUTH_TOKEN when configuring CCR proxy to prevent conflicts
+  - Correct Codex template path structure after consolidation
+
+  ## 修复
+  - 配置 CCR 代理时移除 ANTHROPIC_AUTH_TOKEN 以防止冲突
+  - 修正整合后的 Codex 模板路径结构
+
+  ## Enhancement
+  - Add user approval request in sixStep workflow Phase 2
+  - Add timestamp acquisition rules to sixStep workflow
+  - Enhance sixStep workflow plan directory structure
+  - Reorder execution phase steps in sixStep workflow for clarity
+
+  ## 增强
+  - 在 sixStep 工作流第二阶段添加用户审批请求
+  - 为 sixStep 工作流添加时间戳获取规则
+  - 增强 sixStep 工作流计划目录结构
+  - 重新排序 sixStep 工作流执行阶段步骤以提高清晰度
+
+  ## Testing
+  - Add unit tests for Codex workflow selection presetWorkflows filtering
+  - Verify template consolidation to common directory
+
+  ## 测试
+  - 添加 Codex 工作流选择 presetWorkflows 过滤的单元测试
+  - 验证模板到 common 目录的整合
+
 ## 3.4.3
 
 ### Patch Changes
