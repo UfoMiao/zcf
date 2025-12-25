@@ -60,7 +60,7 @@ npx zcf init -s -T codex -p 302ai -k "sk-xxx"
 - **Codex Base URL**: `https://open.bigmodel.cn/api/coding/paas/v4`
 - **认证方式**: `auth_token`
 - **Codex Wire API**: `chat`
-- **Codex 默认模型**: `GLM-4.6`
+- **Codex 默认模型**: `GLM-4.7`
 
 **使用示例**：
 ```bash

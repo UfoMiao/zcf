@@ -31,7 +31,7 @@
 
 [![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
 このプロジェクトは Z.ai の GLM CODING PLAN によってスポンサーされています。
-GLM CODING PLAN はAIコーディング向けに設計されたサブスクリプションサービスで、月額わずか3ドルから利用できます。Z.aiのフラグシップであるGLM-4.6モデルをはじめ、Claude Code、Cline、Roo Code など10以上の人気AIコーディングツールで高速かつ安定した最先端のコーディング体験を開発者に提供します。
+GLM CODING PLAN はAIコーディング向けに設計されたサブスクリプションサービスで、月額わずか3ドルから利用できます。Z.aiのフラグシップであるGLM-4.7モデルをはじめ、Claude Code、Cline、Roo Code など10以上の人気AIコーディングツールで高速かつ安定した最先端のコーディング体験を開発者に提供します。
 GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---

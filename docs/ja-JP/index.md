@@ -33,7 +33,7 @@ title: ZCF - Zero-Config Code Flow
 
 [![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
 このプロジェクトは Z.ai のスポンサーを受けており、GLM CODING PLAN をサポートしています。
-GLM CODING PLAN は AI コーディング向けに設計されたサブスクリプションサービスで、月額わずか 3 ドルから利用できます。Claude Code、Cline、Roo Code など 10 以上の人気 AI コーディングツールで最先端の GLM-4.6 モデルにアクセスでき、開発者に最高級で高速かつ安定したコーディング体験を提供します。
+GLM CODING PLAN は AI コーディング向けに設計されたサブスクリプションサービスで、月額わずか 3 ドルから利用できます。Claude Code、Cline、Roo Code など 10 以上の人気 AI コーディングツールで最先端の GLM-4.7 モデルにアクセスでき、開発者に最高級で高速かつ安定したコーディング体験を提供します。
 GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---

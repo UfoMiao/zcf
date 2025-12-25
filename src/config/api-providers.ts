@@ -76,7 +76,7 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     codex: {
       baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
       wireApi: 'chat',
-      defaultModel: 'GLM-4.6',
+      defaultModel: 'GLM-4.7',
     },
     description: 'GLM (智谱AI)',
   },
