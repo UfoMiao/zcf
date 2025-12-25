@@ -116,8 +116,11 @@ zcf/
 ├── templates/             # 配置模板
 │   ├── claude-code/       # Claude Code 模板
 │   ├── codex/            # Codex 模板
-│   ├── common/           # 通用模板
-│   └── output-styles/    # 输出风格模板
+│   └── common/           # 共享模板
+│       ├── output-styles/  # AI 人格风格 (en, zh-CN)
+│       └── workflow/       # 共享工作流
+│           ├── git/        # Git 命令 (commit, worktree 等)
+│           └── sixStep/    # 六阶段开发工作流
 │
 ├── tests/                 # 测试文件
 │   ├── unit/             # 单元测试

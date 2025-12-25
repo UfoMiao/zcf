@@ -89,7 +89,7 @@ Use the following command in Codex (note different prefix):
 - Detailed task breakdown
 - Technical implementation plan
 - Development plan and timeline
-- Plan document (saved in `.claude/plan/` or `.codex/plan/`)
+- Plan document (saved in `.zcf/plan/current/task-name.md`)
 
 ### 4. Execute
 
@@ -151,10 +151,17 @@ Use the following command in Codex (note different prefix):
 
 Workflow automatically generates plan documents and requires saving:
 
-- **Claude Code**: `.claude/plan/` directory
-- **Codex**: `.codex/plan/` directory
+- **In-progress tasks**: `.zcf/plan/current/` directory
+- **Completed tasks**: `.zcf/plan/history/` directory
 
-Document naming format is usually: `Plan_TaskDescription_Timestamp.md`
+> 💡 **Tip**: `.zcf/` is the unified workflow directory, same path is used whether using Claude Code or Codex.
+
+#### File Naming Rules
+
+- **In-progress**: `task-name.md` (e.g., `user-login-feature.md`)
+- **Archived**: `[Finish-Time]task-name.md` (e.g., `2024-01-15_143052user-login-feature.md`)
+
+Time format is `YYYY-MM-DD_HHMMSS`, automatically obtained via bash command to ensure accuracy.
 
 ## Best Practices
 
@@ -278,9 +285,21 @@ Workflow will:
 
 ### Plan Document Location
 
-- ⚠️ **Claude Code**: Plan documents saved in `.claude/plan/` directory
-- ⚠️ **Codex**: Plan documents saved in `.codex/plan/` directory
+Workflow uses unified `.zcf/plan/` directory structure:
+
+```
+project-root/
+└── .zcf/
+    └── plan/
+        ├── current/                        # Current in-progress tasks
+        │   └── task-name.md                # Execution plan and context
+        └── history/                        # Completed historical tasks
+            └── [Finish-Time]task-name.md   # Archived task records
+```
+
+- ⚠️ **Unified Directory**: Whether using Claude Code or Codex, `.zcf/plan/` directory is used
 - ✅ **Version Control**: It's recommended to include plan documents in Git version control
+- 📁 **Auto-archiving**: After task completion, plan files are automatically moved from `current/` to `history/`
 
 ### Stage Skipping
 

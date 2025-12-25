@@ -116,8 +116,11 @@ zcf/
 ├── templates/             # Configuration templates
 │   ├── claude-code/       # Claude Code templates
 │   ├── codex/            # Codex templates
-│   ├── common/           # Common templates
-│   └── output-styles/    # Output style templates
+│   └── common/           # Shared templates
+│       ├── output-styles/  # AI personality styles (en, zh-CN)
+│       └── workflow/       # Shared workflows
+│           ├── git/        # Git commands (commit, worktree, etc.)
+│           └── sixStep/    # Six-stage development workflow
 │
 ├── tests/                 # Test files
 │   ├── unit/             # Unit tests
