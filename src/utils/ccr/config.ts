@@ -84,6 +84,10 @@ export async function configureCcrProxy(ccrConfig: CcrConfig): Promise<void> {
     settings.env = {}
   }
 
+  // Remove ANTHROPIC_AUTH_TOKEN when switching to CCR proxy to avoid conflicts
+  delete settings.env.ANTHROPIC_AUTH_TOKEN
+
+  // Set CCR proxy configuration
   settings.env.ANTHROPIC_BASE_URL = `http://${host}:${port}`
   settings.env.ANTHROPIC_API_KEY = apiKey
 
