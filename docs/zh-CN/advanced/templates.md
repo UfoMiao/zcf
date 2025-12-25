@@ -104,7 +104,7 @@ npx zcf init -o skip
 
 **Claude Code**：
 ```
-/set-output-style engineer-professional
+/output-style engineer-professional
 ```
 
 **Codex**：

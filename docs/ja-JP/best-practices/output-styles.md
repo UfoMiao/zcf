@@ -35,7 +35,7 @@ npx zcf init -o skip
 
 - **メインメニュー**：`npx zcf` → 6 を選択しスタイル管理へ。
 - **プロジェクト内**：  
-  - Claude Code: `/set-output-style engineer-professional`  
+  - Claude Code: `/output-style engineer-professional`  
   - Codex: `config.toml` の `systemPromptStyle` を編集。
 
 ### 編集
@@ -93,11 +93,11 @@ vim ~/.claude/prompts/output-style/my-custom-style.md
 
 ```bash
 # 実装フェーズ
-/set-output-style engineer-professional
+/output-style engineer-professional
 # レビュー時
-/set-output-style code-review
+/output-style code-review
 # ドキュメント作成時
-/set-output-style documentation
+/output-style documentation
 ```
 
 ### 3. プロジェクト専用スタイル
@@ -107,7 +107,7 @@ vim ~/.claude/prompts/output-style/my-custom-style.md
 Project/.claude/output-style/project-specific.md
 
 # 会話で指定
-/set-output-style project-specific
+/output-style project-specific
 ```
 
 優先度は「プロジェクト > グローバル > 内蔵」の順です。
@@ -130,7 +130,7 @@ cp team-output-styles/team-standards.md ~/.claude/prompts/output-style/
 
 1. ファイルを作成：`vim ~/.claude/prompts/output-style/my-style.md`
 2. 内容を書く（人格/コーディング規約/作業方法など）
-3. メニューまたは `/set-output-style my-style` で適用
+3. メニューまたは `/output-style my-style` で適用
 
 ## 注意点
 

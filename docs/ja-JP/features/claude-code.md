@@ -66,7 +66,7 @@ title: Claude Code 設定
 
 ## 出力スタイルと AI メモリ
 
-- `~/.claude/prompts/output-style/` に複数スタイルを同梱。`/set-output-style engineer-professional` などで切替。
+- `~/.claude/prompts/output-style/` に複数スタイルを同梱。`/output-style engineer-professional` などで切替。
 - AI メモリ（グローバル指示）は `~/.claude/CLAUDE.md` に保存。`npx zcf` → 6 で編集可能。
 
 ## MCP サービス

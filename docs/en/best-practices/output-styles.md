@@ -46,7 +46,7 @@ npx zcf
 
 **Claude Code**:
 ```
-/set-output-style engineer-professional
+/output-style engineer-professional
 ```
 
 **Codex**:
@@ -124,13 +124,13 @@ Create different output styles for different scenarios:
 
 ```bash
 # During development: Use professional engineer style
-/set-output-style engineer-professional
+/output-style engineer-professional
 
 # During code review: Use review-specific style
-/set-output-style code-review
+/output-style code-review
 
 # During documentation: Use documentation style
-/set-output-style documentation
+/output-style documentation
 ```
 
 ### 3. Project-Specific Styles
@@ -142,7 +142,7 @@ For projects requiring independent styles, use project-level output styles:
 Project Root/.claude/output-style/project-specific.md
 
 # Use in conversation
-/set-output-style project-specific
+/output-style project-specific
 ```
 
 Project-specific styles override global styles but only take effect in that project.
@@ -238,7 +238,7 @@ npx zcf
 # Select 6, then select my-style
 
 # Or use in project
-/set-output-style my-style
+/output-style my-style
 ```
 
 ### Team Shared Styles
@@ -292,7 +292,7 @@ After creating new style, test its effects:
 
 ```bash
 # 1. Set new style
-/set-output-style my-new-style
+/output-style my-new-style
 
 # 2. Conduct test conversation
 Please help me implement a simple Todo feature

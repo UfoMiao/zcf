@@ -290,7 +290,7 @@ npx zcf config-switch work --code-type codex
 npx zcf init -s -o all
 
 # 在对话中切换风格
-# Claude Code: /set-output-style engineer-professional
+# Claude Code: /output-style engineer-professional
 # Codex: 通过系统提示配置
 ```
 

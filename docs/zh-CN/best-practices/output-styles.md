@@ -46,7 +46,7 @@ npx zcf
 
 **Claude Code**：
 ```
-/set-output-style engineer-professional
+/output-style engineer-professional
 ```
 
 **Codex**：
@@ -124,13 +124,13 @@ ZCF 提供以下预置输出风格：
 
 ```bash
 # 开发时：使用专业工程师风格
-/set-output-style engineer-professional
+/output-style engineer-professional
 
 # 代码审查时：使用审查专用风格
-/set-output-style code-review
+/output-style code-review
 
 # 文档编写时：使用文档编写风格
-/set-output-style documentation
+/output-style documentation
 ```
 
 ### 3. 项目特定风格
@@ -142,7 +142,7 @@ ZCF 提供以下预置输出风格：
 项目根目录/.claude/output-style/project-specific.md
 
 # 在对话中使用
-/set-output-style project-specific
+/output-style project-specific
 ```
 
 项目特定风格会覆盖全局风格，但仅在该项目中生效。
@@ -238,7 +238,7 @@ npx zcf
 # 选择 6，然后选择 my-style
 
 # 或在项目中使用
-/set-output-style my-style
+/output-style my-style
 ```
 
 ### 团队共享风格
@@ -292,7 +292,7 @@ git commit -m "Update output style standards"
 
 ```bash
 # 1. 设置新风格
-/set-output-style my-new-style
+/output-style my-new-style
 
 # 2. 进行测试对话
 请帮我实现一个简单的 Todo 功能

@@ -285,7 +285,7 @@ npx zcf config-switch glm-provider --code-type codex
 npx zcf init -s -o all
 
 # 会話中に切り替え
-# Claude Code: /set-output-style engineer-professional
+# Claude Code: /output-style engineer-professional
 # Codex: システムプロンプトで設定
 ```
 

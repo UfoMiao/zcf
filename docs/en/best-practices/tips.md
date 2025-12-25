@@ -290,7 +290,7 @@ npx zcf config-switch work --code-type codex
 npx zcf init -s -o all
 
 # Switch style in conversation
-# Claude Code: /set-output-style engineer-professional
+# Claude Code: /output-style engineer-professional
 # Codex: Configure through system prompt
 ```
 
