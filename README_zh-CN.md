@@ -103,9 +103,15 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 
 非常感谢所有赞助商的慷慨支持！
 
+【企业赞助商】
+
 - [302.AI](https://share.302.ai/gAT9VG) （第一个企业赞助商 🤠）
 - [GLM](https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII) （第一个 AI 模型赞助商 🤖）
 - [PackyCode](https://www.packyapi.com/register?aff=zcf) （第一个 API 中转服务商赞助商 🧝🏻‍♀️）
+- [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8)（赞助了 100$ 中转站额度 💰）
+
+【个人赞助商】
+
 - Tc (第一个赞助者)
 - Argolinhas (第一个 ko-fi 赞助者 ٩(•̤̀ᵕ•̤́๑))
 - r\*r (第一个不愿透露姓名的赞助者 🤣)

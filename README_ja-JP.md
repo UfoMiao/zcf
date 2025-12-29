@@ -104,9 +104,15 @@ Telegramグループに参加して、サポートやディスカッション、
 
 すべてのスポンサーの寛大なサポートに感謝します！
 
+【企業スポンサー】
+
 - [302.AI](https://share.302.ai/gAT9VG)（最初の企業スポンサー 🤠）
 - [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB)（最初のAIモデルスポンサー 🤖）
 - [PackyCode](https://www.packyapi.com/register?aff=zcf)（最初のAPIプロキシサービススポンサー 🧝🏻‍♀️）
+- [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8)（$100 プロキシクレジットを提供 💰）
+
+【個人スポンサー】
+
 - Tc（最初のスポンサー）
 - Argolinhas（最初のko-fiスポンサー ٩(•̤̀ᵕ•̤́๑)）
 - r\*r（最初の匿名スポンサー 🤣）

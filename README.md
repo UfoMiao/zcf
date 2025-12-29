@@ -102,9 +102,16 @@ If you find this project helpful, please consider sponsoring its development. Yo
 ### Our Sponsors
 
 A huge thank you to all our sponsors for their generous support!
+
+【Corporate Sponsors】
+
 - [302.AI](https://share.302.ai/gAT9VG) (first corporate sponsorship 🤠)
 - [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB) (first AI model sponsorship 🤖)
 - [PackyCode](https://www.packyapi.com/register?aff=zcf) (first API proxy service sponsor 🧝🏻‍♀️)
+- [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8) (sponsored $100 proxy credits 💰)
+
+【Individual Sponsors】
+
 - Tc (first sponsor)
 - Argolinhas (first ko-fi sponsor ٩(•̤̀ᵕ•̤́๑))
 - r\*r (first anonymous sponsor 🤣)
