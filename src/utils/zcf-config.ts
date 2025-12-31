@@ -5,10 +5,10 @@ import type {
 } from '../types/toml-config'
 import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { dirname } from 'pathe'
-import { parse, stringify } from 'smol-toml'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, LEGACY_ZCF_CONFIG_FILES, SUPPORTED_LANGS, ZCF_CONFIG_DIR, ZCF_CONFIG_FILE } from '../constants'
 import { ensureDir, exists, readFile, writeFile } from './fs-operations'
 import { readJsonConfig } from './json-config'
+import { batchEditToml, parseToml, stringifyToml } from './toml-edit'
 
 // Legacy interfaces for backward compatibility
 export interface ZcfConfig {
@@ -53,7 +53,7 @@ function readTomlConfig(configPath: string): ZcfTomlConfig | null {
     }
 
     const content = readFile(configPath)
-    const parsed = parse(content) as unknown as ZcfTomlConfig
+    const parsed = parseToml<ZcfTomlConfig>(content)
     return parsed
   }
   catch {
@@ -63,9 +63,17 @@ function readTomlConfig(configPath: string): ZcfTomlConfig | null {
 }
 
 /**
- * Write TOML configuration to file
+ * Write TOML configuration to file with format preservation
  * @param configPath - Path to the TOML configuration file
  * @param config - Configuration object to write
+ *
+ * If the file exists, uses incremental editing to preserve user comments,
+ * formatting, and any unmanaged fields. If the file doesn't exist, creates
+ * a new file with the full configuration.
+ *
+ * Note: editToml only works with nested paths (containing dots), so we use
+ * batchEditToml for section fields only. Top-level fields are handled by
+ * the full stringify approach when necessary.
  */
 function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
   try {
@@ -73,9 +81,63 @@ function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
     const configDir = dirname(configPath)
     ensureDir(configDir)
 
-    // Serialize to TOML and write to file
-    const tomlContent = stringify(config)
-    writeFile(configPath, tomlContent)
+    // Check if file exists for incremental editing
+    if (exists(configPath)) {
+      const existingContent = readFile(configPath)
+
+      // Build edits for section fields only (editToml requires nested paths with dots)
+      // Top-level fields like 'version' and 'lastUpdated' cannot be edited incrementally
+      const edits: Array<[string, unknown]> = [
+        // General section
+        ['general.preferredLang', config.general.preferredLang],
+        ['general.currentTool', config.general.currentTool],
+      ]
+
+      // Optional general fields
+      if (config.general.templateLang !== undefined) {
+        edits.push(['general.templateLang', config.general.templateLang])
+      }
+      if (config.general.aiOutputLang !== undefined) {
+        edits.push(['general.aiOutputLang', config.general.aiOutputLang])
+      }
+
+      // Claude Code section
+      edits.push(
+        ['claudeCode.enabled', config.claudeCode.enabled],
+        ['claudeCode.outputStyles', config.claudeCode.outputStyles],
+        ['claudeCode.defaultOutputStyle', config.claudeCode.defaultOutputStyle],
+        ['claudeCode.installType', config.claudeCode.installType],
+        ['claudeCode.currentProfile', config.claudeCode.currentProfile],
+        ['claudeCode.profiles', config.claudeCode.profiles],
+      )
+
+      // Optional Claude Code fields
+      if (config.claudeCode.version !== undefined) {
+        edits.push(['claudeCode.version', config.claudeCode.version])
+      }
+
+      // Codex section
+      edits.push(
+        ['codex.enabled', config.codex.enabled],
+        ['codex.systemPromptStyle', config.codex.systemPromptStyle],
+      )
+
+      try {
+        // Apply incremental edits preserving user customizations
+        const updatedContent = batchEditToml(existingContent, edits)
+        writeFile(configPath, updatedContent)
+      }
+      catch {
+        // Fall back to full stringify if incremental editing fails
+        const tomlContent = stringifyToml(config as unknown as Record<string, unknown>)
+        writeFile(configPath, tomlContent)
+      }
+    }
+    else {
+      // Create new file with full configuration
+      const tomlContent = stringifyToml(config as unknown as Record<string, unknown>)
+      writeFile(configPath, tomlContent)
+    }
   }
   catch {
     // Silently fail if cannot write config - user's system may have permission issues
