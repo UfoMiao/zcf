@@ -23,6 +23,7 @@ catalogs:
     vitepress: ^1.6.4
     vue: ^3.5.25
   runtime:
+    '@rainbowatcher/toml-edit-js': ^0.6.4
     dayjs: ^1.11.18
     find-up-simple: ^1.0.1
     fs-extra: ^11.3.2
@@ -30,7 +31,6 @@ catalogs:
     i18next-fs-backend: ^2.6.0
     pathe: ^2.0.3
     semver: ^7.7.2
-    smol-toml: ^1.4.2
     tinyexec: ^1.0.1
     trash: ^10.0.0
   testing:

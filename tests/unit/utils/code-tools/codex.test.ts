@@ -1364,7 +1364,7 @@ env = {}
       expect(result).toContain('MCPR_TOKEN = \'mcpr_test_token_123\'')
 
       // Verify the config can be parsed back without errors
-      const { parse: parseToml } = await import('smol-toml')
+      const { parseToml } = await import('../../../../src/utils/toml-edit')
       expect(() => parseToml(result)).not.toThrow()
     })
 

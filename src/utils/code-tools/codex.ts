@@ -8,7 +8,6 @@ import inquirer from 'inquirer'
 import ora from 'ora'
 import { dirname, join } from 'pathe'
 import semver from 'semver'
-import { parse as parseToml } from 'smol-toml'
 import { x } from 'tinyexec'
 // Removed MCP config imports; MCP configuration moved to codex-configure.ts
 import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../../constants'
@@ -21,6 +20,7 @@ import { normalizeTomlPath, wrapCommandWithSudo } from '../platform'
 import { addNumbersToChoices } from '../prompt-helpers'
 import { resolveAiOutputLanguage } from '../prompts'
 import { promptBoolean } from '../toggle-prompt'
+import { parseToml } from '../toml-edit'
 import { readDefaultTomlConfig, readZcfConfig, updateTomlConfig, updateZcfConfig } from '../zcf-config'
 import { detectConfigManagementMode } from './codex-config-detector'
 import { configureCodexMcp } from './codex-configure'
@@ -943,6 +943,17 @@ export function writeCodexConfig(data: CodexConfigData): void {
   ensureEnvKeyMigration()
 
   ensureDir(CODEX_DIR)
+
+  // Note: Codex config uses top-level fields (model, model_provider) which cannot be
+  // edited incrementally with editToml (it only supports nested paths with dots).
+  // Instead, we rely on renderCodexConfig which preserves user customizations through
+  // the otherConfig field - this captures all non-ZCF-managed sections and lines
+  // from the existing config and includes them in the rendered output.
+  //
+  // This approach ensures:
+  // - User's [projects.*] sections are preserved
+  // - User's custom settings and comments in otherConfig are preserved
+  // - ZCF-managed sections (model_providers.*, mcp_servers.*) are properly updated
   writeFile(CODEX_CONFIG_FILE, renderCodexConfig(data))
 }
 
