@@ -375,12 +375,26 @@ const result = await uninstallCodex(options)
 
 ### Q: How to handle TOML configuration parsing?
 
-The module uses `smol-toml` for TOML parsing:
+The module uses `@rainbowatcher/toml-edit-js` for TOML parsing with format-preserving editing:
 ```typescript
-import { parse, stringify } from 'smol-toml'
+import { parseToml, stringifyToml, editToml, batchEditToml } from '../toml-edit'
 
-const config = parse(tomlString)
-const tomlString = stringify(config)
+// Parse TOML string to object
+const config = parseToml<MyConfig>(tomlString)
+
+// Stringify object to TOML (for new files)
+const tomlString = stringifyToml(config)
+
+// Edit specific nested paths while preserving formatting and comments
+// Note: editToml only works with nested paths (e.g., 'section.key'), not top-level fields
+const updatedToml = editToml(originalToml, 'section.key', 'new-value')
+
+// Batch edit multiple paths
+const edits: Array<[string, unknown]> = [
+  ['general.lang', 'zh-CN'],
+  ['settings.enabled', true],
+]
+const result = batchEditToml(originalToml, edits)
 ```
 
 ## Related File List

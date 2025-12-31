@@ -21,22 +21,24 @@ import {
 // Mock dependencies
 vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/fs-operations')
-vi.mock('smol-toml')
+vi.mock('../../../src/utils/toml-edit')
 
 const mockExists = vi.fn()
 const mockReadFile = vi.fn()
 const mockWriteFile = vi.fn()
 const mockEnsureDir = vi.fn()
-const mockParse = vi.fn()
-const mockStringify = vi.fn()
+const mockParseToml = vi.fn()
+const mockStringifyToml = vi.fn()
+const mockBatchEditToml = vi.fn()
 
 // Setup mocks
 vi.mocked(await import('../../../src/utils/fs-operations')).exists = mockExists
 vi.mocked(await import('../../../src/utils/fs-operations')).readFile = mockReadFile
 vi.mocked(await import('../../../src/utils/fs-operations')).writeFile = mockWriteFile
 vi.mocked(await import('../../../src/utils/fs-operations')).ensureDir = mockEnsureDir
-vi.mocked(await import('smol-toml')).parse = mockParse
-vi.mocked(await import('smol-toml')).stringify = mockStringify
+vi.mocked(await import('../../../src/utils/toml-edit')).parseToml = mockParseToml
+vi.mocked(await import('../../../src/utils/toml-edit')).stringifyToml = mockStringifyToml
+vi.mocked(await import('../../../src/utils/toml-edit')).batchEditToml = mockBatchEditToml
 
 describe('zcf-config utilities', () => {
   beforeEach(() => {
@@ -118,7 +120,7 @@ system_prompt_style = "engineer-professional"`
 
       mockExists.mockReturnValueOnce(true)
       mockReadFile.mockReturnValueOnce('invalid')
-      mockParse.mockImplementationOnce(() => {
+      mockParseToml.mockImplementationOnce(() => {
         throw new Error('parse failed')
       })
       expect(readTomlConfig('broken.toml')).toBeNull()
@@ -157,7 +159,7 @@ system_prompt_style = "engineer-professional"`
 
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
-      mockParse.mockReturnValue(mockTomlConfig)
+      mockParseToml.mockReturnValue(mockTomlConfig)
 
       const result = readZcfConfig()
 
@@ -172,7 +174,7 @@ system_prompt_style = "engineer-professional"`
       })
       expect(mockExists).toHaveBeenCalled()
       expect(mockReadFile).toHaveBeenCalled()
-      expect(mockParse).toHaveBeenCalled()
+      expect(mockParseToml).toHaveBeenCalled()
     })
 
     it('should return null when file does not exist', () => {
@@ -197,7 +199,7 @@ system_prompt_style = "engineer-professional"`
       }
 
       // Mock internal TOML operations
-      mockStringify.mockReturnValue('mocked toml content')
+      mockStringifyToml.mockReturnValue('mocked toml content')
       mockEnsureDir.mockReturnValue(undefined)
       mockWriteFile.mockReturnValue(undefined)
 
@@ -233,16 +235,23 @@ system_prompt_style = "engineer-professional"`
       }
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
-      mockParse.mockReturnValue(existingTomlConfig)
+      mockParseToml.mockReturnValue(existingTomlConfig)
+      // batchEditToml is used for incremental editing when file exists
+      // Return content with old version/lastUpdated to verify they get updated
+      mockBatchEditToml.mockReturnValue('version = "1.0.0"\nlastUpdated = "2024-01-01"\n[general]\npreferredLang = "zh-CN"')
 
       // Migration is handled internally
 
       updateZcfConfig({ preferredLang: 'zh-CN', codeToolType: 'codex' })
 
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.any(String),
-        'mocked toml content',
-      )
+      // Verify writeFile was called and the content includes updated top-level fields
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+      // Verify version is updated (should be 1.0.0 from existing config or default)
+      expect(writtenContent).toMatch(/version\s*=\s*["']1\.0\.0["']/)
+      // Verify lastUpdated is updated to current timestamp (ISO format)
+      expect(writtenContent).toMatch(/lastUpdated\s*=\s*["']\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     })
 
     it('should handle null existing config', () => {
@@ -250,7 +259,7 @@ system_prompt_style = "engineer-professional"`
       vi.mocked(jsonConfig.readJsonConfig).mockReturnValue(null)
 
       // Mock internal TOML operations
-      mockStringify.mockReturnValue('mocked toml content')
+      mockStringifyToml.mockReturnValue('mocked toml content')
       mockEnsureDir.mockReturnValue(undefined)
       mockWriteFile.mockReturnValue(undefined)
 
@@ -286,21 +295,24 @@ system_prompt_style = "engineer-professional"`
 
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
-      mockParse.mockReturnValue(existingTomlConfig)
+      mockParseToml.mockReturnValue(existingTomlConfig)
 
-      mockStringify.mockImplementation(() => 'mocked toml content')
+      // batchEditToml is used when file exists for incremental editing
+      // Return content with old version/lastUpdated to verify they get updated
+      mockBatchEditToml.mockImplementation(() => 'version = "1.0.0"\nlastUpdated = "2024-01-01"\n[codex]\nenabled = true')
       mockEnsureDir.mockReturnValue(undefined)
       mockWriteFile.mockReturnValue(undefined)
 
       updateZcfConfig({ codeToolType: 'codex' })
 
-      const lastCall = mockStringify.mock.calls.at(-1)
-      expect(lastCall).toBeTruthy()
-      const serializedConfig = lastCall?.[0] as ZcfTomlConfig | undefined
-      if (!serializedConfig) {
-        throw new Error('mockStringify should be called with config')
-      }
-      expect(serializedConfig.codex.systemPromptStyle).toBe('nekomata-engineer')
+      // Verify batchEditToml was called (file exists case uses incremental editing)
+      expect(mockBatchEditToml).toHaveBeenCalled()
+      // Verify writeFile was called and the content includes updated top-level fields
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+      // Verify lastUpdated is updated to current timestamp (ISO format)
+      expect(writtenContent).toMatch(/lastUpdated\s*=\s*["']\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     })
   })
 
@@ -377,7 +389,7 @@ system_prompt_style = "engineer-professional"`
       }
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
-      mockParse.mockReturnValue(mockTomlConfig)
+      mockParseToml.mockReturnValue(mockTomlConfig)
 
       const result = await readZcfConfigAsync()
 
@@ -434,7 +446,7 @@ system_prompt_style = "engineer-professional"`
       }
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
-      mockParse.mockReturnValue(mockTomlConfig)
+      mockParseToml.mockReturnValue(mockTomlConfig)
 
       const result = await getZcfConfigAsync()
 
@@ -452,8 +464,9 @@ system_prompt_style = "engineer-professional"`
         codeToolType: 'claude-code' as const,
       }
 
-      // Mock internal TOML operations
-      mockStringify.mockReturnValue('mocked toml content')
+      // When file doesn't exist, stringifyToml is used for new file creation
+      mockExists.mockReturnValue(false)
+      mockStringifyToml.mockReturnValue('mocked toml content')
       mockEnsureDir.mockReturnValue(undefined)
       mockWriteFile.mockReturnValue(undefined)
 
@@ -503,7 +516,7 @@ system_prompt_style = "engineer-professional"`
       }
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
-      mockParse.mockReturnValue(mockTomlConfig)
+      mockParseToml.mockReturnValue(mockTomlConfig)
 
       const result = getZcfConfig()
 
@@ -538,21 +551,24 @@ system_prompt_style = "engineer-professional"`
       }
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
-      mockParse.mockReturnValue(existingTomlConfig)
+      mockParseToml.mockReturnValue(existingTomlConfig)
 
-      // Set up the migrateFromJsonConfig mock to return the expected config
-      // Migration is handled internally
+      // batchEditToml is used for incremental editing when file exists
+      // Return content with old version/lastUpdated to verify they get updated
+      mockBatchEditToml.mockReturnValue('version = "1.0.0"\nlastUpdated = "2024-01-01"\n[claudeCode]\nenabled = false')
 
       updateZcfConfig({
         outputStyles: undefined,
         defaultOutputStyle: undefined,
       })
 
-      // Since we're mocking migrateFromJsonConfig, we should expect what we mocked
-      expect(mockWriteFile).toHaveBeenCalledWith(
-        expect.any(String),
-        'mocked toml content',
-      )
+      // When file exists, batchEditToml is used for incremental editing
+      // Verify writeFile was called and the content includes updated top-level fields
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+      // Verify lastUpdated is updated to current timestamp (ISO format)
+      expect(writtenContent).toMatch(/lastUpdated\s*=\s*["']\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     })
 
     it('should properly handle all fields in update', () => {
@@ -569,7 +585,7 @@ system_prompt_style = "engineer-professional"`
       }
 
       // Mock internal TOML operations
-      mockStringify.mockReturnValue('mocked toml content')
+      mockStringifyToml.mockReturnValue('mocked toml content')
       mockEnsureDir.mockReturnValue(undefined)
       mockWriteFile.mockReturnValue(undefined)
 
@@ -588,13 +604,13 @@ system_prompt_style = "engineer-professional"`
       it('should read and parse valid TOML config file', () => {
         mockExists.mockReturnValue(true)
         mockReadFile.mockReturnValue(sampleTomlString)
-        mockParse.mockReturnValue(sampleTomlConfig)
+        mockParseToml.mockReturnValue(sampleTomlConfig)
 
         const result = readTomlConfig('/test/config.toml')
 
         expect(mockExists).toHaveBeenCalledWith('/test/config.toml')
         expect(mockReadFile).toHaveBeenCalledWith('/test/config.toml')
-        expect(mockParse).toHaveBeenCalledWith(sampleTomlString)
+        expect(mockParseToml).toHaveBeenCalledWith(sampleTomlString)
         expect(result).toEqual(sampleTomlConfig)
       })
 
@@ -611,7 +627,7 @@ system_prompt_style = "engineer-professional"`
       it('should return null when TOML parsing fails', () => {
         mockExists.mockReturnValue(true)
         mockReadFile.mockReturnValue('invalid toml content')
-        mockParse.mockImplementation(() => {
+        mockParseToml.mockImplementation(() => {
           throw new Error('Invalid TOML')
         })
 
@@ -623,7 +639,9 @@ system_prompt_style = "engineer-professional"`
 
     describe('writeTomlConfig', () => {
       it('should serialize and write TOML config to file', () => {
-        mockStringify.mockReturnValue(sampleTomlString)
+        // When file doesn't exist, stringifyToml is used
+        mockExists.mockReturnValue(false)
+        mockStringifyToml.mockReturnValue(sampleTomlString)
         mockEnsureDir.mockReturnValue(undefined)
         mockWriteFile.mockReturnValue(undefined)
 
@@ -632,12 +650,12 @@ system_prompt_style = "engineer-professional"`
         writeTomlConfig(configPath, sampleTomlConfig)
 
         expect(mockEnsureDir).toHaveBeenCalled()
-        expect(mockStringify).toHaveBeenCalledWith(sampleTomlConfig)
+        expect(mockStringifyToml).toHaveBeenCalledWith(sampleTomlConfig)
         expect(mockWriteFile).toHaveBeenCalledWith(configPath, sampleTomlString)
       })
 
       it('should handle write errors gracefully', () => {
-        mockStringify.mockReturnValue(sampleTomlString)
+        mockStringifyToml.mockReturnValue(sampleTomlString)
         mockEnsureDir.mockImplementation(() => {
           throw new Error('Permission denied')
         })
@@ -645,6 +663,99 @@ system_prompt_style = "engineer-professional"`
         expect(() => {
           writeTomlConfig('/test/config.toml', sampleTomlConfig)
         }).not.toThrow()
+      })
+
+      it('should update top-level fields (version, lastUpdated) when file exists', () => {
+        const configPath = '/test/config.toml'
+        const existingContent = 'version = "0.9.0"\nlastUpdated = "2024-01-01T00:00:00.000Z"\n[general]\npreferredLang = "en"'
+        const newConfig: ZcfTomlConfig = {
+          version: '1.0.0',
+          lastUpdated: '2024-12-25T10:45:00.000Z',
+          general: {
+            preferredLang: 'zh-CN',
+            currentTool: 'claude-code',
+          },
+          claudeCode: {
+            enabled: true,
+            outputStyles: ['engineer-professional'],
+            defaultOutputStyle: 'engineer-professional',
+            installType: 'global',
+          },
+          codex: {
+            enabled: false,
+            systemPromptStyle: 'engineer-professional',
+          },
+        }
+
+        mockExists.mockReturnValue(true)
+        mockReadFile.mockReturnValue(existingContent)
+        // batchEditToml returns content with section edits but old top-level fields
+        mockBatchEditToml.mockReturnValue('version = "0.9.0"\nlastUpdated = "2024-01-01T00:00:00.000Z"\n[general]\npreferredLang = "zh-CN"')
+        mockEnsureDir.mockReturnValue(undefined)
+        mockWriteFile.mockReturnValue(undefined)
+
+        writeTomlConfig(configPath, newConfig)
+
+        // Verify writeFile was called
+        expect(mockWriteFile).toHaveBeenCalled()
+        const writeCall = mockWriteFile.mock.calls[0]
+        const writtenContent = writeCall[1] as string
+
+        // Verify version is updated
+        expect(writtenContent).toMatch(/version\s*=\s*["']1\.0\.0["']/)
+        expect(writtenContent).not.toMatch(/version\s*=\s*["']0\.9\.0["']/)
+
+        // Verify lastUpdated is updated
+        expect(writtenContent).toMatch(/lastUpdated\s*=\s*["']2024-12-25T10:45:00\.000Z["']/)
+        expect(writtenContent).not.toMatch(/lastUpdated\s*=\s*["']2024-01-01T00:00:00\.000Z["']/)
+      })
+
+      it('should add top-level fields if they do not exist', () => {
+        const configPath = '/test/config.toml'
+        const existingContent = '[general]\npreferredLang = "en"'
+        const newConfig: ZcfTomlConfig = {
+          version: '1.0.0',
+          lastUpdated: '2024-12-25T10:45:00.000Z',
+          general: {
+            preferredLang: 'zh-CN',
+            currentTool: 'claude-code',
+          },
+          claudeCode: {
+            enabled: true,
+            outputStyles: ['engineer-professional'],
+            defaultOutputStyle: 'engineer-professional',
+            installType: 'global',
+          },
+          codex: {
+            enabled: false,
+            systemPromptStyle: 'engineer-professional',
+          },
+        }
+
+        mockExists.mockReturnValue(true)
+        mockReadFile.mockReturnValue(existingContent)
+        // batchEditToml returns content without top-level fields
+        mockBatchEditToml.mockReturnValue('[general]\npreferredLang = "zh-CN"')
+        mockEnsureDir.mockReturnValue(undefined)
+        mockWriteFile.mockReturnValue(undefined)
+
+        writeTomlConfig(configPath, newConfig)
+
+        // Verify writeFile was called
+        expect(mockWriteFile).toHaveBeenCalled()
+        const writeCall = mockWriteFile.mock.calls[0]
+        const writtenContent = writeCall[1] as string
+
+        // Verify version is added
+        expect(writtenContent).toMatch(/version\s*=\s*["']1\.0\.0["']/)
+
+        // Verify lastUpdated is added
+        expect(writtenContent).toMatch(/lastUpdated\s*=\s*["']2024-12-25T10:45:00\.000Z["']/)
+
+        // Verify version comes before lastUpdated
+        const versionIndex = writtenContent.indexOf('version')
+        const lastUpdatedIndex = writtenContent.indexOf('lastUpdated')
+        expect(versionIndex).toBeLessThan(lastUpdatedIndex)
       })
     })
 

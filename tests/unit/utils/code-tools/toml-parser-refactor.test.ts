@@ -23,7 +23,7 @@ describe('tOML Parser Refactor', () => {
     vi.clearAllMocks()
   })
 
-  describe('parseCodexConfig with smol-toml', () => {
+  describe('parseCodexConfig with toml-edit', () => {
     it('should parse empty TOML correctly', async () => {
       const { parseCodexConfig } = await import('../../../../src/utils/code-tools/codex')
 
@@ -138,7 +138,7 @@ base_url = "https://api.anthropic.com"
     })
   })
 
-  describe('renderCodexConfig with smol-toml', () => {
+  describe('renderCodexConfig with toml-edit', () => {
     it('should render simple config correctly', async () => {
       const { renderCodexConfig } = await import('../../../../src/utils/code-tools/codex')
 
