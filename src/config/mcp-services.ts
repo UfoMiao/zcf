@@ -87,6 +87,37 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
       env: {},
     },
   },
+  // Claude Code Plugins Marketplace - https://claudecodeplugins.io
+  {
+    id: 'project-health-auditor',
+    requiresApiKey: false,
+    config: {
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', '@claude-code-plugins-plus/project-health-auditor@latest'],
+      env: {},
+    },
+  },
+  {
+    id: 'design-to-code',
+    requiresApiKey: false,
+    config: {
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', '@claude-code-plugins-plus/design-to-code@latest'],
+      env: {},
+    },
+  },
+  {
+    id: 'conversational-api-debugger',
+    requiresApiKey: false,
+    config: {
+      type: 'stdio',
+      command: 'npx',
+      args: ['-y', '@claude-code-plugins-plus/conversational-api-debugger@latest'],
+      env: {},
+    },
+  },
 ]
 
 /**
@@ -132,6 +163,22 @@ export async function getMcpServices(): Promise<McpService[]> {
       id: 'serena',
       name: i18n.t('mcp:services.serena.name'),
       description: i18n.t('mcp:services.serena.description'),
+    },
+    // Claude Code Plugins Marketplace
+    {
+      id: 'project-health-auditor',
+      name: i18n.t('mcp:services.project-health-auditor.name'),
+      description: i18n.t('mcp:services.project-health-auditor.description'),
+    },
+    {
+      id: 'design-to-code',
+      name: i18n.t('mcp:services.design-to-code.name'),
+      description: i18n.t('mcp:services.design-to-code.description'),
+    },
+    {
+      id: 'conversational-api-debugger',
+      name: i18n.t('mcp:services.conversational-api-debugger.name'),
+      description: i18n.t('mcp:services.conversational-api-debugger.description'),
     },
   ]
 
