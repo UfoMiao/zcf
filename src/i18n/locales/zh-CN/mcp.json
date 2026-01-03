@@ -18,6 +18,12 @@
   "services.spec-workflow.name": "Spec 工作流",
   "services.serena.name": "Serena 助手",
   "services.serena.description": "提供类似 IDE 的语义代码检索与编辑，支持符号级实体提取与关系结构利用；与现有编码代理配合可显著提升标记效率",
+  "services.project-health-auditor.name": "项目健康审计",
+  "services.project-health-auditor.description": "分析代码健康度、复杂度和测试覆盖缺口，识别技术债务热点",
+  "services.design-to-code.name": "设计转代码",
+  "services.design-to-code.description": "将 Figma 设计和截图转换为 React、Vue 或 Svelte 组件，支持无障碍访问",
+  "services.conversational-api-debugger.name": "API 调试器",
+  "services.conversational-api-debugger.description": "使用 OpenAPI 规范和 HTTP 日志调试 REST API 故障，进行根因分析",
   "apiKeyApprovalFailed": "API密钥批准状态管理失败",
   "apiKeyPrompt": "请输入 API Key",
   "primaryApiKeySetFailed": "设置 primaryApiKey 失败"
