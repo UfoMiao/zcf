@@ -22,9 +22,23 @@ import { promptBoolean } from '../utils/toggle-prompt'
 import { runCcrMenuFeature, runCcusageFeature, runCometixMenuFeature } from '../utils/tools'
 import { readZcfConfig, updateZcfConfig } from '../utils/zcf-config'
 import { checkUpdates } from './check-updates'
+import { exportCommand } from './export'
+import { importCommand } from './import'
 import { init } from './init'
 import { uninstall } from './uninstall'
 import { update } from './update'
+
+/**
+ * Wait for user to press any key before returning to menu
+ */
+async function waitForKeyPress(): Promise<void> {
+  console.log('')
+  await inquirer.prompt({
+    type: 'input',
+    name: 'continue',
+    message: ansis.gray(i18n.t('menu:pressAnyKeyToReturn')),
+  })
+}
 
 type MenuResult = 'exit' | 'switch' | undefined
 
@@ -111,6 +125,12 @@ function printZcfSection(options: {
     `  ${ansis.cyan('S.')} ${i18n.t('menu:menuOptions.switchCodeTool')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.switchCodeTool')}`)}`,
   )
   console.log(
+    `  ${ansis.cyan('E.')} ${i18n.t('menu:menuOptions.exportConfig')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.exportConfig')}`)}`,
+  )
+  console.log(
+    `  ${ansis.cyan('I.')} ${i18n.t('menu:menuOptions.importConfig')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.importConfig')}`)}`,
+  )
+  console.log(
     `  ${ansis.cyan('-.')} ${options.uninstallOption} ${ansis.gray(`- ${options.uninstallDescription}`)}`,
   )
   console.log(
@@ -158,7 +178,7 @@ async function showClaudeCodeMenu(): Promise<MenuResult> {
     name: 'choice',
     message: i18n.t('common:enterChoice'),
     validate: (value) => {
-      const valid = ['1', '2', '3', '4', '5', '6', '7', 'r', 'R', 'u', 'U', 'l', 'L', '0', '-', '+', 's', 'S', 'q', 'Q']
+      const valid = ['1', '2', '3', '4', '5', '6', '7', 'r', 'R', 'u', 'U', 'l', 'L', '0', 'e', 'E', 'i', 'I', '-', '+', 's', 'S', 'q', 'Q']
       return valid.includes(value) || i18n.t('common:invalidChoice')
     },
   })
@@ -210,6 +230,16 @@ async function showClaudeCodeMenu(): Promise<MenuResult> {
       printSeparator()
       return undefined
     }
+    case 'e':
+      await exportCommand({})
+      await waitForKeyPress()
+      printSeparator()
+      return undefined
+    case 'i':
+      await importCommand(undefined, {})
+      await waitForKeyPress()
+      printSeparator()
+      return undefined
     case '-':
       await uninstall()
       printSeparator()
@@ -282,7 +312,7 @@ async function showCodexMenu(): Promise<MenuResult> {
     name: 'choice',
     message: i18n.t('common:enterChoice'),
     validate: (value) => {
-      const valid = ['1', '2', '3', '4', '5', '6', '0', '-', '+', 's', 'S', 'q', 'Q']
+      const valid = ['1', '2', '3', '4', '5', '6', '0', 'e', 'E', 'i', 'I', '-', '+', 's', 'S', 'q', 'Q']
       return valid.includes(value) || i18n.t('common:invalidChoice')
     },
   })
@@ -319,6 +349,16 @@ async function showCodexMenu(): Promise<MenuResult> {
       printSeparator()
       return undefined
     }
+    case 'e':
+      await exportCommand({})
+      await waitForKeyPress()
+      printSeparator()
+      return undefined
+    case 'i':
+      await importCommand(undefined, {})
+      await waitForKeyPress()
+      printSeparator()
+      return undefined
     case '-':
       await runCodexUninstall()
       printSeparator()
