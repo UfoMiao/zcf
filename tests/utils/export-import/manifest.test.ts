@@ -3,13 +3,17 @@
  */
 
 import type { ExportMetadata } from '../../../src/types/export-import'
-import { describe, expect, it } from 'vitest'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'pathe'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   compareVersions,
   createManifest,
   getManifestSummary,
   manifestHasSensitiveData,
   parseVersion,
+  validateFileIntegrity,
   validateManifest,
 } from '../../../src/utils/export-import/manifest'
 
@@ -167,6 +171,77 @@ describe('manifest', () => {
       expect(result.errors.some(e => e.code === 'MISSING_FILE_PATH')).toBe(true)
     })
 
+    it('should detect missing file type', () => {
+      const manifest = {
+        version: '1.0.0',
+        exportDate: new Date().toISOString(),
+        platform: 'linux',
+        codeType: 'claude-code',
+        scope: ['all'],
+        hasSensitiveData: false,
+        files: [
+          {
+            path: 'settings.json',
+            // Missing type
+            size: 100,
+            checksum: 'abc123',
+          },
+        ],
+      }
+
+      const result = validateManifest(manifest)
+
+      expect(result.valid).toBe(false)
+      expect(result.errors.some(e => e.code === 'MISSING_FILE_TYPE')).toBe(true)
+    })
+
+    it('should detect invalid file size', () => {
+      const manifest = {
+        version: '1.0.0',
+        exportDate: new Date().toISOString(),
+        platform: 'linux',
+        codeType: 'claude-code',
+        scope: ['all'],
+        hasSensitiveData: false,
+        files: [
+          {
+            path: 'settings.json',
+            type: 'settings',
+            size: 'invalid', // Should be number
+            checksum: 'abc123',
+          },
+        ],
+      }
+
+      const result = validateManifest(manifest)
+
+      expect(result.valid).toBe(false)
+      expect(result.errors.some(e => e.code === 'INVALID_FILE_SIZE')).toBe(true)
+    })
+
+    it('should warn about missing checksum', () => {
+      const manifest = {
+        version: '1.0.0',
+        exportDate: new Date().toISOString(),
+        platform: 'linux',
+        codeType: 'claude-code',
+        scope: ['all'],
+        hasSensitiveData: false,
+        files: [
+          {
+            path: 'settings.json',
+            type: 'settings',
+            size: 100,
+            // Missing checksum
+          },
+        ],
+      }
+
+      const result = validateManifest(manifest)
+
+      expect(result.warnings.some(w => w.code === 'MISSING_CHECKSUM')).toBe(true)
+    })
+
     it('should warn about platform mismatch', () => {
       const manifest: ExportMetadata = {
         version: '1.0.0',
@@ -183,6 +258,42 @@ describe('manifest', () => {
       // Platform mismatch is a warning, not an error
       expect(result.valid).toBe(true)
       // Warnings may exist depending on current platform
+    })
+  })
+
+  describe('validateFileIntegrity', () => {
+    let testDir: string
+    let testFile: string
+
+    beforeEach(() => {
+      testDir = mkdtempSync(join(tmpdir(), 'zcf-test-'))
+      testFile = join(testDir, 'test.txt')
+      writeFileSync(testFile, 'test content', 'utf-8')
+    })
+
+    it('should validate file integrity with correct checksum', () => {
+      // First get the actual checksum
+      const { actualChecksum } = validateFileIntegrity(testFile, 'dummy')
+      expect(actualChecksum).toBeTruthy()
+
+      // Then validate with the correct checksum
+      const result = validateFileIntegrity(testFile, actualChecksum!)
+      expect(result.valid).toBe(true)
+      expect(result.actualChecksum).toBe(actualChecksum)
+    })
+
+    it('should detect incorrect checksum', () => {
+      const result = validateFileIntegrity(testFile, 'wrong-checksum')
+
+      expect(result.valid).toBe(false)
+      expect(result.actualChecksum).toBeTruthy()
+    })
+
+    it('should handle non-existent file', () => {
+      const result = validateFileIntegrity('/non/existent/file.txt', 'any-checksum')
+
+      expect(result.valid).toBe(false)
+      expect(result.actualChecksum).toBeUndefined()
     })
   })
 

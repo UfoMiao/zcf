@@ -7,9 +7,14 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   CLAUDE_CODE_FILES,
   CODEX_FILES,
+  collectAllConfig,
   collectClaudeCodeConfig,
   collectCodexConfig,
+  collectCustomFiles,
+  collectHooks,
   collectMcpConfig,
+  collectPrompts,
+  collectSkills,
   collectWorkflows,
   getCollectionSummary,
 } from '../../../src/utils/export-import/collector'
@@ -276,6 +281,252 @@ describe('collector', () => {
 
       // Should return empty array when only zcf directory exists
       expect(files).toHaveLength(0)
+    })
+  })
+
+  describe('collectSkills', () => {
+    it('should collect skill files when skills directory exists', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(true)
+      vi.mocked(fsOperations.readDir).mockReturnValue(['skill1.ts', 'skill2.ts'])
+      vi.mocked(fsOperations.isFile).mockReturnValue(true)
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectSkills('claude-code')
+
+      expect(files.length).toBeGreaterThan(0)
+      expect(files.every(f => f.type === 'skills')).toBe(true)
+    })
+
+    it('should return empty array when skills directory does not exist', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(false)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+
+      const files = collectSkills('claude-code')
+
+      expect(files).toHaveLength(0)
+    })
+  })
+
+  describe('collectHooks', () => {
+    it('should collect hook files when hooks directory exists', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(true)
+      vi.mocked(fsOperations.readDir).mockReturnValue(['pre-commit.sh', 'post-merge.sh'])
+      vi.mocked(fsOperations.isFile).mockReturnValue(true)
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectHooks('claude-code')
+
+      expect(files.length).toBeGreaterThan(0)
+      expect(files.every(f => f.type === 'hooks')).toBe(true)
+    })
+
+    it('should return empty array when hooks directory does not exist', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(false)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+
+      const files = collectHooks('claude-code')
+
+      expect(files).toHaveLength(0)
+    })
+  })
+
+  describe('collectPrompts', () => {
+    it('should collect prompt files when prompts directory exists', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(true)
+      vi.mocked(fsOperations.readDir).mockReturnValue(['prompt1.md', 'prompt2.md'])
+      vi.mocked(fsOperations.isFile).mockReturnValue(true)
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectPrompts()
+
+      expect(files.length).toBeGreaterThan(0)
+      expect(files.every(f => f.type === 'workflows')).toBe(true)
+    })
+
+    it('should return empty array when prompts directory does not exist', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(false)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+
+      const files = collectPrompts()
+
+      expect(files).toHaveLength(0)
+    })
+  })
+
+  describe('collectWorkflows - additional cases', () => {
+    it('should return empty array when workflow directory does not exist', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(false)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+
+      const files = collectWorkflows('claude-code')
+
+      expect(files).toHaveLength(0)
+    })
+
+    it('should handle nested subdirectories in workflows', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockImplementation((path) => {
+        return path.endsWith('agents') || path.includes('custom')
+      })
+      vi.mocked(fsOperations.readDir).mockImplementation((path) => {
+        if (path.endsWith('agents')) {
+          return ['custom']
+        }
+        if (path.includes('custom')) {
+          return ['workflow.md']
+        }
+        return []
+      })
+      vi.mocked(fsOperations.isFile).mockImplementation((path) => {
+        return path.includes('.md')
+      })
+      vi.mocked(fsOperations.readFile).mockReturnValue('# Workflow content')
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectWorkflows('claude-code')
+
+      expect(files.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('collectAllConfig', () => {
+    it('should collect all config when codeType is all', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+      vi.mocked(fsOperations.readFile).mockReturnValue('{\"test\": \"content\"}')
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectAllConfig('all', 'all')
+
+      expect(files.length).toBeGreaterThan(0)
+    })
+
+    it('should only collect Claude Code config when codeType is claude-code', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+      vi.mocked(fsOperations.readFile).mockReturnValue('{\"test\": \"content\"}')
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectAllConfig('claude-code', 'settings')
+
+      expect(files.length).toBeGreaterThan(0)
+    })
+
+    it('should only collect Codex config when codeType is codex', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+      vi.mocked(fsOperations.readFile).mockReturnValue('[config]')
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectAllConfig('codex', 'settings')
+
+      expect(files.length).toBeGreaterThan(0)
+    })
+
+    it('should collect MCP config when scope is mcp', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+      vi.mocked(fsOperations.readFile).mockReturnValue('{\"mcp\": true}')
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const files = collectAllConfig('all', 'mcp')
+
+      expect(files.length).toBeGreaterThan(0)
+    })
+  })
+
+  describe('collectCustomFiles', () => {
+    it('should collect custom file when path exists', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isFile).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const customItems = [
+        {
+          type: 'settings' as const,
+          path: '/path/to/custom.json',
+        },
+      ]
+
+      const files = collectCustomFiles(customItems)
+
+      expect(files.length).toBeGreaterThan(0)
+    })
+
+    it('should collect directory when path is directory', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isFile).mockImplementation((path) => {
+        return path.includes('.md')
+      })
+      vi.mocked(fsOperations.isDirectory).mockImplementation((path) => {
+        return !path.includes('.md')
+      })
+      vi.mocked(fsOperations.readDir).mockReturnValue(['file1.md', 'file2.md'])
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as Stats)
+
+      const customItems = [
+        {
+          type: 'workflows' as const,
+          path: '/path/to/workflows',
+        },
+      ]
+
+      const files = collectCustomFiles(customItems)
+
+      expect(files.length).toBeGreaterThan(0)
+    })
+
+    it('should skip non-existent paths', () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(false)
+
+      const customItems = [
+        {
+          type: 'settings' as const,
+          path: '/non/existent/path',
+        },
+      ]
+
+      const files = collectCustomFiles(customItems)
+
+      expect(files).toHaveLength(0)
+    })
+  })
+
+  describe('getCollectionSummary - additional cases', () => {
+    it('should detect only Claude Code when no Codex files present', () => {
+      const files = [
+        {
+          path: 'configs/claude-code/settings.json',
+          type: 'settings' as const,
+          size: 1024,
+          checksum: 'abc123',
+        },
+      ]
+
+      const summary = getCollectionSummary(files)
+
+      expect(summary.codeTypes).toContain('claude-code')
+      expect(summary.codeTypes).not.toContain('codex')
+    })
+
+    it('should detect only Codex when no Claude Code files present', () => {
+      const files = [
+        {
+          path: 'configs/codex/config.toml',
+          type: 'settings' as const,
+          size: 2048,
+          checksum: 'def456',
+        },
+      ]
+
+      const summary = getCollectionSummary(files)
+
+      expect(summary.codeTypes).toContain('codex')
+      expect(summary.codeTypes).not.toContain('claude-code')
     })
   })
 })

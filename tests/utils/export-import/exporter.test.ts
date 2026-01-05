@@ -4,7 +4,7 @@
 
 import type { ExportOptions } from '../../../src/types/export-import'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { collectClaudeCodeConfig, getCollectionSummary } from '../../../src/utils/export-import/collector'
+import { collectClaudeCodeConfig, collectCodexConfig, getCollectionSummary } from '../../../src/utils/export-import/collector'
 import { executeExport, getExportSummary, validateExportOptions } from '../../../src/utils/export-import/exporter'
 import * as fsOperations from '../../../src/utils/fs-operations'
 
@@ -167,6 +167,43 @@ describe('exporter', () => {
       expect(summary.files).toHaveLength(0)
       expect(summary.summary.total).toBe(0)
     })
+
+    it('should handle codex code type', () => {
+      const mockFiles = [
+        {
+          path: 'config.toml',
+          type: 'settings' as const,
+          size: 1024,
+          checksum: 'abc123',
+        },
+      ]
+
+      vi.mocked(collectCodexConfig).mockReturnValue(mockFiles)
+      vi.mocked(getCollectionSummary).mockReturnValue({
+        total: 1,
+        byType: {
+          settings: 1,
+          profiles: 0,
+          workflows: 0,
+          agents: 0,
+          mcp: 0,
+          hooks: 0,
+          skills: 0,
+        },
+        codeTypes: ['codex'],
+      })
+
+      const options: ExportOptions = {
+        codeType: 'codex',
+        scope: 'all',
+        includeSensitive: false,
+      }
+
+      const summary = getExportSummary(options)
+
+      expect(summary.files).toHaveLength(1)
+      expect(summary.summary.total).toBe(1)
+    })
   })
 
   describe('executeExport', () => {
@@ -212,6 +249,123 @@ describe('exporter', () => {
       expect(progressCallback).toHaveBeenCalled()
       expect(progressCallback.mock.calls[0][0]).toHaveProperty('step')
       expect(progressCallback.mock.calls[0][0]).toHaveProperty('progress')
+    })
+
+    it('should handle export errors gracefully', async () => {
+      vi.mocked(collectClaudeCodeConfig).mockReturnValue([
+        {
+          path: 'settings.json',
+          type: 'settings',
+          size: 1024,
+          checksum: 'abc123',
+          originalPath: '/mock/path/settings.json',
+        },
+      ])
+
+      vi.mocked(fsOperations.exists).mockReturnValue(false)
+
+      const options: ExportOptions = {
+        codeType: 'claude-code',
+        scope: 'all',
+        includeSensitive: false,
+      }
+
+      const result = await executeExport(options)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBeTruthy()
+    })
+
+    it('should handle different code types', async () => {
+      vi.mocked(collectCodexConfig).mockReturnValue([
+        {
+          path: 'config.toml',
+          type: 'settings',
+          size: 1024,
+          checksum: 'abc123',
+          originalPath: '/mock/path/config.toml',
+        },
+      ])
+
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.readFile).mockReturnValue('[config]')
+
+      const options: ExportOptions = {
+        codeType: 'codex',
+        scope: 'all',
+        includeSensitive: false,
+      }
+
+      const result = await executeExport(options)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBeTruthy()
+    })
+
+    it('should handle all code type', async () => {
+      vi.mocked(collectClaudeCodeConfig).mockReturnValue([])
+      vi.mocked(collectCodexConfig).mockReturnValue([])
+
+      const options: ExportOptions = {
+        codeType: 'all',
+        scope: 'all',
+        includeSensitive: false,
+      }
+
+      const result = await executeExport(options)
+
+      expect(result.success).toBe(false)
+    })
+
+    it('should handle custom scope', async () => {
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.isFile).mockReturnValue(true)
+      vi.mocked(fsOperations.isDirectory).mockReturnValue(false)
+      vi.mocked(fsOperations.getStats).mockReturnValue({ size: 1024 } as any)
+      vi.mocked(fsOperations.readFile).mockReturnValue('{"test": "data"}')
+
+      const options: ExportOptions = {
+        codeType: 'claude-code',
+        scope: 'custom',
+        includeSensitive: false,
+        customItems: [
+          {
+            type: 'settings',
+            path: '/path/to/custom.json',
+          },
+        ],
+      }
+
+      const result = await executeExport(options)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBeTruthy()
+    })
+
+    it('should successfully export with includeSensitive option', async () => {
+      vi.mocked(collectClaudeCodeConfig).mockReturnValue([
+        {
+          path: 'settings.json',
+          type: 'settings',
+          size: 1024,
+          checksum: 'abc123',
+          originalPath: '/mock/path/settings.json',
+        },
+      ])
+
+      vi.mocked(fsOperations.exists).mockReturnValue(true)
+      vi.mocked(fsOperations.readFile).mockReturnValue('{"test": "data"}')
+
+      const options: ExportOptions = {
+        codeType: 'claude-code',
+        scope: 'all',
+        includeSensitive: true,
+      }
+
+      const result = await executeExport(options)
+
+      expect(result.success).toBe(false)
+      expect(result.error).toBeTruthy()
     })
   })
 })
