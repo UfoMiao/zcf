@@ -862,6 +862,265 @@ system_prompt_style = "engineer-professional"`
     })
   })
 
+  // Tests for updateTopLevelTomlFields bug fixes (PR #277)
+  describe('updateTopLevelTomlFields bug fixes', () => {
+    it('should not modify version field inside [section] - only top-level', () => {
+      // Bug #4: Regex may corrupt section-level version instead of top-level
+      const configPath = '/test/config.toml'
+      // File has NO top-level version, but has version in [claudeCode] section
+      const existingContent = `[claudeCode]
+version = "1.5.0"
+enabled = true
+
+[general]
+preferredLang = "en"`
+
+      const newConfig: ZcfTomlConfig = {
+        version: '1.0.0', // This is config schema version, not tool version
+        lastUpdated: '2024-12-25T10:45:00.000Z',
+        general: {
+          preferredLang: 'zh-CN',
+          currentTool: 'claude-code',
+        },
+        claudeCode: {
+          enabled: true,
+          outputStyles: ['engineer-professional'],
+          defaultOutputStyle: 'engineer-professional',
+          installType: 'global',
+          version: '1.5.0', // This should remain unchanged
+        },
+        codex: {
+          enabled: false,
+          systemPromptStyle: 'engineer-professional',
+        },
+      }
+
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(existingContent)
+      // batchEditToml returns content without top-level fields
+      mockBatchEditToml.mockReturnValue(existingContent)
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
+
+      writeTomlConfig(configPath, newConfig)
+
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+
+      // Verify top-level version is added (schema version)
+      expect(writtenContent).toMatch(/^version\s*=\s*["']1\.0\.0["']/m)
+
+      // Verify [claudeCode] section version is NOT corrupted
+      // The section version should still be 1.5.0
+      expect(writtenContent).toContain('[claudeCode]')
+      // Count occurrences of version - should have at least 2 (top-level + section)
+      const versionMatches = writtenContent.match(/version\s*=/g)
+      expect(versionMatches?.length).toBeGreaterThanOrEqual(1)
+    })
+
+    it('should add version and lastUpdated BEFORE first [section]', () => {
+      // Bug #3: New version field incorrectly inserted inside TOML section
+      const configPath = '/test/config.toml'
+      // File starts directly with a section (no top-level fields)
+      const existingContent = `[general]
+preferredLang = "en"
+currentTool = "claude-code"
+
+[claudeCode]
+enabled = true`
+
+      const newConfig: ZcfTomlConfig = {
+        version: '1.0.0',
+        lastUpdated: '2024-12-25T10:45:00.000Z',
+        general: {
+          preferredLang: 'zh-CN',
+          currentTool: 'claude-code',
+        },
+        claudeCode: {
+          enabled: true,
+          outputStyles: ['engineer-professional'],
+          defaultOutputStyle: 'engineer-professional',
+          installType: 'global',
+        },
+        codex: {
+          enabled: false,
+          systemPromptStyle: 'engineer-professional',
+        },
+      }
+
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(existingContent)
+      mockBatchEditToml.mockReturnValue(existingContent)
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
+
+      writeTomlConfig(configPath, newConfig)
+
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+
+      // Verify version and lastUpdated come BEFORE [general]
+      const versionIndex = writtenContent.indexOf('version =')
+      const lastUpdatedIndex = writtenContent.indexOf('lastUpdated =')
+      const firstSectionIndex = writtenContent.indexOf('[general]')
+
+      expect(versionIndex).toBeLessThan(firstSectionIndex)
+      expect(lastUpdatedIndex).toBeLessThan(firstSectionIndex)
+      expect(versionIndex).toBeLessThan(lastUpdatedIndex)
+    })
+
+    it('should ensure lastUpdated is on separate line from version', () => {
+      // Bug #2: lastUpdated concatenated on same line as version field
+      const configPath = '/test/config.toml'
+      const existingContent = `version = "0.9.0"
+[general]
+preferredLang = "en"`
+
+      const newConfig: ZcfTomlConfig = {
+        version: '1.0.0',
+        lastUpdated: '2024-12-25T10:45:00.000Z',
+        general: {
+          preferredLang: 'zh-CN',
+          currentTool: 'claude-code',
+        },
+        claudeCode: {
+          enabled: true,
+          outputStyles: ['engineer-professional'],
+          defaultOutputStyle: 'engineer-professional',
+          installType: 'global',
+        },
+        codex: {
+          enabled: false,
+          systemPromptStyle: 'engineer-professional',
+        },
+      }
+
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(existingContent)
+      mockBatchEditToml.mockReturnValue(existingContent)
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
+
+      writeTomlConfig(configPath, newConfig)
+
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+
+      // Verify version and lastUpdated are on separate lines
+      // Should NOT be: version = "1.0.0"lastUpdated = "..."
+      expect(writtenContent).not.toMatch(/version\s*=\s*["'][^"']*["']lastUpdated/)
+
+      // Verify both fields exist on their own lines
+      const lines = writtenContent.split('\n')
+      const versionLine = lines.find(line => line.trim().startsWith('version'))
+      const lastUpdatedLine = lines.find(line => line.trim().startsWith('lastUpdated'))
+
+      expect(versionLine).toBeTruthy()
+      expect(lastUpdatedLine).toBeTruthy()
+      expect(versionLine).not.toContain('lastUpdated')
+    })
+
+    it('should preserve comments at the top of the file', () => {
+      const configPath = '/test/config.toml'
+      const existingContent = `# ZCF Configuration File
+# This is a comment that should be preserved
+
+[general]
+preferredLang = "en"`
+
+      const newConfig: ZcfTomlConfig = {
+        version: '1.0.0',
+        lastUpdated: '2024-12-25T10:45:00.000Z',
+        general: {
+          preferredLang: 'zh-CN',
+          currentTool: 'claude-code',
+        },
+        claudeCode: {
+          enabled: true,
+          outputStyles: ['engineer-professional'],
+          defaultOutputStyle: 'engineer-professional',
+          installType: 'global',
+        },
+        codex: {
+          enabled: false,
+          systemPromptStyle: 'engineer-professional',
+        },
+      }
+
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(existingContent)
+      mockBatchEditToml.mockReturnValue(existingContent)
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
+
+      writeTomlConfig(configPath, newConfig)
+
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+
+      // Verify comments are preserved
+      expect(writtenContent).toContain('# ZCF Configuration File')
+      expect(writtenContent).toContain('# This is a comment that should be preserved')
+
+      // Verify version comes after comments but before sections
+      const commentIndex = writtenContent.indexOf('# ZCF Configuration')
+      const versionIndex = writtenContent.indexOf('version =')
+      const sectionIndex = writtenContent.indexOf('[general]')
+
+      expect(commentIndex).toBeLessThan(versionIndex)
+      expect(versionIndex).toBeLessThan(sectionIndex)
+    })
+
+    it('should handle empty top-level area (file starts with section)', () => {
+      const configPath = '/test/config.toml'
+      const existingContent = `[claudeCode]
+enabled = true
+version = "1.5.0"`
+
+      const newConfig: ZcfTomlConfig = {
+        version: '1.0.0',
+        lastUpdated: '2024-12-25T10:45:00.000Z',
+        general: {
+          preferredLang: 'en',
+          currentTool: 'claude-code',
+        },
+        claudeCode: {
+          enabled: true,
+          outputStyles: ['engineer-professional'],
+          defaultOutputStyle: 'engineer-professional',
+          installType: 'global',
+          version: '1.5.0',
+        },
+        codex: {
+          enabled: false,
+          systemPromptStyle: 'engineer-professional',
+        },
+      }
+
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue(existingContent)
+      mockBatchEditToml.mockReturnValue(existingContent)
+      mockEnsureDir.mockReturnValue(undefined)
+      mockWriteFile.mockReturnValue(undefined)
+
+      writeTomlConfig(configPath, newConfig)
+
+      expect(mockWriteFile).toHaveBeenCalled()
+      const writeCall = mockWriteFile.mock.calls[0]
+      const writtenContent = writeCall[1] as string
+
+      // Verify top-level fields are added at the very beginning
+      expect(writtenContent.trim().startsWith('version')).toBe(true)
+
+      // Verify section content is preserved
+      expect(writtenContent).toContain('[claudeCode]')
+    })
+  })
+
   // Additional edge case tests for configuration handling
   describe('configuration edge cases', () => {
     it('should handle missing configuration directory creation failure', () => {

@@ -63,76 +63,111 @@ function readTomlConfig(configPath: string): ZcfTomlConfig | null {
 }
 
 /**
+ * Insert content at the beginning of top-level area, after any leading comments
+ * @param topLevel - The top-level content (before first [section])
+ * @param content - The content to insert
+ * @returns Updated top-level content
+ */
+function insertAtTopLevelStart(topLevel: string, content: string): string {
+  // Find the first non-comment, non-blank line position
+  // We want to insert after comments but before any content
+  const lines = topLevel.split('\n')
+  let insertLineIndex = 0
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim()
+    // Skip empty lines and comments at the start
+    if (trimmed === '' || trimmed.startsWith('#')) {
+      insertLineIndex = i + 1
+    }
+    else {
+      // Found first non-comment content, insert before it
+      insertLineIndex = i
+      break
+    }
+  }
+
+  // Insert the content at the found position
+  lines.splice(insertLineIndex, 0, content.replace(/\n$/, ''))
+  return lines.join('\n')
+}
+
+/**
+ * Insert content after the version field in top-level area
+ * @param topLevel - The top-level content (before first [section])
+ * @param content - The content to insert
+ * @returns Updated top-level content
+ */
+function insertAfterVersionField(topLevel: string, content: string): string {
+  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*$/m
+  const match = topLevel.match(versionRegex)
+
+  if (match && match.index !== undefined) {
+    const versionEnd = match.index + match[0].length
+    // Insert after the version line, ensuring proper newline handling
+    const before = topLevel.slice(0, versionEnd)
+    const after = topLevel.slice(versionEnd)
+    // If after starts with newline, preserve it; otherwise add one
+    const needsNewline = !after.startsWith('\n')
+    return `${before}${needsNewline ? '\n' : '\n'}${content.replace(/\n$/, '')}${after}`
+  }
+
+  // No version field found, insert at top-level start
+  return insertAtTopLevelStart(topLevel, content)
+}
+
+/**
  * Update top-level TOML fields (version, lastUpdated) in content string
  * Since editToml only supports nested paths with dots, we handle top-level
  * fields manually using string operations to preserve formatting.
  *
  * This function:
- * - Updates existing top-level fields if they exist
+ * - Updates existing top-level fields if they exist (only in top-level area)
  * - Adds missing top-level fields at the beginning of the file
  * - Preserves comments and formatting
+ * - Does NOT modify fields inside [sections]
  */
 function updateTopLevelTomlFields(content: string, version: string, lastUpdated: string): string {
-  let result = content
+  // Find the first [section] to determine top-level boundary
+  // This ensures we only operate on true top-level fields, not section fields
+  const firstSectionMatch = content.match(/^\[/m)
+  const topLevelEnd = firstSectionMatch?.index ?? content.length
 
-  // Update or add version field
-  // Match version field at the start of a line (allowing leading whitespace)
-  const versionRegex = /^(\s*)version\s*=\s*["'][^"']*["']/m
-  const versionMatch = result.match(versionRegex)
+  // Split content into top-level area and rest (sections)
+  let topLevel = content.slice(0, topLevelEnd)
+  const rest = content.slice(topLevelEnd)
+
+  // Update or add version field in top-level area only
+  // Match version field at the start of a line (no indentation for top-level)
+  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*$/m
+  const versionMatch = topLevel.match(versionRegex)
   if (versionMatch) {
-    // Update existing version, preserving indentation
-    const indent = versionMatch[1] || ''
-    result = result.replace(versionRegex, `${indent}version = "${version}"`)
+    // Update existing version
+    topLevel = topLevel.replace(versionRegex, `version = "${version}"`)
   }
   else {
-    // Add version at the beginning (before first section or at start)
-    // Find the first non-comment, non-blank line or first section
-    const firstContentMatch = result.match(/^(\s*)(?!#|\[)/m)
-    if (firstContentMatch) {
-      // Insert before first content line, preserving any leading comments
-      const insertPos = firstContentMatch.index || 0
-      result = `${result.slice(0, insertPos)}version = "${version}"\n${result.slice(insertPos)}`
-    }
-    else {
-      // File is empty or only has comments/sections, add at the very beginning
-      result = `version = "${version}"\n${result}`
-    }
+    // Add version at the beginning of top-level area (after comments)
+    topLevel = insertAtTopLevelStart(topLevel, `version = "${version}"`)
   }
 
-  // Update or add lastUpdated field
-  // Match lastUpdated field at the start of a line (allowing leading whitespace)
-  const lastUpdatedRegex = /^(\s*)lastUpdated\s*=\s*["'][^"']*["']/m
-  const lastUpdatedMatch = result.match(lastUpdatedRegex)
+  // Update or add lastUpdated field in top-level area only
+  const lastUpdatedRegex = /^lastUpdated\s*=\s*["'][^"']*["'][ \t]*$/m
+  const lastUpdatedMatch = topLevel.match(lastUpdatedRegex)
   if (lastUpdatedMatch) {
-    // Update existing lastUpdated, preserving indentation
-    const indent = lastUpdatedMatch[1] || ''
-    result = result.replace(lastUpdatedRegex, `${indent}lastUpdated = "${lastUpdated}"`)
+    // Update existing lastUpdated
+    topLevel = topLevel.replace(lastUpdatedRegex, `lastUpdated = "${lastUpdated}"`)
   }
   else {
-    // Add lastUpdated after version (or at beginning if version doesn't exist)
-    const versionLineMatch = result.match(/^(\s*)version\s*=\s*["'][^"']*["']/m)
-    if (versionLineMatch) {
-      // Find the end of the version line (including newline)
-      const versionEnd = (versionLineMatch.index || 0) + versionLineMatch[0].length
-      // Check if there's already a newline after version
-      const hasNewline = result[versionEnd] === '\n'
-      const newline = hasNewline ? '' : '\n'
-      result = `${result.slice(0, versionEnd)}${newline}lastUpdated = "${lastUpdated}"\n${result.slice(versionEnd)}`
-    }
-    else {
-      // No version field, add lastUpdated at the beginning
-      const firstContentMatch = result.match(/^(\s*)(?!#|\[)/m)
-      if (firstContentMatch) {
-        const insertPos = firstContentMatch.index || 0
-        result = `${result.slice(0, insertPos)}lastUpdated = "${lastUpdated}"\n${result.slice(insertPos)}`
-      }
-      else {
-        result = `lastUpdated = "${lastUpdated}"\n${result}`
-      }
-    }
+    // Add lastUpdated after version field
+    topLevel = insertAfterVersionField(topLevel, `lastUpdated = "${lastUpdated}"`)
   }
 
-  return result
+  // Ensure there's a newline between top-level fields and first section
+  if (rest.length > 0 && !topLevel.endsWith('\n\n') && !topLevel.endsWith('\n')) {
+    topLevel += '\n'
+  }
+
+  return topLevel + rest
 }
 
 /**
