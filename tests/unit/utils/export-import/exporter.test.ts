@@ -19,11 +19,15 @@ import { executeExport, getExportSummary, validateExportOptions } from '../../..
 // Mock dependencies
 vi.mock('../../../../src/utils/fs-operations', () => ({
   exists: vi.fn((path: string) => {
+    // Handle original paths
     if (path.includes('settings.json'))
       return true
     if (path.includes('zcf-config.toml'))
       return true
     if (path.includes('.claude/skills'))
+      return true
+    // Handle export package paths (dynamically generated)
+    if (path.includes('zcf-export-') && path.endsWith('.zip'))
       return true
     if (path.includes('test-export.zip'))
       return true
@@ -86,14 +90,19 @@ vi.mock('../../../../src/utils/export-import/collector', () => ({
     checksum: 'custom123',
     size: 1024,
   }))),
-  getCollectionSummary: vi.fn(files => ({
-    total: files.length,
-    byType: {
-      settings: files.filter((f: any) => f.type === 'settings').length,
-      custom: files.filter((f: any) => f.type === 'custom').length,
-    },
-    codeTypes: ['claude-code'],
-  })),
+  getCollectionSummary: vi.fn((files) => {
+    // Dynamically count files by type
+    const byType: Record<string, number> = {}
+    for (const file of files) {
+      byType[file.type] = (byType[file.type] || 0) + 1
+    }
+
+    return {
+      total: files.length,
+      byType,
+      codeTypes: ['claude-code'],
+    }
+  }),
 }))
 
 vi.mock('../../../../src/utils/export-import/sanitizer', () => ({
@@ -270,7 +279,18 @@ describe('exporter module', () => {
 
     it('should handle package verification failure', async () => {
       const { exists } = await import('../../../../src/utils/fs-operations')
-      vi.mocked(exists).mockReturnValueOnce(false)
+      // Mock exists to return false only for the package file check
+      // First calls are for original files (should return true)
+      // Last call is for package verification (should return false)
+      vi.mocked(exists).mockImplementation((path: string) => {
+        // Original source files exist
+        if (path.includes('settings.json') || path.includes('zcf-config.toml'))
+          return true
+        // But the created package doesn't exist (verification fails)
+        if (path.includes('zcf-export-') && path.endsWith('.zip'))
+          return false
+        return false
+      })
 
       const options: ExportOptions = {
         codeType: 'claude-code',
@@ -286,6 +306,13 @@ describe('exporter module', () => {
 
     it('should handle invalid zip format', async () => {
       const { validateZipFormat } = await import('../../../../src/utils/export-import/core')
+      const { exists } = await import('../../../../src/utils/fs-operations')
+
+      // Ensure package file exists but is invalid format
+      vi.mocked(exists).mockImplementation((_path: string) => {
+        // All files should exist
+        return true
+      })
       vi.mocked(validateZipFormat).mockReturnValueOnce(false)
 
       const options: ExportOptions = {
@@ -344,6 +371,11 @@ describe('exporter module', () => {
 
     it('should process multiple files with progress tracking', async () => {
       const { collectClaudeCodeConfig } = await import('../../../../src/utils/export-import/collector')
+      const { exists } = await import('../../../../src/utils/fs-operations')
+
+      // Mock exists to return true for all files
+      vi.mocked(exists).mockImplementation(() => true)
+
       vi.mocked(collectClaudeCodeConfig).mockReturnValueOnce([
         {
           path: 'configs/claude-code/settings.json',
@@ -390,6 +422,11 @@ describe('exporter module', () => {
     })
 
     it('should handle Codex export', async () => {
+      const { exists } = await import('../../../../src/utils/fs-operations')
+
+      // Mock exists to return true for all files
+      vi.mocked(exists).mockImplementation(() => true)
+
       const options: ExportOptions = {
         codeType: 'codex',
         scope: 'settings',
@@ -419,9 +456,10 @@ describe('exporter module', () => {
 
     it('should cleanup temp directory on failure', async () => {
       const { rmSync } = await import('node:fs')
-      const { collectClaudeCodeConfig } = await import('../../../../src/utils/export-import/collector')
-      vi.mocked(collectClaudeCodeConfig).mockImplementationOnce(() => {
-        throw new Error('Test error')
+      const { createZipPackage } = await import('../../../../src/utils/export-import/core')
+      // Simulate failure during package creation (after temp directory is created)
+      vi.mocked(createZipPackage).mockImplementationOnce(() => {
+        throw new Error('Zip creation failed')
       })
 
       const options: ExportOptions = {
@@ -432,11 +470,18 @@ describe('exporter module', () => {
 
       await executeExport(options)
 
+      // Cleanup should still be called in finally block
       expect(rmSync).toHaveBeenCalled()
     })
 
     it('should handle cleanup errors gracefully', async () => {
       const { rmSync } = await import('node:fs')
+      const { exists } = await import('../../../../src/utils/fs-operations')
+
+      // Mock exists to return true for all files
+      vi.mocked(exists).mockImplementation(() => true)
+
+      // Mock rmSync to throw error but not affect export success
       vi.mocked(rmSync).mockImplementationOnce(() => {
         throw new Error('Cleanup failed')
       })

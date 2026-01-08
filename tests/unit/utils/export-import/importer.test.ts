@@ -25,7 +25,14 @@ vi.mock('../../../../src/utils/fs-operations', () => ({
       return true
     if (path.includes('zcf-config.toml'))
       return true
+    if (path.includes('mcp-settings.json'))
+      return true
     if (path.includes('backup'))
+      return true
+    // Support temporary extraction directory
+    if (path.includes('.zcf-temp'))
+      return true
+    if (path.includes('CLAUDE.md'))
       return true
     return false
   }),
@@ -42,6 +49,12 @@ vi.mock('../../../../src/utils/fs-operations', () => ({
           server1: { command: '/usr/bin/server1' },
         },
       })
+    }
+    if (path.includes('zcf-config.toml')) {
+      return 'version = "3.4.3"\napi_key = "test-key"'
+    }
+    if (path.includes('CLAUDE.md')) {
+      return '# CLAUDE.md\n\nTest markdown file'
     }
     return '{}'
   }),
@@ -265,7 +278,7 @@ describe('importer module', () => {
     })
 
     it('should handle replace strategy correctly', async () => {
-      const { mergeConfigs } = await import('../../../../src/utils/export-import/merger')
+      const { writeFile } = await import('../../../../src/utils/fs-operations')
 
       const options: ImportOptions = {
         packagePath: '/test/test-package.zip',
@@ -277,11 +290,8 @@ describe('importer module', () => {
       const result = await executeImport(options)
 
       expect(result.success).toBe(true)
-      expect(mergeConfigs).toHaveBeenCalledWith(
-        expect.any(Object),
-        expect.any(Object),
-        'replace',
-      )
+      // In replace mode, files are written directly without calling mergeConfigs
+      expect(writeFile).toHaveBeenCalled()
     })
 
     it('should handle skip-existing strategy correctly', async () => {
@@ -588,6 +598,7 @@ describe('importer module', () => {
     it('should handle profile configurations specially', async () => {
       const { validatePackage } = await import('../../../../src/utils/export-import/validator')
       const { mergeProfiles } = await import('../../../../src/utils/export-import/merger')
+      const { exists } = await import('../../../../src/utils/fs-operations')
 
       vi.mocked(validatePackage).mockReturnValueOnce({
         valid: true,
@@ -601,7 +612,7 @@ describe('importer module', () => {
           hasSensitiveData: false,
           files: [
             {
-              path: 'configs/claude-code/zcf-config.toml',
+              path: 'configs/claude-code/zcf-config.json',
               type: 'settings',
               checksum: 'profile123',
               size: 256,
@@ -612,6 +623,20 @@ describe('importer module', () => {
         } as ExportMetadata,
         errors: [],
         warnings: [],
+      })
+
+      // Ensure target file exists to trigger merge logic
+      vi.mocked(exists).mockImplementation((path: string) => {
+        if (path.includes('test-package.zip'))
+          return true
+        if (path.includes('backup'))
+          return true
+        if (path.includes('.zcf-temp'))
+          return true
+        // Target zcf-config.json file must exist to trigger mergeProfiles
+        if (path.includes('zcf-config.json'))
+          return true
+        return false
       })
 
       const options: ImportOptions = {
@@ -634,7 +659,15 @@ describe('importer module', () => {
           return true
         if (path.includes('backup'))
           return true
-        return false // Files don't exist
+        // Extracted files in temp directory must exist
+        if (path.includes('.zcf-temp'))
+          return true
+        // Target files don't exist (to trigger new file creation)
+        if (path.includes('.claude/settings.json'))
+          return false
+        if (path.includes('.codex/settings.json'))
+          return false
+        return false
       })
 
       const options: ImportOptions = {
@@ -742,9 +775,28 @@ describe('importer module', () => {
     })
 
     it('should handle JSON parsing errors gracefully', async () => {
-      const { readFile } = await import('../../../../src/utils/fs-operations')
+      const { readFile, exists } = await import('../../../../src/utils/fs-operations')
 
-      vi.mocked(readFile).mockReturnValueOnce('invalid json {{{')
+      // Ensure extraction directory files exist
+      vi.mocked(exists).mockImplementation((_path: string) => {
+        return true // All files exist
+      })
+
+      // Mock readFile to return invalid JSON for extracted files in temp directory
+      vi.mocked(readFile).mockImplementation((path: string) => {
+        // For extracted files in temp directory, return invalid JSON
+        if (path.includes('.zcf-temp') && path.includes('.json')) {
+          return 'invalid json {{{'
+        }
+        // For target files, return valid content
+        if (path.includes('.claude/settings.json')) {
+          return JSON.stringify({
+            apiKey: 'existing-key',
+            model: 'claude-sonnet-4',
+          })
+        }
+        return '{}'
+      })
 
       const options: ImportOptions = {
         packagePath: '/test/test-package.zip',
@@ -756,12 +808,13 @@ describe('importer module', () => {
       const result = await executeImport(options)
 
       expect(result.success).toBe(true)
+      expect(result.warnings).toBeDefined()
       expect(result.warnings!.some(w => w.includes('Failed to parse'))).toBe(true)
     })
 
     it('should handle non-JSON files', async () => {
       const { validatePackage } = await import('../../../../src/utils/export-import/validator')
-      const { writeFile } = await import('../../../../src/utils/fs-operations')
+      const { writeFile, exists } = await import('../../../../src/utils/fs-operations')
 
       vi.mocked(validatePackage).mockReturnValueOnce({
         valid: true,
@@ -786,6 +839,19 @@ describe('importer module', () => {
         } as ExportMetadata,
         errors: [],
         warnings: [],
+      })
+
+      // Ensure all files exist including extracted markdown files
+      vi.mocked(exists).mockImplementation((path: string) => {
+        if (path.includes('test-package.zip'))
+          return true
+        if (path.includes('backup'))
+          return true
+        if (path.includes('.zcf-temp'))
+          return true
+        if (path.includes('CLAUDE.md'))
+          return true
+        return false
       })
 
       const options: ImportOptions = {
