@@ -240,5 +240,222 @@ count = 0
       ensureTomlInitSync()
       expect(isTomlInitialized()).toBe(true)
     })
+
+    it('should reset initialization state correctly', async () => {
+      const { ensureTomlInit, isTomlInitialized, resetTomlInit } = await import('../../../src/utils/toml-edit')
+
+      // Ensure initialized first
+      await ensureTomlInit()
+      expect(isTomlInitialized()).toBe(true)
+
+      // Reset initialization
+      resetTomlInit()
+      expect(isTomlInitialized()).toBe(false)
+
+      // Re-initialize
+      await ensureTomlInit()
+      expect(isTomlInitialized()).toBe(true)
+    })
+  })
+
+  describe('async functions', () => {
+    describe('parseTomlAsync', () => {
+      it('should parse simple TOML asynchronously', async () => {
+        const { parseTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const toml = `
+name = "test"
+version = "1.0.0"
+
+[section]
+key = "value"
+`
+
+        const result = await parseTomlAsync<{
+          name: string
+          version: string
+          section: { key: string }
+        }>(toml)
+
+        expect(result.name).toBe('test')
+        expect(result.version).toBe('1.0.0')
+        expect(result.section.key).toBe('value')
+      })
+
+      it('should parse nested structures asynchronously', async () => {
+        const { parseTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const toml = `
+[parent]
+name = "parent"
+
+[parent.child]
+name = "child"
+value = 42
+`
+
+        const result = await parseTomlAsync<{
+          parent: {
+            name: string
+            child: { name: string, value: number }
+          }
+        }>(toml)
+
+        expect(result.parent.name).toBe('parent')
+        expect(result.parent.child.name).toBe('child')
+        expect(result.parent.child.value).toBe(42)
+      })
+    })
+
+    describe('stringifyTomlAsync', () => {
+      it('should stringify objects asynchronously', async () => {
+        const { stringifyTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const data = {
+          name: 'test-async',
+          version: '2.0.0',
+        }
+
+        const result = await stringifyTomlAsync(data)
+
+        expect(result).toContain('name = "test-async"')
+        expect(result).toContain('version = "2.0.0"')
+      })
+
+      it('should stringify nested objects with sections asynchronously', async () => {
+        const { stringifyTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const data = {
+          config: {
+            enabled: true,
+            count: 100,
+          },
+        }
+
+        const result = await stringifyTomlAsync(data)
+
+        expect(result).toContain('[config]')
+        expect(result).toContain('enabled = true')
+        expect(result).toContain('count = 100')
+      })
+    })
+
+    describe('editTomlAsync', () => {
+      it('should edit nested fields asynchronously', async () => {
+        const { editTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const original = `
+[section]
+key = "old-value"
+other = "preserved"
+`
+
+        const result = await editTomlAsync(original, 'section.key', 'new-async-value')
+
+        expect(result).toContain('key = "new-async-value"')
+        expect(result).toContain('other = "preserved"')
+        expect(result).not.toContain('old-value')
+      })
+
+      it('should preserve comments when editing asynchronously', async () => {
+        const { editTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const original = `# This comment should be preserved
+[settings]
+# Important setting comment
+enabled = false
+`
+
+        const result = await editTomlAsync(original, 'settings.enabled', true)
+
+        expect(result).toContain('# This comment should be preserved')
+        expect(result).toContain('# Important setting comment')
+        expect(result).toContain('enabled = true')
+      })
+
+      it('should handle various value types asynchronously', async () => {
+        const { editTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        // Test with number
+        let original = `[config]
+value = 0`
+        let result = await editTomlAsync(original, 'config.value', 999)
+        expect(result).toContain('value = 999')
+
+        // Test with boolean
+        original = `[config]
+flag = false`
+        result = await editTomlAsync(original, 'config.flag', true)
+        expect(result).toContain('flag = true')
+
+        // Test with array
+        original = `[config]
+items = []`
+        result = await editTomlAsync(original, 'config.items', ['a', 'b', 'c'])
+        expect(result).toContain('a')
+        expect(result).toContain('b')
+        expect(result).toContain('c')
+      })
+    })
+
+    describe('batchEditTomlAsync', () => {
+      it('should apply multiple edits asynchronously', async () => {
+        const { batchEditTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const original = `# Configuration file
+[general]
+name = "old-name"
+version = "0.0.1"
+
+[settings]
+enabled = false
+count = 0
+`
+
+        const edits: Array<[string, unknown]> = [
+          ['general.name', 'new-name'],
+          ['general.version', '1.0.0'],
+          ['settings.enabled', true],
+          ['settings.count', 42],
+        ]
+
+        const result = await batchEditTomlAsync(original, edits)
+
+        expect(result).toContain('# Configuration file')
+        expect(result).toContain('name = "new-name"')
+        expect(result).toContain('version = "1.0.0"')
+        expect(result).toContain('enabled = true')
+        expect(result).toContain('count = 42')
+      })
+
+      it('should handle empty edits array asynchronously', async () => {
+        const { batchEditTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const original = `[section]
+key = "value"`
+
+        const result = await batchEditTomlAsync(original, [])
+
+        expect(result).toBe(original)
+      })
+
+      it('should apply edits in order asynchronously', async () => {
+        const { batchEditTomlAsync } = await import('../../../src/utils/toml-edit')
+
+        const original = `[section]
+key = "initial"`
+
+        // Apply two edits to the same key - last one should win
+        const edits: Array<[string, unknown]> = [
+          ['section.key', 'first'],
+          ['section.key', 'second'],
+        ]
+
+        const result = await batchEditTomlAsync(original, edits)
+
+        expect(result).toContain('key = "second"')
+        expect(result).not.toContain('key = "first"')
+      })
+    })
   })
 })

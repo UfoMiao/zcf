@@ -99,7 +99,8 @@ function insertAtTopLevelStart(topLevel: string, content: string): string {
  * @returns Updated top-level content
  */
 function insertAfterVersionField(topLevel: string, content: string): string {
-  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*$/m
+  // Support inline comments like: version = "1.0.0" # comment
+  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*(?:#.*)?$/m
   const match = topLevel.match(versionRegex)
 
   if (match && match.index !== undefined) {
@@ -139,7 +140,8 @@ function updateTopLevelTomlFields(content: string, version: string, lastUpdated:
 
   // Update or add version field in top-level area only
   // Match version field at the start of a line (no indentation for top-level)
-  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*$/m
+  // Support inline comments like: version = "1.0.0" # comment
+  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*(?:#.*)?$/m
   const versionMatch = topLevel.match(versionRegex)
   if (versionMatch) {
     // Update existing version
@@ -151,7 +153,8 @@ function updateTopLevelTomlFields(content: string, version: string, lastUpdated:
   }
 
   // Update or add lastUpdated field in top-level area only
-  const lastUpdatedRegex = /^lastUpdated\s*=\s*["'][^"']*["'][ \t]*$/m
+  // Support inline comments like: lastUpdated = "2024-01-01" # comment
+  const lastUpdatedRegex = /^lastUpdated\s*=\s*["'][^"']*["'][ \t]*(?:#.*)?$/m
   const lastUpdatedMatch = topLevel.match(lastUpdatedRegex)
   if (lastUpdatedMatch) {
     // Update existing lastUpdated
