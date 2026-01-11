@@ -108,9 +108,9 @@ function insertAfterVersionField(topLevel: string, content: string): string {
     // Insert after the version line, ensuring proper newline handling
     const before = topLevel.slice(0, versionEnd)
     const after = topLevel.slice(versionEnd)
-    // If after starts with newline, preserve it; otherwise add one
-    const needsNewline = !after.startsWith('\n')
-    return `${before}${needsNewline ? '\n' : '\n'}${content.replace(/\n$/, '')}${after}`
+    // Always insert on a new line after version
+    // The content should be on its own line
+    return `${before}\n${content.replace(/\n$/, '')}${after}`
   }
 
   // No version field found, insert at top-level start
@@ -210,15 +210,23 @@ function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
         edits.push(['general.aiOutputLang', config.general.aiOutputLang])
       }
 
-      // Claude Code section
+      // Claude Code section - required fields
       edits.push(
         ['claudeCode.enabled', config.claudeCode.enabled],
         ['claudeCode.outputStyles', config.claudeCode.outputStyles],
-        ['claudeCode.defaultOutputStyle', config.claudeCode.defaultOutputStyle],
         ['claudeCode.installType', config.claudeCode.installType],
-        ['claudeCode.currentProfile', config.claudeCode.currentProfile],
-        ['claudeCode.profiles', config.claudeCode.profiles],
       )
+
+      // Claude Code section - optional fields (check undefined to avoid batchEditToml issues)
+      if (config.claudeCode.defaultOutputStyle !== undefined) {
+        edits.push(['claudeCode.defaultOutputStyle', config.claudeCode.defaultOutputStyle])
+      }
+      if (config.claudeCode.currentProfile !== undefined) {
+        edits.push(['claudeCode.currentProfile', config.claudeCode.currentProfile])
+      }
+      if (config.claudeCode.profiles !== undefined) {
+        edits.push(['claudeCode.profiles', config.claudeCode.profiles])
+      }
 
       // Optional Claude Code fields
       if (config.claudeCode.version !== undefined) {
