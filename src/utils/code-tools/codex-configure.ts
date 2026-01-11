@@ -6,8 +6,9 @@ import { ensureI18nInitialized, i18n } from '../../i18n'
 import { selectMcpServices } from '../mcp-selector'
 import { getSystemRoot, isWindows } from '../platform'
 import { updateZcfConfig } from '../zcf-config'
-import { backupCodexComplete, getBackupMessage, readCodexConfig, writeCodexConfig } from './codex'
+import { backupCodexComplete, getBackupMessage, readCodexConfig } from './codex'
 import { applyCodexPlatformCommand } from './codex-platform'
+import { batchUpdateCodexMcpServices } from './codex-toml-updater'
 
 export async function configureCodexMcp(options?: CodexFullInitOptions): Promise<void> {
   ensureI18nInitialized()
@@ -40,7 +41,6 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
           .filter(service => !service.requiresApiKey)
           .map(service => service.id)
 
-    const baseProviders = existingConfig?.providers || []
     const existingServices = existingConfig?.mcpServices || []
     const selection: CodexMcpService[] = []
 
@@ -104,14 +104,8 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
       return svc
     })
 
-    writeCodexConfig({
-      model: existingConfig?.model || null,
-      modelProvider: existingConfig?.modelProvider || null,
-      providers: baseProviders,
-      mcpServices: finalServices,
-      managed: true,
-      otherConfig: existingConfig?.otherConfig || [],
-    })
+    // Use targeted MCP updates - preserves existing SSE-type services
+    batchUpdateCodexMcpServices(finalServices)
     updateZcfConfig({ codeToolType: 'codex' })
     console.log(ansis.green(i18n.t('codex:mcpConfigured')))
     return
@@ -122,13 +116,13 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
     return
 
   const servicesMeta = await getMcpServices()
-  const baseProviders = existingConfig?.providers || []
   const selection: CodexMcpService[] = []
   const existingServices = existingConfig?.mcpServices || []
 
   if (selectedIds.length === 0) {
     console.log(ansis.yellow(i18n.t('codex:noMcpConfigured')))
 
+    // No new services to add, but ensure Windows SYSTEMROOT is set for existing services
     const preserved = (existingServices || []).map((svc) => {
       if (isWindows()) {
         const systemRoot = getSystemRoot()
@@ -145,14 +139,8 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
       return svc
     })
 
-    writeCodexConfig({
-      model: existingConfig?.model || null,
-      modelProvider: existingConfig?.modelProvider || null,
-      providers: baseProviders,
-      mcpServices: preserved,
-      managed: true,
-      otherConfig: existingConfig?.otherConfig || [],
-    })
+    // Use targeted MCP updates - preserves existing SSE-type services
+    batchUpdateCodexMcpServices(preserved)
     updateZcfConfig({ codeToolType: 'codex' })
     return
   }
@@ -236,14 +224,8 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
     return svc
   })
 
-  writeCodexConfig({
-    model: existingConfig?.model || null,
-    modelProvider: existingConfig?.modelProvider || null,
-    providers: baseProviders,
-    mcpServices: finalServices,
-    managed: true,
-    otherConfig: existingConfig?.otherConfig || [],
-  })
+  // Use targeted MCP updates - preserves existing SSE-type services
+  batchUpdateCodexMcpServices(finalServices)
 
   updateZcfConfig({ codeToolType: 'codex' })
   console.log(ansis.green(i18n.t('codex:mcpConfigured')))

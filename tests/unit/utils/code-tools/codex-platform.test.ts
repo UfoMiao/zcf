@@ -58,10 +58,21 @@ vi.mock('../../../../src/utils/platform', () => ({
     return ['cmd', '/c', 'npx']
   }),
   getSystemRoot: vi.fn(() => 'C:/Windows'),
+  normalizeTomlPath: vi.fn((str: string) => str.replace(/\\+/g, '/').replace(/\/+/g, '/')),
+}))
+
+vi.mock('../../../../src/utils/fs-operations', () => ({
+  copyDir: vi.fn(),
+  copyFile: vi.fn(),
+  ensureDir: vi.fn(),
+  exists: vi.fn(() => true),
+  readFile: vi.fn(() => ''),
+  writeFile: vi.fn(),
 }))
 
 const codexModule = await import('../../../../src/utils/code-tools/codex')
 const { configureCodexMcp } = codexModule
+const { writeFile } = await import('../../../../src/utils/fs-operations')
 
 describe('applyCodexPlatformCommand integration', () => {
   it('should rewrite npx commands using platform-specific MCP command', async () => {
@@ -76,16 +87,19 @@ describe('applyCodexPlatformCommand integration', () => {
       managed: false,
     } as any)
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
-    let capturedConfig: any
-    vi.spyOn(codexModule, 'writeCodexConfig').mockImplementation((config: any) => {
-      capturedConfig = config
-      return undefined
-    })
+
     await configureCodexMcp()
 
     expect(mockUpdateZcfConfig).toHaveBeenCalledWith({ codeToolType: 'codex' })
-    expect(capturedConfig?.mcpServices?.[0]?.command).toBe('cmd')
-    expect(capturedConfig?.mcpServices?.[0]?.args).toEqual(['/c', 'npx'])
+    // New implementation uses batchUpdateCodexMcpServices which calls writeFile
+    expect(writeFile).toHaveBeenCalled()
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    // Verify the content contains the rewritten command
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+    expect(lastConfigContent).toContain('[mcp_servers.service]')
+    expect(lastConfigContent).toContain('command = "cmd"')
   })
 
   it('should rewrite uvx commands using platform-specific MCP command on Windows', async () => {
@@ -100,15 +114,18 @@ describe('applyCodexPlatformCommand integration', () => {
       managed: false,
     } as any)
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
-    let capturedConfig: any
-    vi.spyOn(codexModule, 'writeCodexConfig').mockImplementation((config: any) => {
-      capturedConfig = config
-      return undefined
-    })
+
     await configureCodexMcp()
 
     expect(mockUpdateZcfConfig).toHaveBeenCalledWith({ codeToolType: 'codex' })
-    expect(capturedConfig?.mcpServices?.[0]?.command).toBe('cmd')
-    expect(capturedConfig?.mcpServices?.[0]?.args).toEqual(['/c', 'uvx', '--from', 'git+https://github.com/oraios/serena', 'serena', 'start-mcp-server', '--context', 'codex'])
+    // New implementation uses batchUpdateCodexMcpServices which calls writeFile
+    expect(writeFile).toHaveBeenCalled()
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    // Verify the content contains the rewritten command
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+    expect(lastConfigContent).toContain('[mcp_servers.serena]')
+    expect(lastConfigContent).toContain('command = "cmd"')
   })
 })

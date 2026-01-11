@@ -1463,7 +1463,6 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
 
   const existingConfig = readCodexConfig()
   const existingAuth = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
-  const providers: CodexProvider[] = []
   const authEntries: Record<string, string> = { ...existingAuth }
 
   // Create provider based on configuration
@@ -1471,7 +1470,7 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
   const providerName = type === 'auth_token' ? 'Official Auth Token' : 'Custom API Key'
   const existingProvider = existingConfig?.providers.find(p => p.id === providerId)
 
-  providers.push({
+  const newProvider: CodexProvider = {
     id: providerId,
     name: providerName,
     baseUrl: baseUrl || existingProvider?.baseUrl || 'https://api.anthropic.com',
@@ -1479,11 +1478,6 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
     tempEnvKey: existingProvider?.tempEnvKey || `${providerId.toUpperCase()}_API_KEY`,
     requiresOpenaiAuth: existingProvider?.requiresOpenaiAuth ?? false,
     model: model || existingProvider?.model,
-  })
-
-  // Preserve other providers (without duplicating current one)
-  if (existingConfig?.providers) {
-    providers.push(...existingConfig.providers.filter(p => p.id !== providerId))
   }
 
   // Store auth entry if token provided
@@ -1493,19 +1487,19 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
     authEntries.OPENAI_API_KEY = token
   }
 
-  // Write configuration files
-  const configData: CodexConfigData = {
-    model: model || existingConfig?.model || 'claude-3-5-sonnet-20241022', // Prefer provided model, then existing, fallback default
+  // Use targeted updates - preserve MCP configs
+  const { updateCodexApiFields, upsertCodexProvider } = await import('./codex-toml-updater')
+
+  // Update top-level API fields
+  updateCodexApiFields({
+    model: model || existingConfig?.model || 'claude-3-5-sonnet-20241022',
     modelProvider: providerId,
     modelProviderCommented: false,
-    providers,
-    mcpServices: existingConfig?.mcpServices || [],
-    managed: true,
-    otherConfig: existingConfig?.otherConfig || [],
-  }
+  })
 
-  // Write TOML format for config file using managed renderer
-  writeCodexConfig(configData)
+  // Add/update the provider section
+  upsertCodexProvider(providerId, newProvider)
+
   // Auth file remains JSON format
   writeJsonConfig(CODEX_AUTH_FILE, authEntries)
 
@@ -1807,14 +1801,20 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
       authEntries.OPENAI_API_KEY = defaultApiKey
   }
 
-  writeCodexConfig({
-    model: existingConfig?.model || null,
+  // Use targeted updates - preserve MCP configs
+  const { updateCodexApiFields, upsertCodexProvider } = await import('./codex-toml-updater')
+
+  // Update top-level API fields
+  updateCodexApiFields({
+    model: existingConfig?.model,
     modelProvider: defaultProvider,
-    providers,
-    mcpServices: existingConfig?.mcpServices || [],
-    managed: true,
-    otherConfig: existingConfig?.otherConfig || [],
+    modelProviderCommented: false,
   })
+
+  // Add/update each provider section
+  for (const provider of providers) {
+    upsertCodexProvider(provider.id, provider)
+  }
 
   writeAuthFile(authEntries)
   updateZcfConfig({ codeToolType: 'codex' })
@@ -2107,14 +2107,13 @@ export async function switchCodexProvider(providerId: string): Promise<boolean> 
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
 
-  // Update model provider
-  const updatedConfig: CodexConfigData = {
-    ...existingConfig,
-    modelProvider: providerId,
-  }
-
   try {
-    writeCodexConfig(updatedConfig)
+    // Use targeted update - only modify model_provider, preserve MCP configs
+    const { updateCodexApiFields } = await import('./codex-toml-updater')
+    updateCodexApiFields({
+      modelProvider: providerId,
+      modelProviderCommented: false,
+    })
     console.log(ansis.green(i18n.t('codex:providerSwitchSuccess', { provider: providerId })))
     return true
   }
@@ -2159,16 +2158,12 @@ export async function switchToOfficialLogin(): Promise<boolean> {
 
     const shouldCommentModelProvider = typeof preservedModelProvider === 'string' && preservedModelProvider.length > 0
 
-    // Comment out model_provider but keep providers configuration
-    const updatedConfig: CodexConfigData = {
-      ...existingConfig,
+    // Use targeted update - only modify model_provider, preserve MCP configs
+    const { updateCodexApiFields } = await import('./codex-toml-updater')
+    updateCodexApiFields({
       modelProvider: shouldCommentModelProvider ? preservedModelProvider : existingConfig.modelProvider,
-      modelProviderCommented: shouldCommentModelProvider
-        ? true
-        : existingConfig.modelProviderCommented,
-    }
-
-    writeCodexConfig(updatedConfig)
+      modelProviderCommented: shouldCommentModelProvider || existingConfig.modelProviderCommented,
+    })
 
     // Set OPENAI_API_KEY to null for official mode - preserve other auth settings
     const auth = readJsonConfig<Record<string, string | null>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}
@@ -2229,15 +2224,13 @@ export async function switchToProvider(providerId: string): Promise<boolean> {
       // Otherwise keep the current model (gpt-5 or gpt-5-codex)
     }
 
-    // Uncomment model_provider and set to specified provider
-    const updatedConfig: CodexConfigData = {
-      ...existingConfig,
+    // Use targeted update - only modify model and model_provider, preserve MCP configs
+    const { updateCodexApiFields } = await import('./codex-toml-updater')
+    updateCodexApiFields({
       model: targetModel,
       modelProvider: providerId,
       modelProviderCommented: false, // Ensure it's not commented
-    }
-
-    writeCodexConfig(updatedConfig)
+    })
 
     // Set OPENAI_API_KEY to the provider's environment variable value for VSCode
     const auth = readJsonConfig<Record<string, string | null>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}

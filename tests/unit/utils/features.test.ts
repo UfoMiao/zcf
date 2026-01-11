@@ -10,6 +10,9 @@ vi.mock('inquirer', () => ({
 vi.mock('node:fs', () => ({
   existsSync: vi.fn(),
   unlinkSync: vi.fn(),
+  mkdirSync: vi.fn(),
+  readFileSync: vi.fn(() => ''),
+  writeFileSync: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/config', () => ({
