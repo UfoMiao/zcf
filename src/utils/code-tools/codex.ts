@@ -938,25 +938,6 @@ export function renderCodexConfig(data: CodexConfigData): string {
   return result
 }
 
-export function writeCodexConfig(data: CodexConfigData): void {
-  // Ensure env_key migration is performed before any config modification
-  ensureEnvKeyMigration()
-
-  ensureDir(CODEX_DIR)
-
-  // Note: Codex config uses top-level fields (model, model_provider) which cannot be
-  // edited incrementally with editToml (it only supports nested paths with dots).
-  // Instead, we rely on renderCodexConfig which preserves user customizations through
-  // the otherConfig field - this captures all non-ZCF-managed sections and lines
-  // from the existing config and includes them in the rendered output.
-  //
-  // This approach ensures:
-  // - User's [projects.*] sections are preserved
-  // - User's custom settings and comments in otherConfig are preserved
-  // - ZCF-managed sections (model_providers.*, mcp_servers.*) are properly updated
-  writeFile(CODEX_CONFIG_FILE, renderCodexConfig(data))
-}
-
 export function writeAuthFile(newEntries: Record<string, string>): void {
   ensureDir(CODEX_DIR)
   const existing = readJsonConfig<Record<string, string>>(CODEX_AUTH_FILE, { defaultValue: {} }) || {}

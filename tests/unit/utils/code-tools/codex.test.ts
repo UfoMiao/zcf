@@ -891,28 +891,6 @@ describe('codex code tool utilities', () => {
       expect(result).toBeNull()
     })
 
-    it('writeCodexConfig should write configuration to file', async () => {
-      const fsOps = await import('../../../../src/utils/fs-operations')
-      const writeFileMock = vi.mocked(fsOps.writeFile)
-      writeFileMock.mockClear()
-
-      const codexModule = await import('../../../../src/utils/code-tools/codex')
-      const mockData = {
-        model: null,
-        modelProvider: 'test',
-        providers: [],
-        mcpServices: [],
-        managed: true,
-        otherConfig: [],
-      }
-
-      codexModule.writeCodexConfig(mockData)
-
-      expect(writeFileMock).toHaveBeenCalled()
-      const writtenContent = writeFileMock.mock.calls[0][1] as string
-      expect(writtenContent).toContain('model_provider = "test"')
-    })
-
     it('writeAuthFile should write authentication data', async () => {
       const jsonConfig = await import('../../../../src/utils/json-config')
       vi.mocked(jsonConfig.writeJsonConfig).mockImplementation(() => {})

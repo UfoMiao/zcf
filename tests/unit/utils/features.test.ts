@@ -90,7 +90,6 @@ vi.mock('../../../src/utils/toggle-prompt', () => ({
 // Mock Codex-related functions
 vi.mock('../../../src/utils/code-tools/codex', () => ({
   readCodexConfig: vi.fn(),
-  writeCodexConfig: vi.fn(),
   runCodexSystemPromptSelection: vi.fn(),
   backupCodexConfig: vi.fn(),
   backupCodexAgents: vi.fn(),
