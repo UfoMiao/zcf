@@ -1,6 +1,6 @@
-import type { CodexConfigData, CodexProvider } from './codex'
+import type { CodexProvider } from './codex'
 import { ensureI18nInitialized, i18n } from '../../i18n'
-import { backupCodexComplete, readCodexConfig, writeAuthFile, writeCodexConfig } from './codex'
+import { backupCodexComplete, readCodexConfig, writeAuthFile } from './codex'
 
 export interface ProviderOperationResult {
   success: boolean
@@ -46,38 +46,6 @@ export async function addProviderToExisting(
       }
     }
 
-    // Add or update provider in configuration
-    let updatedConfig: CodexConfigData
-    if (!existingConfig) {
-      // No existing config: create a new one without backup noise
-      updatedConfig = {
-        model: provider.model || null,
-        modelProvider: provider.id,
-        providers: [provider],
-        mcpServices: [],
-        managed: true,
-        otherConfig: [],
-      }
-    }
-    else if (existingProviderIndex !== -1) {
-      // Overwrite existing provider
-      const updatedProviders = [...existingConfig.providers]
-      updatedProviders[existingProviderIndex] = provider
-      updatedConfig = {
-        ...existingConfig,
-        providers: updatedProviders,
-        modelProvider: existingConfig.modelProvider || provider.id,
-      }
-    }
-    else {
-      // Add new provider
-      updatedConfig = {
-        ...existingConfig,
-        providers: [...existingConfig.providers, provider],
-        modelProvider: existingConfig.modelProvider || provider.id,
-      }
-    }
-
     // Create backup only when config already exists
     let backupPath: string | undefined
     if (existingConfig) {
@@ -91,8 +59,27 @@ export async function addProviderToExisting(
       backupPath = backup || undefined
     }
 
-    // Write updated configuration
-    writeCodexConfig(updatedConfig)
+    // Use targeted updates - preserve MCP configs
+    const { updateCodexApiFields, upsertCodexProvider } = await import('./codex-toml-updater')
+
+    // If no existing config, set top-level fields
+    if (!existingConfig) {
+      updateCodexApiFields({
+        model: provider.model,
+        modelProvider: provider.id,
+        modelProviderCommented: false,
+      })
+    }
+    else if (!existingConfig.modelProvider) {
+      // Update model_provider if not set
+      updateCodexApiFields({
+        modelProvider: provider.id,
+        modelProviderCommented: false,
+      })
+    }
+
+    // Add/update the provider section
+    upsertCodexProvider(provider.id, provider)
 
     // Write API key to auth file
     const authEntries: Record<string, string> = {}
@@ -161,17 +148,9 @@ export async function editExistingProvider(
       ...(updates.model && { model: updates.model }),
     }
 
-    // Update configuration
-    const updatedProviders = [...existingConfig.providers]
-    updatedProviders[providerIndex] = updatedProvider
-
-    const updatedConfig: CodexConfigData = {
-      ...existingConfig,
-      providers: updatedProviders,
-    }
-
-    // Write updated configuration
-    writeCodexConfig(updatedConfig)
+    // Use targeted update - preserve MCP configs
+    const { upsertCodexProvider } = await import('./codex-toml-updater')
+    upsertCodexProvider(providerId, updatedProvider)
 
     // Update API key if provided
     if (updates.apiKey) {
@@ -260,15 +239,21 @@ export async function deleteProviders(
       newDefaultProvider = remainingProviders[0].id
     }
 
-    // Update configuration
-    const updatedConfig: CodexConfigData = {
-      ...existingConfig,
-      modelProvider: newDefaultProvider,
-      providers: remainingProviders,
+    // Use targeted updates - preserve MCP configs
+    const { deleteCodexProvider, updateCodexApiFields } = await import('./codex-toml-updater')
+
+    // Update model_provider if it changed
+    if (newDefaultProvider !== existingConfig.modelProvider) {
+      updateCodexApiFields({
+        modelProvider: newDefaultProvider,
+        modelProviderCommented: false,
+      })
     }
 
-    // Write updated configuration
-    writeCodexConfig(updatedConfig)
+    // Delete each provider section
+    for (const providerId of providerIds) {
+      deleteCodexProvider(providerId)
+    }
 
     const result: ProviderOperationResult = {
       success: true,

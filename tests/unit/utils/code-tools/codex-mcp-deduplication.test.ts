@@ -164,11 +164,16 @@ vi.mock('../../../../src/utils/zcf-config', () => ({
 describe('codex MCP Deduplication Logic', () => {
   const mockConfigPath = '/home/test/.codex/config.toml'
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks()
     vi.mocked(exists).mockReturnValue(true)
     vi.mocked(ensureDir).mockImplementation(() => {})
     vi.mocked(writeFile).mockImplementation(() => {})
+
+    // Reset platform mocks to default (non-Windows) state
+    const { isWindows, getSystemRoot } = await import('../../../../src/utils/platform')
+    vi.mocked(isWindows).mockReturnValue(false)
+    vi.mocked(getSystemRoot).mockReturnValue(null)
   })
 
   describe('mCP Service Smart Merge Logic', () => {
@@ -362,18 +367,20 @@ env = {CUSTOM_VAR = "value"}
         expect.stringContaining('[mcp_servers.my-custom-tool]'),
       )
 
-      // Check that SYSTEMROOT is added to both services
-      const content = vi.mocked(writeFile).mock.calls[0][1] as string
-      expect(content).toContain('SYSTEMROOT = \'C:/Windows\'')
+      // Check that SYSTEMROOT is added to services (check last writeFile call for final content)
+      const calls = vi.mocked(writeFile).mock.calls
+      const content = calls[calls.length - 1][1] as string
+      // TOML output uses double quotes
+      expect(content).toContain('SYSTEMROOT = "C:/Windows"')
 
       // Verify custom service preserves its original env vars and adds SYSTEMROOT
-      expect(content).toContain('CUSTOM_VAR = \'value\'')
-      expect(content).toContain('SYSTEMROOT = \'C:/Windows\'')
+      expect(content).toContain('CUSTOM_VAR = "value"')
+      expect(content).toContain('SYSTEMROOT = "C:/Windows"')
     })
 
     it('should handle service selection with mixed custom and predefined services', async () => {
       // Initial config with both custom and predefined services
-      vi.mocked(readFile).mockReturnValue(`
+      const initialConfig = `
 # --- model provider added by ZCF ---
 model_provider = "openai"
 
@@ -406,7 +413,14 @@ args = ["--mode", "production"]
 [mcp_servers.filesystem]
 command = "npx"
 args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
-`)
+`
+
+      // Track file content for incremental updates - readFile returns latest written content
+      let currentContent = initialConfig
+      vi.mocked(readFile).mockImplementation(() => currentContent)
+      vi.mocked(writeFile).mockImplementation((_path, content) => {
+        currentContent = content as string
+      })
 
       // Mock selectMcpServices to return filesystem (new) and exa (keep existing), but not context7 (remove)
       const { selectMcpServices } = await import('../../../../src/utils/mcp-selector')
@@ -453,10 +467,10 @@ args = ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
         expect.stringContaining('[mcp_servers.custom-tool-2]'),
       )
 
-      // Verify exa service was updated with new API key
-      const content = vi.mocked(writeFile).mock.calls[0][1] as string
-      expect(content).toContain('EXA_API_KEY = \'updated-exa-key\'')
-      expect(content).not.toContain('EXA_API_KEY = \'old-key\'')
+      // Verify exa service was updated with new API key (check final content)
+      // TOML output uses double quotes
+      expect(currentContent).toContain('EXA_API_KEY = "updated-exa-key"')
+      expect(currentContent).not.toContain('EXA_API_KEY = "old-key"')
     })
   })
 })

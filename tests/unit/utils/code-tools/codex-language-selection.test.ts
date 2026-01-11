@@ -119,16 +119,17 @@ describe('codex Language Selection', () => {
       await configureCodexApi(options)
 
       // Assert
-      expect(vi.mocked(writeFile)).toHaveBeenCalledTimes(2)
-
+      // New implementation uses targeted TOML updates, which may result in multiple writeFile calls
+      // We just verify that both config and auth files were written
       const { calls } = vi.mocked(writeFile).mock
-      const configCall = calls.find(call => (call[0] as string).includes('config.toml'))
+      const configCalls = calls.filter(call => (call[0] as string).includes('config.toml'))
       const authCall = calls.find(call => (call[0] as string).includes('auth.json'))
 
-      expect(configCall).toBeDefined()
-      // The config file should be written with some content (format may vary)
-      expect(configCall?.[1]).toBeDefined()
-      expect(configCall?.[1]).toContain('custom-api-key')
+      expect(configCalls.length).toBeGreaterThan(0)
+      // Get the last config call (final state)
+      const lastConfigCall = configCalls[configCalls.length - 1]
+      expect(lastConfigCall?.[1]).toBeDefined()
+      expect(lastConfigCall?.[1]).toContain('custom-api-key')
       expect(authCall).toBeDefined()
 
       // Parse the auth JSON to verify API key

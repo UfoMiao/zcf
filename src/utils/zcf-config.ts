@@ -5,10 +5,10 @@ import type {
 } from '../types/toml-config'
 import { copyFileSync, existsSync, mkdirSync, renameSync, rmSync } from 'node:fs'
 import { dirname } from 'pathe'
-import { parse, stringify } from 'smol-toml'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, LEGACY_ZCF_CONFIG_FILES, SUPPORTED_LANGS, ZCF_CONFIG_DIR, ZCF_CONFIG_FILE } from '../constants'
 import { ensureDir, exists, readFile, writeFile } from './fs-operations'
 import { readJsonConfig } from './json-config'
+import { batchEditToml, parseToml, stringifyToml } from './toml-edit'
 
 // Legacy interfaces for backward compatibility
 export interface ZcfConfig {
@@ -53,7 +53,7 @@ function readTomlConfig(configPath: string): ZcfTomlConfig | null {
     }
 
     const content = readFile(configPath)
-    const parsed = parse(content) as unknown as ZcfTomlConfig
+    const parsed = parseToml<ZcfTomlConfig>(content)
     return parsed
   }
   catch {
@@ -63,9 +63,127 @@ function readTomlConfig(configPath: string): ZcfTomlConfig | null {
 }
 
 /**
- * Write TOML configuration to file
+ * Insert content at the beginning of top-level area, after any leading comments
+ * @param topLevel - The top-level content (before first [section])
+ * @param content - The content to insert
+ * @returns Updated top-level content
+ */
+function insertAtTopLevelStart(topLevel: string, content: string): string {
+  // Find the first non-comment, non-blank line position
+  // We want to insert after comments but before any content
+  const lines = topLevel.split('\n')
+  let insertLineIndex = 0
+
+  for (let i = 0; i < lines.length; i++) {
+    const trimmed = lines[i].trim()
+    // Skip empty lines and comments at the start
+    if (trimmed === '' || trimmed.startsWith('#')) {
+      insertLineIndex = i + 1
+    }
+    else {
+      // Found first non-comment content, insert before it
+      insertLineIndex = i
+      break
+    }
+  }
+
+  // Insert the content at the found position
+  lines.splice(insertLineIndex, 0, content.replace(/\n$/, ''))
+  return lines.join('\n')
+}
+
+/**
+ * Insert content after the version field in top-level area
+ * @param topLevel - The top-level content (before first [section])
+ * @param content - The content to insert
+ * @returns Updated top-level content
+ */
+function insertAfterVersionField(topLevel: string, content: string): string {
+  // Support inline comments like: version = "1.0.0" # comment
+  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*(?:#.*)?$/m
+  const match = topLevel.match(versionRegex)
+
+  if (match && match.index !== undefined) {
+    const versionEnd = match.index + match[0].length
+    // Insert after the version line, ensuring proper newline handling
+    const before = topLevel.slice(0, versionEnd)
+    const after = topLevel.slice(versionEnd)
+    // Always insert on a new line after version
+    // The content should be on its own line
+    return `${before}\n${content.replace(/\n$/, '')}${after}`
+  }
+
+  // No version field found, insert at top-level start
+  return insertAtTopLevelStart(topLevel, content)
+}
+
+/**
+ * Update top-level TOML fields (version, lastUpdated) in content string
+ * Since editToml only supports nested paths with dots, we handle top-level
+ * fields manually using string operations to preserve formatting.
+ *
+ * This function:
+ * - Updates existing top-level fields if they exist (only in top-level area)
+ * - Adds missing top-level fields at the beginning of the file
+ * - Preserves comments and formatting
+ * - Does NOT modify fields inside [sections]
+ */
+function updateTopLevelTomlFields(content: string, version: string, lastUpdated: string): string {
+  // Find the first [section] to determine top-level boundary
+  // This ensures we only operate on true top-level fields, not section fields
+  const firstSectionMatch = content.match(/^\[/m)
+  const topLevelEnd = firstSectionMatch?.index ?? content.length
+
+  // Split content into top-level area and rest (sections)
+  let topLevel = content.slice(0, topLevelEnd)
+  const rest = content.slice(topLevelEnd)
+
+  // Update or add version field in top-level area only
+  // Match version field at the start of a line (no indentation for top-level)
+  // Support inline comments like: version = "1.0.0" # comment
+  const versionRegex = /^version\s*=\s*["'][^"']*["'][ \t]*(?:#.*)?$/m
+  const versionMatch = topLevel.match(versionRegex)
+  if (versionMatch) {
+    // Update existing version
+    topLevel = topLevel.replace(versionRegex, `version = "${version}"`)
+  }
+  else {
+    // Add version at the beginning of top-level area (after comments)
+    topLevel = insertAtTopLevelStart(topLevel, `version = "${version}"`)
+  }
+
+  // Update or add lastUpdated field in top-level area only
+  // Support inline comments like: lastUpdated = "2024-01-01" # comment
+  const lastUpdatedRegex = /^lastUpdated\s*=\s*["'][^"']*["'][ \t]*(?:#.*)?$/m
+  const lastUpdatedMatch = topLevel.match(lastUpdatedRegex)
+  if (lastUpdatedMatch) {
+    // Update existing lastUpdated
+    topLevel = topLevel.replace(lastUpdatedRegex, `lastUpdated = "${lastUpdated}"`)
+  }
+  else {
+    // Add lastUpdated after version field
+    topLevel = insertAfterVersionField(topLevel, `lastUpdated = "${lastUpdated}"`)
+  }
+
+  // Ensure there's a newline between top-level fields and first section
+  if (rest.length > 0 && !topLevel.endsWith('\n\n') && !topLevel.endsWith('\n')) {
+    topLevel += '\n'
+  }
+
+  return topLevel + rest
+}
+
+/**
+ * Write TOML configuration to file with format preservation
  * @param configPath - Path to the TOML configuration file
  * @param config - Configuration object to write
+ *
+ * If the file exists, uses incremental editing to preserve user comments,
+ * formatting, and any unmanaged fields. If the file doesn't exist, creates
+ * a new file with the full configuration.
+ *
+ * Top-level fields (version, lastUpdated) are updated after incremental editing
+ * using string operations since editToml only supports nested paths with dots.
  */
 function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
   try {
@@ -73,9 +191,78 @@ function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
     const configDir = dirname(configPath)
     ensureDir(configDir)
 
-    // Serialize to TOML and write to file
-    const tomlContent = stringify(config)
-    writeFile(configPath, tomlContent)
+    // Check if file exists for incremental editing
+    if (exists(configPath)) {
+      const existingContent = readFile(configPath)
+
+      // Build edits for section fields only (editToml requires nested paths with dots)
+      const edits: Array<[string, unknown]> = [
+        // General section
+        ['general.preferredLang', config.general.preferredLang],
+        ['general.currentTool', config.general.currentTool],
+      ]
+
+      // Optional general fields
+      if (config.general.templateLang !== undefined) {
+        edits.push(['general.templateLang', config.general.templateLang])
+      }
+      if (config.general.aiOutputLang !== undefined) {
+        edits.push(['general.aiOutputLang', config.general.aiOutputLang])
+      }
+
+      // Claude Code section - required fields
+      edits.push(
+        ['claudeCode.enabled', config.claudeCode.enabled],
+        ['claudeCode.outputStyles', config.claudeCode.outputStyles],
+        ['claudeCode.installType', config.claudeCode.installType],
+      )
+
+      // Claude Code section - optional fields (check undefined to avoid batchEditToml issues)
+      if (config.claudeCode.defaultOutputStyle !== undefined) {
+        edits.push(['claudeCode.defaultOutputStyle', config.claudeCode.defaultOutputStyle])
+      }
+      if (config.claudeCode.currentProfile !== undefined) {
+        edits.push(['claudeCode.currentProfile', config.claudeCode.currentProfile])
+      }
+      if (config.claudeCode.profiles !== undefined) {
+        edits.push(['claudeCode.profiles', config.claudeCode.profiles])
+      }
+
+      // Optional Claude Code fields
+      if (config.claudeCode.version !== undefined) {
+        edits.push(['claudeCode.version', config.claudeCode.version])
+      }
+
+      // Codex section
+      edits.push(
+        ['codex.enabled', config.codex.enabled],
+        ['codex.systemPromptStyle', config.codex.systemPromptStyle],
+      )
+
+      try {
+        // Apply incremental edits preserving user customizations
+        let updatedContent = batchEditToml(existingContent, edits)
+
+        // Update top-level fields (version, lastUpdated) which cannot be edited incrementally
+        updatedContent = updateTopLevelTomlFields(
+          updatedContent,
+          config.version,
+          config.lastUpdated,
+        )
+
+        writeFile(configPath, updatedContent)
+      }
+      catch {
+        // Fall back to full stringify if incremental editing fails
+        const tomlContent = stringifyToml(config as unknown as Record<string, unknown>)
+        writeFile(configPath, tomlContent)
+      }
+    }
+    else {
+      // Create new file with full configuration
+      const tomlContent = stringifyToml(config as unknown as Record<string, unknown>)
+      writeFile(configPath, tomlContent)
+    }
   }
   catch {
     // Silently fail if cannot write config - user's system may have permission issues

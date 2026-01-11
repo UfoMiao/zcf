@@ -593,69 +593,6 @@ requires_openai_auth = true
   })
 
   describe('integration with config operations', () => {
-    it('writeCodexConfig should trigger migration before writing', async () => {
-      const fsOps = await import('../../../../src/utils/fs-operations')
-      vi.mocked(fsOps.exists).mockReturnValue(true)
-      vi.mocked(fsOps.readFile).mockReturnValue(`
-[model_providers.old]
-env_key = "OLD_API_KEY"
-`)
-      vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
-      vi.mocked(fsOps.copyFile).mockImplementation(() => {})
-      vi.mocked(fsOps.writeFile).mockImplementation(() => {})
-
-      const zcfConfig = await import('../../../../src/utils/zcf-config')
-      vi.mocked(zcfConfig.readDefaultTomlConfig).mockReturnValue({
-        version: '1.0.0',
-        lastUpdated: new Date().toISOString(),
-        general: {
-          preferredLang: 'en',
-          currentTool: 'codex',
-        },
-        claudeCode: {
-          enabled: false,
-          outputStyles: [],
-          installType: 'global',
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'engineer-professional',
-          // Not migrated yet
-        },
-      })
-      vi.mocked(zcfConfig.updateTomlConfig).mockImplementation(() => ({} as any))
-
-      const { writeCodexConfig } = await import('../../../../src/utils/code-tools/codex')
-
-      const newConfig = {
-        model: null,
-        modelProvider: 'new',
-        providers: [{
-          id: 'new',
-          name: 'New Provider',
-          baseUrl: 'https://new.com',
-          wireApi: 'responses',
-          tempEnvKey: 'NEW_API_KEY',
-          requiresOpenaiAuth: true,
-        }],
-        mcpServices: [],
-        managed: true,
-        otherConfig: [],
-      }
-
-      writeCodexConfig(newConfig)
-
-      // Migration should have been triggered (updateTomlConfig called with envKeyMigrated)
-      expect(zcfConfig.updateTomlConfig).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.objectContaining({
-          codex: expect.objectContaining({
-            envKeyMigrated: true,
-          }),
-        }),
-      )
-    })
-
     it('readCodexConfig should trigger migration before reading', async () => {
       const fsOps = await import('../../../../src/utils/fs-operations')
       vi.mocked(fsOps.exists).mockReturnValue(true)

@@ -68,6 +68,7 @@
     "docs:preview": "pnpm -F @zcf/docs preview"
   },
   "dependencies": {
+    "@rainbowatcher/toml-edit-js": "catalog:runtime",
     "@types/semver": "catalog:types",
     "ansis": "catalog:cli",
     "cac": "catalog:cli",
@@ -81,7 +82,6 @@
     "ora": "catalog:cli",
     "pathe": "catalog:runtime",
     "semver": "catalog:runtime",
-    "smol-toml": "catalog:runtime",
     "tinyexec": "catalog:runtime",
     "trash": "catalog:runtime"
   },

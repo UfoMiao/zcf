@@ -679,7 +679,8 @@ export async function configureCodexAiMemoryFeature(): Promise<void> {
 
 // Helper function to update Codex model provider
 async function updateCodexModelProvider(modelProvider: string): Promise<void> {
-  const { readCodexConfig, writeCodexConfig, backupCodexConfig, getBackupMessage } = await import('./code-tools/codex')
+  const { backupCodexConfig, getBackupMessage } = await import('./code-tools/codex')
+  const { updateCodexApiFields } = await import('./code-tools/codex-toml-updater')
 
   // Create backup before modification
   const backupPath = backupCodexConfig()
@@ -687,23 +688,8 @@ async function updateCodexModelProvider(modelProvider: string): Promise<void> {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
 
-  // Read existing config
-  const existingConfig = readCodexConfig()
-
-  // Update model provider
-  const updatedConfig = {
-    ...existingConfig,
-    model: modelProvider, // Set the model field
-    modelProvider: existingConfig?.modelProvider || null, // Preserve existing API provider
-    providers: existingConfig?.providers || [],
-    mcpServices: existingConfig?.mcpServices || [],
-    managed: true,
-    otherConfig: existingConfig?.otherConfig || [],
-    modelProviderCommented: existingConfig?.modelProviderCommented,
-  }
-
-  // Write updated config
-  writeCodexConfig(updatedConfig)
+  // Update only the model field - preserves MCP and other configurations
+  updateCodexApiFields({ model: modelProvider })
 }
 
 // Helper function to ensure language directive exists in AGENTS.md
