@@ -70,8 +70,9 @@
   "updatingPrompts": "正在更新 Claude Code 记忆文档...",
   "enterCustomModel": "请输入自定义模型名称",
   "systemPromptConfigured": "系统提示词风格已配置",
-  "codexModelOptions.gpt5": "GPT-5 - 通用强力模型，适合复杂任务",
-  "codexModelOptions.gpt5Codex": "GPT-5-Codex - 专为代码优化的模型，推荐用于编程任务",
+  "codexModelOptions.gpt51CodexMax": "GPT-5.1-Codex-Max - Codex 优化旗舰模型，支持深度快速推理",
+  "codexModelOptions.gpt51CodexMini": "GPT-5.1-Codex-Mini - Codex 优化版，更便宜快速但能力稍弱",
+  "codexModelOptions.gpt52": "GPT-5.2 - 最新前沿模型，知识、推理和编码全面提升（推荐）",
   "codexModelOptions.custom": "自定义 - 指定自定义模型名称",
   "windowsMcpConfigFixed": "Windows MCP 配置已修复"
 }

@@ -70,8 +70,9 @@
   "updatingPrompts": "Updating Claude Code memory documents...",
   "enterCustomModel": "Enter custom model name",
   "systemPromptConfigured": "System prompt style configured",
-  "codexModelOptions.gpt5": "GPT-5 - General powerful model, suitable for complex tasks",
-  "codexModelOptions.gpt5Codex": "GPT-5-Codex - Code-optimized model, recommended for programming tasks",
+  "codexModelOptions.gpt51CodexMax": "GPT-5.1-Codex-Max - Codex-optimized flagship for deep and fast reasoning",
+  "codexModelOptions.gpt51CodexMini": "GPT-5.1-Codex-Mini - Optimized for codex. Cheaper, faster, but less capable",
+  "codexModelOptions.gpt52": "GPT-5.2 - Latest frontier model with improvements across knowledge, reasoning and coding (Recommended)",
   "codexModelOptions.custom": "Custom - Specify custom model names",
   "windowsMcpConfigFixed": "Windows MCP configuration fixed"
 }

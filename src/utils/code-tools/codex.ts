@@ -53,7 +53,7 @@ export interface CodexMcpService {
 }
 
 export interface CodexConfigData {
-  model: string | null // Default model to use (gpt-5, gpt-5-codex, etc.)
+  model: string | null // Default model to use (gpt-5.2, gpt-5.1-codex-max, etc.)
   modelProvider: string | null // API provider for model_provider field
   providers: CodexProvider[]
   mcpServices: CodexMcpService[]
@@ -1698,7 +1698,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
         type: 'input',
         name: 'model',
         message: `${i18n.t('configuration:enterCustomModel')}${i18n.t('common:emptyToSkip')}`,
-        default: 'gpt-5-codex',
+        default: 'gpt-5.2',
       }])
       if (model.trim()) {
         customModel = model.trim()
@@ -1746,7 +1746,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
       wireApi: selectedProvider === 'custom' ? (answers.wireApi || 'responses') : prefilledWireApi!,
       tempEnvKey,
       requiresOpenaiAuth: true,
-      model: customModel || prefilledModel || 'gpt-5-codex', // Use custom model, provider's default model, or fallback
+      model: customModel || prefilledModel || 'gpt-5.2', // Use custom model, provider's default model, or fallback
     }
 
     providers.push(newProvider)
@@ -2198,11 +2198,12 @@ export async function switchToProvider(providerId: string): Promise<boolean> {
     else {
       // Provider doesn't have a model, check current model
       const currentModel = existingConfig.model
-      if (currentModel !== 'gpt-5' && currentModel !== 'gpt-5-codex') {
-        // Current model is neither gpt-5 nor gpt-5-codex, change to gpt-5-codex
-        targetModel = 'gpt-5-codex'
+      const knownModels = ['gpt-5.1-codex-max', 'gpt-5.1-codex-mini', 'gpt-5.2']
+      if (!currentModel || !knownModels.includes(currentModel)) {
+        // Current model is not a known Codex model, change to gpt-5.2
+        targetModel = 'gpt-5.2'
       }
-      // Otherwise keep the current model (gpt-5 or gpt-5-codex)
+      // Otherwise keep the current model
     }
 
     // Use targeted update - only modify model and model_provider, preserve MCP configs
