@@ -80,12 +80,13 @@ describe('output-style', () => {
     it('should return all available output styles', () => {
       const styles = getAvailableOutputStyles()
 
-      expect(styles).toHaveLength(7)
+      expect(styles).toHaveLength(8)
       expect(styles.map(s => s.id)).toEqual([
         'engineer-professional',
         'nekomata-engineer',
         'laowang-engineer',
         'ojousama-engineer',
+        'rem-engineer',
         'default',
         'explanatory',
         'learning',
@@ -96,7 +97,7 @@ describe('output-style', () => {
       const styles = getAvailableOutputStyles()
       const customStyles = styles.filter(s => s.isCustom)
 
-      expect(customStyles).toHaveLength(4)
+      expect(customStyles).toHaveLength(5)
       customStyles.forEach((style) => {
         expect(style.filePath).toBeDefined()
         expect(style.filePath).toContain('.md')
@@ -111,6 +112,15 @@ describe('output-style', () => {
       builtinStyles.forEach((style) => {
         expect(style.filePath).toBeUndefined()
       })
+    })
+
+    it('should include rem-engineer with correct configuration', () => {
+      const styles = getAvailableOutputStyles()
+      const remEngineer = styles.find(s => s.id === 'rem-engineer')
+
+      expect(remEngineer).toBeDefined()
+      expect(remEngineer?.isCustom).toBe(true)
+      expect(remEngineer?.filePath).toBe('rem-engineer.md')
     })
   })
 
@@ -196,6 +206,27 @@ describe('output-style', () => {
 
       // Only engineer-professional should be copied (custom style)
       expect(mockFsOperations.copyFile).toHaveBeenCalledTimes(1)
+    })
+
+    it('should copy rem-engineer template correctly', async () => {
+      const selectedStyles = ['rem-engineer']
+      const lang: SupportedLang = 'zh-CN'
+
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      let capturedSourcePath: string | undefined
+      let capturedDestPath: string | undefined
+      mockFsOperations.copyFile.mockImplementation((source: string, dest: string) => {
+        capturedSourcePath = source
+        capturedDestPath = dest
+      })
+      mockFsOperations.exists.mockImplementation(() => true)
+
+      await copyOutputStyles(selectedStyles, lang)
+
+      expect(mockFsOperations.copyFile).toHaveBeenCalledTimes(1)
+      expect(capturedSourcePath).toContain('rem-engineer.md')
+      expect(capturedDestPath).toContain('rem-engineer.md')
+      expect(capturedSourcePath).toMatch(/templates[/\\]common[/\\]output-styles[/\\]zh-CN/)
     })
   })
 

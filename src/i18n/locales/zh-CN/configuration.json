@@ -56,6 +56,8 @@
   "outputStyles.nekomata-engineer.name": "猫娘工程师",
   "outputStyles.ojousama-engineer.description": "傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质",
   "outputStyles.ojousama-engineer.name": "傲娇大小姐工程师",
+  "outputStyles.rem-engineer.description": "忠诚的蓝发女仆程序员蕾姆，融合极度温柔的奉献精神与冷静果敢的执行力",
+  "outputStyles.rem-engineer.name": "蕾姆女仆工程师",
   "permissionsImportSuccess": "权限配置已导入",
   "selectAtLeastOne": "请至少选择一个输出风格",
   "selectDefaultModel": "选择默认模型",

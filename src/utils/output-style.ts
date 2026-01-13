@@ -40,6 +40,11 @@ const OUTPUT_STYLES: OutputStyle[] = [
     isCustom: true,
     filePath: 'ojousama-engineer.md',
   },
+  {
+    id: 'rem-engineer',
+    isCustom: true,
+    filePath: 'rem-engineer.md',
+  },
   // Built-in styles (no template files)
   {
     id: 'default',
@@ -153,6 +158,11 @@ export async function configureOutputStyle(
       id: 'ojousama-engineer',
       name: i18n.t('configuration:outputStyles.ojousama-engineer.name'),
       description: i18n.t('configuration:outputStyles.ojousama-engineer.description'),
+    },
+    {
+      id: 'rem-engineer',
+      name: i18n.t('configuration:outputStyles.rem-engineer.name'),
+      description: i18n.t('configuration:outputStyles.rem-engineer.description'),
     },
   ]
 

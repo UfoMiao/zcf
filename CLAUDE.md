@@ -316,7 +316,7 @@ graph TD
 4. **Comprehensive Cross-Platform Support**: Windows/macOS/Linux/Termux compatibility with platform-specific adaptations and path handling
 5. **Consolidated Template System**: Shared templates in `templates/common/` for output-styles, git workflows, and sixStep workflows, reducing duplication between Claude Code and Codex
 6. **Intelligent IDE Integration**: Advanced IDE detection and auto-open functionality for git-worktree environments
-7. **Professional AI Personality System**: Multiple output styles including engineer-professional, laowang-engineer, nekomata-engineer, and ojousama-engineer
+7. **Professional AI Personality System**: Multiple output styles including engineer-professional, laowang-engineer, nekomata-engineer, ojousama-engineer, and rem-engineer
 8. **Advanced Tool Integration**: Comprehensive integration with CCR proxy, CCusage analytics, and Cometix status line tools
 9. **Sophisticated Uninstallation System**: Advanced uninstaller with conflict resolution, selective removal, and cross-platform trash integration
 10. **Dual Code Tool Architecture**: Simultaneous support for Claude Code and Codex environment configuration with shared template resources
