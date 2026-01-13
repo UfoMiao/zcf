@@ -66,6 +66,7 @@ vim ~/.claude/prompts/output-style/my-custom-style.md
 | `nekomata-engineer` | ネコマタエンジニア | フレンドリーだが専門的 | 個人/カジュアル |
 | `laowang-engineer` | ラオワンエンジニア | ユーモラスで実務的 | 中国語環境 |
 | `ojousama-engineer` | お嬢様エンジニア | 丁寧で上品、細部重視 | 特定のトーンが必要な時 |
+| `rem-engineer` | レムメイドエンジニア | 献身的で冷静沈着 | きめ細やかな配慮が必要な時 |
 
 内蔵スタイルとして `default` / `explanatory` / `learning` も常に利用できます。
 
