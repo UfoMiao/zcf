@@ -70,6 +70,7 @@
   "dependencies": {
     "@rainbowatcher/toml-edit-js": "catalog:runtime",
     "@types/semver": "catalog:types",
+    "adm-zip": "catalog:tooling",
     "ansis": "catalog:cli",
     "cac": "catalog:cli",
     "dayjs": "catalog:runtime",
@@ -91,6 +92,7 @@
     "@commitlint/cli": "catalog:tooling",
     "@commitlint/config-conventional": "catalog:tooling",
     "@commitlint/types": "catalog:tooling",
+    "@types/adm-zip": "catalog:types",
     "@types/fs-extra": "catalog:types",
     "@types/inquirer": "catalog:types",
     "@types/node": "catalog:types",
