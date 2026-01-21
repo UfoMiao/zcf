@@ -41,6 +41,11 @@ const OUTPUT_STYLES: OutputStyle[] = [
     filePath: 'ojousama-engineer.md',
   },
   {
+    id: 'leibus-engineer',
+    isCustom: true,
+    filePath: 'leibus-engineer.md',
+  },
+  {
     id: 'rem-engineer',
     isCustom: true,
     filePath: 'rem-engineer.md',
@@ -158,6 +163,11 @@ export async function configureOutputStyle(
       id: 'ojousama-engineer',
       name: i18n.t('configuration:outputStyles.ojousama-engineer.name'),
       description: i18n.t('configuration:outputStyles.ojousama-engineer.description'),
+    },
+    {
+      id: 'leibus-engineer',
+      name: i18n.t('configuration:outputStyles.leibus-engineer.name'),
+      description: i18n.t('configuration:outputStyles.leibus-engineer.description'),
     },
     {
       id: 'rem-engineer',
