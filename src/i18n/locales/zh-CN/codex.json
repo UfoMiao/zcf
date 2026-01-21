@@ -80,7 +80,7 @@
   "copyingProvider": "正在复制供应商：{{name}}",
   "providerCopied": "✔ 已成功复制供应商：{{name}}",
   "providerCopyFailed": "❌ 复制供应商失败：{{error}}",
-  "providerModelPrompt": "模型名称（如 gpt-5-codex）",
+  "providerModelPrompt": "模型名称（如 gpt-5.2）",
   "providerModelRequired": "必须填写模型名称",
   "selectProvidersToDelete": "选择要删除的供应商（多选）",
   "selectAtLeastOne": "请至少选择一个供应商",

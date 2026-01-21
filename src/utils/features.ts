@@ -531,11 +531,13 @@ export async function configureCodexDefaultModelFeature(): Promise<void> {
   if (currentModel) {
     // Display existing configuration
     console.log(`\n${ansis.blue(`ℹ ${i18n.t('configuration:existingModelConfig') || 'Existing model configuration'}`)}`)
-    const modelDisplay = currentModel === 'gpt-5-codex'
-      ? 'GPT-5-Codex'
-      : currentModel === 'gpt-5'
-        ? 'GPT-5'
-        : currentModel.charAt(0).toUpperCase() + currentModel.slice(1)
+    const modelDisplay = currentModel === 'gpt-5.2'
+      ? 'GPT-5.2'
+      : currentModel === 'gpt-5.1-codex-max'
+        ? 'GPT-5.1-Codex-Max'
+        : currentModel === 'gpt-5.1-codex-mini'
+          ? 'GPT-5.1-Codex-Mini'
+          : currentModel.charAt(0).toUpperCase() + currentModel.slice(1)
     console.log(ansis.gray(`  ${i18n.t('configuration:currentModel') || 'Current model'}: ${modelDisplay}\n`))
 
     // Ask user what to do with existing config
@@ -550,25 +552,29 @@ export async function configureCodexDefaultModelFeature(): Promise<void> {
     }
   }
 
-  const { model } = await inquirer.prompt<{ model: 'gpt-5' | 'gpt-5-codex' | 'custom' }>({
+  const { model } = await inquirer.prompt<{ model: 'gpt-5.1-codex-max' | 'gpt-5.1-codex-mini' | 'gpt-5.2' | 'custom' }>({
     type: 'list',
     name: 'model',
     message: i18n.t('configuration:selectDefaultModel') || 'Select default model',
     choices: addNumbersToChoices([
       {
-        name: i18n.t('configuration:codexModelOptions.gpt5'),
-        value: 'gpt-5' as const,
+        name: i18n.t('configuration:codexModelOptions.gpt51CodexMax'),
+        value: 'gpt-5.1-codex-max' as const,
       },
       {
-        name: i18n.t('configuration:codexModelOptions.gpt5Codex'),
-        value: 'gpt-5-codex' as const,
+        name: i18n.t('configuration:codexModelOptions.gpt51CodexMini'),
+        value: 'gpt-5.1-codex-mini' as const,
+      },
+      {
+        name: i18n.t('configuration:codexModelOptions.gpt52'),
+        value: 'gpt-5.2' as const,
       },
       {
         name: i18n.t('configuration:codexModelOptions.custom'),
         value: 'custom' as const,
       },
     ]),
-    default: currentModel ? ['gpt-5', 'gpt-5-codex', 'custom'].indexOf(currentModel as any) : 1, // Default to gpt-5-codex
+    default: currentModel ? ['gpt-5.1-codex-max', 'gpt-5.1-codex-mini', 'gpt-5.2', 'custom'].indexOf(currentModel as any) : 2, // Default to gpt-5.2
   })
 
   if (!model) {
@@ -679,7 +685,8 @@ export async function configureCodexAiMemoryFeature(): Promise<void> {
 
 // Helper function to update Codex model provider
 async function updateCodexModelProvider(modelProvider: string): Promise<void> {
-  const { readCodexConfig, writeCodexConfig, backupCodexConfig, getBackupMessage } = await import('./code-tools/codex')
+  const { backupCodexConfig, getBackupMessage } = await import('./code-tools/codex')
+  const { updateCodexApiFields } = await import('./code-tools/codex-toml-updater')
 
   // Create backup before modification
   const backupPath = backupCodexConfig()
@@ -687,23 +694,8 @@ async function updateCodexModelProvider(modelProvider: string): Promise<void> {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
 
-  // Read existing config
-  const existingConfig = readCodexConfig()
-
-  // Update model provider
-  const updatedConfig = {
-    ...existingConfig,
-    model: modelProvider, // Set the model field
-    modelProvider: existingConfig?.modelProvider || null, // Preserve existing API provider
-    providers: existingConfig?.providers || [],
-    mcpServices: existingConfig?.mcpServices || [],
-    managed: true,
-    otherConfig: existingConfig?.otherConfig || [],
-    modelProviderCommented: existingConfig?.modelProviderCommented,
-  }
-
-  // Write updated config
-  writeCodexConfig(updatedConfig)
+  // Update only the model field - preserves MCP and other configurations
+  updateCodexApiFields({ model: modelProvider })
 }
 
 // Helper function to ensure language directive exists in AGENTS.md

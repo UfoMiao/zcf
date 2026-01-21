@@ -87,6 +87,7 @@ describe('output-style', () => {
         'laowang-engineer',
         'ojousama-engineer',
         'leibus-engineer',
+        'rem-engineer',
         'default',
         'explanatory',
         'learning',
@@ -112,6 +113,15 @@ describe('output-style', () => {
       builtinStyles.forEach((style) => {
         expect(style.filePath).toBeUndefined()
       })
+    })
+
+    it('should include rem-engineer with correct configuration', () => {
+      const styles = getAvailableOutputStyles()
+      const remEngineer = styles.find(s => s.id === 'rem-engineer')
+
+      expect(remEngineer).toBeDefined()
+      expect(remEngineer?.isCustom).toBe(true)
+      expect(remEngineer?.filePath).toBe('rem-engineer.md')
     })
   })
 
@@ -197,6 +207,27 @@ describe('output-style', () => {
 
       // Only engineer-professional should be copied (custom style)
       expect(mockFsOperations.copyFile).toHaveBeenCalledTimes(1)
+    })
+
+    it('should copy rem-engineer template correctly', async () => {
+      const selectedStyles = ['rem-engineer']
+      const lang: SupportedLang = 'zh-CN'
+
+      mockFsOperations.ensureDir.mockImplementation(() => {})
+      let capturedSourcePath: string | undefined
+      let capturedDestPath: string | undefined
+      mockFsOperations.copyFile.mockImplementation((source: string, dest: string) => {
+        capturedSourcePath = source
+        capturedDestPath = dest
+      })
+      mockFsOperations.exists.mockImplementation(() => true)
+
+      await copyOutputStyles(selectedStyles, lang)
+
+      expect(mockFsOperations.copyFile).toHaveBeenCalledTimes(1)
+      expect(capturedSourcePath).toContain('rem-engineer.md')
+      expect(capturedDestPath).toContain('rem-engineer.md')
+      expect(capturedSourcePath).toMatch(/templates[/\\]common[/\\]output-styles[/\\]zh-CN/)
     })
   })
 

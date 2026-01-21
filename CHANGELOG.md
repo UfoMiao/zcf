@@ -1,5 +1,47 @@
 # Changelog
 
+## 3.5.1
+
+### Patch Changes
+
+- ## Fixes
+  - Implement targeted TOML updates to prevent MCP configuration corruption
+  - Improve newline handling and optional field insertion in zcf-config
+  - Enhance regex for top-level TOML fields to support inline comments
+  - Fix top-level field handling in updateTopLevelTomlFields
+
+  ## 修复
+  - 实现精准的 TOML 更新机制，防止 MCP 配置被破坏
+  - 改进 zcf-config 中的换行处理和可选字段插入
+  - 增强顶层 TOML 字段的正则表达式以支持行内注释
+  - 修复 updateTopLevelTomlFields 中的顶层字段处理
+
+  ## Features
+  - Update Codex model options and default configuration
+
+  ## 新功能
+  - 更新 Codex 模型选项和默认配置
+
+  ## Refactor
+  - Replace smol-toml with @rainbowatcher/toml-edit-js for better TOML handling
+  - Remove writeCodexConfig function (code cleanup)
+
+  ## 重构
+  - 使用 @rainbowatcher/toml-edit-js 替换 smol-toml 以获得更好的 TOML 处理
+  - 移除 writeCodexConfig 函数（代码清理）
+
+  ## Documentation
+  - Move legacy plan markdown files to .zcf/plan/history
+  - Update sponsor sections in README files
+  - Fix output style command across multiple languages
+  - Update Haleclipse image and remove inline styles
+
+  ## 文档
+  - 将历史计划 markdown 文件移动到 .zcf/plan/history
+  - 更新 README 文件中的赞助部分
+  - 修复多语言中的输出样式命令
+  - 更新 Haleclipse 图片并移除内联样式
+
 ## 3.5.0
 
 ### Minor Changes

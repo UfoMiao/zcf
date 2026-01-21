@@ -57,6 +57,9 @@ catalogs:
       specifier: ^3.5.25
       version: 3.5.25
   runtime:
+    '@rainbowatcher/toml-edit-js':
+      specifier: ^0.6.4
+      version: 0.6.4
     dayjs:
       specifier: ^1.11.18
       version: 1.11.18
@@ -78,9 +81,6 @@ catalogs:
     semver:
       specifier: ^7.7.2
       version: 7.7.2
-    smol-toml:
-      specifier: ^1.4.2
-      version: 1.4.2
     tinyexec:
       specifier: ^1.0.1
       version: 1.0.1
@@ -137,6 +137,9 @@ importers:
 
   .:
     dependencies:
+      '@rainbowatcher/toml-edit-js':
+        specifier: catalog:runtime
+        version: 0.6.4
       '@types/semver':
         specifier: catalog:types
         version: 7.7.1
@@ -176,9 +179,6 @@ importers:
       semver:
         specifier: catalog:runtime
         version: 7.7.2
-      smol-toml:
-        specifier: catalog:runtime
-        version: 1.4.2
       tinyexec:
         specifier: catalog:runtime
         version: 1.0.1
@@ -1210,6 +1210,9 @@ packages:
 
   '@quansync/fs@0.1.5':
     resolution: {integrity: sha512-lNS9hL2aS2NZgNW7BBj+6EBl4rOf8l+tQ0eRY6JWCI8jI2kc53gSoqbjojU0OnAWhzoXiOjFyGsHcDGePB3lhA==}
+
+  '@rainbowatcher/toml-edit-js@0.6.4':
+    resolution: {integrity: sha512-mTJG7UiN8AtFEgyUGQ8emGjhVLSU5OvWxbgpXnPDI7V7/I5uu0X/kGktN1RFF1EMNhn+PYjEmxpBekKRiNITEg==}
 
   '@rollup/plugin-alias@5.1.1':
     resolution: {integrity: sha512-PR9zDb+rOzkRb2VD+EuKB7UC41vU5DIwZ5qqCpk0KJudcWAyi8rvYOhS7+L5aZCspw1stTViLgN5v6FF1p5cgQ==}
@@ -3942,10 +3945,6 @@ packages:
     resolution: {integrity: sha512-bSiSngZ/jWeX93BqeIAbImyTbEihizcwNjFoRUIY/T1wWQsfsm2Vw1agPKylXvQTU7iASGdHhyqRlqQzfz+Htg==}
     engines: {node: '>=18'}
 
-  smol-toml@1.4.2:
-    resolution: {integrity: sha512-rInDH6lCNiEyn3+hH8KVGFdbjc099j47+OSgbMrfDYX1CmXLfdKd7qi6IfcWj2wFxvSVkuI46M+wPGYfEOEj6g==}
-    engines: {node: '>= 18'}
-
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -5486,6 +5485,8 @@ snapshots:
   '@quansync/fs@0.1.5':
     dependencies:
       quansync: 0.2.11
+
+  '@rainbowatcher/toml-edit-js@0.6.4': {}
 
   '@rollup/plugin-alias@5.1.1(rollup@4.46.2)':
     optionalDependencies:
@@ -8542,8 +8543,6 @@ snapshots:
     dependencies:
       ansi-styles: 6.2.1
       is-fullwidth-code-point: 5.0.0
-
-  smol-toml@1.4.2: {}
 
   source-map-js@1.2.1: {}
 

@@ -179,6 +179,16 @@ vi.mock('../../../../src/utils/installer', () => installerMock)
 const installerModule = await import('../../../../src/utils/installer')
 const mockedInstallCodex = vi.mocked(installerModule.installCodex)
 
+// Mock codex-toml-updater to control error handling
+vi.mock('../../../../src/utils/code-tools/codex-toml-updater', () => ({
+  batchUpdateCodexMcpServices: vi.fn(),
+  upsertCodexMcpService: vi.fn(),
+  deleteCodexMcpService: vi.fn(),
+  updateCodexApiFields: vi.fn(),
+  upsertCodexProvider: vi.fn(),
+  deleteCodexProvider: vi.fn(),
+}))
+
 // Partially mock codex module to allow real imports while mocking specific functions
 vi.mock('../../../../src/utils/code-tools/codex', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../../src/utils/code-tools/codex')>()
@@ -221,18 +231,18 @@ describe('codex utilities - edge cases', () => {
 
     it('should handle MCP config write failures', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex')
-      const { writeFile } = await import('../../../../src/utils/fs-operations')
+      const { batchUpdateCodexMcpServices } = await import('../../../../src/utils/code-tools/codex-toml-updater')
       const { selectMcpServices } = await import('../../../../src/utils/mcp-selector')
 
       // Mock service selection
       vi.mocked(selectMcpServices).mockResolvedValue(['claude-codebase'])
 
-      // Mock successful write to fail
-      vi.mocked(writeFile).mockImplementation(() => {
+      // Mock batchUpdateCodexMcpServices to throw error (simulating write failure)
+      vi.mocked(batchUpdateCodexMcpServices).mockImplementation(() => {
         throw new Error('Disk full')
       })
 
-      // configureCodexMcp doesn't return false, it throws when failing to write
+      // configureCodexMcp throws when batchUpdateCodexMcpServices fails
       await expect(configureCodexMcp()).rejects.toThrow()
     })
   })

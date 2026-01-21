@@ -41,7 +41,7 @@
   "menuDescriptions.codexImportWorkflow": "仅导入/更新 Codex 工作流相关文件",
   "menuDescriptions.codexConfigureApi": "配置 Codex 的 API 提供商",
   "menuDescriptions.codexConfigureMcp": "配置 Codex 的 MCP 服务",
-  "menuDescriptions.codexConfigureModel": "设置默认模型（gpt-5/gpt-5-codex/自定义）",
+  "menuDescriptions.codexConfigureModel": "设置默认模型（gpt-5.2/gpt-5.1-codex-max/gpt-5.1-codex-mini/自定义）",
   "menuDescriptions.codexConfigureAiMemory": "配置 AI 输出语言和系统提示词风格",
   "menuDescriptions.codexUninstall": "删除 Codex 配置和相关文件",
   "menuDescriptions.codexCheckUpdates": "检查并更新 Codex",

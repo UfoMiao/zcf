@@ -387,7 +387,7 @@ describe('codex-config-switch', () => {
           id: 'my-test-provider-',
           name: 'My Test Provider @#$',
           tempEnvKey: 'MY_TEST_PROVIDER__API_KEY',
-          model: 'gpt-5-codex', // Default model
+          model: 'gpt-5.2', // Default model
         }),
         'test-key',
         true,

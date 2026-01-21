@@ -41,7 +41,7 @@
   "menuDescriptions.codexImportWorkflow": "Import/update Codex workflow-related files",
   "menuDescriptions.codexConfigureApi": "Configure Codex API providers",
   "menuDescriptions.codexConfigureMcp": "Configure Codex MCP services",
-  "menuDescriptions.codexConfigureModel": "Set default model (gpt-5/gpt-5-codex/custom)",
+  "menuDescriptions.codexConfigureModel": "Set default model (gpt-5.2/gpt-5.1-codex-max/gpt-5.1-codex-mini/custom)",
   "menuDescriptions.codexConfigureAiMemory": "Configure AI output language and system prompt style",
   "menuDescriptions.codexUninstall": "Remove Codex configuration and files",
   "menuDescriptions.codexCheckUpdates": "Check and update Codex",

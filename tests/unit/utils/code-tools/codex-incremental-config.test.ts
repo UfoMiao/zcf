@@ -10,9 +10,15 @@ import {
 // Mock the codex module functions
 vi.mock('../../../../src/utils/code-tools/codex', () => ({
   readCodexConfig: vi.fn(),
-  writeCodexConfig: vi.fn(),
   backupCodexComplete: vi.fn(),
   writeAuthFile: vi.fn(),
+}))
+
+// Mock the codex-toml-updater module functions (new targeted update approach)
+vi.mock('../../../../src/utils/code-tools/codex-toml-updater', () => ({
+  updateCodexApiFields: vi.fn(),
+  upsertCodexProvider: vi.fn(),
+  deleteCodexProvider: vi.fn(),
 }))
 
 vi.mock('../../../../src/i18n', () => ({
@@ -59,10 +65,13 @@ describe('codex-incremental-config integration', () => {
       // Arrange
       const {
         readCodexConfig,
-        writeCodexConfig,
         backupCodexComplete,
         writeAuthFile,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const {
+        upsertCodexProvider,
+        deleteCodexProvider,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       // Initial configuration exists
       readCodexConfig.mockReturnValue(initialConfig)
@@ -83,11 +92,8 @@ describe('codex-incremental-config integration', () => {
       expect(addResult.success).toBe(true)
       expect(addResult.addedProvider).toEqual(newProvider)
 
-      // Verify add operation calls
-      expect(writeCodexConfig).toHaveBeenCalledWith({
-        ...initialConfig,
-        providers: [initialConfig.providers[0], newProvider],
-      })
+      // Verify add operation calls - new implementation uses targeted upsertCodexProvider
+      expect(upsertCodexProvider).toHaveBeenCalledWith(newProvider.id, newProvider)
       expect(writeAuthFile).toHaveBeenCalledWith({
         [newProvider.tempEnvKey]: 'api-key-2',
       })
@@ -131,6 +137,9 @@ describe('codex-incremental-config integration', () => {
       expect(deleteResult.deletedProviders).toEqual(['provider-2'])
       expect(deleteResult.remainingProviders).toHaveLength(1)
 
+      // Verify delete operation uses targeted deleteCodexProvider
+      expect(deleteCodexProvider).toHaveBeenCalledWith('provider-2')
+
       // Verify all operations created backups
       expect(backupCodexComplete).toHaveBeenCalledTimes(3)
     })
@@ -157,9 +166,11 @@ describe('codex-incremental-config integration', () => {
       // Arrange
       const {
         readCodexConfig,
-        writeCodexConfig,
         backupCodexComplete,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const {
+        upsertCodexProvider,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       const complexConfig: CodexConfigData = {
         model: null,
@@ -196,55 +207,49 @@ describe('codex-incremental-config integration', () => {
       readCodexConfig.mockReturnValue(complexConfig)
       backupCodexComplete.mockReturnValue('/backup/path/config.toml')
 
+      const newProviderToAdd = {
+        id: 'provider-3',
+        name: 'Provider 3',
+        baseUrl: 'https://api.provider3.com/v1',
+        wireApi: 'responses' as const,
+        tempEnvKey: 'PROVIDER3_API_KEY',
+        requiresOpenaiAuth: true,
+      }
+
       // Act: Add a provider and verify configuration integrity
       const addResult = await addProviderToExisting(
-        {
-          id: 'provider-3',
-          name: 'Provider 3',
-          baseUrl: 'https://api.provider3.com/v1',
-          wireApi: 'responses',
-          tempEnvKey: 'PROVIDER3_API_KEY',
-          requiresOpenaiAuth: true,
-        },
+        newProviderToAdd,
         'api-key-3',
       )
 
       // Assert: Configuration integrity is maintained
       expect(addResult.success).toBe(true)
-      expect(writeCodexConfig).toHaveBeenCalledWith({
-        ...complexConfig,
-        providers: [
-          ...complexConfig.providers,
-          {
-            id: 'provider-3',
-            name: 'Provider 3',
-            baseUrl: 'https://api.provider3.com/v1',
-            wireApi: 'responses',
-            tempEnvKey: 'PROVIDER3_API_KEY',
-            requiresOpenaiAuth: true,
-          },
-        ],
-      })
+      // New implementation uses targeted upsertCodexProvider - only modifies provider section
+      // This preserves MCP services and other config automatically
+      expect(upsertCodexProvider).toHaveBeenCalledWith('provider-3', newProviderToAdd)
 
-      // Verify other configuration parts are preserved
-      const configCall = writeCodexConfig.mock.calls[0][0]
-      expect(configCall.mcpServices).toEqual(complexConfig.mcpServices)
-      expect(configCall.otherConfig).toEqual(complexConfig.otherConfig)
-      expect(configCall.managed).toBe(true)
+      // Note: The new implementation doesn't use writeCodexConfig anymore
+      // Instead, it uses targeted TOML updates that preserve other sections automatically
     })
 
     it('should handle error scenarios gracefully', async () => {
       // Arrange
-      const { readCodexConfig, writeCodexConfig } = vi.mocked(
+      const { readCodexConfig } = vi.mocked(
         await import('../../../../src/utils/code-tools/codex'),
       )
+      const {
+        upsertCodexProvider,
+        updateCodexApiFields,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       // Test 1: Missing configuration - PR #251 changed: creates new config instead of error
       readCodexConfig.mockReturnValue(null)
       const addResult1 = await addProviderToExisting(newProvider, 'api-key')
       expect(addResult1.success).toBe(true)
       expect(addResult1.addedProvider).toEqual(newProvider)
-      expect(writeCodexConfig).toHaveBeenCalled()
+      // New implementation uses targeted updates
+      expect(updateCodexApiFields).toHaveBeenCalled()
+      expect(upsertCodexProvider).toHaveBeenCalledWith(newProvider.id, newProvider)
 
       // Test 2: Duplicate provider
       readCodexConfig.mockReturnValue(initialConfig)
@@ -271,9 +276,12 @@ describe('codex-incremental-config integration', () => {
       // Arrange
       const {
         readCodexConfig,
-        writeCodexConfig,
         backupCodexComplete,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const {
+        updateCodexApiFields,
+        deleteCodexProvider,
+      } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       const multiProviderConfig: CodexConfigData = {
         model: null,
@@ -310,11 +318,11 @@ describe('codex-incremental-config integration', () => {
       // Assert: Default provider is automatically updated
       expect(deleteResult.success).toBe(true)
       expect(deleteResult.newDefaultProvider).toBe('provider-2')
-      expect(writeCodexConfig).toHaveBeenCalledWith({
-        ...multiProviderConfig,
+      // New implementation uses targeted updates
+      expect(updateCodexApiFields).toHaveBeenCalledWith(expect.objectContaining({
         modelProvider: 'provider-2', // Updated to remaining provider
-        providers: [multiProviderConfig.providers[1]], // Only provider-2 remains
-      })
+      }))
+      expect(deleteCodexProvider).toHaveBeenCalledWith('provider-1')
     })
   })
 })

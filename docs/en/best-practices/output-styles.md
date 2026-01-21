@@ -84,6 +84,7 @@ ZCF provides the following pre-configured output styles:
 | `nekomata-engineer` | Nekomata Engineer | Light and friendly, maintains professionalism | Personal projects, relaxed atmosphere |
 | `laowang-engineer` | Laowang Engineer | Humorous and down-to-earth, direct and effective | Chinese projects, domestic teams |
 | `ojousama-engineer` | Ojousama Engineer | Elegant and refined, focuses on details | Specific scenarios, stylized projects |
+| `rem-engineer` | Rem Maid Engineer | Gentle devotion, calm decisiveness | Projects requiring meticulous care |
 
 ### Built-in Output Styles
 

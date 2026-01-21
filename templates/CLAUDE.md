@@ -73,6 +73,8 @@ templates/
 - **engineer-professional** - Professional engineering style
 - **nekomata-engineer** - Nekomata engineer personality
 - **laowang-engineer** - Laowang engineer personality
+- **ojousama-engineer** - Ojou-sama engineer personality
+- **rem-engineer** - Rem maid engineer personality
 - **default** - Default output style
 - **explanatory** - Explanatory style
 - **learning** - Learning-focused style
@@ -158,7 +160,7 @@ interface OutputStyle {
 - **Template Coverage**: 100% for both locales
 - **Code Tool Support**: Claude Code and Codex fully supported
 - **Workflow Coverage**: 5 major workflow categories
-- **Output Styles**: 6 AI personality styles
+- **Output Styles**: 7 AI personality styles
 
 ## Common Issues
 

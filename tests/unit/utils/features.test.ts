@@ -10,6 +10,9 @@ vi.mock('inquirer', () => ({
 vi.mock('node:fs', () => ({
   existsSync: vi.fn(),
   unlinkSync: vi.fn(),
+  mkdirSync: vi.fn(),
+  readFileSync: vi.fn(() => ''),
+  writeFileSync: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/config', () => ({
@@ -87,7 +90,6 @@ vi.mock('../../../src/utils/toggle-prompt', () => ({
 // Mock Codex-related functions
 vi.mock('../../../src/utils/code-tools/codex', () => ({
   readCodexConfig: vi.fn(),
-  writeCodexConfig: vi.fn(),
   runCodexSystemPromptSelection: vi.fn(),
   backupCodexConfig: vi.fn(),
   backupCodexAgents: vi.fn(),
