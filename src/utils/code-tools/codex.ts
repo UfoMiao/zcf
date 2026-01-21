@@ -1657,7 +1657,11 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
           const sanitized = sanitizeProviderName(input)
           if (!sanitized)
             return i18n.t('codex:providerNameRequired')
-          if (sanitized !== input.trim())
+          // Allow uppercase letters in display name - sanitizeProviderName will normalize to lowercase for ID
+          // Also allow dots and spaces since they get converted to hyphens
+          // Reject if the name contains invalid characters (chars that would be stripped, not just transformed)
+          const normalizedInput = input.trim().toLowerCase().replace(/\./g, '-').replace(/\s+/g, '-')
+          if (sanitized !== normalizedInput)
             return i18n.t('codex:providerNameInvalid')
           return true
         },
