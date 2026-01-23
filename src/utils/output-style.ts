@@ -41,12 +41,14 @@ const OUTPUT_STYLES: OutputStyle[] = [
     filePath: 'ojousama-engineer.md',
   },
   {
-    id: 'leibus-engineer',
-    isCustom: true,
-    filePath: 'leibus-engineer.md',
     id: 'rem-engineer',
     isCustom: true,
     filePath: 'rem-engineer.md',
+  },
+  {
+    id: 'leibus-engineer',
+    isCustom: true,
+    filePath: 'leibus-engineer.md',
   },
   // Built-in styles (no template files)
   {

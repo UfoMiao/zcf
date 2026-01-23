@@ -80,14 +80,14 @@ describe('output-style', () => {
     it('should return all available output styles', () => {
       const styles = getAvailableOutputStyles()
 
-      expect(styles).toHaveLength(8)
+      expect(styles).toHaveLength(9)
       expect(styles.map(s => s.id)).toEqual([
         'engineer-professional',
         'nekomata-engineer',
         'laowang-engineer',
         'ojousama-engineer',
-        'leibus-engineer',
         'rem-engineer',
+        'leibus-engineer',
         'default',
         'explanatory',
         'learning',
@@ -98,7 +98,7 @@ describe('output-style', () => {
       const styles = getAvailableOutputStyles()
       const customStyles = styles.filter(s => s.isCustom)
 
-      expect(customStyles).toHaveLength(5)
+      expect(customStyles).toHaveLength(6)
       customStyles.forEach((style) => {
         expect(style.filePath).toBeDefined()
         expect(style.filePath).toContain('.md')
