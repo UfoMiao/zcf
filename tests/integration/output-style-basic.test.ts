@@ -4,15 +4,15 @@ import { getAvailableOutputStyles } from '../../src/utils/output-style'
 describe('output-style basic functionality', () => {
   it('should return correct number of output styles', () => {
     const styles = getAvailableOutputStyles()
-    expect(styles).toHaveLength(8)
+    expect(styles).toHaveLength(9)
   })
 
-  it('should have 5 custom styles and 3 built-in styles', () => {
+  it('should have 6 custom styles and 3 built-in styles', () => {
     const styles = getAvailableOutputStyles()
     const customStyles = styles.filter(s => s.isCustom)
     const builtinStyles = styles.filter(s => !s.isCustom)
 
-    expect(customStyles).toHaveLength(5)
+    expect(customStyles).toHaveLength(6)
     expect(builtinStyles).toHaveLength(3)
   })
 
@@ -26,6 +26,7 @@ describe('output-style basic functionality', () => {
       'laowang-engineer',
       'ojousama-engineer',
       'rem-engineer',
+      'leibus-engineer',
     ])
   })
 
