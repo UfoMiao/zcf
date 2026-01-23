@@ -15,10 +15,11 @@
 
 import type { ExportMetadata } from '../../../../src/types/export-import'
 import { Buffer } from 'node:buffer'
+import { existsSync, rmSync, unlinkSync } from 'node:fs'
 import { homedir } from 'node:os'
 import process from 'node:process'
 import AdmZip from 'adm-zip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   adaptPlatformPaths,
   calculateChecksum,
@@ -704,5 +705,36 @@ describe('export-import/core', () => {
       expect(result.config.a.b.c.d.path).not.toContain('\\')
       expect(result.mappings.length).toBe(1)
     })
+  })
+
+  // Clean up test artifacts after all tests complete
+  afterAll(() => {
+    const testArtifacts = [
+      'test-package.zip',
+      'manifest-test.zip',
+      'valid-test.zip',
+      'entries-test.zip',
+      'empty-test.zip',
+      'extracted',
+    ]
+
+    for (const artifact of testArtifacts) {
+      if (existsSync(artifact)) {
+        try {
+          if (artifact === 'extracted') {
+            // Remove directory recursively
+            rmSync(artifact, { recursive: true, force: true })
+          }
+          else {
+            // Remove file
+            unlinkSync(artifact)
+          }
+        }
+        catch {
+          // Ignore cleanup errors in tests
+          console.warn(`Failed to clean up test artifact: ${artifact}`)
+        }
+      }
+    }
   })
 })
