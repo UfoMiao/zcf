@@ -5,7 +5,6 @@
 [![codecov][codecov-src]][codecov-href]
 [![JSDocs][jsdocs-src]][jsdocs-href]
 [![Ask DeepWiki][deepwiki-src]][deepwiki-href]
-[![Powered by DartNode][dartnode-src]][dartnode-href]
 
 <div align="center">
   <img src="./src/assets/banner.webp" alt="Banner"/>
@@ -170,5 +169,3 @@ Telegramグループに参加して、サポートやディスカッション、
 [jsdocs-href]: https://www.jsdocs.io/package/zcf
 [deepwiki-src]: https://img.shields.io/badge/Ask-DeepWiki-1fa669?style=flat&colorA=080f12&colorB=1fa669
 [deepwiki-href]: https://deepwiki.com/UfoMiao/zcf
-[dartnode-src]: https://dartnode.com/branding/DN-Open-Source-sm.png
-[dartnode-href]: https://dartnode.com
