@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Skill(superpowers:using-superpowers)",
-      "mcp__jetbrains__search_in_files_by_regex",
-      "Skill(superpowers:systematic-debugging)"
-    ]
-  }
-}
