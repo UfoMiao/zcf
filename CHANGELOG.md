@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.6.0
+
+### Minor Changes
+
+- ## New Features
+  - Add Leibus engineer output style with professional technical guidance
+  - Add rem-engineer output style for anime-inspired development assistance
+
+  ## 新功能
+  - 添加 Leibus 工程师输出风格，提供专业技术指导
+  - 添加 rem-engineer 输出风格，提供动漫风格的开发辅助
+
+  ## Fixes
+  - Enhance provider name validation in Codex API configuration
+
+  ## 修复
+  - 增强 Codex API 配置中的提供商名称验证
+
+  ## Documentation
+  - Update output styles documentation for multiple languages (en, zh-CN, ja-JP)
+
+  ## 文档
+  - 更新多语言输出风格文档（英文、简体中文、日文）
+
 ## 3.5.1
 
 ### Patch Changes
