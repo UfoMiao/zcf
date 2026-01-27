@@ -6,6 +6,8 @@ import { ccr } from './commands/ccr'
 import { executeCcusage } from './commands/ccu'
 import { checkUpdates } from './commands/check-updates'
 import { configSwitchCommand } from './commands/config-switch'
+import { exportCommand } from './commands/export'
+import { importCommand } from './commands/import'
 import { init } from './commands/init'
 import { showMainMenu } from './commands/menu'
 import { uninstall } from './commands/uninstall'
@@ -119,6 +121,8 @@ export function customizeHelp(sections: any[]): any[] {
         'i',
       )}     ${i18n.t('cli:help.commandDescriptions.initClaudeCodeConfig')}`,
       `  ${ansis.cyan('zcf update')} | ${ansis.cyan('u')}   ${i18n.t('cli:help.commandDescriptions.updateWorkflowFiles')}`,
+      `  ${ansis.cyan('zcf export')} | ${ansis.cyan('e')}   ${i18n.t('cli:help.commandDescriptions.exportConfigurations')}`,
+      `  ${ansis.cyan('zcf import')} <pkg>  ${i18n.t('cli:help.commandDescriptions.importConfigurations')}`,
       `  ${ansis.cyan('zcf ccr')}          ${i18n.t('cli:help.commandDescriptions.configureCcrProxy')}`,
       `  ${ansis.cyan('zcf ccu')} [args]   ${i18n.t('cli:help.commandDescriptions.claudeCodeUsageAnalysis')}`,
       `  ${ansis.cyan('zcf uninstall')}     ${i18n.t('cli:help.commandDescriptions.uninstallConfigurations')}`,
@@ -127,6 +131,7 @@ export function customizeHelp(sections: any[]): any[] {
       ansis.gray(`  ${i18n.t('cli:help.shortcuts')}`),
       `  ${ansis.cyan('zcf i')}            ${i18n.t('cli:help.shortcutDescriptions.quickInit')}`,
       `  ${ansis.cyan('zcf u')}            ${i18n.t('cli:help.shortcutDescriptions.quickUpdate')}`,
+      `  ${ansis.cyan('zcf e')}            ${i18n.t('cli:help.shortcutDescriptions.quickExport')}`,
       `  ${ansis.cyan('zcf check')}        ${i18n.t('cli:help.shortcutDescriptions.quickCheckUpdates')}`,
     ].join('\n'),
   })
@@ -175,6 +180,14 @@ export function customizeHelp(sections: any[]): any[] {
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.updateWorkflowFilesOnly')}`),
       `  ${ansis.cyan('npx zcf u')}`,
+      '',
+      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.exportConfigurations')}`),
+      `  ${ansis.cyan('npx zcf export')}            ${ansis.gray(`# ${i18n.t('cli:help.defaults.interactiveExport')}`)}`,
+      `  ${ansis.cyan('npx zcf e -T cc -s all')}    ${ansis.gray(`# ${i18n.t('cli:help.defaults.exportAllClaudeCode')}`)}`,
+      '',
+      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.importConfigurations')}`),
+      `  ${ansis.cyan('npx zcf import config.zip')} ${ansis.gray(`# ${i18n.t('cli:help.defaults.interactiveImport')}`)}`,
+      `  ${ansis.cyan('npx zcf import config.zip -m merge')}`,
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.configureClaudeCodeRouter')}`),
       `  ${ansis.cyan('npx zcf ccr')}`,
@@ -276,6 +289,20 @@ export async function setupCommands(cli: CAC): Promise<void> {
       await update(options)
     }))
 
+  // Export command
+  cli
+    .command('export', i18n.t('cli:help.commandDescriptions.exportConfigurations'))
+    .alias('e')
+    .option('--code-type, -T <type>', `${i18n.t('cli:help.optionDescriptions.codeToolType')} (claude-code, codex, all, cc, cx)`)
+    .option('--scope, -s <scope>', `${i18n.t('export:selectScope')} (all, workflows, mcp, settings, wf, config)`)
+    .option('--include-sensitive', i18n.t('export:includeSensitive'))
+    .option('--output, -o <path>', i18n.t('export:selectOutputPath'))
+    .option('--lang, -l <lang>', `${i18n.t('cli:help.optionDescriptions.displayLanguage')} (zh-CN, en)`)
+    .option('--all-lang, -g <lang>', i18n.t('cli:help.optionDescriptions.setAllLanguageParams'))
+    .action(await withLanguageResolution(async (options) => {
+      await exportCommand(options)
+    }))
+
   // CCR command - Configure Claude Code Router
   cli
     .command('ccr', 'Configure Claude Code Router for model proxy')
@@ -321,6 +348,20 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
     .action(await withLanguageResolution(async (options) => {
       await uninstall(options)
+    }))
+
+  // Import command
+  cli
+    .command('import [packagePath]', i18n.t('cli:help.commandDescriptions.importConfigurations'))
+    .option('--package, -p <path>', 'Path to the import package (.zip file)')
+    .option('--code-type, -T <codeType>', 'Target code tool type (claude-code, codex, all)')
+    .option('--merge-strategy, -m <strategy>', 'Merge strategy (replace/merge/skip-existing), default: merge')
+    .option('--include-sensitive', 'Import sensitive data (API keys, tokens)')
+    .option('--no-backup', 'Do not create backup before import')
+    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
+    .action(await withLanguageResolution(async (packagePath, options) => {
+      await importCommand(packagePath, options)
     }))
 
   // Check updates command
