@@ -102,7 +102,7 @@ describe('codex-incremental-config integration', () => {
       const editUpdates = {
         name: 'Updated Provider 1',
         baseUrl: 'https://api.updated-provider1.com/v1',
-        wireApi: 'chat' as const,
+        wireApi: 'responses' as const,
         apiKey: 'updated-api-key-1',
       }
 

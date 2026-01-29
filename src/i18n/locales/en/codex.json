@@ -20,7 +20,6 @@
   "providerBaseUrlRequired": "Base URL is required",
   "providerProtocolPrompt": "Select protocol to use",
   "protocolResponses": "Responses (Recommended, new-generation response API with state management)",
-  "protocolChat": "Chat (Traditional chat completion API, requires message history)",
   "providerApiKeyPrompt": "API key value",
   "providerApiKeyRequired": "API key is required",
   "addProviderPrompt": "Add another provider?",
@@ -118,7 +117,7 @@
   "providerManager.providerIdRequired": "Provider ID is required",
   "providerManager.providerNameRequired": "Provider name is required",
   "providerManager.baseUrlRequired": "Base URL is required",
-  "providerManager.wireApiInvalid": "Wire API must be either \"responses\" or \"chat\"",
+  "providerManager.wireApiInvalid": "Wire API must be \"responses\"",
   "providerManager.unknownError": "Unknown error",
   "envKeyMigrationComplete": "✔ env_key to temp_env_key migration completed"
 }

@@ -16,7 +16,7 @@ export interface ProviderOperationResult {
 export interface ProviderUpdateData {
   name?: string
   baseUrl?: string
-  wireApi?: 'responses' | 'chat'
+  wireApi?: 'responses'
   apiKey?: string
   model?: string
 }
@@ -301,7 +301,7 @@ export function validateProviderData(provider: Partial<CodexProvider>): {
     errors.push(i18n.t('codex:providerManager.baseUrlRequired'))
   }
 
-  if (provider.wireApi && !['responses', 'chat'].includes(provider.wireApi)) {
+  if (provider.wireApi && provider.wireApi !== 'responses') {
     errors.push(i18n.t('codex:providerManager.wireApiInvalid'))
   }
 

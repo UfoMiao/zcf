@@ -282,7 +282,7 @@ describe('codex-provider-manager', () => {
       const updates = {
         name: 'Updated Provider Name',
         baseUrl: 'https://api.updated.com/v1',
-        wireApi: 'chat' as const,
+        wireApi: 'responses' as const,
         apiKey: 'updated-api-key',
       }
 
@@ -709,13 +709,6 @@ describe('codex-provider-manager', () => {
     })
 
     it('should accept valid wireApi values', () => {
-      const chatProvider = {
-        id: 'test-provider',
-        name: 'Test Provider',
-        baseUrl: 'https://api.test.com/v1',
-        wireApi: 'chat',
-      }
-
       const responsesProvider = {
         id: 'test-provider',
         name: 'Test Provider',
@@ -723,8 +716,18 @@ describe('codex-provider-manager', () => {
         wireApi: 'responses',
       }
 
-      expect(validateProviderData(chatProvider).valid).toBe(true)
       expect(validateProviderData(responsesProvider).valid).toBe(true)
+    })
+
+    it('should reject invalid wireApi values', () => {
+      const chatProvider = {
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'https://api.test.com/v1',
+        wireApi: 'chat', // chat is no longer supported
+      }
+
+      expect(validateProviderData(chatProvider).valid).toBe(false)
     })
 
     it('should handle partial provider data correctly', () => {

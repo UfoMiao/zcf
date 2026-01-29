@@ -24,8 +24,8 @@ export interface ApiProviderPreset {
   codex?: {
     /** API base URL */
     baseUrl: string
-    /** Wire API protocol type */
-    wireApi: 'responses' | 'chat'
+    /** Wire API protocol type (only 'responses' is supported in new Codex) */
+    wireApi: 'responses'
     /** Default model (optional) */
     defaultModel?: string
   }
@@ -68,46 +68,31 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
   {
     id: 'glm',
     name: 'GLM',
-    supportedCodeTools: ['claude-code', 'codex'],
+    supportedCodeTools: ['claude-code'],
     claudeCode: {
       baseUrl: 'https://open.bigmodel.cn/api/anthropic',
       authType: 'auth_token',
-    },
-    codex: {
-      baseUrl: 'https://open.bigmodel.cn/api/coding/paas/v4',
-      wireApi: 'chat',
-      defaultModel: 'GLM-4.7',
     },
     description: 'GLM (智谱AI)',
   },
   {
     id: 'minimax',
     name: 'MiniMax',
-    supportedCodeTools: ['claude-code', 'codex'],
+    supportedCodeTools: ['claude-code'],
     claudeCode: {
       baseUrl: 'https://api.minimaxi.com/anthropic',
       authType: 'auth_token',
       defaultModels: ['MiniMax-M2', 'MiniMax-M2'],
-    },
-    codex: {
-      baseUrl: 'https://api.minimaxi.com/v1',
-      wireApi: 'chat',
-      defaultModel: 'MiniMax-M2',
     },
     description: 'MiniMax API Service',
   },
   {
     id: 'kimi',
     name: 'Kimi',
-    supportedCodeTools: ['claude-code', 'codex'],
+    supportedCodeTools: ['claude-code'],
     claudeCode: {
       baseUrl: 'https://api.kimi.com/coding/',
       authType: 'auth_token',
-    },
-    codex: {
-      baseUrl: 'https://api.kimi.com/coding/v1',
-      wireApi: 'chat',
-      defaultModel: 'kimi-for-coding',
     },
     description: 'Kimi (Moonshot AI)',
   },
