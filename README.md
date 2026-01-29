@@ -42,6 +42,10 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
 <td>Thanks to PackyCode for sponsoring this project! PackyCode is a reliable and efficient API relay service provider, offering relay services for Claude Code, Codex, Gemini, and more. PackyCode provides special discounts for our software users: register using  <a href="https://www.packyapi.com/register?aff=zcf">this link</a>  and enter the "zcf" promo code during recharge to get 10% off.</td>
 </tr>
+<tr>
+<td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="./src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
+<td>Thanks to AICodeMirror for sponsoring this project! AICodeMirror provides official high-stability relay services for Claude Code/Codex/Gemini CLI, supporting enterprise-level high concurrency, fast invoicing, and 7x24 dedicated technical support. Official channels for Claude Code/Codex/Gemini at discounts as low as 38%/2%/10.9% off, with additional discounts on top-ups! AICodeMirror offers special benefits for ZCF users: users who register through <a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">this link</a> can enjoy 20% off on first top-up, and enterprise customers can get up to 25% off!</td>
+</tr>
 <tbody>
 </table>
 
@@ -108,6 +112,7 @@ A huge thank you to all our sponsors for their generous support!
 - [302.AI](https://share.302.ai/gAT9VG) (first corporate sponsorship 🤠)
 - [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB) (first AI model sponsorship 🤖)
 - [PackyCode](https://www.packyapi.com/register?aff=zcf) (first API proxy service sponsor 🧝🏻‍♀️)
+- [AICodeMirror](https://www.aicodemirror.com/register?invitecode=ZCFZCF) (official high-stability relay service sponsor 🪞)
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8) (sponsored $100 proxy credits 💰)
 
 【Individual Sponsors】

@@ -42,6 +42,10 @@ GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSK
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
 <td>PackyCode がこのプロジェクトを支援してくれました！PackyCode は信頼性と効率性の高いAPI中継サービスプロバイダーで、Claude Code、Codex、Gemini などの中継サービスを提供します。PackyCode はこのソフトウェアのユーザーに特別な割引を提供します：<a href="https://www.packyapi.com/register?aff=zcf">このリンク</a> を使用して登録し、再課金時に "zcf" プロモーションコードを入力すると 10% 割引を享受できます。</td>
 </tr>
+<tr>
+<td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="./src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
+<td>AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude Code/Codex/Gemini CLI の公式高安定性中継サービスを提供し、エンタープライズレベルの高並行処理、迅速な請求書発行、7x24 専用技術サポートをサポートしています。Claude Code/Codex/Gemini の公式チャネルは最大 3.8/0.2/10.9 割引で、チャージでさらに割引があります！AICodeMirror は ZCF ユーザーに特別な特典を提供しています：<a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">このリンク</a>から登録したユーザーは初回チャージ 20% オフ、企業顧客は最大 25% オフを享受できます！</td>
+</tr>
 <tbody>
 </table>
 
@@ -109,6 +113,7 @@ Telegramグループに参加して、サポートやディスカッション、
 - [302.AI](https://share.302.ai/gAT9VG)（最初の企業スポンサー 🤠）
 - [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB)（最初のAIモデルスポンサー 🤖）
 - [PackyCode](https://www.packyapi.com/register?aff=zcf)（最初のAPIプロキシサービススポンサー 🧝🏻‍♀️）
+- [AICodeMirror](https://www.aicodemirror.com/register?invitecode=ZCFZCF)（公式高安定性中継サービススポンサー 🪞）
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8)（$100 プロキシクレジットを提供 💰）
 
 【個人スポンサー】

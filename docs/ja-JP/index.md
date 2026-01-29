@@ -44,6 +44,10 @@ GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
 <td>PackyCode がこのプロジェクトをスポンサーしてくれたことに感謝します！PackyCode は信頼性が高く効率的な API リレーサービスプロバイダーで、Claude Code、Codex、Gemini などのリレーサービスを提供しています。PackyCode は当ソフトウェアのユーザーに特別割引を提供しています：<a href="https://www.packyapi.com/register?aff=zcf">このリンク</a>から登録し、チャージ時に「zcf」プロモーションコードを入力すると 10% オフになります。</td>
 </tr>
+<tr>
+<td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
+<td>AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude Code/Codex/Gemini CLI の公式高安定性中継サービスを提供し、エンタープライズレベルの高並行処理、迅速な請求書発行、7x24 専用技術サポートをサポートしています。Claude Code/Codex/Gemini の公式チャネルは最大 3.8/0.2/10.9 割引で、チャージでさらに割引があります！AICodeMirror は ZCF ユーザーに特別な特典を提供しています：<a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">このリンク</a>から登録したユーザーは初回チャージ 20% オフ、企業顧客は最大 25% オフを享受できます！</td>
+</tr>
 </tbody>
 </table>
 
