@@ -1634,7 +1634,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
     }])
 
     let prefilledBaseUrl: string | undefined
-    let prefilledWireApi: 'responses' | 'chat' | undefined
+    let prefilledWireApi: 'responses' | undefined
     let prefilledModel: string | undefined
 
     if (selectedProvider !== 'custom') {
@@ -1647,7 +1647,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
       }
     }
 
-    const answers = await inquirer.prompt<{ providerName: string, baseUrl: string, wireApi: string, apiKey: string }>([
+    const answers = await inquirer.prompt<{ providerName: string, baseUrl: string, apiKey: string }>([
       {
         type: 'input',
         name: 'providerName',
@@ -1673,17 +1673,6 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
         default: prefilledBaseUrl || ((answers: any) => existingMap.get(answers.providerId)?.baseUrl || 'https://api.openai.com/v1'),
         when: () => selectedProvider === 'custom',
         validate: input => !!input || i18n.t('codex:providerBaseUrlRequired'),
-      },
-      {
-        type: 'list',
-        name: 'wireApi',
-        message: i18n.t('codex:providerProtocolPrompt'),
-        choices: [
-          { name: i18n.t('codex:protocolResponses'), value: 'responses' },
-          { name: i18n.t('codex:protocolChat'), value: 'chat' },
-        ],
-        default: prefilledWireApi || ((answers: any) => existingMap.get(sanitizeProviderName(answers.providerName))?.wireApi || 'responses'),
-        when: () => selectedProvider === 'custom', // Only ask if custom
       },
       {
         type: 'input',
@@ -1747,7 +1736,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
       id: providerId,
       name: answers.providerName,
       baseUrl: selectedProvider === 'custom' ? answers.baseUrl : prefilledBaseUrl!,
-      wireApi: selectedProvider === 'custom' ? (answers.wireApi || 'responses') : prefilledWireApi!,
+      wireApi: prefilledWireApi || 'responses',
       tempEnvKey,
       requiresOpenaiAuth: true,
       model: customModel || prefilledModel || 'gpt-5.2', // Use custom model, provider's default model, or fallback

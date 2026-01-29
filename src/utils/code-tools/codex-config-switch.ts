@@ -86,7 +86,7 @@ async function handleAddProvider(): Promise<void> {
   }])
 
   let prefilledBaseUrl: string | undefined
-  let prefilledWireApi: 'responses' | 'chat' | undefined
+  let prefilledWireApi: 'responses' | undefined
   let prefilledModel: string | undefined
 
   if (selectedProvider !== 'custom') {
@@ -102,7 +102,6 @@ async function handleAddProvider(): Promise<void> {
   const answers = await inquirer.prompt<{
     providerName: string
     baseUrl: string
-    wireApi: string
     apiKey: string
   }>([
     {
@@ -126,17 +125,6 @@ async function handleAddProvider(): Promise<void> {
       default: prefilledBaseUrl || 'https://api.openai.com/v1',
       when: () => selectedProvider === 'custom',
       validate: input => !!input.trim() || i18n.t('codex:providerBaseUrlRequired'),
-    },
-    {
-      type: 'list',
-      name: 'wireApi',
-      message: i18n.t('codex:providerProtocolPrompt'),
-      choices: [
-        { name: i18n.t('codex:protocolResponses'), value: 'responses' },
-        { name: i18n.t('codex:protocolChat'), value: 'chat' },
-      ],
-      default: prefilledWireApi || 'responses',
-      when: () => selectedProvider === 'custom',
     },
     {
       type: 'input',
@@ -173,7 +161,7 @@ async function handleAddProvider(): Promise<void> {
     id: providerId,
     name: answers.providerName.trim(),
     baseUrl: selectedProvider === 'custom' ? answers.baseUrl.trim() : prefilledBaseUrl!,
-    wireApi: (selectedProvider === 'custom' ? answers.wireApi : prefilledWireApi) as 'responses' | 'chat',
+    wireApi: prefilledWireApi || 'responses',
     tempEnvKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
     requiresOpenaiAuth: true,
     model: prefilledModel || 'gpt-5.2', // Use provider's default model or fallback
@@ -240,7 +228,6 @@ async function handleEditProvider(providers: any[]): Promise<void> {
   const answers = await inquirer.prompt<{
     providerName: string
     baseUrl: string
-    wireApi: string
     apiKey: string
   }>([
     {
@@ -265,16 +252,6 @@ async function handleEditProvider(providers: any[]): Promise<void> {
       validate: input => !!input.trim() || i18n.t('codex:providerBaseUrlRequired'),
     },
     {
-      type: 'list',
-      name: 'wireApi',
-      message: i18n.t('codex:providerProtocolPrompt'),
-      choices: [
-        { name: i18n.t('codex:protocolResponses'), value: 'responses' },
-        { name: i18n.t('codex:protocolChat'), value: 'chat' },
-      ],
-      default: provider.wireApi,
-    },
-    {
       type: 'input',
       name: 'apiKey',
       message: i18n.t('codex:providerApiKeyPrompt'),
@@ -297,7 +274,7 @@ async function handleEditProvider(providers: any[]): Promise<void> {
   const updates = {
     name: answers.providerName.trim(),
     baseUrl: answers.baseUrl.trim(),
-    wireApi: answers.wireApi as 'responses' | 'chat',
+    wireApi: 'responses' as const,
     apiKey: answers.apiKey.trim(),
     model: model.trim(),
   }
@@ -354,7 +331,6 @@ async function handleCopyProvider(providers: any[]): Promise<void> {
   const answers = await inquirer.prompt<{
     providerName: string
     baseUrl: string
-    wireApi: string
     apiKey: string
   }>([
     {
@@ -377,16 +353,6 @@ async function handleCopyProvider(providers: any[]): Promise<void> {
       message: i18n.t('codex:providerBaseUrlPrompt'),
       default: provider.baseUrl,
       validate: input => !!input.trim() || i18n.t('codex:providerBaseUrlRequired'),
-    },
-    {
-      type: 'list',
-      name: 'wireApi',
-      message: i18n.t('codex:providerProtocolPrompt'),
-      choices: [
-        { name: i18n.t('codex:protocolResponses'), value: 'responses' },
-        { name: i18n.t('codex:protocolChat'), value: 'chat' },
-      ],
-      default: provider.wireApi,
     },
     {
       type: 'input',
@@ -414,7 +380,7 @@ async function handleCopyProvider(providers: any[]): Promise<void> {
     id: providerId,
     name: answers.providerName.trim(),
     baseUrl: answers.baseUrl.trim(),
-    wireApi: answers.wireApi as 'responses' | 'chat',
+    wireApi: 'responses',
     tempEnvKey: `${providerId.toUpperCase().replace(/-/g, '_')}_API_KEY`,
     requiresOpenaiAuth: provider.requiresOpenaiAuth ?? true,
     model: model.trim(),

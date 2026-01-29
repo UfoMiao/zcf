@@ -1384,7 +1384,7 @@ async function convertToCodexProvider(config: ApiConfigDefinition): Promise<Code
 
   let baseUrl = config.url || API_DEFAULT_URL
   let model = config.primaryModel || 'gpt-5.2'
-  let wireApi: 'responses' | 'chat' = 'responses'
+  let wireApi = 'responses' as const
 
   if (config.provider && config.provider !== 'custom') {
     const { getProviderPreset } = await import('../config/api-providers')

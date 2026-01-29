@@ -158,7 +158,7 @@ describe('aPI Provider Configuration', () => {
         supportedCodeTools: ['codex'],
         codex: {
           baseUrl: 'https://minimal.com',
-          wireApi: 'chat',
+          wireApi: 'responses',
         },
       }
       expect(minimalProvider).toBeDefined()
@@ -177,7 +177,7 @@ describe('aPI Provider Configuration', () => {
         },
         codex: {
           baseUrl: 'https://dual.com/v1',
-          wireApi: 'chat',
+          wireApi: 'responses',
         },
       }
       expect(dualProvider).toBeDefined()
