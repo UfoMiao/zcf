@@ -42,6 +42,30 @@ describe('aPI Provider Configuration', () => {
       expect(provider302!.supportedCodeTools).toContain('codex')
     })
 
+    it('aicodemirror provider should have correct configuration', () => {
+      const provider = API_PROVIDER_PRESETS.find(p => p.id === 'aicodemirror')
+      expect(provider).toBeDefined()
+      expect(provider!.name).toBe('AICodeMirror')
+      expect(provider!.supportedCodeTools).toContain('claude-code')
+      expect(provider!.supportedCodeTools).toContain('codex')
+      expect(provider!.claudeCode?.baseUrl).toBe('https://api.aicodemirror.com/api/claudecode')
+      expect(provider!.claudeCode?.authType).toBe('auth_token')
+      expect(provider!.codex?.baseUrl).toBe('https://api.aicodemirror.com/api/codex/backend-api/codex')
+      expect(provider!.codex?.wireApi).toBe('responses')
+    })
+
+    it('aicodemirror-cn provider should have correct configuration', () => {
+      const provider = API_PROVIDER_PRESETS.find(p => p.id === 'aicodemirror-cn')
+      expect(provider).toBeDefined()
+      expect(provider!.name).toBe('AICodeMirror CN')
+      expect(provider!.supportedCodeTools).toContain('claude-code')
+      expect(provider!.supportedCodeTools).toContain('codex')
+      expect(provider!.claudeCode?.baseUrl).toBe('https://api.claudecode.net.cn/api/claudecode')
+      expect(provider!.claudeCode?.authType).toBe('auth_token')
+      expect(provider!.codex?.baseUrl).toBe('https://api.claudecode.net.cn/api/codex/backend-api/codex')
+      expect(provider!.codex?.wireApi).toBe('responses')
+    })
+
     it('302.ai should have Claude Code configuration', () => {
       const provider302 = API_PROVIDER_PRESETS.find(p => p.id === '302ai')
       expect(provider302!.claudeCode).toBeDefined()

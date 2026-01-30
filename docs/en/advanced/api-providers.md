@@ -13,6 +13,9 @@ ZCF currently supports the following API provider presets:
 | Preset ID | Provider Name | Description | Claude Code Support | Codex Support | Authentication Method |
 |---------|-----------|------|----------------|-----------|---------|
 | `302ai` | 302.AI | Enterprise-level AI API service | ✅ | ✅ | `api_key` |
+| `packycode` | PackyCode | PackyCode API service | ✅ | ✅ | `auth_token` |
+| `aicodemirror` | AICodeMirror | Global High-Quality Line | ✅ | ✅ | `auth_token` |
+| `aicodemirror-cn` | AICodeMirror CN | China Optimized Line | ✅ | ✅ | `auth_token` |
 | `glm` | GLM (Zhipu AI) | Zhipu AI service | ✅ | ✅ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API service | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (Moonshot) | Moonshot AI service | ✅ | ✅ | `auth_token` |
@@ -43,6 +46,54 @@ npx zcf init -s -p 302ai -k "sk-xxx"
 
 # Codex
 npx zcf init -s -T codex -p 302ai -k "sk-xxx"
+```
+
+### AICodeMirror
+
+**Provider Name**: AICodeMirror
+
+**Features**:
+- 🌐 Global High-Quality Line
+- 🚀 High-speed stable connection
+- 🔧 Supports both Claude Code and Codex
+
+**Configuration Information**:
+- **Claude Code Base URL**: `https://api.aicodemirror.com/api/claudecode`
+- **Codex Base URL**: `https://api.aicodemirror.com/api/codex/backend-api/codex`
+- **Authentication Method**: `auth_token`
+- **Codex Wire API**: `responses`
+
+**Usage Example**:
+```bash
+# Claude Code
+npx zcf init -s -p aicodemirror -k "your-auth-token"
+
+# Codex
+npx zcf init -s -T codex -p aicodemirror -k "your-auth-token"
+```
+
+### AICodeMirror CN
+
+**Provider Name**: AICodeMirror CN (China Optimized Line)
+
+**Features**:
+- 🇨🇳 China Optimized Line
+- ⚡ Low-latency access
+- 🔧 Supports both Claude Code and Codex
+
+**Configuration Information**:
+- **Claude Code Base URL**: `https://api.claudecode.net.cn/api/claudecode`
+- **Codex Base URL**: `https://api.claudecode.net.cn/api/codex/backend-api/codex`
+- **Authentication Method**: `auth_token`
+- **Codex Wire API**: `responses`
+
+**Usage Example**:
+```bash
+# Claude Code
+npx zcf init -s -p aicodemirror-cn -k "your-auth-token"
+
+# Codex
+npx zcf init -s -T codex -p aicodemirror-cn -k "your-auth-token"
 ```
 
 ### GLM (Zhipu AI)
