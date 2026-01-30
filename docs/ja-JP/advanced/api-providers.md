@@ -13,6 +13,9 @@ ZCFは現在、以下のAPIプロバイダープリセットをサポートし�
 | プリセットID | プロバイダー名 | 説明 | Claude Code サポート | Codex サポート | 認証方式 |
 |---------|-----------|------|----------------|-----------|---------|
 | `302ai` | 302.AI | エンタープライズレベルのAI APIサービス | ✅ | ✅ | `api_key` |
+| `packycode` | PackyCode | PackyCode APIサービス | ✅ | ✅ | `auth_token` |
+| `aicodemirror` | AICodeMirror | グローバル高品質回線 | ✅ | ✅ | `auth_token` |
+| `aicodemirror-cn` | AICodeMirror CN | 中国最適化回線 | ✅ | ✅ | `auth_token` |
 | `glm` | GLM (智譜AI) | 智譜AIサービス | ✅ | ✅ | `auth_token` |
 | `minimax` | MiniMax | MiniMax APIサービス | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (月の暗面) | Moonshot AIサービス | ✅ | ✅ | `auth_token` |
@@ -43,6 +46,54 @@ npx zcf init -s -p 302ai -k "sk-xxx"
 
 # Codex
 npx zcf init -s -T codex -p 302ai -k "sk-xxx"
+```
+
+### AICodeMirror
+
+**プロバイダー名**: AICodeMirror
+
+**特徴**:
+- 🌐 グローバル高品質回線
+- 🚀 高速で安定した接続
+- 🔧 Claude CodeとCodexの両方をサポート
+
+**設定情報**:
+- **Claude Code Base URL**: `https://api.aicodemirror.com/api/claudecode`
+- **Codex Base URL**: `https://api.aicodemirror.com/api/codex/backend-api/codex`
+- **認証方式**: `auth_token`
+- **Codex Wire API**: `responses`
+
+**使用例**:
+```bash
+# Claude Code
+npx zcf init -s -p aicodemirror -k "your-auth-token"
+
+# Codex
+npx zcf init -s -T codex -p aicodemirror -k "your-auth-token"
+```
+
+### AICodeMirror CN
+
+**プロバイダー名**: AICodeMirror CN (中国最適化回線)
+
+**特徴**:
+- 🇨🇳 中国最適化回線
+- ⚡ 低遅延アクセス
+- 🔧 Claude CodeとCodexの両方をサポート
+
+**設定情報**:
+- **Claude Code Base URL**: `https://api.claudecode.net.cn/api/claudecode`
+- **Codex Base URL**: `https://api.claudecode.net.cn/api/codex/backend-api/codex`
+- **認証方式**: `auth_token`
+- **Codex Wire API**: `responses`
+
+**使用例**:
+```bash
+# Claude Code
+npx zcf init -s -p aicodemirror-cn -k "your-auth-token"
+
+# Codex
+npx zcf init -s -T codex -p aicodemirror-cn -k "your-auth-token"
 ```
 
 ### GLM (智譜AI)

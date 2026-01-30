@@ -66,6 +66,34 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'PackyCode API Service',
   },
   {
+    id: 'aicodemirror',
+    name: 'AICodeMirror',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.aicodemirror.com/api/claudecode',
+      authType: 'auth_token',
+    },
+    codex: {
+      baseUrl: 'https://api.aicodemirror.com/api/codex/backend-api/codex',
+      wireApi: 'responses',
+    },
+    description: 'AICodeMirror Global High-Quality Line',
+  },
+  {
+    id: 'aicodemirror-cn',
+    name: 'AICodeMirror CN',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.claudecode.net.cn/api/claudecode',
+      authType: 'auth_token',
+    },
+    codex: {
+      baseUrl: 'https://api.claudecode.net.cn/api/codex/backend-api/codex',
+      wireApi: 'responses',
+    },
+    description: 'AICodeMirror China Optimized Line',
+  },
+  {
     id: 'glm',
     name: 'GLM',
     supportedCodeTools: ['claude-code'],

@@ -13,6 +13,9 @@ ZCF 目前支持以下 API 提供商预设：
 | 预设 ID | 提供商名称 | 描述 | Claude Code 支持 | Codex 支持 | 认证方式 |
 |---------|-----------|------|----------------|-----------|---------|
 | `302ai` | 302.AI | 企业级 AI API 服务 | ✅ | ✅ | `api_key` |
+| `packycode` | PackyCode | PackyCode API 服务 | ✅ | ✅ | `auth_token` |
+| `aicodemirror` | AICodeMirror | 全球高保线路 | ✅ | ✅ | `auth_token` |
+| `aicodemirror-cn` | AICodeMirror CN | 国内优化线路 | ✅ | ✅ | `auth_token` |
 | `glm` | GLM (智谱AI) | 智谱 AI 服务 | ✅ | ✅ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API 服务 | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (月之暗面) | Moonshot AI 服务 | ✅ | ✅ | `auth_token` |
@@ -43,6 +46,54 @@ npx zcf init -s -p 302ai -k "sk-xxx"
 
 # Codex
 npx zcf init -s -T codex -p 302ai -k "sk-xxx"
+```
+
+### AICodeMirror
+
+**提供商名称**：AICodeMirror
+
+**特点**：
+- 🌐 全球高保线路
+- 🚀 高速稳定连接
+- 🔧 同时支持 Claude Code 和 Codex
+
+**配置信息**：
+- **Claude Code Base URL**: `https://api.aicodemirror.com/api/claudecode`
+- **Codex Base URL**: `https://api.aicodemirror.com/api/codex/backend-api/codex`
+- **认证方式**: `auth_token`
+- **Codex Wire API**: `responses`
+
+**使用示例**：
+```bash
+# Claude Code
+npx zcf init -s -p aicodemirror -k "your-auth-token"
+
+# Codex
+npx zcf init -s -T codex -p aicodemirror -k "your-auth-token"
+```
+
+### AICodeMirror CN
+
+**提供商名称**：AICodeMirror CN (国内优化线路)
+
+**特点**：
+- 🇨🇳 国内优化线路
+- ⚡ 低延迟访问
+- 🔧 同时支持 Claude Code 和 Codex
+
+**配置信息**：
+- **Claude Code Base URL**: `https://api.claudecode.net.cn/api/claudecode`
+- **Codex Base URL**: `https://api.claudecode.net.cn/api/codex/backend-api/codex`
+- **认证方式**: `auth_token`
+- **Codex Wire API**: `responses`
+
+**使用示例**：
+```bash
+# Claude Code
+npx zcf init -s -p aicodemirror-cn -k "your-auth-token"
+
+# Codex
+npx zcf init -s -T codex -p aicodemirror-cn -k "your-auth-token"
 ```
 
 ### GLM (智谱AI)
