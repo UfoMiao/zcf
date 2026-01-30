@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.6.1
+
+### Patch Changes
+
+- ## New Features
+  - Add AICodeMirror API provider presets for simplified configuration
+  - Support AICodeMirror as a new API provider option
+
+  ## 新功能
+  - 添加 AICodeMirror API 提供商预设，简化配置流程
+  - 支持 AICodeMirror 作为新的 API 提供商选项
+
+  ## Changes
+  - Remove Codex chat format support (deprecated feature)
+  - Simplify Codex configuration by removing chat format options
+
+  ## 变更
+  - 移除 Codex chat 格式支持（已弃用功能）
+  - 简化 Codex 配置，移除 chat 格式选项
+
+  ## Documentation
+  - Add AICodeMirror sponsorship details to README and documentation files
+  - Update API providers documentation with AICodeMirror information
+
+  ## 文档
+  - 在 README 和文档中添加 AICodeMirror 赞助信息
+  - 更新 API 提供商文档，添加 AICodeMirror 相关信息
+
 ## 3.6.0
 
 ### Minor Changes
