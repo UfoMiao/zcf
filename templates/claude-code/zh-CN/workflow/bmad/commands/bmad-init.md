@@ -1,13 +1,16 @@
 # /bmad-init 命令
 
-此命令在您的项目中初始化 BMad-Method。
+此命令在您的项目中初始化或更新 BMad-Method (V6)。
 
 ## 当调用此命令时：
 
-1. 检查 `.bmad-core/install-manifest.yaml` 文件是否存在，判断 BMad 是否已安装
-2. 如果已安装，检查 manifest 中的版本号与最新版本对比
-3. 如果未安装或版本过旧，执行：`npx bmad-method@latest install -f -d . -i claude-code`
-4. 显示成功消息并提示用户重启 Claude Code
+1. 检查 `_bmad/` 目录是否存在，判断 BMad V6 是否已安装
+2. 检查是否存在旧版 V4 安装（`.bmad-core` 或 `.bmad-method` 目录）
+3. 新安装执行：`npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language Chinese --document-output-language Chinese --yes`
+4. 已安装则执行：`npx bmad-method install --directory . --action quick-update --yes`
+5. 修复安装器 bug：将 `{output_folder}` 重命名为 `_bmad-output`（Beta 已知问题）
+6. 自动更新 `.gitignore`（移除 V4 条目，添加 V6 条目）
+7. 显示安装结果并提示用户后续操作
 
 ## 实现
 
@@ -16,140 +19,237 @@ const { execSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
-// 检查 expect 工具是否可用
-function checkExpectAvailability() {
-  try {
-    execSync('which expect', { stdio: 'ignore' })
-    return true
-  } catch (error) {
-    return false
-  }
-}
+// 需要从 .gitignore 清理的旧条目
+const LEGACY_GITIGNORE_ENTRIES = [
+  '.bmad-core',
+  '.bmad-method',
+  '.claude/commands/BMad',
+  '{output_folder}',  // v6.0.0-Beta.8 bug 产物
+]
 
-// 使用 expect 自动化交互式安装
-function installWithExpect() {
-  const expectScript = `
-    spawn npx bmad-method@latest install -f -d . -i claude-code
-    expect "What would you like to do?"
-    send "1\\r"
-    expect "How would you like to proceed?"
-    send "1\\r"
-    expect eof
-  `
-  
-  execSync(`expect -c '${expectScript}'`, {
-    stdio: 'inherit',
-    cwd: process.cwd(),
-    shell: true
-  })
-}
+// V6 新版 .gitignore 条目
+const V6_GITIGNORE_ENTRIES = [
+  '_bmad/',
+  '_bmad-output/',
+]
 
-// 降级安装方案
-function fallbackInstallation() {
-  console.log('⚠️  系统未安装 expect 工具，使用交互式安装')
-  console.log('请根据安装程序的提示手动选择：')
-  console.log('  1. 选择 "Upgrade BMad core" (升级 BMad 核心)')
-  console.log('  2. 选择 "Backup and overwrite modified files" (备份并覆盖修改的文件)')
-  console.log('')
-  
-  execSync('npx bmad-method@latest install -f -d . -i claude-code', {
-    stdio: 'inherit',
-    cwd: process.cwd(),
-    shell: true
-  })
-}
+// 修复安装器 bug: {output_folder} 未解析为 _bmad-output (v6.0.0-Beta.8)
+function fixOutputFolderBug(cwd) {
+  const buggyPath = path.join(cwd, '{output_folder}')
+  const correctPath = path.join(cwd, '_bmad-output')
 
-async function initBmad() {
-  // 检查是否已安装并获取版本
-  const manifestPath = path.join(process.cwd(), '.bmad-core', 'install-manifest.yaml')
-  let needsInstall = true
-  let currentVersion = null
+  if (!fs.existsSync(buggyPath)) return false
 
-  if (fs.existsSync(manifestPath)) {
-    try {
-      // 简单版本检查 - 只检查文件是否存在
-      // 完整的 YAML 解析需要 js-yaml 包
-      const manifestContent = fs.readFileSync(manifestPath, 'utf8')
-      const versionMatch = manifestContent.match(/version:\s*(.+)/)
-      if (versionMatch) {
-        currentVersion = versionMatch[1].trim()
-      }
-
-      // 从 npm 获取最新版本
-      const latestVersion = execSync('npm view bmad-method version', { encoding: 'utf8' }).trim()
-
-      if (currentVersion === latestVersion) {
-        console.log(`✅ BMad-Method已是最新版本 (v${currentVersion})`)
-        console.log('您可以使用 BMad 命令开始工作流')
-        needsInstall = false
-      }
-      else {
-        console.log(`🔄 BMad-Method有更新可用：v${currentVersion} → v${latestVersion}`)
+  if (!fs.existsSync(correctPath)) {
+    // _bmad-output 不存在，直接重命名
+    fs.renameSync(buggyPath, correctPath)
+    console.log('   ✅ {output_folder} → _bmad-output/ (重命名)')
+  } else {
+    // _bmad-output 已存在，合并子目录后删除
+    const entries = fs.readdirSync(buggyPath, { withFileTypes: true })
+    for (const entry of entries) {
+      const src = path.join(buggyPath, entry.name)
+      const dest = path.join(correctPath, entry.name)
+      if (!fs.existsSync(dest)) {
+        fs.renameSync(src, dest)
+        console.log(`   ✅ 移动 ${entry.name} → _bmad-output/`)
       }
     }
-    catch (error) {
-      console.log('⚠️  无法验证 BMad 版本，将重新安装')
+    fs.rmSync(buggyPath, { recursive: true, force: true })
+    console.log('   ✅ 已删除多余的 {output_folder}/')
+  }
+  return true
+}
+
+function updateGitignore(cwd) {
+  const gitignorePath = path.join(cwd, '.gitignore')
+  let content = ''
+  let exists = false
+
+  if (fs.existsSync(gitignorePath)) {
+    content = fs.readFileSync(gitignorePath, 'utf8')
+    exists = true
+  }
+
+  const lines = content.split('\n')
+  let changed = false
+
+  // 移除 V4 旧条目
+  const filtered = lines.filter(line => {
+    const trimmed = line.trim()
+    const isLegacy = LEGACY_GITIGNORE_ENTRIES.some(entry =>
+      trimmed === entry || trimmed === entry + '/' || trimmed === '/' + entry
+    )
+    if (isLegacy) {
+      console.log(`   🗑️  移除旧条目: ${trimmed}`)
+      changed = true
+    }
+    return !isLegacy
+  })
+
+  // 添加 V6 新条目
+  const newEntries = []
+  for (const entry of V6_GITIGNORE_ENTRIES) {
+    const entryBase = entry.replace(/\/$/, '')
+    const alreadyExists = filtered.some(line => {
+      const trimmed = line.trim()
+      return trimmed === entry || trimmed === entryBase || trimmed === '/' + entryBase
+    })
+    if (!alreadyExists) {
+      newEntries.push(entry)
+      console.log(`   ✅ 添加新条目: ${entry}`)
+      changed = true
     }
   }
 
-  if (needsInstall === false) {
+  if (!changed) {
+    console.log('   ℹ️  .gitignore 已是最新，无需更新')
     return
   }
 
-  // 安装 BMad - 使用 expect 优先方案
-  console.log('🚀 正在安装 BMad-Method...')
-  
-  try {
-    const hasExpect = checkExpectAvailability()
-    
-    if (hasExpect) {
-      console.log('📋 使用自动化安装 (expect 工具可用)')
-      installWithExpect()
-    } else {
-      fallbackInstallation()
+  // 构建新内容
+  let result = filtered.join('\n')
+
+  if (newEntries.length > 0) {
+    // 确保末尾有换行，然后添加 BMad 区块
+    if (result.length > 0 && !result.endsWith('\n')) {
+      result += '\n'
     }
+    result += '\n# BMad Method V6\n'
+    result += newEntries.join('\n') + '\n'
+  }
+
+  fs.writeFileSync(gitignorePath, result, 'utf8')
+  console.log(`   📝 .gitignore 已${exists ? '更新' : '创建'}`)
+}
+
+async function initBmad() {
+  const cwd = process.cwd()
+  const bmadV6Path = path.join(cwd, '_bmad')
+  const legacyCorePath = path.join(cwd, '.bmad-core')
+  const legacyMethodPath = path.join(cwd, '.bmad-method')
+
+  // 检查旧版 V4 安装
+  const hasLegacyCore = fs.existsSync(legacyCorePath)
+  const hasLegacyMethod = fs.existsSync(legacyMethodPath)
+
+  if (hasLegacyCore || hasLegacyMethod) {
+    console.log('⚠️  检测到旧版 BMad V4 安装：')
+    if (hasLegacyCore) console.log('   • .bmad-core/ (V4 核心目录)')
+    if (hasLegacyMethod) console.log('   • .bmad-method/ (V4 方法目录)')
+    console.log('')
+    console.log('📌 V6 安装器会自动处理旧版迁移，请在安装过程中按提示操作。')
+    console.log('   详情参考：https://bmad-code-org.github.io/BMAD-METHOD/docs/how-to/upgrade-to-v6')
+    console.log('')
+  }
+
+  // 检查 V6 是否已安装
+  const hasV6 = fs.existsSync(bmadV6Path)
+
+  // 构建非交互式安装命令
+  let installCmd
+  if (hasV6) {
+    console.log('🔄 检测到已有 BMad V6 安装，将执行快速更新...')
+    console.log('')
+    installCmd = [
+      'npx bmad-method install',
+      '--directory .',
+      '--action quick-update',
+      '--yes',
+    ].join(' ')
+  } else {
+    console.log('🚀 正在初始化 BMad-Method V6...')
+    console.log('')
+    installCmd = [
+      'npx bmad-method install',
+      '--directory .',
+      '--modules bmm',
+      '--tools claude-code',
+      '--communication-language Chinese',
+      '--document-output-language Chinese',
+      '--yes',
+    ].join(' ')
+  }
+
+  // 执行安装
+  try {
+    console.log(`📋 执行: ${installCmd}`)
+    console.log('')
+    execSync(installCmd, {
+      stdio: 'inherit',
+      cwd: cwd,
+      shell: true
+    })
 
     console.log('')
-    console.log('✅ BMad-Method已成功安装！')
+    console.log('✅ BMad-Method V6 安装/更新完成！')
     console.log('')
     console.log('═══════════════════════════════════════════════════════════════')
-    console.log('📌 重要提示：请重启 Claude Code 以加载 BMad 扩展')
+    console.log('📌 重要提示：请重启 AI IDE 以加载 BMad 扩展')
     console.log('═══════════════════════════════════════════════════════════════')
     console.log('')
-    console.log('📂 安装详情：')
-    console.log('   • 所有代理和任务命令都已安装在：')
-    console.log('     .claude/commands/BMad/ 目录中')
+    // 修复 {output_folder} bug (v6.0.0-Beta.8)
+    console.log('🔧 检查安装器已知问题...')
+    try {
+      const fixed = fixOutputFolderBug(cwd)
+      if (!fixed) console.log('   ℹ️  无需修复')
+    } catch (err) {
+      console.log(`   ⚠️  修复 {output_folder} 失败: ${err.message}`)
+      console.log('   请手动将 {output_folder}/ 重命名为 _bmad-output/')
+    }
     console.log('')
-    console.log('🔧 Git 配置建议（可选）：')
-    console.log('   如果您不希望将 BMad 工作流文件提交到 Git，请将以下内容添加到 .gitignore：')
-    console.log('     • .bmad-core')
-    console.log('     • .claude/commands/BMad')
-    console.log('     • docs/')
+
+    console.log('📂 V6 目录结构：')
+    console.log('   • _bmad/          — agents、workflows、tasks 和配置')
+    console.log('   • _bmad-output/   — 生成的工件输出目录')
+    console.log('')
+
+    // 自动更新 .gitignore
+    console.log('🔧 更新 .gitignore...')
+    try {
+      updateGitignore(cwd)
+    } catch (err) {
+      console.log('   ⚠️  自动更新 .gitignore 失败，请手动添加 _bmad/ 和 _bmad-output/')
+    }
     console.log('')
     console.log('🚀 快速开始：')
-    console.log('   1. 重启 Claude Code')
-    console.log('   2. 首次使用推荐运行：')
-    console.log('      /BMad:agents:bmad-orchestrator *help')
-    console.log('      这将启动 BMad 工作流引导系统')
+    console.log('   1. 重启 AI IDE')
+    console.log('   2. 运行 /bmad-help 获取引导和下一步建议')
+    console.log('   3. 输入 /bmad 并使用自动补全浏览可用命令')
     console.log('')
-    console.log('💡 提示：BMad Orchestrator 将帮助您选择合适的工作流程，')
-    console.log('       并引导您完成整个开发过程。')
+    console.log('💡 常用工作流：')
+    console.log('   • /bmad-help                      — 交互式帮助')
+    console.log('   • /bmad-bmm-create-prd             — 创建产品需求文档')
+    console.log('   • /bmad-bmm-create-architecture     — 创建架构文档')
+    console.log('   • /bmad-bmm-create-epics-and-stories — 创建史诗和用户故事')
+    console.log('   • /bmad-bmm-sprint-planning         — 初始化 Sprint 计划')
+    console.log('   • /bmad-bmm-dev-story               — 实现用户故事')
+
+    // 清理旧版 V4 IDE 命令提醒
+    const legacyClaudeAgents = path.join(cwd, '.claude', 'commands', 'BMad', 'agents')
+    const legacyClaudeTasks = path.join(cwd, '.claude', 'commands', 'BMad', 'tasks')
+    if (fs.existsSync(legacyClaudeAgents) || fs.existsSync(legacyClaudeTasks)) {
+      console.log('')
+      console.log('⚠️  检测到旧版 V4 IDE 命令，建议手动删除：')
+      if (fs.existsSync(legacyClaudeAgents)) console.log('   • .claude/commands/BMad/agents/')
+      if (fs.existsSync(legacyClaudeTasks)) console.log('   • .claude/commands/BMad/tasks/')
+      console.log('   新的 V6 命令已安装在 .claude/commands/bmad/ 下')
+    }
   }
   catch (error) {
     console.error('❌ 安装失败：', error.message)
     console.log('')
     console.log('🛠️  手动安装指南：')
-    console.log('请手动运行以下命令并根据提示选择：')
-    console.log('  npx bmad-method@latest install -f -d . -i claude-code')
+    console.log('   1. 确保已安装 Node.js 20+')
+    console.log('   2. 非交互式安装：')
+    console.log('      npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language Chinese --document-output-language Chinese --yes')
+    console.log('   3. 快速更新已有安装：')
+    console.log('      npx bmad-method install --directory . --action quick-update --yes')
+    console.log('   4. 或交互式安装：')
+    console.log('      npx bmad-method install')
     console.log('')
-    console.log('安装提示：')
-    console.log('  1. 当询问 "What would you like to do?" 时，选择第一个选项')
-    console.log('  2. 当询问 "How would you like to proceed?" 时，选择 "Backup and overwrite"')
-    console.log('')
-    console.log('💡 提示：如果需要自动化安装，请考虑安装 expect 工具：')
-    console.log('  • macOS: brew install expect')
-    console.log('  • Ubuntu: sudo apt-get install expect')
-    console.log('  • CentOS: sudo yum install expect')
+    console.log('📖 详细文档：')
+    console.log('   https://bmad-code-org.github.io/BMAD-METHOD/docs/how-to/install-bmad')
   }
 }
 
@@ -167,6 +267,9 @@ initBmad()
 
 此命令将：
 
-1. 在您的项目中安装 BMad-Method 框架
-2. 设置所有必要的配置
-3. 提供如何开始使用 BMad 工作流的指导
+1. 检测现有安装状态（V6 / V4 旧版 / 未安装）
+2. 新安装：`npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language Chinese --document-output-language Chinese --yes`
+3. 已安装：`npx bmad-method install --directory . --action quick-update --yes`
+4. 修复 `{output_folder}` → `_bmad-output` 安装器 bug
+5. 自动更新 `.gitignore`（清理旧条目，添加 V6 条目）
+6. 提供后续步骤建议

@@ -1,13 +1,16 @@
 # /bmad-init Command
 
-This command initializes BMad Method in your project.
+This command initializes or updates BMad-Method (V6) in your project.
 
 ## When this command is invoked:
 
-1. Check if BMad is already installed by looking for `.bmad-core/install-manifest.yaml`
-2. If installed, check version in manifest against latest version
-3. If not installed or outdated, execute: `npx bmad-method@latest install -f -d . -i claude-code`
-4. Display success message and prompt user to restart Claude Code
+1. Check if `_bmad/` directory exists to determine if BMad V6 is already installed
+2. Check for legacy V4 installations (`.bmad-core` or `.bmad-method` directories)
+3. Fresh install executes: `npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language English --document-output-language English --yes`
+4. Existing install executes: `npx bmad-method install --directory . --action quick-update --yes`
+5. Fix installer bug: rename `{output_folder}` to `_bmad-output` (Beta known issue)
+6. Automatically update `.gitignore` (remove V4 entries, add V6 entries)
+7. Display installation results and prompt user for next steps
 
 ## Implementation
 
@@ -16,150 +19,257 @@ const { execSync } = require('node:child_process')
 const fs = require('node:fs')
 const path = require('node:path')
 
-// Check if expect tool is available
-function checkExpectAvailability() {
-  try {
-    execSync('which expect', { stdio: 'ignore' })
-    return true
-  } catch (error) {
-    return false
-  }
-}
+// Legacy entries to clean from .gitignore
+const LEGACY_GITIGNORE_ENTRIES = [
+  '.bmad-core',
+  '.bmad-method',
+  '.claude/commands/BMad',
+  '{output_folder}',  // v6.0.0-Beta.8 bug artifact
+]
 
-// Use expect to automate interactive installation
-function installWithExpect() {
-  const expectScript = `
-    spawn npx bmad-method@latest install -f -d . -i claude-code
-    expect "What would you like to do?"
-    send "1\\r"
-    expect "How would you like to proceed?"
-    send "1\\r"
-    expect eof
-  `
-  
-  execSync(`expect -c '${expectScript}'`, {
-    stdio: 'inherit',
-    cwd: process.cwd(),
-    shell: true
-  })
-}
+// V6 .gitignore entries
+const V6_GITIGNORE_ENTRIES = [
+  '_bmad/',
+  '_bmad-output/',
+]
 
-// Fallback installation method
-function fallbackInstallation() {
-  console.log('⚠️  expect tool not found, using interactive installation')
-  console.log('Please follow the installation prompts and select:')
-  console.log('  1. Choose "Upgrade BMad core" when prompted')
-  console.log('  2. Choose "Backup and overwrite modified files" when prompted')
-  console.log('')
-  
-  execSync('npx bmad-method@latest install -f -d . -i claude-code', {
-    stdio: 'inherit',
-    cwd: process.cwd(),
-    shell: true
-  })
-}
+// Fix installer bug: {output_folder} not resolved to _bmad-output (v6.0.0-Beta.8)
+function fixOutputFolderBug(cwd) {
+  const buggyPath = path.join(cwd, '{output_folder}')
+  const correctPath = path.join(cwd, '_bmad-output')
 
-async function initBmad() {
-  // Check if already installed and get version
-  const manifestPath = path.join(process.cwd(), '.bmad-core', 'install-manifest.yaml')
-  let needsInstall = true
-  let currentVersion = null
+  if (!fs.existsSync(buggyPath)) return false
 
-  if (fs.existsSync(manifestPath)) {
-    try {
-      // Simple version check - just check if file exists
-      // Full YAML parsing would require js-yaml package
-      const manifestContent = fs.readFileSync(manifestPath, 'utf8')
-      const versionMatch = manifestContent.match(/version:\s*(.+)/)
-      if (versionMatch) {
-        currentVersion = versionMatch[1].trim()
-      }
-
-      // Get latest version from npm
-      const latestVersion = execSync('npm view bmad-method version', { encoding: 'utf8' }).trim()
-
-      if (currentVersion === latestVersion) {
-        console.log(`✅ BMad Method is up to date (v${currentVersion})`)
-        console.log('You can use BMad commands to begin your workflow')
-        needsInstall = false
-      }
-      else {
-        console.log(`🔄 BMad Method update available: v${currentVersion} → v${latestVersion}`)
+  if (!fs.existsSync(correctPath)) {
+    // _bmad-output doesn't exist, simply rename
+    fs.renameSync(buggyPath, correctPath)
+    console.log('   ✅ {output_folder} → _bmad-output/ (renamed)')
+  } else {
+    // _bmad-output already exists, merge subdirectories then delete
+    const entries = fs.readdirSync(buggyPath, { withFileTypes: true })
+    for (const entry of entries) {
+      const src = path.join(buggyPath, entry.name)
+      const dest = path.join(correctPath, entry.name)
+      if (!fs.existsSync(dest)) {
+        fs.renameSync(src, dest)
+        console.log(`   ✅ Moved ${entry.name} → _bmad-output/`)
       }
     }
-    catch (error) {
-      console.log('⚠️  Could not verify BMad version, will reinstall')
+    fs.rmSync(buggyPath, { recursive: true, force: true })
+    console.log('   ✅ Removed redundant {output_folder}/')
+  }
+  return true
+}
+
+function updateGitignore(cwd) {
+  const gitignorePath = path.join(cwd, '.gitignore')
+  let content = ''
+  let exists = false
+
+  if (fs.existsSync(gitignorePath)) {
+    content = fs.readFileSync(gitignorePath, 'utf8')
+    exists = true
+  }
+
+  const lines = content.split('\n')
+  let changed = false
+
+  // Remove V4 legacy entries
+  const filtered = lines.filter(line => {
+    const trimmed = line.trim()
+    const isLegacy = LEGACY_GITIGNORE_ENTRIES.some(entry =>
+      trimmed === entry || trimmed === entry + '/' || trimmed === '/' + entry
+    )
+    if (isLegacy) {
+      console.log(`   🗑️  Removing legacy entry: ${trimmed}`)
+      changed = true
+    }
+    return !isLegacy
+  })
+
+  // Add V6 entries
+  const newEntries = []
+  for (const entry of V6_GITIGNORE_ENTRIES) {
+    const entryBase = entry.replace(/\/$/, '')
+    const alreadyExists = filtered.some(line => {
+      const trimmed = line.trim()
+      return trimmed === entry || trimmed === entryBase || trimmed === '/' + entryBase
+    })
+    if (!alreadyExists) {
+      newEntries.push(entry)
+      console.log(`   ✅ Adding new entry: ${entry}`)
+      changed = true
     }
   }
 
-  if (needsInstall === false) {
+  if (!changed) {
+    console.log('   ℹ️  .gitignore is up to date, no changes needed')
     return
   }
 
-  // Install BMad - Using expect-first approach
-  console.log('🚀 Installing BMad Method...')
-  
-  try {
-    const hasExpect = checkExpectAvailability()
-    
-    if (hasExpect) {
-      console.log('📋 Using automated installation (expect tool available)')
-      installWithExpect()
-    } else {
-      fallbackInstallation()
+  // Build new content
+  let result = filtered.join('\n')
+
+  if (newEntries.length > 0) {
+    // Ensure trailing newline, then add BMad section
+    if (result.length > 0 && !result.endsWith('\n')) {
+      result += '\n'
     }
+    result += '\n# BMad Method V6\n'
+    result += newEntries.join('\n') + '\n'
+  }
+
+  fs.writeFileSync(gitignorePath, result, 'utf8')
+  console.log(`   📝 .gitignore ${exists ? 'updated' : 'created'}`)
+}
+
+async function initBmad() {
+  const cwd = process.cwd()
+  const bmadV6Path = path.join(cwd, '_bmad')
+  const legacyCorePath = path.join(cwd, '.bmad-core')
+  const legacyMethodPath = path.join(cwd, '.bmad-method')
+
+  // Check for legacy V4 installation
+  const hasLegacyCore = fs.existsSync(legacyCorePath)
+  const hasLegacyMethod = fs.existsSync(legacyMethodPath)
+
+  if (hasLegacyCore || hasLegacyMethod) {
+    console.log('⚠️  Legacy BMad V4 installation detected:')
+    if (hasLegacyCore) console.log('   • .bmad-core/ (V4 core directory)')
+    if (hasLegacyMethod) console.log('   • .bmad-method/ (V4 method directory)')
+    console.log('')
+    console.log('📌 The V6 installer will handle legacy migration automatically. Follow the prompts during installation.')
+    console.log('   Details: https://bmad-code-org.github.io/BMAD-METHOD/docs/how-to/upgrade-to-v6')
+    console.log('')
+  }
+
+  // Check if V6 is already installed
+  const hasV6 = fs.existsSync(bmadV6Path)
+
+  // Build non-interactive install command
+  let installCmd
+  if (hasV6) {
+    console.log('🔄 Existing BMad V6 installation detected, performing quick update...')
+    console.log('')
+    installCmd = [
+      'npx bmad-method install',
+      '--directory .',
+      '--action quick-update',
+      '--yes',
+    ].join(' ')
+  } else {
+    console.log('🚀 Initializing BMad-Method V6...')
+    console.log('')
+    installCmd = [
+      'npx bmad-method install',
+      '--directory .',
+      '--modules bmm',
+      '--tools claude-code',
+      '--communication-language English',
+      '--document-output-language English',
+      '--yes',
+    ].join(' ')
+  }
+
+  // Execute installation
+  try {
+    console.log(`📋 Executing: ${installCmd}`)
+    console.log('')
+    execSync(installCmd, {
+      stdio: 'inherit',
+      cwd: cwd,
+      shell: true
+    })
 
     console.log('')
-    console.log('✅ BMad Method installed successfully!')
+    console.log('✅ BMad-Method V6 installation/update complete!')
     console.log('')
     console.log('═══════════════════════════════════════════════════════════════')
-    console.log('📌 IMPORTANT: Please restart Claude Code to load BMad agents')
+    console.log('📌 IMPORTANT: Please restart your AI IDE to load BMad extensions')
     console.log('═══════════════════════════════════════════════════════════════')
     console.log('')
-    console.log('📂 Installation Details:')
-    console.log('   • All agents and task commands are installed in:')
-    console.log('     .claude/commands/BMad/')
+    // Fix {output_folder} bug (v6.0.0-Beta.8)
+    console.log('🔧 Checking for known installer issues...')
+    try {
+      const fixed = fixOutputFolderBug(cwd)
+      if (!fixed) console.log('   ℹ️  No fixes needed')
+    } catch (err) {
+      console.log(`   ⚠️  Failed to fix {output_folder}: ${err.message}`)
+      console.log('   Please manually rename {output_folder}/ to _bmad-output/')
+    }
     console.log('')
-    console.log('🔧 Git Configuration (Optional):')
-    console.log('   If you prefer not to commit BMad workflow files, add these to .gitignore:')
-    console.log('     • .bmad-core')
-    console.log('     • .claude/commands/BMad')
-    console.log('     • docs/')
+
+    console.log('📂 V6 Directory Structure:')
+    console.log('   • _bmad/          — agents, workflows, tasks, and configuration')
+    console.log('   • _bmad-output/   — generated artifact output directory')
     console.log('')
-    console.log('🚀 Getting Started:')
-    console.log('   1. Restart Claude Code')
-    console.log('   2. For first-time users, run:')
-    console.log('      /BMad:agents:bmad-orchestrator *help')
-    console.log('      This will start the BMad workflow guidance system')
+
+    // Automatically update .gitignore
+    console.log('🔧 Updating .gitignore...')
+    try {
+      updateGitignore(cwd)
+    } catch (err) {
+      console.log('   ⚠️  Failed to automatically update .gitignore, please manually add _bmad/ and _bmad-output/')
+    }
     console.log('')
-    console.log('💡 Tip: The BMad Orchestrator will help you choose the right workflow')
-    console.log('       and guide you through the entire development process.')
+    console.log('🚀 Quick Start:')
+    console.log('   1. Restart your AI IDE')
+    console.log('   2. Run /bmad-help for guidance and next step suggestions')
+    console.log('   3. Type /bmad and use autocomplete to browse available commands')
+    console.log('')
+    console.log('💡 Common Workflows:')
+    console.log('   • /bmad-help                      — Interactive help')
+    console.log('   • /bmad-bmm-create-prd             — Create Product Requirements Document')
+    console.log('   • /bmad-bmm-create-architecture     — Create Architecture Document')
+    console.log('   • /bmad-bmm-create-epics-and-stories — Create Epics and User Stories')
+    console.log('   • /bmad-bmm-sprint-planning         — Initialize Sprint Planning')
+    console.log('   • /bmad-bmm-dev-story               — Implement User Story')
+
+    // Legacy V4 IDE command cleanup reminder
+    const legacyClaudeAgents = path.join(cwd, '.claude', 'commands', 'BMad', 'agents')
+    const legacyClaudeTasks = path.join(cwd, '.claude', 'commands', 'BMad', 'tasks')
+    if (fs.existsSync(legacyClaudeAgents) || fs.existsSync(legacyClaudeTasks)) {
+      console.log('')
+      console.log('⚠️  Legacy V4 IDE commands detected, consider removing manually:')
+      if (fs.existsSync(legacyClaudeAgents)) console.log('   • .claude/commands/BMad/agents/')
+      if (fs.existsSync(legacyClaudeTasks)) console.log('   • .claude/commands/BMad/tasks/')
+      console.log('   New V6 commands are installed under .claude/commands/bmad/')
+    }
   }
   catch (error) {
     console.error('❌ Installation failed:', error.message)
     console.log('')
     console.log('🛠️  Manual Installation Guide:')
-    console.log('Please run the following command and follow the prompts:')
-    console.log('  npx bmad-method@latest install -f -d . -i claude-code')
+    console.log('   1. Ensure Node.js 20+ is installed')
+    console.log('   2. Non-interactive install:')
+    console.log('      npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language English --document-output-language English --yes')
+    console.log('   3. Quick update existing installation:')
+    console.log('      npx bmad-method install --directory . --action quick-update --yes')
+    console.log('   4. Or interactive install:')
+    console.log('      npx bmad-method install')
     console.log('')
-    console.log('Installation Tips:')
-    console.log('  1. When asked "What would you like to do?", choose the first option')
-    console.log('  2. When asked "How would you like to proceed?", choose "Backup and overwrite"')
-    console.log('')
-    console.log('💡 Tip: For automated installation, consider installing expect tool:')
-    console.log('  • macOS: brew install expect')
-    console.log('  • Ubuntu: sudo apt-get install expect')
-    console.log('  • CentOS: sudo yum install expect')
+    console.log('📖 Documentation:')
+    console.log('   https://bmad-code-org.github.io/BMAD-METHOD/docs/how-to/install-bmad')
   }
 }
 
-// Execute
+// Execute initialization
 initBmad()
 ```
 
-## Notes
+## Usage
 
-- This command requires npm/npx to be available
-- The installation will download the latest BMad Method package
-- User must restart Claude Code after installation for agents to load properly
-- BMad Method includes its own built-in state tracking system
+Simply type in Claude Code:
+
+```
+/bmad-init
+```
+
+This command will:
+
+1. Detect current installation status (V6 / V4 legacy / not installed)
+2. Fresh install: non-interactively execute `npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language English --document-output-language English --yes`
+3. Existing install: execute `npx bmad-method install --directory . --action quick-update --yes`
+4. Fix `{output_folder}` → `_bmad-output` installer bug
+5. Automatically update `.gitignore` (clean up legacy entries, add V6 entries)
+6. Provide next step suggestions
