@@ -32,6 +32,11 @@ describe('resolveCodeType', () => {
     expect(result).toBe('codex')
   })
 
+  it('should resolve claude alias to claude-code', async () => {
+    const result = await resolveCodeType('claude')
+    expect(result).toBe('claude-code')
+  })
+
   it('should accept full code type names', async () => {
     const result1 = await resolveCodeType('claude-code')
     expect(result1).toBe('claude-code')
@@ -50,7 +55,7 @@ describe('resolveCodeType', () => {
 
   it('should throw error for invalid code type', async () => {
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: codex.',
+      'Invalid code type: "invalid". Valid options are: cc, cx, claude, claude-code, codex. Using default: codex.',
     )
   })
 
@@ -66,7 +71,7 @@ describe('resolveCodeType', () => {
     vi.mocked(readZcfConfigAsync).mockRejectedValueOnce(new Error('Config read failed'))
 
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.',
+      'Invalid code type: "invalid". Valid options are: cc, cx, claude, claude-code, codex. Using default: claude-code.',
     )
   })
 
@@ -79,7 +84,7 @@ describe('resolveCodeType', () => {
     } as any)
 
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: codex.',
+      'Invalid code type: "invalid". Valid options are: cc, cx, claude, claude-code, codex. Using default: codex.',
     )
   })
 
@@ -92,7 +97,7 @@ describe('resolveCodeType', () => {
     } as any)
 
     await expect(resolveCodeType('wrong')).rejects.toThrow(
-      'Invalid code type: "wrong". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.',
+      'Invalid code type: "wrong". Valid options are: cc, cx, claude, claude-code, codex. Using default: claude-code.',
     )
   })
 })

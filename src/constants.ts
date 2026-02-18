@@ -37,6 +37,7 @@ export const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
 export const CODE_TOOL_ALIASES: Record<string, CodeToolType> = {
   cc: 'claude-code',
   cx: 'codex',
+  claude: 'claude-code',
 }
 
 export function isCodeToolType(value: any): value is CodeToolType {

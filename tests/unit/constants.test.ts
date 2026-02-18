@@ -21,6 +21,7 @@ describe('constants helpers', () => {
   it('should resolve code tool aliases and fallbacks', () => {
     expect(resolveCodeToolType('cc')).toBe('claude-code')
     expect(resolveCodeToolType('cx')).toBe('codex')
+    expect(resolveCodeToolType('claude')).toBe('claude-code')
     expect(resolveCodeToolType('invalid')).toBe(DEFAULT_CODE_TOOL_TYPE)
   })
 

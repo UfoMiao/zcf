@@ -9,6 +9,7 @@ import { readZcfConfigAsync } from './zcf-config'
 const CODE_TYPE_ABBREVIATIONS: Record<string, CodeToolType> = {
   cc: 'claude-code',
   cx: 'codex',
+  claude: 'claude-code',
 } as const
 
 /**
