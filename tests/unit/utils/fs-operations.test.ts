@@ -289,15 +289,56 @@ describe('fs-operations utilities', () => {
       expect(copyFileSync).not.toHaveBeenCalled()
     })
 
-    it('should skip symlinks', () => {
-      const mockStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => true }
-      vi.mocked(existsSync).mockReturnValue(true)
-      vi.mocked(readdirSync).mockReturnValue(['symlink'] as any)
+    it('should skip dangling symlinks', () => {
+      const mockStats = { isDirectory: () => false, isFile: () => false, isSymbolicLink: () => true }
+      vi.mocked(existsSync)
+        .mockReturnValueOnce(true) // source exists
+        .mockReturnValueOnce(false) // dest doesn't exist
+        .mockReturnValueOnce(false) // symlink target doesn't exist (dangling)
+      vi.mocked(readdirSync).mockReturnValue(['dangling-symlink'] as any)
       vi.mocked(lstatSync).mockReturnValue(mockStats as any)
 
       copyDir('/source', '/dest')
 
       expect(copyFileSync).not.toHaveBeenCalled()
+    })
+
+    it('should copy valid symlink targets', () => {
+      const mockLinkStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => true }
+      const mockTargetStats = { isDirectory: () => false, isFile: () => true }
+      vi.mocked(existsSync)
+        .mockReturnValueOnce(true) // source exists
+        .mockReturnValueOnce(false) // dest doesn't exist
+        .mockReturnValueOnce(true) // symlink target exists
+        .mockReturnValueOnce(false) // dest file doesn't exist
+      vi.mocked(readdirSync).mockReturnValue(['valid-symlink'] as any)
+      vi.mocked(lstatSync).mockReturnValue(mockLinkStats as any)
+      vi.mocked(statSync).mockReturnValue(mockTargetStats as any)
+
+      copyDir('/source', '/dest')
+
+      expect(copyFileSync).toHaveBeenCalledWith('/source/valid-symlink', '/dest/valid-symlink')
+    })
+
+    it('should recursively copy symlinked directories', () => {
+      const mockLinkStats = { isDirectory: () => false, isFile: () => false, isSymbolicLink: () => true }
+      const mockTargetStats = { isDirectory: () => true, isFile: () => false }
+      vi.mocked(existsSync)
+        .mockReturnValueOnce(true) // source exists
+        .mockReturnValueOnce(false) // dest doesn't exist
+        .mockReturnValueOnce(true) // symlink target exists
+        .mockReturnValueOnce(true) // source/subdir exists (recursive call)
+        .mockReturnValueOnce(false) // dest/subdir doesn't exist
+      vi.mocked(readdirSync)
+        .mockReturnValueOnce(['symlinked-dir'] as any)
+        .mockReturnValueOnce([] as any) // empty subdir
+      vi.mocked(lstatSync).mockReturnValue(mockLinkStats as any)
+      vi.mocked(statSync).mockReturnValue(mockTargetStats as any)
+
+      copyDir('/source', '/dest')
+
+      // Should create the directory
+      expect(mkdirSync).toHaveBeenCalledWith('/dest/symlinked-dir', { recursive: true })
     })
 
     it('should skip files that disappear during traversal', () => {

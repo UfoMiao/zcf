@@ -203,7 +203,7 @@ export function copyDir(src: string, dest: string, options: CopyDirOptions = {})
       stats = lstatSync(srcPath)
     }
     catch (error) {
-      // Skip files that disappeared during traversal (race condition) or dangling symlinks
+      // Skip files that disappeared during traversal (race condition)
       if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         continue
       }
@@ -215,8 +215,29 @@ export function copyDir(src: string, dest: string, options: CopyDirOptions = {})
       continue
     }
 
-    // Skip symlinks entirely - they're typically runtime artifacts
+    // Handle symlinks: skip dangling symlinks (target doesn't exist)
+    // but preserve valid symlinks (for dotfiles-managed setups)
     if (stats.isSymbolicLink()) {
+      try {
+        // Check if symlink target exists
+        existsSync(srcPath) // This follows the symlink
+        // If exists, copy the symlink target content (not the symlink itself)
+        // For valid symlinks, use statSync to get target stats
+        const targetStats = statSync(srcPath)
+        if (targetStats.isDirectory()) {
+          copyDir(srcPath, destPath, options)
+        }
+        else {
+          if (!overwrite && exists(destPath)) {
+            continue
+          }
+          copyFile(srcPath, destPath)
+        }
+      }
+      catch {
+        // Dangling symlink - skip it
+        continue
+      }
       continue
     }
 
