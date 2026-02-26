@@ -2,6 +2,7 @@ import type { SupportedLang } from '../../../src/constants'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   cleanupLegacyPersonalityFiles,
+  clearGlobalOutputStyle,
   configureOutputStyle,
   copyOutputStyles,
   getAvailableOutputStyles,
@@ -327,6 +328,40 @@ describe('output-style', () => {
     })
   })
 
+  describe('clearGlobalOutputStyle', () => {
+    it('should remove outputStyle key from settings.json', () => {
+      const existingSettings = {
+        env: { ANTHROPIC_API_KEY: 'test-key' },
+        outputStyle: 'engineer-professional',
+      }
+      mockJsonConfig.readJsonConfig.mockImplementation(() => existingSettings)
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
+
+      clearGlobalOutputStyle()
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        expect.stringContaining('settings.json'),
+        expect.objectContaining({
+          env: { ANTHROPIC_API_KEY: 'test-key' },
+        }),
+      )
+      // Verify outputStyle key is not present
+      const writtenConfig = mockJsonConfig.writeJsonConfig.mock.calls[0][1]
+      expect(writtenConfig).not.toHaveProperty('outputStyle')
+    })
+
+    it('should handle settings without existing outputStyle', () => {
+      const existingSettings = { env: {} }
+      mockJsonConfig.readJsonConfig.mockImplementation(() => existingSettings)
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
+
+      clearGlobalOutputStyle()
+
+      const writtenConfig = mockJsonConfig.writeJsonConfig.mock.calls[0][1]
+      expect(writtenConfig).not.toHaveProperty('outputStyle')
+    })
+  })
+
   describe('configureOutputStyle', () => {
     it('should configure output styles in interactive mode', async () => {
       // Mock no legacy files to avoid complex legacy handling
@@ -441,6 +476,76 @@ describe('output-style', () => {
 
       expect(mockFsOperations.removeFile).not.toHaveBeenCalled()
       expect(promptBoolean).toHaveBeenCalled()
+    })
+
+    it('should handle empty selection and choosing none (clear output style)', async () => {
+      mockFsOperations.exists = vi.fn((path) => {
+        return path.includes('output-styles')
+      })
+
+      mockInquirer.default.prompt = vi.fn()
+        .mockResolvedValueOnce({ selectedStyles: [] }) // No custom styles selected
+        .mockResolvedValueOnce({ defaultStyle: '__none__' }) // Choose "none"
+      Object.assign(mockInquirer.default, {
+        prompt: mockInquirer.default.prompt,
+        prompts: {},
+        registerPrompt: vi.fn(),
+        restoreDefaultPrompts: vi.fn(),
+      })
+
+      mockJsonConfig.readJsonConfig.mockImplementation(() => ({ outputStyle: 'engineer-professional' }))
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
+      mockZcfConfig.updateZcfConfig.mockImplementation(() => {})
+
+      await configureOutputStyle()
+
+      // Should call prompt twice: checkbox for custom styles + list for built-in/none
+      expect(mockInquirer.default.prompt).toHaveBeenCalledTimes(2)
+      // Should clear outputStyle from settings
+      const writtenConfig = mockJsonConfig.writeJsonConfig.mock.calls[0][1]
+      expect(writtenConfig).not.toHaveProperty('outputStyle')
+      // Should update zcf config with empty styles
+      expect(mockZcfConfig.updateZcfConfig).toHaveBeenCalledWith({
+        outputStyles: [],
+        defaultOutputStyle: '',
+      })
+    })
+
+    it('should handle empty selection and choosing a built-in style', async () => {
+      mockFsOperations.exists = vi.fn((path) => {
+        return path.includes('output-styles')
+      })
+
+      mockInquirer.default.prompt = vi.fn()
+        .mockResolvedValueOnce({ selectedStyles: [] }) // No custom styles selected
+        .mockResolvedValueOnce({ defaultStyle: 'explanatory' }) // Choose built-in style
+      Object.assign(mockInquirer.default, {
+        prompt: mockInquirer.default.prompt,
+        prompts: {},
+        registerPrompt: vi.fn(),
+        restoreDefaultPrompts: vi.fn(),
+      })
+
+      mockJsonConfig.readJsonConfig.mockImplementation(() => ({}))
+      mockJsonConfig.writeJsonConfig.mockImplementation(() => {})
+      mockZcfConfig.updateZcfConfig.mockImplementation(() => {})
+
+      await configureOutputStyle()
+
+      // Should call prompt twice: checkbox for custom styles + list for built-in/none
+      expect(mockInquirer.default.prompt).toHaveBeenCalledTimes(2)
+      // Should set the built-in style as outputStyle
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        expect.stringContaining('settings.json'),
+        expect.objectContaining({ outputStyle: 'explanatory' }),
+      )
+      // Should update zcf config with empty styles but with default
+      expect(mockZcfConfig.updateZcfConfig).toHaveBeenCalledWith({
+        outputStyles: [],
+        defaultOutputStyle: 'explanatory',
+      })
+      // Should NOT copy any files
+      expect(mockFsOperations.copyFile).not.toHaveBeenCalled()
     })
   })
 })

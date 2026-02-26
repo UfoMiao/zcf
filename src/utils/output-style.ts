@@ -108,6 +108,14 @@ export function setGlobalDefaultOutputStyle(styleId: string): void {
   writeJsonConfig(SETTINGS_FILE, updatedSettings)
 }
 
+export function clearGlobalOutputStyle(): void {
+  const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE) || {}
+
+  // Remove the outputStyle key entirely
+  const { outputStyle: _, ...rest } = existingSettings
+  writeJsonConfig(SETTINGS_FILE, rest)
+}
+
 export function hasLegacyPersonalityFiles(): boolean {
   return LEGACY_FILES.some(filename => exists(join(CLAUDE_DIR, filename)))
 }
@@ -128,6 +136,7 @@ export async function configureOutputStyle(
   ensureI18nInitialized()
 
   // Create static output style list for i18n-ally compatibility
+  // Order: default first for discoverability, then custom styles, then other built-in styles
   const outputStyleList = [
     {
       id: 'default',
@@ -140,24 +149,14 @@ export async function configureOutputStyle(
       description: i18n.t('configuration:outputStyles.engineer-professional.description'),
     },
     {
-      id: 'explanatory',
-      name: i18n.t('configuration:outputStyles.explanatory.name'),
-      description: i18n.t('configuration:outputStyles.explanatory.description'),
+      id: 'nekomata-engineer',
+      name: i18n.t('configuration:outputStyles.nekomata-engineer.name'),
+      description: i18n.t('configuration:outputStyles.nekomata-engineer.description'),
     },
     {
       id: 'laowang-engineer',
       name: i18n.t('configuration:outputStyles.laowang-engineer.name'),
       description: i18n.t('configuration:outputStyles.laowang-engineer.description'),
-    },
-    {
-      id: 'learning',
-      name: i18n.t('configuration:outputStyles.learning.name'),
-      description: i18n.t('configuration:outputStyles.learning.description'),
-    },
-    {
-      id: 'nekomata-engineer',
-      name: i18n.t('configuration:outputStyles.nekomata-engineer.name'),
-      description: i18n.t('configuration:outputStyles.nekomata-engineer.description'),
     },
     {
       id: 'ojousama-engineer',
@@ -173,6 +172,16 @@ export async function configureOutputStyle(
       id: 'rem-engineer',
       name: i18n.t('configuration:outputStyles.rem-engineer.name'),
       description: i18n.t('configuration:outputStyles.rem-engineer.description'),
+    },
+    {
+      id: 'explanatory',
+      name: i18n.t('configuration:outputStyles.explanatory.name'),
+      description: i18n.t('configuration:outputStyles.explanatory.description'),
+    },
+    {
+      id: 'learning',
+      name: i18n.t('configuration:outputStyles.learning.name'),
+      description: i18n.t('configuration:outputStyles.learning.description'),
     },
   ]
 
@@ -220,15 +229,61 @@ export async function configureOutputStyle(
           checked: true, // Default select all custom styles
         }
       })),
-      validate: async input => input.length > 0 || i18n.t('configuration:selectAtLeastOne'),
+      // Allow empty selection - user can choose to not install any custom styles
     })
 
-    if (!promptedStyles || promptedStyles.length === 0) {
-      console.log(ansis.yellow(i18n.t('common:cancelled')))
+    selectedStyles = promptedStyles || []
+
+    // If no custom styles selected, ask user if they want to set a built-in default style or skip entirely
+    if (selectedStyles.length === 0) {
+      const builtinStyles = availableStyles.filter(style => !style.isCustom)
+      const noneOption = { id: '__none__', name: i18n.t('configuration:noOutputStyle'), description: i18n.t('configuration:noOutputStyleDesc') }
+      const { defaultStyle: promptedDefault } = await inquirer.prompt<{ defaultStyle: string }>({
+        type: 'list',
+        name: 'defaultStyle',
+        message: i18n.t('configuration:selectDefaultOutputStyle'),
+        choices: addNumbersToChoices([
+          // Show "none" option first
+          {
+            name: `${noneOption.name} - ${ansis.gray(noneOption.description)}`,
+            value: '__none__',
+            short: noneOption.name,
+          },
+          // Then show built-in styles
+          ...builtinStyles.map((style) => {
+            const styleInfo = outputStyleList.find(s => s.id === style.id)
+            return {
+              name: `${styleInfo?.name || style.id} - ${ansis.gray(styleInfo?.description || '')}`,
+              value: style.id,
+              short: styleInfo?.name || style.id,
+            }
+          }),
+        ]),
+        default: '__none__',
+      })
+
+      if (!promptedDefault || promptedDefault === '__none__') {
+        // User chose not to use any output style - clear existing settings
+        clearGlobalOutputStyle()
+        updateZcfConfig({
+          outputStyles: [],
+          defaultOutputStyle: '',
+        })
+        console.log(ansis.green(`✔ ${i18n.t('configuration:outputStyleCleared')}`))
+        return
+      }
+
+      // User selected a built-in style as default
+      defaultStyle = promptedDefault
+      setGlobalDefaultOutputStyle(defaultStyle)
+      updateZcfConfig({
+        outputStyles: [],
+        defaultOutputStyle: defaultStyle,
+      })
+      console.log(ansis.green(`✔ ${i18n.t('configuration:outputStyleInstalled')}`))
+      console.log(ansis.gray(`  ${i18n.t('configuration:defaultStyle')}: ${defaultStyle}`))
       return
     }
-
-    selectedStyles = promptedStyles
 
     const { defaultStyle: promptedDefault } = await inquirer.prompt<{ defaultStyle: string }>({
       type: 'list',
@@ -244,9 +299,10 @@ export async function configureOutputStyle(
             short: styleInfo?.name || styleId,
           }
         }),
-        // Then show all built-in styles (always available)
+        // Then show all built-in styles (always available), with default first
         ...availableStyles
           .filter(style => !style.isCustom)
+          .sort((a, _b) => a.id === 'default' ? -1 : 0)
           .map((style) => {
             const styleInfo = outputStyleList.find(s => s.id === style.id)
             return {
