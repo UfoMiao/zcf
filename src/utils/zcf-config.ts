@@ -324,7 +324,7 @@ function migrateFromJsonConfig(jsonConfig: any): ZcfTomlConfig {
     claudeCode: {
       enabled: jsonConfig.codeToolType === 'claude-code',
       outputStyles: jsonConfig.outputStyles || defaultConfig.claudeCode.outputStyles,
-      defaultOutputStyle: jsonConfig.defaultOutputStyle || defaultConfig.claudeCode.defaultOutputStyle,
+      defaultOutputStyle: jsonConfig.defaultOutputStyle ?? defaultConfig.claudeCode.defaultOutputStyle,
       installType: claudeCodeInstallType,
       currentProfile: jsonConfig.currentProfileId || defaultConfig.claudeCode.currentProfile,
       profiles: jsonConfig.claudeCode?.profiles || {},

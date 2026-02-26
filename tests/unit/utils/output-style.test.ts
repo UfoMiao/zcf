@@ -504,10 +504,10 @@ describe('output-style', () => {
       // Should clear outputStyle from settings
       const writtenConfig = mockJsonConfig.writeJsonConfig.mock.calls[0][1]
       expect(writtenConfig).not.toHaveProperty('outputStyle')
-      // Should update zcf config with empty styles
+      // Should update zcf config with empty styles and 'none' marker
       expect(mockZcfConfig.updateZcfConfig).toHaveBeenCalledWith({
         outputStyles: [],
-        defaultOutputStyle: '',
+        defaultOutputStyle: 'none',
       })
     })
 

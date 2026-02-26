@@ -262,12 +262,18 @@ export async function configureOutputStyle(
         default: '__none__',
       })
 
-      if (!promptedDefault || promptedDefault === '__none__') {
-        // User chose not to use any output style - clear existing settings
+      if (!promptedDefault) {
+        // User cancelled the prompt - do nothing
+        console.log(ansis.yellow(i18n.t('common:cancelled')))
+        return
+      }
+
+      if (promptedDefault === '__none__') {
+        // User explicitly chose not to use any output style - clear existing settings
         clearGlobalOutputStyle()
         updateZcfConfig({
           outputStyles: [],
-          defaultOutputStyle: '',
+          defaultOutputStyle: 'none',
         })
         console.log(ansis.green(`✔ ${i18n.t('configuration:outputStyleCleared')}`))
         return
@@ -302,7 +308,7 @@ export async function configureOutputStyle(
         // Then show all built-in styles (always available), with default first
         ...availableStyles
           .filter(style => !style.isCustom)
-          .sort((a, _b) => a.id === 'default' ? -1 : 0)
+          .sort((a, b) => a.id === 'default' ? -1 : b.id === 'default' ? 1 : 0)
           .map((style) => {
             const styleInfo = outputStyleList.find(s => s.id === style.id)
             return {
