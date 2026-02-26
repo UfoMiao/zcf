@@ -211,7 +211,8 @@ export function backupCodexFiles(): string | null {
   const backupDir = createBackupDirectory(timestamp)
 
   const filter = (path: string): boolean => {
-    return !path.includes('/backup')
+    // Skip backup directories and temp directories (runtime artifacts, dangling symlinks)
+    return !path.includes('/backup') && !path.includes('/tmp')
   }
 
   copyDir(CODEX_DIR, backupDir, { filter })

@@ -1,6 +1,7 @@
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   readdirSync,
   readFileSync,
@@ -200,10 +201,10 @@ describe('fs-operations utilities', () => {
 
   describe('copyDir', () => {
     it('should copy directory recursively', () => {
-      const mockStats = { isDirectory: () => false, isFile: () => true }
+      const mockStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false }
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(readdirSync).mockReturnValue(['file1.txt', 'file2.txt'] as any)
-      vi.mocked(statSync).mockReturnValue(mockStats as any)
+      vi.mocked(lstatSync).mockReturnValue(mockStats as any)
 
       copyDir('/source', '/dest')
 
@@ -211,8 +212,8 @@ describe('fs-operations utilities', () => {
     })
 
     it('should handle subdirectories', () => {
-      const fileStats = { isDirectory: () => false, isFile: () => true }
-      const dirStats = { isDirectory: () => true, isFile: () => false }
+      const fileStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false }
+      const dirStats = { isDirectory: () => true, isFile: () => false, isSymbolicLink: () => false }
 
       // Mock existsSync - return false for dest/subdir so it gets created
       vi.mocked(existsSync)
@@ -227,7 +228,7 @@ describe('fs-operations utilities', () => {
         .mockReturnValueOnce(['subfile.txt'] as any) // /source/subdir contents
 
       // Mock stats for each path check
-      vi.mocked(statSync)
+      vi.mocked(lstatSync)
         .mockReturnValueOnce(dirStats as any) // /source/subdir is directory
         .mockReturnValueOnce(fileStats as any) // /source/file.txt is file
         .mockReturnValueOnce(fileStats as any) // /source/subdir/subfile.txt is file
@@ -241,10 +242,10 @@ describe('fs-operations utilities', () => {
     })
 
     it('should apply filter function', () => {
-      const mockStats = { isDirectory: () => false, isFile: () => true }
+      const mockStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false }
       vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(readdirSync).mockReturnValue(['file1.txt', 'file2.md'] as any)
-      vi.mocked(statSync).mockReturnValue(mockStats as any)
+      vi.mocked(lstatSync).mockReturnValue(mockStats as any)
 
       const filter = (path: string) => path.endsWith('.txt')
 
@@ -275,16 +276,41 @@ describe('fs-operations utilities', () => {
     })
 
     it('should skip files when overwrite is false and destination exists', () => {
-      const mockStats = { isDirectory: () => false, isFile: () => true }
+      const mockStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false }
       vi.mocked(existsSync)
         .mockReturnValueOnce(true) // source exists
         .mockReturnValueOnce(false) // dest doesn't exist initially
         .mockReturnValueOnce(true) // dest file exists during copy
       vi.mocked(readdirSync).mockReturnValue(['file1.txt'] as any)
-      vi.mocked(statSync).mockReturnValue(mockStats as any)
+      vi.mocked(lstatSync).mockReturnValue(mockStats as any)
 
       copyDir('/source', '/dest', { overwrite: false })
 
+      expect(copyFileSync).not.toHaveBeenCalled()
+    })
+
+    it('should skip symlinks', () => {
+      const mockStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => true }
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(readdirSync).mockReturnValue(['symlink'] as any)
+      vi.mocked(lstatSync).mockReturnValue(mockStats as any)
+
+      copyDir('/source', '/dest')
+
+      expect(copyFileSync).not.toHaveBeenCalled()
+    })
+
+    it('should skip files that disappear during traversal', () => {
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(readdirSync).mockReturnValue(['disappeared.txt'] as any)
+      const error = new Error('ENOENT') as NodeJS.ErrnoException
+      error.code = 'ENOENT'
+      vi.mocked(lstatSync).mockImplementation(() => {
+        throw error
+      })
+
+      // Should not throw, just skip the file
+      expect(() => copyDir('/source', '/dest')).not.toThrow()
       expect(copyFileSync).not.toHaveBeenCalled()
     })
   })

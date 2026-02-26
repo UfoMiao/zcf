@@ -21,9 +21,10 @@ describe('final push for 90% branch coverage', () => {
     vi.mocked(fs.readdirSync)
       .mockReturnValueOnce(['subdir'] as any)
       .mockReturnValueOnce([] as any) // subdir is empty
-    vi.mocked(fs.statSync).mockReturnValue({
+    vi.mocked(fs.lstatSync).mockReturnValue({
       isDirectory: () => true,
       isFile: () => false,
+      isSymbolicLink: () => false,
     } as any)
     vi.mocked(fs.copyFileSync).mockImplementation(() => undefined)
 
@@ -42,11 +43,12 @@ describe('final push for 90% branch coverage', () => {
       .mockReturnValueOnce([] as any) // subdir is empty
 
     let statCallCount = 0
-    vi.mocked(fs.statSync).mockImplementation(() => {
+    vi.mocked(fs.lstatSync).mockImplementation(() => {
       statCallCount++
       return {
         isDirectory: () => statCallCount === 2, // second call is for subdir
         isFile: () => statCallCount === 1, // first call is for file
+        isSymbolicLink: () => false,
       } as any
     })
 

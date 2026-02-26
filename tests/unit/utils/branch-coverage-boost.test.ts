@@ -14,9 +14,10 @@ describe('branch coverage boost tests', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true)
     vi.mocked(fs.mkdirSync).mockImplementation(() => undefined)
     vi.mocked(fs.readdirSync).mockReturnValue(['file1.txt', 'file2.js'] as any)
-    vi.mocked(fs.statSync).mockReturnValue({
+    vi.mocked(fs.lstatSync).mockReturnValue({
       isDirectory: () => false,
       isFile: () => true,
+      isSymbolicLink: () => false,
     } as any)
     vi.mocked(fs.copyFileSync).mockImplementation(() => {})
 
