@@ -19,6 +19,8 @@ const NAMESPACES = [
   'cometix',
   'configuration',
   'errors',
+  'export',
+  'import',
   'installation',
   'language',
   'mcp',
