@@ -18,6 +18,12 @@
   "services.spec-workflow.name": "Spec Workflow",
   "services.serena.name": "Serena Assistant",
   "services.serena.description": "Semantic code retrieval and editing akin to an IDE; extracts symbol-level entities and leverages relations to greatly improve token efficiency with coding agents",
+  "services.project-health-auditor.name": "Project Health Auditor",
+  "services.project-health-auditor.description": "Analyze code health, complexity, and test coverage gaps to identify technical debt hot spots",
+  "services.design-to-code.name": "Design to Code",
+  "services.design-to-code.description": "Convert Figma designs and screenshots to React, Vue, or Svelte components with accessibility",
+  "services.conversational-api-debugger.name": "API Debugger",
+  "services.conversational-api-debugger.description": "Debug REST API failures using OpenAPI specs and HTTP logs with root cause analysis",
   "apiKeyApprovalFailed": "Failed to manage API key approval status",
   "apiKeyPrompt": "Enter API Key",
   "primaryApiKeySetFailed": "Failed to set primaryApiKey"
