@@ -1,5 +1,33 @@
 # Changelog
 
+## 3.6.2
+
+### Patch Changes
+
+- ## New Features
+  - Upgrade bmad-init template from V4 to V6
+  - Allow skipping output style selection during init
+  - Update API provider presets and add new services
+
+  ## 新功能
+  - 将 bmad-init 模板从 V4 升级至 V6
+  - 支持在初始化时跳过输出风格选择
+  - 更新 API 提供商预设并新增服务
+
+  ## Fixes
+  - Address Codex review feedback for codex-backup (skip tmp dir, handle dangling symlinks)
+  - Address Qodo/Cursor/Codex review feedback for output-style
+
+  ## 修复
+  - 根据 Codex 评审反馈改进 codex-backup（跳过 tmp 目录、处理悬空符号链接）
+  - 根据 Qodo/Cursor/Codex 评审反馈改进 output-style
+
+  ## Documentation
+  - Update sponsorship details in README and documentation files
+
+  ## 文档
+  - 更新 README 与文档中的赞助信息
+
 ## 3.6.1
 
 ### Patch Changes
