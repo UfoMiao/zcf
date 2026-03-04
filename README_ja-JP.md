@@ -24,15 +24,15 @@
 
 ## ♥️ スポンサー AI API
 
-[![スポンサー AI API](./src/assets/302.ai-jp.jpg)](https://share.302.ai/gAT9VG)
-[302.AI](https://share.302.ai/gAT9VG) は、従量課金制のエンタープライズ向けAIリソースプラットフォームで、市場で最新かつ最も包括的なAIモデルとAPIに加え、すぐに使える多様なオンラインAIアプリを提供します。
+[![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
+このプロジェクトは Z.ai の GLM CODING PLAN によってスポンサーされています。
+GLM CODING PLAN はAIコーディング向けに設計されたサブスクリプションサービスで、月額わずか10ドルから利用できます。Z.aiのフラグシップである GLM-4.7 および（GLM-5 は Pro ユーザーのみ利用可能）を、Claude Code、Cline、Roo Code など10以上の人気AIコーディングツールで利用でき、開発者に高速かつ安定した最先端のコーディング体験を提供します。
+GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
-[![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
-このプロジェクトは Z.ai の GLM CODING PLAN によってスポンサーされています。
-GLM CODING PLAN はAIコーディング向けに設計されたサブスクリプションサービスで、月額わずか3ドルから利用できます。Z.aiのフラグシップであるGLM-4.7モデルをはじめ、Claude Code、Cline、Roo Code など10以上の人気AIコーディングツールで高速かつ安定した最先端のコーディング体験を開発者に提供します。
-GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSKB
+[![スポンサー AI API](./src/assets/302.ai-jp.jpg)](https://share.302.ai/gAT9VG)
+[302.AI](https://share.302.ai/gAT9VG) は、従量課金制のエンタープライズ向けAIリソースプラットフォームで、市場で最新かつ最も包括的なAIモデルとAPIに加え、すぐに使える多様なオンラインAIアプリを提供します。
 
 ---
 

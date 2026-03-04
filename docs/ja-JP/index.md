@@ -26,15 +26,15 @@ title: ZCF - Zero-Config Code Flow
 
 ## ♥️ スポンサー AI API
 
-[![スポンサー AI API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
-[302.AI](https://share.302.ai/gAT9VG) は使用量ベースのエンタープライズ級 AI リソースプラットフォームで、市場で最新かつ最も包括的な AI モデルと API、および様々な即座に使用可能なオンライン AI アプリケーションを提供しています。
+[![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
+このプロジェクトは Z.ai のスポンサーを受けており、GLM CODING PLAN をサポートしています。
+GLM CODING PLAN は AI コーディング向けに設計されたサブスクリプションサービスで、月額わずか 10 ドルから利用できます。Claude Code、Cline、Roo Code など 10 以上の人気 AI コーディングツールで、フラグシップの GLM-4.7 および（GLM-5 は Pro ユーザーのみ利用可能）にアクセスでき、開発者に最高級で高速かつ安定したコーディング体験を提供します。
+GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
-[![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
-このプロジェクトは Z.ai のスポンサーを受けており、GLM CODING PLAN をサポートしています。
-GLM CODING PLAN は AI コーディング向けに設計されたサブスクリプションサービスで、月額わずか 3 ドルから利用できます。Claude Code、Cline、Roo Code など 10 以上の人気 AI コーディングツールで最先端の GLM-4.7 モデルにアクセスでき、開発者に最高級で高速かつ安定したコーディング体験を提供します。
-GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
+[![スポンサー AI API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
+[302.AI](https://share.302.ai/gAT9VG) は使用量ベースのエンタープライズ級 AI リソースプラットフォームで、市場で最新かつ最も包括的な AI モデルと API、および様々な即座に使用可能なオンライン AI アプリケーションを提供しています。
 
 ---
 
