@@ -25,7 +25,7 @@ ZCF 内置以下 MCP 服务配置：
 | `context7` | stdio | 上下文检索与库文档查询 | ❌ | [Context7](https://context7.com) |
 | `open-websearch` | stdio | DuckDuckGo/Bing/Brave 搜索引擎 | ❌ | [open-webSearch](https://github.com/Aas-ee/open-webSearch) |
 | `spec-workflow` | stdio | Spec 工作流 MCP 服务 | ❌ | [spec-workflow-mcp](https://github.com/Pimzino/spec-workflow-mcp) |
-| `mcp-deepwiki` | stdio | DeepWiki 文档检索 | ❌ | [mcp-deepwiki](https://github.com/context-labs/deepwiki) |
+| `mcp-deepwiki` | stdio | DeepWiki 文档检索 | ❌ | [mcp-deepwiki](https://github.com/regenrek/deepwiki-mcp) |
 | `Playwright` | stdio | Playwright 浏览器自动化操作 | ❌ | [mcp-playwright](https://github.com/modelcontextprotocol/server-playwright) |
 | `exa` | stdio | Exa AI 网络搜索 | ✅ 需要 `EXA_API_KEY` | [mcp-exa](https://github.com/modelcontextprotocol/server-exa) |
 | `serena` | uvx | Serena IDE 助手，语义代码检索 | ❌ | [Serena](https://github.com/modelcontextprotocol/server-serena) |

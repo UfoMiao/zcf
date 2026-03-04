@@ -25,7 +25,7 @@ ZCF has built-in the following MCP service configurations:
 | `context7` | stdio | Context retrieval and library documentation query | ❌ | [Context7](https://context7.com) |
 | `open-websearch` | stdio | DuckDuckGo/Bing/Brave search engines | ❌ | [open-webSearch](https://github.com/Aas-ee/open-webSearch) |
 | `spec-workflow` | stdio | Spec workflow MCP service | ❌ | [spec-workflow-mcp](https://github.com/Pimzino/spec-workflow-mcp) |
-| `mcp-deepwiki` | stdio | DeepWiki documentation retrieval | ❌ | [mcp-deepwiki](https://github.com/context-labs/deepwiki) |
+| `mcp-deepwiki` | stdio | DeepWiki documentation retrieval | ❌ | [mcp-deepwiki](https://github.com/regenrek/deepwiki-mcp) |
 | `Playwright` | stdio | Playwright browser automation operations | ❌ | [mcp-playwright](https://github.com/modelcontextprotocol/server-playwright) |
 | `exa` | stdio | Exa AI web search | ✅ Requires `EXA_API_KEY` | [mcp-exa](https://github.com/modelcontextprotocol/server-exa) |
 | `serena` | uvx | Serena IDE assistant, semantic code search | ❌ | [Serena](https://github.com/modelcontextprotocol/server-serena) |
