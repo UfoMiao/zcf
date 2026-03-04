@@ -362,8 +362,8 @@ describe('init command - Single Config Save', () => {
 
     it('should fallback to getProfileByName if addedProfile is not returned', async () => {
       const testProfile: ClaudeCodeProfile = {
-        id: 'glm',
-        name: 'glm',
+        id: 'glm-cn',
+        name: 'glm-cn',
         authType: 'api_key',
         apiKey: 'sk-glm-key',
         baseUrl: 'https://open.bigmodel.cn/api/paas/v4/',
@@ -379,7 +379,7 @@ describe('init command - Single Config Save', () => {
       await init({
         skipPrompt: true,
         skipBanner: true,
-        provider: 'glm',
+        provider: 'glm-cn',
         apiKey: 'sk-glm-key',
         configAction: 'new',
         workflows: false,
@@ -388,8 +388,8 @@ describe('init command - Single Config Save', () => {
       })
 
       // Verify getProfileByName was called
-      expect(mockGetProfileByName).toHaveBeenCalledWith('glm')
-      expect(mockSwitchProfile).toHaveBeenCalledWith('glm')
+      expect(mockGetProfileByName).toHaveBeenCalledWith('glm-cn')
+      expect(mockSwitchProfile).toHaveBeenCalledWith('glm-cn')
       expect(mockApplyProfileSettings).toHaveBeenCalledWith(testProfile)
     })
 

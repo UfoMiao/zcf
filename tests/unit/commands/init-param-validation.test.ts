@@ -48,7 +48,7 @@ vi.mock('../../../src/config/workflows', () => ({
 }))
 
 vi.mock('../../../src/config/api-providers', () => ({
-  getValidProviderIds: () => ['302ai', 'kimi'],
+  getValidProviderIds: () => ['302ai', 'kimi-coding'],
   getProviderPreset: (provider: string) => {
     if (provider === '302ai') {
       return {

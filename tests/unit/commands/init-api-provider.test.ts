@@ -103,7 +103,7 @@ describe('init command - API provider preset', () => {
 
       const options: any = {
         skipPrompt: true,
-        provider: 'glm',
+        provider: 'glm-cn',
         apiKey: 'test-key',
       }
 
@@ -116,7 +116,7 @@ describe('init command - API provider preset', () => {
 
       const options: any = {
         skipPrompt: true,
-        provider: 'kimi',
+        provider: 'kimi-coding',
         apiKey: 'test-key',
       }
 
@@ -179,7 +179,7 @@ describe('init command - API provider preset', () => {
 
       const options: any = {
         skipPrompt: true,
-        provider: 'glm',
+        provider: 'glm-cn',
         apiKey: 'test-key',
         apiType: 'api_key', // Explicitly set to api_key
       }
@@ -258,7 +258,7 @@ describe('init command - API provider preset', () => {
       await init({
         skipBanner: true,
         skipPrompt: true,
-        provider: 'glm',
+        provider: 'glm-cn',
         apiKey: 'test-token',
         configLang: 'en',
         aiOutputLang: 'en',
@@ -299,7 +299,7 @@ describe('init command - API provider preset', () => {
       await init({
         skipBanner: true,
         skipPrompt: true,
-        provider: 'kimi',
+        provider: 'kimi-coding',
         apiKey: 'test-token',
         configLang: 'en',
         aiOutputLang: 'en',

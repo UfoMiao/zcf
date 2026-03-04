@@ -94,14 +94,35 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'AICodeMirror China Optimized Line',
   },
   {
-    id: 'glm',
-    name: 'GLM',
+    id: 'glm-cn',
+    name: 'GLM CN',
     supportedCodeTools: ['claude-code'],
     claudeCode: {
       baseUrl: 'https://open.bigmodel.cn/api/anthropic',
       authType: 'auth_token',
     },
     description: 'GLM (智谱AI)',
+  },
+  {
+    id: 'z-ai',
+    name: 'Z.ai',
+    supportedCodeTools: ['claude-code'],
+    claudeCode: {
+      baseUrl: 'https://api.z.ai/api/anthropic',
+      authType: 'auth_token',
+    },
+    description: 'Z.ai API Service',
+  },
+  {
+    id: 'bailian-coding',
+    name: 'Bailian Coding',
+    supportedCodeTools: ['claude-code'],
+    claudeCode: {
+      baseUrl: 'https://coding.dashscope.aliyuncs.com/apps/anthropic',
+      authType: 'auth_token',
+      defaultModels: ['GLM-5'],
+    },
+    description: 'Bailian Coding API Service',
   },
   {
     id: 'minimax',
@@ -115,8 +136,8 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'MiniMax API Service',
   },
   {
-    id: 'kimi',
-    name: 'Kimi',
+    id: 'kimi-coding',
+    name: 'Kimi Coding',
     supportedCodeTools: ['claude-code'],
     claudeCode: {
       baseUrl: 'https://api.kimi.com/coding/',
