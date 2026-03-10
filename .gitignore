@@ -47,3 +47,7 @@ zcf-*.tgz
 
 # VitePress
 docs/.vitepress/cache/**
+
+# BMad Method V6
+_bmad/
+_bmad-output/
