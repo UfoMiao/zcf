@@ -16,6 +16,7 @@ ZCF currently supports the following API provider presets:
 | `packycode` | PackyCode | PackyCode API service | ✅ | ✅ | `auth_token` |
 | `aicodemirror` | AICodeMirror | Global High-Quality Line | ✅ | ✅ | `auth_token` |
 | `aicodemirror-cn` | AICodeMirror CN | China Optimized Line | ✅ | ✅ | `auth_token` |
+| `crazyrouter` | Crazyrouter | AI API aggregation gateway | ✅ | ✅ | `api_key` |
 | `glm` | GLM (Zhipu AI) | Zhipu AI service | ✅ | ✅ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API service | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (Moonshot) | Moonshot AI service | ✅ | ✅ | `auth_token` |
@@ -94,6 +95,32 @@ npx zcf init -s -p aicodemirror-cn -k "your-auth-token"
 
 # Codex
 npx zcf init -s -T codex -p aicodemirror-cn -k "your-auth-token"
+```
+
+### Crazyrouter
+
+**Official Link**: [Crazyrouter](https://crazyrouter.com)
+
+**Features**:
+- 🚀 High-performance AI API aggregation gateway
+- 🔑 One API key for 300+ models (GPT, Claude, Gemini, DeepSeek, etc.)
+- 💰 All models at 55% of official pricing
+- 🔄 Auto-failover, smart routing, unlimited concurrency
+- ✅ Fully OpenAI-compatible; works with Claude Code, Codex, and Gemini CLI
+
+**Configuration Information**:
+- **Claude Code Base URL**: `https://crazyrouter.com`
+- **Codex Base URL**: `https://crazyrouter.com/v1`
+- **Authentication Method**: `api_key`
+- **Codex Wire API**: `responses`
+
+**Usage Example**:
+```bash
+# Claude Code
+npx zcf init -s -p crazyrouter -k "your-api-key"
+
+# Codex
+npx zcf init -s -T codex -p crazyrouter -k "your-api-key"
 ```
 
 ### GLM (Zhipu AI)

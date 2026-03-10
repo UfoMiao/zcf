@@ -47,6 +47,10 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 <td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="./src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
 <td>Thanks to AICodeMirror for sponsoring this project! AICodeMirror provides official high-stability relay services for Claude Code/Codex/Gemini CLI, supporting enterprise-level high concurrency, fast invoicing, and 7x24 dedicated technical support. Official channels for Claude Code/Codex/Gemini at discounts as low as 38%/2%/10.9% off, with additional discounts on top-ups! AICodeMirror offers special benefits for ZCF users: users who register through <a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">this link</a> can enjoy 20% off on first top-up, and enterprise customers can get up to 25% off!</td>
 </tr>
+<tr>
+<td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
+<td>Thanks to Crazyrouter for sponsoring this project! Crazyrouter is a high-performance AI API aggregation gateway — one API key for 300+ models (GPT, Claude, Gemini, DeepSeek, and more). All models at 55% of official pricing with auto-failover, smart routing, and unlimited concurrency. Fully OpenAI-compatible, works seamlessly with Claude Code, Codex, and Gemini CLI. Crazyrouter offers an exclusive deal for ZCF users: register via <a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">this link</a> to get $2 free credit instantly!</td>
+</tr>
 <tbody>
 </table>
 
@@ -115,6 +119,7 @@ A huge thank you to all our sponsors for their generous support!
 - [PackyCode](https://www.packyapi.com/register?aff=zcf) (first API proxy service sponsor 🧝🏻‍♀️)
 - [AICodeMirror](https://www.aicodemirror.com/register?invitecode=ZCFZCF) (official high-stability relay service sponsor 🪞)
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8) (sponsored $100 proxy credits 💰)
+- [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo) (AI API aggregation gateway sponsor 🚀)
 
 【Individual Sponsors】
 

@@ -94,6 +94,20 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'AICodeMirror China Optimized Line',
   },
   {
+    id: 'crazyrouter',
+    name: 'Crazyrouter',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://crazyrouter.com',
+      authType: 'api_key',
+    },
+    codex: {
+      baseUrl: 'https://crazyrouter.com/v1',
+      wireApi: 'responses',
+    },
+    description: 'Crazyrouter AI API aggregation gateway',
+  },
+  {
     id: 'glm-cn',
     name: 'GLM CN',
     supportedCodeTools: ['claude-code'],
