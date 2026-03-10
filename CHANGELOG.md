@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.6.3
+
+### Patch Changes
+
+- ## New Features
+  - Add BMAD multi-agent commands and workflows (bmad-agent-_, bmad-bmm-_, bmad-editorial-_, bmad-review-_, bmad-help, bmad-party-mode, etc.)
+  - Add Crazyrouter as a new sponsor in documentation and API provider presets
+
+  ## 新功能
+  - 新增 BMAD 多智能体命令与工作流（bmad-agent-_、bmad-bmm-_、bmad-editorial-_、bmad-review-_、bmad-help、bmad-party-mode 等）
+  - 在文档与 API 提供商预设中新增 Crazyrouter 赞助商
+
+  ## Documentation
+  - Update README (en, zh-CN, ja-JP) and docs with Crazyrouter sponsorship
+  - Add Crazyrouter to API providers documentation (en, zh-CN, ja-JP)
+
+  ## 文档
+  - 更新 README（中英日）及文档中的 Crazyrouter 赞助信息
+  - 在 API 提供商文档（中英日）中新增 Crazyrouter
+
 ## 3.6.2
 
 ### Patch Changes
