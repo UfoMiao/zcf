@@ -22,7 +22,7 @@
   </p>
 </div>
 
-## ♥️ スポンサー AI API
+## ♥️ スポンサー
 
 [![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
 このプロジェクトは Z.ai の GLM CODING PLAN によってスポンサーされています。
@@ -50,7 +50,7 @@ GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSK
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
 <td>Crazyrouter のスポンサーに感謝します！Crazyrouter は高性能 AI API 集約ゲートウェイです — 1つの API キーで 300+ モデル（GPT、Claude、Gemini、DeepSeek など）を利用可能。全モデル公式価格の 55% で提供、自動フェイルオーバー、スマートルーティング、無制限同時接続に対応。OpenAI 完全互換で、Claude Code、Codex、Gemini CLI とシームレスに連携。ZCF ユーザー限定特典：<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">こちらのリンク</a>から登録すると $2 の無料クレジットを即時プレゼント！</td>
 </tr>
-<tbody>
+</tbody>
 </table>
 
 ## 🚀 クイックスタート
@@ -92,7 +92,7 @@ Telegramグループに参加して、サポートやディスカッション、
 - [ccusage](https://github.com/ryoppippi/ccusage)
 - [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD)
 
-これらのコミュニティ貢献者の皆さまに心より感謝いたします！
+これらのコミュニティ貢献者のシェアに感謝します！
 
 
 ## ❤️ サポートとスポンサー
@@ -133,6 +133,7 @@ Telegramグループに参加して、サポートやディスカッション、
 - 初屿贤（最初のCodexユーザースポンサー 🙅🏻‍♂️）
 - Protein（最初の1688スポンサー 😏）
 - [musistudio](https://github.com/musistudio)（最初のオープンソースプロジェクト作者スポンサー、[CCR](https://github.com/musistudio/claude-code-router) の作者です 🤩）
+- \*年（初の100元スポンサー 💴）
 - [BeatSeat](https://github.com/BeatSeat)（コミュニティエキスパート 😎、$1000 Claude クレジットを提供）
 - [wenwen](https://github.com/wenwen12345)（コミュニティエキスパート 🤓、毎日 $100 Claude&GPT クレジットを提供）
 - 16°C coffee（私の親友 🤪、ChatGPT Pro $200パッケージを提供）

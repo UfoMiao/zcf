@@ -52,7 +52,7 @@ GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
 <td>感谢 Crazyrouter 赞助了本项目！Crazyrouter 是一个高性能 AI API 聚合网关 — 一个 Key 调用 300+ 模型（GPT、Claude、Gemini、DeepSeek 等），所有模型低至官方价格 5.5 折，支持自动故障转移、智能路由和无限并发。完全兼容 OpenAI 格式，可无缝接入 Claude Code、Codex 和 Gemini CLI。Crazyrouter 为 ZCF 用户提供了专属福利，通过<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">此链接</a>注册即送 $2 免费额度！</td>
 </tr>
-<tbody>
+</tbody>
 </table>
 
 ## 🚀 快速开始
@@ -125,7 +125,7 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 
 【个人赞助商】
 
-- Tc (第一个赞助者)
+- Tc (第一个赞助者 1️⃣)
 - Argolinhas (第一个 ko-fi 赞助者 ٩(•̤̀ᵕ•̤́๑))
 - r\*r (第一个不愿透露姓名的赞助者 🤣)
 - \*\*康 (第一个 KFC 赞助者 🍗)
@@ -133,8 +133,9 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 - 炼\*3 (第一个 termux 用户赞助者 📱)
 - [chamo101](https://github.com/chamo101) (第一个 GitHub issue 赞助者 🎉)
 - 初屿贤 (第一个 codex 用户赞助者 🙅🏻‍♂️)
-- Protein （第一个一路发发赞助者 😏）
+- Protein (第一个一路发发赞助者 😏)
 - [musistudio](https://github.com/musistudio) (第一个开源项目作者赞助者，[CCR](https://github.com/musistudio/claude-code-router) 的作者哦 🤩)
+- \*年 (第一个百元赞助者 💴)
 - [BeatSeat](https://github.com/BeatSeat) (社区大佬 😎，提供了 $1000 Claude 额度)
 - [wenwen](https://github.com/wenwen12345) (社区大佬 🤓，提供了每日 $100 Claude&GPT 额度)
 - 16°C 咖啡 (我的好基友 🤪, 提供了 ChatGPT Pro $200 套餐)

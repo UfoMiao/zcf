@@ -22,7 +22,7 @@
 </p>
 </div>
 
-## ♥️ Sponsor AI API
+## ♥️ Sponsors
 
 [![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
 
@@ -51,12 +51,12 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
 <td>Thanks to Crazyrouter for sponsoring this project! Crazyrouter is a high-performance AI API aggregation gateway — one API key for 300+ models (GPT, Claude, Gemini, DeepSeek, and more). All models at 55% of official pricing with auto-failover, smart routing, and unlimited concurrency. Fully OpenAI-compatible, works seamlessly with Claude Code, Codex, and Gemini CLI. Crazyrouter offers an exclusive deal for ZCF users: register via <a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">this link</a> to get $2 free credit instantly!</td>
 </tr>
-<tbody>
+</tbody>
 </table>
 
 ## 🚀 Quick Start
 
-- Recommended: `npx zcf` opens the interactive menu and guides you through install/update.
+- Recommended: `npx zcf` opens the interactive menu — pick what you need.
 - Common commands:
 
 ```bash
@@ -93,7 +93,7 @@ This project is inspired by and incorporates work from:
 - [ccusage](https://github.com/ryoppippi/ccusage)
 - [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD)
 
-Thanks to these community contributors for sharing their amazing projects!
+Thanks to these community contributors for sharing!
 
 ## ❤️ Support & Sponsors
 
@@ -133,6 +133,7 @@ A huge thank you to all our sponsors for their generous support!
 - 初屿贤 (first Codex user sponsor 🙅🏻‍♂️)
 - Protein (first 1688 sponsor 😏)
 - [musistudio](https://github.com/musistudio) (first open source project author sponsor, the author of [CCR](https://github.com/musistudio/claude-code-router) 🤩)
+- \*年 (first 100 CNY sponsor 💴)
 - [BeatSeat](https://github.com/BeatSeat) (community expert 😎, provided $1000 Claude credits)
 - [wenwen](https://github.com/wenwen12345) (community expert 🤓, provided daily $100 Claude&GPT credits)
 - 16°C coffee (My best friend 🤪, offered ChatGPT Pro $200 package)
