@@ -153,18 +153,17 @@ npx zcf init -s -T codex -p glm -k "your-auth-token"
 
 **プロバイダー名**: MiniMax
 
+**公式リンク**: [MiniMax プラットフォーム](https://platform.minimax.io)
+
 **特徴**:
-- 🎯 AIモデルサービスに焦点
-- 💡 複数のアプリケーションシナリオをサポート
-- 🔧 柔軟な設定オプション
+- 🎯 高性能AIモデル (MiniMax-M2.7)
+- 💡 204,800トークンのコンテキストウィンドウ、最大192K出力
+- 🔧 Anthropic互換API、Claude Code対応
 
 **設定情報**:
-- **Claude Code Base URL**: `https://api.minimaxi.com/anthropic`
-- **Codex Base URL**: `https://api.minimaxi.com/v1`
+- **Claude Code Base URL**: `https://api.minimax.io/anthropic`
 - **認証方式**: `auth_token`
-- **Codex Wire API**: `chat`
-- **Claude Code デフォルトモデル**: `MiniMax-M2`
-- **Codex デフォルトモデル**: `MiniMax-M2`
+- **Claude Code デフォルトモデル**: `MiniMax-M2.7`（メイン）、`MiniMax-M2.7-highspeed`（高速）
 
 **使用例**:
 ```bash

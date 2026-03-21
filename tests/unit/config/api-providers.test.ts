@@ -80,6 +80,16 @@ describe('aPI Provider Configuration', () => {
       expect(provider302!.codex!.wireApi).toBe('responses')
     })
 
+    it('minimax provider should have correct configuration', () => {
+      const provider = API_PROVIDER_PRESETS.find(p => p.id === 'minimax')
+      expect(provider).toBeDefined()
+      expect(provider!.name).toBe('MiniMax')
+      expect(provider!.supportedCodeTools).toContain('claude-code')
+      expect(provider!.claudeCode?.baseUrl).toBe('https://api.minimax.io/anthropic')
+      expect(provider!.claudeCode?.authType).toBe('auth_token')
+      expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M2.7', 'MiniMax-M2.7-highspeed'])
+    })
+
     it('providers with claudeCode config should have valid authType', () => {
       API_PROVIDER_PRESETS.forEach((provider) => {
         if (provider.claudeCode) {

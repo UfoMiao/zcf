@@ -153,18 +153,17 @@ npx zcf init -s -T codex -p glm -k "your-auth-token"
 
 **提供商名称**：MiniMax
 
+**官方链接**：[MiniMax 平台](https://platform.minimax.io)
+
 **特点**：
-- 🎯 专注于 AI 模型服务
-- 💡 支持多种应用场景
-- 🔧 灵活的配置选项
+- 🎯 高性能 AI 模型 (MiniMax-M2.7)
+- 💡 204,800 tokens 上下文窗口，最大 192K 输出
+- 🔧 兼容 Anthropic API，适配 Claude Code
 
 **配置信息**：
-- **Claude Code Base URL**: `https://api.minimaxi.com/anthropic`
-- **Codex Base URL**: `https://api.minimaxi.com/v1`
+- **Claude Code Base URL**: `https://api.minimax.io/anthropic`
 - **认证方式**: `auth_token`
-- **Codex Wire API**: `chat`
-- **Claude Code 默认模型**: `MiniMax-M2`
-- **Codex 默认模型**: `MiniMax-M2`
+- **Claude Code 默认模型**: `MiniMax-M2.7`（主力）、`MiniMax-M2.7-highspeed`（高速）
 
 **使用示例**：
 ```bash

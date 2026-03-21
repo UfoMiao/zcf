@@ -153,18 +153,17 @@ npx zcf init -s -T codex -p glm -k "your-auth-token"
 
 **Provider Name**: MiniMax
 
+**Official Link**: [MiniMax Platform](https://platform.minimax.io)
+
 **Features**:
-- 🎯 Focuses on AI model services
-- 💡 Supports multiple application scenarios
-- 🔧 Flexible configuration options
+- 🎯 Peak performance AI models (MiniMax-M2.7)
+- 💡 204,800 tokens context window with up to 192K output
+- 🔧 Anthropic-compatible API for Claude Code
 
 **Configuration Information**:
-- **Claude Code Base URL**: `https://api.minimaxi.com/anthropic`
-- **Codex Base URL**: `https://api.minimaxi.com/v1`
+- **Claude Code Base URL**: `https://api.minimax.io/anthropic`
 - **Authentication Method**: `auth_token`
-- **Codex Wire API**: `chat`
-- **Claude Code Default Model**: `MiniMax-M2`
-- **Codex Default Model**: `MiniMax-M2`
+- **Claude Code Default Model**: `MiniMax-M2.7` (primary), `MiniMax-M2.7-highspeed` (fast)
 
 **Usage Example**:
 ```bash
