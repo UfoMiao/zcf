@@ -134,7 +134,7 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     claudeCode: {
       baseUrl: 'https://coding.dashscope.aliyuncs.com/apps/anthropic',
       authType: 'auth_token',
-      defaultModels: ['GLM-5'],
+      defaultModels: ['glm-5'],
     },
     description: 'Bailian Coding API Service',
   },

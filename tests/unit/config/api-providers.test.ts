@@ -90,6 +90,12 @@ describe('aPI Provider Configuration', () => {
       expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M2.7', 'MiniMax-M2.7-highspeed'])
     })
 
+    it('bailian-coding provider should use lowercase glm-5 default model', () => {
+      const provider = API_PROVIDER_PRESETS.find(p => p.id === 'bailian-coding')
+      expect(provider).toBeDefined()
+      expect(provider!.claudeCode?.defaultModels).toEqual(['glm-5'])
+    })
+
     it('providers with claudeCode config should have valid authType', () => {
       API_PROVIDER_PRESETS.forEach((provider) => {
         if (provider.claudeCode) {
