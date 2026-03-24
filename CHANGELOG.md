@@ -1,5 +1,31 @@
 # Changelog
 
+## 3.6.4
+
+### Patch Changes
+
+- ## Fixes
+  - Update MiniMax provider preset to M2.7 models and correct API endpoint (api.minimax.io)
+  - Align MiniMax documentation (en, zh-CN, ja-JP) with current models and platform link
+  - Add unit test coverage for MiniMax provider configuration
+  - Use lowercase `glm-5` as the default model for Bailian Coding API preset
+  - Add unit test coverage for Bailian Coding default models
+
+  ## 修复
+  - 更新 MiniMax 提供商预设为 M2.7 系列模型并修正 API 端点（api.minimax.io）
+  - 同步 MiniMax 文档（中英日）中的模型与平台链接说明
+  - 为 MiniMax 提供商配置补充单元测试
+  - 百炼 Coding 预设默认模型改为小写 `glm-5`
+  - 为百炼 Coding 默认模型补充单元测试
+
+  ## Documentation
+  - Rename sponsorship section titles to "Sponsors" across README (en, zh-CN, ja-JP)
+  - Refine sponsorship wording and extend sponsor entries where applicable
+
+  ## 文档
+  - 将各语言 README 中赞助板块标题统一为「赞助商」等对应表述
+  - 优化赞助说明措辞并补充日文与中文 README 中的赞助条目
+
 ## 3.6.3
 
 ### Patch Changes
