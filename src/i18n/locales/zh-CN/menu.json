@@ -3,6 +3,8 @@
   "menuDescriptions.ccusage": "Claude Code 用量分析",
   "menuDescriptions.changeLanguage": "更改 ZCF 界面语言",
   "menuDescriptions.checkUpdates": "检查并更新 Claude Code、CCR 和 CCometixLine 的版本",
+  "menuDescriptions.exportConfig": "导出当前配置到便携式 ZIP 压缩包",
+  "menuDescriptions.importConfig": "从 ZIP 压缩包导入配置",
   "menuDescriptions.uninstall": "从系统中删除 Claude Code 配置和工具",
   "menuDescriptions.cometixLine": "基于 Rust 的高性能 Claude Code 状态栏工具，集成 Git 信息和实时使用量跟踪",
   "menuDescriptions.configureAiMemory": "配置 AI 输出语言和输出风格",
@@ -16,6 +18,8 @@
   "menuOptions.ccusage": "ccusage",
   "menuOptions.changeLanguage": "更改显示语言 / Select display language",
   "menuOptions.checkUpdates": "检查更新",
+  "menuOptions.exportConfig": "导出配置",
+  "menuOptions.importConfig": "导入配置",
   "menuOptions.uninstall": "卸载和删除配置",
   "menuOptions.cometixLine": "CCometixLine",
   "menuOptions.configureAiMemory": "配置 Claude 全局记忆",
@@ -47,5 +51,6 @@
   "menuDescriptions.codexCheckUpdates": "检查并更新 Codex",
   "switchCodeToolPrompt": "请选择代码工具类型",
   "codeToolSwitched": "已切换为 {{tool}}",
-  "selectFunction": "请选择功能"
+  "selectFunction": "请选择功能",
+  "pressAnyKeyToReturn": "按任意键返回主菜单..."
 }
