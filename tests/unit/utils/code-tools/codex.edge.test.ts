@@ -129,6 +129,9 @@ vi.mock('../../../../src/utils/fs-operations', () => ({
   copyFile: vi.fn(),
   ensureDir: vi.fn(),
   exists: vi.fn(),
+  readDir: vi.fn(),
+  isDirectory: vi.fn(),
+  isFile: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
 }))
