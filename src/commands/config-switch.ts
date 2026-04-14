@@ -5,7 +5,7 @@ import inquirer from 'inquirer'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { ClaudeCodeConfigManager } from '../utils/claude-code-config-manager'
-import { listCodexProviders, readCodexConfig, switchToOfficialLogin as switchCodexOfficialLogin, switchCodexProvider, switchToProvider } from '../utils/code-tools/codex'
+import { listCodexProviders, readCodexConfig, switchToOfficialLogin as switchCodexOfficialLogin, switchToProvider } from '../utils/code-tools/codex'
 import { handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
 import { readZcfConfig } from '../utils/zcf-config'
@@ -158,8 +158,7 @@ async function handleDirectSwitch(codeType: CodeToolType, target: string): Promi
     await handleClaudeCodeDirectSwitch(target)
   }
   else if (resolvedCodeType === 'codex') {
-    await switchCodexProvider(target)
-    // switchCodexProvider already handles success/failure messages
+    await switchToProvider(target)
   }
 }
 

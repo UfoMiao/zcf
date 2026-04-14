@@ -43,6 +43,7 @@ vi.mock('../../../src/utils/code-tools/codex-provider-manager', () => ({
 
 vi.mock('../../../src/utils/code-tools/codex', () => ({
   switchCodexProvider: vi.fn(),
+  switchToProvider: vi.fn(),
 }))
 
 vi.mock('node:fs', () => ({
@@ -393,7 +394,7 @@ describe('init command - multi-configuration', () => {
     it('should set default provider for Codex', async () => {
       const { handleMultiConfigurations } = await import('../../../src/commands/init')
       const { addProviderToExisting } = await import('../../../src/utils/code-tools/codex-provider-manager')
-      const { switchCodexProvider } = await import('../../../src/utils/code-tools/codex')
+      const { switchToProvider } = await import('../../../src/utils/code-tools/codex')
 
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
@@ -413,7 +414,7 @@ describe('init command - multi-configuration', () => {
       await handleMultiConfigurations(options, 'codex')
 
       // PR #251: provider ID is now lowercase with special chars replaced by dashes
-      expect(switchCodexProvider).toHaveBeenCalledWith('config1')
+      expect(switchToProvider).toHaveBeenCalledWith('config1')
     })
 
     it('should throw error when provider addition fails', async () => {
@@ -445,7 +446,7 @@ describe('init command - multi-configuration', () => {
     it('should handle config without name using provider as fallback', async () => {
       const { handleMultiConfigurations } = await import('../../../src/commands/init')
       const { addProviderToExisting } = await import('../../../src/utils/code-tools/codex-provider-manager')
-      const { switchCodexProvider } = await import('../../../src/utils/code-tools/codex')
+      const { switchToProvider } = await import('../../../src/utils/code-tools/codex')
 
       vi.mocked(addProviderToExisting).mockResolvedValue({
         success: true,
@@ -465,13 +466,13 @@ describe('init command - multi-configuration', () => {
       await handleMultiConfigurations(options, 'codex')
 
       // Should use provider as displayName and generate providerId from it
-      expect(switchCodexProvider).toHaveBeenCalledWith('302ai')
+      expect(switchToProvider).toHaveBeenCalledWith('302ai')
     })
 
     it('should not set default provider when provider ID not in added list', async () => {
       const { handleMultiConfigurations } = await import('../../../src/commands/init')
       const { addProviderToExisting } = await import('../../../src/utils/code-tools/codex-provider-manager')
-      const { switchCodexProvider } = await import('../../../src/utils/code-tools/codex')
+      const { switchToProvider } = await import('../../../src/utils/code-tools/codex')
 
       // First call succeeds but with different ID
       vi.mocked(addProviderToExisting).mockResolvedValueOnce({
@@ -502,13 +503,13 @@ describe('init command - multi-configuration', () => {
       })
 
       await expect(handleMultiConfigurations(options, 'codex')).rejects.toThrow()
-      expect(switchCodexProvider).not.toHaveBeenCalled()
+      expect(switchToProvider).not.toHaveBeenCalled()
     })
 
     it('should log error when default provider ID not in added list for Codex', async () => {
       const { handleMultiConfigurations } = await import('../../../src/commands/init')
       const { addProviderToExisting } = await import('../../../src/utils/code-tools/codex-provider-manager')
-      const { switchCodexProvider } = await import('../../../src/utils/code-tools/codex')
+      const { switchToProvider } = await import('../../../src/utils/code-tools/codex')
 
       // Provider is added successfully
       vi.mocked(addProviderToExisting).mockResolvedValueOnce({
@@ -530,8 +531,8 @@ describe('init command - multi-configuration', () => {
       // because we only add Config1
       await handleMultiConfigurations(options, 'codex')
 
-      // switchCodexProvider should not be called since no config is marked default
-      expect(switchCodexProvider).not.toHaveBeenCalled()
+      // switchToProvider should not be called since no config is marked default
+      expect(switchToProvider).not.toHaveBeenCalled()
     })
 
     it('should display error when default provider ID mismatch in Codex configs', async () => {
@@ -545,11 +546,12 @@ describe('init command - multi-configuration', () => {
       }))
       vi.mock('../../../src/utils/code-tools/codex', () => ({
         switchCodexProvider: vi.fn(),
+        switchToProvider: vi.fn(),
       }))
 
       const { handleMultiConfigurations } = await import('../../../src/commands/init')
       const { addProviderToExisting } = await import('../../../src/utils/code-tools/codex-provider-manager')
-      const { switchCodexProvider } = await import('../../../src/utils/code-tools/codex')
+      const { switchToProvider } = await import('../../../src/utils/code-tools/codex')
 
       // First provider added successfully
       vi.mocked(addProviderToExisting).mockResolvedValue({
@@ -571,8 +573,8 @@ describe('init command - multi-configuration', () => {
       await handleMultiConfigurations(options, 'codex')
 
       // The provider ID will be 'my-config-' (special chars replaced with dashes)
-      // This should match and switchCodexProvider should be called
-      expect(switchCodexProvider).toHaveBeenCalledWith('my-config-')
+      // This should match and switchToProvider should be called
+      expect(switchToProvider).toHaveBeenCalledWith('my-config-')
     })
 
     it('should handle exception thrown during provider addition', async () => {

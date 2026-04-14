@@ -1212,11 +1212,11 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
   const defaultConfig = configs.find(c => c.default)
   if (defaultConfig) {
     // Import and call Codex provider switching function
-    const { switchCodexProvider } = await import('../utils/code-tools/codex')
+    const { switchToProvider } = await import('../utils/code-tools/codex')
     const displayName = defaultConfig.name || defaultConfig.provider || 'custom'
     const providerId = displayName.toLowerCase().replace(/[^a-z0-9]/g, '-')
     if (addedProviderIds.includes(providerId)) {
-      await switchCodexProvider(providerId)
+      await switchToProvider(providerId)
       console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProviderSet', { name: displayName })}`))
     }
     else {
