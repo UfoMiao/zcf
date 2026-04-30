@@ -52,6 +52,10 @@ GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
 <td>感谢 Crazyrouter 赞助了本项目！Crazyrouter 是一个高性能 AI API 聚合网关 — 一个 Key 调用 300+ 模型（GPT、Claude、Gemini、DeepSeek 等），所有模型低至官方价格 5.5 折，支持自动故障转移、智能路由和无限并发。完全兼容 OpenAI 格式，可无缝接入 Claude Code、Codex 和 Gemini CLI。Crazyrouter 为 ZCF 用户提供了专属福利，通过<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">此链接</a>注册即送 $2 免费额度！</td>
 </tr>
+<tr>
+<td width="180"><a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C"><img src="./src/assets/PatewayAI.png" alt="PatewayAI" width="150"></a></td>
+<td>感谢 PatewayAI 赞助了本项目！PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模型 API 中转服务商，提供 Claude 全系列与 Codex 系列模型，100% 官方源直供，不掺假不注水，欢迎检验。计费透明，Token 级账单可逐笔核验。同时支持企业级高并发，并为企业客户提供专业的管理平台，企业客户可签订正式合同并开具发票。PatewayAI 为 ZCF 用户提供了专属福利，通过<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">此链接</a>注册即送 $3 试用额度，用户充值低至 6 折，邀请好友双向赠送，邀请奖励可达 $150！</td>
+</tr>
 </tbody>
 </table>
 
@@ -122,6 +126,7 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 - [AICodeMirror](https://www.aicodemirror.com/register?invitecode=ZCFZCF) （官方高稳定中转服务赞助商 🪞）
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8)（赞助了 100$ 中转站额度 💰）
 - [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo)（AI API 聚合网关赞助商 🚀）
+- [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)（官方直连中转服务赞助商 🛡️）
 
 【个人赞助商】
 

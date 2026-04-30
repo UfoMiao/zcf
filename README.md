@@ -51,6 +51,10 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
 <td>Thanks to Crazyrouter for sponsoring this project! Crazyrouter is a high-performance AI API aggregation gateway — one API key for 300+ models (GPT, Claude, Gemini, DeepSeek, and more). All models at 55% of official pricing with auto-failover, smart routing, and unlimited concurrency. Fully OpenAI-compatible, works seamlessly with Claude Code, Codex, and Gemini CLI. Crazyrouter offers an exclusive deal for ZCF users: register via <a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">this link</a> to get $2 free credit instantly!</td>
 </tr>
+<tr>
+<td width="180"><a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C"><img src="./src/assets/PatewayAI.png" alt="PatewayAI" width="150"></a></td>
+<td>Thanks to PatewayAI for sponsoring this project! PatewayAI is a high-quality model API relay service provider focused on official direct connections for serious AI developers, offering the full range of Claude and Codex series models. 100% official source supply with no adulteration — open to inspection. Transparent billing with token-level invoices auditable line by line. Enterprise-grade concurrency support with a dedicated management platform for enterprise customers, including formal contracts and invoicing. PatewayAI offers an exclusive benefit for ZCF users: register via <a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">this link</a> to get $3 free trial credit, recharges as low as 60% off, with bilateral invite rewards up to $150!</td>
+</tr>
 </tbody>
 </table>
 
@@ -120,6 +124,7 @@ A huge thank you to all our sponsors for their generous support!
 - [AICodeMirror](https://www.aicodemirror.com/register?invitecode=ZCFZCF) (official high-stability relay service sponsor 🪞)
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8) (sponsored $100 proxy credits 💰)
 - [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo) (AI API aggregation gateway sponsor 🚀)
+- [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C) (official direct-connect relay service sponsor 🛡️)
 
 【Individual Sponsors】
 

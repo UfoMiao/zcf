@@ -159,6 +159,20 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     },
     description: 'Kimi (Moonshot AI)',
   },
+  {
+    id: 'pateway',
+    name: 'PatewayAI',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.pateway.ai',
+      authType: 'api_key',
+    },
+    codex: {
+      baseUrl: 'https://api.pateway.ai/v1',
+      wireApi: 'responses',
+    },
+    description: 'PatewayAI official direct-connect relay service',
+  },
 ]
 
 /**
