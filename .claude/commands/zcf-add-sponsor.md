@@ -1,6 +1,6 @@
 ---
 description: Quickly add a new corporate sponsor to ZCF — sponsor list by default, with optional API preset and documentation ad placements
-allowed-tools: Read(**), Write(**), Edit(**), Exec(ls, cat, grep, rg, sed, awk, file)
+allowed-tools: Read(**), Write(**), Edit(**), Exec(ls, cat, grep, rg, sed, awk, file, mv, pnpm, node, git)
 argument-hint: [--with-api] [--with-ad] [--name <name>] [--url <url>] [--id <provider-id>] [--logo <path>] [--badge <emoji>]
 # examples:
 #   - /zcf-add-sponsor                                                          # Interactive mode, only add to README Our Sponsors lists
