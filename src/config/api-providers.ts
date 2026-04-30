@@ -166,7 +166,7 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     claudeCode: {
       baseUrl: 'https://api.deepseek.com/anthropic',
       authType: 'auth_token',
-      defaultModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
+      defaultModels: ['deepseek-v4-pro', 'deepseek-v4-flash'],
     },
     description: 'DeepSeek official API (Anthropic-compatible endpoint)',
   },
