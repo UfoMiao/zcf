@@ -160,6 +160,17 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'Kimi (Moonshot AI)',
   },
   {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    supportedCodeTools: ['claude-code'],
+    claudeCode: {
+      baseUrl: 'https://api.deepseek.com/anthropic',
+      authType: 'auth_token',
+      defaultModels: ['deepseek-v4-flash', 'deepseek-v4-pro'],
+    },
+    description: 'DeepSeek official API (Anthropic-compatible endpoint)',
+  },
+  {
     id: 'pateway',
     name: 'PatewayAI',
     supportedCodeTools: ['claude-code', 'codex'],

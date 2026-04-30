@@ -96,6 +96,16 @@ describe('aPI Provider Configuration', () => {
       expect(provider!.claudeCode?.defaultModels).toEqual(['glm-5'])
     })
 
+    it('deepseek provider should have correct configuration', () => {
+      const provider = API_PROVIDER_PRESETS.find(p => p.id === 'deepseek')
+      expect(provider).toBeDefined()
+      expect(provider!.name).toBe('DeepSeek')
+      expect(provider!.supportedCodeTools).toContain('claude-code')
+      expect(provider!.claudeCode?.baseUrl).toBe('https://api.deepseek.com/anthropic')
+      expect(provider!.claudeCode?.authType).toBe('auth_token')
+      expect(provider!.claudeCode?.defaultModels).toEqual(['deepseek-v4-flash', 'deepseek-v4-pro'])
+    })
+
     it('providers with claudeCode config should have valid authType', () => {
       API_PROVIDER_PRESETS.forEach((provider) => {
         if (provider.claudeCode) {
