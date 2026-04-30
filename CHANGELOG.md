@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.6.5
+
+### Patch Changes
+
+- ## New Features
+  - Add `/zcf-add-sponsor` project command for quick sponsor onboarding (sponsor list by default, with optional `--with-ad` and `--with-api` flags)
+  - Add PatewayAI as a new corporate sponsor with API provider preset for both Claude Code and Codex
+  - Add DeepSeek v4 provider preset for Claude Code via Anthropic-compatible endpoint (closes #348)
+
+  ## 新功能
+  - 新增 `/zcf-add-sponsor` 项目命令，快速完成赞助商上线（默认仅追加赞助商列表，可选 `--with-ad` / `--with-api` 拓展广告位与 API 预设）
+  - 新增 PatewayAI 企业赞助商，并提供同时支持 Claude Code 与 Codex 的 API 提供商预设
+  - 新增 DeepSeek v4 API 提供商预设（Claude Code，通过 Anthropic 兼容端点接入，关联 #348）
+
+  ## Fixes
+  - Add `pnpm`, `git`, `node`, `mv` to `/zcf-add-sponsor` allowed-tools to align with sibling commands and unblock the documented validation step
+  - Swap DeepSeek `defaultModels` order so `deepseek-v4-pro` is the primary model and `deepseek-v4-flash` maps to the Haiku slot
+
+  ## 修复
+  - 为 `/zcf-add-sponsor` 命令补全 `pnpm`、`git`、`node`、`mv` 工具白名单，与其他同类命令对齐，确保文档中的校验步骤可执行
+  - 调整 DeepSeek 预设的 `defaultModels` 顺序，使 `deepseek-v4-pro` 作为主模型，`deepseek-v4-flash` 对应 Haiku 槽位
+
 ## 3.6.4
 
 ### Patch Changes
