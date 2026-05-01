@@ -75,12 +75,34 @@ export interface InitOptions {
   defaultOutputStyle?: string
   allLang?: string // New: unified language parameter
   installCometixLine?: string | boolean // New: CCometixLine installation control
+  // Workflow-only mode: install workflow files only; skip Claude Code install,
+  // API/MCP/output-style/CCometixLine setup, and AI language directive write.
+  workflowsOnly?: string | boolean
   // Multi-configuration parameters
   apiConfigs?: string // JSON string for multiple API configurations
   apiConfigsFile?: string // Path to JSON file with API configurations
 }
 
 export async function validateSkipPromptOptions(options: InitOptions): Promise<void> {
+  // Normalise workflowsOnly first so the rest of the defaults respect it.
+  // When set, the user is asking for "workflow files only" — so any side-effect
+  // -producing option that the user did not explicitly pass should default off.
+  if (typeof options.workflowsOnly === 'string') {
+    options.workflowsOnly = options.workflowsOnly.toLowerCase() === 'true'
+  }
+  if (options.workflowsOnly === true) {
+    if (!options.apiType)
+      options.apiType = 'skip'
+    if (options.mcpServices === undefined)
+      options.mcpServices = false
+    if (options.outputStyles === undefined)
+      options.outputStyles = false
+    if (options.installCometixLine === undefined)
+      options.installCometixLine = false
+    if (!options.configAction)
+      options.configAction = 'docs-only'
+  }
+
   // Apply --all-lang logic first
   if (options.allLang) {
     if (options.allLang === 'zh-CN' || options.allLang === 'en') {
@@ -491,7 +513,11 @@ export async function init(options: InitOptions = {}): Promise<void> {
     const aiOutputLang = await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig, options.skipPrompt)
 
     // Step 4: Check and handle Claude Code installation
-    const installationStatus = await getInstallationStatus()
+    // workflowsOnly skips this entirely — workflows write to ~/.claude/commands/zcf
+    // and ~/.claude/agents/zcf, neither of which depend on a Claude Code install.
+    const installationStatus = options.workflowsOnly
+      ? { hasGlobal: false, hasLocal: false, localPath: '' }
+      : await getInstallationStatus()
 
     // Handle installations (including none, single, or multiple)
     if (installationStatus.hasGlobal || installationStatus.hasLocal) {
@@ -537,6 +563,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
         }
       }
     }
+    else if (options.workflowsOnly) {
+      // workflowsOnly: do not install Claude Code; workflow files do not require it.
+    }
     else {
       // No installation found - install Claude Code
       if (options.skipPrompt) {
@@ -560,7 +589,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 4.5: Check for Claude Code updates (if any installation exists)
-    if (installationStatus.hasGlobal || installationStatus.hasLocal) {
+    // Skip in workflowsOnly mode — we don't want to silently update Claude Code
+    // when the user only asked to install workflow files.
+    if (!options.workflowsOnly && (installationStatus.hasGlobal || installationStatus.hasLocal)) {
       // Skip version check if Claude Code was just installed (it's already latest)
       await checkClaudeCodeVersionAndPrompt(options.skipPrompt)
     }
@@ -801,7 +832,10 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 8: Apply language directive to CLAUDE.md
-    applyAiLanguageDirective(aiOutputLang as AiOutputLanguage | string)
+    // Skip in workflowsOnly mode — modifying ~/.claude/CLAUDE.md is a global side
+    // effect outside the "install workflow files" intent.
+    if (!options.workflowsOnly)
+      applyAiLanguageDirective(aiOutputLang as AiOutputLanguage | string)
     // Step 8.5: Configure Output Styles
     if (options.skipPrompt) {
       // Use provided output styles and default
@@ -995,13 +1029,19 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 12: Save zcf config
-    updateZcfConfig({
-      version,
-      preferredLang: i18n.language as SupportedLang, // ZCF界面语言
-      templateLang: configLang, // 模板语言
-      aiOutputLang: aiOutputLang as AiOutputLanguage | string,
-      codeToolType,
-    })
+    if (options.workflowsOnly) {
+      // Only persist version; preserve the user's existing language/style prefs.
+      updateZcfConfig({ version })
+    }
+    else {
+      updateZcfConfig({
+        version,
+        preferredLang: i18n.language as SupportedLang, // ZCF界面语言
+        templateLang: configLang, // 模板语言
+        aiOutputLang: aiOutputLang as AiOutputLanguage | string,
+        codeToolType,
+      })
+    }
 
     // Step 13: Success message
     console.log(ansis.green(`✔ ${i18n.t('configuration:configSuccess')} ${CLAUDE_DIR}`))

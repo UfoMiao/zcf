@@ -36,6 +36,7 @@ export interface CliOptions {
   defaultOutputStyle?: string // default: engineer-professional
   allLang?: string // New: unified language parameter
   installCometixLine?: string | boolean // New: CCometixLine installation control, default: true
+  workflowsOnly?: string | boolean // New: install workflow files only; skip all other side effects
 }
 
 //  Interface for language-related options extraction
@@ -159,6 +160,7 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.green('--default-output-style, -d')} <style> ${i18n.t('cli:help.optionDescriptions.defaultOutputStyle')} (${i18n.t('cli:help.defaults.prefix')} engineer-professional)`,
       `  ${ansis.green('--code-type, -T')} <type>   ${i18n.t('cli:help.optionDescriptions.codeToolType')} (claude-code, codex, cc=claude-code, cx=codex)`,
       `  ${ansis.green('--install-cometix-line, -x')} <value> ${i18n.t('cli:help.optionDescriptions.installStatuslineTool')} (${i18n.t('cli:help.defaults.prefix')} true)`,
+      `  ${ansis.green('--workflows-only')} <value>      ${i18n.t('cli:help.optionDescriptions.workflowsOnly')} (${i18n.t('cli:help.defaults.prefix')} false)`,
     ].join('\n'),
   })
 
@@ -259,6 +261,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .option('--install-cometix-line, -x <value>', `Install CCometixLine statusline tool (true/false), ${i18n.t('cli:help.defaults.prefix')} true`)
+    .option('--workflows-only <value>', `Install workflow files only; skip Claude Code install/update, API/MCP/output-style/CCometixLine setup and the AI language directive (true/false), ${i18n.t('cli:help.defaults.prefix')} false`)
     .option('--api-configs <configs>', 'API configurations as JSON string for multiple profiles')
     .option('--api-configs-file <file>', 'Path to JSON file containing API configurations')
     .action(await withLanguageResolution(async (options) => {
