@@ -1,6 +1,6 @@
-import type { InitOptions } from '../../../src/commands/init'
+import type { InitOptions } from '../../src/commands/init'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { init } from '../../../src/commands/init'
+import { init } from '../../src/commands/init'
 
 // Mock all side-effect-producing dependencies so we can assert which were
 // invoked when workflowsOnly is set vs unset. The init flow normally:
@@ -14,7 +14,7 @@ import { init } from '../../../src/commands/init'
 // In workflowsOnly mode we expect every one of those to be skipped, with
 // only selectAndInstallWorkflows + a version-only updateZcfConfig firing.
 
-vi.mock('../../../src/utils/installer', () => ({
+vi.mock('../../src/utils/installer', () => ({
   getInstallationStatus: vi.fn().mockResolvedValue({
     hasGlobal: true,
     hasLocal: false,
@@ -25,11 +25,11 @@ vi.mock('../../../src/utils/installer', () => ({
   removeLocalClaudeCode: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../src/utils/installation-manager', () => ({
+vi.mock('../../src/utils/installation-manager', () => ({
   handleMultipleInstallations: vi.fn().mockResolvedValue('global'),
 }))
 
-vi.mock('../../../src/utils/config', () => ({
+vi.mock('../../src/utils/config', () => ({
   ensureClaudeDir: vi.fn(),
   backupExistingConfig: vi.fn().mockReturnValue('/test/backup'),
   copyConfigFiles: vi.fn(),
@@ -40,33 +40,33 @@ vi.mock('../../../src/utils/config', () => ({
   switchToOfficialLogin: vi.fn().mockReturnValue(true),
 }))
 
-vi.mock('../../../src/utils/prompts', () => ({
+vi.mock('../../src/utils/prompts', () => ({
   resolveAiOutputLanguage: vi.fn().mockResolvedValue('en'),
   resolveTemplateLanguage: vi.fn().mockResolvedValue('en'),
 }))
 
-vi.mock('../../../src/utils/workflow-installer', () => ({
+vi.mock('../../src/utils/workflow-installer', () => ({
   selectAndInstallWorkflows: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('../../../src/utils/output-style', () => ({
+vi.mock('../../src/utils/output-style', () => ({
   configureOutputStyle: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../src/utils/mcp-selector', () => ({
+vi.mock('../../src/utils/mcp-selector', () => ({
   selectMcpServices: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('../../../src/utils/version-checker', () => ({
+vi.mock('../../src/utils/version-checker', () => ({
   checkClaudeCodeVersionAndPrompt: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../src/utils/cometix/installer', () => ({
+vi.mock('../../src/utils/cometix/installer', () => ({
   isCometixLineInstalled: vi.fn().mockResolvedValue(false),
   installCometixLine: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../../src/utils/zcf-config', () => ({
+vi.mock('../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn().mockReturnValue({
     version: '0.0.0',
     preferredLang: 'zh-CN',
@@ -84,31 +84,35 @@ vi.mock('../../../src/utils/zcf-config', () => ({
   updateZcfConfig: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/banner', () => ({
+vi.mock('../../src/utils/banner', () => ({
   displayBannerWithInfo: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/platform', () => ({
+vi.mock('../../src/utils/platform', () => ({
   isTermux: vi.fn().mockReturnValue(false),
   isWindows: vi.fn().mockReturnValue(false),
 }))
 
-vi.mock('../../../src/config/workflows', () => ({
+vi.mock('../../src/config/workflows', () => ({
   WORKFLOW_CONFIG_BASE: [
     { id: 'workflow1', name: 'Workflow 1' },
     { id: 'workflow2', name: 'Workflow 2' },
   ],
 }))
 
-vi.mock('../../../src/config/mcp-services', () => ({
+vi.mock('../../src/config/mcp-services', () => ({
   MCP_SERVICE_CONFIGS: [
     { id: 'service1', requiresApiKey: false },
   ],
   getMcpServices: vi.fn().mockResolvedValue([]),
 }))
 
-vi.mock('../../../src/utils/code-type-resolver', () => ({
+vi.mock('../../src/utils/code-type-resolver', () => ({
   resolveCodeType: vi.fn().mockResolvedValue('claude-code'),
+}))
+
+vi.mock('../../src/utils/code-tools/codex', () => ({
+  runCodexFullInit: vi.fn().mockResolvedValue('en'),
 }))
 
 vi.mock('node:fs', () => ({
@@ -134,9 +138,9 @@ describe('init --workflows-only', () => {
   })
 
   it('skips Claude Code install/version checks and the AI language directive', async () => {
-    const { getInstallationStatus, installClaudeCode } = await import('../../../src/utils/installer')
-    const { checkClaudeCodeVersionAndPrompt } = await import('../../../src/utils/version-checker')
-    const { applyAiLanguageDirective } = await import('../../../src/utils/config')
+    const { getInstallationStatus, installClaudeCode } = await import('../../src/utils/installer')
+    const { checkClaudeCodeVersionAndPrompt } = await import('../../src/utils/version-checker')
+    const { applyAiLanguageDirective } = await import('../../src/utils/config')
 
     const options: InitOptions = {
       skipPrompt: true,
@@ -152,9 +156,9 @@ describe('init --workflows-only', () => {
   })
 
   it('skips CCometixLine, MCP and output-style configuration', async () => {
-    const { installCometixLine } = await import('../../../src/utils/cometix/installer')
-    const { configureOutputStyle } = await import('../../../src/utils/output-style')
-    const { configureApi } = await import('../../../src/utils/config')
+    const { installCometixLine } = await import('../../src/utils/cometix/installer')
+    const { configureOutputStyle } = await import('../../src/utils/output-style')
+    const { configureApi } = await import('../../src/utils/config')
 
     const options: InitOptions = {
       skipPrompt: true,
@@ -169,7 +173,7 @@ describe('init --workflows-only', () => {
   })
 
   it('still installs workflow files', async () => {
-    const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
+    const { selectAndInstallWorkflows } = await import('../../src/utils/workflow-installer')
 
     const options: InitOptions = {
       skipPrompt: true,
@@ -182,7 +186,7 @@ describe('init --workflows-only', () => {
   })
 
   it('persists only version metadata and preserves existing language prefs', async () => {
-    const { updateZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { updateZcfConfig } = await import('../../src/utils/zcf-config')
 
     const options: InitOptions = {
       skipPrompt: true,
@@ -203,12 +207,53 @@ describe('init --workflows-only', () => {
   })
 
   it('runs the full flow when workflowsOnly is not set', async () => {
-    const { getInstallationStatus } = await import('../../../src/utils/installer')
-    const { applyAiLanguageDirective } = await import('../../../src/utils/config')
+    const { getInstallationStatus } = await import('../../src/utils/installer')
+    const { applyAiLanguageDirective } = await import('../../src/utils/config')
 
     const options: InitOptions = {
       skipPrompt: true,
       apiType: 'skip',
+    }
+
+    await init(options)
+
+    expect(getInstallationStatus).toHaveBeenCalled()
+    expect(applyAiLanguageDirective).toHaveBeenCalled()
+  })
+
+  it('refuses --workflows-only when codeType resolves to codex', async () => {
+    const { resolveCodeType } = await import('../../src/utils/code-type-resolver')
+    const { runCodexFullInit } = await import('../../src/utils/code-tools/codex')
+    vi.mocked(resolveCodeType).mockResolvedValueOnce('codex')
+
+    // init() catches the thrown error and routes it through handleGeneralError,
+    // which calls process.exit(1). Stub it so the assertion can still run.
+    const exitSpy = vi.spyOn(process, 'exit').mockImplementation(() => undefined as never)
+
+    const options: InitOptions = {
+      skipPrompt: true,
+      workflowsOnly: true,
+    }
+
+    // The codex branch performs its own full init via runCodexFullInit and
+    // would silently overwrite user prefs; --workflows-only must surface
+    // a clear error rather than no-op.
+    await init(options)
+
+    expect(runCodexFullInit).not.toHaveBeenCalled()
+    expect(exitSpy).toHaveBeenCalledWith(1)
+
+    exitSpy.mockRestore()
+  })
+
+  it('treats --workflows-only false (string) as disabled and runs the full flow', async () => {
+    const { getInstallationStatus } = await import('../../src/utils/installer')
+    const { applyAiLanguageDirective } = await import('../../src/utils/config')
+
+    const options: InitOptions = {
+      skipPrompt: true,
+      apiType: 'skip',
+      workflowsOnly: 'false', // CLI delivers --workflows-only <value> as a string
     }
 
     await init(options)

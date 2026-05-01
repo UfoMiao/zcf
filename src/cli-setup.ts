@@ -261,7 +261,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .option('--install-cometix-line, -x <value>', `Install CCometixLine statusline tool (true/false), ${i18n.t('cli:help.defaults.prefix')} true`)
-    .option('--workflows-only <value>', `Install workflow files only; skip Claude Code install/update, API/MCP/output-style/CCometixLine setup and the AI language directive (true/false), ${i18n.t('cli:help.defaults.prefix')} false`)
+    .option('--workflows-only <value>', `${i18n.t('cli:help.optionDescriptions.workflowsOnly')} (true/false), ${i18n.t('cli:help.defaults.prefix')} false`)
     .option('--api-configs <configs>', 'API configurations as JSON string for multiple profiles')
     .option('--api-configs-file <file>', 'Path to JSON file containing API configurations')
     .action(await withLanguageResolution(async (options) => {
