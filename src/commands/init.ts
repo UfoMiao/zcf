@@ -75,12 +75,34 @@ export interface InitOptions {
   defaultOutputStyle?: string
   allLang?: string // New: unified language parameter
   installCometixLine?: string | boolean // New: CCometixLine installation control
+  // Workflow-only mode: install workflow files only; skip Claude Code install,
+  // API/MCP/output-style/CCometixLine setup, and AI language directive write.
+  workflowsOnly?: string | boolean
   // Multi-configuration parameters
   apiConfigs?: string // JSON string for multiple API configurations
   apiConfigsFile?: string // Path to JSON file with API configurations
 }
 
 export async function validateSkipPromptOptions(options: InitOptions): Promise<void> {
+  // Normalise workflowsOnly first so the rest of the defaults respect it.
+  // When set, the user is asking for "workflow files only" — so any side-effect
+  // -producing option that the user did not explicitly pass should default off.
+  if (typeof options.workflowsOnly === 'string') {
+    options.workflowsOnly = options.workflowsOnly.toLowerCase() === 'true'
+  }
+  if (options.workflowsOnly === true) {
+    if (!options.apiType)
+      options.apiType = 'skip'
+    if (options.mcpServices === undefined)
+      options.mcpServices = false
+    if (options.outputStyles === undefined)
+      options.outputStyles = false
+    if (options.installCometixLine === undefined)
+      options.installCometixLine = false
+    if (!options.configAction)
+      options.configAction = 'docs-only'
+  }
+
   // Apply --all-lang logic first
   if (options.allLang) {
     if (options.allLang === 'zh-CN' || options.allLang === 'en') {
@@ -267,6 +289,15 @@ export async function validateSkipPromptOptions(options: InitOptions): Promise<v
 }
 
 export async function init(options: InitOptions = {}): Promise<void> {
+  // Normalise workflowsOnly first so every downstream branch (including non
+  // skipPrompt callers and programmatic invocations) sees a real boolean.
+  // CLI parsing delivers --workflows-only <value> as a string, so the literal
+  // 'false' would otherwise read as truthy in the if (options.workflowsOnly)
+  // guards below.
+  if (typeof options.workflowsOnly === 'string') {
+    options.workflowsOnly = options.workflowsOnly.toLowerCase() === 'true'
+  }
+
   // Validate options if in skip-prompt mode (outside try-catch to allow errors to propagate in tests)
   if (options.skipPrompt) {
     await validateSkipPromptOptions(options)
@@ -424,6 +455,14 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     if (codeToolType === 'codex') {
+      // workflowsOnly currently only supports the claude-code path. The codex
+      // branch performs its own full init via runCodexFullInit and would
+      // silently overwrite user prefs, so refuse the combination explicitly
+      // rather than no-op the flag.
+      if (options.workflowsOnly) {
+        throw new Error(i18n.t('errors:workflowsOnlyUnsupportedForCodex'))
+      }
+
       if (options.skipPrompt)
         process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP = 'true'
 
@@ -491,7 +530,11 @@ export async function init(options: InitOptions = {}): Promise<void> {
     const aiOutputLang = await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig, options.skipPrompt)
 
     // Step 4: Check and handle Claude Code installation
-    const installationStatus = await getInstallationStatus()
+    // workflowsOnly skips this entirely — workflows write to ~/.claude/commands/zcf
+    // and ~/.claude/agents/zcf, neither of which depend on a Claude Code install.
+    const installationStatus = options.workflowsOnly
+      ? { hasGlobal: false, hasLocal: false, localPath: '' }
+      : await getInstallationStatus()
 
     // Handle installations (including none, single, or multiple)
     if (installationStatus.hasGlobal || installationStatus.hasLocal) {
@@ -537,6 +580,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
         }
       }
     }
+    else if (options.workflowsOnly) {
+      // workflowsOnly: do not install Claude Code; workflow files do not require it.
+    }
     else {
       // No installation found - install Claude Code
       if (options.skipPrompt) {
@@ -560,7 +606,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 4.5: Check for Claude Code updates (if any installation exists)
-    if (installationStatus.hasGlobal || installationStatus.hasLocal) {
+    // Skip in workflowsOnly mode — we don't want to silently update Claude Code
+    // when the user only asked to install workflow files.
+    if (!options.workflowsOnly && (installationStatus.hasGlobal || installationStatus.hasLocal)) {
       // Skip version check if Claude Code was just installed (it's already latest)
       await checkClaudeCodeVersionAndPrompt(options.skipPrompt)
     }
@@ -764,7 +812,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 7: Execute the chosen action
-    if (['backup', 'docs-only', 'merge'].includes(action)) {
+    // Skip backup in workflowsOnly mode — workflows write only to ~/.claude/commands/zcf
+    // and ~/.claude/agents/zcf, so backing up the entire CLAUDE_DIR is wasted I/O.
+    if (!options.workflowsOnly && ['backup', 'docs-only', 'merge'].includes(action)) {
       const backupDir = backupExistingConfig()
       if (backupDir) {
         console.log(ansis.gray(`✔ ${i18n.t('configuration:backupSuccess')}: ${backupDir}`))
@@ -772,8 +822,13 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     if (action === 'docs-only') {
-      // Only copy base config files without agents/commands
-      copyConfigFiles(true)
+      // Skip base config copy in workflowsOnly mode — only the workflow files
+      // should land. copyConfigFiles writes settings/CLAUDE.md scaffolding which
+      // is outside the "install workflow files only" intent.
+      if (!options.workflowsOnly) {
+        // Only copy base config files without agents/commands
+        copyConfigFiles(true)
+      }
       // Select and install workflows
       if (options.skipPrompt) {
         // Use provided workflows or default to all workflows, skip if false
@@ -801,19 +856,26 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 8: Apply language directive to CLAUDE.md
-    applyAiLanguageDirective(aiOutputLang as AiOutputLanguage | string)
+    // Skip in workflowsOnly mode — modifying ~/.claude/CLAUDE.md is a global side
+    // effect outside the "install workflow files" intent.
+    if (!options.workflowsOnly)
+      applyAiLanguageDirective(aiOutputLang as AiOutputLanguage | string)
     // Step 8.5: Configure Output Styles
-    if (options.skipPrompt) {
-      // Use provided output styles and default
-      if (options.outputStyles !== false) {
-        await configureOutputStyle(
-          options.outputStyles as string[],
-          options.defaultOutputStyle,
-        )
+    // Skip in workflowsOnly mode — output styles live in ~/.claude/output-styles
+    // and are a separate concern from workflow files.
+    if (!options.workflowsOnly) {
+      if (options.skipPrompt) {
+        // Use provided output styles and default
+        if (options.outputStyles !== false) {
+          await configureOutputStyle(
+            options.outputStyles as string[],
+            options.defaultOutputStyle,
+          )
+        }
       }
-    }
-    else {
-      await configureOutputStyle()
+      else {
+        await configureOutputStyle()
+      }
     }
 
     // Step 9: Apply API configuration (skip if only updating docs)
@@ -966,42 +1028,52 @@ export async function init(options: InitOptions = {}): Promise<void> {
     }
 
     // Step 11: CCometixLine installation
-    const cometixInstalled = await isCometixLineInstalled()
-    if (!cometixInstalled) {
-      let shouldInstallCometix = false
+    // Skip entirely in workflowsOnly mode — installing a statusline tool is a
+    // separate side effect from "install workflow files".
+    if (!options.workflowsOnly) {
+      const cometixInstalled = await isCometixLineInstalled()
+      if (!cometixInstalled) {
+        let shouldInstallCometix = false
 
-      if (options.skipPrompt) {
-        // Use installCometixLine option or default to true
-        shouldInstallCometix = options.installCometixLine !== false
+        if (options.skipPrompt) {
+          // Use installCometixLine option or default to true
+          shouldInstallCometix = options.installCometixLine !== false
+        }
+        else {
+          const userChoice = await promptBoolean({
+            message: i18n.t('cometix:installCometixPrompt'),
+            defaultValue: true,
+          })
+
+          shouldInstallCometix = userChoice
+        }
+
+        if (shouldInstallCometix) {
+          await installCometixLine()
+        }
+        else {
+          console.log(ansis.yellow(i18n.t('cometix:cometixSkipped')))
+        }
       }
       else {
-        const userChoice = await promptBoolean({
-          message: i18n.t('cometix:installCometixPrompt'),
-          defaultValue: true,
-        })
-
-        shouldInstallCometix = userChoice
+        console.log(ansis.green(`✔ ${i18n.t('cometix:cometixAlreadyInstalled')}`))
       }
-
-      if (shouldInstallCometix) {
-        await installCometixLine()
-      }
-      else {
-        console.log(ansis.yellow(i18n.t('cometix:cometixSkipped')))
-      }
-    }
-    else {
-      console.log(ansis.green(`✔ ${i18n.t('cometix:cometixAlreadyInstalled')}`))
     }
 
     // Step 12: Save zcf config
-    updateZcfConfig({
-      version,
-      preferredLang: i18n.language as SupportedLang, // ZCF界面语言
-      templateLang: configLang, // 模板语言
-      aiOutputLang: aiOutputLang as AiOutputLanguage | string,
-      codeToolType,
-    })
+    if (options.workflowsOnly) {
+      // Only persist version; preserve the user's existing language/style prefs.
+      updateZcfConfig({ version })
+    }
+    else {
+      updateZcfConfig({
+        version,
+        preferredLang: i18n.language as SupportedLang, // ZCF UI language
+        templateLang: configLang, // Template language
+        aiOutputLang: aiOutputLang as AiOutputLanguage | string,
+        codeToolType,
+      })
+    }
 
     // Step 13: Success message
     console.log(ansis.green(`✔ ${i18n.t('configuration:configSuccess')} ${CLAUDE_DIR}`))

@@ -21,6 +21,7 @@
   "invalidPermissionsAllow": "无效的 permissions.allow：期望数组类型",
   "invalidCodeType": "无效的代码类型：\"{value}\"。可用的类型：{validOptions}。使用默认值：{defaultValue}。",
   "invalidProvider": "无效的提供商：{provider}。可用的提供商：{validProviders}",
+  "workflowsOnlyUnsupportedForCodex": "--workflows-only 暂不支持 codex（codeType=codex）。codex 初始化流程尚未实现 workflows-only 路径。请去掉 --workflows-only 重新执行，或使用 --code-type claude-code。",
   "generalError": "错误",
   "stackTrace": "堆栈跟踪"
 }

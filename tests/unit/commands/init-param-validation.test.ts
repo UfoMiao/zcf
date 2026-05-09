@@ -304,4 +304,65 @@ describe('validateSkipPromptOptions', () => {
       expect(() => validateSkipPromptOptions(options)).not.toThrow()
     })
   })
+
+  describe('workflowsOnly parameter', () => {
+    it('should coerce string "true" to boolean true', async () => {
+      options.workflowsOnly = 'true'
+
+      await validateSkipPromptOptions(options)
+
+      expect(options.workflowsOnly).toBe(true)
+    })
+
+    it('should coerce string "false" to boolean false (case-insensitive)', async () => {
+      options.workflowsOnly = 'FALSE'
+
+      await validateSkipPromptOptions(options)
+
+      expect(options.workflowsOnly).toBe(false)
+    })
+
+    it('should force side-effect-producing options to skip when workflowsOnly is true', async () => {
+      options.workflowsOnly = true
+
+      await validateSkipPromptOptions(options)
+
+      // apiType -> 'skip' so API setup is bypassed
+      expect(options.apiType).toBe('skip')
+      // configAction -> 'docs-only' so settings.json is not merged
+      expect(options.configAction).toBe('docs-only')
+      // mcpServices/outputStyles/installCometixLine collapse to false (= "skip")
+      expect(options.mcpServices).toBe(false)
+      expect(options.outputStyles).toBe(false)
+      expect(options.installCometixLine).toBe(false)
+      // workflows still defaults to "all" so something actually gets installed
+      expect(options.workflows).toEqual(['workflow-a', 'workflow-b'])
+    })
+
+    it('should respect explicit user overrides when workflowsOnly is true', async () => {
+      options.workflowsOnly = true
+      options.apiType = 'auth_token'
+      options.apiKey = 'sk-test'
+      options.installCometixLine = 'true'
+      options.workflows = ['workflow-a']
+
+      await validateSkipPromptOptions(options)
+
+      // Explicit values win over the workflowsOnly defaults
+      expect(options.apiType).toBe('auth_token')
+      expect(options.installCometixLine).toBe(true)
+      expect(options.workflows).toEqual(['workflow-a'])
+    })
+
+    it('should not change behaviour when workflowsOnly is false', async () => {
+      options.workflowsOnly = false
+
+      await validateSkipPromptOptions(options)
+
+      // Falls through to the normal defaults (apiType not auto-set, services default to all)
+      expect(options.apiType).toBeUndefined()
+      expect(options.installCometixLine).toBe(true)
+      expect(options.configAction).toBe('backup')
+    })
+  })
 })
