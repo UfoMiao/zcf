@@ -33,7 +33,7 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
-[![Sponsor PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
+[![Sponsor PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai-en.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
 PatewayAI is a high-quality model API relay service provider focused on official direct connections for serious AI developers, offering the full range of Claude and Codex series models. 100% official source supply with no adulteration — open to inspection. Transparent billing with token-level invoices auditable line by line. Enterprise-grade concurrency support with a dedicated management platform for enterprise customers, including formal contracts and invoicing. PatewayAI offers an exclusive benefit for ZCF users: register via <a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">this link</a> to get $3 free trial credit, recharges as low as 60% off, with bilateral invite rewards up to $150!
 
 ---

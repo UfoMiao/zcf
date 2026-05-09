@@ -33,7 +33,7 @@ GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
-[![スポンサー PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
+[![スポンサー PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai-en.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
 PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化した高品質モデル API 中継サービスプロバイダーで、Claude 全系列と Codex 系列モデルを提供します。100% 公式ソース直供給で、不純物なし、検証可能。課金は透明で、トークンレベルの請求書を 1 件ずつ照合できます。エンタープライズレベルの高並行性に対応し、企業顧客向けに専用管理プラットフォームを提供、正式契約締結と請求書発行も可能です。PatewayAI は ZCF ユーザー専用特典を提供：<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">このリンク</a>から登録すると $3 のトライアルクレジットを即時プレゼント、チャージは最大 60% オフ、招待は双方向ボーナスで報酬は最大 $150！
 
 ---
