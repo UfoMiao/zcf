@@ -7,7 +7,6 @@ import {
   getCurrentCodexProvider,
   listCodexProviders,
   readCodexConfig,
-  switchCodexProvider,
   switchToOfficialLogin,
   switchToProvider,
 } from '../../../src/utils/code-tools/codex'
@@ -75,7 +74,6 @@ vi.mock('../../../src/utils/zcf-config', () => ({
 }))
 
 const mockInquirer = vi.mocked(inquirer)
-const mockSwitchCodexProvider = vi.mocked(switchCodexProvider)
 const mockListCodexProviders = vi.mocked(listCodexProviders)
 const mockGetCurrentCodexProvider = vi.mocked(getCurrentCodexProvider)
 const mockReadCodexConfig = vi.mocked(readCodexConfig)
@@ -166,21 +164,19 @@ describe('config-switch command', () => {
 
   describe('with provider argument', () => {
     it('should switch to specified provider directly', async () => {
-      mockSwitchCodexProvider.mockResolvedValue(true)
+      mockSwitchToProvider.mockResolvedValue(true)
 
       await configSwitchCommand({ target: 'claude-api' })
 
-      expect(mockSwitchCodexProvider).toHaveBeenCalledWith('claude-api')
-      // switchCodexProvider handles its own success/failure messages
+      expect(mockSwitchToProvider).toHaveBeenCalledWith('claude-api')
     })
 
     it('should handle switching to non-existent provider', async () => {
-      mockSwitchCodexProvider.mockResolvedValue(false)
+      mockSwitchToProvider.mockResolvedValue(false)
 
       await configSwitchCommand({ target: 'non-existent' })
 
-      expect(mockSwitchCodexProvider).toHaveBeenCalledWith('non-existent')
-      // switchCodexProvider handles its own success/failure messages
+      expect(mockSwitchToProvider).toHaveBeenCalledWith('non-existent')
     })
   })
 
@@ -278,7 +274,7 @@ describe('config-switch command', () => {
 
     it('should handle errors when switching providers', async () => {
       const error = new Error('Failed to write config')
-      mockSwitchCodexProvider.mockRejectedValue(error)
+      mockSwitchToProvider.mockRejectedValue(error)
 
       await expect(configSwitchCommand({ target: 'claude-api' })).rejects.toThrow('Failed to write config')
     })

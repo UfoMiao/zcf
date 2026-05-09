@@ -83,6 +83,9 @@ vi.mock('../../../../src/utils/fs-operations', () => ({
   copyDir: vi.fn(),
   copyFile: vi.fn(),
   exists: vi.fn(),
+  readDir: vi.fn(),
+  isDirectory: vi.fn(),
+  isFile: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
 }))
@@ -1979,6 +1982,100 @@ model_provider = ""
             OPENAI_API_KEY: 'test-key',
           }),
           { pretty: true },
+        )
+      })
+
+      it('should sync session metadata to the active provider when switching', async () => {
+        const fsOps = await import('../../../../src/utils/fs-operations')
+        const sessionRoot = '/home/test/.codex/sessions'
+        const archivedRoot = '/home/test/.codex/archived_sessions'
+        const sessionYearDir = `${sessionRoot}/2026`
+        const sessionMonthDir = `${sessionYearDir}/04`
+        const sessionDayDir = `${sessionMonthDir}/14`
+        const sessionFile = `${sessionDayDir}/rollout-1.jsonl`
+
+        vi.mocked(fsOps.exists).mockImplementation((path: string) => [
+          '/home/test/.codex/config.toml',
+          '/home/test/.codex',
+          sessionRoot,
+          archivedRoot,
+          sessionYearDir,
+          sessionMonthDir,
+          sessionDayDir,
+          sessionFile,
+        ].includes(path))
+
+        vi.mocked(fsOps.readDir).mockImplementation((path: string) => {
+          if (path === sessionRoot)
+            return ['2026']
+          if (path === sessionYearDir)
+            return ['04']
+          if (path === sessionMonthDir)
+            return ['14']
+          if (path === sessionDayDir)
+            return ['rollout-1.jsonl']
+          if (path === archivedRoot)
+            return []
+          return []
+        })
+
+        vi.mocked(fsOps.isDirectory).mockImplementation((path: string) => [
+          sessionRoot,
+          archivedRoot,
+          sessionYearDir,
+          sessionMonthDir,
+          sessionDayDir,
+        ].includes(path))
+
+        vi.mocked(fsOps.isFile).mockImplementation((path: string) => path === sessionFile)
+
+        vi.mocked(fsOps.readFile).mockImplementation((path: string) => {
+          if (path === sessionFile) {
+            return '{"timestamp":"2026-04-14T08:00:00.000Z","type":"session_meta","payload":{"id":"thread-1","model_provider":"old-provider"}}\n{"timestamp":"2026-04-14T08:00:01.000Z","type":"response_item","payload":{"type":"message"}}\n'
+          }
+
+          return `
+          model_provider = "old-provider"
+          [model_providers.test-provider]
+          name = "Test Provider"
+          base_url = "https://test.com"
+          wire_api = "responses"
+          temp_env_key = "TEST_KEY"
+          requires_openai_auth = true
+        `
+        })
+
+        vi.mocked(fsOps.copyDir).mockImplementation(() => {})
+        vi.mocked(fsOps.writeFile).mockImplementation(() => {})
+
+        const jsonConfig = await import('../../../../src/utils/json-config')
+        vi.mocked(jsonConfig.readJsonConfig).mockReturnValue({
+          TEST_KEY: 'test-key',
+        })
+
+        const codexModule = await import('../../../../src/utils/code-tools/codex')
+        vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+          model: null,
+          modelProvider: 'old-provider',
+          providers: [{
+            id: 'test-provider',
+            name: 'Test Provider',
+            baseUrl: 'https://test.com',
+            wireApi: 'responses',
+            tempEnvKey: 'TEST_KEY',
+            requiresOpenaiAuth: true,
+          }],
+          mcpServices: [],
+          managed: true,
+          otherConfig: [],
+        })
+
+        const result = await codexModule.switchToProvider('test-provider')
+
+        expect(result).toBe(true)
+        expect(fsOps.writeFile).toHaveBeenCalledWith(
+          sessionFile,
+          expect.stringContaining('"model_provider":"test-provider"'),
         )
       })
     })

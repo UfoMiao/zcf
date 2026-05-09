@@ -466,10 +466,11 @@ describe('config-switch command - Codex Support', () => {
     expect(mockConsoleLog).toHaveBeenCalledWith('codex:noProvidersAvailable')
   })
 
-  it('should switch Codex provider directly when target specified', async () => {
+  it('should use full provider switch flow when switching Codex provider directly', async () => {
     await configSwitchCommand({ target: 'provider-2', codeType: 'codex' })
 
-    expect(mockSwitchCodexProvider).toHaveBeenCalledWith('provider-2')
+    expect(mockSwitchToProvider).toHaveBeenCalledWith('provider-2')
+    expect(mockSwitchCodexProvider).not.toHaveBeenCalled()
   })
 
   it('should switch to official Codex login via interactive flow', async () => {
