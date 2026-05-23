@@ -38,20 +38,6 @@ export interface ApiProviderPreset {
  */
 export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
   {
-    id: '302ai',
-    name: '302.AI',
-    supportedCodeTools: ['claude-code', 'codex'],
-    claudeCode: {
-      baseUrl: 'https://api.302.ai/cc',
-      authType: 'api_key',
-    },
-    codex: {
-      baseUrl: 'https://api.302.ai/v1',
-      wireApi: 'responses',
-    },
-    description: '302.AI API Service',
-  },
-  {
     id: 'packycode',
     name: 'PackyCode',
     supportedCodeTools: ['claude-code', 'codex'],
@@ -64,6 +50,48 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
       wireApi: 'responses',
     },
     description: 'PackyCode API Service',
+  },
+  {
+    id: 'pateway',
+    name: 'PatewayAI',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.pateway.ai',
+      authType: 'api_key',
+    },
+    codex: {
+      baseUrl: 'https://api.pateway.ai/v1',
+      wireApi: 'responses',
+    },
+    description: 'PatewayAI official direct-connect relay service',
+  },
+  {
+    id: 'apikey-fun',
+    name: 'APIKEY.FUN',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.apikey.fun',
+      authType: 'auth_token',
+    },
+    codex: {
+      baseUrl: 'https://api.apikey.fun/v1',
+      wireApi: 'responses',
+    },
+    description: 'APIKEY.FUN enterprise AI relay service',
+  },
+  {
+    id: '302ai',
+    name: '302.AI',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.302.ai/cc',
+      authType: 'api_key',
+    },
+    codex: {
+      baseUrl: 'https://api.302.ai/v1',
+      wireApi: 'responses',
+    },
+    description: '302.AI API Service',
   },
   {
     id: 'aicodemirror',
@@ -170,20 +198,7 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     },
     description: 'DeepSeek official API (Anthropic-compatible endpoint)',
   },
-  {
-    id: 'pateway',
-    name: 'PatewayAI',
-    supportedCodeTools: ['claude-code', 'codex'],
-    claudeCode: {
-      baseUrl: 'https://api.pateway.ai',
-      authType: 'api_key',
-    },
-    codex: {
-      baseUrl: 'https://api.pateway.ai/v1',
-      wireApi: 'responses',
-    },
-    description: 'PatewayAI official direct-connect relay service',
-  },
+
 ]
 
 /**

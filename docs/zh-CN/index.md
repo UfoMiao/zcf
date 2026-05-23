@@ -51,6 +51,10 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 <td>感谢 PackyCode 赞助了本项目！PackyCode 是一家稳定、高效的API中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务。PackyCode 为本软件的用户提供了特别优惠，使用<a href="https://www.packyapi.com/register?aff=zcf">此链接</a>注册并在充值时填写"zcf"优惠码，可以享受9折优惠。</td>
 </tr>
 <tr>
+<td width="180"><a href="https://apikey.fun/register?aff=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
+<td>感谢 APIKEY.FUN 赞助本项目！APIKEY.FUN 是一家专业的企业级 AI 中转站，致力于为企业和个人开发者提供稳定、高效、低成本的 AI 模型 API 接入服务。平台支持 Claude、OpenAI、Gemini 等主流热门模型，价格低至官方原价的 7%。通过<a href="https://apikey.fun/register?aff=ZCFZCF">本项目专属链接</a>注册，可享受最高充值永久 95 折专属优惠。</td>
+</tr>
+<tr>
 <td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
 <td>感谢 AICodeMirror 赞助了本项目！AICodeMirror 提供 Claude Code/Codex/Gemini CLI 官方高稳定中转服务，支持企业级高并发、极速开票、7x24专属技术支持。Claude Code/Codex/Gemini 官方渠道低至 3.8/0.2/10.9 折，充值更有折上折！AICodeMirror 为 ZCF 的用户提供了特别福利，通过<a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">此链接</a>注册的用户，可享受首充8折，企业客户最高可享 7.5折！</td>
 </tr>
