@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.6.6
+
+### Patch Changes
+
+- ## New Features
+  - Add APIKEY.FUN as a sponsor/provider option and update provider presets for improved sponsor visibility.
+  - Replace and add sponsor brand assets to support the refreshed sponsor presentation across channels.
+
+  ## 新功能
+  - 新增 APIKEY.FUN 赞助商/提供商入口，并更新预设配置以提升赞助展示一致性。
+  - 替换并新增赞助品牌素材，支持多渠道统一展示新版赞助内容。
+
+  ## Documentation
+  - Update README and localized docs (EN/JA/ZH-CN) to reflect the latest sponsorship layout and assets.
+
+  ## 文档
+  - 更新 README 与多语言文档（EN/JA/ZH-CN），同步最新赞助展示布局与素材引用。
+
 ## 3.6.5
 
 ### Patch Changes
