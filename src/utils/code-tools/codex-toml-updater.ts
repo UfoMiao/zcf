@@ -277,7 +277,7 @@ function escapeRegex(str: string): string {
 function createMcpSectionRegex(serviceId: string): RegExp {
   const escapedServiceId = escapeRegex(serviceId)
   return new RegExp(
-    `\\n?\\[mcp_servers\\.${escapedServiceId}(?:\\.[^\\]]+)?\\][\\s\\S]*?(?=\\n\\[(?!mcp_servers\\.${escapedServiceId}(?:\\.|\\]))|$)`,
+    `(?:^|\\n)[ \\t]*\\[mcp_servers\\.${escapedServiceId}(?:\\.[^\\]]+)?\\][\\s\\S]*?(?=(?:\\n[ \\t]*\\[(?!mcp_servers\\.${escapedServiceId}(?:\\.|\\]))|$))`,
     'g',
   )
 }

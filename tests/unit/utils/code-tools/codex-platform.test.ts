@@ -210,4 +210,39 @@ retries = 3
     expect(lastConfigContent).toContain('url = "https://example.com/sse"')
     expect(lastConfigContent).toContain('retries = 3')
   })
+
+  it('should stop at indented non-MCP section headers when replacing MCP sections', async () => {
+    mockSelectMcpServices.mockResolvedValue(['SERVICE'])
+    mockGetMcpServices.mockResolvedValue([
+      { id: 'SERVICE', name: 'Service', description: 'desc' },
+    ])
+
+    const { readFile } = await import('../../../../src/utils/fs-operations')
+    vi.mocked(readFile).mockReturnValue(`
+  [mcp_servers.service]
+  command = "old-command"
+  args = []
+
+  [custom_section]
+  key = "must-stay"
+`)
+
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+      providers: [],
+      mcpServices: [],
+      managed: false,
+    } as any)
+    vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
+
+    await configureCodexMcp()
+
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+
+    expect(lastConfigContent).toContain('[mcp_servers.service]')
+    expect(lastConfigContent).toContain('[custom_section]')
+    expect(lastConfigContent).toContain('key = "must-stay"')
+  })
 })
