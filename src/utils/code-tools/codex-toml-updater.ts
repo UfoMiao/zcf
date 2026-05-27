@@ -9,11 +9,12 @@
  * - MCP modifications should NOT affect API configurations
  */
 
-import type { CodexMcpService, CodexProvider } from './codex'
+import type { CodexConfigData, CodexMcpService, CodexProvider } from './codex'
 import { CODEX_CONFIG_FILE, CODEX_DIR } from '../../constants'
 import { ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { normalizeTomlPath } from '../platform'
 import { editToml, parseToml } from '../toml-edit'
+import { parseCodexConfig } from './codex'
 
 /**
  * Update top-level TOML fields using regex-based replacement
@@ -287,7 +288,10 @@ function upsertMcpSection(
   service: CodexMcpService,
   options: { preserveCommandAndArgs?: boolean } = {},
 ): string {
-  const section = renderMcpSection(serviceId, service, options)
+  const existingConfig = content ? parseCodexConfig(content) : null
+  const existingService = existingConfig?.mcpServices.find(candidate => candidate.id === serviceId)
+  const mergedService = mergeMcpService(serviceId, existingService, service, options)
+  const section = renderMcpSection(serviceId, mergedService, options)
   const sectionRegex = createMcpSectionRegex(serviceId)
 
   if (sectionRegex.test(content)) {
@@ -299,6 +303,39 @@ function upsertMcpSection(
   return `${content.trimEnd()}${separator}${section}\n`
 }
 
+function mergeMcpService(
+  serviceId: string,
+  existingService: CodexMcpService | undefined,
+  nextService: CodexMcpService,
+  options: { preserveCommandAndArgs?: boolean } = {},
+): CodexMcpService {
+  const mergedExtraFields = {
+    ...(existingService?.extraFields || {}),
+    ...(nextService.extraFields || {}),
+  }
+
+  if (options.preserveCommandAndArgs && existingService?.command) {
+    return {
+      ...nextService,
+      id: serviceId,
+      command: existingService.command,
+      args: existingService.args || [],
+      env: nextService.env ?? existingService.env,
+      startup_timeout_sec: nextService.startup_timeout_sec ?? existingService.startup_timeout_sec,
+      extraFields: Object.keys(mergedExtraFields).length > 0 ? mergedExtraFields : undefined,
+    }
+  }
+
+  return {
+    ...existingService,
+    ...nextService,
+    id: serviceId,
+    env: nextService.env ?? existingService?.env,
+    startup_timeout_sec: nextService.startup_timeout_sec ?? existingService?.startup_timeout_sec,
+    extraFields: Object.keys(mergedExtraFields).length > 0 ? mergedExtraFields : undefined,
+  }
+}
+
 function renderMcpSection(
   serviceId: string,
   service: CodexMcpService,
@@ -307,7 +344,7 @@ function renderMcpSection(
   const lines = [`[mcp_servers.${serviceId}]`]
 
   if (!options.preserveCommandAndArgs) {
-    const normalizedCommand = normalizeTomlPath(service.command)
+    const normalizedCommand = normalizeTomlStringValue(service.command)
     lines.push(`command = "${escapeTomlString(normalizedCommand)}"`)
     lines.push(`args = ${formatTomlArray(service.args || [])}`)
   }
@@ -320,7 +357,40 @@ function renderMcpSection(
     lines.push(`startup_timeout_sec = ${service.startup_timeout_sec}`)
   }
 
+  if (service.extraFields) {
+    for (const [key, value] of Object.entries(service.extraFields)) {
+      const formatted = formatTomlField(key, value)
+      if (formatted) {
+        lines.push(formatted)
+      }
+    }
+  }
+
   return lines.join('\n')
+}
+
+function formatTomlField(key: string, value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  if (typeof value === 'string') {
+    return `${key} = "${escapeTomlString(normalizeTomlStringValue(value))}"`
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return `${key} = ${value}`
+  }
+
+  if (Array.isArray(value)) {
+    return `${key} = ${formatTomlArray(value)}`
+  }
+
+  if (typeof value === 'object') {
+    return `${key} = ${formatInlineTable(value as Record<string, unknown>)}`
+  }
+
+  return ''
 }
 
 function formatInlineTable(obj: Record<string, unknown>): string {
@@ -333,7 +403,7 @@ function formatInlineTable(obj: Record<string, unknown>): string {
 
 function formatInlineTableValue(value: unknown): string {
   if (typeof value === 'string') {
-    return `'${normalizeTomlPath(value).replace(/'/g, "''")}'`
+    return `'${normalizeTomlStringValue(value).replace(/'/g, "''")}'`
   }
 
   if (typeof value === 'number' || typeof value === 'boolean') {
@@ -354,7 +424,7 @@ function formatInlineTableValue(value: unknown): string {
 function formatTomlArray(values: unknown[]): string {
   const items = values.map((value) => {
     if (typeof value === 'string') {
-      return `"${escapeTomlString(normalizeTomlPath(value))}"`
+      return `"${escapeTomlString(normalizeTomlStringValue(value))}"`
     }
 
     if (typeof value === 'number' || typeof value === 'boolean') {
@@ -373,4 +443,8 @@ function formatTomlArray(values: unknown[]): string {
 
 function escapeTomlString(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+function normalizeTomlStringValue(value: string): string {
+  return value.includes('\\') ? normalizeTomlPath(value) : value
 }

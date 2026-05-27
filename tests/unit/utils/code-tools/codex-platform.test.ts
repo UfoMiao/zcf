@@ -170,4 +170,44 @@ CODEX_HOME = 'C:/Users/yukaidi/.codex'
     expect(lastConfigContent).not.toContain('[mcp_servers.node_repl]\nenv = {')
     expect(lastConfigContent).toContain('[mcp_servers.service]')
   })
+
+  it('should preserve existing SSE MCP url and extra fields during updates', async () => {
+    mockSelectMcpServices.mockResolvedValue([])
+    mockGetMcpServices.mockResolvedValue([])
+
+    const { readFile } = await import('../../../../src/utils/fs-operations')
+    vi.mocked(readFile).mockReturnValue(`
+[mcp_servers.remote-docs]
+url = "https://example.com/sse"
+startup_timeout_sec = 15
+retries = 3
+`)
+
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+      providers: [],
+      mcpServices: [{
+        id: 'remote-docs',
+        command: 'remote-docs',
+        args: [],
+        startup_timeout_sec: 15,
+        extraFields: {
+          url: 'https://example.com/sse',
+          retries: 3,
+        },
+      }],
+      managed: false,
+    } as any)
+    vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
+
+    await configureCodexMcp()
+
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+
+    expect(lastConfigContent).toContain('[mcp_servers.remote-docs]')
+    expect(lastConfigContent).toContain('url = "https://example.com/sse"')
+    expect(lastConfigContent).toContain('retries = 3')
+  })
 })
