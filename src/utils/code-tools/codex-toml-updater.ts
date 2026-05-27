@@ -203,25 +203,10 @@ export function upsertCodexMcpService(serviceId: string, service: CodexMcpServic
 
   if (existingService?.url && !existingService?.command) {
     // This is an SSE-type service, only update non-conflicting fields
-    if (service.env && Object.keys(service.env).length > 0) {
-      content = editToml(content, `${basePath}.env`, service.env)
-    }
-    if (service.startup_timeout_sec) {
-      content = editToml(content, `${basePath}.startup_timeout_sec`, service.startup_timeout_sec)
-    }
+    content = upsertMcpSection(content, serviceId, service, { preserveCommandAndArgs: true })
   }
   else {
-    // This is a stdio-type service or new service, update all fields
-    const normalizedCommand = normalizeTomlPath(service.command)
-    content = editToml(content, `${basePath}.command`, normalizedCommand)
-    content = editToml(content, `${basePath}.args`, service.args || [])
-
-    if (service.env && Object.keys(service.env).length > 0) {
-      content = editToml(content, `${basePath}.env`, service.env)
-    }
-    if (service.startup_timeout_sec) {
-      content = editToml(content, `${basePath}.startup_timeout_sec`, service.startup_timeout_sec)
-    }
+    content = upsertMcpSection(content, serviceId, service)
   }
 
   writeFile(CODEX_CONFIG_FILE, content)
@@ -242,10 +227,7 @@ export function deleteCodexMcpService(serviceId: string): void {
   const content = readFile(CODEX_CONFIG_FILE) || ''
 
   // Use regex to remove the entire section
-  const sectionRegex = new RegExp(
-    `\\n?\\[mcp_servers\\.${escapeRegex(serviceId)}\\][\\s\\S]*?(?=\\n\\[|$)`,
-    'g',
-  )
+  const sectionRegex = createMcpSectionRegex(serviceId)
 
   const updatedContent = content.replace(sectionRegex, '')
   writeFile(CODEX_CONFIG_FILE, updatedContent)
@@ -289,4 +271,106 @@ export function batchUpdateCodexMcpServices(
  */
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function createMcpSectionRegex(serviceId: string): RegExp {
+  const escapedServiceId = escapeRegex(serviceId)
+  return new RegExp(
+    `\\n?\\[mcp_servers\\.${escapedServiceId}(?:\\.[^\\]]+)?\\][\\s\\S]*?(?=\\n\\[(?!mcp_servers\\.${escapedServiceId}(?:\\.|\\]))|$)`,
+    'g',
+  )
+}
+
+function upsertMcpSection(
+  content: string,
+  serviceId: string,
+  service: CodexMcpService,
+  options: { preserveCommandAndArgs?: boolean } = {},
+): string {
+  const section = renderMcpSection(serviceId, service, options)
+  const sectionRegex = createMcpSectionRegex(serviceId)
+
+  if (sectionRegex.test(content)) {
+    const normalized = content.replace(sectionRegex, `\n${section.trimEnd()}\n`)
+    return normalized.replace(/^\n/, '')
+  }
+
+  const separator = content.trimEnd().length > 0 ? '\n\n' : ''
+  return `${content.trimEnd()}${separator}${section}\n`
+}
+
+function renderMcpSection(
+  serviceId: string,
+  service: CodexMcpService,
+  options: { preserveCommandAndArgs?: boolean } = {},
+): string {
+  const lines = [`[mcp_servers.${serviceId}]`]
+
+  if (!options.preserveCommandAndArgs) {
+    const normalizedCommand = normalizeTomlPath(service.command)
+    lines.push(`command = "${escapeTomlString(normalizedCommand)}"`)
+    lines.push(`args = ${formatTomlArray(service.args || [])}`)
+  }
+
+  if (service.env && Object.keys(service.env).length > 0) {
+    lines.push(`env = ${formatInlineTable(service.env)}`)
+  }
+
+  if (service.startup_timeout_sec) {
+    lines.push(`startup_timeout_sec = ${service.startup_timeout_sec}`)
+  }
+
+  return lines.join('\n')
+}
+
+function formatInlineTable(obj: Record<string, unknown>): string {
+  const entries = Object.entries(obj)
+    .filter(([, value]) => value !== null && value !== undefined)
+    .map(([key, value]) => `${key} = ${formatInlineTableValue(value)}`)
+    .join(', ')
+  return `{${entries}}`
+}
+
+function formatInlineTableValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return `'${normalizeTomlPath(value).replace(/'/g, "''")}'`
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+
+  if (Array.isArray(value)) {
+    return formatTomlArray(value)
+  }
+
+  if (value && typeof value === 'object') {
+    return formatInlineTable(value as Record<string, unknown>)
+  }
+
+  return `''`
+}
+
+function formatTomlArray(values: unknown[]): string {
+  const items = values.map((value) => {
+    if (typeof value === 'string') {
+      return `"${escapeTomlString(normalizeTomlPath(value))}"`
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value)
+    }
+
+    if (value && typeof value === 'object') {
+      return formatInlineTable(value as Record<string, unknown>)
+    }
+
+    return '""'
+  })
+
+  return `[${items.join(', ')}]`
+}
+
+function escapeTomlString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
 }

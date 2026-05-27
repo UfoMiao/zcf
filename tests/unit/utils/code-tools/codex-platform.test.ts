@@ -128,4 +128,46 @@ describe('applyCodexPlatformCommand integration', () => {
     expect(lastConfigContent).toContain('[mcp_servers.serena]')
     expect(lastConfigContent).toContain('command = "cmd"')
   })
+
+  it('should preserve existing node_repl env tables when adding MCP services', async () => {
+    mockSelectMcpServices.mockResolvedValue(['SERVICE'])
+    mockGetMcpServices.mockResolvedValue([
+      { id: 'SERVICE', name: 'Service', description: 'desc' },
+    ])
+
+    const { readFile } = await import('../../../../src/utils/fs-operations')
+    vi.mocked(readFile).mockReturnValue(`model_provider = "jjj"
+model = "gpt-5.2"
+
+[mcp_servers.node_repl]
+args = []
+command = 'C:/Users/yukaidi/AppData/Local/OpenAI/Codex/bin/node_repl.exe'
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = 'C:/Users/yukaidi/AppData/Local/OpenAI/Codex/bin/node.exe'
+CODEX_HOME = 'C:/Users/yukaidi/.codex'
+`)
+
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
+      providers: [],
+      mcpServices: [],
+      managed: false,
+    } as any)
+    vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
+
+    await configureCodexMcp()
+
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+
+    expect(lastConfigContent).toContain('[mcp_servers.node_repl.env]')
+    expect(lastConfigContent).not.toContain('{ NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS')
+    expect(lastConfigContent).not.toContain('[mcp_servers.node_repl]\nenv = {')
+    expect(lastConfigContent).toContain('[mcp_servers.service]')
+  })
 })
