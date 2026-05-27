@@ -1,3 +1,4 @@
+import type { CodexConfigData } from '../../../../src/utils/code-tools/codex'
 import { describe, expect, it, vi } from 'vitest'
 
 const mockSelectMcpServices = vi.fn()
@@ -74,6 +75,19 @@ const codexModule = await import('../../../../src/utils/code-tools/codex')
 const { configureCodexMcp } = codexModule
 const { writeFile } = await import('../../../../src/utils/fs-operations')
 
+function createMockCodexConfig(overrides: Partial<CodexConfigData> = {}): CodexConfigData {
+  return {
+    model: null,
+    modelProvider: null,
+    providers: [],
+    mcpServices: [],
+    managed: false,
+    otherConfig: [],
+    modelProviderCommented: undefined,
+    ...overrides,
+  }
+}
+
 describe('applyCodexPlatformCommand integration', () => {
   it('should rewrite npx commands using platform-specific MCP command', async () => {
     mockSelectMcpServices.mockResolvedValue(['SERVICE'])
@@ -81,11 +95,7 @@ describe('applyCodexPlatformCommand integration', () => {
       { id: 'SERVICE', name: 'Service', description: 'desc' },
     ])
 
-    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-      providers: [],
-      mcpServices: [],
-      managed: false,
-    } as any)
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
 
     await configureCodexMcp()
@@ -108,11 +118,7 @@ describe('applyCodexPlatformCommand integration', () => {
       { id: 'serena', name: 'Serena', description: 'Serena MCP service' },
     ])
 
-    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-      providers: [],
-      mcpServices: [],
-      managed: false,
-    } as any)
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
 
     await configureCodexMcp()
@@ -151,11 +157,7 @@ NODE_REPL_NODE_PATH = 'C:/Users/yukaidi/AppData/Local/OpenAI/Codex/bin/node.exe'
 CODEX_HOME = 'C:/Users/yukaidi/.codex'
 `)
 
-    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-      providers: [],
-      mcpServices: [],
-      managed: false,
-    } as any)
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
 
     await configureCodexMcp()
@@ -183,8 +185,7 @@ startup_timeout_sec = 15
 retries = 3
 `)
 
-    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-      providers: [],
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig({
       mcpServices: [{
         id: 'remote-docs',
         command: 'remote-docs',
@@ -195,8 +196,7 @@ retries = 3
           retries: 3,
         },
       }],
-      managed: false,
-    } as any)
+    }))
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
 
     await configureCodexMcp()
@@ -227,11 +227,7 @@ retries = 3
   key = "must-stay"
 `)
 
-    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-      providers: [],
-      mcpServices: [],
-      managed: false,
-    } as any)
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
 
     await configureCodexMcp()
