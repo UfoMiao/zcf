@@ -249,6 +249,20 @@ describe('claude-config', () => {
       expect(result.args).toEqual(['/c', 'uvx', '--from', 'git+https://github.com/example/repo', 'tool'])
     })
 
+    it('should preserve HTTP config without Windows command transformation', () => {
+      mockPlatform.isWindows.mockReturnValue(true)
+
+      const httpConfig: McpServerConfig = {
+        type: 'http',
+        url: 'https://mcp.deepwiki.com/mcp',
+      }
+
+      const result = buildMcpServerConfig(httpConfig)
+
+      expect(result).toEqual(httpConfig)
+      expect(mockPlatform.getMcpCommand).not.toHaveBeenCalled()
+    })
+
     it('should use custom placeholder', () => {
       const customConfig: McpServerConfig = {
         type: 'stdio',

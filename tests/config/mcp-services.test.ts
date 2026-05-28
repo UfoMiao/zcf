@@ -62,6 +62,20 @@ describe('mcp services configuration', () => {
         },
       })
     })
+
+    it('should have mcp-deepwiki service with HTTP configuration', () => {
+      const deepwikiConfig = MCP_SERVICE_CONFIGS.find(config => config.id === 'mcp-deepwiki')
+
+      expect(deepwikiConfig).toBeDefined()
+      expect(deepwikiConfig!.requiresApiKey).toBe(false)
+      expect(deepwikiConfig!.config).toEqual({
+        type: 'http',
+        url: 'https://mcp.deepwiki.com/mcp',
+      })
+      expect(deepwikiConfig!.config).not.toHaveProperty('command')
+      expect(deepwikiConfig!.config).not.toHaveProperty('args')
+      expect(deepwikiConfig!.config).not.toHaveProperty('env')
+    })
   })
 
   describe('getMcpServices', () => {
@@ -204,11 +218,16 @@ describe('mcp services configuration', () => {
         expect(service.config).toBeDefined()
 
         // Config structure checks
-        expect(['stdio', 'sse']).toContain(service.config.type)
+        expect(['stdio', 'sse', 'http']).toContain(service.config.type)
 
         if (service.config.type === 'stdio') {
           expect(service.config.command).toBeDefined()
           expect(Array.isArray(service.config.args)).toBe(true)
+        }
+
+        if (service.config.type === 'http') {
+          expect(service.config.url).toBeDefined()
+          expect(service.config.command).toBeUndefined()
         }
       })
     })
