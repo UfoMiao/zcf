@@ -226,7 +226,7 @@ ZCF has built-in common MCP service configurations, supporting one-click install
 | `context7` | stdio | Context retrieval and library documentation query | ❌ |
 | `open-websearch` | stdio | DuckDuckGo/Bing/Brave search | ❌ |
 | `spec-workflow` | stdio | Spec workflow MCP service | ❌ |
-| `mcp-deepwiki` | stdio | DeepWiki documentation retrieval | ❌ |
+| `mcp-deepwiki` | http | DeepWiki documentation retrieval | ❌ |
 | `Playwright` | stdio | Playwright browser operations | ❌ |
 | `exa` | stdio | Exa web search | ✅ Requires `EXA_API_KEY` |
 | `serena` | uvx | Serena IDE assistant | ❌ |

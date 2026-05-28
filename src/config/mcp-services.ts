@@ -48,10 +48,8 @@ export const MCP_SERVICE_CONFIGS: McpServiceConfig[] = [
     id: 'mcp-deepwiki',
     requiresApiKey: false,
     config: {
-      type: 'stdio',
-      command: 'npx',
-      args: ['-y', 'mcp-deepwiki@latest'],
-      env: {},
+      type: 'http',
+      url: 'https://mcp.deepwiki.com/mcp',
     },
   },
   {

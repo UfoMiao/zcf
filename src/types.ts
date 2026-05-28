@@ -12,7 +12,7 @@ export interface McpService {
 }
 
 export interface McpServerConfig {
-  type: 'stdio' | 'sse'
+  type: 'stdio' | 'sse' | 'http'
   command?: string
   args?: string[]
   url?: string

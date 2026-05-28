@@ -226,7 +226,7 @@ ZCF 内置常用 MCP 服务配置，支持一键安装和管理。
 | `context7` | stdio | 上下文检索与库文档查询 | ❌ |
 | `open-websearch` | stdio | DuckDuckGo/Bing/Brave 搜索 | ❌ |
 | `spec-workflow` | stdio | Spec 工作流 MCP 服务 | ❌ |
-| `mcp-deepwiki` | stdio | DeepWiki 文档检索 | ❌ |
+| `mcp-deepwiki` | http | DeepWiki 文档检索 | ❌ |
 | `Playwright` | stdio | Playwright 浏览器操作 | ❌ |
 | `exa` | stdio | Exa 网络搜索 | ✅ 需要 `EXA_API_KEY` |
 | `serena` | uvx | Serena IDE 助手 | ❌ |
