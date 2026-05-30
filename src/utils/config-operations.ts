@@ -1,17 +1,12 @@
-import type { AiOutputLanguage } from '../constants'
 import type { ApiConfig } from '../types/config'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
-import { CLAUDE_DIR } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import {
-  applyAiLanguageDirective,
-  backupExistingConfig,
   configureApi,
   getExistingApiConfig,
   switchToOfficialLogin,
 } from './config'
-import { configureOutputStyle } from './output-style'
 import { addNumbersToChoices } from './prompt-helpers'
 import { formatApiKeyDisplay, validateApiKey } from './validator'
 
@@ -253,30 +248,4 @@ export async function modifyApiConfigPartially(
       // Note: addCompletedOnboarding is already called inside configureApi
     }
   }
-}
-
-/**
- * Update only prompt/documentation files
- */
-export async function updatePromptOnly(
-  aiOutputLang?: AiOutputLanguage | string,
-): Promise<void> {
-  ensureI18nInitialized()
-
-  // Backup existing config
-  const backupDir = backupExistingConfig()
-  if (backupDir) {
-    console.log(ansis.gray(`✔ ${i18n.t('configuration:backupSuccess')}: ${backupDir}`))
-  }
-
-  // Apply AI language directive if provided
-  if (aiOutputLang) {
-    applyAiLanguageDirective(aiOutputLang)
-  }
-
-  // Configure output styles
-  await configureOutputStyle()
-
-  console.log(ansis.green(`✔ ${i18n.t('configuration:configSuccess')} ${CLAUDE_DIR}`))
-  console.log(`\n${ansis.cyan(i18n.t('common:complete'))}`)
 }

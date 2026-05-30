@@ -8,18 +8,17 @@ Running `npx zcf` enters the interactive menu system. The menu is ZCF's core int
 
 ## Menu Features
 
-- 🎯 **Dynamic Display**: Dynamically adjust menu items based on current code tool (Claude Code or Codex)
+- 🎯 **Visual Options**: Browse all features without remembering command parameters
 - ⌨️ **Shortcut Operations**: Execute operations by entering a single character, no need to remember commands
-- 🔄 **Smart Switching**: Seamlessly switch between Claude Code and Codex
 - 📋 **Feature Aggregation**: All common features are centralized in the menu for quick access
 
-## Claude Code Mode Menu
+## Main Menu
 
 | Option | Function | Corresponding Command | Description |
 |------|------|---------|------|
 | `1` | Complete Initialization | `zcf init` | Complete Claude Code environment initialization |
 | `2` | Import/Update Workflows | `zcf update` | Update workflow templates and prompts |
-| `3` | Configure API or CCR | - | Configure API keys, providers, or CCR proxy |
+| `3` | Configure API or CCR | - | Configure API keys (custom endpoint) or CCR proxy |
 | `4` | Configure MCP Services | - | Install and configure MCP services |
 | `5` | Configure Default Model | - | Set default Claude model to use |
 | `6` | Configure AI Memory & Output Style | - | Set AI output language and global output style |
@@ -28,23 +27,9 @@ Running `npx zcf` enters the interactive menu system. The menu is ZCF's core int
 | `U` | Claude Code Usage Analysis | `zcf ccu` | View API usage statistics |
 | `L` | CCometixLine Management | - | Status bar tool management |
 | `0` | Switch Script Language | - | Switch CLI interface language (zh-CN/en) |
-| `S` | Switch Code Tool | - | Switch between Claude Code ↔ Codex |
-| `-` | Uninstall Current Tool Configuration | `zcf uninstall` | Uninstall Claude Code configuration |
+| `-` | Uninstall Configuration | `zcf uninstall` | Uninstall Claude Code configuration |
 | `+` | Check Updates | `zcf check-updates` | Check tool versions and update |
 | `Q` | Exit | - | Exit menu |
-
-## Codex Mode Menu
-
-The menu in Codex mode adjusts to Codex corresponding operations:
-
-- `1` - Codex Complete Initialization
-- `2` - Update Codex Workflows and Templates
-- `3` - Configure Codex API Provider or MCP
-- `4` - Configure Codex MCP Services
-- `S` - Switch back to Claude Code
-- Other options remain the same
-
-> 💡 **Tip**: In Codex mode, menu functions automatically adapt to Codex configuration methods, but you can still switch back to Claude Code anytime via `S`.
 
 ## Usage Tips
 
@@ -74,7 +59,6 @@ You can quickly navigate in the menu:
 
 - Enter option character to execute directly
 - Enter `Q` anytime to exit menu
-- Use `S` to switch between tools
 
 ### 4. Language Switching
 
@@ -87,25 +71,12 @@ npx zcf
 # Menu will redisplay after language switch
 ```
 
-### 5. Tool Switching
-
-Use `S` to switch between Claude Code and Codex:
-
-```bash
-npx zcf
-# Current mode: Claude Code
-# Enter S
-# Switch to: Codex mode
-# Menu items automatically adjust to Codex corresponding operations
-```
-
 ## Menu Function Details
 
 ### Complete Initialization (Option 1)
 
 Equivalent to running `npx zcf init`, will guide you through:
 
-- Select code tool type
 - Configure API (official login/API Key/CCR proxy)
 - Select MCP services
 - Select workflows
@@ -126,7 +97,6 @@ Equivalent to running `npx zcf update`, will:
 Provides the following configuration options:
 
 - Configure API Key (custom endpoint)
-- Use API provider presets (302.AI, GLM, etc.)
 - Configure CCR proxy
 - Switch back to official login
 
@@ -303,19 +273,6 @@ npx zcf --verbose
 
 # 3. Reinitialize configuration
 npx zcf init --config-action new
-```
-
-### Tool Switch Failed
-
-If `S` option fails to switch tools:
-
-```bash
-# 1. Check configuration file
-cat ~/.ufomiao/zcf/config.toml | grep codeToolType
-
-# 2. Manually switch
-npx zcf init -T codex  # Switch to Codex
-npx zcf init -T claude-code  # Switch to Claude Code
 ```
 
 ## Related Resources

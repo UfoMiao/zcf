@@ -3,24 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupCommands } from '../../src/cli-setup'
 
 // Mock all dependencies with enhanced error handling
-vi.mock('../../src/commands/init', () => ({
-  init: vi.fn().mockResolvedValue(undefined),
-}))
-
 vi.mock('../../src/commands/menu', () => ({
   showMainMenu: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../src/commands/update', () => ({
-  update: vi.fn().mockResolvedValue(undefined),
-}))
-
-vi.mock('../../src/commands/ccr', () => ({
-  ccr: vi.fn().mockResolvedValue(undefined),
-}))
-
-vi.mock('../../src/commands/ccu', () => ({
-  executeCcusage: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../src/commands/config-switch', () => ({
+  configSwitchCommand: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../src/commands/uninstall', () => ({
@@ -193,7 +181,7 @@ describe('cli-setup - Edge Cases', () => {
 
       await setupCommands(cli)
 
-      expect(commandSpy).toHaveBeenCalledWith('uninstall', 'Remove ZCF configurations and tools')
+      expect(commandSpy).toHaveBeenCalledWith('uninstall', 'Remove ccs configurations and tools')
     })
 
     it('should register all command aliases properly', async () => {
@@ -201,12 +189,10 @@ describe('cli-setup - Edge Cases', () => {
       await setupCommands(cli)
 
       // Find commands by their descriptions and check aliases
-      const initCommand = cli.commands.find(cmd => cmd.description === 'Initialize Claude Code configuration')
-      const updateCommand = cli.commands.find(cmd => cmd.description === 'Update Claude Code prompts only')
-      const checkCommand = cli.commands.find(cmd => cmd.description === 'Check and update Claude Code and CCR to latest versions')
+      const configSwitchCommand = cli.commands.find(cmd => cmd.description.startsWith('Switch Claude Code API configuration'))
+      const checkCommand = cli.commands.find(cmd => cmd.description === 'Check and update Claude Code and ccs to latest versions')
 
-      expect(initCommand?.aliasNames).toContain('i')
-      expect(updateCommand?.aliasNames).toContain('u')
+      expect(configSwitchCommand?.aliasNames).toContain('cs')
       expect(checkCommand?.aliasNames).toContain('check')
     })
 
@@ -216,7 +202,7 @@ describe('cli-setup - Edge Cases', () => {
       // Mock cli.command to throw on specific calls
       const originalCommand = cli.command.bind(cli)
       vi.spyOn(cli, 'command').mockImplementation((name, desc) => {
-        if (name === 'ccr') {
+        if (name === 'uninstall') {
           throw new Error('Command registration failed')
         }
         return originalCommand(name, desc)
@@ -230,12 +216,12 @@ describe('cli-setup - Edge Cases', () => {
   describe('i18n integration during setup', () => {
     it('should call i18n.t for help text generation', async () => {
       const { i18n } = await import('../../src/i18n')
-      const cli = cac('test')
+      const { customizeHelp } = await import('../../src/cli-setup')
 
-      await setupCommands(cli)
+      // customizeHelp is what generates i18n-backed help text
+      customizeHelp([])
 
-      // Should call i18n.t for help text keys
-      expect(i18n.t).toHaveBeenCalledWith('cli:help.defaults.prefix')
+      expect(i18n.t).toHaveBeenCalledWith('cli:help.commands')
     })
 
     it('should handle i18n.t returning undefined gracefully', async () => {

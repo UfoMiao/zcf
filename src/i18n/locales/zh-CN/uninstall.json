@@ -1,5 +1,5 @@
 {
-  "title": "ZCF 卸载工具",
+  "title": "ccs 卸载工具",
   "selectMainOption": "选择卸载选项:",
   "completeUninstall": "完全卸载",
   "completeUninstallDesc": "删除所有 Claude Code 相关配置和工具",
@@ -30,8 +30,8 @@
   "warningsCount": "卸载过程中发生了 {{count}} 个警告。",
 
   "outputStyles": "输出风格 - 删除输出风格配置",
-  "commands": "自定义指令 - 删除自定义 ZCF 指令",
-  "agents": "自定义代理 - 删除自定义 ZCF 代理",
+  "commands": "自定义指令 - 删除自定义 ccs 指令",
+  "agents": "自定义代理 - 删除自定义 ccs 代理",
   "claudeMd": "CLAUDE.md - 删除全局记忆文件",
   "permissionsEnvs": "权限和环境变量 - 删除权限配置和环境变量",
   "mcps": "MCP 服务 - 删除 MCP 服务器配置",
@@ -39,7 +39,7 @@
   "ccline": "CCometixLine - 卸载状态栏工具",
   "claudeCode": "Claude Code - 卸载 Claude Code 和配置",
   "backups": "备份文件 - 删除备份文件",
-  "zcfConfig": "ZCF 配置 - 删除 ZCF 偏好设置配置",
+  "zcfConfig": "ccs 配置 - 删除 ccs 偏好设置配置",
 
   "settingsJsonNotFound": "未找到 settings.json 文件",
   "commandsNotFound": "未找到指令目录",
@@ -50,7 +50,7 @@
   "cclinePackageNotFound": "未找到 CCometixLine 包",
   "claudeCodePackageNotFound": "未找到 Claude Code 包",
   "backupsNotFound": "未找到备份目录",
-  "zcfConfigNotFound": "未找到 ZCF 配置文件",
+  "zcfConfigNotFound": "未找到 ccs 配置文件",
   "outputStylesDirectoryNotFound": "未找到输出风格目录",
   "uninstallFailed": "卸载 {{codeType}} 失败{{message}}"
 }

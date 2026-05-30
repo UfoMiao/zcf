@@ -1,5 +1,4 @@
 import type { AiOutputLanguage, SupportedLang } from '../constants'
-import type { ZcfTomlConfig } from '../types/toml-config'
 import type { ZcfConfig } from './zcf-config'
 import process from 'node:process'
 import ansis from 'ansis'
@@ -273,73 +272,4 @@ export async function resolveTemplateLanguage(
 
   // Interactive mode: ask user to select
   return await selectTemplateLanguage()
-}
-
-/**
- * Resolve system prompt style with priority order
- * Priority: 1. Command line option, 2. Saved config, 3. Ask user
- */
-export async function resolveSystemPromptStyle(
-  availablePrompts: Array<{ id: string, name: string, description: string }>,
-  commandLineOption?: string,
-  savedConfig?: ZcfTomlConfig | null,
-  skipPrompt?: boolean,
-): Promise<string> {
-  ensureI18nInitialized()
-
-  // Priority 1: Command line option
-  if (commandLineOption && availablePrompts.some(p => p.id === commandLineOption)) {
-    return commandLineOption
-  }
-
-  // Priority 2: Check saved config
-  if (savedConfig?.codex?.systemPromptStyle) {
-    const currentStyleId = savedConfig.codex.systemPromptStyle
-    const currentStyle = availablePrompts.find(p => p.id === currentStyleId)
-
-    if (currentStyle) {
-      if (skipPrompt) {
-        // Non-interactive mode: return saved config directly
-        return currentStyleId
-      }
-
-      // Interactive mode: ask for modification
-      console.log(ansis.blue(`${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))
-
-      const shouldModify = await promptBoolean({
-        message: i18n.t('language:modifySystemPromptPrompt'),
-        defaultValue: false,
-      })
-
-      if (!shouldModify) {
-        console.log(ansis.gray(`✔ ${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))
-        return currentStyleId
-      }
-    }
-  }
-
-  // Priority 3: No saved config
-  if (skipPrompt) {
-    // Non-interactive mode: default to engineer-professional
-    return 'engineer-professional'
-  }
-
-  // Interactive mode: ask user to select
-  const { systemPrompt } = await inquirer.prompt<{ systemPrompt: string }>([{
-    type: 'list',
-    name: 'systemPrompt',
-    message: i18n.t('codex:systemPromptPrompt'),
-    choices: addNumbersToChoices(availablePrompts.map(style => ({
-      name: `${style.name} - ${ansis.gray(style.description)}`,
-      value: style.id,
-    }))),
-    default: 'engineer-professional', // Default to engineer-professional
-  }])
-
-  if (!systemPrompt) {
-    console.log(ansis.yellow(i18n.t('common:cancelled')))
-    process.exit(0)
-  }
-
-  return systemPrompt
 }

@@ -4,18 +4,15 @@ title: Version Check
 
 # Version Check
 
-`zcf check-updates` is used to detect and update various components in the ZCF toolchain, including ZCF itself, Claude Code, CCR, CCometixLine, Codex, and other tools.
+`zcf check-updates` is used to detect and update various components in the ZCF toolchain, including ZCF itself, Claude Code, CCR, CCometixLine, and other tools.
 
-> **Alias**: `zcf check` provides the same command with a shorter name (`npx zcf check -T cx`).
+> **Alias**: `zcf check` provides the same command with a shorter name (`npx zcf check`).
 
 ## Command Format
 
 ```bash
-# Check all tool updates (Claude Code mode)
+# Check all tool updates
 npx zcf check
-
-# Check Codex related tool updates
-npx zcf check -T cx
 
 # Non-interactive mode (auto update, skip confirmation)
 npx zcf check -s
@@ -29,14 +26,11 @@ npx zcf
 
 | Parameter | Abbreviation | Description | Optional Values | Default |
 |------|------|------|--------|--------|
-| `--code-type, -T` | `-T` | Specify tool type | `claude-code`, `codex`, `cc`, `cx` | Read from ZCF configuration |
 | `--skip-prompt, -s` | `-s` | Skip interactive confirmation (non-interactive mode) | None | No (interactive mode) |
 
 ## Tools Checked
 
-### Claude Code Mode
-
-When `-T` is `cc` (or `claude-code`) or not specified, checks the following tools:
+The command checks the following tools:
 
 1. **CCR (Claude Code Router)**
    - Package name: `@musistudio/claude-code-router`
@@ -49,14 +43,6 @@ When `-T` is `cc` (or `claude-code`) or not specified, checks the following tool
 3. **CCometixLine**
    - Package name: `@cometix/ccline`
    - Check method: npm registry
-
-### Codex Mode
-
-When `-T` is `cx` (or `codex`), checks:
-
-1. **Codex CLI**
-   - Check method: Codex official API
-   - Update method: Automatically download and install latest version
 
 ## Workflow
 
@@ -131,15 +117,6 @@ Use non-interactive mode in CI/CD or automation scripts:
 npx zcf check -s
 ```
 
-### Targeted Updates
-
-Only check updates for specific tool types:
-
-```bash
-# Only check Codex related tools
-npx zcf check -T cx
-```
-
 ## Update Strategy
 
 ### Safe Update Recommendations
@@ -198,7 +175,6 @@ ZCF will check version compatibility between tools to ensure:
 
 - CCR matches Claude Code version
 - CCometixLine is compatible with Claude Code
-- Codex CLI is latest stable version
 
 ## Usage Recommendations
 
@@ -230,9 +206,6 @@ ccr status
 
 # Verify CCometixLine (if installed)
 ccline --version
-
-# Verify Codex
-codex --version
 ```
 
 ## Integration with zcf init

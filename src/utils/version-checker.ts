@@ -13,7 +13,7 @@ const execAsync = promisify(exec)
  * This function detects the version regardless of installation method (npm, Homebrew, etc.)
  * by executing the command and parsing its version output.
  *
- * @param command - Command name (e.g., 'claude', 'ccr', 'codex')
+ * @param command - Command name (e.g., 'claude', 'ccr')
  * @param maxRetries - Maximum number of retry attempts (default: 3)
  * @returns Version string or null if command is not installed
  */

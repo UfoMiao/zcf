@@ -21,18 +21,15 @@ describe('i18n Integrity Tests', () => {
       const requiredNamespaces = [
         'common',
         'api',
-        'ccr',
         'cli',
-        'cometix',
         'configuration',
         'errors',
         'installation',
         'language',
-        'mcp',
         'menu',
-        'tools',
+        'multi-config',
+        'uninstall',
         'updater',
-        'workflow',
       ]
 
       for (const lang of requiredLanguages) {
@@ -52,18 +49,15 @@ describe('i18n Integrity Tests', () => {
       const namespaces = [
         'common',
         'api',
-        'ccr',
         'cli',
-        'cometix',
         'configuration',
         'errors',
         'installation',
         'language',
-        'mcp',
         'menu',
-        'tools',
+        'multi-config',
+        'uninstall',
         'updater',
-        'workflow',
       ]
 
       for (const ns of namespaces) {
@@ -97,18 +91,15 @@ describe('i18n Integrity Tests', () => {
       const requiredNamespaces = [
         'common',
         'api',
-        'ccr',
         'cli',
-        'cometix',
         'configuration',
         'errors',
         'installation',
         'language',
-        'mcp',
         'menu',
-        'tools',
+        'multi-config',
+        'uninstall',
         'updater',
-        'workflow',
       ]
 
       for (const lang of requiredLanguages) {

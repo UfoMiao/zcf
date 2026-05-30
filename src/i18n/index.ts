@@ -14,21 +14,15 @@ export const i18n: I18nInstance = i18next.createInstance()
 const NAMESPACES = [
   'common',
   'api',
-  'ccr',
   'cli',
-  'cometix',
   'configuration',
   'errors',
   'installation',
   'language',
-  'mcp',
   'menu',
   'multi-config',
-  'tools',
   'uninstall',
   'updater',
-  'workflow',
-  'codex',
 ] as const
 
 // Ensure i18n is initialized - safety check for utility functions

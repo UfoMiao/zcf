@@ -76,7 +76,6 @@ npx zcf uninstall --mode custom --items '["ccr","backups"]'
 
 **削除される内容**：
 - ✅ Claude Code 設定（`~/.claude/`）
-- ✅ Codex 設定（`~/.codex/`）
 - ✅ CCR 設定（`~/.claude-code-router/`）
 - ✅ CCometixLine 設定（`~/.cometix/`）
 - ✅ ZCF グローバル設定（`~/.ufomiao/zcf/`）
@@ -84,7 +83,6 @@ npx zcf uninstall --mode custom --items '["ccr","backups"]'
 
 **削除されない内容**：
 - ❌ Claude Code CLI 自体（他の方法でアンインストールする必要がある）
-- ❌ Codex CLI 自体（他の方法でアンインストールする必要がある）
 - ❌ システムレベルのツールと依存関係
 
 ### カスタムアンインストールモード
@@ -94,10 +92,9 @@ npx zcf uninstall --mode custom --items '["ccr","backups"]'
 | コンポーネント | 説明 | 設定場所 |
 |------|------|---------|
 | `claude-code` | Claude Code 設定 | `~/.claude/` |
-| `codex` | Codex 設定 | `~/.codex/` |
 | `ccr` | Claude Code Router 設定 | `~/.claude-code-router/` |
 | `cometix` | CCometixLine 設定 | `~/.cometix/` |
-| `backups` | すべてのバックアップファイル | `~/.claude/backup/`, `~/.codex/backup/` など |
+| `backups` | すべてのバックアップファイル | `~/.claude/backup/` など |
 | `zcf-config` | ZCF グローバル設定 | `~/.ufomiao/zcf/` |
 
 ```bash
@@ -142,7 +139,6 @@ npx zcf uninstall --mode custom --items backups
 # 新しいデバイスで再設定し、古いデバイスをクリーンアップ
 # 1. 新しいデバイスで設定をバックアップ
 cp -r ~/.claude ~/claude-backup
-cp -r ~/.codex ~/codex-backup
 
 # 2. 新しいデバイスで初期化
 npx zcf init
@@ -178,7 +174,6 @@ npx zcf uninstall --mode custom --items cometix
 ```bash
 # バックアップ場所を検索
 ls -la ~/.claude/backup/
-ls -la ~/.codex/backup/
 
 # 手動復元（例）
 cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
@@ -226,9 +221,6 @@ cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
 # Claude Code 設定をバックアップ
 tar -czf claude-backup.tar.gz ~/.claude/
 
-# Codex 設定をバックアップ
-tar -czf codex-backup.tar.gz ~/.codex/
-
 # ZCF 設定をバックアップ
 tar -czf zcf-backup.tar.gz ~/.ufomiao/zcf/
 ```
@@ -260,7 +252,7 @@ npx zcf uninstall --mode custom --items ccr
 ```bash
 # テスト環境をすばやくリセット
 npx zcf uninstall --mode complete
-npx zcf init -s -p 302ai -k "test-key" -g zh-CN
+npx zcf init -s -t api_key -k "test-key" -u "https://api.example.com" -g zh-CN
 ```
 
 ## トラブルシューティング
@@ -275,7 +267,7 @@ npx zcf init -s -p 302ai -k "test-key" -g zh-CN
 
 ```bash
 # 権限を確認
-ls -la ~/.claude/ ~/.codex/
+ls -la ~/.claude/
 
 # プロセス占有を確認
 lsof ~/.claude/  # macOS/Linux
@@ -292,7 +284,6 @@ lsof ~/.claude/  # macOS/Linux
 ```bash
 # 手動クリーンアップ（注意して使用）
 rm -rf ~/.claude/
-rm -rf ~/.codex/
 rm -rf ~/.ufomiao/zcf/
 ```
 

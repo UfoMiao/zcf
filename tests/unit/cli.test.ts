@@ -1,9 +1,10 @@
+import process from 'node:process'
 import { resolve } from 'pathe'
 import { exec } from 'tinyexec'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 describe('cLI', () => {
-  const cliPath = resolve(__dirname, '../../bin/zcf.mjs')
+  const cliPath = resolve(__dirname, '../../bin/ccs.mjs')
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -13,12 +14,12 @@ describe('cLI', () => {
     vi.restoreAllMocks()
   })
 
-  describe('zcf command', () => {
+  describe('ccs command', () => {
     it('should run without errors when showing help', async () => {
       const result = await exec(process.execPath, [cliPath, '--help'])
 
       expect(result.exitCode).toBe(0)
-      expect(result.stdout).toContain('ZCF - Zero-Config Code Flow')
+      expect(result.stdout).toContain('ccs - Claude Code Switch')
       expect(result.stdout).toContain('Commands')
     })
 
@@ -31,18 +32,16 @@ describe('cLI', () => {
   })
 
   describe('command structure', () => {
-    it('should have init command alias', async () => {
+    it('should expose config-switch command', async () => {
       const result = await exec(process.execPath, [cliPath, '--help'])
 
-      expect(result.stdout).toContain('zcf init')
-      expect(result.stdout).toContain('zcf i')
+      expect(result.stdout).toContain('config-switch')
     })
 
-    it('should have update command alias', async () => {
+    it('should expose check-updates command', async () => {
       const result = await exec(process.execPath, [cliPath, '--help'])
 
-      expect(result.stdout).toContain('zcf update')
-      expect(result.stdout).toContain('zcf u')
+      expect(result.stdout).toContain('check-updates')
     })
   })
 })

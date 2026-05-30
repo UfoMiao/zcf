@@ -17,18 +17,6 @@ export interface ClaudeCodeConfig {
 }
 
 /**
- * Codex specific configuration
- * Features: Single system prompt style selection
- * Note: Codex only supports global installation
- */
-export interface CodexConfig {
-  enabled: boolean
-  systemPromptStyle: string
-  installMethod?: 'npm' | 'homebrew' | 'native'
-  envKeyMigrated?: boolean // Whether env_key to temp_env_key migration has been completed
-}
-
-/**
  * General ZCF configuration
  */
 export interface GeneralConfig {
@@ -46,7 +34,6 @@ export interface ZcfTomlConfig {
   lastUpdated: string
   general: GeneralConfig
   claudeCode: ClaudeCodeConfig
-  codex: CodexConfig
 }
 
 /**
@@ -55,7 +42,6 @@ export interface ZcfTomlConfig {
 export type PartialZcfTomlConfig = Partial<ZcfTomlConfig> & {
   general?: Partial<GeneralConfig>
   claudeCode?: Partial<ClaudeCodeConfig>
-  codex?: Partial<CodexConfig>
 }
 
 /**

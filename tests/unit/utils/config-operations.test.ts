@@ -7,14 +7,11 @@ import * as config from '../../../src/utils/config'
 import {
   configureApiCompletely,
   modifyApiConfigPartially,
-  updatePromptOnly,
 } from '../../../src/utils/config-operations'
-import * as outputStyle from '../../../src/utils/output-style'
 import * as validator from '../../../src/utils/validator'
 
 vi.mock('inquirer')
 vi.mock('../../../src/utils/config')
-vi.mock('../../../src/utils/output-style')
 vi.mock('../../../src/utils/validator')
 
 describe('config-operations utilities', () => {
@@ -446,87 +443,6 @@ describe('config-operations utilities', () => {
         expect.objectContaining({
           message: i18n.t('api:selectModifyItems'),
         }),
-      )
-    })
-  })
-
-  describe('updatePromptOnly', () => {
-    const backupDir = '/backup/dir'
-
-    beforeEach(() => {
-      vi.mocked(config.backupExistingConfig).mockReturnValue(backupDir)
-    })
-
-    it('should backup existing config', async () => {
-      await updatePromptOnly()
-
-      expect(config.backupExistingConfig).toHaveBeenCalled()
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(backupDir),
-      )
-    })
-
-    it('should call copyConfigFiles but no longer copies documentation files', async () => {
-      await updatePromptOnly()
-
-      // copyConfigFiles is called but no longer copies memory files when onlyMd=true
-      // Documentation is now generated via output-style system
-    })
-
-    it('should apply AI language directive if provided', async () => {
-      await updatePromptOnly('Chinese')
-
-      expect(config.applyAiLanguageDirective).toHaveBeenCalledWith('Chinese')
-    })
-
-    it('should not apply AI language directive if not provided', async () => {
-      await updatePromptOnly()
-
-      expect(config.applyAiLanguageDirective).not.toHaveBeenCalled()
-    })
-
-    it('should configure output styles', async () => {
-      await updatePromptOnly()
-
-      expect(outputStyle.configureOutputStyle).toHaveBeenCalled()
-    })
-
-    it('should show success message', async () => {
-      await updatePromptOnly()
-
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.t('configuration:configSuccess')),
-      )
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.t('common:complete')),
-      )
-    })
-
-    it('should handle no backup directory', async () => {
-      vi.mocked(config.backupExistingConfig).mockReturnValue(null)
-
-      await updatePromptOnly()
-
-      // copyConfigFiles is no longer called in the simplified version
-      expect(outputStyle.configureOutputStyle).toHaveBeenCalled()
-    })
-
-    it('should work with different config and script languages', async () => {
-      await updatePromptOnly('English')
-
-      // copyConfigFiles is no longer called since memory files are not copied
-      expect(config.applyAiLanguageDirective).toHaveBeenCalledWith('English')
-      expect(outputStyle.configureOutputStyle).toHaveBeenCalled()
-    })
-
-    it('should show success messages with real i18n', async () => {
-      await updatePromptOnly()
-
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.t('configuration:configSuccess')),
-      )
-      expect(console.log).toHaveBeenCalledWith(
-        expect.stringContaining(i18n.t('common:complete')),
       )
     })
   })

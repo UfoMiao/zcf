@@ -9,6 +9,7 @@
   "checkingVersion": "检查版本中...",
   "claudeCodeNotInstalled": "Claude Code 未安装",
   "claudeCodeUpToDate": "Claude Code 已是最新版本 (v{version})",
+  "ccsUpToDate": "ccs 已是最新版本 (v{version})",
   "cometixLineNotInstalled": "CCometixLine 未安装",
   "cometixLineUpToDate": "CCometixLine 已是最新版本 (v{version})",
   "confirmUpdate": "将 {tool} 更新到最新版本？",

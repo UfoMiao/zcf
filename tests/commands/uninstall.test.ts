@@ -25,7 +25,6 @@ vi.mock('../../src/utils/zcf-config', () => ({
 vi.mock('../../src/utils/code-type-resolver', () => ({
   resolveCodeType: resolveCodeTypeMock,
 }))
-vi.mock('../../src/utils/code-tools/codex')
 
 // Mock modules
 const mockInquirer = vi.hoisted(() => ({
@@ -43,10 +42,6 @@ const mockUninstaller = vi.hoisted(() => ({
   })),
 }))
 
-const codexUninstallMock = vi.hoisted(() => ({
-  runCodexUninstall: vi.fn().mockResolvedValue(undefined),
-}))
-
 const mockedPromptBoolean = vi.mocked(promptBoolean)
 function queuePromptBooleans(...values: boolean[]) {
   values.forEach(value => mockedPromptBoolean.mockResolvedValueOnce(value))
@@ -55,7 +50,6 @@ function queuePromptBooleans(...values: boolean[]) {
 vi.mocked(await import('inquirer')).default = mockInquirer as any
 vi.mocked(await import('../../src/i18n')).i18n = mockI18n as any
 vi.mocked(await import('../../src/utils/uninstaller')).ZcfUninstaller = mockUninstaller.ZcfUninstaller
-vi.mocked(await import('../../src/utils/code-tools/codex')).runCodexUninstall = codexUninstallMock.runCodexUninstall
 
 describe('uninstall command', () => {
   beforeEach(() => {
@@ -175,16 +169,6 @@ describe('uninstall command', () => {
     })
   })
 
-  it('should fall back to config when code type resolution fails and run Codex uninstaller', async () => {
-    resolveCodeTypeMock.mockRejectedValueOnce(new Error('invalid code type'))
-    zcfConfigMock.readZcfConfig.mockReturnValueOnce({ codeToolType: 'codex' })
-
-    await uninstall({ codeType: 'unknown' })
-
-    expect(resolveCodeTypeMock).toHaveBeenCalled()
-    expect(codexUninstallMock.runCodexUninstall).toHaveBeenCalled()
-  })
-
   describe('non-interactive mode', () => {
     it('should execute complete uninstall when mode is complete', async () => {
       const mockCompleteUninstall = vi.fn().mockResolvedValue({
@@ -274,17 +258,6 @@ describe('uninstall command', () => {
 
       // Should use default English language
       // This would be tested by checking i18n initialization calls
-    })
-  })
-
-  describe('codex uninstall flow', () => {
-    it('should delegate to Codex uninstaller when codex code type selected', async () => {
-      const { resolveCodeType } = await import('../../src/utils/code-type-resolver')
-      vi.mocked(resolveCodeType).mockResolvedValueOnce('codex')
-
-      await uninstall({ codeType: 'codex' })
-
-      expect(codexUninstallMock.runCodexUninstall).toHaveBeenCalled()
     })
   })
 

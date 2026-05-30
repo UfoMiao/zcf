@@ -4,30 +4,26 @@ title: Quick Start
 
 # Quick Start
 
-This chapter introduces how to initialize your environment with ZCF in minutes, covering pre-installation preparation, common commands, and recommended operation sequence.
+This chapter shows how to install `ccs` and start managing your Claude Code API endpoints in minutes.
 
 ## Quick Navigation
 
-If you're new to ZCF, we recommend following these steps:
-
-1. **View [Installation Guide](installation.md)** - Learn about system requirements, usage methods, interactive and non-interactive initialization flows, and complete configuration steps
-2. **Familiarize with core features** - Check [Features](../features/) to understand Claude Code, Codex, MCP services, CCR proxy, and other core capabilities
-3. **Master CLI commands** - Refer to [CLI Commands](../cli/) to learn how to use various commands
+1. **Read the [Installation Guide](installation.md)** — System requirements and install methods.
+2. **Learn the two features** — See [Features](../features/) to understand endpoint switching and update checking.
+3. **Master the commands** — Refer to [CLI Commands](../cli/) for every command and option.
 
 ## Recommended Workflow
 
 ### First-Time Use
 
-1. Run `npx zcf` or `npx zcf init` for complete initialization
-2. Select code tool type (Claude Code or Codex)
-3. Configure API key or use API provider preset
-4. Select MCP services to install
-5. Select workflow templates and output styles
+1. Run `npx @xwm111/ccs` (or install globally with `npm i -g @xwm111/ccs`).
+2. Run `ccs` to open the interactive menu.
+3. Add a Claude Code API endpoint (base URL + auth type + key) and set it active.
 
-### Existing Environment
+### Day-to-Day Use
 
-- Run `npx zcf update` to update workflows and templates
-- Use `npx zcf` to open interactive menu for incremental configuration
-- Use `npx zcf config-switch` to switch between different configurations
+- Use `ccs config-switch` (or `ccs cs`) to switch the active endpoint.
+- Use `ccs cs --list` to see all saved configurations.
+- Use `ccs check-updates` (or `ccs check`) to update Claude Code and ccs.
 
-> 💡 **Tip**: During operation, if you need to understand specific features, feel free to jump to the corresponding feature chapter or CLI command documentation.
+> Tip: Run `ccs` with no arguments any time to open the interactive menu.

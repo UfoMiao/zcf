@@ -145,7 +145,7 @@ describe('npm Package Integration Tests', () => {
     }
 
     // Check all required namespaces
-    const requiredNamespaces = ['api', 'ccr', 'cli', 'cometix', 'configuration', 'errors', 'installation', 'language', 'mcp', 'tools', 'updater', 'workflow']
+    const requiredNamespaces = ['api', 'cli', 'configuration', 'errors', 'installation', 'language', 'menu', 'multi-config', 'uninstall', 'updater']
     for (const ns of requiredNamespaces) {
       expect(fileNames).toContain(`dist/i18n/locales/zh-CN/${ns}.json`)
       expect(fileNames).toContain(`dist/i18n/locales/en/${ns}.json`)
@@ -153,7 +153,7 @@ describe('npm Package Integration Tests', () => {
 
     // Count total i18n files
     const i18nFiles = fileNames.filter((name: string) => name.includes('dist/i18n/locales/') && name.endsWith('.json'))
-    expect(i18nFiles.length).toBeGreaterThanOrEqual(28) // 14 namespaces × 2 languages
+    expect(i18nFiles.length).toBeGreaterThanOrEqual(20) // 11 namespaces × 2 languages
 
     // Clean up the generated tarball
     const tarballName = packData[0]?.filename
@@ -227,7 +227,7 @@ describe('npm Package Integration Tests', () => {
 
     // Verify i18n files count
     const i18nFiles = packedFiles.filter(file => file.includes('dist/i18n/locales/') && file.endsWith('.json'))
-    expect(i18nFiles.length).toBeGreaterThanOrEqual(28) // 14 namespaces × 2 languages
+    expect(i18nFiles.length).toBeGreaterThanOrEqual(20) // 11 namespaces × 2 languages
 
     console.log(`Verified ${packedFiles.length} files in package, ${i18nFiles.length} i18n files included`)
   }, 2000) // Fast timeout - optimized test

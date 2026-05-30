@@ -1,193 +1,65 @@
-[![npm version][npm-version-src]][npm-version-href]
-[![npm downloads][npm-downloads-src]][npm-downloads-href]
-[![License][license-src]][license-href]
-[![Claude Code][claude-code-src]][claude-code-href]
-[![codecov][codecov-src]][codecov-href]
-[![JSDocs][jsdocs-src]][jsdocs-href]
-[![Ask DeepWiki][deepwiki-src]][deepwiki-href]
-
 <div align="center">
-  <img src="./src/assets/banner.webp" alt="Banner"/>
-
-  <h1>
-    ZCF - Zero-Config Code Flow
-  </h1>
+  <h1>ccs - Claude Code Switch</h1>
 
   <p align="center">
-   <a href="README.md">English</a> | <a href="README_zh-CN.md">中文</a> | <b>日本語</b> | <a href="CHANGELOG.md">更新履歴</a>
+  <a href="README.md">English</a> | <a href="README_zh-CN.md">中文</a> | <b>日本語</b>
 
-**✨ 完全ドキュメント**: [ドキュメント入口](https://zcf.ufomiao.com/ja-JP/)
-
-> ゼロ設定、ワンクリックで Claude Code & Codex 環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
+  > 複数の Claude Code API エンドポイントを管理し、コマンド一つで切り替え —— さらに Claude Code と ccs を最新に保ちます。
   </p>
 </div>
 
-## ♥️ スポンサー
+## ccs とは？
 
-[![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
-このプロジェクトは Z.ai の GLM CODING PLAN によってスポンサーされています。
-GLM CODING PLAN はAIコーディング向けに設計されたサブスクリプションサービスで、月額わずか10ドルから利用できます。Z.aiのフラグシップである GLM-4.7 および（GLM-5 は Pro ユーザーのみ利用可能）を、Claude Code、Cline、Roo Code など10以上の人気AIコーディングツールで利用でき、開発者に高速かつ安定した最先端のコーディング体験を提供します。
-GLM CODING PLANが10%オフで利用可能：https://z.ai/subscribe?ic=8JVLJQFSKB
+`ccs`（Claude Code Switch）は、2 つのことだけに特化した小さな CLI ツールです。
 
----
+1. **API エンドポイントの管理と切り替え** —— 複数の Claude Code API プロファイル（base URL + 認証方式 + キー）を保存し、インタラクティブメニューまたは単一コマンドで有効なエンドポイントを即座に切り替えます。
+2. **アップデート確認** —— Claude Code と `ccs` 本体を最新バージョンに更新します。
 
-[![スポンサー PatewayAI](./src/assets/pateway.ai-en.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
-PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化した高品質モデル API 中継サービスプロバイダーで、Claude 全系列と Codex 系列モデルを提供します。100% 公式ソース直供給で、不純物なし、検証可能。課金は透明で、トークンレベルの請求書を 1 件ずつ照合できます。エンタープライズレベルの高並行性に対応し、企業顧客向けに専用管理プラットフォームを提供、正式契約締結と請求書発行も可能です。PatewayAI は ZCF ユーザー専用特典を提供：<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">このリンク</a>から登録すると $3 のトライアルクレジットを即時プレゼント、チャージは最大 60% オフ、招待は双方向ボーナスで報酬は最大 $150！
+さらに、インタラクティブメニュー、zh-CN/en の言語切り替え、クリーンなアンインストール機能も提供します。設定は `~/.ccs` に保存されます。
 
----
-
-[![スポンサー AI API](./src/assets/302.ai-jp.jpg)](https://share.302.ai/gAT9VG)
-[302.AI](https://share.302.ai/gAT9VG) は、従量課金制のエンタープライズ向けAIリソースプラットフォームで、市場で最新かつ最も包括的なAIモデルとAPIに加え、すぐに使える多様なオンラインAIアプリを提供します。
-
----
-
-<table>
-<tbody>
-<tr>
-<td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="./src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
-<td>PackyCode がこのプロジェクトを支援してくれました！PackyCode は信頼性と効率性の高いAPI中継サービスプロバイダーで、Claude Code、Codex、Gemini などの中継サービスを提供します。PackyCode はこのソフトウェアのユーザーに特別な割引を提供します：<a href="https://www.packyapi.com/register?aff=zcf">このリンク</a> を使用して登録し、再課金時に "zcf" プロモーションコードを入力すると 10% 割引を享受できます。</td>
-</tr>
-<tr>
-<td width="180"><a href="https://apikey.fun/register?aff=ZCFZCF"><img src="./src/assets/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
-<td>APIKEY.FUN のご支援に感謝します！APIKEY.FUN は企業および個人開発者向けに、安定・高効率・低コストな AI モデル API 接続を提供する、プロフェッショナルなエンタープライズ向け AI 中継プラットフォームです。Claude、OpenAI、Gemini などの主要モデルに対応し、価格は公式の 7% まで低減可能です。<a href="https://apikey.fun/register?aff=ZCFZCF">この専用リンク</a>から登録すると、チャージ永久 95 折（5% オフ）の特典を受けられます。</td>
-</tr>
-<tr>
-<td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="./src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
-<td>AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude Code/Codex/Gemini CLI の公式高安定性中継サービスを提供し、エンタープライズレベルの高並行処理、迅速な請求書発行、7x24 専用技術サポートをサポートしています。Claude Code/Codex/Gemini の公式チャネルは最大 3.8/0.2/10.9 割引で、チャージでさらに割引があります！AICodeMirror は ZCF ユーザーに特別な特典を提供しています：<a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">このリンク</a>から登録したユーザーは初回チャージ 20% オフ、企業顧客は最大 25% オフを享受できます！</td>
-</tr>
-<tr>
-<td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
-<td>Crazyrouter のスポンサーに感謝します！Crazyrouter は高性能 AI API 集約ゲートウェイです — 1つの API キーで 300+ モデル（GPT、Claude、Gemini、DeepSeek など）を利用可能。全モデル公式価格の 55% で提供、自動フェイルオーバー、スマートルーティング、無制限同時接続に対応。OpenAI 完全互換で、Claude Code、Codex、Gemini CLI とシームレスに連携。ZCF ユーザー限定特典：<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">こちらのリンク</a>から登録すると $2 の無料クレジットを即時プレゼント！</td>
-</tr>
-</tbody>
-</table>
-
-## 🚀 クイックスタート
-
-- 推奨：`npx zcf` でインタラクティブメニューを開き、必要な操作を選択。
-- よく使うコマンド：
+## インストール
 
 ```bash
-npx zcf i        # フル初期化：インストール + ワークフロー + API/CCR + MCP
-npx zcf u        # ワークフローのみ更新
-npx zcf --lang ja  # インターフェース言語を切り替え（例）
+# グローバルインストール
+npm i -g @xwm111/ccs
+
+# またはインストールせずに実行
+npx @xwm111/ccs
 ```
 
-- 非対話例（プロバイダープリセット）：
+## 使い方
 
 ```bash
-npx zcf i -s -p 302ai -k "sk-xxx"
+ccs                  # インタラクティブメニューを開く（デフォルト）
+ccs config-switch    # API エンドポイントの管理 / 切り替え
+ccs cs               # config-switch のエイリアス
+ccs cs --list        # 保存済みの設定を一覧表示
+ccs cs my-endpoint   # 指定した名前の設定に直接切り替え
+ccs check-updates    # Claude Code と ccs を確認・更新
+ccs check            # check-updates のエイリアス
+ccs uninstall        # ccs の設定とツールを削除
 ```
 
-より詳しい使い方・オプション・ワークフローはドキュメントを参照してください。
+主なオプション：
 
-## 📖 完全ドキュメント
+```bash
+ccs --lang zh-CN     # 表示言語を切り替え（zh-CN, en）
+ccs --help           # ヘルプを表示
+ccs --version        # バージョンを表示
+```
 
-- https://zcf.ufomiao.com/ja-JP/
+## 機能
 
-## 💬 コミュニティ
+### 1. 複数の API エンドポイントとクイック切り替え
 
-Telegramグループに参加して、サポートやディスカッション、アップデート情報を入手しましょう：
+任意の数の Claude Code API プロファイルを保存できます。各プロファイルには独自の base URL、認証方式（Auth Token / API Key）、キーがあります。インタラクティブメニューまたは `ccs cs <name>` で有効なエンドポイントを切り替え、`ccs cs --list` で設定済みのすべてを確認できます。
 
-[![Telegram](https://img.shields.io/badge/Telegram-参加-blue?style=flat&logo=telegram)](https://t.me/ufomiao_zcf)
+### 2. アップデート確認
 
-## 🙏 謝辞
+`ccs check-updates` は Claude Code と `ccs` の新しいバージョンを確認し、更新します。
 
-本プロジェクトは以下のオープンソースプロジェクトからインスピレーションを受け、さまざまな要素を取り入れています：
+## ライセンス
 
-- [LINUX DO - 新たな理想郷コミュニティ](https://linux.do)
-- [CCR](https://github.com/musistudio/claude-code-router)
-- [CCometixLine](https://github.com/Haleclipse/CCometixLine)
-- [ccusage](https://github.com/ryoppippi/ccusage)
-- [BMad Method](https://github.com/bmad-code-org/BMAD-METHOD)
+[MIT License](LICENSE)
 
-これらのコミュニティ貢献者のシェアに感謝します！
-
-
-## ❤️ サポートとスポンサー
-
-このプロジェクトが役立つと思われる場合は、開発をスポンサーすることを検討してください。あなたのサポートに非常に感謝します！
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/UfoMiao)
-
-<table>
-  <tr>
-    <td><img src="/src/assets/alipay.webp" width="200" alt="Alipay" /></td>
-    <td><img src="/src/assets/wechat.webp" width="200" alt="WeChat Pay" /></td>
-  </tr>
-</table>
-
-### スポンサー
-
-すべてのスポンサーの寛大なサポートに感謝します！
-
-【企業スポンサー】
-
-- [302.AI](https://share.302.ai/gAT9VG)（最初の企業スポンサー 🤠）
-- [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB)（最初のAIモデルスポンサー 🤖）
-- [PackyCode](https://www.packyapi.com/register?aff=zcf)（最初のAPIプロキシサービススポンサー 🧝🏻‍♀️）
-- [APIKEY.FUN](https://apikey.fun/register?aff=ZCFZCF)（企業向け AI 中継スポンサー 🎁）
-- [AICodeMirror](https://www.aicodemirror.com/register?invitecode=ZCFZCF)（公式高安定性中継サービススポンサー 🪞）
-- [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8)（$100 プロキシクレジットを提供 💰）
-- [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo)（AI API 集約ゲートウェイスポンサー 🚀）
-- [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)（公式直接接続中継サービススポンサー 🛡️）
-
-【個人スポンサー】
-
-- Tc（最初のスポンサー）
-- Argolinhas（最初のko-fiスポンサー ٩(•̤̀ᵕ•̤́๑)）
-- r\*r（最初の匿名スポンサー 🤣）
-- \*\*康（最初のKFCスポンサー 🍗）
-- \*东（最初のコーヒースポンサー ☕️）
-- 炼\*3（最初のTermuxユーザースポンサー 📱）
-- [chamo101](https://github.com/chamo101)（最初のGitHub issue ユーザースポンサー 🎉）
-- 初屿贤（最初のCodexユーザースポンサー 🙅🏻‍♂️）
-- Protein（最初の1688スポンサー 😏）
-- [musistudio](https://github.com/musistudio)（最初のオープンソースプロジェクト作者スポンサー、[CCR](https://github.com/musistudio/claude-code-router) の作者です 🤩）
-- \*年（初の100元スポンサー 💴）
-- [BeatSeat](https://github.com/BeatSeat)（コミュニティエキスパート 😎、$1000 Claude クレジットを提供）
-- [wenwen](https://github.com/wenwen12345)（コミュニティエキスパート 🤓、毎日 $100 Claude&GPT クレジットを提供）
-- 16°C coffee（私の親友 🤪、ChatGPT Pro $200パッケージを提供）
-
-### プロモーション感謝
-
-このプロジェクトを宣伝してくださった以下の著者に感謝します：
-
-- 逛逛 GitHub, ツイート: https://mp.weixin.qq.com/s/phqwSRb16MKCHHVozTFeiQ
-- Geek, ツイート: https://x.com/geekbb/status/1955174718618866076
-
-## 📄 ライセンス
-
-[MITライセンス](LICENSE)
-
----
-
-## 🚀 コントリビューター
-
-<a href="https://github.com/UfoMiao/zcf/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=UfoMiao/zcf" />
-</a>
-<br /><br />
-
-## ⭐️ スター履歴
-
-このプロジェクトが役立った場合は、⭐️ Starをお願いします！
-
-[![Star History Chart](https://api.star-history.com/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.com/#UfoMiao/zcf&Date)
-
-<!-- Badges -->
-
-[npm-version-src]: https://img.shields.io/npm/v/zcf?style=flat&colorA=080f12&colorB=1fa669
-[npm-version-href]: https://npmjs.com/package/zcf
-[npm-downloads-src]: https://img.shields.io/npm/dm/zcf?style=flat&colorA=080f12&colorB=1fa669
-[npm-downloads-href]: https://npmjs.com/package/zcf
-[license-src]: https://img.shields.io/github/license/ufomiao/zcf.svg?style=flat&colorA=080f12&colorB=1fa669
-[license-href]: https://github.com/ufomiao/zcf/blob/main/LICENSE
-[claude-code-src]: https://img.shields.io/badge/Claude-Code-1fa669?style=flat&colorA=080f12&colorB=1fa669
-[claude-code-href]: https://claude.ai/code
-[codecov-src]: https://codecov.io/gh/UfoMiao/zcf/graph/badge.svg?token=HZI6K4Y7D7&style=flat&colorA=080f12&colorB=1fa669
-[codecov-href]: https://codecov.io/gh/UfoMiao/zcf
-[jsdocs-src]: https://img.shields.io/badge/jsdocs-reference-1fa669?style=flat&colorA=080f12&colorB=1fa669
-[jsdocs-href]: https://www.jsdocs.io/package/zcf
-[deepwiki-src]: https://img.shields.io/badge/Ask-DeepWiki-1fa669?style=flat&colorA=080f12&colorB=1fa669
-[deepwiki-href]: https://deepwiki.com/UfoMiao/zcf
+Forked from [UfoMiao/zcf](https://github.com/UfoMiao/zcf) (MIT)。

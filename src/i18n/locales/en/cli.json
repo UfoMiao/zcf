@@ -50,6 +50,9 @@
   "banner.updateSubtitle": "Update configuration for Claude Code",
   "help.defaults.dailyUsage": "Daily usage (default)",
   "help.defaults.interactiveUninstall": "Interactive uninstall menu",
-  "help.defaults.updateTools": "Update Claude Code, CCR and CCometixLine",
-  "help.defaults.prefix": "default:"
+  "help.defaults.updateTools": "Update Claude Code and ccs",
+  "help.defaults.prefix": "default:",
+  "help.commandDescriptions.switchConfiguration": "Switch Claude Code API configuration",
+  "help.optionDescriptions.listConfigurations": "List available configurations",
+  "help.exampleDescriptions.switchConfiguration": "Switch API configuration"
 }

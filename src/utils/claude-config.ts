@@ -223,7 +223,7 @@ export function manageApiKeyApproval(apiKey: string): void {
   }
   catch (error) {
     ensureI18nInitialized()
-    console.error(i18n.t('mcp:apiKeyApprovalFailed'), error)
+    console.error(i18n.t('api:apiKeyApprovalFailed'), error)
     // Don't throw error to avoid breaking the main flow
     // This is a nice-to-have feature, not critical
   }
@@ -250,7 +250,7 @@ export function setPrimaryApiKey(): void {
   }
   catch (error) {
     ensureI18nInitialized()
-    console.error(i18n.t('mcp:primaryApiKeySetFailed'), error)
+    console.error(i18n.t('api:primaryApiKeySetFailed'), error)
     // Don't throw error to avoid breaking the main flow
     // This is important but shouldn't block the configuration process
   }

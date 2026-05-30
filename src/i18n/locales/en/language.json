@@ -1,5 +1,5 @@
 {
-  "selectScriptLang": "Select ZCF display language",
+  "selectScriptLang": "Select ccs display language",
   "selectConfigLang": "Select Claude Code configuration language",
   "selectAiOutputLang": "Select AI output language",
   "aiOutputLangHint": "AI will respond to you in this language",

@@ -132,80 +132,6 @@ export async function installClaudeCode(skipMethodSelection: boolean = false): P
 }
 
 /**
- * Check if Codex is installed
- */
-export async function isCodexInstalled(): Promise<boolean> {
-  return await commandExists('codex')
-}
-
-/**
- * Install Codex with method selection support
- * @param skipMethodSelection - If true, use default npm installation
- */
-export async function installCodex(skipMethodSelection: boolean = false): Promise<void> {
-  ensureI18nInitialized()
-
-  const codeType: CodeType = 'codex'
-  const codeTypeName = i18n.t('common:codex')
-
-  // Check if already installed
-  const installed = await isCodexInstalled()
-  if (installed) {
-    console.log(ansis.green(`✔ ${codeTypeName} ${i18n.t('installation:alreadyInstalled')}`))
-
-    // Detect and display current version
-    const version = await detectInstalledVersion(codeType)
-    if (version) {
-      console.log(ansis.gray(`  ${i18n.t('installation:detectedVersion', { version })}`))
-    }
-
-    return
-  }
-
-  // If skip method selection, use npm directly (for backwards compatibility)
-  if (skipMethodSelection) {
-    console.log(i18n.t('installation:installingWith', { method: 'npm', codeType: codeTypeName }))
-
-    try {
-      // Use --force to handle EEXIST errors when files already exist
-      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex', '--force'])
-      if (usedSudo) {
-        console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
-      }
-      await exec(command, args)
-      console.log(ansis.green(`✔ ${codeTypeName} ${i18n.t('installation:installSuccess')}`))
-
-      // Verify installation and create symlink if needed
-      const verification = await verifyInstallation(codeType)
-      displayVerificationResult(verification, codeType)
-    }
-    catch (error) {
-      console.error(ansis.red(`✖ ${codeTypeName} ${i18n.t('installation:installFailed')}`))
-      throw error
-    }
-    return
-  }
-
-  // New flow: select installation method
-  const method = await selectInstallMethod(codeType)
-  if (!method) {
-    console.log(ansis.yellow(i18n.t('common:cancelled')))
-    return
-  }
-
-  const success = await executeInstallMethod(method, codeType)
-
-  if (!success) {
-    // Handle installation failure with retry options
-    const retrySuccess = await handleInstallFailure(codeType, [method])
-    if (!retrySuccess) {
-      console.error(ansis.red(`✖ ${codeTypeName} ${i18n.t('installation:installFailed')}`))
-      throw new Error(i18n.t('installation:installFailed'))
-    }
-  }
-}
-
-/**
  * Check if local Claude Code installation exists
  */
 export async function isLocalClaudeCodeInstalled(): Promise<boolean> {
@@ -286,7 +212,7 @@ async function getInstallMethodFromConfig(codeType: CodeType): Promise<InstallMe
 export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const codeTypeName = i18n.t('common:claudeCode')
 
   // Try to detect install method from config
   type ExtendedInstallMethod = InstallMethod | 'npm-global' | 'native' | 'manual' | null
@@ -545,7 +471,7 @@ function getInstallMethodOptions(codeType: CodeType, recommendedMethods: Install
 export async function selectInstallMethod(codeType: CodeType, excludeMethods: InstallMethod[] = []): Promise<InstallMethod | null> {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const codeTypeName = i18n.t('common:claudeCode')
   const recommendedMethods = getRecommendedInstallMethods(codeType) as InstallMethod[]
   const methodOptions = getInstallMethodOptions(codeType, recommendedMethods)
     .filter(option => !excludeMethods.includes(option.value))
@@ -574,7 +500,7 @@ export async function selectInstallMethod(codeType: CodeType, excludeMethods: In
 export async function executeInstallMethod(method: InstallMethod, codeType: CodeType): Promise<boolean> {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const codeTypeName = i18n.t('common:claudeCode')
   const spinner = ora(i18n.t('installation:installingWith', { method, codeType: codeTypeName })).start()
 
   try {
@@ -925,10 +851,10 @@ export async function createHomebrewSymlink(command: string, sourcePath: string)
 /**
  * Display verification result to user with appropriate messages
  */
-export function displayVerificationResult(result: VerificationResult, codeType: CodeType): void {
+export function displayVerificationResult(result: VerificationResult, _codeType: CodeType): void {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const codeTypeName = i18n.t('common:claudeCode')
 
   if (result.success) {
     if (result.symlinkCreated) {

@@ -57,8 +57,8 @@ describe('constants', () => {
       expect(ClAUDE_CONFIG_FILE).toBe(join(homedir(), '.claude.json'))
     })
 
-    it('should define correct ZCF config directory path', () => {
-      expect(ZCF_CONFIG_DIR).toBe(join(homedir(), '.ufomiao', 'zcf'))
+    it('should define correct ccs config directory path', () => {
+      expect(ZCF_CONFIG_DIR).toBe(join(homedir(), '.ccs'))
     })
 
     it('should define correct ZCF config file path', () => {
@@ -75,7 +75,7 @@ describe('constants', () => {
 
   describe('code tool constants', () => {
     it('should define supported code tool types', () => {
-      expect(CODE_TOOL_TYPES).toEqual(['claude-code', 'codex'])
+      expect(CODE_TOOL_TYPES).toEqual(['claude-code'])
     })
 
     it('should define default code tool type', () => {
@@ -107,7 +107,6 @@ describe('constants', () => {
   describe('isCodeToolType function', () => {
     it('should return true for valid code tool types', () => {
       expect(isCodeToolType('claude-code')).toBe(true)
-      expect(isCodeToolType('codex')).toBe(true)
     })
 
     it('should return false for invalid code tool types', () => {
@@ -185,7 +184,7 @@ describe('constants', () => {
 
   describe('constants structure validation', () => {
     it('should have correct array lengths for constants', () => {
-      expect(CODE_TOOL_TYPES).toHaveLength(2)
+      expect(CODE_TOOL_TYPES).toHaveLength(1)
       expect(SUPPORTED_LANGS).toHaveLength(2)
     })
 

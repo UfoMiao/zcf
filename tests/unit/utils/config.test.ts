@@ -19,13 +19,11 @@ import {
 } from '../../../src/utils/config'
 import * as fsOps from '../../../src/utils/fs-operations'
 import * as jsonConfig from '../../../src/utils/json-config'
-import * as permissionCleaner from '../../../src/utils/permission-cleaner'
 import * as zcfConfig from '../../../src/utils/zcf-config'
 
 vi.mock('../../../src/utils/fs-operations')
 vi.mock('../../../src/utils/json-config')
 vi.mock('../../../src/utils/zcf-config')
-vi.mock('../../../src/utils/permission-cleaner')
 vi.mock('../../../src/utils/claude-config')
 vi.mock('../../../src/i18n')
 vi.mock('dayjs')
@@ -629,14 +627,14 @@ describe('config utilities', () => {
         .mockReturnValueOnce(templateSettings)
         .mockReturnValueOnce(existingSettings)
       vi.mocked(fsOps.exists).mockReturnValue(true)
-      vi.mocked(permissionCleaner.mergeAndCleanPermissions).mockReturnValue(['read', 'write', 'execute'])
 
       mergeSettingsFile('/template/settings.json', '/target/settings.json')
 
-      expect(permissionCleaner.mergeAndCleanPermissions).toHaveBeenCalledWith(
-        ['read', 'write'],
-        ['write', 'execute'],
-      )
+      // Permissions are merged and de-duplicated via a Set
+      const writeCall = vi.mocked(jsonConfig.writeJsonConfig).mock.calls.at(-1)
+      expect(writeCall?.[0]).toBe('/target/settings.json')
+      const written = writeCall?.[1] as { permissions: { allow: string[] } }
+      expect(written.permissions.allow).toEqual(['read', 'write', 'execute'])
     })
   })
 

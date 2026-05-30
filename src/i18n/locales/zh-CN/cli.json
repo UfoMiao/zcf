@@ -50,6 +50,9 @@
   "banner.updateSubtitle": "更新 Claude Code 配置",
   "help.defaults.dailyUsage": "每日用量（默认）",
   "help.defaults.interactiveUninstall": "交互式卸载菜单",
-  "help.defaults.updateTools": "更新 Claude Code、CCR 和 CCometixLine",
-  "help.defaults.prefix": "默认:"
+  "help.defaults.updateTools": "更新 Claude Code 和 ccs",
+  "help.defaults.prefix": "默认:",
+  "help.commandDescriptions.switchConfiguration": "切换 Claude Code API 配置",
+  "help.optionDescriptions.listConfigurations": "列出可用配置",
+  "help.exampleDescriptions.switchConfiguration": "切换 API 配置"
 }

@@ -4,12 +4,30 @@ title: 功能总览
 
 # 功能总览
 
-ZCF 将环境配置、工作流导入与工具链整合到一套 CLI 中。核心能力可以分为以下几个维度：
+`ccs`（Claude Code Switch）专注于两大功能，外加若干便捷特性。
 
-- **环境初始化**：针对 Claude Code 与 Codex 的完整初始化流程，覆盖 API、输出风格、记忆、模板、MCP、工作流与状态栏。
-- **配置管理**：支持增量管理、备份策略、多 API 配置、模板语言与 AI 输出语言分离。
-- **工作流体系**：预置六阶段工作流、Feat 工作流、BMad 敏捷、Spec 扩展与 Git 智能命令。
-- **集成生态**：涵盖 CCR、CCometixLine、Context7、Open Web Search、DeepWiki、Playwright、Serena 等。
-- **命令行工具**：提供 `zcf init/update/ccr/ccu/uninstall/config-switch` 等命令，并以交互式菜单聚合。
+## 1. 管理并切换 API 端点
 
-后续章节将详细介绍各能力及最佳实践。
+保存多个 Claude Code API 配置，每个配置都有独立的：
+
+- **Base URL** —— API 端点地址
+- **鉴权方式** —— Auth Token 或 API Key
+- **密钥** —— Token 或 API Key
+
+通过交互式菜单或 `ccs cs <name>` 直接即时切换当前生效的端点，使用 `ccs cs --list` 查看全部配置。
+
+完整用法见[配置切换](../cli/config-switch.md)。
+
+## 2. 检查更新
+
+`ccs check-updates`（别名 `ccs check`）会检查 Claude Code 和 `ccs` 的新版本并完成更新。
+
+完整用法见[版本检查](../cli/check-updates.md)。
+
+## 便捷特性
+
+- **交互式菜单** —— 运行不带参数的 `ccs`。见[主菜单](../cli/menu.md)。
+- **语言切换** —— 使用 `ccs --lang <zh-CN|en>` 在英文与简体中文之间切换界面。
+- **干净卸载** —— 使用 `ccs uninstall` 移除 ccs 的配置和工具。见[卸载与清理](../cli/uninstall.md)。
+
+所有配置均保存在 `~/.ccs` 目录中。

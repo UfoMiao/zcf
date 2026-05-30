@@ -44,20 +44,20 @@ describe('check updates command', () => {
       const { resolveCodeType } = await import('../../src/utils/code-type-resolver')
       const { ToolUpdateScheduler } = await import('../../src/utils/tool-update-scheduler')
 
-      vi.mocked(resolveCodeType).mockResolvedValue('codex')
+      vi.mocked(resolveCodeType).mockResolvedValue('claude-code')
       const mockUpdate = vi.fn()
       vi.mocked(ToolUpdateScheduler).mockImplementation(() => ({
         updateByCodeType: mockUpdate,
       }) as any)
 
       const options: CheckUpdatesOptions = {
-        codeType: 'cx',
+        codeType: 'cc',
         skipPrompt: true,
       }
 
       await checkUpdates(options)
 
-      expect(mockUpdate).toHaveBeenCalledWith('codex', true)
+      expect(mockUpdate).toHaveBeenCalledWith('claude-code', true)
     })
 
     it('should use default code type when none provided', async () => {

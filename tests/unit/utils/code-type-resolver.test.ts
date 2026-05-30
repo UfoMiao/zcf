@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 import { resolveCodeType } from '../../../src/utils/code-type-resolver'
 
-// Mock readZcfConfigAsync
+// Mock readZcfConfigAsync (codeToolType is now always claude-code)
 vi.mock('../../../src/utils/zcf-config', () => ({
   readZcfConfigAsync: vi.fn().mockResolvedValue({
-    codeToolType: 'codex',
+    codeToolType: 'claude-code',
   }),
 }))
 
@@ -27,36 +27,31 @@ describe('resolveCodeType', () => {
     expect(result).toBe('claude-code')
   })
 
-  it('should resolve cx abbreviation to codex', async () => {
-    const result = await resolveCodeType('cx')
-    expect(result).toBe('codex')
-  })
-
   it('should accept full code type names', async () => {
-    const result1 = await resolveCodeType('claude-code')
-    expect(result1).toBe('claude-code')
-
-    const result2 = await resolveCodeType('codex')
-    expect(result2).toBe('codex')
+    const result = await resolveCodeType('claude-code')
+    expect(result).toBe('claude-code')
   })
 
   it('should be case insensitive', async () => {
-    const result1 = await resolveCodeType('CC')
-    expect(result1).toBe('claude-code')
+    const result = await resolveCodeType('CC')
+    expect(result).toBe('claude-code')
+  })
 
-    const result2 = await resolveCodeType('CX')
-    expect(result2).toBe('codex')
+  it('should throw error for invalid code type (codex no longer supported)', async () => {
+    await expect(resolveCodeType('codex')).rejects.toThrow(
+      'Invalid code type: "codex". Valid options are: cc, claude-code. Using default: claude-code.',
+    )
   })
 
   it('should throw error for invalid code type', async () => {
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: codex.',
+      'Invalid code type: "invalid". Valid options are: cc, claude-code. Using default: claude-code.',
     )
   })
 
   it('should return default when no parameter provided', async () => {
     const result = await resolveCodeType()
-    expect(result).toBe('codex') // from mocked config
+    expect(result).toBe('claude-code')
   })
 
   it('should use DEFAULT_CODE_TOOL_TYPE when config read fails in error path', async () => {
@@ -66,20 +61,7 @@ describe('resolveCodeType', () => {
     vi.mocked(readZcfConfigAsync).mockRejectedValueOnce(new Error('Config read failed'))
 
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.',
-    )
-  })
-
-  it('should use config value as default when available in error path', async () => {
-    const { readZcfConfigAsync } = await import('../../../src/utils/zcf-config')
-
-    // Mock config read to succeed with custom value
-    vi.mocked(readZcfConfigAsync).mockResolvedValueOnce({
-      codeToolType: 'codex',
-    } as any)
-
-    await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: codex.',
+      'Invalid code type: "invalid". Valid options are: cc, claude-code. Using default: claude-code.',
     )
   })
 
@@ -92,7 +74,7 @@ describe('resolveCodeType', () => {
     } as any)
 
     await expect(resolveCodeType('wrong')).rejects.toThrow(
-      'Invalid code type: "wrong". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.',
+      'Invalid code type: "wrong". Valid options are: cc, claude-code. Using default: claude-code.',
     )
   })
 })

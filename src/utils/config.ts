@@ -20,7 +20,6 @@ import {
 } from './fs-operations'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { deepMerge } from './object-utils'
-import { mergeAndCleanPermissions } from './permission-cleaner'
 
 export type { ApiConfig } from '../types/config'
 
@@ -132,7 +131,7 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
     }
     catch (error) {
       ensureI18nInitialized()
-      console.error(i18n.t('mcp:primaryApiKeySetFailed'), error)
+      console.error(i18n.t('api:primaryApiKeySetFailed'), error)
       // Don't fail the API configuration
     }
   }
@@ -282,12 +281,14 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
     // Ensure user's env vars are preserved
     mergedSettings.env = mergedEnv
 
-    // Handle permissions.allow array specially to avoid duplicates and clean invalid entries
+    // Handle permissions.allow array specially to avoid duplicates
     if (mergedSettings.permissions && mergedSettings.permissions.allow) {
-      mergedSettings.permissions.allow = mergeAndCleanPermissions(
-        templateSettings.permissions?.allow,
-        existingSettings.permissions?.allow,
-      )
+      mergedSettings.permissions.allow = [
+        ...new Set([
+          ...(templateSettings.permissions?.allow ?? []),
+          ...(existingSettings.permissions?.allow ?? []),
+        ]),
+      ]
     }
 
     // Write merged settings

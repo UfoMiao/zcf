@@ -1,5 +1,5 @@
 {
-  "title": "ZCF Uninstaller",
+  "title": "ccs Uninstaller",
   "selectMainOption": "Select uninstall option:",
   "completeUninstall": "Complete Uninstall",
   "completeUninstallDesc": "Remove all Claude Code related configurations and tools",
@@ -30,8 +30,8 @@
   "warningsCount": "{{count}} warnings occurred during uninstall.",
 
   "outputStyles": "Output Styles - Remove output style configurations",
-  "commands": "Commands - Remove custom ZCF commands",
-  "agents": "Agents - Remove custom ZCF agents",
+  "commands": "Commands - Remove custom ccs commands",
+  "agents": "Agents - Remove custom ccs agents",
   "claudeMd": "CLAUDE.md - Remove global memory file",
   "permissionsEnvs": "Permissions & Envs - Remove permissions and environment variables",
   "mcps": "MCPs - Remove MCP server configurations",
@@ -39,7 +39,7 @@
   "ccline": "CCometixLine - Uninstall status line tool",
   "claudeCode": "Claude Code - Uninstall Claude Code and configurations",
   "backups": "Backups - Remove backup files",
-  "zcfConfig": "ZCF Config - Remove ZCF preference configurations",
+  "zcfConfig": "ccs Config - Remove ccs preference configurations",
 
   "settingsJsonNotFound": "settings.json not found",
   "commandsNotFound": "Commands directory not found",
@@ -50,7 +50,7 @@
   "cclinePackageNotFound": "CCometixLine package not found",
   "claudeCodePackageNotFound": "Claude Code package not found",
   "backupsNotFound": "Backup directory not found",
-  "zcfConfigNotFound": "ZCF configuration file not found",
+  "zcfConfigNotFound": "ccs configuration file not found",
   "outputStylesDirectoryNotFound": "Output styles directory not found",
   "uninstallFailed": "Failed to uninstall {{codeType}}{{message}}"
 }

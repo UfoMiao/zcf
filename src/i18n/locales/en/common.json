@@ -8,13 +8,12 @@
   "none": "None",
   "enterChoice": "Enter your choice and press enter (case-insensitive)",
   "invalidChoice": "Invalid choice. Please enter a valid option.",
-  "goodbye": "👋 Thanks for using ZCF! Goodbye!",
+  "goodbye": "👋 Thanks for using ccs! Goodbye!",
   "returnToMenu": "Return to main menu?",
   "back": "Back",
   "operationFailed": "Operation failed",
   "backupCreated": "📁 Configuration backup created: {{path}}",
   "current": "current",
   "claudeCode": "Claude Code",
-  "codex": "Codex",
   "yes": "Yes"
 }

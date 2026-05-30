@@ -9,6 +9,7 @@
   "checkingVersion": "Checking version...",
   "claudeCodeNotInstalled": "Claude Code is not installed",
   "claudeCodeUpToDate": "Claude Code is up to date (v{version})",
+  "ccsUpToDate": "ccs is up to date (v{version})",
   "cometixLineNotInstalled": "CCometixLine is not installed",
   "cometixLineUpToDate": "CCometixLine is up to date (v{version})",
   "confirmUpdate": "Update {tool} to the latest version?",

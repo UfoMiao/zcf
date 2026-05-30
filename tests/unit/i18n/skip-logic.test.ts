@@ -61,18 +61,6 @@ describe('i18n reusable skip logic', () => {
       })
     })
 
-    it('should verify actual usage of skip logic in tools.ts for Chinese', () => {
-      // This test verifies that tools.ts actually uses the concatenation approach
-      const toolsMessage = i18n.t('tools:enterCustomArgs')
-      const skipHint = i18n.t('common:emptyToSkip')
-
-      // The actual message used in code should be the concatenation
-      const expectedFullMessage = `${toolsMessage}${skipHint}`
-
-      // This test verifies the concatenation approach should be used in actual code
-      expect(expectedFullMessage).toBe(`输入自定义参数（空内容回车则跳过）`)
-    })
-
     it('should ensure base messages are clean without embedded skip hints', () => {
       INPUT_PROMPT_KEYS.forEach((key) => {
         const baseMessage = i18n.t(key)

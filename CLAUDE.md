@@ -4,11 +4,11 @@
 
 ## Project Overview
 
-ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. The current version v3.4.3 features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, sophisticated uninstallation capabilities with advanced conflict resolution, and API provider preset system for simplified configuration. The project also integrates dual code tool support, enabling both Claude Code and Codex environment configuration, with consolidated template architecture for shared resources.
+ZCF (Zero-Config Code Flow) is a CLI tool that automatically configures Claude Code environments. Built with TypeScript and distributed as an npm package, it provides one-click setup for Claude Code including configuration files, API settings, MCP services, and AI workflows. It features advanced i18next internationalization, enhanced engineering templates, intelligent IDE detection, comprehensive multi-platform support including Termux compatibility, and sophisticated uninstallation capabilities with advanced conflict resolution. API configuration uses a custom flow where users provide their own base URL, authentication type, and API key.
 
 ## Architecture Overview
 
-ZCF follows a modular CLI architecture with strict TypeScript typing, comprehensive i18next-based internationalization, and cross-platform support. The project is built using modern tooling including unbuild, Vitest, ESM-only configuration, and @antfu/eslint-config for code quality. The architecture emphasizes robust error handling, user-friendly interfaces, and extensive testing coverage with advanced tool integration including CCR proxy, Cometix status line, and CCusage analytics. Version 3.4.x introduces consolidated template architecture with shared resources in `templates/common/` for output styles, git workflows, and sixStep workflows, enabling code reuse between Claude Code and Codex.
+ZCF follows a modular CLI architecture with strict TypeScript typing, comprehensive i18next-based internationalization, and cross-platform support. The project is built using modern tooling including unbuild, Vitest, ESM-only configuration, and @antfu/eslint-config for code quality. The architecture emphasizes robust error handling, user-friendly interfaces, and extensive testing coverage with advanced tool integration including CCR proxy, Cometix status line, and CCusage analytics. It uses a consolidated template architecture with shared resources in `templates/common/` for output styles, git workflows, and sixStep workflows.
 
 ### Module Structure Diagram
 
@@ -41,7 +41,6 @@ graph TD
     C --> C8["tools/ - Tool integration"];
     C --> C9["uninstaller.ts - Advanced uninstaller"];
     C --> C10["trash.ts - Cross-platform trash"];
-    C --> C11["code-tools/ - Codex integration"];
 
     D --> D1["locales/zh-CN/ - Chinese translations"];
     D --> D2["locales/en/ - English translations"];
@@ -59,7 +58,6 @@ graph TD
     F --> F2["mcp-services.ts - MCP configurations"];
 
     G --> G1["claude-code/ - Claude Code templates"];
-    G --> G2["codex/ - Codex templates"];
     G --> G3["common/ - Shared templates (output-styles, git, sixStep)"];
 
     H --> H1["commands/ - Command tests"];
@@ -84,14 +82,13 @@ graph TD
 | Module | Path | Description | Entry Points | Test Coverage |
 |------------------------|--------------|---------------------------------------|-------------------------------------------------------|-------------------------------|
 | **Commands** | `src/commands/` | CLI command implementations with advanced interactive and non-interactive modes including comprehensive uninstallation and config switching | init.ts, menu.ts, update.ts, ccr.ts, ccu.ts, check-updates.ts, uninstall.ts, config-switch.ts | High - comprehensive test suites |
-| **Utilities** | `src/utils/` | Core functionality with enhanced configuration management, platform support, Codex integration, and advanced uninstallation capabilities | config.ts, installer.ts, platform.ts, workflow-installer.ts, ccr/, cometix/, code-tools/, uninstaller.ts, trash.ts | High - extensive unit tests |
+| **Utilities** | `src/utils/` | Core functionality with enhanced configuration management, platform support, and advanced uninstallation capabilities | config.ts, installer.ts, platform.ts, workflow-installer.ts, ccr/, cometix/, uninstaller.ts, trash.ts | High - extensive unit tests |
 | **CCR Integration** | `src/utils/ccr/` | Claude Code Router proxy management and configuration | presets.ts, commands.ts, installer.ts, config.ts | High - comprehensive CCR tests |
 | **Cometix Tools** | `src/utils/cometix/` | Status line tools and configuration management | errors.ts, common.ts, types.ts, commands.ts, installer.ts, menu.ts | High - extensive Cometix tests |
-| **Code Tools** | `src/utils/code-tools/` | Codex integration and dual code tool support | codex-config-detector.ts, codex-provider-manager.ts, codex-uninstaller.ts, codex-platform.ts, codex-config-switch.ts, codex-configure.ts, codex.ts | High - comprehensive Codex tests |
 | **Internationalization** | `src/i18n/` | Advanced i18next multilingual support with namespace organization and complete uninstall translations | index.ts, locales/zh-CN/, locales/en/ | High - translation validation |
 | **Types** | `src/types/` | Comprehensive TypeScript type definitions including Claude Code and TOML config types | workflow.ts, config.ts, ccr.ts, claude-code-config.ts, toml-config.ts | Implicit through usage |
-| **Configuration** | `src/config/` | Centralized workflow and system configurations including API provider presets | workflows.ts, mcp-services.ts, api-providers.ts | High - config validation tests |
-| **Templates** | `templates/` | Consolidated multilingual templates with shared resources in common/ for output-styles, git workflows, and sixStep workflows | claude-code/, codex/, common/ (output-styles, workflow/git, workflow/sixStep) | Medium - template validation tests |
+| **Configuration** | `src/config/` | Centralized workflow and system configurations | workflows.ts, mcp-services.ts | High - config validation tests |
+| **Templates** | `templates/` | Consolidated multilingual templates with shared resources in common/ for output-styles, git workflows, and sixStep workflows | claude-code/, common/ (output-styles, workflow/git, workflow/sixStep) | Medium - template validation tests |
 | **Testing** | `tests/` | Comprehensive test suites with layered coverage architecture and advanced uninstaller testing | commands/, utils/, unit/, integration/, edge/, i18n/, templates/ | Self-testing with 80% target |
 
 ## Project Statistics
@@ -116,14 +113,13 @@ npx zcf i                  # Full initialization
 npx zcf u                  # Update workflows only
 npx zcf ccr [--lang <en|zh-CN>]  # Claude Code Router management
 npx zcf ccu [args...]      # Run ccusage with arguments
-npx zcf check-updates [--lang <en|zh-CN>] [--code-type <claude-code|codex>]  # Check tool updates
-npx zcf config-switch [target] [--code-type <claude-code|codex>]  # Switch configurations
+npx zcf check-updates [--lang <en|zh-CN>]  # Check tool updates
+npx zcf config-switch [target]  # Switch Claude Code configurations
 npx zcf uninstall [--mode <complete|custom|interactive>] [--items <items>] [--lang <en|zh-CN>]  # ZCF uninstallation
 
 # Config switch examples
 npx zcf config-switch --list                    # List available configurations
-npx zcf config-switch provider1 --code-type codex  # Switch Codex provider
-npx zcf config-switch config1 --code-type claude-code  # Switch Claude Code config
+npx zcf config-switch config1                   # Switch to a saved Claude Code configuration
 
 # Uninstall examples
 npx zcf uninstall                                    # Interactive uninstall menu
@@ -314,20 +310,18 @@ graph TD
 2. **Advanced i18next I18N Support**: All user-facing strings support zh-CN and en localization with namespace-based organization and dynamic language switching
 3. **Smart Configuration Merging**: Intelligent config merging with comprehensive backup system to preserve user customizations
 4. **Comprehensive Cross-Platform Support**: Windows/macOS/Linux/Termux compatibility with platform-specific adaptations and path handling
-5. **Consolidated Template System**: Shared templates in `templates/common/` for output-styles, git workflows, and sixStep workflows, reducing duplication between Claude Code and Codex
+5. **Consolidated Template System**: Shared templates in `templates/common/` for output-styles, git workflows, and sixStep workflows
 6. **Intelligent IDE Integration**: Advanced IDE detection and auto-open functionality for git-worktree environments
 7. **Professional AI Personality System**: Multiple output styles including engineer-professional, laowang-engineer, nekomata-engineer, ojousama-engineer, and rem-engineer
 8. **Advanced Tool Integration**: Comprehensive integration with CCR proxy, CCusage analytics, and Cometix status line tools
 9. **Sophisticated Uninstallation System**: Advanced uninstaller with conflict resolution, selective removal, and cross-platform trash integration
-10. **Dual Code Tool Architecture**: Simultaneous support for Claude Code and Codex environment configuration with shared template resources
 
 ### Important Implementation Details
 
 1. **Advanced Windows Compatibility**: MCP configurations require sophisticated Windows path handling with proper escaping and validation
 2. **Comprehensive Configuration Backup**: All modifications create timestamped backups in `~/.claude/backup/` with full recovery capabilities
-3. **Enhanced API Configuration**: Supports Auth Token (OAuth), API Key, and CCR Proxy authentication with comprehensive validation and API provider preset system (v3.3.3+)
-4. **API Provider Preset System**: Pre-configured settings for popular providers (302.AI, GLM, MiniMax, Kimi) simplifying configuration from 5+ prompts to just 2 (provider + API key)
-5. **Advanced Workflow System**: Modular workflow installation with sophisticated dependency resolution and conflict management
+3. **Enhanced API Configuration**: Supports Auth Token (OAuth), API Key, and CCR Proxy authentication with comprehensive validation, using a custom configuration flow (user-provided base URL, auth type, and API key)
+4. **Advanced Workflow System**: Modular workflow installation with sophisticated dependency resolution and conflict management
 6. **Advanced CCR Integration**: Claude Code Router proxy management with configuration validation and preset management
 7. **Intelligent Auto-Update System**: Automated tool updating for Claude Code, CCR, and CCometixLine with comprehensive version checking
 8. **Advanced Common Tools Workflow**: Enhanced workflow category with init-project command and comprehensive agent ecosystem

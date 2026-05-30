@@ -1,4 +1,3 @@
-import type { CcrConfig } from '../types/ccr'
 import type { ClaudeCodeConfigData, ClaudeCodeProfile, OperationResult } from '../types/claude-code-config'
 import type { ZcfTomlConfig } from '../types/toml-config'
 import dayjs from 'dayjs'
@@ -222,8 +221,6 @@ export class ClaudeCodeConfigManager {
       // Clean model variables upfront; will re-set based on profile below
       clearModelEnv(settings.env)
 
-      let shouldRestartCcr = false
-
       if (profile.authType === 'api_key') {
         settings.env.ANTHROPIC_API_KEY = profile.apiKey
         delete settings.env.ANTHROPIC_AUTH_TOKEN
@@ -232,29 +229,11 @@ export class ClaudeCodeConfigManager {
         settings.env.ANTHROPIC_AUTH_TOKEN = profile.apiKey
         delete settings.env.ANTHROPIC_API_KEY
       }
-      else if (profile.authType === 'ccr_proxy') {
-        const { readCcrConfig } = await import('./ccr/config')
-        const ccrConfig = readCcrConfig()
-        if (!ccrConfig) {
-          throw new Error(i18n.t('ccr:ccrNotConfigured') || 'CCR proxy configuration not found')
-        }
 
-        const host = ccrConfig.HOST || '127.0.0.1'
-        const port = ccrConfig.PORT || 3456
-        const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
-
-        settings.env.ANTHROPIC_BASE_URL = `http://${host}:${port}`
-        settings.env.ANTHROPIC_API_KEY = apiKey
-        delete settings.env.ANTHROPIC_AUTH_TOKEN
-        shouldRestartCcr = true
-      }
-
-      if (profile.authType !== 'ccr_proxy') {
-        if (profile.baseUrl)
-          settings.env.ANTHROPIC_BASE_URL = profile.baseUrl
-        else
-          delete settings.env.ANTHROPIC_BASE_URL
-      }
+      if (profile.baseUrl)
+        settings.env.ANTHROPIC_BASE_URL = profile.baseUrl
+      else
+        delete settings.env.ANTHROPIC_BASE_URL
 
       // Apply model configuration if provided
       const hasModelConfig = Boolean(
@@ -284,11 +263,6 @@ export class ClaudeCodeConfigManager {
       const { setPrimaryApiKey, addCompletedOnboarding } = await import('./claude-config')
       setPrimaryApiKey()
       addCompletedOnboarding()
-
-      if (shouldRestartCcr) {
-        const { runCcrRestart } = await import('./ccr/commands')
-        await runCcrRestart()
-      }
     }
     catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
@@ -733,77 +707,6 @@ export class ClaudeCodeConfigManager {
   }
 
   /**
-   * Sync CCR configuration
-   */
-  static async syncCcrProfile(): Promise<void> {
-    try {
-      // 读取CCR配置
-      const { readCcrConfig } = await import('./ccr/config')
-      const ccrConfig = readCcrConfig()
-
-      if (!ccrConfig) {
-        // 如果没有CCR配置，删除CCR profile（如果存在）
-        await this.ensureCcrProfileExists(ccrConfig)
-        return
-      }
-
-      // 确保CCR profile存在且最新
-      await this.ensureCcrProfileExists(ccrConfig)
-    }
-    catch (error) {
-      console.error('Failed to sync CCR profile:', error)
-    }
-  }
-
-  /**
-   * 确保CCR配置文件存在
-   */
-  private static async ensureCcrProfileExists(ccrConfig: CcrConfig | null): Promise<void> {
-    const config = this.readConfig() || this.createEmptyConfig()
-    const ccrProfileId = 'ccr-proxy'
-    const existingCcrProfile = config.profiles[ccrProfileId]
-
-    if (!ccrConfig) {
-      // 删除CCR配置（如果存在）
-      if (existingCcrProfile) {
-        delete config.profiles[ccrProfileId]
-        // 如果删除的是当前配置，切换到其他配置
-        if (config.currentProfileId === ccrProfileId) {
-          const remainingIds = Object.keys(config.profiles)
-          config.currentProfileId = remainingIds[0] || ''
-        }
-        this.writeConfig(config)
-      }
-      return
-    }
-
-    const host = ccrConfig.HOST || '127.0.0.1'
-    const port = ccrConfig.PORT || 3456
-    const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
-    const baseUrl = `http://${host}:${port}`
-
-    // 创建或更新CCR配置
-    const ccrProfile: ClaudeCodeProfile = {
-      name: 'CCR Proxy',
-      authType: 'ccr_proxy',
-      baseUrl,
-      apiKey,
-    }
-
-    config.profiles[ccrProfileId] = {
-      ...ccrProfile,
-      id: ccrProfileId,
-    }
-
-    // 如果没有当前配置，设为当前配置
-    if (!config.currentProfileId) {
-      config.currentProfileId = ccrProfileId
-    }
-
-    this.writeConfig(config)
-  }
-
-  /**
    * Switch to official login
    */
   static async switchToOfficial(): Promise<OperationResult> {
@@ -818,32 +721,6 @@ export class ClaudeCodeConfigManager {
       this.writeConfig(config)
 
       return { success: true }
-    }
-    catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error),
-      }
-    }
-  }
-
-  /**
-   * Switch to CCR proxy
-   */
-  static async switchToCcr(): Promise<OperationResult> {
-    try {
-      // 确保CCR配置存在
-      await this.syncCcrProfile()
-
-      const config = this.readConfig()
-      if (!config || !config.profiles['ccr-proxy']) {
-        return {
-          success: false,
-          error: 'CCR proxy configuration not found. Please configure CCR first.',
-        }
-      }
-
-      return await this.switchProfile('ccr-proxy')
     }
     catch (error) {
       return {

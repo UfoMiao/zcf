@@ -1,124 +1,48 @@
 ---
-title: ZCF - Zero-Config Code Flow
+title: ccs - Claude Code Switch
 ---
-
-<p style="margin: 0; line-height: 1.5;">
-<a href="https://npmjs.com/package/zcf" target="_blank" rel="noreferrer"><img src="https://img.shields.io/npm/v/zcf?style=flat&colorA=080f12&colorB=1fa669" alt="npm version" style="display: inline-block; margin-right: 8px; vertical-align: middle;"></a>
-<a href="https://npmjs.com/package/zcf" target="_blank" rel="noreferrer"><img src="https://img.shields.io/npm/dm/zcf?style=flat&colorA=080f12&colorB=1fa669" alt="npm downloads" style="display: inline-block; margin-right: 8px; vertical-align: middle;"></a>
-<a href="https://github.com/UfoMiao/zcf/blob/main/LICENSE" target="_blank" rel="noreferrer"><img src="https://img.shields.io/github/license/ufomiao/zcf.svg?style=flat&colorA=080f12&colorB=1fa669" alt="License" style="display: inline-block; margin-right: 8px; vertical-align: middle;"></a>
-<a href="https://claude.ai/code" target="_blank" rel="noreferrer"><img src="https://img.shields.io/badge/Claude-Code-1fa669?style=flat&colorA=080f12&colorB=1fa669" alt="Claude Code" style="display: inline-block; margin-right: 8px; vertical-align: middle;"></a>
-<a href="https://codecov.io/gh/UfoMiao/zcf" target="_blank" rel="noreferrer"><img src="https://codecov.io/gh/UfoMiao/zcf/graph/badge.svg?token=HZI6K4Y7D7&style=flat&colorA=080f12&colorB=1fa669" alt="codecov" style="display: inline-block; margin-right: 8px; vertical-align: middle;"></a>
-<a href="https://www.jsdocs.io/package/zcf" target="_blank" rel="noreferrer"><img src="https://img.shields.io/badge/jsdocs-reference-1fa669?style=flat&colorA=080f12&colorB=1fa669" alt="JSDocs" style="display: inline-block; margin-right: 8px; vertical-align: middle;"></a>
-<a href="https://deepwiki.com/UfoMiao/zcf" target="_blank" rel="noreferrer"><img src="https://img.shields.io/badge/Ask-DeepWiki-1fa669?style=flat&colorA=080f12&colorB=1fa669" alt="Ask DeepWiki" style="display: inline-block; vertical-align: middle;"></a>
-</p>
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/banner.webp" alt="Banner"/>
+  <h1>ccs - Claude Code Switch</h1>
 
-  <h1>
-    ZCF - Zero-Config Code Flow
-  </h1>
-
- 
-> 零配置,一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
-
+  > 管理多个 Claude Code API 端点并一键切换 —— 同时让 Claude Code 和 ccs 保持最新。
 </div>
 
-## ♥️ 赞助商 AI API
+## 项目简介
 
+`ccs`（Claude Code Switch）是一个小巧的命令行工具，只专注做好两件事：
 
-[![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM.png)](https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII)
-本项目由 Z智谱 提供赞助, 他们通过 GLM CODING PLAN 对本项目提供技术支持。
-GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元，即可在十余款主流AI编码工具如 Claude Code、Cline、Roo Code 中畅享智谱旗舰模型GLM-4.7（受限于算力，GLM-5 目前仅限Pro用户开放），为开发者提供顶尖的编码体验。
-智谱AI为本产品提供了特别优惠，使用以下链接购买可以享受九折优惠：https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII
+1. **管理并切换 API 端点** —— 保存多个 Claude Code API 配置（base URL + 鉴权方式 + 密钥），通过交互式菜单或一条命令即时切换当前生效的配置。
+2. **检查更新** —— 将 Claude Code 和 `ccs` 本身更新到最新版本。
 
----
+此外还提供交互式菜单、中英文（zh-CN/en）界面切换以及干净的卸载功能。配置保存在 `~/.ccs` 目录中。
 
-[![赞助商 PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
-PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模型 API 中转服务商，提供 Claude 全系列与 Codex 系列模型，100% 官方源直供，不掺假不注水，欢迎检验。计费透明，Token 级账单可逐笔核验。同时支持企业级高并发，并为企业客户提供专业的管理平台，企业客户可签订正式合同并开具发票。PatewayAI 为 ZCF 用户提供了专属福利，通过<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">此链接</a>注册即送 $3 试用额度，用户充值低至 6 折，邀请好友双向赠送，邀请奖励可达 $150！
+## 快速开始
 
----
+```bash
+# 全局安装
+npm i -g @xwm111/ccs
 
-[![赞助商 AI API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
-[302.AI](https://share.302.ai/gAT9VG) 是一个按用量付费的企业级AI资源平台，提供市场上最新、最全面的AI模型和API，以及多种开箱即用的在线AI应用。
+# 或免安装直接运行
+npx @xwm111/ccs
 
----
+# 打开交互式菜单
+ccs
+```
 
-<table>
-<tbody>
-<tr>
-<td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
-<td>感谢 PackyCode 赞助了本项目！PackyCode 是一家稳定、高效的API中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务。PackyCode 为本软件的用户提供了特别优惠，使用<a href="https://www.packyapi.com/register?aff=zcf">此链接</a>注册并在充值时填写"zcf"优惠码，可以享受9折优惠。</td>
-</tr>
-<tr>
-<td width="180"><a href="https://apikey.fun/register?aff=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
-<td>感谢 APIKEY.FUN 赞助本项目！APIKEY.FUN 是一家专业的企业级 AI 中转站，致力于为企业和个人开发者提供稳定、高效、低成本的 AI 模型 API 接入服务。平台支持 Claude、OpenAI、Gemini 等主流热门模型，价格低至官方原价的 7%。通过<a href="https://apikey.fun/register?aff=ZCFZCF">本项目专属链接</a>注册，可享受最高充值永久 95 折专属优惠。</td>
-</tr>
-<tr>
-<td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
-<td>感谢 AICodeMirror 赞助了本项目！AICodeMirror 提供 Claude Code/Codex/Gemini CLI 官方高稳定中转服务，支持企业级高并发、极速开票、7x24专属技术支持。Claude Code/Codex/Gemini 官方渠道低至 3.8/0.2/10.9 折，充值更有折上折！AICodeMirror 为 ZCF 的用户提供了特别福利，通过<a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">此链接</a>注册的用户，可享受首充8折，企业客户最高可享 7.5折！</td>
-</tr>
-<tr>
-<td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
-<td>感谢 Crazyrouter 赞助了本项目！Crazyrouter 是一个高性能 AI API 聚合网关 — 一个 Key 调用 300+ 模型（GPT、Claude、Gemini、DeepSeek 等），所有模型低至官方价格 5.5 折，支持自动故障转移、智能路由和无限并发。完全兼容 OpenAI 格式，可无缝接入 Claude Code、Codex 和 Gemini CLI。Crazyrouter 为 ZCF 用户提供了专属福利，通过<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">此链接</a>注册即送 $2 免费额度！</td>
-</tr>
-</tbody>
-</table>
+详情参见 [开始使用](getting-started/)。
 
-## 项目概述
+## 为什么选择 ccs
 
-ZCF（Zero-Config Code Flow）是一个面向专业开发者的 CLI 工具，目标是在几分钟内完成 Claude Code 与 Codex 的端到端环境初始化。通过 `npx zcf` 可以一站式完成配置目录创建、API/代理接入、MCP 服务接入、工作流导入、输出风格与记忆配置，以及常用工具安装。
-
-### 为什么选择 ZCF
-
-- **零配置体验**：自动检测操作系统、语言偏好与安装状态，必要时触发增量配置，避免重复劳动。
-- **多工具统一**：同时支持 Claude Code 与 Codex，两套环境共享一套 CLI，随时切换目标平台。
-- **结构化工作流**：预置六阶段结构化工作流、Feat 规划流、BMad 敏捷流等，内置代理与指令模板。
-- **丰富的 MCP 集成**：默认提供 Context7、Open Web Search、Spec Workflow、DeepWiki、Playwright、Serena 等服务。
-- **可视化状态与运维**：包含 CCR（Claude Code Router）配置助手以及 CCometixLine 状态栏安装与升级能力。
-- **可扩展配置体系**：支持多 API 配置并行、输出风格切换、环境权限导入、模板与语言分离管理。
-
-## 使用 ZCF 你将获得什么
-
-1. **安全的隐私与权限配置**：环境变量、权限模板与备份策略自动落地，确保极简但安全的运行环境。
-2. **API 与代理管理**：支持官方登录、API Key、CCR 代理三种模式，内置 302.AI、GLM、MiniMax、Kimi 等预设。
-3. **全局输出风格与语言体系**：命令行即可设置 AI 输出语言、项目级/全局输出风格与 Codex 记忆指令。
-4. **工作流与指令模板集**：自动导入 `/zcf:workflow`、`/zcf:feat`、`/git-commit` 等命令以及对应的代理配置。
-5. **MCP 服务基座**：一键启用主流 MCP Server，并根据是否需要 API Key 智能提示环境变量要求。
-6. **辅助工具链**：CCometixLine 状态栏自动安装、CCR 管理菜单、Codex CLI 安装/升级、使用数据统计。
-
-
-## 适用人群
-
-- 需要快速搭建 Claude Code/Codex 开发环境的个人或团队。
-- 希望在 IDE 中统一管理 MCP 服务、工作流与命令体系的资深工程师。
-- 维护多台设备或多套配置，希望通过备份、模板与多 API 配置减少重复操作的团队。
+- **多端点，一键切换** —— 保存任意数量的 Claude Code API 配置并即时切换。
+- **始终最新** —— 一条命令同时更新 Claude Code 和 ccs。
+- **双语界面** —— 支持英文与简体中文。
+- **干净整洁** —— 配置独立存放于 `~/.ccs`，可通过 `ccs uninstall` 干净移除。
 
 ## 相关链接
 
-- **GitHub**：<https://github.com/UfoMiao/zcf>
-- **npm**：<https://www.npmjs.com/package/zcf>
-- **更新日志**：[CHANGELOG.md](https://github.com/UfoMiao/zcf/blob/main/CHANGELOG.md)
+- **npm**: <https://www.npmjs.com/package/@xwm111/ccs>
 
-## 💬 社区
+## 许可证
 
-加入我们的 Telegram 群组，获取支持、参与讨论和接收更新：
-
-[![Telegram](https://img.shields.io/badge/Telegram-加入群组-blue?style=flat&logo=telegram)](https://t.me/ufomiao_zcf)
-
-<!-- Badges -->
-
-[npm-version-src]: https://img.shields.io/npm/v/zcf?style=flat&colorA=080f12&colorB=1fa669
-[npm-version-href]: https://npmjs.com/package/zcf
-[npm-downloads-src]: https://img.shields.io/npm/dm/zcf?style=flat&colorA=080f12&colorB=1fa669
-[npm-downloads-href]: https://npmjs.com/package/zcf
-[license-src]: https://img.shields.io/github/license/ufomiao/zcf.svg?style=flat&colorA=080f12&colorB=1fa669
-[license-href]: https://github.com/UfoMiao/zcf/blob/main/LICENSE
-[claude-code-src]: https://img.shields.io/badge/Claude-Code-1fa669?style=flat&colorA=080f12&colorB=1fa669
-[claude-code-href]: https://claude.ai/code
-[codecov-src]: https://codecov.io/gh/UfoMiao/zcf/graph/badge.svg?token=HZI6K4Y7D7&style=flat&colorA=080f12&colorB=1fa669
-[codecov-href]: https://codecov.io/gh/UfoMiao/zcf
-[jsdocs-src]: https://img.shields.io/badge/jsdocs-reference-1fa669?style=flat&colorA=080f12&colorB=1fa669
-[jsdocs-href]: https://www.jsdocs.io/package/zcf
-[deepwiki-src]: https://img.shields.io/badge/Ask-DeepWiki-1fa669?style=flat&colorA=080f12&colorB=1fa669
-[deepwiki-href]: https://deepwiki.com/UfoMiao/zcf
+MIT 许可协议。Forked from [UfoMiao/zcf](https://github.com/UfoMiao/zcf) (MIT)。

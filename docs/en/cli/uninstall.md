@@ -76,7 +76,6 @@ Remove all ZCF-related configurations and tools:
 
 **Will Delete**:
 - ✅ Claude Code configuration (`~/.claude/`)
-- ✅ Codex configuration (`~/.codex/`)
 - ✅ CCR configuration (`~/.claude-code-router/`)
 - ✅ CCometixLine configuration (`~/.cometix/`)
 - ✅ ZCF global configuration (`~/.ufomiao/zcf/`)
@@ -84,7 +83,6 @@ Remove all ZCF-related configurations and tools:
 
 **Will Not Delete**:
 - ❌ Claude Code CLI itself (needs to be uninstalled through other methods)
-- ❌ Codex CLI itself (needs to be uninstalled through other methods)
 - ❌ System-level tools and dependencies
 
 ### Custom Uninstall Mode
@@ -94,10 +92,9 @@ You can selectively uninstall the following components:
 | Component | Description | Configuration Location |
 |------|------|---------|
 | `claude-code` | Claude Code configuration | `~/.claude/` |
-| `codex` | Codex configuration | `~/.codex/` |
 | `ccr` | Claude Code Router configuration | `~/.claude-code-router/` |
 | `cometix` | CCometixLine configuration | `~/.cometix/` |
-| `backups` | All backup files | `~/.claude/backup/`, `~/.codex/backup/` etc. |
+| `backups` | All backup files | `~/.claude/backup/` etc. |
 | `zcf-config` | ZCF global configuration | `~/.ufomiao/zcf/` |
 
 ```bash
@@ -142,7 +139,6 @@ npx zcf uninstall --mode custom --items backups
 # Reconfigure on new device, clean old device
 # 1. Backup configuration on new device
 cp -r ~/.claude ~/claude-backup
-cp -r ~/.codex ~/codex-backup
 
 # 2. Initialize on new device
 npx zcf init
@@ -178,7 +174,6 @@ If you need to restore:
 ```bash
 # Find backup location
 ls -la ~/.claude/backup/
-ls -la ~/.codex/backup/
 
 # Manually restore (example)
 cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
@@ -226,9 +221,6 @@ It's recommended to manually backup important configurations before uninstalling
 # Backup Claude Code configuration
 tar -czf claude-backup.tar.gz ~/.claude/
 
-# Backup Codex configuration
-tar -czf codex-backup.tar.gz ~/.codex/
-
 # Backup ZCF configuration
 tar -czf zcf-backup.tar.gz ~/.ufomiao/zcf/
 ```
@@ -260,7 +252,7 @@ In test or development environments:
 ```bash
 # Quick reset test environment
 npx zcf uninstall --mode complete
-npx zcf init -s -p 302ai -k "test-key" -g zh-CN
+npx zcf init -s -t api_key -k "test-key" -u "https://api.example.com" -g zh-CN
 ```
 
 ## Troubleshooting
@@ -275,7 +267,7 @@ If uninstall fails:
 
 ```bash
 # Check permissions
-ls -la ~/.claude/ ~/.codex/
+ls -la ~/.claude/
 
 # Check process occupancy
 lsof ~/.claude/  # macOS/Linux
@@ -292,7 +284,6 @@ If some files are not deleted:
 ```bash
 # Manual cleanup (use with caution)
 rm -rf ~/.claude/
-rm -rf ~/.codex/
 rm -rf ~/.ufomiao/zcf/
 ```
 

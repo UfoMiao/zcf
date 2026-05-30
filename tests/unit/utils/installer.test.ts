@@ -7,7 +7,6 @@ import * as platform from '../../../src/utils/platform'
 const {
   getInstallationStatus,
   installClaudeCode,
-  installCodex,
   isClaudeCodeInstalled,
   isLocalClaudeCodeInstalled,
   removeLocalClaudeCode,
@@ -419,53 +418,7 @@ describe('installer utilities', () => {
     })
   })
 
-  describe('installCodex', () => {
-    it('should return early when Codex is already installed and log detected version', async () => {
-      vi.mocked(platform.commandExists).mockResolvedValueOnce(true)
-
-      await installCodex()
-
-      expect(exec).toHaveBeenCalledWith('codex', ['--version'])
-    })
-
-    it('should log detected version details when Codex is installed', async () => {
-      vi.mocked(platform.commandExists).mockResolvedValue(true)
-      vi.mocked(exec).mockResolvedValue({ exitCode: 0, stdout: 'codex 0.2.0' } as any)
-
-      await installCodex()
-
-      expect(exec).toHaveBeenCalledWith('codex', ['--version'])
-    })
-
-    it('should install Codex via npm when skipping method selection', async () => {
-      vi.mocked(platform.commandExists).mockResolvedValueOnce(false)
-      vi.spyOn(installerModule, 'isCodexInstalled').mockResolvedValueOnce(false)
-      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
-      vi.mocked(platform.wrapCommandWithSudo).mockReturnValue({
-        command: 'npm',
-        args: ['install', '-g', '@openai/codex', '--force'],
-        usedSudo: false,
-      })
-
-      await installCodex(true)
-
-      // npm install now includes --force to handle EEXIST errors
-      expect(exec).toHaveBeenCalledWith('npm', ['install', '-g', '@openai/codex', '--force'])
-    })
-
-    it('should honor selected install method in interactive flow with --cask', async () => {
-      vi.mocked(platform.commandExists)
-        .mockResolvedValueOnce(false) // isCodexInstalled check
-        .mockResolvedValue(true) // verifyInstallation check
-      mockInquirer.prompt.mockResolvedValue({ method: 'homebrew' })
-      vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as any)
-
-      await installCodex()
-
-      // Codex is installed as a cask
-      expect(exec).toHaveBeenCalledWith('brew', ['install', '--cask', 'codex'])
-    })
-
+  describe('uninstallCodeTool', () => {
     it('should fall back to npm when config read fails during uninstall method detection', async () => {
       claudeConfigMock.readMcpConfig.mockImplementation(() => {
         throw new Error('read fail')
@@ -670,7 +623,7 @@ describe('installer utilities', () => {
     })
   })
 
-  describe('uninstallCodeTool', () => {
+  describe('uninstallCodeTool - install method scenarios', () => {
     beforeEach(() => {
       claudeConfigMock.readMcpConfig.mockReset()
     })

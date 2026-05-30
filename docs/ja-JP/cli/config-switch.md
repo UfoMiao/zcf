@@ -4,7 +4,7 @@ title: 設定切替
 
 # 設定切替
 
-`zcf config-switch` は複数の API 設定間を素早く切り替えるために使用されます。異なるプロジェクトで異なる API プロバイダーを使用するユーザーに適しています。
+`zcf config-switch` は複数の Claude Code API 設定間を素早く切り替えるために使用されます。異なるプロジェクトで異なる API を使用するユーザーに適しています。
 
 > **別名**：`zcf cs` という短縮形を使用できます。すべての例は `npx zcf cs --list` などの形式に書き換えることができます。
 
@@ -17,20 +17,14 @@ npx zcf cs
 # 利用可能なすべての設定を一覧表示
 npx zcf cs --list
 
-# 指定された設定に直接切替（Claude Code）
-npx zcf cs provider1
-
-# ツールタイプを指定（短縮形 -T cc/cx をサポート）
-npx zcf cs --list -T cc      # Claude Code 設定を一覧表示
-npx zcf cs --list -T cx      # Codex 設定を一覧表示
-npx zcf cs provider1 -T cx   # Codex 設定を切替
+# 指定された設定に直接切替
+npx zcf cs work-api
 ```
 
 ## パラメータ説明
 
 | パラメータ | 説明 | オプション値 | デフォルト値 |
 |------|------|--------|--------|
-| `--code-type`, `-T` | ツールタイプを指定 | `claude-code` (cc), `codex` (cx) | ZCF 設定から読み取り |
 | `--list`, `-l` | 設定のみを一覧表示し、切替しない | なし | いいえ |
 | `目標設定` | 切替先の設定名を直接指定 | 設定名または ID | なし |
 
@@ -49,17 +43,6 @@ npx zcf cs provider1 -T cx   # Codex 設定を切替
 - プロファイル管理：各設定は独立したプロファイルとして保存
 - 現在の設定識別子：`currentProfileId` フィールド
 
-### Codex 設定切替
-
-Codex のモデルプロバイダーの切替をサポートします：
-
-1. **公式ログイン**：Codex 公式 OAuth ログインを使用
-2. **カスタムプロバイダー**：`zcf init` で設定されたプロバイダー（302.AI、GLM など）
-
-**設定ソース**：
-- 設定ファイル：`~/.codex/config.toml`
-- プロバイダーリスト：設定ファイルから読み取られた設定済みプロバイダー
-
 ## 使用方法
 
 ### インタラクティブ切替
@@ -70,23 +53,14 @@ Codex のモデルプロバイダーの切替をサポートします：
 npx zcf cs
 ```
 
-**Claude Code インタラクティブインターフェース**：
+**インタラクティブインターフェース**：
 ```
 ? Claude Code 設定を選択：
   ❯ ● 公式ログインを使用 (current)
     CCR プロキシ
-    GLM Provider (glm-provider)
-    302.AI Provider (302ai-provider)
-    MiniMax Provider (minimax-provider)
-```
-
-**Codex インタラクティブインターフェース**：
-```
-? Codex プロバイダーを選択：
-  ❯ ● 公式ログインを使用 (current)
-    302.AI プロバイダー
-    GLM プロバイダー
-    MiniMax プロバイダー
+    作業 API (work-api)
+    個人 API (personal-api)
+    予備 API (backup-api)
 ```
 
 ### すべての設定を一覧表示
@@ -94,11 +68,7 @@ npx zcf cs
 現在利用可能なすべての設定を表示します：
 
 ```bash
-# Claude Code 設定
-npx zcf cs --list --code-type claude-code
-
-# Codex 設定
-npx zcf cs --list --code-type codex
+npx zcf cs --list
 ```
 
 **出力例**：
@@ -107,8 +77,8 @@ npx zcf cs --list --code-type codex
 
 1. 公式ログイン (current)
 2. CCR プロキシ
-3. GLM Provider - glm-provider
-4. 302.AI Provider - 302ai-provider
+3. 作業 API - work-api
+4. 個人 API - personal-api
 ```
 
 ### 直接切替
@@ -116,16 +86,13 @@ npx zcf cs --list --code-type codex
 設定名がわかっている場合、直接切替できます：
 
 ```bash
-# 指定されたプロファイルに切替（プロバイダーの英語名を使用）
-npx zcf cs glm-provider
-
-# Codex プロバイダーを切替
-npx zcf cs glm-provider --code-type codex
+# 指定されたプロファイルに切替（設定名を使用）
+npx zcf cs work-api
 ```
 
 **サポートされるマッチング方法**：
-- 設定 ID（`glm-provider` など）
-- 設定名（`GLM Provider` など）
+- 設定 ID（`work-api` など）
+- 設定名（`作業 API` など）
 
 ## 設定管理
 
@@ -137,17 +104,17 @@ npx zcf cs glm-provider --code-type codex
 # 複数設定パラメータを使用
 npx zcf init --api-configs '[
   {
-    "name": "GLM Provider",
-    "provider": "glm",
+    "name": "作業 API",
     "type": "api_key",
-    "key": "sk-glm-xxx",
-    "primaryModel": "glm-4"
+    "key": "sk-work-xxx",
+    "url": "https://api.example.com",
+    "primaryModel": "claude-sonnet-4-5"
   },
   {
-    "name": "302.AI Provider",
-    "provider": "302ai",
+    "name": "個人 API",
     "type": "api_key",
-    "key": "sk-302ai-xxx",
+    "key": "sk-personal-xxx",
+    "url": "https://personal.api.com",
     "primaryModel": "claude-sonnet-4-5"
   }
 ]'
@@ -155,17 +122,15 @@ npx zcf init --api-configs '[
 
 ### 設定命名の推奨事項
 
-識別と管理を容易にするため、プロバイダー（Provider）の英語名を使用することを推奨します：
+識別と管理を容易にするため、意味のある英語名を使用することを推奨します：
 
 ✅ **推奨**：
-- `glm-provider` - GLM プロバイダー
-- `302ai-provider` - 302.AI プロバイダー
-- `minimax-provider` - MiniMax プロバイダー
-- `kimi-provider` - Kimi プロバイダー
-- `packycode-provider` - PackyCode プロバイダー
+- `work-api` - 作業 API
+- `personal-api` - 個人 API
+- `backup-api` - 予備 API
 
 ❌ **非推奨**：
-- `作業環境`、`個人開発`、`work-env`、`personal-dev` などの使用シナリオベースの命名
+- `作業環境`、`個人開発` などの非英語名
 - `config1`、`config2` などの意味のない名前
 - `default`、`new` などの汎用名
 - 意味のないランダム文字列
@@ -174,7 +139,7 @@ npx zcf init --api-configs '[
 
 設定を切替えると：
 
-1. **メイン設定を更新**：`settings.json` または `config.toml` の API 設定を変更
+1. **メイン設定を更新**：`settings.json` の API 設定を変更
 2. **設定項目を適用**：API URL、キー、モデル選択などを含む
 3. **切替結果を表示**：成功または失敗のプロンプト
 
@@ -185,46 +150,36 @@ npx zcf init --api-configs '[
 
 ## 使用シナリオ
 
-### 1. 異なるプロジェクトで異なる API プロバイダーを使用
+### 1. 異なるプロジェクトで異なる API を使用
 
 ```bash
-# プロジェクト A は GLM を使用
-npx zcf cs glm-provider
+# プロジェクト A は作業 API を使用
+npx zcf cs work-api
 
-# プロジェクト B は 302.AI を使用
-npx zcf cs 302ai-provider
+# プロジェクト B は個人 API を使用
+npx zcf cs personal-api
 
-# プロジェクト C は MiniMax を使用
-npx zcf cs minimax-provider
+# プロジェクト C は予備 API を使用
+npx zcf cs backup-api
 ```
 
 ### 2. 新しい設定をテスト
 
 ```bash
 # テスト設定に切替
-npx zcf cs kimi-provider
+npx zcf cs backup-api
 
 # テスト完了後に戻す
-npx zcf cs glm-provider
-```
-
-### 3. Codex プロバイダーを切替
-
-```bash
-# Codex プロバイダーを一覧表示
-npx zcf cs --code-type codex --list
-
-# 指定されたプロバイダーに切替
-npx zcf cs glm-provider --code-type codex
+npx zcf cs work-api
 ```
 
 ## ベストプラクティス
 
 ### 設定の整理
 
-1. **プロバイダー別に分類**：GLM、302.AI、MiniMax、Kimi、PackyCode
-2. **標準命名を使用**：`{provider}-provider` 形式（例：`glm-provider`）
-3. **一貫性を維持**：同じプロバイダーを異なるプロジェクトで同じ設定名を維持
+1. **用途別に分類**：work、personal、backup
+2. **標準命名を使用**：`{用途}-api` 形式（例：`work-api`）
+3. **一貫性を維持**：同じ API を異なるプロジェクトで同じ設定名を維持
 
 ### 切替前の準備
 
@@ -237,15 +192,15 @@ npx zcf cs glm-provider --code-type codex
 異なる Worktree で異なる設定を使用します：
 
 ```bash
-# メインブランチは GLM 設定を使用
-npx zcf cs glm-provider
+# メインブランチは作業設定を使用
+npx zcf cs work-api
 
 # 機能ブランチ Worktree を作成
 /git-worktree add feat/new-feature -o
 
 # 機能ブランチで設定を切替
 cd ../.zcf/project-name/feat/new-feature
-npx zcf cs 302ai-provider
+npx zcf cs personal-api
 ```
 
 ## よくある質問
@@ -253,7 +208,7 @@ npx zcf cs 302ai-provider
 ### Q: 切替後に設定が有効にならない？
 
 A: 
-1. Claude Code または Codex を再起動
+1. Claude Code を再起動
 2. 設定ファイルが正しく更新されているか確認
 3. API キーが有効か検証
 
@@ -270,10 +225,6 @@ A: ZCF メインメニューから設定を管理できます：
 ### Q: 設定を切替えるとデータが失われますか？
 
 A: いいえ。切替は現在使用されている API 設定のみを変更し、データや設定を削除することはありません。
-
-### Q: Codex と Claude Code の設定は独立していますか？
-
-A: はい。両者は異なる設定ファイル（`~/.codex/config.toml` と `~/.claude/settings.json`）を使用し、個別に管理できます。
 
 ## 関連ドキュメント
 

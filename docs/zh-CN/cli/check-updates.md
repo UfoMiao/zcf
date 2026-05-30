@@ -4,18 +4,15 @@ title: 版本检查
 
 # 版本检查
 
-`zcf check-updates` 用于检测并更新 ZCF 工具链中的各个组件，包括 ZCF 本身、Claude Code、CCR、CCometixLine、Codex 等工具。
+`zcf check-updates` 用于检测并更新 ZCF 工具链中的各个组件，包括 ZCF 本身、Claude Code、CCR、CCometixLine 等工具。
 
-> **别名**：可使用同等效果的 `zcf check`（如 `npx zcf check -T cx`）。
+> **别名**：可使用同等效果的 `zcf check`（如 `npx zcf check`）。
 
 ## 命令格式
 
 ```bash
-# 检查所有工具更新（Claude Code 模式）
+# 检查所有工具更新
 npx zcf check
-
-# 检查 Codex 相关工具更新
-npx zcf check -T cx
 
 # 非交互模式（自动更新，跳过确认）
 npx zcf check -s
@@ -29,14 +26,11 @@ npx zcf
 
 | 参数 | 简写 | 说明 | 可选值 | 默认值 |
 |------|------|------|--------|--------|
-| `--code-type, -T` | `-T` | 指定工具类型 | `claude-code`, `codex`, `cc`, `cx` | 从 ZCF 配置读取 |
 | `--skip-prompt, -s` | `-s` | 跳过交互确认（非交互模式） | 无 | 否（交互模式） |
 
 ## 检查的工具
 
-### Claude Code 模式
-
-当 `-T` 为 `cc`（或 `claude-code`）或未指定时，检查以下工具：
+该命令会检查以下工具：
 
 1. **CCR (Claude Code Router)**
    - 包名：`@musistudio/claude-code-router`
@@ -49,14 +43,6 @@ npx zcf
 3. **CCometixLine**
    - 包名：`@cometix/ccline`
    - 检查方式：npm registry
-
-### Codex 模式
-
-当 `-T` 为 `cx`（或 `codex`）时，检查：
-
-1. **Codex CLI**
-   - 检查方式：Codex 官方 API
-   - 更新方式：自动下载并安装最新版本
 
 ## 工作流程
 
@@ -131,15 +117,6 @@ npx zcf check
 npx zcf check -s
 ```
 
-### 针对性更新
-
-只检查特定工具类型的更新：
-
-```bash
-# 只检查 Codex 相关工具
-npx zcf check -T cx
-```
-
 ## 更新策略
 
 ### 安全更新建议
@@ -198,7 +175,6 @@ ZCF 会检查工具之间的版本兼容性，确保：
 
 - CCR 与 Claude Code 版本匹配
 - CCometixLine 与 Claude Code 兼容
-- Codex CLI 为最新稳定版
 
 ## 使用建议
 
@@ -230,9 +206,6 @@ ccr status
 
 # 验证 CCometixLine（如果安装）
 ccline --version
-
-# 验证 Codex
-codex --version
 ```
 
 ## 与 zcf init 联动

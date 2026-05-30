@@ -62,10 +62,6 @@ describe('zcf-config utilities', () => {
       defaultOutputStyle: 'nekomata-engineer',
       installType: 'global',
     },
-    codex: {
-      enabled: false,
-      systemPromptStyle: 'engineer-professional',
-    },
   }
 
   const sampleTomlString = `version = "1.0.0"
@@ -80,11 +76,7 @@ current_tool = "claude-code"
 enabled = true
 output_styles = ["engineer-professional", "nekomata-engineer"]
 default_output_style = "nekomata-engineer"
-install_type = "global"
-
-[codex]
-enabled = false
-system_prompt_style = "engineer-professional"`
+install_type = "global"`
 
   describe('helper utilities', () => {
     it('should create default config with zh-CN AI output when preferredLang is zh-CN', () => {
@@ -101,7 +93,7 @@ system_prompt_style = "engineer-professional"`
         preferredLang: 'zh-CN',
         templateLang: 'en',
         aiOutputLang: 'zh-CN',
-        codeToolType: 'codex',
+        codeToolType: 'claude-code',
         outputStyles: ['engineer-professional'],
         defaultOutputStyle: 'engineer-professional',
         currentProfileId: 'profile-1',
@@ -113,7 +105,6 @@ system_prompt_style = "engineer-professional"`
 
       expect(migrated.general.preferredLang).toBe('zh-CN')
       expect(migrated.claudeCode.installType).toBe('local')
-      expect(migrated.codex.enabled).toBe(true)
       expect(migrated.claudeCode.currentProfile).toBe('profile-1')
     })
 
@@ -146,17 +137,13 @@ system_prompt_style = "engineer-professional"`
         general: {
           preferredLang: 'en' as const,
           aiOutputLang: 'en',
-          currentTool: 'codex' as const,
+          currentTool: 'claude-code' as const,
         },
         claudeCode: {
           enabled: false,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global' as const,
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -170,7 +157,7 @@ system_prompt_style = "engineer-professional"`
         version: '1.0.0',
         preferredLang: 'en',
         aiOutputLang: 'en',
-        codeToolType: 'codex',
+        codeToolType: 'claude-code',
         lastUpdated: '2024-01-01',
         outputStyles: ['engineer-professional'],
         defaultOutputStyle: 'engineer-professional',
@@ -231,10 +218,6 @@ system_prompt_style = "engineer-professional"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global' as const,
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
@@ -245,7 +228,7 @@ system_prompt_style = "engineer-professional"`
 
       // Migration is handled internally
 
-      updateZcfConfig({ preferredLang: 'zh-CN', codeToolType: 'codex' })
+      updateZcfConfig({ preferredLang: 'zh-CN', codeToolType: 'claude-code' })
 
       // Verify writeFile was called and the content includes updated top-level fields
       expect(mockWriteFile).toHaveBeenCalled()
@@ -272,50 +255,6 @@ system_prompt_style = "engineer-professional"`
         expect.any(String),
         'mocked toml content',
       )
-    })
-
-    it('should preserve codex system prompt style when updating unrelated fields', () => {
-      const existingTomlConfig: ZcfTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: '2025-09-21T08:00:00.000Z',
-        general: {
-          preferredLang: 'zh-CN',
-          templateLang: 'zh-CN',
-          aiOutputLang: 'zh-CN',
-          currentTool: 'codex',
-        },
-        claudeCode: {
-          enabled: false,
-          outputStyles: ['engineer-professional'],
-          defaultOutputStyle: 'engineer-professional',
-          installType: 'global',
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'nekomata-engineer',
-        },
-      }
-
-      mockExists.mockReturnValue(true)
-      mockReadFile.mockReturnValue(sampleTomlString)
-      mockParseToml.mockReturnValue(existingTomlConfig)
-
-      // batchEditToml is used when file exists for incremental editing
-      // Return content with old version/lastUpdated to verify they get updated
-      mockBatchEditToml.mockImplementation(() => 'version = "1.0.0"\nlastUpdated = "2024-01-01"\n[codex]\nenabled = true')
-      mockEnsureDir.mockReturnValue(undefined)
-      mockWriteFile.mockReturnValue(undefined)
-
-      updateZcfConfig({ codeToolType: 'codex' })
-
-      // Verify batchEditToml was called (file exists case uses incremental editing)
-      expect(mockBatchEditToml).toHaveBeenCalled()
-      // Verify writeFile was called and the content includes updated top-level fields
-      expect(mockWriteFile).toHaveBeenCalled()
-      const writeCall = mockWriteFile.mock.calls[0]
-      const writtenContent = writeCall[1] as string
-      // Verify lastUpdated is updated to current timestamp (ISO format)
-      expect(writtenContent).toMatch(/lastUpdated\s*=\s*["']\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
     })
   })
 
@@ -385,10 +324,6 @@ system_prompt_style = "engineer-professional"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global' as const,
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
       mockExists.mockReturnValue(true)
       mockReadFile.mockReturnValue(sampleTomlString)
@@ -434,17 +369,13 @@ system_prompt_style = "engineer-professional"`
         lastUpdated: '2024-06-01',
         general: {
           preferredLang: 'zh-CN' as const,
-          currentTool: 'codex' as const,
+          currentTool: 'claude-code' as const,
         },
         claudeCode: {
           enabled: false,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global' as const,
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'engineer-professional',
         },
       }
       mockExists.mockReturnValue(true)
@@ -455,7 +386,7 @@ system_prompt_style = "engineer-professional"`
 
       expect(result.version).toBe('2.0.0')
       expect(result.preferredLang).toBe('zh-CN')
-      expect(result.codeToolType).toBe('codex')
+      expect(result.codeToolType).toBe('claude-code')
       expect(result.lastUpdated).toBe('2024-06-01')
     })
 
@@ -504,17 +435,13 @@ system_prompt_style = "engineer-professional"`
         general: {
           preferredLang: 'zh-CN' as const,
           aiOutputLang: 'zh-CN',
-          currentTool: 'codex' as const,
+          currentTool: 'claude-code' as const,
         },
         claudeCode: {
           enabled: false,
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global' as const,
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'engineer-professional',
         },
       }
       mockExists.mockReturnValue(true)
@@ -525,7 +452,7 @@ system_prompt_style = "engineer-professional"`
 
       expect(result.version).toBe('2.0.0')
       expect(result.preferredLang).toBe('zh-CN')
-      expect(result.codeToolType).toBe('codex')
+      expect(result.codeToolType).toBe('claude-code')
       expect(result.lastUpdated).toBe('2024-06-01')
     })
   })
@@ -538,17 +465,12 @@ system_prompt_style = "engineer-professional"`
         general: {
           preferredLang: 'en' as const,
           aiOutputLang: 'en',
-          currentTool: 'codex' as const,
+          currentTool: 'claude-code' as const,
         },
         claudeCode: {
           enabled: false,
           outputStyles: ['style1'],
           defaultOutputStyle: 'style1',
-          installType: 'global' as const,
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'style1',
           installType: 'global' as const,
         },
       }
@@ -584,7 +506,7 @@ system_prompt_style = "engineer-professional"`
         aiOutputLang: 'zh-CN',
         outputStyles: ['nekomata-engineer'],
         defaultOutputStyle: 'nekomata-engineer',
-        codeToolType: 'codex' as const,
+        codeToolType: 'claude-code' as const,
       }
 
       // Mock internal TOML operations
@@ -684,10 +606,6 @@ system_prompt_style = "engineer-professional"`
             defaultOutputStyle: 'engineer-professional',
             installType: 'global',
           },
-          codex: {
-            enabled: false,
-            systemPromptStyle: 'engineer-professional',
-          },
         }
 
         mockExists.mockReturnValue(true)
@@ -729,10 +647,6 @@ system_prompt_style = "engineer-professional"`
             defaultOutputStyle: 'engineer-professional',
             installType: 'global',
           },
-          codex: {
-            enabled: false,
-            systemPromptStyle: 'engineer-professional',
-          },
         }
 
         mockExists.mockReturnValue(true)
@@ -770,10 +684,8 @@ system_prompt_style = "engineer-professional"`
         expect(result.general.preferredLang).toBe('en')
         expect(result.general.currentTool).toBe(DEFAULT_CODE_TOOL_TYPE)
         expect(result.claudeCode.enabled).toBe(true)
-        expect(result.codex.enabled).toBe(false)
         expect(result.claudeCode.outputStyles).toEqual(['engineer-professional'])
         expect(result.claudeCode.defaultOutputStyle).toBe('engineer-professional')
-        expect(result.codex.systemPromptStyle).toBe('engineer-professional')
       })
 
       it('should create config with custom language preference', () => {
@@ -816,22 +728,19 @@ system_prompt_style = "engineer-professional"`
         expect(result.claudeCode.outputStyles).toEqual(['engineer-professional', 'nekomata-engineer'])
         expect(result.claudeCode.defaultOutputStyle).toBe('nekomata-engineer')
         expect(result.claudeCode.installType).toBe('local')
-        expect(result.codex.enabled).toBe(false)
       })
 
       it('should handle partial JSON config migration', () => {
         const partialJsonConfig = {
           version: '1.0.0',
           preferredLang: 'en',
-          codeToolType: 'codex',
+          codeToolType: 'claude-code',
         }
 
         const result = migrateFromJsonConfig(partialJsonConfig)
 
-        expect(result.general.currentTool).toBe('codex')
-        expect(result.claudeCode.enabled).toBe(false)
-        expect(result.codex.enabled).toBe(true)
-        expect(result.codex.systemPromptStyle).toBe('engineer-professional')
+        expect(result.general.currentTool).toBe('claude-code')
+        expect(result.claudeCode.enabled).toBe(true)
       })
 
       it('should handle corrupted JSON config gracefully', () => {
@@ -860,7 +769,6 @@ system_prompt_style = "engineer-professional"`
         expect(result.general.preferredLang).toBe('en')
         expect(result.general.currentTool).toBe('claude-code')
         expect(result.claudeCode.enabled).toBe(false)
-        expect(result.codex.enabled).toBe(false)
       })
     })
   })
@@ -891,10 +799,6 @@ preferredLang = "en"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
           version: '1.5.0', // This should remain unchanged
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -946,10 +850,6 @@ enabled = true`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
 
       mockExists.mockReturnValue(true)
@@ -993,10 +893,6 @@ preferredLang = "en"`
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1047,10 +943,6 @@ preferredLang = "en"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
 
       mockExists.mockReturnValue(true)
@@ -1098,10 +990,6 @@ version = "1.5.0"`
           installType: 'global',
           version: '1.5.0',
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
 
       mockExists.mockReturnValue(true)
@@ -1146,10 +1034,6 @@ preferredLang = "en"`
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1197,10 +1081,6 @@ preferredLang = "en"`
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1278,10 +1158,6 @@ preferredLang = "en"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
 
       mockExists.mockReturnValue(true)
@@ -1316,10 +1192,6 @@ preferredLang = "en"`
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1361,10 +1233,6 @@ preferredLang = "en"`
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1410,10 +1278,6 @@ preferredLang = "en"`
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1461,10 +1325,6 @@ author = "developer"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
 
       mockExists.mockReturnValue(true)
@@ -1502,10 +1362,6 @@ preferredLang = "en"`
           outputStyles: ['engineer-professional'],
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1548,10 +1404,6 @@ preferredLang = "en"`
           },
           version: '1.2.3',
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
 
       mockExists.mockReturnValue(true)
@@ -1575,46 +1427,6 @@ preferredLang = "en"`
       // The actual profile preservation logic is covered by the function implementation
       expect(mockWriteFile).toHaveBeenCalled()
     })
-
-    it('should preserve systemPromptStyle from existing codex config', () => {
-      const existingTomlConfig: ZcfTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: '2025-01-01T00:00:00.000Z',
-        general: {
-          preferredLang: 'en',
-          currentTool: 'codex',
-        },
-        claudeCode: {
-          enabled: false,
-          outputStyles: ['engineer-professional'],
-          defaultOutputStyle: 'engineer-professional',
-          installType: 'global',
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'nekomata-engineer',
-        },
-      }
-
-      mockExists.mockReturnValue(true)
-      mockReadFile.mockReturnValue(sampleTomlString)
-      mockParseToml.mockReturnValue(existingTomlConfig)
-      mockBatchEditToml.mockReturnValue(sampleTomlString)
-      mockEnsureDir.mockReturnValue(undefined)
-      mockWriteFile.mockReturnValue(undefined)
-
-      const config = {
-        version: '1.0.0',
-        preferredLang: 'en' as const,
-        lastUpdated: '2024-01-01',
-        codeToolType: 'codex' as const,
-      }
-
-      writeZcfConfig(config)
-
-      // The test verifies the function runs and preserves systemPromptStyle
-      expect(mockWriteFile).toHaveBeenCalled()
-    })
   })
 
   // Tests for migrateFromJsonConfig edge cases
@@ -1631,19 +1443,6 @@ preferredLang = "en"`
 
       expect(result.general.preferredLang).toBe('zh-CN')
       expect(result.general.templateLang).toBe('en')
-    })
-
-    it('should handle JSON config with systemPromptStyle set', () => {
-      const jsonConfig = {
-        version: '1.0.0',
-        preferredLang: 'en',
-        codeToolType: 'codex',
-        systemPromptStyle: 'laowang-engineer',
-      }
-
-      const result = migrateFromJsonConfig(jsonConfig)
-
-      expect(result.codex.systemPromptStyle).toBe('laowang-engineer')
     })
 
     it('should default to global installType when claudeCodeInstallation is missing', () => {
@@ -1710,10 +1509,6 @@ preferredLang = "en"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
         },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
-        },
       }
 
       mockExists.mockReturnValue(true)
@@ -1758,7 +1553,6 @@ preferredLang = "en"`
       expect(result.general.preferredLang).toBe('zh-CN')
       // Should have defaults for other fields
       expect(result.claudeCode.enabled).toBe(true)
-      expect(result.codex.enabled).toBe(false)
     })
 
     it('should deep merge claudeCode updates', () => {
@@ -1776,10 +1570,6 @@ preferredLang = "en"`
           defaultOutputStyle: 'engineer-professional',
           installType: 'global',
           currentProfile: 'profile-1',
-        },
-        codex: {
-          enabled: false,
-          systemPromptStyle: 'engineer-professional',
         },
       }
 
@@ -1803,46 +1593,6 @@ preferredLang = "en"`
       expect(result.claudeCode.defaultOutputStyle).toBe('nekomata-engineer')
       expect(result.claudeCode.enabled).toBe(true) // Preserved
       expect(result.claudeCode.installType).toBe('global') // Preserved
-    })
-
-    it('should deep merge codex updates', () => {
-      const configPath = '/test/codex-merge-config.toml'
-      const existingConfig: ZcfTomlConfig = {
-        version: '1.0.0',
-        lastUpdated: '2024-01-01T00:00:00.000Z',
-        general: {
-          preferredLang: 'en',
-          currentTool: 'codex',
-        },
-        claudeCode: {
-          enabled: false,
-          outputStyles: ['engineer-professional'],
-          defaultOutputStyle: 'engineer-professional',
-          installType: 'global',
-        },
-        codex: {
-          enabled: true,
-          systemPromptStyle: 'engineer-professional',
-        },
-      }
-
-      mockExists.mockReturnValue(true)
-      mockReadFile.mockReturnValue('existing content')
-      mockParseToml.mockReturnValue(existingConfig)
-      mockBatchEditToml.mockReturnValue('updated content')
-      mockEnsureDir.mockReturnValue(undefined)
-      mockWriteFile.mockReturnValue(undefined)
-
-      const updates = {
-        codex: {
-          systemPromptStyle: 'laowang-engineer',
-        },
-      } as PartialZcfTomlConfig
-
-      const result = updateTomlConfig(configPath, updates)
-
-      expect(result.codex.systemPromptStyle).toBe('laowang-engineer')
-      expect(result.codex.enabled).toBe(true) // Preserved
     })
   })
 })

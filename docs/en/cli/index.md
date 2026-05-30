@@ -4,17 +4,21 @@ title: Commands Overview
 
 # Commands Overview
 
-ZCF CLI is implemented based on `cac`, and all commands can be called via `npx zcf <command>`. Common commands are as follows:
+The `ccs` CLI is built on `cac`. After installing with `npm i -g @xwm111/ccs` (or via `npx @xwm111/ccs`), the commands are:
 
 | Command | Description |
 | --- | --- |
-| `zcf` | Open interactive menu, aggregating all functions |
-| `zcf init` / `zcf i` | Complete initialization, covering Claude Code or Codex |
-| `zcf update` / `zcf u` | Update workflows and templates, with language and output style options |
-| `zcf ccr` | Manage Claude Code Router proxy |
-| `zcf ccu` | Claude Code usage analysis and statistics |
-| `zcf uninstall` | Uninstall configuration with option to keep backups |
-| `zcf config-switch` / `zcf cs` | Switch between multiple configurations |
-| `zcf check-updates` / `zcf check` | Check and upgrade toolchain |
+| `ccs` | Open the interactive menu (default) |
+| `ccs config-switch` / `ccs cs` | Manage and switch Claude Code API endpoints |
+| `ccs check-updates` / `ccs check` | Check and update Claude Code and ccs |
+| `ccs uninstall` | Remove ccs configurations and tools |
 
-Each command supports `--help` to view detailed parameters. The following chapters will explain each one.
+Common options:
+
+| Option | Description |
+| --- | --- |
+| `--lang, -l <lang>` | Display language (`zh-CN`, `en`) |
+| `--help, -h` | Show help |
+| `--version, -v` | Show version |
+
+Each command supports `--help` for detailed options. The following chapters cover each one.

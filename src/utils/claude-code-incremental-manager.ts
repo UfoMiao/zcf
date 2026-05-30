@@ -94,36 +94,6 @@ async function promptContinueAdding(): Promise<boolean> {
 async function handleAddProfile(): Promise<void> {
   console.log(ansis.cyan(`\n${i18n.t('multi-config:addingNewProfile')}`))
 
-  // Step 1: Select API provider (custom or preset)
-  const { getApiProviders } = await import('../config/api-providers')
-  const providers = getApiProviders('claude-code')
-
-  const providerChoices = [
-    { name: i18n.t('api:customProvider'), value: 'custom' },
-    ...providers.map((p: any) => ({ name: p.name, value: p.id })),
-  ]
-
-  const { selectedProvider } = await inquirer.prompt<{ selectedProvider: string }>([{
-    type: 'list',
-    name: 'selectedProvider',
-    message: i18n.t('api:selectApiProvider'),
-    choices: addNumbersToChoices(providerChoices),
-  }])
-
-  let prefilledBaseUrl: string | undefined
-  let prefilledAuthType: 'api_key' | 'auth_token' | undefined
-  let prefilledDefaultModels: string[] | undefined
-
-  if (selectedProvider !== 'custom') {
-    const provider = providers.find((p: any) => p.id === selectedProvider)
-    if (provider?.claudeCode) {
-      prefilledBaseUrl = provider.claudeCode.baseUrl
-      prefilledAuthType = provider.claudeCode.authType
-      prefilledDefaultModels = provider.claudeCode.defaultModels
-      console.log(ansis.gray(i18n.t('api:providerSelected', { name: provider.name })))
-    }
-  }
-
   const answers = await inquirer.prompt<{
     profileName: string
     authType: 'api_key' | 'auth_token' | 'ccr_proxy'
@@ -135,7 +105,6 @@ async function handleAddProfile(): Promise<void> {
       type: 'input',
       name: 'profileName',
       message: i18n.t('multi-config:profileNamePrompt'),
-      default: selectedProvider !== 'custom' ? providers.find((p: any) => p.id === selectedProvider)?.name : undefined,
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed) {
@@ -155,15 +124,14 @@ async function handleAddProfile(): Promise<void> {
         { name: i18n.t('multi-config:authType.api_key'), value: 'api_key' },
         { name: i18n.t('multi-config:authType.auth_token'), value: 'auth_token' },
       ],
-      default: prefilledAuthType || 'api_key',
-      when: () => selectedProvider === 'custom', // Only ask if custom
+      default: 'api_key',
     },
     {
       type: 'input',
       name: 'baseUrl',
       message: i18n.t('multi-config:baseUrlPrompt'),
-      default: prefilledBaseUrl || 'https://api.anthropic.com',
-      when: (answers: any) => selectedProvider === 'custom' && answers.authType !== 'ccr_proxy',
+      default: 'https://api.anthropic.com',
+      when: (answers: any) => answers.authType !== 'ccr_proxy',
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed) {
@@ -183,10 +151,8 @@ async function handleAddProfile(): Promise<void> {
     {
       type: 'input',
       name: 'apiKey',
-      message: selectedProvider !== 'custom'
-        ? i18n.t('api:enterProviderApiKey', { provider: providers.find((p: any) => p.id === selectedProvider)?.name || selectedProvider })
-        : i18n.t('multi-config:apiKeyPrompt'),
-      when: (answers: any) => selectedProvider === 'custom' ? answers.authType !== 'ccr_proxy' : true,
+      message: i18n.t('multi-config:apiKeyPrompt'),
+      when: (answers: any) => answers.authType !== 'ccr_proxy',
       validate: (input: string) => {
         const trimmed = input.trim()
         if (!trimmed) {
@@ -204,12 +170,9 @@ async function handleAddProfile(): Promise<void> {
     },
   ])
 
-  // For custom provider, prompt for model configuration
-  let modelConfig: { primaryModel: string, haikuModel: string, sonnetModel: string, opusModel: string } | null = null
-  if (selectedProvider === 'custom') {
-    const { promptCustomModels } = await import('./features')
-    modelConfig = await promptCustomModels()
-  }
+  // Prompt for model configuration
+  const { promptCustomModels } = await import('./features')
+  const modelConfig: { primaryModel: string, haikuModel: string, sonnetModel: string, opusModel: string } | null = await promptCustomModels()
 
   // Continue with setAsDefault prompt
   const setAsDefault = await promptBoolean({
@@ -223,12 +186,12 @@ async function handleAddProfile(): Promise<void> {
   const profile: ClaudeCodeProfile = {
     id: profileId,
     name: profileName,
-    authType: selectedProvider === 'custom' ? answers.authType : prefilledAuthType!,
+    authType: answers.authType,
   }
 
   if (profile.authType !== 'ccr_proxy') {
     profile.apiKey = answers.apiKey.trim()
-    profile.baseUrl = selectedProvider === 'custom' ? answers.baseUrl.trim() : prefilledBaseUrl!
+    profile.baseUrl = answers.baseUrl.trim()
   }
 
   // Add model configuration if provided
@@ -242,16 +205,6 @@ async function handleAddProfile(): Promise<void> {
       profile.defaultSonnetModel = modelConfig.sonnetModel.trim()
     if (modelConfig.opusModel.trim())
       profile.defaultOpusModel = modelConfig.opusModel.trim()
-  }
-  else if (prefilledDefaultModels?.length) {
-    if (prefilledDefaultModels[0]?.trim())
-      profile.primaryModel = prefilledDefaultModels[0].trim()
-    if (prefilledDefaultModels[1]?.trim())
-      profile.defaultHaikuModel = prefilledDefaultModels[1].trim()
-    if (prefilledDefaultModels[2]?.trim())
-      profile.defaultSonnetModel = prefilledDefaultModels[2].trim()
-    if (prefilledDefaultModels[3]?.trim())
-      profile.defaultOpusModel = prefilledDefaultModels[3].trim()
   }
 
   const existingProfile = ClaudeCodeConfigManager.getProfileByName(profile.name)

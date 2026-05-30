@@ -233,12 +233,6 @@ function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
         edits.push(['claudeCode.version', config.claudeCode.version])
       }
 
-      // Codex section
-      edits.push(
-        ['codex.enabled', config.codex.enabled],
-        ['codex.systemPromptStyle', config.codex.systemPromptStyle],
-      )
-
       try {
         // Apply incremental edits preserving user customizations
         let updatedContent = batchEditToml(existingContent, edits)
@@ -250,10 +244,22 @@ function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
           config.lastUpdated,
         )
 
+        // Validate round-trip: incremental editing can serialize nested objects
+        // (e.g. claudeCode.profiles) as malformed inline tables. If the result no
+        // longer round-trips the profiles, fall back to a full stringify.
+        const expectedProfiles = Object.keys(config.claudeCode.profiles || {}).length
+        if (expectedProfiles > 0) {
+          const verify = parseToml<ZcfTomlConfig>(updatedContent)
+          const actualProfiles = Object.keys(verify?.claudeCode?.profiles || {}).length
+          if (actualProfiles !== expectedProfiles) {
+            throw new Error('Incremental edit produced inconsistent profiles')
+          }
+        }
+
         writeFile(configPath, updatedContent)
       }
       catch {
-        // Fall back to full stringify if incremental editing fails
+        // Fall back to full stringify if incremental editing fails or is inconsistent
         const tomlContent = stringifyToml(config as unknown as Record<string, unknown>)
         writeFile(configPath, tomlContent)
       }
@@ -294,10 +300,6 @@ function createDefaultTomlConfig(preferredLang: SupportedLang = 'en', claudeCode
       currentProfile: '',
       profiles: {},
     },
-    codex: {
-      enabled: false,
-      systemPromptStyle: 'engineer-professional',
-    },
   }
 }
 
@@ -329,10 +331,6 @@ function migrateFromJsonConfig(jsonConfig: any): ZcfTomlConfig {
       currentProfile: jsonConfig.currentProfileId || defaultConfig.claudeCode.currentProfile,
       profiles: jsonConfig.claudeCode?.profiles || {},
     },
-    codex: {
-      enabled: jsonConfig.codeToolType === 'codex',
-      systemPromptStyle: jsonConfig.systemPromptStyle || defaultConfig.codex.systemPromptStyle,
-    },
   }
 
   return tomlConfig
@@ -358,10 +356,6 @@ function updateTomlConfig(configPath: string, updates: PartialZcfTomlConfig): Zc
     claudeCode: {
       ...existingConfig.claudeCode,
       ...updates.claudeCode,
-    },
-    codex: {
-      ...existingConfig.codex,
-      ...updates.codex,
     },
   }
 
@@ -505,14 +499,6 @@ export function writeZcfConfig(config: ZcfConfig): void {
     }
     const existingTomlConfig = readTomlConfig(ZCF_CONFIG_FILE)
     const tomlConfig = convertLegacyToTomlConfig(sanitizedConfig)
-
-    const nextSystemPromptStyle
-      = (sanitizedConfig as any).systemPromptStyle
-        || existingTomlConfig?.codex?.systemPromptStyle
-
-    if (nextSystemPromptStyle) {
-      tomlConfig.codex.systemPromptStyle = nextSystemPromptStyle
-    }
 
     if (existingTomlConfig?.claudeCode) {
       if (existingTomlConfig.claudeCode.profiles) {

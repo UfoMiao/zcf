@@ -1,41 +1,19 @@
 import type { CAC } from 'cac'
-import type { CodeToolType, SupportedLang } from './constants'
+import type { SupportedLang } from './constants'
 import ansis from 'ansis'
 import { version } from '../package.json'
-import { ccr } from './commands/ccr'
-import { executeCcusage } from './commands/ccu'
 import { checkUpdates } from './commands/check-updates'
 import { configSwitchCommand } from './commands/config-switch'
-import { init } from './commands/init'
 import { showMainMenu } from './commands/menu'
 import { uninstall } from './commands/uninstall'
-import { update } from './commands/update'
 import { changeLanguage, i18n, initI18n } from './i18n'
 import { selectScriptLanguage } from './utils/prompts'
 import { readZcfConfigAsync } from './utils/zcf-config'
 
 export interface CliOptions {
   lang?: 'zh-CN' | 'en'
-  configLang?: 'zh-CN' | 'en'
-  aiOutputLang?: string
-  force?: boolean
+  allLang?: string
   skipPrompt?: boolean
-  codeType?: CodeToolType
-  // Non-interactive parameters
-  configAction?: string // default: backup
-  apiType?: string
-  apiKey?: string // Used for both API key and auth token
-  apiUrl?: string
-  apiModel?: string // Primary API model (e.g., claude-sonnet-4-5)
-  apiHaikuModel?: string // Default Haiku model
-  apiSonnetModel?: string // Default Sonnet model
-  apiOpusModel?: string // Default Opus model
-  mcpServices?: string // default: all non-key services, "skip" to skip all
-  workflows?: string // default: all workflows, "skip" to skip all
-  outputStyles?: string // default: all custom styles
-  defaultOutputStyle?: string // default: engineer-professional
-  allLang?: string // New: unified language parameter
-  installCometixLine?: string | boolean // New: CCometixLine installation control, default: true
 }
 
 //  Interface for language-related options extraction
@@ -107,27 +85,17 @@ export function customizeHelp(sections: any[]): any[] {
   // Add custom header
   sections.unshift({
     title: '',
-    body: ansis.cyan.bold(`ZCF - Zero-Config Code Flow v${version}`),
+    body: ansis.cyan.bold(`ccs - Claude Code Switch v${version}`),
   })
 
   // Add commands section with aliases
   sections.push({
     title: ansis.yellow(i18n.t('cli:help.commands')),
     body: [
-      `  ${ansis.cyan('zcf')}              ${i18n.t('cli:help.commandDescriptions.showInteractiveMenuDefault')}`,
-      `  ${ansis.cyan('zcf init')} | ${ansis.cyan(
-        'i',
-      )}     ${i18n.t('cli:help.commandDescriptions.initClaudeCodeConfig')}`,
-      `  ${ansis.cyan('zcf update')} | ${ansis.cyan('u')}   ${i18n.t('cli:help.commandDescriptions.updateWorkflowFiles')}`,
-      `  ${ansis.cyan('zcf ccr')}          ${i18n.t('cli:help.commandDescriptions.configureCcrProxy')}`,
-      `  ${ansis.cyan('zcf ccu')} [args]   ${i18n.t('cli:help.commandDescriptions.claudeCodeUsageAnalysis')}`,
-      `  ${ansis.cyan('zcf uninstall')}     ${i18n.t('cli:help.commandDescriptions.uninstallConfigurations')}`,
-      `  ${ansis.cyan('zcf check-updates')} ${i18n.t('cli:help.commandDescriptions.checkUpdateVersions')}`,
-      '',
-      ansis.gray(`  ${i18n.t('cli:help.shortcuts')}`),
-      `  ${ansis.cyan('zcf i')}            ${i18n.t('cli:help.shortcutDescriptions.quickInit')}`,
-      `  ${ansis.cyan('zcf u')}            ${i18n.t('cli:help.shortcutDescriptions.quickUpdate')}`,
-      `  ${ansis.cyan('zcf check')}        ${i18n.t('cli:help.shortcutDescriptions.quickCheckUpdates')}`,
+      `  ${ansis.cyan('ccs')}                      ${i18n.t('cli:help.commandDescriptions.showInteractiveMenuDefault')}`,
+      `  ${ansis.cyan('ccs config-switch')} | ${ansis.cyan('cs')}  ${i18n.t('cli:help.commandDescriptions.switchConfiguration')}`,
+      `  ${ansis.cyan('ccs check-updates')} | ${ansis.cyan('check')}  ${i18n.t('cli:help.commandDescriptions.checkUpdateVersions')}`,
+      `  ${ansis.cyan('ccs uninstall')}            ${i18n.t('cli:help.commandDescriptions.uninstallConfigurations')}`,
     ].join('\n'),
   })
 
@@ -135,30 +103,11 @@ export function customizeHelp(sections: any[]): any[] {
   sections.push({
     title: ansis.yellow(i18n.t('cli:help.options')),
     body: [
-      `  ${ansis.green('--lang, -l')} <lang>         ${i18n.t('cli:help.optionDescriptions.displayLanguage')} (zh-CN, en)`,
-      `  ${ansis.green('--config-lang, -c')} <lang>  ${i18n.t('cli:help.optionDescriptions.configurationLanguage')} (zh-CN, en)`,
-      `  ${ansis.green('--force, -f')}               ${i18n.t('cli:help.optionDescriptions.forceOverwrite')}`,
-      `  ${ansis.green('--help, -h')}                ${i18n.t('cli:help.optionDescriptions.displayHelp')}`,
-      `  ${ansis.green('--version, -v')}             ${i18n.t('cli:help.optionDescriptions.displayVersion')}`,
-      '',
-      ansis.gray(`  ${i18n.t('cli:help.nonInteractiveMode')}`),
-      `  ${ansis.green('--skip-prompt, -s')}         ${i18n.t('cli:help.optionDescriptions.skipAllPrompts')}`,
-      `  ${ansis.green('--api-type, -t')} <type>      ${i18n.t('cli:help.optionDescriptions.apiType')} (auth_token, api_key, ccr_proxy, skip)`,
-      `  ${ansis.green('--api-key, -k')} <key>       ${i18n.t('cli:help.optionDescriptions.apiKey')}`,
-      `  ${ansis.green('--api-url, -u')} <url>       ${i18n.t('cli:help.optionDescriptions.customApiUrl')}`,
-      `  ${ansis.green('--api-model, -M')} <model>   ${i18n.t('cli:help.optionDescriptions.apiModel')} (e.g., claude-sonnet-4-5)`,
-      `  ${ansis.green('--api-haiku-model, -H')} <model> ${i18n.t('cli:help.optionDescriptions.apiHaikuModel')} (e.g., claude-haiku-4-5)`,
-      `  ${ansis.green('--api-sonnet-model, -S')} <model> ${i18n.t('cli:help.optionDescriptions.apiSonnetModel')} (e.g., claude-sonnet-4-5)`,
-      `  ${ansis.green('--api-opus-model, -O')} <model> ${i18n.t('cli:help.optionDescriptions.apiOpusModel')} (e.g., claude-opus-4-5)`,
-      `  ${ansis.green('--ai-output-lang, -a')} <lang> ${i18n.t('cli:help.optionDescriptions.aiOutputLanguage')}`,
-      `  ${ansis.green('--all-lang, -g')} <lang>     ${i18n.t('cli:help.optionDescriptions.setAllLanguageParams')}`,
-      `  ${ansis.green('--config-action, -r')} <action> ${i18n.t('cli:help.optionDescriptions.configHandling')} (${i18n.t('cli:help.defaults.prefix')} backup)`,
-      `  ${ansis.green('--mcp-services, -m')} <list>  ${i18n.t('cli:help.optionDescriptions.mcpServices')} (${i18n.t('cli:help.defaults.prefix')} all non-key services)`,
-      `  ${ansis.green('--workflows, -w')} <list>    ${i18n.t('cli:help.optionDescriptions.workflows')} (${i18n.t('cli:help.defaults.prefix')} all workflows)`,
-      `  ${ansis.green('--output-styles, -o')} <styles> ${i18n.t('cli:help.optionDescriptions.outputStyles')} (${i18n.t('cli:help.defaults.prefix')} all custom styles)`,
-      `  ${ansis.green('--default-output-style, -d')} <style> ${i18n.t('cli:help.optionDescriptions.defaultOutputStyle')} (${i18n.t('cli:help.defaults.prefix')} engineer-professional)`,
-      `  ${ansis.green('--code-type, -T')} <type>   ${i18n.t('cli:help.optionDescriptions.codeToolType')} (claude-code, codex, cc=claude-code, cx=codex)`,
-      `  ${ansis.green('--install-cometix-line, -x')} <value> ${i18n.t('cli:help.optionDescriptions.installStatuslineTool')} (${i18n.t('cli:help.defaults.prefix')} true)`,
+      `  ${ansis.green('--lang, -l')} <lang>      ${i18n.t('cli:help.optionDescriptions.displayLanguage')} (zh-CN, en)`,
+      `  ${ansis.green('--all-lang, -g')} <lang>  ${i18n.t('cli:help.optionDescriptions.setAllLanguageParams')}`,
+      `  ${ansis.green('--list, -l')}             ${i18n.t('cli:help.optionDescriptions.listConfigurations')}`,
+      `  ${ansis.green('--help, -h')}             ${i18n.t('cli:help.optionDescriptions.displayHelp')}`,
+      `  ${ansis.green('--version, -v')}          ${i18n.t('cli:help.optionDescriptions.displayVersion')}`,
     ].join('\n'),
   })
 
@@ -167,41 +116,18 @@ export function customizeHelp(sections: any[]): any[] {
     title: ansis.yellow(i18n.t('cli:help.examples')),
     body: [
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.showInteractiveMenu')}`),
-      `  ${ansis.cyan('npx zcf')}`,
+      `  ${ansis.cyan('npx @xwm111/ccs')}`,
       '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.runFullInitialization')}`),
-      `  ${ansis.cyan('npx zcf init')}`,
-      `  ${ansis.cyan('npx zcf i')}`,
-      '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.updateWorkflowFilesOnly')}`),
-      `  ${ansis.cyan('npx zcf u')}`,
-      '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.configureClaudeCodeRouter')}`),
-      `  ${ansis.cyan('npx zcf ccr')}`,
-      '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.runClaudeCodeUsageAnalysis')}`),
-      `  ${ansis.cyan('npx zcf ccu')}               ${ansis.gray(`# ${i18n.t('cli:help.defaults.dailyUsage')}`)}`,
-      `  ${ansis.cyan('npx zcf ccu monthly --json')}`,
-      '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.uninstallConfigurations')}`),
-      `  ${ansis.cyan('npx zcf uninstall')}         ${ansis.gray(`# ${i18n.t('cli:help.defaults.interactiveUninstall')}`)}`,
+      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.switchConfiguration')}`),
+      `  ${ansis.cyan('ccs config-switch --list')}`,
+      `  ${ansis.cyan('ccs cs my-endpoint')}`,
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkAndUpdateTools')}`),
-      `  ${ansis.cyan('npx zcf check-updates')}     ${ansis.gray(`# ${i18n.t('cli:help.defaults.updateTools')}`)}`,
-      `  ${ansis.cyan('npx zcf check')}`,
+      `  ${ansis.cyan('ccs check-updates')}`,
+      `  ${ansis.cyan('ccs check')}`,
       '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkClaudeCode')}`),
-      `  ${ansis.cyan('npx zcf check --code-type claude-code')}`,
-      `  ${ansis.cyan('npx zcf check -T cc')}`,
-      '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkCodex')}`),
-      `  ${ansis.cyan('npx zcf check --code-type codex')}`,
-      `  ${ansis.cyan('npx zcf check -T cx')}`,
-      '',
-      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.nonInteractiveModeCicd')}`),
-      `  ${ansis.cyan('npx zcf i --skip-prompt --api-type api_key --api-key "sk-ant-..."')}`,
-      `  ${ansis.cyan('npx zcf i --skip-prompt --all-lang zh-CN --api-type api_key --api-key "key"')}`,
-      `  ${ansis.cyan('npx zcf i --skip-prompt --api-type ccr_proxy')}`,
+      ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.uninstallConfigurations')}`),
+      `  ${ansis.cyan('ccs uninstall')}`,
       '',
     ].join('\n'),
   })
@@ -225,98 +151,31 @@ export async function setupCommands(cli: CAC): Promise<void> {
   // Default command - show menu
   cli
     .command('', 'Show interactive menu (default)')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
-    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
-    .option('--force, -f', 'Force overwrite existing configuration')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
-    .action(await withLanguageResolution(async (options) => {
-      await showMainMenu({ codeType: options.codeType })
-    }))
-
-  // Init command
-  cli
-    .command('init', 'Initialize Claude Code configuration')
-    .alias('i')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
-    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
-    .option('--ai-output-lang, -a <lang>', 'AI output language')
-    .option('--force, -f', 'Force overwrite existing configuration')
-    .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
-    .option('--config-action, -r <action>', `Config handling (new/backup/merge/docs-only/skip), ${i18n.t('cli:help.defaults.prefix')} backup`)
-    .option('--api-type, -t <type>', 'API type (auth_token/api_key/ccr_proxy/skip)')
-    .option('--api-key, -k <key>', 'API key (used for both API key and auth token types)')
-    .option('--api-url, -u <url>', 'Custom API URL')
-    .option('--api-model, -M <model>', 'Primary API model (e.g., claude-sonnet-4-5)')
-    .option('--api-haiku-model, -H <model>', 'Default Haiku model (e.g., claude-haiku-4-5)')
-    .option('--api-sonnet-model, -S <model>', 'Default Sonnet model (e.g., claude-sonnet-4-5)')
-    .option('--api-opus-model, -O <model>', 'Default Opus model (e.g., claude-opus-4-5)')
-    .option('--provider, -p <provider>', 'API provider preset (302ai, glm, minimax, kimi, custom)')
-    .option('--mcp-services, -m <services>', `Comma-separated MCP services to install (context7,mcp-deepwiki,Playwright,exa), "skip" to skip all, "all" for all non-key services, ${i18n.t('cli:help.defaults.prefix')} all`)
-    .option('--workflows, -w <workflows>', `Comma-separated workflows to install (sixStepsWorkflow,featPlanUx,gitWorkflow,bmadWorkflow), "skip" to skip all, "all" for all workflows, ${i18n.t('cli:help.defaults.prefix')} all`)
-    .option('--output-styles, -o <styles>', `Comma-separated output styles (engineer-professional,nekomata-engineer,laowang-engineer,default,explanatory,learning), "skip" to skip all, "all" for all custom styles, ${i18n.t('cli:help.defaults.prefix')} all`)
-    .option('--default-output-style, -d <style>', `Default output style, ${i18n.t('cli:help.defaults.prefix')} engineer-professional`)
-    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
-    .option('--install-cometix-line, -x <value>', `Install CCometixLine statusline tool (true/false), ${i18n.t('cli:help.defaults.prefix')} true`)
-    .option('--api-configs <configs>', 'API configurations as JSON string for multiple profiles')
-    .option('--api-configs-file <file>', 'Path to JSON file containing API configurations')
-    .action(await withLanguageResolution(async (options) => {
-      await init(options)
-    }))
-
-  // Update command
-  cli
-    .command('update', 'Update Claude Code prompts only')
-    .alias('u')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
-    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
-    .action(await withLanguageResolution(async (options) => {
-      await update(options)
-    }))
-
-  // CCR command - Configure Claude Code Router
-  cli
-    .command('ccr', 'Configure Claude Code Router for model proxy')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'Display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .action(await withLanguageResolution(async () => {
-      await ccr()
+      await showMainMenu()
     }))
 
-  // CCU command - Claude Code usage analysis
+  // Config switch command - Switch Claude Code API configuration
   cli
-    .command('ccu [...args]', 'Run Claude Code usage analysis tool')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
-    .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .allowUnknownOptions()
-    .action(await withLanguageResolution(async (args) => {
-      await executeCcusage(args)
-    }))
-
-  // Config switch command - Switch Codex provider or Claude Code configuration
-  cli
-    .command('config-switch [target]', 'Switch Codex provider or Claude Code configuration, or list available configurations')
+    .command('config-switch [target]', 'Switch Claude Code API configuration, or list available configurations')
     .alias('cs')
-    .option('--code-type, -T <type>', 'Code tool type (claude-code, codex, cc, cx)')
-    .option('--lang <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang <lang>', 'Display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--list, -l', 'List available configurations')
     .action(await withLanguageResolution(async (target, options) => {
       await configSwitchCommand({
         target,
-        codeType: options.codeType,
         list: options.list,
       })
     }))
 
-  // Uninstall command - Remove ZCF configurations and tools
+  // Uninstall command - Remove ccs configurations and tools
   cli
-    .command('uninstall', 'Remove ZCF configurations and tools')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .command('uninstall', 'Remove ccs configurations and tools')
+    .option('--lang, -l <lang>', 'Display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .option('--mode, -m <mode>', 'Uninstall mode (complete/custom/interactive), default: interactive')
     .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
     .action(await withLanguageResolution(async (options) => {
@@ -325,11 +184,10 @@ export async function setupCommands(cli: CAC): Promise<void> {
 
   // Check updates command
   cli
-    .command('check-updates', 'Check and update Claude Code and CCR to latest versions')
+    .command('check-updates', 'Check and update Claude Code and ccs to latest versions')
     .alias('check')
-    .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--lang, -l <lang>', 'Display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
     .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
     .action(await withLanguageResolution(async (options) => {
       await checkUpdates(options)

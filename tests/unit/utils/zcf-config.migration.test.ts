@@ -36,7 +36,7 @@ vi.mock('../../../src/utils/toml-edit', () => ({
 
 describe('zcf-config migration', () => {
   const home = homedir()
-  const newDir = join(home, '.ufomiao', 'zcf')
+  const newDir = join(home, '.ccs')
   const newPath = join(newDir, 'config.toml')
   const claudeLegacy = join(home, '.claude', '.zcf-config.json')
   const legacyJson = join(home, '.zcf.json')

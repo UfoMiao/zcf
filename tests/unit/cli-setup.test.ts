@@ -4,16 +4,16 @@ import { version } from '../../package.json'
 import { customizeHelp, setupCommands, withLanguageResolution } from '../../src/cli-setup'
 
 // Mock commands
-vi.mock('../../src/commands/init', () => ({
-  init: vi.fn().mockResolvedValue(undefined),
-}))
-
 vi.mock('../../src/commands/menu', () => ({
   showMainMenu: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../src/commands/update', () => ({
-  update: vi.fn().mockResolvedValue(undefined),
+vi.mock('../../src/commands/config-switch', () => ({
+  configSwitchCommand: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('../../src/commands/uninstall', () => ({
+  uninstall: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('../../src/commands/check-updates', () => ({
@@ -64,9 +64,9 @@ describe('cli-setup', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
     // Import modules to ensure they're loaded for mocking
-    await import('../../src/commands/init')
     await import('../../src/commands/menu')
-    await import('../../src/commands/update')
+    await import('../../src/commands/config-switch')
+    await import('../../src/commands/uninstall')
     await import('../../src/commands/check-updates')
   })
 
@@ -75,7 +75,7 @@ describe('cli-setup', () => {
   })
 
   describe('setupCommands', () => {
-    it('should setup all commands on cli instance', async () => {
+    it('should setup only the retained commands on cli instance', async () => {
       const cli = cac('test')
       const commandSpy = vi.spyOn(cli, 'command')
       const helpSpy = vi.spyOn(cli, 'help')
@@ -83,13 +83,24 @@ describe('cli-setup', () => {
 
       await setupCommands(cli)
 
-      // Check that commands were registered
+      // Check that the retained commands were registered
       expect(commandSpy).toHaveBeenCalledWith('', 'Show interactive menu (default)')
-      expect(commandSpy).toHaveBeenCalledWith('init', 'Initialize Claude Code configuration')
-      expect(commandSpy).toHaveBeenCalledWith('update', 'Update Claude Code prompts only')
-      expect(commandSpy).toHaveBeenCalledWith('ccr', 'Configure Claude Code Router for model proxy')
-      expect(commandSpy).toHaveBeenCalledWith('ccu [...args]', 'Run Claude Code usage analysis tool')
-      expect(commandSpy).toHaveBeenCalledWith('check-updates', 'Check and update Claude Code and CCR to latest versions')
+      expect(commandSpy).toHaveBeenCalledWith(
+        'config-switch [target]',
+        'Switch Claude Code API configuration, or list available configurations',
+      )
+      expect(commandSpy).toHaveBeenCalledWith('uninstall', 'Remove ccs configurations and tools')
+      expect(commandSpy).toHaveBeenCalledWith(
+        'check-updates',
+        'Check and update Claude Code and ccs to latest versions',
+      )
+
+      // Removed commands should not be registered
+      const registeredNames = commandSpy.mock.calls.map(call => call[0])
+      expect(registeredNames).not.toContain('init')
+      expect(registeredNames).not.toContain('update')
+      expect(registeredNames).not.toContain('ccr')
+      expect(registeredNames.some(name => name.startsWith('ccu'))).toBe(false)
 
       // Check help and version were setup
       expect(helpSpy).toHaveBeenCalled()
@@ -145,27 +156,23 @@ describe('cli-setup', () => {
       const result = customizeHelp(sections)
 
       // Should add header
-      expect(result[0].body).toContain('ZCF - Zero-Config Code Flow')
+      expect(result[0].body).toContain('ccs - Claude Code Switch')
 
       // Should add commands section
       const commandsSection = result.find(s => s.title.includes('Commands'))
       expect(commandsSection).toBeDefined()
-      expect(commandsSection.body).toContain('zcf init')
-      expect(commandsSection.body).toContain('zcf update')
+      expect(commandsSection.body).toContain('ccs config-switch')
+      expect(commandsSection.body).toContain('ccs check-updates')
 
       // Should add options section
       const optionsSection = result.find(s => s.title.includes('Options'))
       expect(optionsSection).toBeDefined()
       expect(optionsSection.body).toContain('--lang')
-      expect(optionsSection.body).toContain('--config-lang')
-      expect(optionsSection.body).toContain('--force')
 
       // Should add examples section
       const examplesSection = result.find(s => s.title.includes('Examples'))
       expect(examplesSection).toBeDefined()
-      expect(examplesSection.body).toContain('npx zcf')
-      expect(examplesSection.body).toContain('npx zcf init')
-      expect(examplesSection.body).toContain('npx zcf u')
+      expect(examplesSection.body).toContain('npx @xwm111/ccs')
     })
 
     it('should maintain existing sections', () => {
@@ -189,7 +196,6 @@ describe('cli-setup', () => {
       await expect(setupCommands(cli)).resolves.not.toThrow()
 
       // Check that commands are properly registered
-      // cac stores commands in the commands array
       expect(cli.commands.length).toBeGreaterThan(0)
 
       // Verify version is set
@@ -197,199 +203,68 @@ describe('cli-setup', () => {
     })
   })
 
-  describe('command line argument shortcuts', () => {
+  describe('command line options', () => {
     let cli: any
 
     beforeEach(async () => {
-      cli = cac('zcf-test')
+      cli = cac('ccs-test')
       await setupCommands(cli)
     })
 
-    describe('new single-character shortcuts', () => {
-      it('should recognize -s as shortcut for --skip-prompt', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-s'], { run: false })
-        expect(parsed.options.skipPrompt).toBe(true)
-      })
-
-      it('should recognize -c as shortcut for --config-lang', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-c', 'zh-CN'], { run: false })
-        expect(parsed.options.configLang).toBe('zh-CN')
-      })
-
-      it('should recognize -a as shortcut for --ai-output-lang', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-a', 'en'], { run: false })
-        expect(parsed.options.aiOutputLang).toBe('en')
-      })
-
-      it('should recognize -r as shortcut for --config-action', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-r', 'backup'], { run: false })
-        expect(parsed.options.configAction).toBe('backup')
-      })
-
-      it('should recognize -t as shortcut for --api-type', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-t', 'api_key'], { run: false })
-        expect(parsed.options.apiType).toBe('api_key')
-      })
-
-      it('should recognize -k as shortcut for --api-key', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-k', 'sk-test'], { run: false })
-        expect(parsed.options.apiKey).toBe('sk-test')
-      })
-
-      it('should recognize -u as shortcut for --api-url', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-u', 'https://api.example.com'], { run: false })
-        expect(parsed.options.apiUrl).toBe('https://api.example.com')
-      })
-
-      it('should recognize -m as shortcut for --mcp-services', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-m', 'context7,exa'], { run: false })
-        expect(parsed.options.mcpServices).toBe('context7,exa')
-      })
-
-      it('should recognize -w as shortcut for --workflows', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-w', 'bmadWorkflow'], { run: false })
-        expect(parsed.options.workflows).toBe('bmadWorkflow')
-      })
-
-      it('should recognize -o as shortcut for --output-styles', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-o', 'nekomata-engineer'], { run: false })
-        expect(parsed.options.outputStyles).toBe('nekomata-engineer')
-      })
-
-      it('should recognize -d as shortcut for --default-output-style', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-d', 'engineer-professional'], { run: false })
-        expect(parsed.options.defaultOutputStyle).toBe('engineer-professional')
-      })
-
-      it('should recognize -g as shortcut for --all-lang', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-g', 'zh-CN'], { run: false })
-        expect(parsed.options.allLang).toBe('zh-CN')
-      })
-
-      it('should recognize -x as shortcut for --install-cometix-line', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-x', 'false'], { run: false })
-        expect(parsed.options.installCometixLine).toBe('false')
-      })
-
-      it('should recognize -T as shortcut for --code-type', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-T', 'codex'], { run: false })
-        expect(parsed.options.codeType).toBe('codex')
-      })
-
-      it('should default code-type to claude-code when not provided', () => {
-        const parsed = cli.parse(['node', 'test', 'init'], { run: false })
-        expect(parsed.options.codeType).toBeUndefined()
-      })
-
-      it('should work with multiple new shortcuts together', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-s', '-c', 'zh-CN', '-a', 'en', '-t', 'api_key'], { run: false })
-        expect(parsed.options.skipPrompt).toBe(true)
-        expect(parsed.options.configLang).toBe('zh-CN')
-        expect(parsed.options.aiOutputLang).toBe('en')
-        expect(parsed.options.apiType).toBe('api_key')
-      })
+    it('should recognize --lang option on the default command', () => {
+      const parsed = cli.parse(['node', 'test', '-l', 'zh-CN'], { run: false })
+      expect(parsed.options.lang).toBe('zh-CN')
     })
 
-    describe('shortcut conflict prevention', () => {
-      it('should not conflict with existing -l shortcut (lang)', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-l', 'zh-CN'], { run: false })
-        expect(parsed.options.lang).toBe('zh-CN')
-      })
-
-      it('should not conflict with existing -f shortcut (force)', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-f'], { run: false })
-        expect(parsed.options.force).toBe(true)
-      })
+    it('should recognize --all-lang option', () => {
+      const parsed = cli.parse(['node', 'test', '-g', 'zh-CN'], { run: false })
+      expect(parsed.options.allLang).toBe('zh-CN')
     })
 
-    describe('help text verification', () => {
-      it('should display all shortcuts in help text', () => {
-        const helpSections = customizeHelp([])
-        const optionsSection = helpSections.find(s => s.title.includes('Options'))
+    it('should recognize --list option for config-switch', () => {
+      const parsed = cli.parse(['node', 'test', 'config-switch', '--list'], { run: false })
+      expect(parsed.options.list).toBe(true)
+    })
+  })
 
-        // All new single-character shortcuts should be present
-        expect(optionsSection.body).toContain('-s') // skip-prompt
-        expect(optionsSection.body).toContain('-c') // config-lang
-        expect(optionsSection.body).toContain('-a') // ai-output-lang
-        expect(optionsSection.body).toContain('-o') // config-action
-        expect(optionsSection.body).toContain('-t') // api-type
-        expect(optionsSection.body).toContain('-k') // api-key
-        expect(optionsSection.body).toContain('-u') // api-url
-        expect(optionsSection.body).toContain('-m') // mcp-services
-        expect(optionsSection.body).toContain('-w') // workflows
-        expect(optionsSection.body).toContain('-o') // output-styles
-        expect(optionsSection.body).toContain('-g') // all-lang
-        expect(optionsSection.body).toContain('-x') // install-cometix-line
-        expect(optionsSection.body).toContain('-T') // code-type
-      })
+  describe('check command options', () => {
+    let cli: any
 
-      it('should have proper formatting in help text', () => {
-        const helpSections = customizeHelp([])
-        const optionsSection = helpSections.find(s => s.title.includes('Options'))
-
-        // Should contain properly formatted options
-        expect(optionsSection.body).toContain('--skip-prompt, -s')
-        expect(optionsSection.body).toContain('--config-lang, -c')
-        expect(optionsSection.body).toContain('--ai-output-lang, -a')
-        expect(optionsSection.body).toContain('--code-type, -T')
-      })
+    beforeEach(async () => {
+      cli = cac('ccs-test')
+      await setupCommands(cli)
     })
 
-    describe('check command options', () => {
-      it('should recognize -s as shortcut for check command skip mode', () => {
-        const parsed = cli.parse(['node', 'test', 'check', '-s'], { run: false })
-        expect(parsed.options.skipPrompt).toBe(true)
-      })
-
-      it('should pass options to checkUpdates action', async () => {
-        const checkCommand = cli.commands.find((cmd: any) => cmd.name === 'check-updates')
-        expect(checkCommand).toBeDefined()
-        if (checkCommand?.commandAction) {
-          await checkCommand.commandAction({ skipPrompt: true, codeType: 'cc' })
-          expect(mockedCheckUpdates).toHaveBeenCalledWith({ skipPrompt: true, codeType: 'cc' })
-        }
-      })
+    it('should recognize -s as shortcut for check command skip mode', () => {
+      const parsed = cli.parse(['node', 'test', 'check', '-s'], { run: false })
+      expect(parsed.options.skipPrompt).toBe(true)
     })
 
-    describe('default command with codeType option', () => {
-      it('should pass codeType option to showMainMenu', async () => {
-        const cli = cac('test')
-        await setupCommands(cli)
+    it('should pass options to checkUpdates action', async () => {
+      const checkCommand = cli.commands.find((cmd: any) => cmd.name === 'check-updates')
+      expect(checkCommand).toBeDefined()
+      if (checkCommand?.commandAction) {
+        await checkCommand.commandAction({ skipPrompt: true })
+        expect(mockedCheckUpdates).toHaveBeenCalledWith({ skipPrompt: true })
+      }
+    })
+  })
 
-        const { showMainMenu } = await import('../../src/commands/menu')
+  describe('default command', () => {
+    it('should invoke showMainMenu', async () => {
+      const cli = cac('test')
+      await setupCommands(cli)
 
-        // Parse command with codeType option
-        const parsed = cli.parse(['node', 'test', '-T', 'codex'], { run: false })
-        expect(parsed.options.codeType).toBe('codex')
+      const { showMainMenu } = await import('../../src/commands/menu')
 
-        // Execute the default command action
-        const defaultCommand = cli.commands.find(cmd => cmd.name === '')
-        expect(defaultCommand).toBeDefined()
+      // Execute the default command action
+      const defaultCommand = cli.commands.find(cmd => cmd.name === '')
+      expect(defaultCommand).toBeDefined()
 
-        // Manually trigger the action with options
-        if (defaultCommand?.commandAction) {
-          await defaultCommand.commandAction({ codeType: 'codex' })
-          expect(showMainMenu).toHaveBeenCalledWith({ codeType: 'codex' })
-        }
-      })
-
-      it('should handle codeType abbreviation in default command', async () => {
-        const cli = cac('test')
-        await setupCommands(cli)
-
-        const { showMainMenu } = await import('../../src/commands/menu')
-
-        // Parse command with codeType abbreviation
-        const parsed = cli.parse(['node', 'test', '-T', 'cx'], { run: false })
-        expect(parsed.options.codeType).toBe('cx')
-
-        // Execute the default command action
-        const defaultCommand = cli.commands.find(cmd => cmd.name === '')
-        if (defaultCommand?.commandAction) {
-          await defaultCommand.commandAction({ codeType: 'cx' })
-          expect(showMainMenu).toHaveBeenCalledWith({ codeType: 'cx' })
-        }
-      })
+      if (defaultCommand?.commandAction) {
+        await defaultCommand.commandAction({})
+        expect(showMainMenu).toHaveBeenCalled()
+      }
     })
   })
 })

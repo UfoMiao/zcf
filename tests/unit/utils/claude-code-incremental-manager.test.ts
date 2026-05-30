@@ -76,7 +76,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
 
       // Mock user input for adding configuration
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockResolvedValueOnce({
           profileName: 'Test Profile',
           authType: 'api_key' as const,
@@ -98,55 +97,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
 
       expect(ClaudeCodeConfigManager.readConfig).toHaveBeenCalled()
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
-    })
-    it('should apply provider default models when adding preset profile', async () => {
-      const apiProviders = await import('../../../src/config/api-providers')
-      const providerPreset = {
-        id: 'four-model-provider',
-        name: 'Four Model Provider',
-        supportedCodeTools: ['claude-code'] as const,
-        claudeCode: {
-          baseUrl: 'https://api.four-models.com',
-          authType: 'api_key' as const,
-          defaultModels: [
-            'primary-model',
-            'haiku-model',
-            'sonnet-model',
-            'opus-model',
-          ],
-        },
-      }
-
-      vi.spyOn(apiProviders, 'getApiProviders').mockReturnValue([providerPreset] as any)
-
-      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
-      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('four-model-profile-id')
-      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
-        success: true,
-        addedProfile: {
-          id: 'four-model-profile-id',
-          name: providerPreset.name,
-          authType: providerPreset.claudeCode.authType,
-        },
-      })
-      vi.mocked(ClaudeCodeConfigManager.switchProfile).mockResolvedValue({ success: true })
-      vi.mocked(validateApiKey).mockImplementationOnce(() => ({ isValid: true }))
-
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: providerPreset.id })
-        .mockResolvedValueOnce({
-          profileName: providerPreset.name,
-          apiKey: 'sk-four-models-key',
-        } as any)
-      queuePromptBooleans(false, false)
-
-      await configureIncrementalManagement()
-
-      const addedProfileArg = vi.mocked(ClaudeCodeConfigManager.addProfile).mock.calls.at(-1)?.[0] as Record<string, any>
-      expect(addedProfileArg.primaryModel).toBe(providerPreset.claudeCode.defaultModels?.[0])
-      expect(addedProfileArg.defaultHaikuModel).toBe(providerPreset.claudeCode.defaultModels?.[1])
-      expect(addedProfileArg.defaultSonnetModel).toBe(providerPreset.claudeCode.defaultModels?.[2])
-      expect(addedProfileArg.defaultOpusModel).toBe(providerPreset.claudeCode.defaultModels?.[3])
     })
     it('should show management menu when existing configurations are present', async () => {
       // Mock configuration situation
@@ -175,7 +125,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       // Mock user selection to add configuration
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'add' }) // Select add
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockResolvedValueOnce({
           profileName: 'Test Profile',
           authType: 'api_key' as const,
@@ -197,7 +146,7 @@ describe('claudeCode Incremental Configuration Manager', () => {
       await configureIncrementalManagement()
 
       expect(ClaudeCodeConfigManager.readConfig).toHaveBeenCalled()
-      expect(inquirer.prompt).toHaveBeenCalledTimes(3)
+      expect(inquirer.prompt).toHaveBeenCalledTimes(2)
       expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
     })
     it('should handle user skip operation', async () => {
@@ -353,7 +302,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       // Mock user adding new API profile and setting as default
       vi.mocked(inquirer.prompt)
         .mockResolvedValueOnce({ action: 'add' }) // Select add
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockResolvedValueOnce({
           profileName: 'API Profile',
           authType: 'api_key' as const,
@@ -433,10 +381,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       let capturedQuestions: any[] = []
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
       const mockPrompt = vi.mocked(inquirer.prompt)
-      mockPrompt.mockImplementationOnce(((questions: any[]) => {
-        capturedQuestions = questions
-        return Promise.resolve({ selectedProvider: 'custom' })
-      }) as any)
       mockPrompt.mockImplementationOnce(((questions: any[]) => {
         capturedQuestions = questions
         return Promise.resolve(answers)
@@ -523,7 +467,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
         authType: 'api_key',
       } as any)
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockImplementationOnce((() => Promise.resolve({
           profileName: 'Duplicate',
           authType: 'api_key',
@@ -546,7 +489,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
         authType: 'api_key',
       } as any)
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockImplementationOnce((() => Promise.resolve({
           profileName: 'Duplicate',
           authType: 'api_key',
@@ -575,7 +517,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
     it('should handle profile addition failure', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockResolvedValueOnce({
           profileName: 'Test Profile',
           authType: 'api_key' as const,
@@ -767,7 +708,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
     it('should handle auth_token profile type correctly', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockResolvedValueOnce({
           profileName: 'Auth Token Profile',
           authType: 'auth_token' as const,
@@ -797,7 +737,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
     it('should handle setting non-default profile', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' }) // Provider selection
         .mockResolvedValueOnce({
           profileName: 'Non-Default Profile',
           authType: 'api_key' as const,
@@ -884,29 +823,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       expect(ClaudeCodeConfigManager.deleteProfiles).not.toHaveBeenCalled()
     })
 
-    it('should handle preset provider with prefilled values', async () => {
-      vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
-      vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
-
-      // Mock preset provider selection
-      vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: '302ai' }) // Select preset
-        .mockResolvedValueOnce({
-          profileName: '302.AI',
-          apiKey: 'sk-302-test-key',
-        } as any)
-      queuePromptBooleans(false, false)
-
-      vi.mocked(ClaudeCodeConfigManager.addProfile).mockResolvedValue({
-        success: true,
-        backupPath: '/test/backup.json',
-      })
-
-      await configureIncrementalManagement()
-
-      expect(ClaudeCodeConfigManager.addProfile).toHaveBeenCalled()
-    })
-
     it('should handle model configuration with empty strings', async () => {
       vi.mocked(ClaudeCodeConfigManager.readConfig).mockReturnValue(null)
       vi.mocked(ClaudeCodeConfigManager.generateProfileId).mockReturnValue('test-profile-id')
@@ -920,7 +836,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       })
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' })
         .mockResolvedValueOnce({
           profileName: 'Test Profile',
           authType: 'api_key' as const,
@@ -956,7 +871,6 @@ describe('claudeCode Incremental Configuration Manager', () => {
       })
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' })
         .mockResolvedValueOnce({
           profileName: 'Test Profile',
           authType: 'api_key' as const,
@@ -986,14 +900,12 @@ describe('claudeCode Incremental Configuration Manager', () => {
         .mockReturnValueOnce('profile-2')
 
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' })
         .mockResolvedValueOnce({
           profileName: 'Profile 1',
           authType: 'api_key' as const,
           apiKey: 'sk-ant-key-1',
           baseUrl: 'https://api.anthropic.com',
         } as any)
-        .mockResolvedValueOnce({ selectedProvider: 'custom' })
         .mockResolvedValueOnce({
           profileName: 'Profile 2',
           authType: 'api_key' as const,

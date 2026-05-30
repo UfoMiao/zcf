@@ -67,8 +67,6 @@ vi.mock('../../../src/utils/claude-config', () => ({
   addCompletedOnboarding: mockAddCompletedOnboarding,
 }))
 
-const mockRunCcrRestart = vi.fn()
-
 const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
 
 function cleanConfigDir(): void {
@@ -85,16 +83,6 @@ afterAll(() => {
   cleanConfigDir()
   rmSync(testConfigDir, { force: true, recursive: true })
 })
-
-// Mock dependencies
-const mockReadCcrConfig = vi.fn()
-vi.mock('../../../src/utils/ccr/config', () => ({
-  readCcrConfig: mockReadCcrConfig,
-}))
-
-vi.mock('../../../src/utils/ccr/commands', () => ({
-  runCcrRestart: mockRunCcrRestart,
-}))
 
 describe('claudeCodeConfigManager', () => {
   beforeEach(() => {
@@ -115,7 +103,6 @@ describe('claudeCodeConfigManager', () => {
     mockWriteJsonConfig.mockImplementation((path: string, data: any) => {
       writeFileSync(path, JSON.stringify(data, null, 2))
     })
-    mockReadCcrConfig.mockReturnValue(null)
   })
 
   afterEach(() => {
@@ -288,7 +275,6 @@ describe('claudeCodeConfigManager', () => {
       expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBeUndefined()
       expect(mockSetPrimaryApiKey).toHaveBeenCalled()
       expect(mockAddCompletedOnboarding).toHaveBeenCalled()
-      expect(mockRunCcrRestart).not.toHaveBeenCalled()
     })
 
     it('auth_token 模式应该写入Token并清理API Key', async () => {
@@ -312,42 +298,6 @@ describe('claudeCodeConfigManager', () => {
       expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBe('https://api.anthropic.com')
       expect(mockSetPrimaryApiKey).toHaveBeenCalled()
       expect(mockAddCompletedOnboarding).toHaveBeenCalled()
-      expect(mockRunCcrRestart).not.toHaveBeenCalled()
-    })
-
-    it('ccr_proxy 模式应该读取CCR配置并触发重启', async () => {
-      mockReadCcrConfig.mockReturnValue({
-        HOST: '10.0.0.2',
-        PORT: 7000,
-        APIKEY: 'sk-ccr',
-      })
-      mockReadJsonConfig.mockImplementationOnce(() => ({ env: {} }))
-      let writtenSettings: any
-      mockWriteJsonConfig.mockImplementationOnce((_path, data) => {
-        writtenSettings = data
-      })
-
-      await ClaudeCodeConfigManager.applyProfileSettings({
-        id: 'ccr',
-        name: 'CCR',
-        authType: 'ccr_proxy',
-      })
-
-      expect(writtenSettings.env.ANTHROPIC_BASE_URL).toBe('http://10.0.0.2:7000')
-      expect(writtenSettings.env.ANTHROPIC_API_KEY).toBe('sk-ccr')
-      expect(mockSetPrimaryApiKey).toHaveBeenCalled()
-      expect(mockAddCompletedOnboarding).toHaveBeenCalled()
-      expect(mockRunCcrRestart).toHaveBeenCalled()
-    })
-
-    it('ccr_proxy 模式缺少配置时应该抛出错误', async () => {
-      mockReadCcrConfig.mockReturnValue(null)
-
-      await expect(ClaudeCodeConfigManager.applyProfileSettings({
-        id: 'ccr',
-        name: 'CCR',
-        authType: 'ccr_proxy',
-      })).rejects.toThrow('multi-config:failedToApplySettings: ccr:ccrNotConfigured')
     })
 
     it('写入设置失败时应该抛出包装错误', async () => {
@@ -1015,230 +965,6 @@ describe('claudeCodeConfigManager', () => {
 
       const config = ClaudeCodeConfigManager.readConfig()
       expect(config?.currentProfileId).toBe(result.newCurrentProfileId)
-    })
-  })
-
-  describe('switchToCcr', () => {
-    beforeEach(async () => {
-      // 添加一个测试配置
-      const profile: ClaudeCodeProfile = {
-        id: 'test-profile',
-        name: 'Test Profile',
-        authType: 'api_key',
-        apiKey: 'test-key',
-      }
-      await ClaudeCodeConfigManager.addProfile(profile)
-      vi.clearAllMocks()
-    })
-
-    it('应该切换到CCR代理', async () => {
-      // Mock CCR配置存在
-      mockReadCcrConfig.mockReturnValue({
-        HOST: 'localhost',
-        PORT: 8080,
-        APIKEY: 'sk-test',
-      } as any)
-
-      const result = await ClaudeCodeConfigManager.switchToCcr()
-
-      expect(result.success).toBe(true)
-
-      const config = ClaudeCodeConfigManager.readConfig()
-      expect(config?.currentProfileId).toBe('ccr-proxy')
-      expect(config?.profiles['ccr-proxy']).toBeTruthy()
-    })
-
-    it('应该处理CCR未配置的情况', async () => {
-      // Mock CCR配置不存在
-      mockReadCcrConfig.mockReturnValue(null)
-
-      const result = await ClaudeCodeConfigManager.switchToCcr()
-
-      expect(result.success).toBe(false)
-      expect(result.error).toContain('CCR proxy configuration not found')
-    })
-
-    it('应该处理读取CCR配置失败', async () => {
-      // Mock console.error to suppress error output
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      // Mock CCR配置读取失败
-      mockReadCcrConfig.mockImplementation(() => {
-        throw new Error('Failed to read CCR config')
-      })
-
-      const result = await ClaudeCodeConfigManager.switchToCcr()
-
-      expect(result.success).toBe(false)
-      expect(result.error).toBeTruthy()
-
-      consoleErrorSpy.mockRestore()
-    })
-  })
-
-  describe('cCR profile同步', () => {
-    it('syncCcrProfile应该在缺少配置时清理CCR profile', async () => {
-      await ClaudeCodeConfigManager.addProfile({
-        name: 'Placeholder',
-        authType: 'api_key',
-        apiKey: 'sk-placeholder',
-      })
-      // 添加CCR profile
-      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists({
-        HOST: '127.0.0.1',
-        PORT: 3456,
-        APIKEY: 'sk-zcf',
-      })
-
-      mockReadCcrConfig.mockReturnValue(null)
-      const ensureSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'ensureCcrProfileExists')
-
-      await ClaudeCodeConfigManager.syncCcrProfile()
-
-      expect(ensureSpy).toHaveBeenCalledWith(null)
-      const config = ClaudeCodeConfigManager.readConfig()
-      expect(config?.profiles['ccr-proxy']).toBeUndefined()
-      ensureSpy.mockRestore()
-    })
-
-    it('ensureCcrProfileExists应该基于CCR配置创建profile', async () => {
-      cleanConfigDir()
-      ClaudeCodeConfigManager.writeConfig(ClaudeCodeConfigManager.createEmptyConfig())
-
-      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists({
-        HOST: '10.0.0.5',
-        PORT: 4567,
-        APIKEY: 'sk-ensure',
-      })
-
-      const config = ClaudeCodeConfigManager.readConfig()
-      const profile = config?.profiles['ccr-proxy']
-      expect(profile).toMatchObject({
-        id: 'ccr-proxy',
-        name: 'CCR Proxy',
-        authType: 'ccr_proxy',
-        baseUrl: 'http://10.0.0.5:4567',
-        apiKey: 'sk-ensure',
-      })
-      expect(config?.currentProfileId).toBe('ccr-proxy')
-    })
-
-    it('ensureCcrProfileExists应该删除当前CCR profile并切换', async () => {
-      await ClaudeCodeConfigManager.addProfile({
-        name: 'Main',
-        authType: 'api_key',
-        apiKey: 'sk-main',
-      })
-      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists({
-        HOST: '127.0.0.1',
-        PORT: 3456,
-        APIKEY: 'sk-ccr',
-      })
-
-      await (ClaudeCodeConfigManager as any).ensureCcrProfileExists(null)
-
-      const config = ClaudeCodeConfigManager.readConfig()
-      expect(config?.profiles['ccr-proxy']).toBeUndefined()
-      expect(config?.currentProfileId).toBeTruthy()
-      expect(config?.currentProfileId).not.toBe('ccr-proxy')
-    })
-
-    it('switchToOfficial写入失败时应该返回错误', async () => {
-      await ClaudeCodeConfigManager.addProfile({
-        name: 'Official Test',
-        authType: 'api_key',
-        apiKey: 'sk-official',
-      })
-      const writeSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'writeConfig').mockImplementation(() => {
-        throw new Error('official failed')
-      })
-
-      const result = await ClaudeCodeConfigManager.switchToOfficial()
-
-      expect(result.success).toBe(false)
-      expect(result.error).toBe('official failed')
-
-      writeSpy.mockRestore()
-    })
-
-    it('switchToCcr在切换失败时应该返回错误', async () => {
-      await ClaudeCodeConfigManager.addProfile({
-        name: 'CCREntry',
-        authType: 'api_key',
-        apiKey: 'sk-entry',
-      })
-      mockReadCcrConfig.mockReturnValue({
-        HOST: '127.0.0.1',
-        PORT: 3456,
-        APIKEY: 'sk-ccr',
-      })
-
-      const switchSpy = vi.spyOn(ClaudeCodeConfigManager as any, 'switchProfile').mockImplementation(() => {
-        throw new Error('switch fail')
-      })
-
-      const result = await ClaudeCodeConfigManager.switchToCcr()
-
-      expect(result.success).toBe(false)
-      expect(result.error).toBe('switch fail')
-
-      switchSpy.mockRestore()
-    })
-  })
-
-  describe('syncCcrProfile', () => {
-    beforeEach(() => {
-      vi.clearAllMocks()
-    })
-
-    it('应该同步存在的CCR配置', async () => {
-      // Mock CCR配置存在
-      mockReadCcrConfig.mockReturnValue({
-        HOST: 'localhost',
-        PORT: 8080,
-        APIKEY: 'sk-test',
-      } as any)
-
-      await ClaudeCodeConfigManager.syncCcrProfile()
-
-      const config = ClaudeCodeConfigManager.readConfig()
-      expect(config?.profiles['ccr-proxy']).toBeTruthy()
-      expect(config?.profiles['ccr-proxy']?.name).toBe('CCR Proxy')
-      expect(config?.profiles['ccr-proxy']?.authType).toBe('ccr_proxy')
-      expect(config?.profiles['ccr-proxy']?.baseUrl).toBe('http://localhost:8080')
-      expect(config?.profiles['ccr-proxy']?.apiKey).toBe('sk-test')
-    })
-
-    it('应该删除不存在的CCR配置', async () => {
-      // 先创建CCR配置
-      mockReadCcrConfig.mockReturnValue({
-        HOST: 'localhost',
-        PORT: 8080,
-        APIKEY: 'sk-test',
-      } as any)
-      await ClaudeCodeConfigManager.syncCcrProfile()
-
-      // 然后Mock CCR配置不存在
-      mockReadCcrConfig.mockReturnValue(null)
-      await ClaudeCodeConfigManager.syncCcrProfile()
-
-      const config = ClaudeCodeConfigManager.readConfig()
-      expect(config?.profiles['ccr-proxy']).toBeUndefined()
-    })
-
-    it('应该处理同步错误', async () => {
-      // Mock console.error to suppress error output
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
-
-      // Mock CCR配置读取失败
-      mockReadCcrConfig.mockImplementation(() => {
-        throw new Error('Sync failed')
-      })
-
-      // 应该不抛出错误，而是静默处理
-      await expect(ClaudeCodeConfigManager.syncCcrProfile()).resolves.toBeUndefined()
-
-      consoleErrorSpy.mockRestore()
     })
   })
 

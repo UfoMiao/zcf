@@ -4,12 +4,30 @@ title: Features Overview
 
 # Features Overview
 
-ZCF integrates environment configuration, workflow import, and toolchain into one CLI. Core capabilities can be divided into the following dimensions:
+`ccs` (Claude Code Switch) focuses on two features, plus a few conveniences.
 
-- **Environment Initialization**: Complete initialization process for Claude Code and Codex, covering API, output styles, memory, templates, MCP, workflows, and status bar.
-- **Configuration Management**: Supports incremental management, backup strategies, multiple API configurations, template language and AI output language separation.
-- **Workflow System**: Pre-configured six-stage workflow, Feat workflow, BMad agile, Spec extension, and Git smart commands.
-- **Integration Ecosystem**: Covers CCR, CCometixLine, Context7, Open Web Search, DeepWiki, Playwright, Serena, etc.
-- **Command Line Tools**: Provides `zcf init/update/ccr/ccu/uninstall/config-switch` commands and aggregates them in an interactive menu.
+## 1. Manage & switch API endpoints
 
-Subsequent chapters will detail each capability and best practices.
+Save multiple Claude Code API profiles, each with its own:
+
+- **Base URL** — the API endpoint
+- **Auth type** — Auth Token or API Key
+- **Key** — the token or API key
+
+Switch the active endpoint instantly from the interactive menu or directly with `ccs cs <name>`. List everything with `ccs cs --list`.
+
+See [Config Switch](../cli/config-switch.md) for full usage.
+
+## 2. Check updates
+
+`ccs check-updates` (alias `ccs check`) checks for new versions of Claude Code and `ccs`, and updates them.
+
+See [Version Check](../cli/check-updates.md) for full usage.
+
+## Conveniences
+
+- **Interactive menu** — Run `ccs` with no arguments. See [Main Menu](../cli/menu.md).
+- **Language switching** — Switch the interface between English and Simplified Chinese with `ccs --lang <zh-CN|en>`.
+- **Clean uninstall** — Remove ccs configuration and tools with `ccs uninstall`. See [Uninstall](../cli/uninstall.md).
+
+All configuration is stored in `~/.ccs`.

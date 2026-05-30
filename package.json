@@ -1,52 +1,47 @@
 {
-  "name": "zcf",
+  "name": "@xwm111/ccs",
   "type": "module",
-  "version": "3.6.6",
+  "version": "0.1.0",
   "packageManager": "pnpm@10.17.1",
-  "description": "Zero-Config Code Flow - One-click configuration tool for Code Cli",
+  "description": "Claude Code Switch - manage and quickly switch between multiple Claude Code API endpoints",
   "author": {
-    "name": "Miao Da",
-    "email": "ufo025174@gmail.com",
-    "url": "https://github.com/WitMiao"
+    "name": "xwm111",
+    "url": "https://github.com/xwm111"
   },
   "license": "MIT",
-  "homepage": "https://github.com/UfoMiao/zcf",
+  "homepage": "https://github.com/xwm111/ccs",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/UfoMiao/zcf.git"
+    "url": "git+https://github.com/xwm111/ccs.git"
   },
-  "bugs": "https://github.com/UfoMiao/zcf/issues",
+  "bugs": "https://github.com/xwm111/ccs/issues",
   "keywords": [
     "claude",
     "claude-code",
-    "codex",
+    "api",
+    "endpoint",
+    "switch",
     "config",
     "cli",
-    "setup",
-    "zero-config",
-    "zcf",
-    "anthropic",
-    "openai",
-    "ChatGPT",
-    "ai",
-    "automation",
-    "mcp"
+    "anthropic"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.mjs",
   "module": "dist/index.mjs",
   "types": "dist/index.d.mts",
   "bin": {
-    "zcf": "bin/zcf.mjs"
+    "ccs": "bin/ccs.mjs"
   },
   "files": [
     "bin",
-    "dist",
-    "templates"
+    "dist"
   ],
   "scripts": {
     "dev": "tsx ./src/cli.ts",
     "build": "unbuild",
-    "start": "node bin/zcf.mjs",
+    "start": "node bin/ccs.mjs",
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "pnpm build",
     "lint": "eslint",

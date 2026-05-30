@@ -8,18 +8,17 @@ title: 主菜单
 
 ## 菜单特点
 
-- 🎯 **动态显示**：根据当前代码工具（Claude Code 或 Codex）动态调整菜单项
+- 🎯 **可视化选项**：无需记忆命令参数即可浏览所有功能
 - ⌨️ **快捷键操作**：输入单个字符即可执行操作，无需记忆命令
-- 🔄 **智能切换**：可以在 Claude Code 和 Codex 之间无缝切换
 - 📋 **功能聚合**：所有常用功能都集中在菜单中，方便快速访问
 
-## Claude Code 模式菜单
+## 主菜单
 
 | 选项 | 功能 | 对应命令 | 说明 |
 |------|------|---------|------|
 | `1` | 完整初始化 | `zcf init` | 完整初始化 Claude Code 环境 |
 | `2` | 导入/更新工作流 | `zcf update` | 更新工作流模板和提示词 |
-| `3` | 配置 API 或 CCR | - | 配置 API 密钥、提供商或 CCR 代理 |
+| `3` | 配置 API 或 CCR | - | 配置 API 密钥（自定义端点）或 CCR 代理 |
 | `4` | 配置 MCP 服务 | - | 安装和配置 MCP 服务 |
 | `5` | 配置默认模型 | - | 设置默认使用的 Claude 模型 |
 | `6` | 配置 AI 记忆与输出风格 | - | 设置 AI 输出语言和全局输出风格 |
@@ -28,23 +27,9 @@ title: 主菜单
 | `U` | Claude Code 使用分析 | `zcf ccu` | 查看 API 使用统计 |
 | `L` | CCometixLine 管理 | - | 状态栏工具管理 |
 | `0` | 切换脚本语言 | - | 切换 CLI 界面语言（zh-CN/en） |
-| `S` | 切换代码工具 | - | 在 Claude Code ↔ Codex 之间切换 |
-| `-` | 卸载当前工具配置 | `zcf uninstall` | 卸载 Claude Code 配置 |
+| `-` | 卸载配置 | `zcf uninstall` | 卸载 Claude Code 配置 |
 | `+` | 检查更新 | `zcf check-updates` | 检查工具版本并更新 |
 | `Q` | 退出 | - | 退出菜单 |
-
-## Codex 模式菜单
-
-Codex 模式下的菜单会调整为 Codex 对应的操作：
-
-- `1` - Codex 完整初始化
-- `2` - 更新 Codex 工作流和模板
-- `3` - 配置 Codex API 提供商或 MCP
-- `4` - 配置 Codex MCP 服务
-- `S` - 切换回 Claude Code
-- 其他选项保持相同
-
-> 💡 **提示**：在 Codex 模式下，菜单功能会自动适配 Codex 的配置方式，但仍可通过 `S` 随时切换回 Claude Code。
 
 ## 使用技巧
 
@@ -74,7 +59,6 @@ npx zcf
 
 - 输入选项字符直接执行
 - 随时输入 `Q` 退出菜单
-- 使用 `S` 在工具间切换
 
 ### 4. 语言切换
 
@@ -87,25 +71,12 @@ npx zcf
 # 语言切换后菜单会重新显示
 ```
 
-### 5. 工具切换
-
-使用 `S` 可以在 Claude Code 和 Codex 之间切换：
-
-```bash
-npx zcf
-# 当前模式：Claude Code
-# 输入 S
-# 切换到：Codex 模式
-# 菜单项自动调整为 Codex 对应操作
-```
-
 ## 菜单功能详解
 
 ### 完整初始化（选项 1）
 
 等同于执行 `npx zcf init`，会引导您完成：
 
-- 选择代码工具类型
 - 配置 API（官方登录/API Key/CCR 代理）
 - 选择 MCP 服务
 - 选择工作流
@@ -126,7 +97,6 @@ npx zcf
 提供以下配置选项：
 
 - 配置 API Key（自定义端点）
-- 使用 API 提供商预设（302.AI、GLM 等）
 - 配置 CCR 代理
 - 切换回官方登录
 
@@ -303,19 +273,6 @@ npx zcf --verbose
 
 # 3. 重新初始化配置
 npx zcf init --config-action new
-```
-
-### 工具切换失败
-
-如果 `S` 选项切换工具失败：
-
-```bash
-# 1. 检查配置文件
-cat ~/.ufomiao/zcf/config.toml | grep codeToolType
-
-# 2. 手动切换
-npx zcf init -T codex  # 切换到 Codex
-npx zcf init -T claude-code  # 切换到 Claude Code
 ```
 
 ## 相关资源

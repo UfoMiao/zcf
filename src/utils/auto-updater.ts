@@ -1,10 +1,15 @@
 import ansis from 'ansis'
 import ora from 'ora'
+import semver from 'semver'
 import { exec } from 'tinyexec'
+import { version } from '../../package.json'
 import { ensureI18nInitialized, format, i18n } from '../i18n'
 import { shouldUseSudoForGlobalInstall } from './platform'
 import { promptBoolean } from './toggle-prompt'
-import { checkCcrVersion, checkClaudeCodeVersion, checkCometixLineVersion, handleDuplicateInstallations } from './version-checker'
+import { checkClaudeCodeVersion, getLatestVersion, handleDuplicateInstallations } from './version-checker'
+
+/** npm package name of this CLI (used for self-update checks) */
+const CCS_PACKAGE_NAME = '@xwm111/ccs'
 
 /**
  * Execute a command with sudo support for Linux non-root users.
@@ -33,38 +38,38 @@ export async function execWithSudoIfNeeded(command: string, args: string[]): Pro
   }
 }
 
-export async function updateCcr(force = false, skipPrompt = false): Promise<boolean> {
+/**
+ * Check whether a newer version of this CLI (ccs) is published on npm and update it.
+ */
+export async function updateCcsSelf(force = false, skipPrompt = false): Promise<boolean> {
   ensureI18nInitialized()
   const spinner = ora(i18n.t('updater:checkingVersion')).start()
 
   try {
-    const { installed, currentVersion, latestVersion, needsUpdate } = await checkCcrVersion()
+    const latestVersion = await getLatestVersion(CCS_PACKAGE_NAME)
     spinner.stop()
-
-    if (!installed) {
-      console.log(ansis.yellow(i18n.t('updater:ccrNotInstalled')))
-      return false
-    }
-
-    if (!needsUpdate && !force) {
-      console.log(ansis.green(format(i18n.t('updater:ccrUpToDate'), { version: currentVersion || '' })))
-      return true
-    }
 
     if (!latestVersion) {
       console.log(ansis.yellow(i18n.t('updater:cannotCheckVersion')))
       return false
     }
 
+    const needsUpdate = semver.valid(latestVersion) && semver.valid(version)
+      ? semver.gt(latestVersion, version)
+      : latestVersion !== version
+
+    if (!needsUpdate && !force) {
+      console.log(ansis.green(format(i18n.t('updater:ccsUpToDate'), { version })))
+      return true
+    }
+
     // Show version info
-    console.log(ansis.cyan(format(i18n.t('updater:currentVersion'), { version: currentVersion || '' })))
+    console.log(ansis.cyan(format(i18n.t('updater:currentVersion'), { version })))
     console.log(ansis.cyan(format(i18n.t('updater:latestVersion'), { version: latestVersion })))
 
-    // Handle confirmation based on skipPrompt mode
     if (!skipPrompt) {
-      // Interactive mode: Ask for confirmation
       const confirm = await promptBoolean({
-        message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCR' }),
+        message: format(i18n.t('updater:confirmUpdate'), { tool: 'ccs' }),
         defaultValue: true,
       })
 
@@ -74,20 +79,18 @@ export async function updateCcr(force = false, skipPrompt = false): Promise<bool
       }
     }
     else {
-      // Skip-prompt mode: Auto-update with notification
-      console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'CCR' })))
+      console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'ccs' })))
     }
 
-    // Perform update
-    const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: 'CCR' })).start()
+    const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: 'ccs' })).start()
 
     try {
-      await execWithSudoIfNeeded('npm', ['update', '-g', '@musistudio/claude-code-router'])
-      updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'CCR' }))
+      await execWithSudoIfNeeded('npm', ['install', '-g', `${CCS_PACKAGE_NAME}@latest`])
+      updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'ccs' }))
       return true
     }
     catch (error) {
-      updateSpinner.fail(format(i18n.t('updater:updateFailed'), { tool: 'CCR' }))
+      updateSpinner.fail(format(i18n.t('updater:updateFailed'), { tool: 'ccs' }))
       console.error(ansis.red(error instanceof Error ? error.message : String(error)))
       return false
     }
@@ -176,72 +179,6 @@ export async function updateClaudeCode(force = false, skipPrompt = false): Promi
   }
 }
 
-export async function updateCometixLine(force = false, skipPrompt = false): Promise<boolean> {
-  ensureI18nInitialized()
-  const spinner = ora(i18n.t('updater:checkingVersion')).start()
-
-  try {
-    const { installed, currentVersion, latestVersion, needsUpdate } = await checkCometixLineVersion()
-    spinner.stop()
-
-    if (!installed) {
-      console.log(ansis.yellow(i18n.t('updater:cometixLineNotInstalled')))
-      return false
-    }
-
-    if (!needsUpdate && !force) {
-      console.log(ansis.green(format(i18n.t('updater:cometixLineUpToDate'), { version: currentVersion || '' })))
-      return true
-    }
-
-    if (!latestVersion) {
-      console.log(ansis.yellow(i18n.t('updater:cannotCheckVersion')))
-      return false
-    }
-
-    // Show version info
-    console.log(ansis.cyan(format(i18n.t('updater:currentVersion'), { version: currentVersion || '' })))
-    console.log(ansis.cyan(format(i18n.t('updater:latestVersion'), { version: latestVersion })))
-
-    // Handle confirmation based on skipPrompt mode
-    if (!skipPrompt) {
-      // Interactive mode: Ask for confirmation
-      const confirm = await promptBoolean({
-        message: format(i18n.t('updater:confirmUpdate'), { tool: 'CCometixLine' }),
-        defaultValue: true,
-      })
-
-      if (!confirm) {
-        console.log(ansis.gray(i18n.t('updater:updateSkipped')))
-        return true
-      }
-    }
-    else {
-      // Skip-prompt mode: Auto-update with notification
-      console.log(ansis.cyan(format(i18n.t('updater:autoUpdating'), { tool: 'CCometixLine' })))
-    }
-
-    // Perform update
-    const updateSpinner = ora(format(i18n.t('updater:updating'), { tool: 'CCometixLine' })).start()
-
-    try {
-      await execWithSudoIfNeeded('npm', ['update', '-g', '@cometix/ccline'])
-      updateSpinner.succeed(format(i18n.t('updater:updateSuccess'), { tool: 'CCometixLine' }))
-      return true
-    }
-    catch (error) {
-      updateSpinner.fail(format(i18n.t('updater:updateFailed'), { tool: 'CCometixLine' }))
-      console.error(ansis.red(error instanceof Error ? error.message : String(error)))
-      return false
-    }
-  }
-  catch (error) {
-    spinner.fail(i18n.t('updater:checkFailed'))
-    console.error(ansis.red(error instanceof Error ? error.message : String(error)))
-    return false
-  }
-}
-
 export async function checkAndUpdateTools(skipPrompt = false): Promise<void> {
   ensureI18nInitialized()
   console.log(ansis.bold.cyan(`\n🔍 ${i18n.t('updater:checkingTools')}\n`))
@@ -261,15 +198,15 @@ export async function checkAndUpdateTools(skipPrompt = false): Promise<void> {
 
   const results: Array<{ tool: string, success: boolean, error?: string }> = []
 
-  // Check and update CCR with error handling
+  // Check and update ccs (this CLI) itself
   try {
-    const success = await updateCcr(false, skipPrompt)
-    results.push({ tool: 'CCR', success })
+    const success = await updateCcsSelf(false, skipPrompt)
+    results.push({ tool: 'ccs', success })
   }
   catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error(ansis.red(`❌ ${format(i18n.t('updater:updateFailed'), { tool: 'CCR' })}: ${errorMessage}`))
-    results.push({ tool: 'CCR', success: false, error: errorMessage })
+    console.error(ansis.red(`❌ ${format(i18n.t('updater:updateFailed'), { tool: 'ccs' })}: ${errorMessage}`))
+    results.push({ tool: 'ccs', success: false, error: errorMessage })
   }
 
   console.log() // Empty line
@@ -283,19 +220,6 @@ export async function checkAndUpdateTools(skipPrompt = false): Promise<void> {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error(ansis.red(`❌ ${format(i18n.t('updater:updateFailed'), { tool: 'Claude Code' })}: ${errorMessage}`))
     results.push({ tool: 'Claude Code', success: false, error: errorMessage })
-  }
-
-  console.log() // Empty line
-
-  // Check and update CCometixLine with error handling
-  try {
-    const success = await updateCometixLine(false, skipPrompt)
-    results.push({ tool: 'CCometixLine', success })
-  }
-  catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error(ansis.red(`❌ ${format(i18n.t('updater:updateFailed'), { tool: 'CCometixLine' })}: ${errorMessage}`))
-    results.push({ tool: 'CCometixLine', success: false, error: errorMessage })
   }
 
   // Summary report

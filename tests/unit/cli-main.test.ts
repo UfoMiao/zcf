@@ -35,7 +35,7 @@ describe('cli main entry', () => {
     await import('../../src/cli')
 
     // Check cac was called with correct name
-    expect(cac).toHaveBeenCalledWith('zcf')
+    expect(cac).toHaveBeenCalledWith('ccs')
 
     // Check setupCommands was called
     expect(setupCommands).toHaveBeenCalled()

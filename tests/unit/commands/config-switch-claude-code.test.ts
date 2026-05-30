@@ -37,7 +37,6 @@ vi.mock('../../../src/i18n', () => ({
         'multi-config:successfullySwitchedToProfile': '成功切换到配置文件：{name}',
         'multi-config:failedToSwitchToProfile': '切换到配置文件失败：{error}',
         'multi-config:profileNameNotFound': '未找到配置：{name}',
-        'codex:useOfficialLogin': '使用官方登录',
         'common:current': '当前',
         'common:cancelled': '已取消操作',
         'common:operationFailed': '操作失败',
@@ -63,32 +62,9 @@ vi.mock('../../../src/utils/claude-code-config-manager', () => ({
     readConfig: vi.fn(),
     switchProfile: vi.fn(),
     switchToOfficial: vi.fn(),
-    switchToCcr: vi.fn(),
     applyProfileSettings: vi.fn(),
     getProfileById: vi.fn(),
   },
-}))
-
-const {
-  mockListCodexProvidersFn,
-  mockReadCodexConfigFn,
-  mockSwitchCodexProviderFn,
-  mockSwitchCodexOfficialLoginFn,
-  mockSwitchToProviderFn,
-} = vi.hoisted(() => ({
-  mockListCodexProvidersFn: vi.fn(),
-  mockReadCodexConfigFn: vi.fn(),
-  mockSwitchCodexProviderFn: vi.fn(),
-  mockSwitchCodexOfficialLoginFn: vi.fn(),
-  mockSwitchToProviderFn: vi.fn(),
-}))
-
-vi.mock('../../../src/utils/code-tools/codex', () => ({
-  listCodexProviders: mockListCodexProvidersFn,
-  readCodexConfig: mockReadCodexConfigFn,
-  switchCodexProvider: mockSwitchCodexProviderFn,
-  switchToOfficialLogin: mockSwitchCodexOfficialLoginFn,
-  switchToProvider: mockSwitchToProviderFn,
 }))
 
 vi.mock('../../../src/utils/prompt-helpers', () => ({
@@ -119,15 +95,9 @@ vi.mock('../../../src/constants', () => ({
 
 const mockInquirer = vi.mocked(inquirer)
 const mockClaudeCodeConfigManager = vi.mocked(ClaudeCodeConfigManager)
-const mockResolveCodeToolType = vi.mocked(resolveCodeToolType)
 
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(vi.fn())
 
-const mockListCodexProviders = vi.mocked(mockListCodexProvidersFn)
-const mockReadCodexConfig = vi.mocked(mockReadCodexConfigFn)
-const mockSwitchCodexProvider = vi.mocked(mockSwitchCodexProviderFn)
-const mockSwitchCodexOfficialLogin = vi.mocked(mockSwitchCodexOfficialLoginFn)
-const mockSwitchToProvider = vi.mocked(mockSwitchToProviderFn)
 describe('config-switch command - Claude Code Support', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -152,7 +122,6 @@ describe('config-switch command - Claude Code Support', () => {
     mockClaudeCodeConfigManager.getProfileById.mockImplementation((id: string) => (defaultConfig.profiles as Record<string, any>)[id] || null)
     mockClaudeCodeConfigManager.switchProfile.mockResolvedValue({ success: true })
     mockClaudeCodeConfigManager.switchToOfficial.mockResolvedValue({ success: true })
-    mockClaudeCodeConfigManager.switchToCcr.mockResolvedValue({ success: true })
   })
 
   afterEach(() => {
@@ -216,25 +185,6 @@ describe('config-switch command - Claude Code Support', () => {
       expect(mockConsoleLog).toHaveBeenCalledWith('切换到官方登录失败：Network error')
     })
 
-    it('should switch to CCR proxy', async () => {
-      await configSwitchCommand({ target: 'ccr', codeType: 'claude-code' })
-
-      expect(mockClaudeCodeConfigManager.switchToCcr).toHaveBeenCalled()
-      expect(mockClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalled()
-      expect(mockConsoleLog).toHaveBeenCalledWith('成功切换到 CCR 代理')
-    })
-
-    it('should handle CCR proxy failure', async () => {
-      mockClaudeCodeConfigManager.switchToCcr.mockResolvedValue({
-        success: false,
-        error: 'CCR not configured',
-      })
-
-      await configSwitchCommand({ target: 'ccr', codeType: 'claude-code' })
-
-      expect(mockConsoleLog).toHaveBeenCalledWith('切换到 CCR 代理失败：CCR not configured')
-    })
-
     it('should switch to profile by ID', async () => {
       await configSwitchCommand({ target: 'profile2', codeType: 'claude-code' })
 
@@ -278,7 +228,6 @@ describe('config-switch command - Claude Code Support', () => {
         message: '选择 Claude Code 配置：',
         choices: expect.arrayContaining([
           expect.objectContaining({ value: 'official' }),
-          expect.objectContaining({ value: 'ccr' }),
           expect.objectContaining({ value: 'profile1' }),
           expect.objectContaining({ value: 'profile2' }),
         ]),
@@ -292,14 +241,6 @@ describe('config-switch command - Claude Code Support', () => {
       await configSwitchCommand({ codeType: 'claude-code' })
 
       expect(mockClaudeCodeConfigManager.switchToOfficial).toHaveBeenCalled()
-    })
-
-    it('should handle CCR proxy selection in interactive mode', async () => {
-      mockInquirer.prompt.mockResolvedValue({ selectedConfig: 'ccr' })
-
-      await configSwitchCommand({ codeType: 'claude-code' })
-
-      expect(mockClaudeCodeConfigManager.switchToCcr).toHaveBeenCalled()
     })
 
     it('should handle cancellation in interactive mode', async () => {
@@ -414,94 +355,5 @@ describe('config-switch command - Claude Code Support', () => {
 
       await expect(configSwitchCommand({ codeType: 'claude-code' })).rejects.toThrow('Prompt failed')
     })
-  })
-
-  describe('mixed functionality (Codex + Claude Code)', () => {
-    it('should handle Codex listing when codeType is codex', async () => {
-      // This test verifies that the command can handle codex code type
-      // The actual codex functionality is tested separately in codex tests
-      await expect(configSwitchCommand({ list: true, codeType: 'codex' })).resolves.not.toThrow()
-    })
-
-    it('should handle Codex interactive switch when codeType is codex', async () => {
-      // This test verifies that the command can handle codex code type
-      // The actual codex functionality is tested separately in codex tests
-      mockInquirer.prompt.mockResolvedValue({ selectedConfig: 'provider1' })
-      await expect(configSwitchCommand({ codeType: 'codex' })).resolves.not.toThrow()
-    })
-  })
-})
-
-describe('config-switch command - Codex Support', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    mockResolveCodeToolType.mockImplementation((type: any) => type || 'claude-code')
-    mockClaudeCodeConfigManager.readConfig.mockReturnValue(undefined as any)
-    mockListCodexProviders.mockResolvedValue([
-      { id: 'provider-1', name: 'Provider One', baseUrl: 'https://one.test', envKey: 'PROVIDER_ONE' },
-      { id: 'provider-2', name: 'Provider Two', baseUrl: 'https://two.test' },
-    ] as any[])
-    mockReadCodexConfig.mockReturnValue({
-      modelProvider: 'provider-1',
-      modelProviderCommented: false,
-    } as any)
-    mockSwitchCodexProvider.mockResolvedValue(true)
-    mockSwitchCodexOfficialLogin.mockResolvedValue(true)
-    mockSwitchToProvider.mockResolvedValue(true)
-  })
-
-  it('should list Codex providers including current provider', async () => {
-    await configSwitchCommand({ list: true, codeType: 'codex' })
-
-    expect(mockListCodexProviders).toHaveBeenCalled()
-    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Provider One'))
-    expect(mockConsoleLog).toHaveBeenCalledWith(expect.stringContaining('Provider Two'))
-  })
-
-  it('should display message when no Codex providers available', async () => {
-    mockListCodexProviders.mockResolvedValue([])
-
-    await configSwitchCommand({ list: true, codeType: 'codex' })
-
-    expect(mockConsoleLog).toHaveBeenCalledWith('codex:noProvidersAvailable')
-  })
-
-  it('should switch Codex provider directly when target specified', async () => {
-    await configSwitchCommand({ target: 'provider-2', codeType: 'codex' })
-
-    expect(mockSwitchCodexProvider).toHaveBeenCalledWith('provider-2')
-  })
-
-  it('should switch to official Codex login via interactive flow', async () => {
-    mockInquirer.prompt.mockImplementationOnce(((questions: any) => {
-      const questionArray = Array.isArray(questions) ? questions : [questions]
-      expect(questionArray[0].choices.some((choice: any) => choice.value === 'official')).toBe(true)
-      return Promise.resolve({ selectedConfig: 'official' })
-    }) as any)
-
-    await configSwitchCommand({ codeType: 'codex' })
-
-    expect(mockSwitchCodexOfficialLogin).toHaveBeenCalled()
-  })
-
-  it('should switch to selected Codex provider via interactive flow', async () => {
-    mockInquirer.prompt.mockImplementationOnce((() => Promise.resolve({ selectedConfig: 'provider-2' })) as any)
-
-    await configSwitchCommand({ codeType: 'codex' })
-
-    expect(mockSwitchToProvider).toHaveBeenCalledWith('provider-2')
-  })
-
-  it('should fall back to Codex type from configuration when option omitted', async () => {
-    const mockReadZcfConfig = vi.mocked(readZcfConfig)
-    mockReadZcfConfig.mockReturnValue({
-      codeToolType: 'codex',
-    } as any)
-    mockListCodexProviders.mockResolvedValue([])
-
-    await configSwitchCommand({})
-
-    expect(mockListCodexProviders).toHaveBeenCalled()
-    expect(mockConsoleLog).toHaveBeenCalledWith('codex:noProvidersAvailable')
   })
 })

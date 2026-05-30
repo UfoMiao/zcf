@@ -76,7 +76,6 @@ npx zcf uninstall --mode custom --items '["ccr","backups"]'
 
 **会删除的内容**：
 - ✅ Claude Code 配置（`~/.claude/`）
-- ✅ Codex 配置（`~/.codex/`）
 - ✅ CCR 配置（`~/.claude-code-router/`）
 - ✅ CCometixLine 配置（`~/.cometix/`）
 - ✅ ZCF 全局配置（`~/.ufomiao/zcf/`）
@@ -84,7 +83,6 @@ npx zcf uninstall --mode custom --items '["ccr","backups"]'
 
 **不会删除的内容**：
 - ❌ Claude Code CLI 本身（需要通过其他方式卸载）
-- ❌ Codex CLI 本身（需要通过其他方式卸载）
 - ❌ 系统级工具和依赖
 
 ### 自定义卸载模式
@@ -94,10 +92,9 @@ npx zcf uninstall --mode custom --items '["ccr","backups"]'
 | 组件 | 说明 | 配置位置 |
 |------|------|---------|
 | `claude-code` | Claude Code 配置 | `~/.claude/` |
-| `codex` | Codex 配置 | `~/.codex/` |
 | `ccr` | Claude Code Router 配置 | `~/.claude-code-router/` |
 | `cometix` | CCometixLine 配置 | `~/.cometix/` |
-| `backups` | 所有备份文件 | `~/.claude/backup/`, `~/.codex/backup/` 等 |
+| `backups` | 所有备份文件 | `~/.claude/backup/` 等 |
 | `zcf-config` | ZCF 全局配置 | `~/.ufomiao/zcf/` |
 
 ```bash
@@ -142,7 +139,6 @@ npx zcf uninstall --mode custom --items backups
 # 在新设备上重新配置，旧设备清理
 # 1. 在新设备上备份配置
 cp -r ~/.claude ~/claude-backup
-cp -r ~/.codex ~/codex-backup
 
 # 2. 在新设备上初始化
 npx zcf init
@@ -178,7 +174,6 @@ npx zcf uninstall --mode custom --items cometix
 ```bash
 # 查找备份位置
 ls -la ~/.claude/backup/
-ls -la ~/.codex/backup/
 
 # 手动恢复（示例）
 cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
@@ -226,9 +221,6 @@ cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
 # 备份 Claude Code 配置
 tar -czf claude-backup.tar.gz ~/.claude/
 
-# 备份 Codex 配置
-tar -czf codex-backup.tar.gz ~/.codex/
-
 # 备份 ZCF 配置
 tar -czf zcf-backup.tar.gz ~/.ufomiao/zcf/
 ```
@@ -260,7 +252,7 @@ npx zcf uninstall --mode custom --items ccr
 ```bash
 # 快速重置测试环境
 npx zcf uninstall --mode complete
-npx zcf init -s -p 302ai -k "test-key" -g zh-CN
+npx zcf init -s -t api_key -k "test-key" -u "https://api.example.com" -g zh-CN
 ```
 
 ## 故障排除
@@ -275,7 +267,7 @@ npx zcf init -s -p 302ai -k "test-key" -g zh-CN
 
 ```bash
 # 检查权限
-ls -la ~/.claude/ ~/.codex/
+ls -la ~/.claude/
 
 # 检查进程占用
 lsof ~/.claude/  # macOS/Linux
@@ -292,7 +284,6 @@ lsof ~/.claude/  # macOS/Linux
 ```bash
 # 手动清理（谨慎使用）
 rm -rf ~/.claude/
-rm -rf ~/.codex/
 rm -rf ~/.ufomiao/zcf/
 ```
 

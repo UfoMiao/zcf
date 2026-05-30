@@ -4,12 +4,30 @@ title: 機能概要
 
 # 機能概要
 
-ZCF は環境構築・ワークフロー導入・ツールチェーンを 1 つの CLI に統合しています。主な能力は以下の通りです。
+`ccs`（Claude Code Switch）は 2 つの機能と、いくつかの便利機能に特化しています。
 
-- **環境初期化**：Claude Code / Codex の API、出力スタイル、メモリ、テンプレート、MCP、ワークフロー、ステータスバーをまとめてセットアップ。
-- **設定管理**：増分反映、バックアップ、複数 API 設定、テンプレート言語と出力言語の分離。
-- **ワークフローシステム**：6 段階ワークフロー、Feat、BMad、Spec 拡張、Git スマートコマンド。
-- **統合エコシステム**：CCR、CCometixLine、Context7、Open Web Search、DeepWiki、Playwright、Serena など。
-- **コマンドライン**：`zcf init/update/ccr/ccu/uninstall/config-switch` とインタラクティブメニュー。
+## 1. API エンドポイントの管理と切り替え
 
-以降の章で各機能とベストプラクティスを紹介します。
+複数の Claude Code API プロファイルを保存できます。各プロファイルには独自の：
+
+- **Base URL** —— API エンドポイント
+- **認証方式** —— Auth Token または API Key
+- **キー** —— トークンまたは API キー
+
+インタラクティブメニューまたは `ccs cs <name>` で有効なエンドポイントを即座に切り替え、`ccs cs --list` ですべてを一覧表示できます。
+
+詳しい使い方は[設定切り替え](../cli/config-switch.md)を参照してください。
+
+## 2. アップデート確認
+
+`ccs check-updates`（エイリアス `ccs check`）は Claude Code と `ccs` の新しいバージョンを確認し、更新します。
+
+詳しい使い方は[バージョンチェック](../cli/check-updates.md)を参照してください。
+
+## 便利機能
+
+- **インタラクティブメニュー** —— 引数なしで `ccs` を実行。[メインメニュー](../cli/menu.md)を参照。
+- **言語切り替え** —— `ccs --lang <zh-CN|en>` で英語と簡体字中国語を切り替え。
+- **クリーンなアンインストール** —— `ccs uninstall` で ccs の設定とツールを削除。[アンインストール](../cli/uninstall.md)を参照。
+
+すべての設定は `~/.ccs` に保存されます。
