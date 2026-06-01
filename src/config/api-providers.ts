@@ -173,7 +173,7 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     claudeCode: {
       baseUrl: 'https://api.minimax.io/anthropic',
       authType: 'auth_token',
-      defaultModels: ['MiniMax-M2.7', 'MiniMax-M2.7-highspeed'],
+      defaultModels: ['MiniMax-M3', 'MiniMax-M2.7-highspeed'],
     },
     description: 'MiniMax API Service',
   },

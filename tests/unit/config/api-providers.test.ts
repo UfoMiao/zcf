@@ -87,7 +87,7 @@ describe('aPI Provider Configuration', () => {
       expect(provider!.supportedCodeTools).toContain('claude-code')
       expect(provider!.claudeCode?.baseUrl).toBe('https://api.minimax.io/anthropic')
       expect(provider!.claudeCode?.authType).toBe('auth_token')
-      expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M2.7', 'MiniMax-M2.7-highspeed'])
+      expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M3', 'MiniMax-M2.7-highspeed'])
     })
 
     it('bailian-coding provider should use lowercase glm-5 default model', () => {

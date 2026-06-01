@@ -156,14 +156,14 @@ npx zcf init -s -T codex -p glm -k "your-auth-token"
 **公式リンク**: [MiniMax プラットフォーム](https://platform.minimax.io)
 
 **特徴**:
-- 🎯 高性能AIモデル (MiniMax-M2.7)
+- 🎯 高性能AIモデル (MiniMax-M3)
 - 💡 204,800トークンのコンテキストウィンドウ、最大192K出力
 - 🔧 Anthropic互換API、Claude Code対応
 
 **設定情報**:
 - **Claude Code Base URL**: `https://api.minimax.io/anthropic`
 - **認証方式**: `auth_token`
-- **Claude Code デフォルトモデル**: `MiniMax-M2.7`（メイン）、`MiniMax-M2.7-highspeed`（高速）
+- **Claude Code デフォルトモデル**: `MiniMax-M3`（メイン）、`MiniMax-M2.7-highspeed`（高速）
 
 **使用例**:
 ```bash
