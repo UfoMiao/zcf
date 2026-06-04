@@ -289,7 +289,7 @@ npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 
 添加到 Claude Code 的 `settings.json`：
 
-**Linux/macOS：**
+**跨平台通用（推荐）：**
 
 ```json
 {
@@ -301,17 +301,7 @@ npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 }
 ```
 
-**Windows：**
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "%USERPROFILE%\\.claude\\ccline\\ccline.exe",
-    "padding": 0
-  }
-}
-```
+> Windows 用户请勿使用 `%USERPROFILE%` 路径。Claude Code v2.1.47+ 支持 `~` 展开，推荐使用上面的跨平台配置。
 
 **回退方案（npm 安装）：**
 

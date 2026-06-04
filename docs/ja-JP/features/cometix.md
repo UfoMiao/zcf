@@ -54,7 +54,7 @@ npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 
 Claude Code の `settings.json` に追加：
 
-**Linux/macOS：**
+**クロスプラットフォーム（推奨）：**
 
 ```json
 {
@@ -66,17 +66,7 @@ Claude Code の `settings.json` に追加：
 }
 ```
 
-**Windows：**
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "%USERPROFILE%\\.claude\\ccline\\ccline.exe",
-    "padding": 0
-  }
-}
-```
+> Windows ユーザーは `%USERPROFILE%` パスを使用しないでください。Claude Code v2.1.47+ は `~` の展開に対応しているため、上記のクロスプラットフォーム設定を使用してください。
 
 **フォールバック（npm インストール）：**
 

@@ -123,19 +123,18 @@ describe('statusLine Configuration', () => {
       )
     })
 
-    it('should handle platform-specific statusLine paths', () => {
-      // Red: This test should FAIL initially
-      const windowsTemplateSettings: ClaudeSettings = {
+    it('should handle cross-platform statusLine paths', () => {
+      const crossPlatformTemplateSettings: ClaudeSettings = {
         ...mockTemplateSettings,
         statusLine: {
           type: 'command',
-          command: '%USERPROFILE%\\.claude\\ccline\\ccline.exe',
+          command: '~/.claude/ccline/ccline',
           padding: 0,
         },
       }
 
       mockExists.mockReturnValue(false)
-      mockReadJsonConfig.mockReturnValue(windowsTemplateSettings)
+      mockReadJsonConfig.mockReturnValue(crossPlatformTemplateSettings)
 
       mergeSettingsFile('/template/settings.json', '/target/settings.json')
 
@@ -144,7 +143,7 @@ describe('statusLine Configuration', () => {
         expect.objectContaining({
           statusLine: {
             type: 'command',
-            command: '%USERPROFILE%\\.claude\\ccline\\ccline.exe',
+            command: '~/.claude/ccline/ccline',
             padding: 0,
           },
         }),
