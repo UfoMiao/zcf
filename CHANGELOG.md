@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.6.7
+
+### Patch Changes
+
+- ## New Features
+  - Upgrade the MiniMax provider preset to use the M3 default model.
+
+  ## 新功能
+  - 将 MiniMax 提供商预设升级为默认使用 M3 模型。
+
+  ## Fixes
+  - Use a cross-platform CCometixLine status command so generated Claude Code status line configuration works consistently across macOS, Linux, Windows, and Termux.
+  - Update DeepWiki MCP configuration typing, tests, and multilingual documentation.
+
+  ## 修复
+  - 使用跨平台的 CCometixLine 状态栏命令，确保生成的 Claude Code 状态栏配置在 macOS、Linux、Windows 和 Termux 中保持一致。
+  - 更新 DeepWiki MCP 配置类型、测试与多语言文档。
+
 ## 3.6.6
 
 ### Patch Changes
