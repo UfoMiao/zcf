@@ -133,12 +133,12 @@ describe('statusLine Configuration Integration', () => {
     expect(result?.permissions?.allow).toEqual(['Bash', 'Read', 'Write'])
   })
 
-  it('should handle Windows path format correctly', async () => {
-    // Arrange: Template with Windows statusLine path
+  it('should handle cross-platform statusLine path correctly', async () => {
+    // Arrange: Template with cross-platform statusLine path
     const templateSettings: ClaudeSettings = {
       statusLine: {
         type: 'command',
-        command: '%USERPROFILE%\\.claude\\ccline\\ccline.exe',
+        command: '~/.claude/ccline/ccline',
         padding: 0,
       },
     }
@@ -148,9 +148,9 @@ describe('statusLine Configuration Integration', () => {
     // Act: Merge settings
     mergeSettingsFile(templatePath, targetPath)
 
-    // Assert: Windows path should be preserved correctly
+    // Assert: Cross-platform path should be preserved correctly
     const result = readJsonConfig<ClaudeSettings>(targetPath)
 
-    expect(result?.statusLine?.command).toBe('%USERPROFILE%\\.claude\\ccline\\ccline.exe')
+    expect(result?.statusLine?.command).toBe('~/.claude/ccline/ccline')
   })
 })

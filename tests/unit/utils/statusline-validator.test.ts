@@ -108,7 +108,7 @@ describe('statusLine Validator', () => {
   })
 
   describe('getPlatformStatusLineConfig', () => {
-    it('should return Windows configuration on Windows platform', () => {
+    it('should return cross-platform configuration on Windows platform', () => {
       // Mock Windows platform
       mockIsWindows.mockReturnValue(true)
 
@@ -116,7 +116,7 @@ describe('statusLine Validator', () => {
 
       expect(result).toEqual({
         type: 'command',
-        command: '%USERPROFILE%\\.claude\\ccline\\ccline.exe',
+        command: '~/.claude/ccline/ccline',
         padding: 0,
       })
     })

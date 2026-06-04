@@ -1,5 +1,4 @@
 import type { StatusLineConfig } from '../types/config'
-import { isWindows } from './platform'
 
 /**
  * Validates StatusLine configuration structure
@@ -54,9 +53,7 @@ export function sanitizeStatusLineConfig(config: any): StatusLineConfig | null {
 export function getPlatformStatusLineConfig(): StatusLineConfig {
   return {
     type: 'command',
-    command: isWindows()
-      ? '%USERPROFILE%\\.claude\\ccline\\ccline.exe'
-      : '~/.claude/ccline/ccline',
+    command: '~/.claude/ccline/ccline',
     padding: 0,
   }
 }

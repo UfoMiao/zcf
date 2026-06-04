@@ -43,7 +43,7 @@ export const MOCK_STATUS_LINE_CONFIGS = {
   },
   windows: {
     type: 'command' as const,
-    command: '%USERPROFILE%\\.claude\\ccline\\ccline.exe',
+    command: '~/.claude/ccline/ccline',
     padding: 0,
   },
   custom: {

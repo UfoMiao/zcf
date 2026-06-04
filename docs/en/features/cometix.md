@@ -289,7 +289,7 @@ npm install -g @cometix/ccline --registry https://registry.npmmirror.com
 
 Add to your Claude Code `settings.json`:
 
-**Linux/macOS:**
+**Cross-platform (recommended):**
 
 ```json
 {
@@ -301,17 +301,7 @@ Add to your Claude Code `settings.json`:
 }
 ```
 
-**Windows:**
-
-```json
-{
-  "statusLine": {
-    "type": "command",
-    "command": "%USERPROFILE%\\.claude\\ccline\\ccline.exe",
-    "padding": 0
-  }
-}
-```
+> Windows users should not use `%USERPROFILE%` paths. Claude Code v2.1.47+ supports `~` expansion, so use the cross-platform configuration above.
 
 **Fallback (npm installation):**
 
