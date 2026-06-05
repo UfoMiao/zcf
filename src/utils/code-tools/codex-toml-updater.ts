@@ -9,11 +9,12 @@
  * - MCP modifications should NOT affect API configurations
  */
 
-import type { CodexMcpService, CodexProvider } from './codex'
+import type { CodexConfigData, CodexMcpService, CodexProvider } from './codex'
 import { CODEX_CONFIG_FILE, CODEX_DIR } from '../../constants'
 import { ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { normalizeTomlPath } from '../platform'
 import { editToml, parseToml } from '../toml-edit'
+import { parseCodexConfig } from './codex'
 
 /**
  * Update top-level TOML fields using regex-based replacement
@@ -203,25 +204,10 @@ export function upsertCodexMcpService(serviceId: string, service: CodexMcpServic
 
   if (existingService?.url && !existingService?.command) {
     // This is an SSE-type service, only update non-conflicting fields
-    if (service.env && Object.keys(service.env).length > 0) {
-      content = editToml(content, `${basePath}.env`, service.env)
-    }
-    if (service.startup_timeout_sec) {
-      content = editToml(content, `${basePath}.startup_timeout_sec`, service.startup_timeout_sec)
-    }
+    content = upsertMcpSection(content, serviceId, service, { preserveCommandAndArgs: true })
   }
   else {
-    // This is a stdio-type service or new service, update all fields
-    const normalizedCommand = normalizeTomlPath(service.command)
-    content = editToml(content, `${basePath}.command`, normalizedCommand)
-    content = editToml(content, `${basePath}.args`, service.args || [])
-
-    if (service.env && Object.keys(service.env).length > 0) {
-      content = editToml(content, `${basePath}.env`, service.env)
-    }
-    if (service.startup_timeout_sec) {
-      content = editToml(content, `${basePath}.startup_timeout_sec`, service.startup_timeout_sec)
-    }
+    content = upsertMcpSection(content, serviceId, service)
   }
 
   writeFile(CODEX_CONFIG_FILE, content)
@@ -242,10 +228,7 @@ export function deleteCodexMcpService(serviceId: string): void {
   const content = readFile(CODEX_CONFIG_FILE) || ''
 
   // Use regex to remove the entire section
-  const sectionRegex = new RegExp(
-    `\\n?\\[mcp_servers\\.${escapeRegex(serviceId)}\\][\\s\\S]*?(?=\\n\\[|$)`,
-    'g',
-  )
+  const sectionRegex = createMcpSectionRegex(serviceId)
 
   const updatedContent = content.replace(sectionRegex, '')
   writeFile(CODEX_CONFIG_FILE, updatedContent)
@@ -289,4 +272,179 @@ export function batchUpdateCodexMcpServices(
  */
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function createMcpSectionRegex(serviceId: string): RegExp {
+  const escapedServiceId = escapeRegex(serviceId)
+  return new RegExp(
+    `(?:^|\\n)[ \\t]*\\[mcp_servers\\.${escapedServiceId}(?:\\.[^\\]]+)?\\][\\s\\S]*?(?=(?:\\n[ \\t]*\\[(?!mcp_servers\\.${escapedServiceId}(?:\\.|\\]))|$))`,
+    'g',
+  )
+}
+
+function upsertMcpSection(
+  content: string,
+  serviceId: string,
+  service: CodexMcpService,
+  options: { preserveCommandAndArgs?: boolean } = {},
+): string {
+  const existingConfig = content ? parseCodexConfig(content) : null
+  const existingService = existingConfig?.mcpServices.find(candidate => candidate.id === serviceId)
+  const mergedService = mergeMcpService(serviceId, existingService, service, options)
+  const section = renderMcpSection(serviceId, mergedService, options)
+  const sectionRegex = createMcpSectionRegex(serviceId)
+
+  if (sectionRegex.test(content)) {
+    const normalized = content.replace(sectionRegex, `\n${section.trimEnd()}\n`)
+    return normalized.replace(/^\n/, '')
+  }
+
+  const separator = content.trimEnd().length > 0 ? '\n\n' : ''
+  return `${content.trimEnd()}${separator}${section}\n`
+}
+
+function mergeMcpService(
+  serviceId: string,
+  existingService: CodexMcpService | undefined,
+  nextService: CodexMcpService,
+  options: { preserveCommandAndArgs?: boolean } = {},
+): CodexMcpService {
+  const mergedExtraFields = {
+    ...(existingService?.extraFields || {}),
+    ...(nextService.extraFields || {}),
+  }
+
+  if (options.preserveCommandAndArgs && existingService?.command) {
+    return {
+      ...nextService,
+      id: serviceId,
+      command: existingService.command,
+      args: existingService.args || [],
+      env: nextService.env ?? existingService.env,
+      startup_timeout_sec: nextService.startup_timeout_sec ?? existingService.startup_timeout_sec,
+      extraFields: Object.keys(mergedExtraFields).length > 0 ? mergedExtraFields : undefined,
+    }
+  }
+
+  return {
+    ...existingService,
+    ...nextService,
+    id: serviceId,
+    env: nextService.env ?? existingService?.env,
+    startup_timeout_sec: nextService.startup_timeout_sec ?? existingService?.startup_timeout_sec,
+    extraFields: Object.keys(mergedExtraFields).length > 0 ? mergedExtraFields : undefined,
+  }
+}
+
+function renderMcpSection(
+  serviceId: string,
+  service: CodexMcpService,
+  options: { preserveCommandAndArgs?: boolean } = {},
+): string {
+  const lines = [`[mcp_servers.${serviceId}]`]
+
+  if (!options.preserveCommandAndArgs) {
+    const normalizedCommand = normalizeTomlStringValue(service.command)
+    lines.push(`command = "${escapeTomlString(normalizedCommand)}"`)
+    lines.push(`args = ${formatTomlArray(service.args || [])}`)
+  }
+
+  if (service.env && Object.keys(service.env).length > 0) {
+    lines.push(`env = ${formatInlineTable(service.env)}`)
+  }
+
+  if (service.startup_timeout_sec) {
+    lines.push(`startup_timeout_sec = ${service.startup_timeout_sec}`)
+  }
+
+  if (service.extraFields) {
+    for (const [key, value] of Object.entries(service.extraFields)) {
+      const formatted = formatTomlField(key, value)
+      if (formatted) {
+        lines.push(formatted)
+      }
+    }
+  }
+
+  return lines.join('\n')
+}
+
+function formatTomlField(key: string, value: unknown): string {
+  if (value === null || value === undefined) {
+    return ''
+  }
+
+  if (typeof value === 'string') {
+    return `${key} = "${escapeTomlString(normalizeTomlStringValue(value))}"`
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return `${key} = ${value}`
+  }
+
+  if (Array.isArray(value)) {
+    return `${key} = ${formatTomlArray(value)}`
+  }
+
+  if (typeof value === 'object') {
+    return `${key} = ${formatInlineTable(value as Record<string, unknown>)}`
+  }
+
+  return ''
+}
+
+function formatInlineTable(obj: Record<string, unknown>): string {
+  const entries = Object.entries(obj)
+    .filter(([, value]) => value !== null && value !== undefined)
+    .map(([key, value]) => `${key} = ${formatInlineTableValue(value)}`)
+    .join(', ')
+  return `{${entries}}`
+}
+
+function formatInlineTableValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return `'${normalizeTomlStringValue(value).replace(/'/g, "''")}'`
+  }
+
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+
+  if (Array.isArray(value)) {
+    return formatTomlArray(value)
+  }
+
+  if (value && typeof value === 'object') {
+    return formatInlineTable(value as Record<string, unknown>)
+  }
+
+  return `''`
+}
+
+function formatTomlArray(values: unknown[]): string {
+  const items = values.map((value) => {
+    if (typeof value === 'string') {
+      return `"${escapeTomlString(normalizeTomlStringValue(value))}"`
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value)
+    }
+
+    if (value && typeof value === 'object') {
+      return formatInlineTable(value as Record<string, unknown>)
+    }
+
+    return '""'
+  })
+
+  return `[${items.join(', ')}]`
+}
+
+function escapeTomlString(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
+function normalizeTomlStringValue(value: string): string {
+  return value.includes('\\') ? normalizeTomlPath(value) : value
 }
