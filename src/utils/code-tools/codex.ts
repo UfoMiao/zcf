@@ -13,7 +13,7 @@ import { x } from 'tinyexec'
 import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
 import { applyAiLanguageDirective } from '../config'
-import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
+import { copyDir, copyFile, ensureDir, exists, isDirectory, isFile, readDir, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { normalizeTomlPath, wrapCommandWithSudo } from '../platform'
 // Removed MCP selection and platform command imports from this module
@@ -2057,6 +2057,96 @@ export async function listCodexProviders(): Promise<CodexProvider[]> {
   return config?.providers || []
 }
 
+const CODEX_SESSION_DIRECTORIES = ['sessions', 'archived_sessions'] as const
+
+function collectCodexSessionFiles(rootDir: string, files: string[]): void {
+  if (!exists(rootDir) || !isDirectory(rootDir))
+    return
+
+  for (const entry of readDir(rootDir)) {
+    const entryPath = join(rootDir, entry)
+
+    if (isDirectory(entryPath)) {
+      collectCodexSessionFiles(entryPath, files)
+      continue
+    }
+
+    if (isFile(entryPath) && entryPath.endsWith('.jsonl')) {
+      files.push(entryPath)
+    }
+  }
+}
+
+function rewriteSessionMetaProvider(content: string, providerId: string): string | null {
+  if (!content.trim())
+    return null
+
+  const newline = content.includes('\r\n') ? '\r\n' : '\n'
+  const rawLines = content.split(/\r?\n/)
+  const hasTrailingNewline = rawLines.at(-1) === ''
+  const lines = hasTrailingNewline ? rawLines.slice(0, -1) : rawLines
+  let changed = false
+
+  const updatedLines = lines.map((line) => {
+    if (!line.trim())
+      return line
+
+    try {
+      const record = JSON.parse(line) as { type?: string, payload?: Record<string, any> }
+      if (record.type !== 'session_meta' || !record.payload || typeof record.payload !== 'object')
+        return line
+
+      if (record.payload.model_provider === providerId)
+        return line
+
+      record.payload = {
+        ...record.payload,
+        model_provider: providerId,
+      }
+      changed = true
+      return JSON.stringify(record)
+    }
+    catch {
+      return line
+    }
+  })
+
+  if (!changed)
+    return null
+
+  let updatedContent = updatedLines.join(newline)
+  if (hasTrailingNewline)
+    updatedContent += newline
+
+  return updatedContent
+}
+
+function syncCodexSessionProviders(providerId: string): void {
+  for (const directoryName of CODEX_SESSION_DIRECTORIES) {
+    const rootDir = join(CODEX_DIR, directoryName)
+    const sessionFiles: string[] = []
+
+    try {
+      collectCodexSessionFiles(rootDir, sessionFiles)
+    }
+    catch {
+      continue
+    }
+
+    for (const sessionFile of sessionFiles) {
+      try {
+        const updatedContent = rewriteSessionMetaProvider(readFile(sessionFile), providerId)
+        if (updatedContent !== null) {
+          writeFile(sessionFile, updatedContent)
+        }
+      }
+      catch {
+        // Ignore malformed or transient session files and keep the provider switch successful.
+      }
+    }
+  }
+}
+
 /**
  * Switch to a different Codex provider
  * @param providerId - ID of the provider to switch to
@@ -2215,6 +2305,7 @@ export async function switchToProvider(providerId: string): Promise<boolean> {
     const envValue = auth[provider.tempEnvKey] || null
     auth.OPENAI_API_KEY = envValue
     writeJsonConfig(CODEX_AUTH_FILE, auth, { pretty: true })
+    syncCodexSessionProviders(providerId)
 
     console.log(ansis.green(i18n.t('codex:providerSwitchSuccess', { provider: providerId })))
     return true
