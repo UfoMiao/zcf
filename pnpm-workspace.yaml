@@ -43,9 +43,11 @@ catalogs:
     '@commitlint/cli': ^19.8.1
     '@commitlint/config-conventional': ^19.8.1
     '@commitlint/types': ^19.8.1
+    adm-zip: ^0.5.16
     husky: ^9.1.7
     lint-staged: ^16.2.0
   types:
+    '@types/adm-zip': ^0.5.7
     '@types/fs-extra': ^11.0.4
     '@types/inquirer': ^9.0.9
     '@types/node': ^22.18.6
