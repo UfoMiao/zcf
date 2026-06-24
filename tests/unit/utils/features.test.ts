@@ -35,6 +35,14 @@ vi.mock('../../../src/utils/claude-code-incremental-manager', () => ({
   configureIncrementalManagement: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/claude-code-config-manager', () => ({
+  ClaudeCodeConfigManager: {
+    switchToOfficial: vi.fn(),
+    switchToCcr: vi.fn(),
+    syncCcrProfile: vi.fn(),
+  },
+}))
+
 vi.mock('../../../src/utils/ccr/config', () => ({
   setupCcrConfiguration: vi.fn(),
   configureCcrProxy: vi.fn(),
@@ -165,13 +173,16 @@ describe('features utilities', () => {
     it('should handle official login mode', async () => {
       const { configureApiFeature } = await import('../../../src/utils/features')
       const { switchToOfficialLogin } = await import('../../../src/utils/config')
+      const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
 
       vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'official' })
       vi.mocked(switchToOfficialLogin).mockReturnValue(true)
+      vi.mocked(ClaudeCodeConfigManager.switchToOfficial).mockResolvedValue({ success: true })
 
       await configureApiFeature()
 
       expect(switchToOfficialLogin).toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.switchToOfficial).toHaveBeenCalled()
     })
 
     it('should handle custom API mode', async () => {
@@ -196,14 +207,47 @@ describe('features utilities', () => {
       const { configureApiFeature } = await import('../../../src/utils/features')
       const ccrConfigModule = await import('../../../src/utils/ccr/config')
       const ccrInstallerModule = await import('../../../src/utils/ccr/installer')
+      const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
 
       vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'ccr' })
       vi.mocked(ccrInstallerModule.isCcrInstalled).mockResolvedValue({ hasCorrectPackage: true } as any)
       vi.mocked(ccrConfigModule.setupCcrConfiguration).mockResolvedValue(true as any)
+      vi.mocked(ClaudeCodeConfigManager.switchToCcr).mockResolvedValue({ success: true })
 
       await configureApiFeature()
 
       expect(ccrConfigModule.setupCcrConfiguration).toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.switchToCcr).toHaveBeenCalled()
+    })
+
+    it('should log error when switchToCcr fails after CCR setup', async () => {
+      const { configureApiFeature } = await import('../../../src/utils/features')
+      const ccrConfigModule = await import('../../../src/utils/ccr/config')
+      const ccrInstallerModule = await import('../../../src/utils/ccr/installer')
+      const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'ccr' })
+      vi.mocked(ccrInstallerModule.isCcrInstalled).mockResolvedValue({ hasCorrectPackage: true } as any)
+      vi.mocked(ccrConfigModule.setupCcrConfiguration).mockResolvedValue(true as any)
+      vi.mocked(ClaudeCodeConfigManager.switchToCcr).mockResolvedValue({ success: false, error: 'sync failed' })
+
+      await configureApiFeature()
+
+      expect(console.error).toHaveBeenCalled()
+    })
+
+    it('should log error when switchToOfficial fails after official login', async () => {
+      const { configureApiFeature } = await import('../../../src/utils/features')
+      const { switchToOfficialLogin } = await import('../../../src/utils/config')
+      const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'official' })
+      vi.mocked(switchToOfficialLogin).mockReturnValue(true)
+      vi.mocked(ClaudeCodeConfigManager.switchToOfficial).mockResolvedValue({ success: false, error: 'sync failed' })
+
+      await configureApiFeature()
+
+      expect(console.error).toHaveBeenCalled()
     })
 
     it('should handle skip mode', async () => {

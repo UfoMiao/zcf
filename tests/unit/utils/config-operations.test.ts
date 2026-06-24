@@ -16,6 +16,13 @@ vi.mock('inquirer')
 vi.mock('../../../src/utils/config')
 vi.mock('../../../src/utils/output-style')
 vi.mock('../../../src/utils/validator')
+vi.mock('../../../src/utils/claude-code-config-manager', () => ({
+  ClaudeCodeConfigManager: {
+    switchToOfficial: vi.fn(),
+    switchToCcr: vi.fn(),
+    syncCcrProfile: vi.fn(),
+  },
+}))
 
 describe('config-operations utilities', () => {
   beforeAll(() => {
@@ -210,6 +217,33 @@ describe('config-operations utilities', () => {
           message: i18n.t('api:configureApi'),
         }),
       )
+    })
+
+    it('should sync ClaudeCodeConfigManager when switching to official login', async () => {
+      const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ authType: 'official' })
+      vi.mocked(config.switchToOfficialLogin).mockReturnValue(true)
+      vi.mocked(ClaudeCodeConfigManager.switchToOfficial).mockResolvedValue({ success: true })
+
+      const result = await configureApiCompletely()
+
+      expect(result).toBeNull()
+      expect(config.switchToOfficialLogin).toHaveBeenCalled()
+      expect(ClaudeCodeConfigManager.switchToOfficial).toHaveBeenCalled()
+    })
+
+    it('should log error when switchToOfficial fails during official login', async () => {
+      const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ authType: 'official' })
+      vi.mocked(config.switchToOfficialLogin).mockReturnValue(true)
+      vi.mocked(ClaudeCodeConfigManager.switchToOfficial).mockResolvedValue({ success: false, error: 'sync failed' })
+
+      const result = await configureApiCompletely()
+
+      expect(result).toBeNull()
+      expect(console.error).toHaveBeenCalled()
     })
   })
 

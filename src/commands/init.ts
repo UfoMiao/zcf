@@ -693,6 +693,16 @@ export async function init(options: InitOptions = {}): Promise<void> {
           await configureCcrProxy(defaultCcrConfig)
           console.log(ansis.green(`✔ ${i18n.t('ccr:proxyConfigSuccess')}`))
 
+          // Sync ClaudeCodeConfigManager state
+          const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+          const ccrResult = await ClaudeCodeConfigManager.switchToCcr()
+          if (!ccrResult.success) {
+            console.error(ansis.red(i18n.t('ccr:ccrConfigFailed')))
+            if (process.env.DEBUG) {
+              console.error(ansis.gray(ccrResult.error))
+            }
+          }
+
           // Add onboarding flag
           try {
             addCompletedOnboarding()
@@ -716,6 +726,15 @@ export async function init(options: InitOptions = {}): Promise<void> {
             // Handle official login
             const success = switchToOfficialLogin()
             if (success) {
+              // Sync ClaudeCodeConfigManager state
+              const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+              const syncResult = await ClaudeCodeConfigManager.switchToOfficial()
+              if (!syncResult.success) {
+                console.error(ansis.red(i18n.t('api:officialLoginFailed')))
+                if (process.env.DEBUG) {
+                  console.error(ansis.gray(syncResult.error))
+                }
+              }
               console.log(ansis.green(`✔ ${i18n.t('api:officialLoginConfigured')}`))
               apiConfig = null // No need for API config
             }
@@ -743,6 +762,15 @@ export async function init(options: InitOptions = {}): Promise<void> {
             // Setup CCR configuration
             const ccrConfigured = await setupCcrConfiguration()
             if (ccrConfigured) {
+              // Sync ClaudeCodeConfigManager state so "Switch API Config" reflects CCR as current
+              const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+              const ccrResult = await ClaudeCodeConfigManager.switchToCcr()
+              if (!ccrResult.success) {
+                console.error(ansis.red(i18n.t('ccr:ccrConfigFailed')))
+                if (process.env.DEBUG) {
+                  console.error(ansis.gray(ccrResult.error))
+                }
+              }
               console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
               // CCR configuration already sets up the proxy in settings.json
               // addCompletedOnboarding is already called inside setupCcrConfiguration

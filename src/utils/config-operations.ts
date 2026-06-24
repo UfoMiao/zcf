@@ -1,5 +1,6 @@
 import type { AiOutputLanguage } from '../constants'
 import type { ApiConfig } from '../types/config'
+import process from 'node:process'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { CLAUDE_DIR } from '../constants'
@@ -60,6 +61,15 @@ export async function configureApiCompletely(
   if (authType === 'official') {
     const success = switchToOfficialLogin()
     if (success) {
+      // Sync ClaudeCodeConfigManager state
+      const { ClaudeCodeConfigManager } = await import('./claude-code-config-manager')
+      const syncResult = await ClaudeCodeConfigManager.switchToOfficial()
+      if (!syncResult.success) {
+        console.error(ansis.red(i18n.t('api:officialLoginFailed')))
+        if (process.env.DEBUG) {
+          console.error(ansis.gray(syncResult.error))
+        }
+      }
       return null // No API config needed for official login
     }
     else {

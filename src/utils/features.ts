@@ -1,5 +1,6 @@
 import type { SupportedLang } from '../constants'
 import type { McpServerConfig } from '../types'
+import process from 'node:process'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { getMcpServices } from '../config/mcp-services'
@@ -46,6 +47,15 @@ async function handleOfficialLoginMode(): Promise<void> {
   ensureI18nInitialized()
   const success = switchToOfficialLogin()
   if (success) {
+    // Sync ClaudeCodeConfigManager state
+    const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+    const syncResult = await ClaudeCodeConfigManager.switchToOfficial()
+    if (!syncResult.success) {
+      console.error(ansis.red(i18n.t('api:officialLoginFailed')))
+      if (process.env.DEBUG) {
+        console.error(ansis.gray(syncResult.error))
+      }
+    }
     console.log(ansis.green(`✔ ${i18n.t('api:officialLoginConfigured')}`))
   }
   else {
@@ -185,6 +195,15 @@ async function handleCcrProxyMode(): Promise<void> {
   // Setup CCR configuration
   const ccrConfigured = await setupCcrConfiguration()
   if (ccrConfigured) {
+    // Sync ClaudeCodeConfigManager state so "Switch API Config" reflects CCR as current
+    const { ClaudeCodeConfigManager } = await import('../utils/claude-code-config-manager')
+    const result = await ClaudeCodeConfigManager.switchToCcr()
+    if (!result.success) {
+      console.error(ansis.red(i18n.t('ccr:ccrConfigFailed')))
+      if (process.env.DEBUG) {
+        console.error(ansis.gray(result.error))
+      }
+    }
     console.log(ansis.green(`✔ ${i18n.t('ccr:ccrSetupComplete')}`))
   }
 }

@@ -123,6 +123,14 @@ vi.mock('../../../src/utils/ccr/config', () => ({
   setupCcrConfiguration: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/claude-code-config-manager', () => ({
+  ClaudeCodeConfigManager: {
+    switchToOfficial: vi.fn().mockResolvedValue({ success: true }),
+    switchToCcr: vi.fn().mockResolvedValue({ success: true }),
+    syncCcrProfile: vi.fn().mockResolvedValue(undefined),
+  },
+}))
+
 vi.mock('../../../src/utils/cometix/installer', () => ({
   isCometixLineInstalled: vi.fn(),
   installCometixLine: vi.fn(),
@@ -175,6 +183,11 @@ interface TestMocks {
   configureApiCompletely: any
   modifyApiConfigPartially: any
   configureIncrementalManagement: any
+  ClaudeCodeConfigManager: {
+    switchToOfficial: any
+    switchToCcr: any
+    syncCcrProfile: any
+  }
 }
 
 let testMocks: TestMocks
@@ -200,6 +213,7 @@ describe('init command', () => {
     const { setupCcrConfiguration } = await import('../../../src/utils/ccr/config')
     const { configureApiCompletely, modifyApiConfigPartially } = await import('../../../src/utils/config-operations')
     const { configureIncrementalManagement } = await import('../../../src/utils/claude-code-incremental-manager')
+    const { ClaudeCodeConfigManager } = await import('../../../src/utils/claude-code-config-manager')
     const { existsSync } = await import('node:fs')
     const { promptBoolean } = await import('../../../src/utils/toggle-prompt')
 
@@ -228,6 +242,11 @@ describe('init command', () => {
       configureApiCompletely: vi.mocked(configureApiCompletely),
       modifyApiConfigPartially: vi.mocked(modifyApiConfigPartially),
       configureIncrementalManagement: vi.mocked(configureIncrementalManagement),
+      ClaudeCodeConfigManager: {
+        switchToOfficial: vi.mocked(ClaudeCodeConfigManager.switchToOfficial),
+        switchToCcr: vi.mocked(ClaudeCodeConfigManager.switchToCcr),
+        syncCcrProfile: vi.mocked(ClaudeCodeConfigManager.syncCcrProfile),
+      },
       promptBoolean: vi.mocked(promptBoolean),
     }
     // Default promptBoolean to return false to avoid hanging
@@ -869,6 +888,8 @@ describe('init command', () => {
 
         // Should call switchToOfficialLogin for official mode
         expect(testMocks.switchToOfficialLogin).toHaveBeenCalled()
+        // Should sync ClaudeCodeConfigManager state
+        expect(testMocks.ClaudeCodeConfigManager.switchToOfficial).toHaveBeenCalled()
       })
 
       it('should handle CCR proxy mode selection', async () => {
@@ -888,6 +909,7 @@ describe('init command', () => {
           hasCorrectPackage: true,
         } as any)
         testMocks.setupCcrConfiguration.mockResolvedValue(true)
+        testMocks.ClaudeCodeConfigManager.switchToCcr.mockResolvedValue({ success: true })
         testMocks.inquirerPrompt.mockResolvedValueOnce({ apiMode: 'ccr' }) // Unified menu selection
         testMocks.configureOutputStyle.mockResolvedValue(undefined)
         testMocks.updateZcfConfig.mockResolvedValue(undefined)
@@ -901,6 +923,8 @@ describe('init command', () => {
         // Should check CCR installation and setup CCR configuration
         expect(testMocks.isCcrInstalled).toHaveBeenCalled()
         expect(testMocks.setupCcrConfiguration).toHaveBeenCalled()
+        // Should sync ClaudeCodeConfigManager state
+        expect(testMocks.ClaudeCodeConfigManager.switchToCcr).toHaveBeenCalled()
       })
 
       it('should handle skip mode selection', async () => {
