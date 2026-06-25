@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.6.8
+
+### Patch Changes
+
+- ## Fixes
+  - Sync ClaudeCodeConfigManager state after API configuration changes so the "Switch API Config" menu correctly reflects the active configuration after CCR proxy or official login setup
+  - Add sync calls across features.ts, config-operations.ts, and init.ts for all six API configuration change paths
+  - Add unit tests for configuration sync in features, config-operations, and init modules
+
+  ## 修复
+  - 在 API 配置变更后同步 ClaudeCodeConfigManager 状态，使「切换 API 配置」菜单在 CCR 代理或官方登录设置后能正确反映当前活动配置
+  - 在 features.ts、config-operations.ts 和 init.ts 的六个 API 配置变更路径中添加同步调用
+  - 为 features、config-operations 和 init 模块的配置同步补充单元测试
+
 ## 3.6.7
 
 ### Patch Changes
