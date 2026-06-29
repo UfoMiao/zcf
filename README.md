@@ -18,7 +18,7 @@
 
 **✨ Full Documentation**: [ZCF Docs](https://zcf.ufomiao.com/)
 
-> Zero-config, one-click setup for Claude Code & Codex with bilingual support, intelligent agent system and personalized AI assistant
+> Zero-config, one-click setup for Claude Code, Codex & CodeBuddy with bilingual support, intelligent agent system and personalized AI assistant
 </p>
 </div>
 

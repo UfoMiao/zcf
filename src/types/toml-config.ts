@@ -29,6 +29,17 @@ export interface CodexConfig {
 }
 
 /**
+ * CodeBuddy specific configuration
+ * Features: API profile management (reuses ClaudeCodeProfile)
+ */
+export interface CodeBuddyConfig {
+  enabled: boolean
+  currentProfile?: string
+  profiles?: Record<string, ClaudeCodeProfile>
+  version?: string
+}
+
+/**
  * General ZCF configuration
  */
 export interface GeneralConfig {
@@ -47,6 +58,7 @@ export interface ZcfTomlConfig {
   general: GeneralConfig
   claudeCode: ClaudeCodeConfig
   codex: CodexConfig
+  codebuddy?: CodeBuddyConfig
 }
 
 /**
@@ -56,6 +68,7 @@ export type PartialZcfTomlConfig = Partial<ZcfTomlConfig> & {
   general?: Partial<GeneralConfig>
   claudeCode?: Partial<ClaudeCodeConfig>
   codex?: Partial<CodexConfig>
+  codebuddy?: Partial<CodeBuddyConfig>
 }
 
 /**

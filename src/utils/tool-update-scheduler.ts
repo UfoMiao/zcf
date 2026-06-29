@@ -23,6 +23,9 @@ export class ToolUpdateScheduler {
       case 'codex':
         await this.updateCodexTools(skipPrompt)
         break
+      case 'codebuddy':
+        await this.updateCodebuddyTools(skipPrompt)
+        break
       default:
         throw new Error(`Unsupported code type: ${codeType}`)
     }
@@ -48,5 +51,10 @@ export class ToolUpdateScheduler {
       // Don't throw error for unsuccessful updates, as runCodexUpdate handles error reporting
       // This maintains consistency with checkAndUpdateTools behavior
     }
+  }
+
+  private async updateCodebuddyTools(skipPrompt: boolean): Promise<void> {
+    const { runCodebuddyUpdate } = await import('./code-tools/codebuddy')
+    await runCodebuddyUpdate(false, skipPrompt)
   }
 }

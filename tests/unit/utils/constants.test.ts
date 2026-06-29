@@ -75,7 +75,7 @@ describe('constants', () => {
 
   describe('code tool constants', () => {
     it('should define supported code tool types', () => {
-      expect(CODE_TOOL_TYPES).toEqual(['claude-code', 'codex'])
+      expect(CODE_TOOL_TYPES).toEqual(['claude-code', 'codex', 'codebuddy'])
     })
 
     it('should define default code tool type', () => {
@@ -108,6 +108,7 @@ describe('constants', () => {
     it('should return true for valid code tool types', () => {
       expect(isCodeToolType('claude-code')).toBe(true)
       expect(isCodeToolType('codex')).toBe(true)
+      expect(isCodeToolType('codebuddy')).toBe(true)
     })
 
     it('should return false for invalid code tool types', () => {
@@ -185,7 +186,7 @@ describe('constants', () => {
 
   describe('constants structure validation', () => {
     it('should have correct array lengths for constants', () => {
-      expect(CODE_TOOL_TYPES).toHaveLength(2)
+      expect(CODE_TOOL_TYPES).toHaveLength(3)
       expect(SUPPORTED_LANGS).toHaveLength(2)
     })
 

@@ -1,4 +1,5 @@
 import type { SupportedLang } from '../constants'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { pathExists } from 'fs-extra'
 import { join } from 'pathe'
@@ -18,6 +19,7 @@ export type UninstallItem
     | 'ccr'
     | 'ccline'
     | 'claude-code'
+    | 'codebuddy'
     | 'backups'
     | 'zcf-config'
 
@@ -41,6 +43,7 @@ export class ZcfUninstaller {
 
     // Set up conflict resolution rules
     this.conflictResolution.set('claude-code', ['mcps']) // Claude Code uninstall includes MCP removal
+    this.conflictResolution.set('codebuddy', ['mcps']) // CodeBuddy uninstall includes MCP removal
 
     // Ensure lang parameter is used (future i18n support)
     void this._lang
@@ -369,6 +372,49 @@ export class ZcfUninstaller {
   /**
    * 9. Uninstall Claude Code and remove entire .claude.json
    */
+  async uninstallCodebuddy(): Promise<UninstallResult> {
+    const result: UninstallResult = {
+      success: false,
+      removed: [],
+      removedConfigs: [],
+      errors: [],
+      warnings: [],
+    }
+
+    try {
+      // Remove CodeBuddy MCP config file
+      const mcpPath = join(homedir(), '.codebuddy', '.mcp.json')
+      if (await pathExists(mcpPath)) {
+        const trashResult = await moveToTrash(mcpPath)
+        if (!trashResult[0]?.success) {
+          result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
+        }
+        result.removed.push('~/.codebuddy/.mcp.json (MCP configuration)')
+      }
+
+      // Remove settings.json env section (clear profile)
+      const settingsPath = join(homedir(), '.codebuddy', 'settings.json')
+      if (await pathExists(settingsPath)) {
+        const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'))
+        if (settings.env) {
+          delete settings.env.ANTHROPIC_API_KEY
+          delete settings.env.ANTHROPIC_AUTH_TOKEN
+          delete settings.env.ANTHROPIC_BASE_URL
+          delete settings.env.ANTHROPIC_MODEL
+          writeFileSync(settingsPath, JSON.stringify(settings, null, 2))
+          result.removedConfigs.push('~/.codebuddy/settings.json (API configuration cleared)')
+        }
+      }
+
+      result.success = true
+    }
+    catch (error: any) {
+      result.errors.push(`CodeBuddy uninstall failed: ${error.message}`)
+    }
+
+    return result
+  }
+
   async uninstallClaudeCode(): Promise<UninstallResult> {
     const result: UninstallResult = {
       success: false,
@@ -636,6 +682,8 @@ export class ZcfUninstaller {
         return await this.uninstallCcline()
       case 'claude-code':
         return await this.uninstallClaudeCode()
+      case 'codebuddy':
+        return await this.uninstallCodebuddy()
       case 'backups':
         return await this.removeBackups()
       case 'zcf-config':
