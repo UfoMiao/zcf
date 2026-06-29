@@ -69,6 +69,27 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
       return
     }
 
+    if (codeToolType === 'codebuddy') {
+      const { runCodebuddyUpdate } = await import('../utils/code-tools/codebuddy')
+      await runCodebuddyUpdate(false, options.skipPrompt)
+
+      const newPreferredLang = options.configLang || zcfConfig?.preferredLang
+      if (newPreferredLang) {
+        updateZcfConfig({
+          version,
+          preferredLang: newPreferredLang,
+          codeToolType,
+        })
+      }
+      else {
+        updateZcfConfig({
+          version,
+          codeToolType,
+        })
+      }
+      return
+    }
+
     // Use intelligent template language selection
     const { resolveTemplateLanguage } = await import('../utils/prompts')
     const configLang = await resolveTemplateLanguage(

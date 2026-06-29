@@ -5,6 +5,7 @@ import inquirer from 'inquirer'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { ClaudeCodeConfigManager } from '../utils/claude-code-config-manager'
+import { CodeBuddyConfigManager } from '../utils/code-tools/codebuddy-config-manager'
 import { listCodexProviders, readCodexConfig, switchToOfficialLogin as switchCodexOfficialLogin, switchCodexProvider, switchToProvider } from '../utils/code-tools/codex'
 import { handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
@@ -256,6 +257,9 @@ async function handleInteractiveSwitch(codeType?: CodeToolType): Promise<void> {
   else if (resolvedCodeType === 'codex') {
     await handleCodexInteractiveSwitch()
   }
+  else if (resolvedCodeType === 'codebuddy') {
+    await handleCodebuddyInteractiveSwitch()
+  }
 }
 
 /**
@@ -334,6 +338,48 @@ async function handleClaudeCodeInteractiveSwitch(): Promise<void> {
     }
     // Re-throw other errors
     throw error
+  }
+}
+
+/**
+ * Handle interactive CodeBuddy configuration selection
+ */
+async function handleCodebuddyInteractiveSwitch(): Promise<void> {
+  ensureI18nInitialized()
+
+  console.log(ansis.cyan.bold(i18n.t('multi-config:codebuddySwitchTitle') || '=== CodeBuddy Configuration Switch ==='))
+
+  const choices: Array<{ name: string, value: string }> = [
+    { name: i18n.t('multi-config:useOfficialLogin') || 'Use Official Login', value: 'official' },
+  ]
+
+  const currentProfile = CodeBuddyConfigManager.getCurrentProfile()
+  if (currentProfile) {
+    choices.push({
+      name: `${ansis.green('● ')}${currentProfile.name || 'Current Profile'}`,
+      value: 'current',
+    })
+  }
+
+  const { selection } = await inquirer.prompt<{ selection: string }>({
+    type: 'list',
+    name: 'selection',
+    message: i18n.t('multi-config:selectConfig') || 'Select configuration',
+    choices: addNumbersToChoices(choices),
+  })
+
+  if (!selection) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  if (selection === 'official') {
+    await CodeBuddyConfigManager.applyProfileSettings(null)
+    console.log(ansis.green(i18n.t('multi-config:switchedToOfficial') || 'Switched to official login'))
+  }
+  else if (selection === 'current' && currentProfile) {
+    await CodeBuddyConfigManager.applyProfileSettings(currentProfile)
+    console.log(ansis.green(i18n.t('multi-config:switchedToProfile', { name: currentProfile.name }) || `Switched to ${currentProfile.name}`))
   }
 }
 

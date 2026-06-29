@@ -607,7 +607,7 @@ describe('menu command', () => {
       } as any)
 
       // Mock resolveCodeType to throw error for invalid type
-      vi.mocked(resolveCodeType).mockRejectedValue(new Error('Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.'))
+      vi.mocked(resolveCodeType).mockRejectedValue(new Error('Invalid code type: "invalid". Valid options are: cc, cx, cb, claude-code, codex, codebuddy. Using default: claude-code.'))
 
       // Mock inquirer to exit immediately
       vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
