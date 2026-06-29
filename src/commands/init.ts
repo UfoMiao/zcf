@@ -408,6 +408,16 @@ export async function init(options: InitOptions = {}): Promise<void> {
         }
       }
     }
+    else if (codeToolType === 'codebuddy') {
+      if (!configLang) {
+        if (options.skipPrompt) {
+          configLang = zcfConfig?.templateLang || 'en'
+        }
+        else {
+          configLang = zcfConfig?.templateLang || (i18n.language as SupportedLang) || 'en'
+        }
+      }
+    }
     else {
       if (!configLang) {
         const { resolveTemplateLanguage } = await import('../utils/prompts')
@@ -484,6 +494,45 @@ export async function init(options: InitOptions = {}): Promise<void> {
         codeToolType,
       })
       console.log(ansis.green(i18n.t('codex:setupComplete')))
+      return
+    }
+
+    if (codeToolType === 'codebuddy') {
+      const { runCodebuddyFullInit } = await import('../utils/code-tools/codebuddy')
+
+      // Handle multi-config providers before running full init
+      const hasApiConfigs = Boolean(options.apiConfigs || options.apiConfigsFile)
+      if (hasApiConfigs) {
+        await handleMultiConfigurations(options, 'codebuddy')
+      }
+
+      await runCodebuddyFullInit({
+        configLang,
+        aiOutputLang: options.aiOutputLang as AiOutputLanguage | undefined,
+        force: options.force,
+        skipPrompt: options.skipPrompt,
+        configAction: options.configAction as string | undefined,
+        apiType: options.apiType as string | undefined,
+        apiKey: options.apiKey as string | undefined,
+        apiUrl: options.apiUrl as string | undefined,
+        apiModel: options.apiModel as string | undefined,
+        apiHaikuModel: options.apiHaikuModel as string | undefined,
+        apiSonnetModel: options.apiSonnetModel as string | undefined,
+        apiOpusModel: options.apiOpusModel as string | undefined,
+        mcpServices: options.mcpServices as string | undefined,
+        workflows: options.workflows as string | undefined,
+        outputStyles: options.outputStyles as string | undefined,
+        defaultOutputStyle: options.defaultOutputStyle as string | undefined,
+        allLang: options.allLang as string | undefined,
+      })
+      updateZcfConfig({
+        version,
+        preferredLang: i18n.language as SupportedLang,
+        templateLang: configLang,
+        aiOutputLang: options.aiOutputLang ?? zcfConfig?.aiOutputLang ?? 'en',
+        codeToolType,
+      })
+      console.log(ansis.green(i18n.t('installation:codebuddySetupComplete') || 'CodeBuddy setup complete!'))
       return
     }
 

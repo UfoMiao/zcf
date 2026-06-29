@@ -1,5 +1,6 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 import type {
+  CodeBuddyConfig,
   PartialZcfTomlConfig,
   ZcfTomlConfig,
 } from '../types/toml-config'
@@ -239,6 +240,14 @@ function writeTomlConfig(configPath: string, config: ZcfTomlConfig): void {
         ['codex.systemPromptStyle', config.codex.systemPromptStyle],
       )
 
+      // CodeBuddy section
+      if (config.codebuddy) {
+        edits.push(
+          ['codebuddy.enabled', config.codebuddy.enabled],
+          ['codebuddy.currentProfile', config.codebuddy.currentProfile || ''],
+        )
+      }
+
       try {
         // Apply incremental edits preserving user customizations
         let updatedContent = batchEditToml(existingContent, edits)
@@ -298,6 +307,11 @@ function createDefaultTomlConfig(preferredLang: SupportedLang = 'en', claudeCode
       enabled: false,
       systemPromptStyle: 'engineer-professional',
     },
+    codebuddy: {
+      enabled: false,
+      currentProfile: '',
+      profiles: {},
+    },
   }
 }
 
@@ -333,6 +347,11 @@ function migrateFromJsonConfig(jsonConfig: any): ZcfTomlConfig {
       enabled: jsonConfig.codeToolType === 'codex',
       systemPromptStyle: jsonConfig.systemPromptStyle || defaultConfig.codex.systemPromptStyle,
     },
+    codebuddy: {
+      enabled: jsonConfig.codeToolType === 'codebuddy',
+      currentProfile: jsonConfig.currentProfileId || '',
+      profiles: {},
+    },
   }
 
   return tomlConfig
@@ -363,6 +382,10 @@ function updateTomlConfig(configPath: string, updates: PartialZcfTomlConfig): Zc
       ...existingConfig.codex,
       ...updates.codex,
     },
+    codebuddy: {
+      ...existingConfig.codebuddy,
+      ...updates.codebuddy,
+    } as CodeBuddyConfig,
   }
 
   writeTomlConfig(configPath, updatedConfig)

@@ -16,6 +16,13 @@ export const CODEX_AUTH_FILE = join(CODEX_DIR, 'auth.json')
 export const CODEX_AGENTS_FILE = join(CODEX_DIR, 'AGENTS.md')
 export const CODEX_PROMPTS_DIR = join(CODEX_DIR, 'prompts')
 
+// CodeBuddy
+export const CODEBUDDY_DIR = join(homedir(), '.codebuddy')
+export const CODEBUDDY_SETTINGS_FILE = join(CODEBUDDY_DIR, 'settings.json')
+export const CODEBUDDY_MCP_FILE = join(CODEBUDDY_DIR, '.mcp.json')
+export const CODEBUDDY_MD_FILE = join(CODEBUDDY_DIR, 'CODEBUDDY.md')
+export const CODEBUDDY_AGENTS_DIR = join(CODEBUDDY_DIR, 'agents')
+
 // ZCF configuration paths
 export const ZCF_CONFIG_DIR = join(homedir(), '.ufomiao', 'zcf')
 export const ZCF_CONFIG_FILE = join(ZCF_CONFIG_DIR, 'config.toml')
@@ -24,19 +31,21 @@ export const LEGACY_ZCF_CONFIG_FILES = [
   join(homedir(), '.zcf.json'),
 ]
 
-export const CODE_TOOL_TYPES = ['claude-code', 'codex'] as const
+export const CODE_TOOL_TYPES = ['claude-code', 'codex', 'codebuddy'] as const
 export type CodeToolType = (typeof CODE_TOOL_TYPES)[number]
 export const DEFAULT_CODE_TOOL_TYPE: CodeToolType = 'claude-code'
 
 export const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
   'claude-code': 'for Claude Code',
   'codex': 'for Codex',
+  'codebuddy': 'for CodeBuddy',
 }
 
 // Short aliases for code tool types
 export const CODE_TOOL_ALIASES: Record<string, CodeToolType> = {
   cc: 'claude-code',
   cx: 'codex',
+  cb: 'codebuddy',
 }
 
 export function isCodeToolType(value: any): value is CodeToolType {

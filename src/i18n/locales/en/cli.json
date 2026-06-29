@@ -45,6 +45,7 @@
   "help.exampleDescriptions.checkAndUpdateTools": "Check and update tools",
   "help.exampleDescriptions.checkClaudeCode": "Check and update Claude Code tools",
   "help.exampleDescriptions.checkCodex": "Check and update Codex tools",
+  "help.exampleDescriptions.checkCodebuddy": "Check and update CodeBuddy tools",
   "help.exampleDescriptions.nonInteractiveModeCicd": "Non-interactive mode (CI/CD)",
   "banner.subtitle": "One-click configuration tool for Claude Code",
   "banner.updateSubtitle": "Update configuration for Claude Code",

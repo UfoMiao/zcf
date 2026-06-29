@@ -229,7 +229,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
     .option('--force, -f', 'Force overwrite existing configuration')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, codebuddy, cc, cx, cb)')
     .action(await withLanguageResolution(async (options) => {
       await showMainMenu({ codeType: options.codeType })
     }))
@@ -257,7 +257,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--output-styles, -o <styles>', `Comma-separated output styles (engineer-professional,nekomata-engineer,laowang-engineer,default,explanatory,learning), "skip" to skip all, "all" for all custom styles, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--default-output-style, -d <style>', `Default output style, ${i18n.t('cli:help.defaults.prefix')} engineer-professional`)
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, codebuddy, cc, cx, cb)')
     .option('--install-cometix-line, -x <value>', `Install CCometixLine statusline tool (true/false), ${i18n.t('cli:help.defaults.prefix')} true`)
     .option('--api-configs <configs>', 'API configurations as JSON string for multiple profiles')
     .option('--api-configs-file <file>', 'Path to JSON file containing API configurations')
@@ -316,7 +316,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .command('uninstall', 'Remove ZCF configurations and tools')
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, codebuddy, cc, cx, cb)')
     .option('--mode, -m <mode>', 'Uninstall mode (complete/custom/interactive), default: interactive')
     .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
     .action(await withLanguageResolution(async (options) => {
@@ -329,7 +329,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .alias('check')
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, codebuddy, cc, cx, cb)')
     .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
     .action(await withLanguageResolution(async (options) => {
       await checkUpdates(options)
