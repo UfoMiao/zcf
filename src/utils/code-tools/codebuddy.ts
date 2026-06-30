@@ -56,7 +56,10 @@ export async function runCodebuddyFullInit(options: {
   await configureCodebuddyApi(options)
 
   // 4. Configure MCP services
-  await configureCodebuddyMcp(options)
+  await configureCodebuddyMcp({
+    mcpServices: options.mcpServices,
+    _skipPrompt: options.skipPrompt,
+  })
 
   // 5. Update ZCF config
   updateZcfConfig({

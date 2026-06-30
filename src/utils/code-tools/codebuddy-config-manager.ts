@@ -69,6 +69,9 @@ export class CodeBuddyConfigManager {
 
   static async applyCurrentProfile(): Promise<void> {
     const profile = this.getCurrentProfile()
+    if (!profile) {
+      return
+    }
     await this.applyProfileSettings(profile)
   }
 
