@@ -1135,6 +1135,9 @@ export async function handleMultiConfigurations(options: InitOptions, codeToolTy
     else if (codeToolType === 'codex') {
       await handleCodexConfigs(configs)
     }
+    else if (codeToolType === 'codebuddy') {
+      await handleCodebuddyConfigs(configs)
+    }
 
     console.log(ansis.green(`✔ ${i18n.t('multi-config:configsAddedSuccessfully')}`))
   }
@@ -1299,6 +1302,41 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
     else {
       console.log(ansis.red(i18n.t('multi-config:providerAddFailed', { name: displayName, error: 'provider not added' })))
     }
+  }
+}
+
+/**
+ * Handle multi-config for CodeBuddy
+ */
+async function handleCodebuddyConfigs(configs: ApiConfigDefinition[]): Promise<void> {
+  const { CodeBuddyConfigManager } = await import('../utils/code-tools/codebuddy-config-manager')
+  const { readDefaultTomlConfig, createDefaultTomlConfig } = await import('../utils/zcf-config')
+
+  for (const config of configs) {
+    try {
+      const profile = await convertToClaudeCodeProfile(config)
+      const tomlConfig = readDefaultTomlConfig() || createDefaultTomlConfig()
+      const codebuddy = tomlConfig.codebuddy || { enabled: false, currentProfile: '', profiles: {} }
+      const profiles = codebuddy.profiles || {}
+      profiles[profile.id || profile.name] = CodeBuddyConfigManager.sanitizeProfile(profile)
+      CodeBuddyConfigManager.writeConfig({ profiles })
+      console.log(ansis.green(`✔ ${i18n.t('multi-config:profileAdded', { name: config.name })}`))
+    }
+    catch (error) {
+      console.error(ansis.red(i18n.t('multi-config:configsFailed', {
+        name: config.name,
+        error: error instanceof Error ? error.message : String(error),
+      })))
+      throw error
+    }
+  }
+
+  // Set default profile if specified
+  const defaultConfig = configs.find(c => c.default)
+  if (defaultConfig) {
+    const defaultProfile = await convertToClaudeCodeProfile(defaultConfig)
+    CodeBuddyConfigManager.writeConfig({ currentProfile: defaultProfile.id || defaultProfile.name })
+    console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProviderSet', { name: defaultConfig.name })}`))
   }
 }
 

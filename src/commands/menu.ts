@@ -385,7 +385,9 @@ export async function showMainMenu(options: { codeType?: string } = {}): Promise
 
       const result = codeTool === 'codex'
         ? await showCodexMenu()
-        : await showClaudeCodeMenu()
+        : codeTool === 'codebuddy'
+          ? await showClaudeCodeMenu()
+          : await showClaudeCodeMenu()
 
       if (result === 'exit') {
         exitMenu = true
