@@ -223,6 +223,21 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'DeepSeek official API (Anthropic-compatible endpoint)',
   },
 
+  {
+    id: 'aihub',
+    name: 'AIHub',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://aihub.top',
+      authType: 'api_key',
+    },
+    codex: {
+      baseUrl: 'https://aihub.top/v1',
+      wireApi: 'responses',
+    },
+    description: 'AIHub high-availability AI model API relay platform',
+  },
+
 ]
 
 /**

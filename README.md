@@ -76,6 +76,11 @@ PatewayAI is a high-quality model API relay service provider focused on official
 
 ---
 
+[![Sponsor AIHub](./src/assets/aihub.jpg)](https://aihub.top/register?aff=ZYD5VXBARHD8)
+Thanks to [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) for sponsoring this project! AIHub is a high-availability AI model API relay platform for individual developers and enterprise teams, supporting Codex and Claude Code at prices below ~10% of official rates — we don't produce tokens, we're token movers. Register via [this link](https://aihub.top/register?aff=ZYD5VXBARHD8) and enter the promo code **ZCF** to claim $3 trial credit.
+
+---
+
 <table>
 <tbody>
 <tr>
@@ -144,6 +149,8 @@ A huge thank you to all our sponsors for their generous support!
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C) (official direct-connect relay service sponsor 🛡️)
 - [code0](https://code0.ai?source=zcf) (AI coding workspace sponsor 🎁)
 - [Claude API](https://console.claudeapi.com?source=zcf) (Claude official API provider sponsor 🎁)
+
+- [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) (high-availability AI API relay platform sponsor 🎁)
 
 【Individual Sponsors】
 

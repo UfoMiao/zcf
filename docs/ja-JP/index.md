@@ -53,6 +53,13 @@ PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化し
 
 ---
 
+[![スポンサー AIHub](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/aihub.jpg)](https://aihub.top/register?aff=ZYD5VXBARHD8)
+[AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) がこのプロジェクトをスポンサーしてくれたことに感謝します！AIHub は、個人開発者と企業チーム向けの高可用性 AI モデル API 中継プラットフォームで、Codex および Claude Code を公式価格の約 1 割以下で提供します。トークンを生産するのではなく、トークンの運搬屋です。[このリンク](https://aihub.top/register?aff=ZYD5VXBARHD8)から登録し、プロモーションコード **ZCF** を入力すると、$3 のテストクレジットを受け取れます。
+
+---
+
+
+
 <table>
 <tbody>
 <tr>

@@ -77,6 +77,11 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 
 ---
 
+[![赞助商 AIHub](./src/assets/aihub.jpg)](https://aihub.top/register?aff=ZYD5VXBARHD8)
+感谢 [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) 赞助本项目！AIHub 是一家面向个人开发者和企业团队的高可用 AI 模型 API 中转平台，支持 Codex / Claude Code，价格低至官方约 1 折。我们不生产 Token，我们只是 Token 的搬运工。通过[此链接](https://aihub.top/register?aff=ZYD5VXBARHD8)注册并填写优惠码 **ZCF**，即可领取 $3 测试额度。
+
+---
+
 <table>
 <tbody>
 <tr>
@@ -146,6 +151,8 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)（官方直连中转服务赞助商 🛡️）
 - [code0](https://code0.ai?source=zcf)（AI 编程工作台赞助商 🎁）
 - [Claude API](https://console.claudeapi.com?source=zcf)（Claude 官方 API 服务商赞助商 🎁）
+
+- [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8)（高可用 AI 模型 API 中转平台赞助商 🎁）
 
 【个人赞助商】
 

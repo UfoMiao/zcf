@@ -55,6 +55,13 @@ PatewayAI is a high-quality model API relay service provider focused on official
 
 
 
+[![Sponsor AIHub](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/aihub.jpg)](https://aihub.top/register?aff=ZYD5VXBARHD8)
+Thanks to [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) for sponsoring this project! AIHub is a high-availability AI model API relay platform for individual developers and enterprise teams, supporting Codex and Claude Code at prices below ~10% of official rates — we don't produce tokens, we're token movers. Register via [this link](https://aihub.top/register?aff=ZYD5VXBARHD8) and enter the promo code **ZCF** to claim $3 trial credit.
+
+---
+
+
+
 <table>
 <tbody>
 <tr>
