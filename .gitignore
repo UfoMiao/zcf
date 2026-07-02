@@ -51,3 +51,8 @@ docs/.vitepress/cache/**
 # BMad Method V6
 _bmad/
 _bmad-output/
+
+# Multica workspace metadata
+.multica/
+.agent_context/
+.claude/
