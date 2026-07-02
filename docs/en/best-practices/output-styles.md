@@ -355,5 +355,3 @@ If multiple styles exist simultaneously:
 - [Usage Tips](tips.md) - More practical tips
 
 > 💡 **Tip**: Proper use of output styles can greatly improve code quality and development efficiency. It's recommended to unify output style standards within teams and customize appropriately based on project characteristics. Output styles should be concise and clear, focusing on core standards and key requirements.
-
-

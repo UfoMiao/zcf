@@ -458,5 +458,3 @@ git rebase -i upstream/main
 - **Documentation**: Check project documentation for more information
 
 Thank you for your contributions! 🎉
-
-

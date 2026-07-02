@@ -422,5 +422,3 @@ npx zcf update -c zh-CN
 - [Configuration Management](configuration.md) - Configuration management guide
 
 > 💡 **Tip**: Proper use of template system can greatly improve development efficiency. It's recommended to unify template standards within teams and regularly update templates to get latest features.
-
-
