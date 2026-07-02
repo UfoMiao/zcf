@@ -74,8 +74,6 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 [![302.ai](./src/assets/302.ai.jpg)](https://share.302.ai/gAT9VG)
 [302.AI](https://share.302.ai/gAT9VG) 是一个按用量付费的企业级AI资源平台，提供市场上最新、最全面的AI模型和API，以及多种开箱即用的在线AI应用。
 
----
-
 <table>
 <tbody>
 <tr>
@@ -94,6 +92,11 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
 <td>感谢 Crazyrouter 赞助了本项目！Crazyrouter 是一个高性能 AI API 聚合网关 — 一个 Key 调用 300+ 模型（GPT、Claude、Gemini、DeepSeek 等），所有模型低至官方价格 5.5 折，支持自动故障转移、智能路由和无限并发。完全兼容 OpenAI 格式，可无缝接入 Claude Code、Codex 和 Gemini CLI。Crazyrouter 为 ZCF 用户提供了专属福利，通过<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">此链接</a>注册即送 $2 免费额度！</td>
 </tr>
+<tr>
+<td width="180"><a href="https://aihub.top/register?aff=ZYD5VXBARHD8"><img src="./src/assets/aihub.jpg" alt="AIHub" width="150"></a></td>
+<td>感谢 AIHub 赞助本项目！AIHub 是一家面向个人开发者和企业团队的高可用 AI 模型 API 中转平台，支持 Codex / Claude Code，价格低至官方约 1 折。通过<a href="https://aihub.top/register?aff=ZYD5VXBARHD8">此链接</a>注册并填写优惠码 <strong>ZCF</strong>，即可领取 $3 测试额度。</td>
+</tr>
+
 </tbody>
 </table>
 
@@ -145,6 +148,8 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)（官方直连中转服务赞助商 🛡️）
 - [code0](https://code0.ai?source=zcf)（AI 编程工作台赞助商 🎁）
 - [Claude API](https://console.claudeapi.com?source=zcf)（Claude 官方 API 服务商赞助商 🎁）
+
+- [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8)（高可用 AI 模型 API 中转平台赞助商 🎁）
 
 【个人赞助商】
 

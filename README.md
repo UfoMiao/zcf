@@ -73,8 +73,6 @@ PatewayAI is a high-quality model API relay service provider focused on official
 [![Sponsor AI API](./src/assets/302.ai-en.jpg)](https://share.302.ai/gAT9VG)
 [302.AI](https://share.302.ai/gAT9VG) is a pay-as-you-go enterprise AI resource hub that offers the latest and most comprehensive AI models and APIs on the market, along with a variety of ready-to-use online AI applications.
 
----
-
 <table>
 <tbody>
 <tr>
@@ -93,6 +91,11 @@ PatewayAI is a high-quality model API relay service provider focused on official
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
 <td>Thanks to Crazyrouter for sponsoring this project! Crazyrouter is a high-performance AI API aggregation gateway — one API key for 300+ models (GPT, Claude, Gemini, DeepSeek, and more). All models at 55% of official pricing with auto-failover, smart routing, and unlimited concurrency. Fully OpenAI-compatible, works seamlessly with Claude Code, Codex, and Gemini CLI. Crazyrouter offers an exclusive deal for ZCF users: register via <a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">this link</a> to get $2 free credit instantly!</td>
 </tr>
+<tr>
+<td width="180"><a href="https://aihub.top/register?aff=ZYD5VXBARHD8"><img src="./src/assets/aihub.jpg" alt="AIHub" width="150"></a></td>
+<td>Thanks to AIHub for sponsoring this project! AIHub is a high-availability AI model API relay platform for individual developers and enterprise teams, supporting Codex and Claude Code at prices below ~10% of official rates. Register via <a href="https://aihub.top/register?aff=ZYD5VXBARHD8">this link</a> and enter the promo code <strong>ZCF</strong> to claim $3 trial credit.</td>
+</tr>
+
 </tbody>
 </table>
 
@@ -143,6 +146,8 @@ A huge thank you to all our sponsors for their generous support!
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C) (official direct-connect relay service sponsor 🛡️)
 - [code0](https://code0.ai?source=zcf) (AI coding workspace sponsor 🎁)
 - [Claude API](https://console.claudeapi.com?source=zcf) (Claude official API provider sponsor 🎁)
+
+- [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) (high-availability AI API relay platform sponsor 🎁)
 
 【Individual Sponsors】
 
