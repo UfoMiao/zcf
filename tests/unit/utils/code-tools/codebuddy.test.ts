@@ -74,6 +74,12 @@ vi.mock('../../../../src/utils/code-tools/codebuddy-config-manager', () => ({
   },
 }))
 
+vi.mock('../../../../src/utils/platform', () => ({
+  getPlatform: vi.fn(() => 'macos'),
+  isWindows: vi.fn(() => false),
+  getSystemRoot: vi.fn(() => 'C:\\Windows'),
+}))
+
 vi.mock('../../../../src/config/mcp-services', () => ({
   getMcpServices: vi.fn(() => []),
   MCP_SERVICE_CONFIGS: {},
