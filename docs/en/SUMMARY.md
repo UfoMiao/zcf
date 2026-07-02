@@ -10,6 +10,7 @@
 * [Features Overview](features/index.md)
 * [Claude Code Configuration](features/claude-code.md)
 * [Codex Support](features/codex.md)
+* [CodeBuddy Support](features/codebuddy.md)
 * [Workflow System](features/workflows.md)
 * [MCP Service Integration](features/mcp.md)
 * [Claude Code Router](features/ccr.md)

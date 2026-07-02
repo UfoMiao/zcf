@@ -75,5 +75,10 @@
   "providerAddFailed": "Failed to add provider \"{{name}}\": {{error}}",
   "invalidJson": "Invalid API configs JSON: {{error}}",
   "fileReadFailed": "Failed to read API configs file: {{error}}",
-  "providerOrTypeRequired": "Must provide either provider or type field"
+  "providerOrTypeRequired": "Must provide either provider or type field",
+  "codebuddySwitchTitle": "=== CodeBuddy Configuration Switch ===",
+  "selectConfig": "Select configuration",
+  "useOfficialLogin": "Use Official Login",
+  "switchedToOfficial": "Switched to official login",
+  "switchedToProfile": "Switched to {{name}}"
 }

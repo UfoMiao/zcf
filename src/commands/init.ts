@@ -509,9 +509,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
       await runCodebuddyFullInit({
         configLang,
         aiOutputLang: options.aiOutputLang as AiOutputLanguage | undefined,
-        force: options.force,
         skipPrompt: options.skipPrompt,
-        configAction: options.configAction as string | undefined,
         apiType: options.apiType as string | undefined,
         apiKey: options.apiKey as string | undefined,
         apiUrl: options.apiUrl as string | undefined,
@@ -520,10 +518,6 @@ export async function init(options: InitOptions = {}): Promise<void> {
         apiSonnetModel: options.apiSonnetModel as string | undefined,
         apiOpusModel: options.apiOpusModel as string | undefined,
         mcpServices: options.mcpServices as string | undefined,
-        workflows: options.workflows as string | undefined,
-        outputStyles: options.outputStyles as string | undefined,
-        defaultOutputStyle: options.defaultOutputStyle as string | undefined,
-        allLang: options.allLang as string | undefined,
       })
       updateZcfConfig({
         version,
@@ -1310,16 +1304,13 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
  */
 async function handleCodebuddyConfigs(configs: ApiConfigDefinition[]): Promise<void> {
   const { CodeBuddyConfigManager } = await import('../utils/code-tools/codebuddy-config-manager')
-  const { readDefaultTomlConfig, createDefaultTomlConfig } = await import('../utils/zcf-config')
+
+  const profiles: Record<string, ClaudeCodeProfile> = {}
 
   for (const config of configs) {
     try {
       const profile = await convertToClaudeCodeProfile(config)
-      const tomlConfig = readDefaultTomlConfig() || createDefaultTomlConfig()
-      const codebuddy = tomlConfig.codebuddy || { enabled: false, currentProfile: '', profiles: {} }
-      const profiles = codebuddy.profiles || {}
       profiles[profile.id || profile.name] = CodeBuddyConfigManager.sanitizeProfile(profile)
-      CodeBuddyConfigManager.writeConfig({ profiles })
       console.log(ansis.green(`✔ ${i18n.t('multi-config:profileAdded', { name: config.name })}`))
     }
     catch (error) {
@@ -1331,12 +1322,18 @@ async function handleCodebuddyConfigs(configs: ApiConfigDefinition[]): Promise<v
     }
   }
 
-  // Set default profile if specified
+  // Set default profile if specified and write once
   const defaultConfig = configs.find(c => c.default)
   if (defaultConfig) {
     const defaultProfile = await convertToClaudeCodeProfile(defaultConfig)
-    CodeBuddyConfigManager.writeConfig({ currentProfile: defaultProfile.id || defaultProfile.name })
+    CodeBuddyConfigManager.writeConfig({
+      currentProfile: defaultProfile.id || defaultProfile.name,
+      profiles,
+    })
     console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProviderSet', { name: defaultConfig.name })}`))
+  }
+  else {
+    CodeBuddyConfigManager.writeConfig({ profiles })
   }
 }
 

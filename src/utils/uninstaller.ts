@@ -401,6 +401,9 @@ export class ZcfUninstaller {
           delete settings.env.ANTHROPIC_AUTH_TOKEN
           delete settings.env.ANTHROPIC_BASE_URL
           delete settings.env.ANTHROPIC_MODEL
+          delete settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL
+          delete settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL
+          delete settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL
           writeFileSync(settingsPath, JSON.stringify(settings, null, 2))
           result.removedConfigs.push('~/.codebuddy/settings.json (API configuration cleared)')
         }

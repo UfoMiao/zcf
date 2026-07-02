@@ -21,9 +21,7 @@ export { CodeBuddyConfigManager }
 export async function runCodebuddyFullInit(options: {
   configLang?: SupportedLang
   aiOutputLang?: AiOutputLanguage
-  force?: boolean
   skipPrompt?: boolean
-  configAction?: string
   apiType?: string
   apiKey?: string
   apiUrl?: string
@@ -32,10 +30,6 @@ export async function runCodebuddyFullInit(options: {
   apiSonnetModel?: string
   apiOpusModel?: string
   mcpServices?: string
-  workflows?: string
-  outputStyles?: string
-  defaultOutputStyle?: string
-  allLang?: string
 } = {}): Promise<void> {
   ensureI18nInitialized()
 
@@ -173,7 +167,9 @@ export async function configureCodebuddyApi(options: {
   const { apiKey } = await inquirer.prompt<{ apiKey: string }>({
     type: 'input',
     name: 'apiKey',
-    message: i18n.t('api:enterApiKey') || 'Enter API key',
+    message: apiChoice === 'auth_token'
+      ? i18n.t('api:enterAuthToken') || 'Enter auth token'
+      : i18n.t('api:enterApiKey') || 'Enter API key',
   })
 
   const { apiUrl } = await inquirer.prompt<{ apiUrl: string }>({
@@ -183,11 +179,43 @@ export async function configureCodebuddyApi(options: {
     default: '',
   })
 
+  const { primaryModel } = await inquirer.prompt<{ primaryModel: string }>({
+    type: 'input',
+    name: 'primaryModel',
+    message: `${i18n.t('configuration:enterPrimaryModel') || 'Enter primary model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
+    default: '',
+  })
+
+  const { haikuModel } = await inquirer.prompt<{ haikuModel: string }>({
+    type: 'input',
+    name: 'haikuModel',
+    message: `${i18n.t('configuration:enterHaikuModel') || 'Enter default Haiku model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
+    default: '',
+  })
+
+  const { sonnetModel } = await inquirer.prompt<{ sonnetModel: string }>({
+    type: 'input',
+    name: 'sonnetModel',
+    message: `${i18n.t('configuration:enterSonnetModel') || 'Enter default Sonnet model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
+    default: '',
+  })
+
+  const { opusModel } = await inquirer.prompt<{ opusModel: string }>({
+    type: 'input',
+    name: 'opusModel',
+    message: `${i18n.t('configuration:enterOpusModel') || 'Enter default Opus model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
+    default: '',
+  })
+
   await CodeBuddyConfigManager.applyProfileSettings({
     name: 'default',
     authType: apiChoice as any,
     apiKey: apiKey || undefined,
     baseUrl: apiUrl || undefined,
+    primaryModel: primaryModel || undefined,
+    defaultHaikuModel: haikuModel || undefined,
+    defaultSonnetModel: sonnetModel || undefined,
+    defaultOpusModel: opusModel || undefined,
   })
 
   console.log(ansis.green(i18n.t('api:apiConfigComplete') || 'API configuration complete!'))

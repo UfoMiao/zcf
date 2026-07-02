@@ -361,25 +361,36 @@ async function handleCodebuddyInteractiveSwitch(): Promise<void> {
     })
   }
 
-  const { selection } = await inquirer.prompt<{ selection: string }>({
-    type: 'list',
-    name: 'selection',
-    message: i18n.t('multi-config:selectConfig') || 'Select configuration',
-    choices: addNumbersToChoices(choices),
-  })
+  try {
+    const { selection } = await inquirer.prompt<{ selection: string }>({
+      type: 'list',
+      name: 'selection',
+      message: i18n.t('multi-config:selectConfig') || 'Select configuration',
+      choices: addNumbersToChoices(choices),
+    })
 
-  if (!selection) {
-    console.log(ansis.yellow(i18n.t('common:cancelled')))
-    return
-  }
+    if (!selection) {
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
+      return
+    }
 
-  if (selection === 'official') {
-    await CodeBuddyConfigManager.applyProfileSettings(null)
-    console.log(ansis.green(i18n.t('multi-config:switchedToOfficial') || 'Switched to official login'))
+    if (selection === 'official') {
+      await CodeBuddyConfigManager.applyProfileSettings(null)
+      console.log(ansis.green(i18n.t('multi-config:switchedToOfficial') || 'Switched to official login'))
+    }
+    else if (selection === 'current' && currentProfile) {
+      await CodeBuddyConfigManager.applyProfileSettings(currentProfile)
+      console.log(ansis.green(i18n.t('multi-config:switchedToProfile', { name: currentProfile.name }) || `Switched to ${currentProfile.name}`))
+    }
   }
-  else if (selection === 'current' && currentProfile) {
-    await CodeBuddyConfigManager.applyProfileSettings(currentProfile)
-    console.log(ansis.green(i18n.t('multi-config:switchedToProfile', { name: currentProfile.name }) || `Switched to ${currentProfile.name}`))
+  catch (error: any) {
+    // Handle user exit (Ctrl+C)
+    if (error.name === 'ExitPromptError') {
+      console.log(ansis.cyan(`\n${i18n.t('common:goodbye')}`))
+      return
+    }
+    // Re-throw other errors
+    throw error
   }
 }
 

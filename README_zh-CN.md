@@ -18,7 +18,7 @@
 
 **✨ 完整文档**: [文档入口](https://zcf.ufomiao.com/zh-CN/)
 
-> 零配置,一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
+> 零配置,一键搞定 Claude Code、Codex 与 CodeBuddy 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
   </p>
 </div>
 
@@ -30,6 +30,7 @@
 ```bash
 npx zcf i        # 完整初始化：安装 + 工作流 + API/CCR + MCP
 npx zcf u        # 仅更新工作流
+npx zcf i -s -T codebuddy -p 302ai -k "sk-xxx"  # 初始化 CodeBuddy
 npx zcf --lang zh-CN  # 切换界面语言示例
 ```
 

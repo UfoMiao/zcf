@@ -10,6 +10,7 @@
 * [功能总览](features/index.md)
 * [Claude Code 配置能力](features/claude-code.md)
 * [Codex 支持](features/codex.md)
+* [CodeBuddy 支持](features/codebuddy.md)
 * [工作流系统](features/workflows.md)
 * [MCP 服务集成](features/mcp.md)
 * [Claude Code Router](features/ccr.md)

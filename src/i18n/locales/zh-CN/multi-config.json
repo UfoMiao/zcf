@@ -75,5 +75,10 @@
   "providerAddFailed": "添加提供商 \"{{name}}\" 失败：{{error}}",
   "invalidJson": "无效的API配置JSON：{{error}}",
   "fileReadFailed": "读取API配置文件失败：{{error}}",
-  "providerOrTypeRequired": "必须提供 provider 或 type 字段"
+  "providerOrTypeRequired": "必须提供 provider 或 type 字段",
+  "codebuddySwitchTitle": "=== CodeBuddy 配置切换 ===",
+  "selectConfig": "选择配置",
+  "useOfficialLogin": "使用官方登录",
+  "switchedToOfficial": "已切换为官方登录",
+  "switchedToProfile": "已切换为 {{name}}"
 }

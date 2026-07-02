@@ -21,5 +21,8 @@
   "updateSkipped": "跳过更新",
   "updateSuccess": "{tool} 更新成功！",
   "updateSummary": "更新摘要",
-  "updating": "正在更新 {tool}..."
+  "updating": "正在更新 {tool}...",
+  "codebuddyUpdateTitle": "=== CodeBuddy 更新 ===",
+  "codebuddyMdNotFound": "未找到 CODEBUDDY.md，正在创建...",
+  "codebuddyUpdateComplete": "CodeBuddy 更新完成！"
 }
