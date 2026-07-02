@@ -22,6 +22,29 @@
 </p>
 </div>
 
+## 🚀 Quick Start
+
+- Recommended: `npx zcf` opens the interactive menu — pick what you need.
+- Common commands:
+
+```bash
+npx zcf i        # Full initialization: install + workflows + API/CCR + MCP
+npx zcf u        # Update workflows only
+npx zcf --lang zh-CN  # Switch interface language (example)
+```
+
+- Non-interactive example (provider preset):
+
+```bash
+npx zcf i -s -p 302ai -k "sk-xxx"
+```
+
+More usage, options, and workflows: see documentation.
+
+## 📖 Full Documentation
+
+- https://zcf.ufomiao.com/
+
 ## ♥️ Sponsors
 
 [![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
@@ -72,29 +95,6 @@ PatewayAI is a high-quality model API relay service provider focused on official
 </tr>
 </tbody>
 </table>
-
-## 🚀 Quick Start
-
-- Recommended: `npx zcf` opens the interactive menu — pick what you need.
-- Common commands:
-
-```bash
-npx zcf i        # Full initialization: install + workflows + API/CCR + MCP
-npx zcf u        # Update workflows only
-npx zcf --lang zh-CN  # Switch interface language (example)
-```
-
-- Non-interactive example (provider preset):
-
-```bash
-npx zcf i -s -p 302ai -k "sk-xxx"
-```
-
-More usage, options, and workflows: see documentation.
-
-## 📖 Full Documentation
-
-- https://zcf.ufomiao.com/
 
 ## 💬 Community
 

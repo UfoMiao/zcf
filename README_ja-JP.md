@@ -22,6 +22,29 @@
   </p>
 </div>
 
+## 🚀 クイックスタート
+
+- 推奨：`npx zcf` でインタラクティブメニューを開き、必要な操作を選択。
+- よく使うコマンド：
+
+```bash
+npx zcf i        # フル初期化：インストール + ワークフロー + API/CCR + MCP
+npx zcf u        # ワークフローのみ更新
+npx zcf --lang ja  # インターフェース言語を切り替え（例）
+```
+
+- 非対話例（プロバイダープリセット）：
+
+```bash
+npx zcf i -s -p 302ai -k "sk-xxx"
+```
+
+より詳しい使い方・オプション・ワークフローはドキュメントを参照してください。
+
+## 📖 完全ドキュメント
+
+- https://zcf.ufomiao.com/ja-JP/
+
 ## ♥️ スポンサー
 
 [![GLM](./src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
@@ -71,29 +94,6 @@ PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化し
 </tr>
 </tbody>
 </table>
-
-## 🚀 クイックスタート
-
-- 推奨：`npx zcf` でインタラクティブメニューを開き、必要な操作を選択。
-- よく使うコマンド：
-
-```bash
-npx zcf i        # フル初期化：インストール + ワークフロー + API/CCR + MCP
-npx zcf u        # ワークフローのみ更新
-npx zcf --lang ja  # インターフェース言語を切り替え（例）
-```
-
-- 非対話例（プロバイダープリセット）：
-
-```bash
-npx zcf i -s -p 302ai -k "sk-xxx"
-```
-
-より詳しい使い方・オプション・ワークフローはドキュメントを参照してください。
-
-## 📖 完全ドキュメント
-
-- https://zcf.ufomiao.com/ja-JP/
 
 ## 💬 コミュニティ
 
