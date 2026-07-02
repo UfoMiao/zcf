@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.6.10
+
+### Patch Changes
+
+- ## New Features
+  - Add AIHub as a sponsor with API provider preset for Claude Code and Codex
+  - Add AIHub sponsor brand asset and update README and multilingual documentation
+
+  ## 新功能
+  - 新增 AIHub 赞助商及 API 提供商预设，支持 Claude Code 与 Codex
+  - 新增 AIHub 赞助品牌素材，并更新 README 及多语言文档
+
+  ## Documentation
+  - Expand CLAUDE.md with updated project architecture and module documentation
+
+  ## 文档
+  - 扩展 CLAUDE.md，更新项目架构与模块文档
+
 ## 3.6.9
 
 ### Patch Changes
