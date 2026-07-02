@@ -33,6 +33,16 @@ GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元
 
 ---
 
+[![code0](./src/assets/code0.jpg)](https://code0.ai?source=zcf)
+感谢 [code0.ai](https://code0.ai?source=zcf) 赞助本项目！[code0.ai](http://code0.ai) 是面向开发者与技术团队的 AI 编程工作台，聚合 Claude Code、Codex 等主流 Agent 编程能力，支持代码生成、项目理解、调试修复、代码审查与文档生成等常见研发场景。适合独立开发者、Agent 工程师、开源项目维护者和企业研发团队使用，支持开票和团队对接。通过[专属链接](https://code0.ai?source=zcf)注册后联系客服，可领取免费测试额度，体验更高效的 AI 编程工作流。
+
+---
+
+[![Claude API](./src/assets/claude-api.jpg)](https://console.claudeapi.com?source=zcf)
+感谢 [Claude API](https://console.claudeapi.com?source=zcf) 赞助本项目！Claude API 是专注 Claude 模型的官方渠道 API 服务商，基于 Anthropic 官方 Key 与 AWS Bedrock 官方渠道，提供稳定的 Claude Code 与 Agent 应用接入体验，支持 Claude 全系列模型，保留 Tool Use、长上下文等官方能力。服务非逆向、非降智，适合 Claude Code 深度用户、Agent 工程师与企业技术团队使用。通过[专属链接](https://console.claudeapi.com?source=zcf)注册后联系客服，可领取免费测试额度，并支持开票和团队对接。
+
+---
+
 [![pateway.ai](./src/assets/pateway.ai.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
 PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模型 API 中转服务商，提供 Claude 全系列与 Codex 系列模型，100% 官方源直供，不掺假不注水，欢迎检验。计费透明，Token 级账单可逐笔核验。同时支持企业级高并发，并为企业客户提供专业的管理平台，企业客户可签订正式合同并开具发票。PatewayAI 为 ZCF 用户提供了专属福利，通过<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">此链接</a>注册即送 $3 试用额度，用户充值低至 6 折，邀请好友双向赠送，邀请奖励可达 $150！
 
@@ -133,6 +143,8 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8)（赞助了 100$ 中转站额度 💰）
 - [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo)（AI API 聚合网关赞助商 🚀）
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)（官方直连中转服务赞助商 🛡️）
+- [code0](https://code0.ai?source=zcf)（AI 编程工作台赞助商 🎁）
+- [Claude API](https://console.claudeapi.com?source=zcf)（Claude 官方 API 服务商赞助商 🎁）
 
 【个人赞助商】
 

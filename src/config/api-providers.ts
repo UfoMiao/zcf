@@ -52,6 +52,30 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'PackyCode API Service',
   },
   {
+    id: 'code0',
+    name: 'code0',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://code0.ai/v1/anthropic',
+      authType: 'api_key',
+    },
+    codex: {
+      baseUrl: 'https://code0.ai/v1/openai',
+      wireApi: 'responses',
+    },
+    description: 'code0 AI coding workspace API aggregation platform',
+  },
+  {
+    id: 'claude-api',
+    name: 'Claude API',
+    supportedCodeTools: ['claude-code'],
+    claudeCode: {
+      baseUrl: 'https://gw.claudeapi.com',
+      authType: 'api_key',
+    },
+    description: 'Claude API official-channel Claude model provider',
+  },
+  {
     id: 'pateway',
     name: 'PatewayAI',
     supportedCodeTools: ['claude-code', 'codex'],

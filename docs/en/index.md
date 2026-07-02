@@ -33,6 +33,16 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
+[![Sponsor code0](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/code0-en.jpg)](https://code0.ai?source=zcf)
+Thanks to [code0.ai](https://code0.ai?source=zcf) for sponsoring this project! [code0.ai](http://code0.ai) is an AI coding workspace for developers and technical teams, bringing together mainstream Agent coding capabilities such as Claude Code and Codex. It supports common development scenarios including code generation, project understanding, debugging, code review, and documentation. It is suitable for independent developers, Agent engineers, open-source maintainers, and enterprise R&D teams, with invoicing and team onboarding supported. Register through the [exclusive link](https://code0.ai?source=zcf) and contact customer support to claim free test credits and experience a more efficient AI coding workflow.
+
+---
+
+[![Sponsor Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api-en.jpg)](https://console.claudeapi.com?source=zcf)
+Thanks to [Claude API](https://console.claudeapi.com?source=zcf) for sponsoring this project! Claude API is an official-channel API provider focused on Claude models. Built on Anthropic official keys and AWS Bedrock official channels, it provides a stable integration experience for Claude Code and Agent applications, supports the full Claude model family, and preserves official capabilities such as Tool Use and long context. The service is not reverse-engineered and does not downgrade model capabilities, making it suitable for heavy Claude Code users, Agent engineers, and enterprise technical teams. Register through the [exclusive link](https://console.claudeapi.com?source=zcf) and contact customer support to claim free test credits. Invoicing and team onboarding are also supported.
+
+---
+
 [![Sponsor PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai-en.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
 PatewayAI is a high-quality model API relay service provider focused on official direct connections for serious AI developers, offering the full range of Claude and Codex series models. 100% official source supply with no adulteration — open to inspection. Transparent billing with token-level invoices auditable line by line. Enterprise-grade concurrency support with a dedicated management platform for enterprise customers, including formal contracts and invoicing. PatewayAI offers an exclusive benefit for ZCF users: register via <a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">this link</a> to get $3 free trial credit, recharges as low as 60% off, with bilateral invite rewards up to $150!
 
