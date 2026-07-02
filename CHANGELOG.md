@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.6.9
+
+### Patch Changes
+
+- ## New Features
+  - Add code0 and Claude API sponsors with API provider presets for Claude Code and Codex
+  - Add sponsor brand assets and update README and multilingual documentation
+
+  ## 新功能
+  - 新增 code0 与 Claude API 赞助商及 API 提供商预设，支持 Claude Code 与 Codex
+  - 新增赞助品牌素材，并更新 README 及多语言文档
+
+  ## Optimization
+  - Reorganize README layout to place quick start and documentation above sponsors section
+  - Clean up trailing whitespace in documentation files
+
+  ## 优化
+  - 调整 README 布局，将快速入门与文档链接置于赞助商区块之前
+  - 清理文档文件末尾多余空白行
+
 ## 3.6.8
 
 ### Patch Changes
