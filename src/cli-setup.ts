@@ -157,7 +157,7 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.green('--workflows, -w')} <list>    ${i18n.t('cli:help.optionDescriptions.workflows')} (${i18n.t('cli:help.defaults.prefix')} all workflows)`,
       `  ${ansis.green('--output-styles, -o')} <styles> ${i18n.t('cli:help.optionDescriptions.outputStyles')} (${i18n.t('cli:help.defaults.prefix')} all custom styles)`,
       `  ${ansis.green('--default-output-style, -d')} <style> ${i18n.t('cli:help.optionDescriptions.defaultOutputStyle')} (${i18n.t('cli:help.defaults.prefix')} engineer-professional)`,
-      `  ${ansis.green('--code-type, -T')} <type>   ${i18n.t('cli:help.optionDescriptions.codeToolType')} (claude-code, codex, cc=claude-code, cx=codex)`,
+      `  ${ansis.green('--code-type, -T')} <type>   ${i18n.t('cli:help.optionDescriptions.codeToolType')} (claude-code, codex, codebuddy, cc=claude-code, cx=codex, cb=codebuddy)`,
       `  ${ansis.green('--install-cometix-line, -x')} <value> ${i18n.t('cli:help.optionDescriptions.installStatuslineTool')} (${i18n.t('cli:help.defaults.prefix')} true)`,
     ].join('\n'),
   })
@@ -272,6 +272,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
+    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, codebuddy, cc, cx, cb)')
     .action(await withLanguageResolution(async (options) => {
       await update(options)
     }))
@@ -297,9 +298,9 @@ export async function setupCommands(cli: CAC): Promise<void> {
 
   // Config switch command - Switch Codex provider or Claude Code configuration
   cli
-    .command('config-switch [target]', 'Switch Codex provider or Claude Code configuration, or list available configurations')
+    .command('config-switch [target]', 'Switch Claude Code, Codex, or CodeBuddy configuration, or list available configurations')
     .alias('cs')
-    .option('--code-type, -T <type>', 'Code tool type (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <type>', 'Code tool type (claude-code, codex, codebuddy, cc, cx, cb)')
     .option('--lang <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--list, -l', 'List available configurations')
