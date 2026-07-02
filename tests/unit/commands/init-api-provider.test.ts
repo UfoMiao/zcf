@@ -60,6 +60,17 @@ vi.mock('../../../src/utils/claude-config', () => ({
   backupMcpConfig: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/code-tools/codebuddy', () => ({
+  runCodebuddyFullInit: vi.fn(),
+}))
+
+vi.mock('../../../src/utils/code-tools/codebuddy-config-manager', () => ({
+  CodeBuddyConfigManager: {
+    sanitizeProfile: vi.fn(profile => profile),
+    writeConfig: vi.fn(),
+  },
+}))
+
 vi.mock('node:fs', () => ({
   existsSync: vi.fn(),
 }))
@@ -72,6 +83,8 @@ vi.mock('../../../src/constants', () => ({
   ZCF_CONFIG_FILE: '/test/.ufomiao/zcf/config.toml',
   CODE_TOOL_BANNERS: {
     'claude-code': 'ZCF',
+    'codex': 'ZCF',
+    'codebuddy': 'ZCF',
   },
   API_DEFAULT_URL: 'https://api.anthropic.com',
   API_ENV_KEY: 'ANTHROPIC_API_KEY',
@@ -532,6 +545,122 @@ describe('init command - API provider preset', () => {
       }
 
       await expect(validateSkipPromptOptions(options)).rejects.toThrow()
+    })
+  })
+
+  describe('init with codebuddy', () => {
+    it('should run CodeBuddy full init in skip-prompt mode', async () => {
+      const { init } = await import('../../../src/commands/init')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { runCodebuddyFullInit } = await import('../../../src/utils/code-tools/codebuddy')
+
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'codebuddy',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+
+      await init({
+        skipBanner: true,
+        skipPrompt: true,
+        codeType: 'codebuddy',
+        configLang: 'en',
+        aiOutputLang: 'en',
+        apiType: 'skip',
+      })
+
+      expect(runCodebuddyFullInit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          configLang: 'en',
+          skipPrompt: true,
+          apiType: 'skip',
+        }),
+      )
+      expect(updateZcfConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          codeToolType: 'codebuddy',
+          templateLang: 'en',
+          aiOutputLang: 'en',
+        }),
+      )
+    })
+
+    it('should resolve codebuddy from abbreviation cb', async () => {
+      const { init } = await import('../../../src/commands/init')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { runCodebuddyFullInit } = await import('../../../src/utils/code-tools/codebuddy')
+
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'codebuddy',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+
+      await init({
+        skipBanner: true,
+        skipPrompt: true,
+        codeType: 'cb',
+        apiType: 'skip',
+      })
+
+      expect(runCodebuddyFullInit).toHaveBeenCalled()
+    })
+
+    it('should handle multi-config providers for codebuddy', async () => {
+      const { init } = await import('../../../src/commands/init')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { runCodebuddyFullInit } = await import('../../../src/utils/code-tools/codebuddy')
+
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'codebuddy',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+
+      await init({
+        skipBanner: true,
+        skipPrompt: true,
+        codeType: 'codebuddy',
+        apiConfigs: JSON.stringify([{ name: 'custom', provider: 'custom', key: 'k', url: 'https://api.example.com' }]),
+      })
+
+      expect(runCodebuddyFullInit).toHaveBeenCalled()
+    })
+
+    it('should apply provider preset and default profile for codebuddy multi-config', async () => {
+      const { init } = await import('../../../src/commands/init')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { runCodebuddyFullInit } = await import('../../../src/utils/code-tools/codebuddy')
+      const codebuddyManager = await import('../../../src/utils/code-tools/codebuddy-config-manager')
+
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'codebuddy',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+
+      await init({
+        skipBanner: true,
+        skipPrompt: true,
+        codeType: 'codebuddy',
+        apiConfigs: JSON.stringify([
+          { name: 'minimax', provider: 'minimax', key: 'k' },
+          { name: 'custom', provider: 'custom', key: 'k', url: 'https://api.example.com', default: true },
+        ]),
+      })
+
+      expect(runCodebuddyFullInit).toHaveBeenCalled()
+      expect(codebuddyManager.CodeBuddyConfigManager.writeConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          currentProfile: expect.any(String),
+          profiles: expect.any(Object),
+        }),
+      )
     })
   })
 })

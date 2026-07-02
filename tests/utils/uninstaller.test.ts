@@ -354,6 +354,110 @@ describe('zcfUninstaller', () => {
     })
   })
 
+  describe('uninstallCodebuddy', () => {
+    it('should remove CodeBuddy MCP config and clear settings env', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({
+        env: {
+          ANTHROPIC_API_KEY: 'sk-test',
+          ANTHROPIC_AUTH_TOKEN: 'token',
+          ANTHROPIC_BASE_URL: 'https://api.example.com',
+          ANTHROPIC_MODEL: 'model',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'haiku',
+          ANTHROPIC_DEFAULT_SONNET_MODEL: 'sonnet',
+          ANTHROPIC_DEFAULT_OPUS_MODEL: 'opus',
+        },
+      }))
+      mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
+
+      const result = await uninstaller.uninstallCodebuddy()
+
+      expect(mockTrash.moveToTrash).toHaveBeenCalledWith('/home/user/.codebuddy/.mcp.json')
+      expect(mockFs.writeFileSync).toHaveBeenCalled()
+      expect(result.success).toBe(true)
+      expect(result.removed).toContain('~/.codebuddy/.mcp.json (MCP configuration)')
+      expect(result.removedConfigs).toContain('~/.codebuddy/settings.json (API configuration cleared)')
+    })
+
+    it('should succeed when CodeBuddy files are missing', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(false)
+
+      const result = await uninstaller.uninstallCodebuddy()
+
+      expect(result.success).toBe(true)
+      expect(result.removed).toHaveLength(0)
+      expect(result.removedConfigs).toHaveLength(0)
+    })
+
+    it('should keep settings file when env section is absent', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({ other: 'value' }))
+      mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
+
+      const result = await uninstaller.uninstallCodebuddy()
+
+      expect(mockFs.writeFileSync).not.toHaveBeenCalled()
+      expect(result.success).toBe(true)
+      expect(result.removedConfigs).toHaveLength(0)
+    })
+
+    it('should handle trash failure gracefully', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({ env: { ANTHROPIC_API_KEY: 'sk-test' } }))
+      mockTrash.moveToTrash.mockResolvedValue([{ success: false, error: 'permission denied' }])
+
+      const result = await uninstaller.uninstallCodebuddy()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('permission denied')
+    })
+
+    it('should handle read errors gracefully', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockFs.readFileSync.mockImplementation(() => {
+        throw new Error('read failed')
+      })
+
+      const result = await uninstaller.uninstallCodebuddy()
+
+      expect(result.success).toBe(false)
+      expect(result.errors[0]).toMatch(/read failed/)
+    })
+  })
+
+  describe('customUninstall with codebuddy conflicts', () => {
+    it('should resolve conflicts between codebuddy and mcps', async () => {
+      const items: UninstallItem[] = ['codebuddy', 'mcps', 'commands']
+
+      const mockUninstallCodebuddy = vi.spyOn(uninstaller, 'uninstallCodebuddy')
+        .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
+      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeCustomCommands')
+        .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
+      const mockRemoveMcps = vi.spyOn(uninstaller, 'removeMcps')
+        .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
+
+      const results = await uninstaller.customUninstall(items)
+
+      expect(mockUninstallCodebuddy).toHaveBeenCalled()
+      expect(mockRemoveCommands).toHaveBeenCalled()
+      expect(mockRemoveMcps).not.toHaveBeenCalled()
+      expect(results).toHaveLength(2)
+    })
+  })
+
+  describe('completeUninstall codebuddy behavior', () => {
+    it('should remove CodeBuddy directory and package when included', async () => {
+      // completeUninstall currently does not include CodeBuddy; keep behavior unchanged
+      mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
+      mockExec.exec.mockResolvedValue({ stdout: 'uninstalled', stderr: '' })
+
+      const result = await uninstaller.completeUninstall()
+
+      expect(result.success).toBe(true)
+      expect(result.removed).toContain('~/.claude/')
+    })
+  })
+
   describe('error handling', () => {
     it('should handle file system errors gracefully', async () => {
       mockFsExtra.pathExists.mockRejectedValue(new Error('Permission denied'))

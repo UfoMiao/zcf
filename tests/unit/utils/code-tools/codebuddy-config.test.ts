@@ -108,6 +108,17 @@ describe('codebuddy-config', () => {
       const merged = mergeMcpServers(null, newServers)
       expect(merged.mcpServers.server1).toBeDefined()
     })
+
+    it('should initialize mcpServers when existing config lacks it', () => {
+      const existing = {} as ClaudeConfiguration
+      const newServers: Record<string, McpServerConfig> = {
+        server1: { type: 'stdio', command: 'cmd1' },
+      }
+
+      const merged = mergeMcpServers(existing, newServers)
+      expect(merged.mcpServers).toBeDefined()
+      expect(merged.mcpServers.server1).toBeDefined()
+    })
   })
 
   describe('buildMcpServerConfig', () => {

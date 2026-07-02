@@ -67,6 +67,10 @@ vi.mock('../../../src/utils/banner', () => ({
   displayBanner: vi.fn(),
 }))
 
+vi.mock('../../../src/utils/code-tools/codebuddy', () => ({
+  runCodebuddyUpdate: vi.fn(),
+}))
+
 describe('update command', () => {
   beforeEach(async () => {
     vi.clearAllMocks()
@@ -182,6 +186,91 @@ describe('update command', () => {
       )
       expect(codexUpdateSpy).toHaveBeenCalled()
       codexUpdateSpy.mockRestore()
+    })
+
+    it('should display banner when skipBanner is false', async () => {
+      const { update } = await import('../../../src/commands/update')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { displayBanner } = await import('../../../src/utils/banner')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+
+      await update({ codeType: 'codebuddy', skipBanner: false })
+
+      expect(displayBanner).toHaveBeenCalled()
+    })
+
+    it('should update Codex without preferredLang', async () => {
+      const { update } = await import('../../../src/commands/update')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const codexModule = await import('../../../src/utils/code-tools/codex')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'claude-code' } as any)
+      vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
+      const codexUpdateSpy = vi.spyOn(codexModule, 'runCodexUpdate').mockResolvedValue(true)
+
+      await update({ codeType: 'codex', skipBanner: true })
+
+      expect(updateZcfConfig).toHaveBeenCalledWith({ version: expect.any(String), codeToolType: 'codex' })
+      codexUpdateSpy.mockRestore()
+    })
+
+    it('should run CodeBuddy update and persist config with preferredLang', async () => {
+      const { update } = await import('../../../src/commands/update')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const codebuddyModule = await import('../../../src/utils/code-tools/codebuddy')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'zh-CN', codeToolType: 'codebuddy' } as any)
+      vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
+      const codebuddyUpdateSpy = vi.spyOn(codebuddyModule, 'runCodebuddyUpdate').mockResolvedValue(true)
+
+      await update({ codeType: 'codebuddy', skipBanner: true })
+
+      expect(codebuddyUpdateSpy).toHaveBeenCalledWith(false, undefined)
+      expect(updateZcfConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          codeToolType: 'codebuddy',
+          preferredLang: 'zh-CN',
+        }),
+      )
+      codebuddyUpdateSpy.mockRestore()
+    })
+
+    it('should run CodeBuddy update and persist config without preferredLang', async () => {
+      const { update } = await import('../../../src/commands/update')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const codebuddyModule = await import('../../../src/utils/code-tools/codebuddy')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'codebuddy' } as any)
+      vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
+      const codebuddyUpdateSpy = vi.spyOn(codebuddyModule, 'runCodebuddyUpdate').mockResolvedValue(true)
+
+      await update({ codeType: 'codebuddy', skipBanner: true })
+
+      expect(codebuddyUpdateSpy).toHaveBeenCalledWith(false, undefined)
+      expect(updateZcfConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          codeToolType: 'codebuddy',
+        }),
+      )
+      expect(updateZcfConfig).not.toHaveBeenCalledWith(expect.objectContaining({ preferredLang: expect.anything() }))
+      codebuddyUpdateSpy.mockRestore()
+    })
+
+    it('should resolve codebuddy from saved config when codeType is omitted', async () => {
+      const { update } = await import('../../../src/commands/update')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const codebuddyModule = await import('../../../src/utils/code-tools/codebuddy')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codebuddy' } as any)
+      vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
+      const codebuddyUpdateSpy = vi.spyOn(codebuddyModule, 'runCodebuddyUpdate').mockResolvedValue(true)
+
+      await update({ skipBanner: true })
+
+      expect(codebuddyUpdateSpy).toHaveBeenCalled()
+      expect(updateZcfConfig).toHaveBeenCalledWith(expect.objectContaining({ codeToolType: 'codebuddy' }))
+      codebuddyUpdateSpy.mockRestore()
     })
 
     it('should handle errors gracefully', async () => {
