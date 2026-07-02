@@ -18,7 +18,7 @@
 
 **✨ 完全ドキュメント**: [ドキュメント入口](https://zcf.ufomiao.com/ja-JP/)
 
-> ゼロ設定、ワンクリックで Claude Code & Codex 環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
+> ゼロ設定、ワンクリックで Claude Code、Codex、CodeBuddy 環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
   </p>
 </div>
 
@@ -30,6 +30,7 @@
 ```bash
 npx zcf i        # フル初期化：インストール + ワークフロー + API/CCR + MCP
 npx zcf u        # ワークフローのみ更新
+npx zcf i -s -T codebuddy -p 302ai -k "sk-xxx"  # CodeBuddy を初期化
 npx zcf --lang ja  # インターフェース言語を切り替え（例）
 ```
 

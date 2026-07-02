@@ -52,5 +52,8 @@
   "backupsNotFound": "未找到备份目录",
   "zcfConfigNotFound": "未找到 ZCF 配置文件",
   "outputStylesDirectoryNotFound": "未找到输出风格目录",
-  "uninstallFailed": "卸载 {{codeType}} 失败{{message}}"
+  "uninstallFailed": "卸载 {{codeType}} 失败{{message}}",
+  "codebuddyUninstallTitle": "=== 卸载 CodeBuddy ===",
+  "codebuddyConfirmUninstall": "是否移除所有 CodeBuddy 配置？",
+  "codebuddyUninstallComplete": "CodeBuddy 配置已移除！"
 }

@@ -1,8 +1,8 @@
 import type { ClaudeConfiguration, McpServerConfig } from '../../../../src/types'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  backupMcpConfig,
   buildMcpServerConfig,
-  ensureApiKeyApproved,
   fixWindowsMcpConfig,
   getMcpConfigPath,
   getSettingsPath,
@@ -116,6 +116,59 @@ describe('codebuddy-config', () => {
       const result = buildMcpServerConfig(base)
       expect(result).toEqual(base)
     })
+
+    it('should replace placeholder in args with provided apiKey', () => {
+      const base: McpServerConfig = {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', 'server', '--key', 'YOUR_EXA_API_KEY'],
+      }
+      const result = buildMcpServerConfig(base, 'sk-test')
+      expect(result.args).toContain('sk-test')
+      expect(result.args).not.toContain('YOUR_EXA_API_KEY')
+    })
+
+    it('should replace custom placeholder in url', () => {
+      const base: McpServerConfig = {
+        type: 'sse',
+        url: 'https://api.example.com?key=YOUR_CUSTOM_KEY',
+      }
+      const result = buildMcpServerConfig(base, 'sk-test', 'YOUR_CUSTOM_KEY')
+      expect(result.url).toBe('https://api.example.com?key=sk-test')
+    })
+
+    it('should set env variable when envVarName is provided', () => {
+      const base: McpServerConfig = {
+        type: 'stdio',
+        command: 'npx',
+        env: { EXA_API_KEY: 'placeholder' },
+      }
+      const result = buildMcpServerConfig(base, 'sk-test', 'YOUR_EXA_API_KEY', 'EXA_API_KEY')
+      expect(result.env?.EXA_API_KEY).toBe('sk-test')
+    })
+
+    it('should return config unchanged when apiKey is empty', () => {
+      const base: McpServerConfig = {
+        type: 'stdio',
+        command: 'npx',
+        args: ['--key', 'YOUR_EXA_API_KEY'],
+      }
+      const result = buildMcpServerConfig(base, '')
+      expect(result.args).toContain('YOUR_EXA_API_KEY')
+    })
+
+    it('should apply Windows command wrapping on Windows', () => {
+      mockPlatform.isWindows.mockReturnValue(true)
+      mockPlatform.getMcpCommand.mockReturnValue(['cmd', '/c', 'npx'])
+      const base: McpServerConfig = {
+        type: 'stdio',
+        command: 'npx',
+        args: ['-y', 'server'],
+      }
+      const result = buildMcpServerConfig(base)
+      expect(result.command).toBe('cmd')
+      expect(result.args).toEqual(['/c', 'npx', '-y', 'server'])
+    })
   })
 
   describe('fixWindowsMcpConfig', () => {
@@ -124,22 +177,41 @@ describe('codebuddy-config', () => {
       const config: ClaudeConfiguration = { mcpServers: { test: { type: 'stdio', command: 'echo' } } }
       expect(fixWindowsMcpConfig(config)).toEqual(config)
     })
+
+    it('should wrap commands on Windows', () => {
+      mockPlatform.isWindows.mockReturnValue(true)
+      mockPlatform.getMcpCommand.mockReturnValue(['cmd', '/c', 'npx'])
+      const config: ClaudeConfiguration = {
+        mcpServers: {
+          test: { type: 'stdio', command: 'npx', args: ['-y', 'server'] },
+        },
+      }
+      const result = fixWindowsMcpConfig(config)
+      expect(result.mcpServers.test.command).toBe('cmd')
+      expect(result.mcpServers.test.args).toEqual(['/c', 'npx', '-y', 'server'])
+    })
   })
 
-  describe('ensureApiKeyApproved', () => {
-    it('should add truncated API key to approved list', () => {
-      const config: ClaudeConfiguration = { mcpServers: {} }
-      const result = ensureApiKeyApproved(config, 'sk-test-key-12345678901234567890')
-      expect(result.customApiKeyResponses?.approved).toContain('sk-test-key-12345678')
+  describe('backupMcpConfig', () => {
+    it('should call backupJsonConfig with correct paths', () => {
+      mockJsonConfig.backupJsonConfig.mockReturnValue('/test/.codebuddy/backup/.mcp.json.123')
+      const result = backupMcpConfig()
+      expect(mockJsonConfig.backupJsonConfig).toHaveBeenCalledWith(
+        '/test/.codebuddy/.mcp.json',
+        '/test/.codebuddy/backup',
+      )
+      expect(result).toBe('/test/.codebuddy/backup/.mcp.json.123')
     })
+  })
 
-    it('should remove from rejected if present', () => {
-      const config: ClaudeConfiguration = {
-        mcpServers: {},
-        customApiKeyResponses: { approved: [], rejected: ['sk-test-key-12345678'] },
-      }
-      const result = ensureApiKeyApproved(config, 'sk-test-key-12345678901234567890')
-      expect(result.customApiKeyResponses?.rejected).not.toContain('sk-test-key-12345678')
+  describe('writeSettings', () => {
+    it('should write settings to settings.json', () => {
+      const settings = { env: { ANTHROPIC_API_KEY: 'sk-test' } }
+      writeSettings(settings)
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith(
+        '/test/.codebuddy/settings.json',
+        settings,
+      )
     })
   })
 })

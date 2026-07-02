@@ -30,6 +30,7 @@
 ```bash
 npx zcf i        # Full initialization: install + workflows + API/CCR + MCP
 npx zcf u        # Update workflows only
+npx zcf i -s -T codebuddy -p 302ai -k "sk-xxx"  # Initialize CodeBuddy
 npx zcf --lang zh-CN  # Switch interface language (example)
 ```
 

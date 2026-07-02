@@ -52,5 +52,8 @@
   "backupsNotFound": "Backup directory not found",
   "zcfConfigNotFound": "ZCF configuration file not found",
   "outputStylesDirectoryNotFound": "Output styles directory not found",
-  "uninstallFailed": "Failed to uninstall {{codeType}}{{message}}"
+  "uninstallFailed": "Failed to uninstall {{codeType}}{{message}}",
+  "codebuddyUninstallTitle": "=== CodeBuddy Uninstall ===",
+  "codebuddyConfirmUninstall": "Remove all CodeBuddy configurations?",
+  "codebuddyUninstallComplete": "CodeBuddy configurations removed!"
 }

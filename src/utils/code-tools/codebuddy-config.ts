@@ -1,7 +1,6 @@
 import type { ClaudeConfiguration, McpServerConfig } from '../../types'
 import { join } from 'pathe'
 import { CODEBUDDY_DIR, CODEBUDDY_MCP_FILE, CODEBUDDY_SETTINGS_FILE } from '../../constants'
-import { ensureI18nInitialized, i18n } from '../../i18n'
 import { backupJsonConfig, readJsonConfig, writeJsonConfig } from '../json-config'
 import { deepClone } from '../object-utils'
 import { getMcpCommand, isWindows } from '../platform'
@@ -91,94 +90,6 @@ export function fixWindowsMcpConfig(config: ClaudeConfiguration): ClaudeConfigur
   }
 
   return fixed
-}
-
-export function addCompletedOnboarding(): void {
-  try {
-    let config = readMcpConfig()
-    if (!config) {
-      config = { mcpServers: {} }
-    }
-
-    if (config.hasCompletedOnboarding === true) {
-      return
-    }
-
-    config.hasCompletedOnboarding = true
-    writeMcpConfig(config)
-  }
-  catch (error) {
-    console.error('Failed to add onboarding flag', error)
-    throw error
-  }
-}
-
-export function ensureApiKeyApproved(config: ClaudeConfiguration, apiKey: string): ClaudeConfiguration {
-  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim() === '') {
-    return config
-  }
-
-  const truncatedApiKey = apiKey.substring(0, 20)
-  const updatedConfig = { ...config }
-
-  if (!updatedConfig.customApiKeyResponses) {
-    updatedConfig.customApiKeyResponses = {
-      approved: [],
-      rejected: [],
-    }
-  }
-
-  if (!Array.isArray(updatedConfig.customApiKeyResponses.approved)) {
-    updatedConfig.customApiKeyResponses.approved = []
-  }
-  if (!Array.isArray(updatedConfig.customApiKeyResponses.rejected)) {
-    updatedConfig.customApiKeyResponses.rejected = []
-  }
-
-  const rejectedIndex = updatedConfig.customApiKeyResponses.rejected.indexOf(truncatedApiKey)
-  if (rejectedIndex > -1) {
-    updatedConfig.customApiKeyResponses.rejected.splice(rejectedIndex, 1)
-  }
-
-  if (!updatedConfig.customApiKeyResponses.approved.includes(truncatedApiKey)) {
-    updatedConfig.customApiKeyResponses.approved.push(truncatedApiKey)
-  }
-
-  return updatedConfig
-}
-
-export function removeApiKeyFromRejected(config: ClaudeConfiguration, apiKey: string): ClaudeConfiguration {
-  if (!config.customApiKeyResponses || !Array.isArray(config.customApiKeyResponses.rejected)) {
-    return config
-  }
-
-  const truncatedApiKey = apiKey.substring(0, 20)
-  const updatedConfig = { ...config }
-
-  if (updatedConfig.customApiKeyResponses) {
-    const rejectedIndex = updatedConfig.customApiKeyResponses.rejected.indexOf(truncatedApiKey)
-    if (rejectedIndex > -1) {
-      updatedConfig.customApiKeyResponses.rejected.splice(rejectedIndex, 1)
-    }
-  }
-
-  return updatedConfig
-}
-
-export function manageApiKeyApproval(apiKey: string): void {
-  try {
-    let config = readMcpConfig()
-    if (!config) {
-      config = { mcpServers: {} }
-    }
-
-    const updatedConfig = ensureApiKeyApproved(config, apiKey)
-    writeMcpConfig(updatedConfig)
-  }
-  catch (error) {
-    ensureI18nInitialized()
-    console.error(i18n.t('mcp:apiKeyApprovalFailed'), error)
-  }
 }
 
 // -- Settings (reads/writes ~/.codebuddy/settings.json) --

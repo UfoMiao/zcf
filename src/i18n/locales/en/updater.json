@@ -21,5 +21,8 @@
   "updateSkipped": "Update skipped",
   "updateSuccess": "{tool} updated successfully!",
   "updateSummary": "Update Summary",
-  "updating": "Updating {tool}..."
+  "updating": "Updating {tool}...",
+  "codebuddyUpdateTitle": "=== CodeBuddy Update ===",
+  "codebuddyMdNotFound": "CODEBUDDY.md not found. Creating new one...",
+  "codebuddyUpdateComplete": "CodeBuddy update complete!"
 }

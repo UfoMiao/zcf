@@ -10,6 +10,7 @@
 * [機能概要](features/index.md)
 * [Claude Code 設定機能](features/claude-code.md)
 * [Codex サポート](features/codex.md)
+* [CodeBuddy サポート](features/codebuddy.md)
 * [ワークフローシステム](features/workflows.md)
 * [MCP サービス統合](features/mcp.md)
 * [Claude Code Router](features/ccr.md)
