@@ -1,6 +1,7 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 import type { McpServerConfig } from '../types'
 import type { ApiConfigDefinition, ClaudeCodeProfile } from '../types/claude-code-config'
+import type { CodeBuddyProfile } from '../types/codebuddy-config'
 import type { CodexProvider } from '../utils/code-tools/codex'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
@@ -514,9 +515,6 @@ export async function init(options: InitOptions = {}): Promise<void> {
         apiKey: options.apiKey as string | undefined,
         apiUrl: options.apiUrl as string | undefined,
         apiModel: options.apiModel as string | undefined,
-        apiHaikuModel: options.apiHaikuModel as string | undefined,
-        apiSonnetModel: options.apiSonnetModel as string | undefined,
-        apiOpusModel: options.apiOpusModel as string | undefined,
         mcpServices: options.mcpServices as string | undefined,
       })
       updateZcfConfig({
@@ -1305,11 +1303,11 @@ async function handleCodexConfigs(configs: ApiConfigDefinition[]): Promise<void>
 async function handleCodebuddyConfigs(configs: ApiConfigDefinition[]): Promise<void> {
   const { CodeBuddyConfigManager } = await import('../utils/code-tools/codebuddy-config-manager')
 
-  const profiles: Record<string, ClaudeCodeProfile> = {}
+  const profiles: Record<string, CodeBuddyProfile> = {}
 
   for (const config of configs) {
     try {
-      const profile = await convertToClaudeCodeProfile(config)
+      const profile = await convertToCodeBuddyProfile(config)
       profiles[profile.id || profile.name] = CodeBuddyConfigManager.sanitizeProfile(profile)
       console.log(ansis.green(`✔ ${i18n.t('multi-config:profileAdded', { name: config.name })}`))
     }
@@ -1325,7 +1323,7 @@ async function handleCodebuddyConfigs(configs: ApiConfigDefinition[]): Promise<v
   // Set default profile if specified and write once
   const defaultConfig = configs.find(c => c.default)
   if (defaultConfig) {
-    const defaultProfile = await convertToClaudeCodeProfile(defaultConfig)
+    const defaultProfile = await convertToCodeBuddyProfile(defaultConfig)
     CodeBuddyConfigManager.writeConfig({
       currentProfile: defaultProfile.id || defaultProfile.name,
       profiles,
@@ -1480,6 +1478,45 @@ async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<
     defaultSonnetModel,
     defaultOpusModel,
     id: ClaudeCodeConfigManager.generateProfileId(config.name!),
+  }
+
+  return profile
+}
+
+/**
+ * Convert API config definition to CodeBuddy profile
+ * Reuses Claude Code provider presets for base URL/auth type but only keeps
+ * CodeBuddy-specific fields, avoiding Claude-exclusive model fields.
+ */
+async function convertToCodeBuddyProfile(config: ApiConfigDefinition): Promise<CodeBuddyProfile> {
+  const { CodeBuddyConfigManager } = await import('../utils/code-tools/codebuddy-config-manager')
+
+  // Apply provider preset if specified
+  let baseUrl = config.url
+  let primaryModel = config.primaryModel
+  let authType = config.type || 'api_key'
+
+  if (config.provider && config.provider !== 'custom') {
+    const { getProviderPreset } = await import('../config/api-providers')
+    const preset = getProviderPreset(config.provider)
+
+    if (preset?.claudeCode) {
+      baseUrl = baseUrl || preset.claudeCode.baseUrl
+      authType = preset.claudeCode.authType
+      if (preset.claudeCode.defaultModels && preset.claudeCode.defaultModels.length > 0) {
+        const [p] = preset.claudeCode.defaultModels
+        primaryModel = primaryModel || p
+      }
+    }
+  }
+
+  const profile: CodeBuddyProfile = {
+    name: config.name!,
+    authType: authType as CodeBuddyProfile['authType'],
+    apiKey: config.key,
+    baseUrl,
+    primaryModel,
+    id: CodeBuddyConfigManager.generateProfileId(config.name!),
   }
 
   return profile

@@ -217,7 +217,7 @@ describe('codebuddy-config', () => {
 
   describe('writeSettings', () => {
     it('should write settings to settings.json', () => {
-      const settings = { env: { ANTHROPIC_API_KEY: 'sk-test' } }
+      const settings = { env: { CODEBUDDY_API_KEY: 'sk-test' } }
       writeSettings(settings)
       expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith(
         '/test/.codebuddy/settings.json',

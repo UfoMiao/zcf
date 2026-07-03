@@ -359,13 +359,13 @@ describe('zcfUninstaller', () => {
       mockFsExtra.pathExists.mockResolvedValue(true)
       mockFs.readFileSync.mockReturnValue(JSON.stringify({
         env: {
-          ANTHROPIC_API_KEY: 'sk-test',
-          ANTHROPIC_AUTH_TOKEN: 'token',
-          ANTHROPIC_BASE_URL: 'https://api.example.com',
-          ANTHROPIC_MODEL: 'model',
-          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'haiku',
-          ANTHROPIC_DEFAULT_SONNET_MODEL: 'sonnet',
-          ANTHROPIC_DEFAULT_OPUS_MODEL: 'opus',
+          CODEBUDDY_API_KEY: 'sk-test',
+          CODEBUDDY_AUTH_TOKEN: 'token',
+          CODEBUDDY_BASE_URL: 'https://api.example.com',
+          CODEBUDDY_MODEL: 'model',
+          CODEBUDDY_SMALL_FAST_MODEL: 'haiku',
+          CODEBUDDY_BIG_SLOW_MODEL: 'sonnet',
+          CODEBUDDY_CODE_SUBAGENT_MODEL: 'opus',
         },
       }))
       mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
@@ -403,7 +403,7 @@ describe('zcfUninstaller', () => {
 
     it('should handle trash failure gracefully', async () => {
       mockFsExtra.pathExists.mockResolvedValue(true)
-      mockFs.readFileSync.mockReturnValue(JSON.stringify({ env: { ANTHROPIC_API_KEY: 'sk-test' } }))
+      mockFs.readFileSync.mockReturnValue(JSON.stringify({ env: { CODEBUDDY_API_KEY: 'sk-test' } }))
       mockTrash.moveToTrash.mockResolvedValue([{ success: false, error: 'permission denied' }])
 
       const result = await uninstaller.uninstallCodebuddy()

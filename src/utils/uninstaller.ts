@@ -6,6 +6,7 @@ import { join } from 'pathe'
 import { exec } from 'tinyexec'
 import { ZCF_CONFIG_FILE } from '../constants'
 import { i18n } from '../i18n'
+import { clearCodeBuddyEnv } from './config.model-keys'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { moveToTrash } from './trash'
 
@@ -397,13 +398,7 @@ export class ZcfUninstaller {
       if (await pathExists(settingsPath)) {
         const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'))
         if (settings.env) {
-          delete settings.env.ANTHROPIC_API_KEY
-          delete settings.env.ANTHROPIC_AUTH_TOKEN
-          delete settings.env.ANTHROPIC_BASE_URL
-          delete settings.env.ANTHROPIC_MODEL
-          delete settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL
-          delete settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL
-          delete settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL
+          clearCodeBuddyEnv(settings.env)
           writeFileSync(settingsPath, JSON.stringify(settings, null, 2))
           result.removedConfigs.push('~/.codebuddy/settings.json (API configuration cleared)')
         }

@@ -26,9 +26,9 @@ export async function runCodebuddyFullInit(options: {
   apiKey?: string
   apiUrl?: string
   apiModel?: string
-  apiHaikuModel?: string
-  apiSonnetModel?: string
-  apiOpusModel?: string
+  apiSmallFastModel?: string
+  apiBigSlowModel?: string
+  apiCodeSubagentModel?: string
   mcpServices?: string
 } = {}): Promise<void> {
   ensureI18nInitialized()
@@ -125,9 +125,9 @@ export async function configureCodebuddyApi(options: {
   apiKey?: string
   apiUrl?: string
   apiModel?: string
-  apiHaikuModel?: string
-  apiSonnetModel?: string
-  apiOpusModel?: string
+  apiSmallFastModel?: string
+  apiBigSlowModel?: string
+  apiCodeSubagentModel?: string
   skipPrompt?: boolean
 } = {}): Promise<void> {
   ensureI18nInitialized()
@@ -140,9 +140,9 @@ export async function configureCodebuddyApi(options: {
       apiKey: options.apiKey,
       baseUrl: options.apiUrl,
       primaryModel: options.apiModel,
-      defaultHaikuModel: options.apiHaikuModel,
-      defaultSonnetModel: options.apiSonnetModel,
-      defaultOpusModel: options.apiOpusModel,
+      smallFastModel: options.apiSmallFastModel,
+      bigSlowModel: options.apiBigSlowModel,
+      codeSubagentModel: options.apiCodeSubagentModel,
     })
     return
   }
@@ -186,24 +186,24 @@ export async function configureCodebuddyApi(options: {
     default: '',
   })
 
-  const { haikuModel } = await inquirer.prompt<{ haikuModel: string }>({
+  const { smallFastModel } = await inquirer.prompt<{ smallFastModel: string }>({
     type: 'input',
-    name: 'haikuModel',
-    message: `${i18n.t('configuration:enterHaikuModel') || 'Enter default Haiku model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
+    name: 'smallFastModel',
+    message: `${i18n.t('configuration:enterSmallFastModel') || 'Enter CodeBuddy small-fast model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
     default: '',
   })
 
-  const { sonnetModel } = await inquirer.prompt<{ sonnetModel: string }>({
+  const { bigSlowModel } = await inquirer.prompt<{ bigSlowModel: string }>({
     type: 'input',
-    name: 'sonnetModel',
-    message: `${i18n.t('configuration:enterSonnetModel') || 'Enter default Sonnet model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
+    name: 'bigSlowModel',
+    message: `${i18n.t('configuration:enterBigSlowModel') || 'Enter CodeBuddy big-slow model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
     default: '',
   })
 
-  const { opusModel } = await inquirer.prompt<{ opusModel: string }>({
+  const { codeSubagentModel } = await inquirer.prompt<{ codeSubagentModel: string }>({
     type: 'input',
-    name: 'opusModel',
-    message: `${i18n.t('configuration:enterOpusModel') || 'Enter default Opus model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
+    name: 'codeSubagentModel',
+    message: `${i18n.t('configuration:enterCodeSubagentModel') || 'Enter CodeBuddy code-subagent model'} ${i18n.t('common:emptyToSkip') || '(empty to skip)'}`,
     default: '',
   })
 
@@ -213,9 +213,9 @@ export async function configureCodebuddyApi(options: {
     apiKey: apiKey || undefined,
     baseUrl: apiUrl || undefined,
     primaryModel: primaryModel || undefined,
-    defaultHaikuModel: haikuModel || undefined,
-    defaultSonnetModel: sonnetModel || undefined,
-    defaultOpusModel: opusModel || undefined,
+    smallFastModel: smallFastModel || undefined,
+    bigSlowModel: bigSlowModel || undefined,
+    codeSubagentModel: codeSubagentModel || undefined,
   })
 
   console.log(ansis.green(i18n.t('api:apiConfigComplete') || 'API configuration complete!'))

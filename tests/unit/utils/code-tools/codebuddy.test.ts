@@ -272,9 +272,9 @@ describe('codebuddy', () => {
         apiKey: 'sk-test',
         baseUrl: 'https://api.example.com',
         primaryModel: undefined,
-        defaultHaikuModel: undefined,
-        defaultSonnetModel: undefined,
-        defaultOpusModel: undefined,
+        smallFastModel: undefined,
+        bigSlowModel: undefined,
+        codeSubagentModel: undefined,
       })
     })
 
@@ -306,9 +306,9 @@ describe('codebuddy', () => {
         .mockResolvedValueOnce({ apiKey: 'sk-interactive' } as any)
         .mockResolvedValueOnce({ apiUrl: 'https://interactive.example.com' } as any)
         .mockResolvedValueOnce({ primaryModel: '' } as any)
-        .mockResolvedValueOnce({ haikuModel: '' } as any)
-        .mockResolvedValueOnce({ sonnetModel: '' } as any)
-        .mockResolvedValueOnce({ opusModel: '' } as any)
+        .mockResolvedValueOnce({ smallFastModel: '' } as any)
+        .mockResolvedValueOnce({ bigSlowModel: '' } as any)
+        .mockResolvedValueOnce({ codeSubagentModel: '' } as any)
 
       await configureCodebuddyApi({})
 
@@ -318,9 +318,9 @@ describe('codebuddy', () => {
         apiKey: 'sk-interactive',
         baseUrl: 'https://interactive.example.com',
         primaryModel: undefined,
-        defaultHaikuModel: undefined,
-        defaultSonnetModel: undefined,
-        defaultOpusModel: undefined,
+        smallFastModel: undefined,
+        bigSlowModel: undefined,
+        codeSubagentModel: undefined,
       })
     })
 
@@ -330,9 +330,9 @@ describe('codebuddy', () => {
         .mockResolvedValueOnce({ apiKey: '' } as any)
         .mockResolvedValueOnce({ apiUrl: '' } as any)
         .mockResolvedValueOnce({ primaryModel: '' } as any)
-        .mockResolvedValueOnce({ haikuModel: '' } as any)
-        .mockResolvedValueOnce({ sonnetModel: '' } as any)
-        .mockResolvedValueOnce({ opusModel: '' } as any)
+        .mockResolvedValueOnce({ smallFastModel: '' } as any)
+        .mockResolvedValueOnce({ bigSlowModel: '' } as any)
+        .mockResolvedValueOnce({ codeSubagentModel: '' } as any)
 
       await configureCodebuddyApi({})
 
@@ -342,9 +342,9 @@ describe('codebuddy', () => {
         apiKey: undefined,
         baseUrl: undefined,
         primaryModel: undefined,
-        defaultHaikuModel: undefined,
-        defaultSonnetModel: undefined,
-        defaultOpusModel: undefined,
+        smallFastModel: undefined,
+        bigSlowModel: undefined,
+        codeSubagentModel: undefined,
       })
     })
   })
@@ -579,7 +579,7 @@ describe('codebuddy', () => {
 
   describe('readCodebuddyConfig', () => {
     it('should delegate to readSettings', () => {
-      const settings = { env: { ANTHROPIC_API_KEY: 'sk-test' } }
+      const settings = { env: { CODEBUDDY_API_KEY: 'sk-test' } }
       mockReadSettings.mockReturnValue(settings)
 
       const result = readCodebuddyConfig()

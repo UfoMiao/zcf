@@ -68,6 +68,7 @@ vi.mock('../../../src/utils/code-tools/codebuddy-config-manager', () => ({
   CodeBuddyConfigManager: {
     sanitizeProfile: vi.fn(profile => profile),
     writeConfig: vi.fn(),
+    generateProfileId: vi.fn(name => name.toLowerCase().replace(/\s+/g, '-')),
   },
 }))
 

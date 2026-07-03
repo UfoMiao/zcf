@@ -1,5 +1,6 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
 import type { ClaudeCodeProfile } from './claude-code-config'
+import type { CodeBuddyProfile } from './codebuddy-config'
 
 /**
  * Claude Code specific configuration
@@ -30,12 +31,12 @@ export interface CodexConfig {
 
 /**
  * CodeBuddy specific configuration
- * Features: API profile management (reuses ClaudeCodeProfile)
+ * Features: API profile management (uses CodeBuddyProfile)
  */
 export interface CodeBuddyConfig {
   enabled: boolean
   currentProfile?: string
-  profiles?: Record<string, ClaudeCodeProfile>
+  profiles?: Record<string, CodeBuddyProfile>
   version?: string
 }
 
