@@ -58,7 +58,7 @@ export async function runCodebuddyFullInit(options: {
   // 4. Configure MCP services
   await configureCodebuddyMcp({
     mcpServices: options.mcpServices,
-    _skipPrompt: options.skipPrompt,
+    skipPrompt: options.skipPrompt,
   })
 
   // 5. Update ZCF config
@@ -198,7 +198,7 @@ export async function configureCodebuddyApi(options: {
  */
 export async function configureCodebuddyMcp(options: {
   mcpServices?: string
-  _skipPrompt?: boolean
+  skipPrompt?: boolean
 } = {}): Promise<void> {
   ensureI18nInitialized()
 
@@ -207,7 +207,7 @@ export async function configureCodebuddyMcp(options: {
     return
   }
 
-  if (options._skipPrompt) {
+  if (options.skipPrompt) {
     console.log(ansis.gray(i18n.t('mcp:mcpNonInteractiveSkipped') || 'MCP configuration requires interactive mode, skipped'))
     return
   }
@@ -227,7 +227,7 @@ export async function configureCodebuddyMcp(options: {
 
     const backupPath = backupMcpConfig()
     if (backupPath) {
-      console.log(ansis.gray(`MCP config backed up: ${backupPath}`))
+      console.log(ansis.gray(`${i18n.t('mcp:mcpBackupSuccess')}: ${backupPath}`))
     }
 
     const newServers: Record<string, any> = {}
@@ -291,6 +291,6 @@ export async function ensureCodebuddyMd(
       : '# CodeBuddy Instructions\n'
 
     writeFile(CODEBUDDY_MD_FILE, content)
-    console.log(ansis.green(`Created CODEBUDDY.md at ${CODEBUDDY_MD_FILE}`))
+    console.log(ansis.green(i18n.t('installation:codebuddyMdCreated', { path: CODEBUDDY_MD_FILE })))
   }
 }

@@ -4,6 +4,7 @@ import inquirer from 'inquirer'
 import { CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
+import { configureCodebuddyApi, configureCodebuddyMcp, runCodebuddyFullInit, runCodebuddyUninstall, runCodebuddyUpdate } from '../utils/code-tools/codebuddy'
 import { configureCodexApi, configureCodexMcp, runCodexFullInit, runCodexUninstall, runCodexUpdate, runCodexWorkflowImportWithLanguageSelection } from '../utils/code-tools/codex'
 import { resolveCodeType } from '../utils/code-type-resolver'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
@@ -358,6 +359,103 @@ async function showCodexMenu(): Promise<MenuResult> {
   return undefined
 }
 
+async function showCodebuddyMenu(): Promise<MenuResult> {
+  console.log(ansis.cyan(i18n.t('menu:selectFunction')))
+  console.log('  -------- CodeBuddy --------')
+  console.log(
+    `  ${ansis.cyan('1.')} ${i18n.t('menu:menuOptions.codebuddyFullInit')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.codebuddyFullInit')}`)}`,
+  )
+  console.log(
+    `  ${ansis.cyan('2.')} ${i18n.t('menu:menuOptions.codebuddyConfigureApi')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.codebuddyConfigureApi')}`)}`,
+  )
+  console.log(
+    `  ${ansis.cyan('3.')} ${i18n.t('menu:menuOptions.codebuddyConfigureMcp')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.codebuddyConfigureMcp')}`)}`,
+  )
+  console.log(
+    `  ${ansis.cyan('4.')} ${i18n.t('menu:menuOptions.configureEnvPermission')} ${ansis.gray(`- ${i18n.t('menu:menuDescriptions.configureEnvPermission')}`)}`,
+  )
+  console.log('')
+  printZcfSection({
+    uninstallOption: i18n.t('menu:menuOptions.codebuddyUninstall'),
+    uninstallDescription: i18n.t('menu:menuDescriptions.codebuddyUninstall'),
+    updateOption: i18n.t('menu:menuOptions.codebuddyCheckUpdates'),
+    updateDescription: i18n.t('menu:menuDescriptions.codebuddyCheckUpdates'),
+  })
+
+  const { choice } = await inquirer.prompt<{ choice: string }>({
+    type: 'input',
+    name: 'choice',
+    message: i18n.t('common:enterChoice'),
+    validate: (value) => {
+      const valid = ['1', '2', '3', '4', '0', '-', '+', 's', 'S', 'q', 'Q']
+      return valid.includes(value) || i18n.t('common:invalidChoice')
+    },
+  })
+
+  if (!choice) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return 'exit'
+  }
+
+  const normalized = choice.toLowerCase()
+
+  switch (normalized) {
+    case '1':
+      await runCodebuddyFullInit()
+      break
+    case '2':
+      await configureCodebuddyApi()
+      break
+    case '3':
+      await configureCodebuddyMcp()
+      break
+    case '4':
+      await configureEnvPermissionFeature()
+      break
+    case '0': {
+      const currentLang = i18n.language as SupportedLang
+      await changeScriptLanguageFeature(currentLang)
+      printSeparator()
+      return undefined
+    }
+    case '-':
+      await runCodebuddyUninstall()
+      printSeparator()
+      return undefined
+    case '+':
+      await runCodebuddyUpdate()
+      printSeparator()
+      return undefined
+    case 's': {
+      const switched = await handleCodeToolSwitch('codebuddy')
+      if (switched) {
+        return 'switch'
+      }
+      printSeparator()
+      return undefined
+    }
+    case 'q':
+      console.log(ansis.cyan(i18n.t('common:goodbye')))
+      return 'exit'
+    default:
+      return undefined
+  }
+
+  printSeparator()
+
+  const shouldContinue = await promptBoolean({
+    message: i18n.t('common:returnToMenu'),
+    defaultValue: true,
+  })
+
+  if (!shouldContinue) {
+    console.log(ansis.cyan(i18n.t('common:goodbye')))
+    return 'exit'
+  }
+
+  return undefined
+}
+
 export async function showMainMenu(options: { codeType?: string } = {}): Promise<void> {
   try {
     // Handle code type parameter if provided
@@ -386,7 +484,7 @@ export async function showMainMenu(options: { codeType?: string } = {}): Promise
       const result = codeTool === 'codex'
         ? await showCodexMenu()
         : codeTool === 'codebuddy'
-          ? await showClaudeCodeMenu()
+          ? await showCodebuddyMenu()
           : await showClaudeCodeMenu()
 
       if (result === 'exit') {

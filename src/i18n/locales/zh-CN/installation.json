@@ -76,5 +76,6 @@
   "duplicateWarningContinue": "已知晓多重安装风险，继续使用",
   "versionMismatchWarning": "⚠️ 版本不一致：npm 版本为 {npmVersion}，Homebrew 版本为 {homebrewVersion}",
   "activatingHomebrew": "正在激活 Homebrew 安装...",
-  "autoRemovingNpm": "静默模式：自动删除 npm 安装并保留 Homebrew..."
+  "autoRemovingNpm": "静默模式：自动删除 npm 安装并保留 Homebrew...",
+  "codebuddyMdCreated": "已在 {path} 创建 CODEBUDDY.md"
 }

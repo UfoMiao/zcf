@@ -18,7 +18,7 @@
 
 **✨ 完整文档**: [文档入口](https://zcf.ufomiao.com/zh-CN/)
 
-> 零配置,一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
+> 零配置,一键搞定 Claude Code, Codex & CodeBuddy 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
   </p>
 </div>
 

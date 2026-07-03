@@ -397,10 +397,13 @@ export class ZcfUninstaller {
       if (await pathExists(settingsPath)) {
         const settings = JSON.parse(readFileSync(settingsPath, 'utf-8'))
         if (settings.env) {
-          delete settings.env.ANTHROPIC_API_KEY
-          delete settings.env.ANTHROPIC_AUTH_TOKEN
-          delete settings.env.ANTHROPIC_BASE_URL
-          delete settings.env.ANTHROPIC_MODEL
+          // Use CodeBuddy-specific env key cleaner (CODEBUDDY_*, not ANTHROPIC_*)
+          const { clearCodebuddyAuthEnv } = await import('./code-tools/codebuddy-config-manager')
+          clearCodebuddyAuthEnv(settings.env)
+          // Remove empty env object to avoid leaving empty stanza
+          if (Object.keys(settings.env).length === 0) {
+            delete settings.env
+          }
           writeFileSync(settingsPath, JSON.stringify(settings, null, 2))
           result.removedConfigs.push('~/.codebuddy/settings.json (API configuration cleared)')
         }

@@ -1,8 +1,47 @@
 import type { ClaudeCodeProfile } from '../../types/claude-code-config'
 import { CODEBUDDY_SETTINGS_FILE, ZCF_CONFIG_FILE } from '../../constants'
-import { clearModelEnv } from '../config.model-keys'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { createDefaultTomlConfig, readDefaultTomlConfig, writeTomlConfig } from '../zcf-config'
+
+// CodeBuddy-specific environment variable keys (do NOT share with ClaudeCode's ANTHROPIC_* keys)
+// Reference: https://www.codebuddy.cn/docs/cli/env-vars
+export const CODEBUDDY_ENV_KEYS = {
+  API_KEY: 'CODEBUDDY_API_KEY',
+  AUTH_TOKEN: 'CODEBUDDY_AUTH_TOKEN',
+  BASE_URL: 'CODEBUDDY_BASE_URL',
+  MODEL: 'CODEBUDDY_MODEL',
+  SMALL_FAST_MODEL: 'CODEBUDDY_SMALL_FAST_MODEL',
+  BIG_SLOW_MODEL: 'CODEBUDDY_BIG_SLOW_MODEL',
+  // Legacy alias cleaned to avoid stale values from older ClaudeCode-style configs
+  MODEL_LEGACY: 'ANTHROPIC_MODEL',
+} as const
+
+const CODEBUDDY_MODEL_ENV_KEYS = [
+  CODEBUDDY_ENV_KEYS.MODEL,
+  CODEBUDDY_ENV_KEYS.SMALL_FAST_MODEL,
+  CODEBUDDY_ENV_KEYS.BIG_SLOW_MODEL,
+  CODEBUDDY_ENV_KEYS.MODEL_LEGACY,
+] as const
+
+/**
+ * Clear CodeBuddy model-related env keys from a settings.env object.
+ * Independent from ClaudeCode's clearModelEnv — CodeBuddy uses CODEBUDDY_* naming.
+ */
+export function clearCodebuddyModelEnv(env: Record<string, string | undefined>): void {
+  for (const key of CODEBUDDY_MODEL_ENV_KEYS) {
+    delete env[key]
+  }
+}
+
+/**
+ * Clear all CodeBuddy auth/model env keys from a settings.env object.
+ */
+export function clearCodebuddyAuthEnv(env: Record<string, string | undefined>): void {
+  delete env[CODEBUDDY_ENV_KEYS.API_KEY]
+  delete env[CODEBUDDY_ENV_KEYS.AUTH_TOKEN]
+  delete env[CODEBUDDY_ENV_KEYS.BASE_URL]
+  clearCodebuddyModelEnv(env)
+}
 
 export interface OperationResult {
   success: boolean
@@ -25,8 +64,12 @@ export class CodeBuddyConfigManager {
         settings.env = {}
       }
 
-      // Clean model variables upfront; will re-set based on profile below
-      clearModelEnv(settings.env)
+      // Clean CodeBuddy model env keys upfront; will re-set based on profile below
+      clearCodebuddyModelEnv(settings.env)
+      // Also clear auth keys so switching profiles doesn't leave stale credentials
+      delete settings.env[CODEBUDDY_ENV_KEYS.API_KEY]
+      delete settings.env[CODEBUDDY_ENV_KEYS.AUTH_TOKEN]
+      delete settings.env[CODEBUDDY_ENV_KEYS.BASE_URL]
 
       if (!profile) {
         writeJsonConfig(CODEBUDDY_SETTINGS_FILE, settings)
@@ -34,29 +77,30 @@ export class CodeBuddyConfigManager {
       }
 
       if (profile.authType === 'api_key') {
-        settings.env.ANTHROPIC_API_KEY = profile.apiKey
-        delete settings.env.ANTHROPIC_AUTH_TOKEN
+        settings.env[CODEBUDDY_ENV_KEYS.API_KEY] = profile.apiKey
       }
       else if (profile.authType === 'auth_token') {
-        settings.env.ANTHROPIC_AUTH_TOKEN = profile.apiKey
-        delete settings.env.ANTHROPIC_API_KEY
+        settings.env[CODEBUDDY_ENV_KEYS.AUTH_TOKEN] = profile.apiKey
       }
 
       if (profile.baseUrl) {
-        settings.env.ANTHROPIC_BASE_URL = profile.baseUrl
+        settings.env[CODEBUDDY_ENV_KEYS.BASE_URL] = profile.baseUrl
       }
 
       if (profile.primaryModel) {
-        settings.env.ANTHROPIC_MODEL = profile.primaryModel
+        settings.env[CODEBUDDY_ENV_KEYS.MODEL] = profile.primaryModel
       }
       if (profile.defaultHaikuModel) {
-        settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = profile.defaultHaikuModel
+        settings.env[CODEBUDDY_ENV_KEYS.SMALL_FAST_MODEL] = profile.defaultHaikuModel
       }
       if (profile.defaultSonnetModel) {
-        settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL = profile.defaultSonnetModel
+        settings.env[CODEBUDDY_ENV_KEYS.BIG_SLOW_MODEL] = profile.defaultSonnetModel
       }
       if (profile.defaultOpusModel) {
-        settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL = profile.defaultOpusModel
+        // CodeBuddy has no OPUS equivalent; map to BIG_SLOW_MODEL if not already set
+        if (!settings.env[CODEBUDDY_ENV_KEYS.BIG_SLOW_MODEL]) {
+          settings.env[CODEBUDDY_ENV_KEYS.BIG_SLOW_MODEL] = profile.defaultOpusModel
+        }
       }
 
       writeJsonConfig(CODEBUDDY_SETTINGS_FILE, settings)

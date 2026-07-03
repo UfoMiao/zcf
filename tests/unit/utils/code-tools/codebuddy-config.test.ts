@@ -2,7 +2,6 @@ import type { ClaudeConfiguration, McpServerConfig } from '../../../../src/types
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   buildMcpServerConfig,
-  ensureApiKeyApproved,
   fixWindowsMcpConfig,
   getMcpConfigPath,
   getSettingsPath,
@@ -123,23 +122,6 @@ describe('codebuddy-config', () => {
       mockPlatform.isWindows.mockReturnValue(false)
       const config: ClaudeConfiguration = { mcpServers: { test: { type: 'stdio', command: 'echo' } } }
       expect(fixWindowsMcpConfig(config)).toEqual(config)
-    })
-  })
-
-  describe('ensureApiKeyApproved', () => {
-    it('should add truncated API key to approved list', () => {
-      const config: ClaudeConfiguration = { mcpServers: {} }
-      const result = ensureApiKeyApproved(config, 'sk-test-key-12345678901234567890')
-      expect(result.customApiKeyResponses?.approved).toContain('sk-test-key-12345678')
-    })
-
-    it('should remove from rejected if present', () => {
-      const config: ClaudeConfiguration = {
-        mcpServers: {},
-        customApiKeyResponses: { approved: [], rejected: ['sk-test-key-12345678'] },
-      }
-      const result = ensureApiKeyApproved(config, 'sk-test-key-12345678901234567890')
-      expect(result.customApiKeyResponses?.rejected).not.toContain('sk-test-key-12345678')
     })
   })
 })

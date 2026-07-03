@@ -76,5 +76,6 @@
   "duplicateWarningContinue": "Acknowledged duplicate installation risk, continue",
   "versionMismatchWarning": "⚠️ Version mismatch: npm is {npmVersion}, Homebrew is {homebrewVersion}",
   "activatingHomebrew": "Activating Homebrew installation...",
-  "autoRemovingNpm": "Silent mode: Auto-removing npm installation and keeping Homebrew..."
+  "autoRemovingNpm": "Silent mode: Auto-removing npm installation and keeping Homebrew...",
+  "codebuddyMdCreated": "Created CODEBUDDY.md at {path}"
 }

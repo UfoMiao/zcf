@@ -86,7 +86,7 @@ describe('codebuddy-config-manager', () => {
 
       const call = mockJsonConfig.writeJsonConfig.mock.calls[0] as [string, any]
       expect(call[0]).toBe('/test/.codebuddy/settings.json')
-      expect(call[1].env.ANTHROPIC_API_KEY).toBe('sk-test')
+      expect(call[1].env.CODEBUDDY_API_KEY).toBe('sk-test')
     })
 
     it('should write auth token to settings.json env', async () => {
@@ -98,15 +98,15 @@ describe('codebuddy-config-manager', () => {
       }
 
       await CodeBuddyConfigManager.applyProfileSettings(profile)
-      expect((mockJsonConfig.writeJsonConfig.mock.calls[0] as [string, any])[1].env.ANTHROPIC_AUTH_TOKEN).toBe('token-123')
+      expect((mockJsonConfig.writeJsonConfig.mock.calls[0] as [string, any])[1].env.CODEBUDDY_AUTH_TOKEN).toBe('token-123')
     })
 
     it('should clear env when profile is null', async () => {
-      mockJsonConfig.readJsonConfig.mockReturnValue({ env: { ANTHROPIC_API_KEY: 'old-key' } })
+      mockJsonConfig.readJsonConfig.mockReturnValue({ env: { CODEBUDDY_API_KEY: 'old-key' } })
 
       await CodeBuddyConfigManager.applyProfileSettings(null)
       const call = mockJsonConfig.writeJsonConfig.mock.calls[0] as [string, any]
-      expect(call[1].env.ANTHROPIC_API_KEY).toBeUndefined()
+      expect(call[1].env.CODEBUDDY_API_KEY).toBeUndefined()
     })
   })
 
