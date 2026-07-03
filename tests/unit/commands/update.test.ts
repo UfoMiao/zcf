@@ -273,18 +273,26 @@ describe('update command', () => {
       codebuddyUpdateSpy.mockRestore()
     })
 
-    it('should handle errors gracefully', async () => {
+    it('should fall back to default code tool when codeType is invalid and no config is saved', async () => {
       const { update } = await import('../../../src/commands/update')
-      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
-      const error = new Error('Test error')
+      const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { updatePromptOnly: _updatePromptOnly } = await import('../../../src/utils/config-operations')
+      const { resolveAiOutputLanguage, resolveTemplateLanguage } = await import('../../../src/utils/prompts')
+      const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
 
-      vi.mocked(readZcfConfig).mockImplementation(() => {
-        throw error
-      })
+      vi.mocked(readZcfConfig).mockReturnValue(undefined as any)
+      vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
+      vi.mocked(resolveTemplateLanguage).mockResolvedValue('en')
+      vi.mocked(resolveAiOutputLanguage).mockResolvedValue('english')
+      vi.mocked(_updatePromptOnly).mockResolvedValue(undefined)
+      vi.mocked(selectAndInstallWorkflows).mockResolvedValue(undefined)
 
-      await update({ skipBanner: true })
+      await update({ codeType: 'invalid' as any, skipBanner: true })
 
-      expect(console.error).toHaveBeenCalled()
+      expect(_updatePromptOnly).toHaveBeenCalled()
+      expect(updateZcfConfig).toHaveBeenCalledWith(
+        expect.objectContaining({ codeToolType: 'claude-code' }),
+      )
     })
   })
 })

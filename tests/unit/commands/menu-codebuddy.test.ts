@@ -265,4 +265,47 @@ describe('menu codebuddy', () => {
 
     await expect(showMainMenu()).resolves.not.toThrow()
   })
+
+  it('should validate codebuddy menu choices', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codebuddy' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+    await showMainMenu()
+
+    const promptConfig = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
+    expect(promptConfig.validate('1')).toBe(true)
+    expect(promptConfig.validate('x')).toBe('common:invalidChoice')
+  })
+
+  it('should handle switch to same code tool', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codebuddy' } as any)
+    vi.mocked(inquirer.prompt)
+      .mockResolvedValueOnce({ choice: 's' })
+      .mockResolvedValueOnce({ tool: 'codebuddy' })
+      .mockResolvedValueOnce({ choice: 'q' })
+
+    await showMainMenu()
+
+    expect(updateZcfConfig).not.toHaveBeenCalled()
+  })
+
+  it('should exit menu when user declines to continue', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { runCodebuddyFullInit } = await import('../../../src/utils/code-tools/codebuddy')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codebuddy' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '1' })
+    queuePromptBooleans(false)
+
+    await showMainMenu()
+
+    expect(runCodebuddyFullInit).toHaveBeenCalled()
+  })
 })

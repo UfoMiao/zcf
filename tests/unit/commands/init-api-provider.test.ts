@@ -96,6 +96,7 @@ describe('init command - API provider preset', () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    vi.spyOn(process, 'exit').mockImplementation((() => {}) as any)
   })
 
   describe('validateSkipPromptOptions - provider validation', () => {
@@ -662,6 +663,95 @@ describe('init command - API provider preset', () => {
           profiles: expect.any(Object),
         }),
       )
+    })
+
+    it('should infer configLang from i18n for codebuddy interactive mode', async () => {
+      const { init } = await import('../../../src/commands/init')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { runCodebuddyFullInit } = await import('../../../src/utils/code-tools/codebuddy')
+
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'codebuddy',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+
+      await init({
+        skipBanner: true,
+        codeType: 'codebuddy',
+      })
+
+      expect(runCodebuddyFullInit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          configLang: 'en',
+          skipPrompt: undefined,
+        }),
+      )
+    })
+
+    it('should fall back to default code tool when resolveCodeType fails', async () => {
+      const { init } = await import('../../../src/commands/init')
+      const codeTypeResolver = await import('../../../src/utils/code-type-resolver')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { getInstallationStatus } = await import('../../../src/utils/installer')
+      const { existsSync } = await import('node:fs')
+      const { configureApi } = await import('../../../src/utils/config')
+
+      const resolveSpy = vi.spyOn(codeTypeResolver, 'resolveCodeType').mockRejectedValueOnce(new Error('bad type'))
+
+      vi.mocked(getInstallationStatus).mockResolvedValue({
+        hasGlobal: true,
+        hasLocal: false,
+        localPath: '/test/.claude/local/claude',
+      })
+      vi.mocked(existsSync).mockReturnValue(false)
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'claude-code',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+      vi.mocked(configureApi).mockReturnValue({ url: 'https://api.anthropic.com', key: 'k' })
+
+      await init({
+        skipBanner: true,
+        skipPrompt: true,
+        codeType: 'invalid',
+        apiType: 'api_key',
+        apiKey: 'k',
+        configLang: 'en',
+        aiOutputLang: 'en',
+      })
+
+      expect(configureApi).toHaveBeenCalled()
+      resolveSpy.mockRestore()
+    })
+
+    it('should report and rethrow codebuddy multi-config conversion errors', async () => {
+      const { init } = await import('../../../src/commands/init')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const codebuddyManager = await import('../../../src/utils/code-tools/codebuddy-config-manager')
+
+      vi.mocked(readZcfConfig).mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'codebuddy',
+        lastUpdated: new Date().toISOString(),
+      } as any)
+      vi.mocked(codebuddyManager.CodeBuddyConfigManager.generateProfileId).mockImplementationOnce(() => {
+        throw new Error('profile conversion failed')
+      })
+
+      await init({
+        skipBanner: true,
+        skipPrompt: true,
+        codeType: 'codebuddy',
+        apiConfigs: JSON.stringify([{ name: 'bad', provider: 'custom', key: 'k' }]),
+      })
+
+      expect(console.error).toHaveBeenCalled()
+      expect(process.exit).toHaveBeenCalledWith(1)
     })
   })
 })

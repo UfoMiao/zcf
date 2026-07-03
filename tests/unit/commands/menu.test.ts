@@ -35,6 +35,8 @@ vi.mock('../../../src/utils/features', () => ({
   configureMcpFeature: vi.fn(),
   configureDefaultModelFeature: vi.fn(),
   configureAiMemoryFeature: vi.fn(),
+  configureCodexDefaultModelFeature: vi.fn(),
+  configureCodexAiMemoryFeature: vi.fn(),
   clearZcfCacheFeature: vi.fn(),
   changeScriptLanguageFeature: vi.fn(),
   configureEnvPermissionFeature: vi.fn(),
@@ -373,6 +375,158 @@ describe('menu command', () => {
 
       expect(handleGeneralError).toHaveBeenCalledWith(error)
     })
+  })
+
+  it('should validate claude-code menu choices', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+    await showMainMenu()
+
+    const promptConfig = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
+    expect(promptConfig.validate('1')).toBe(true)
+    expect(promptConfig.validate('x')).toBe('common:invalidChoice')
+  })
+
+  it('should validate codex menu choices', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValue({ choice: 'q' })
+
+    await showMainMenu()
+
+    const promptConfig = vi.mocked(inquirer.prompt).mock.calls[0][0] as any
+    expect(promptConfig.validate('1')).toBe(true)
+    expect(promptConfig.validate('x')).toBe('common:invalidChoice')
+  })
+
+  it('should handle claude-code update option', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { update } = await import('../../../src/commands/update')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '2' })
+    queuePromptBooleans(false)
+    vi.mocked(update).mockResolvedValue(undefined)
+
+    await showMainMenu()
+
+    expect(update).toHaveBeenCalledWith({ skipBanner: true })
+  })
+
+  it('should ignore invalid claude-code choices and continue', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
+    vi.mocked(inquirer.prompt)
+      .mockResolvedValueOnce({ choice: 'x' })
+      .mockResolvedValueOnce({ choice: 'q' })
+
+    await expect(showMainMenu()).resolves.not.toThrow()
+  })
+
+  it('should handle codex import workflow option', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { runCodexWorkflowImportWithLanguageSelection } = await import('../../../src/utils/code-tools/codex')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '2' })
+    queuePromptBooleans(false)
+
+    await showMainMenu()
+
+    expect(runCodexWorkflowImportWithLanguageSelection).toHaveBeenCalled()
+  })
+
+  it('should handle codex configure API option', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { configureCodexApi } = await import('../../../src/utils/code-tools/codex')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '3' })
+    queuePromptBooleans(false)
+
+    await showMainMenu()
+
+    expect(configureCodexApi).toHaveBeenCalled()
+  })
+
+  it('should handle codex configure MCP option', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { configureCodexMcp } = await import('../../../src/utils/code-tools/codex')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '4' })
+    queuePromptBooleans(false)
+
+    await showMainMenu()
+
+    expect(configureCodexMcp).toHaveBeenCalled()
+  })
+
+  it('should handle codex configure model option', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { configureCodexDefaultModelFeature } = await import('../../../src/utils/features')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '5' })
+    queuePromptBooleans(false)
+
+    await showMainMenu()
+
+    expect(configureCodexDefaultModelFeature).toHaveBeenCalled()
+  })
+
+  it('should handle codex configure AI memory option', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+    const { configureCodexAiMemoryFeature } = await import('../../../src/utils/features')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '6' })
+    queuePromptBooleans(false)
+
+    await showMainMenu()
+
+    expect(configureCodexAiMemoryFeature).toHaveBeenCalled()
+  })
+
+  it('should handle codex switch to same tool', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt)
+      .mockResolvedValueOnce({ choice: 's' })
+      .mockResolvedValueOnce({ tool: 'codex' })
+      .mockResolvedValueOnce({ choice: 'q' })
+
+    await showMainMenu()
+
+    expect(updateZcfConfig).not.toHaveBeenCalled()
+  })
+
+  it('should ignore invalid codex choices and continue', async () => {
+    const { showMainMenu } = await import('../../../src/commands/menu')
+    const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+
+    vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+    vi.mocked(inquirer.prompt)
+      .mockResolvedValueOnce({ choice: 'x' })
+      .mockResolvedValueOnce({ choice: 'q' })
+
+    await expect(showMainMenu()).resolves.not.toThrow()
   })
 
   // Extended Tests

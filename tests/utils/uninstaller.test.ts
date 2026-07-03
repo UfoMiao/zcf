@@ -15,6 +15,10 @@ vi.mock('../../src/utils/installer', () => ({
   uninstallCodeTool: vi.fn(),
 }))
 
+vi.mock('../../src/constants', () => ({
+  ZCF_CONFIG_FILE: '/home/user/.ufomiao/zcf/config.toml',
+}))
+
 // Mock modules
 const mockFs = vi.hoisted(() => ({
   existsSync: vi.fn(),
@@ -455,6 +459,121 @@ describe('zcfUninstaller', () => {
 
       expect(result.success).toBe(true)
       expect(result.removed).toContain('~/.claude/')
+    })
+  })
+
+  describe('warning branches', () => {
+    it('should warn when output-styles trash fails', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockJsonConfig.readJsonConfig.mockReturnValue({})
+      mockTrash.moveToTrash.mockResolvedValue([{ success: false, error: 'trash failed' }])
+
+      const result = await uninstaller.removeOutputStyles()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('trash failed')
+    })
+
+    it('should warn when CLAUDE.md trash fails', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockTrash.moveToTrash.mockResolvedValue([{ success: false, error: 'trash failed' }])
+
+      const result = await uninstaller.removeClaudeMd()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('trash failed')
+    })
+
+    it('should warn when permissions settings.json is missing', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(false)
+
+      const result = await uninstaller.removePermissionsAndEnvs()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('settingsJsonNotFound')
+    })
+
+    it('should warn when MCP settings.json is missing', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(false)
+
+      const result = await uninstaller.removeMcps()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('claudeJsonNotFound')
+    })
+
+    it('should warn when CCR directory trash fails', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockTrash.moveToTrash.mockResolvedValue([{ success: false, error: 'trash failed' }])
+      mockExec.exec.mockResolvedValue({ stdout: 'uninstalled', stderr: '' })
+
+      const result = await uninstaller.uninstallCcr()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('trash failed')
+    })
+
+    it('should warn when backups directory is missing', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(false)
+
+      const result = await uninstaller.removeBackups()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('backupsNotFound')
+    })
+
+    it('should warn when ZCF config file is missing', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(false)
+
+      const result = await uninstaller.removeZcfConfig()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('zcfConfigNotFound')
+    })
+  })
+
+  describe('uninstallClaudeCode edge cases', () => {
+    it('should warn when .claude.json trash fails', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockTrash.moveToTrash.mockResolvedValue([{ success: false, error: 'trash failed' }])
+      mockUninstallCodeTool.mockResolvedValue(true)
+
+      const result = await uninstaller.uninstallClaudeCode()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings).toContain('trash failed')
+    })
+
+    it('should report error when uninstallCodeTool returns false', async () => {
+      mockFsExtra.pathExists.mockResolvedValue(true)
+      mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
+      mockUninstallCodeTool.mockResolvedValue(false)
+
+      const result = await uninstaller.uninstallClaudeCode()
+
+      expect(result.success).toBe(false)
+      expect(result.errors.length).toBeGreaterThan(0)
+    })
+
+    it('should handle outer errors gracefully', async () => {
+      mockFsExtra.pathExists.mockRejectedValue(new Error('outer error'))
+
+      const result = await uninstaller.uninstallClaudeCode()
+
+      expect(result.success).toBe(false)
+      expect(result.errors[0]).toMatch(/uninstallFailed/)
+    })
+  })
+
+  describe('completeUninstall edge cases', () => {
+    it('should warn on unexpected package uninstall failures', async () => {
+      mockTrash.moveToTrash.mockResolvedValue([{ success: true }])
+      mockExec.exec.mockRejectedValue(new Error('unexpected failure'))
+
+      const result = await uninstaller.completeUninstall()
+
+      expect(result.success).toBe(true)
+      expect(result.warnings.some(w => w.includes('unexpected failure'))).toBe(true)
     })
   })
 
