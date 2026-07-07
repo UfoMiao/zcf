@@ -2,6 +2,7 @@ import type { CAC } from 'cac'
 import type { CodeToolType, SupportedLang } from './constants'
 import ansis from 'ansis'
 import { version } from '../package.json'
+import { listAgents, registerAllAgents } from './adapters'
 import { ccr } from './commands/ccr'
 import { executeCcusage } from './commands/ccu'
 import { checkUpdates } from './commands/check-updates'
@@ -131,6 +132,11 @@ export function customizeHelp(sections: any[]): any[] {
     ].join('\n'),
   })
 
+  const registeredAgents = listAgents()
+  const agentList = registeredAgents
+    .map(a => `${a.id}${a.aliases.length ? ` (${a.aliases.join(', ')})` : ''}`)
+    .join(', ')
+
   // Add options section
   sections.push({
     title: ansis.yellow(i18n.t('cli:help.options')),
@@ -150,14 +156,15 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.green('--api-haiku-model, -H')} <model> ${i18n.t('cli:help.optionDescriptions.apiHaikuModel')} (e.g., claude-haiku-4-5)`,
       `  ${ansis.green('--api-sonnet-model, -S')} <model> ${i18n.t('cli:help.optionDescriptions.apiSonnetModel')} (e.g., claude-sonnet-4-5)`,
       `  ${ansis.green('--api-opus-model, -O')} <model> ${i18n.t('cli:help.optionDescriptions.apiOpusModel')} (e.g., claude-opus-4-5)`,
-      `  ${ansis.green('--ai-output-lang, -a')} <lang> ${i18n.t('cli:help.optionDescriptions.aiOutputLanguage')}`,
+      `  ${ansis.green('--ai-output-lang, -A')} <lang> ${i18n.t('cli:help.optionDescriptions.aiOutputLanguage')}`,
       `  ${ansis.green('--all-lang, -g')} <lang>     ${i18n.t('cli:help.optionDescriptions.setAllLanguageParams')}`,
       `  ${ansis.green('--config-action, -r')} <action> ${i18n.t('cli:help.optionDescriptions.configHandling')} (${i18n.t('cli:help.defaults.prefix')} backup)`,
       `  ${ansis.green('--mcp-services, -m')} <list>  ${i18n.t('cli:help.optionDescriptions.mcpServices')} (${i18n.t('cli:help.defaults.prefix')} all non-key services)`,
       `  ${ansis.green('--workflows, -w')} <list>    ${i18n.t('cli:help.optionDescriptions.workflows')} (${i18n.t('cli:help.defaults.prefix')} all workflows)`,
       `  ${ansis.green('--output-styles, -o')} <styles> ${i18n.t('cli:help.optionDescriptions.outputStyles')} (${i18n.t('cli:help.defaults.prefix')} all custom styles)`,
       `  ${ansis.green('--default-output-style, -d')} <style> ${i18n.t('cli:help.optionDescriptions.defaultOutputStyle')} (${i18n.t('cli:help.defaults.prefix')} engineer-professional)`,
-      `  ${ansis.green('--code-type, -T')} <type>   ${i18n.t('cli:help.optionDescriptions.codeToolType')} (claude-code, codex, cc=claude-code, cx=codex)`,
+      `  ${ansis.green('--agent, -a')} <agent>      ${i18n.t('cli:help.optionDescriptions.agent')} (${agentList})`,
+      `  ${ansis.green('--code-type, -T')} <type>   ${i18n.t('cli:help.optionDescriptions.codeToolTypeAlias')} (${agentList})`,
       `  ${ansis.green('--install-cometix-line, -x')} <value> ${i18n.t('cli:help.optionDescriptions.installStatuslineTool')} (${i18n.t('cli:help.defaults.prefix')} true)`,
     ].join('\n'),
   })
@@ -191,12 +198,12 @@ export function customizeHelp(sections: any[]): any[] {
       `  ${ansis.cyan('npx zcf check')}`,
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkClaudeCode')}`),
-      `  ${ansis.cyan('npx zcf check --code-type claude-code')}`,
-      `  ${ansis.cyan('npx zcf check -T cc')}`,
+      `  ${ansis.cyan('npx zcf check --agent claude-code')}`,
+      `  ${ansis.cyan('npx zcf check -a cc')}`,
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.checkCodex')}`),
-      `  ${ansis.cyan('npx zcf check --code-type codex')}`,
-      `  ${ansis.cyan('npx zcf check -T cx')}`,
+      `  ${ansis.cyan('npx zcf check --agent codex')}`,
+      `  ${ansis.cyan('npx zcf check -a cx')}`,
       '',
       ansis.gray(`  # ${i18n.t('cli:help.exampleDescriptions.nonInteractiveModeCicd')}`),
       `  ${ansis.cyan('npx zcf i --skip-prompt --api-type api_key --api-key "sk-ant-..."')}`,
@@ -210,6 +217,9 @@ export function customizeHelp(sections: any[]): any[] {
 }
 
 export async function setupCommands(cli: CAC): Promise<void> {
+  // Register agent adapters before any command resolves code types.
+  registerAllAgents()
+
   // Use async initialization to ensure help text displays correctly
   try {
     // Try to get language from existing config for help system
@@ -229,9 +239,10 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
     .option('--force, -f', 'Force overwrite existing configuration')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--agent, -a <agent>', 'Select target agent (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Alias for --agent')
     .action(await withLanguageResolution(async (options) => {
-      await showMainMenu({ codeType: options.codeType })
+      await showMainMenu({ codeType: options.agent || options.codeType })
     }))
 
   // Init command
@@ -240,7 +251,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .alias('i')
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--config-lang, -c <lang>', 'Configuration language (zh-CN, en)')
-    .option('--ai-output-lang, -a <lang>', 'AI output language')
+    .option('--ai-output-lang, -A <lang>', 'AI output language')
     .option('--force, -f', 'Force overwrite existing configuration')
     .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
     .option('--config-action, -r <action>', `Config handling (new/backup/merge/docs-only/skip), ${i18n.t('cli:help.defaults.prefix')} backup`)
@@ -257,12 +268,13 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--output-styles, -o <styles>', `Comma-separated output styles (engineer-professional,nekomata-engineer,laowang-engineer,default,explanatory,learning), "skip" to skip all, "all" for all custom styles, ${i18n.t('cli:help.defaults.prefix')} all`)
     .option('--default-output-style, -d <style>', `Default output style, ${i18n.t('cli:help.defaults.prefix')} engineer-professional`)
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--agent, -a <agent>', 'Select target agent (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Alias for --agent')
     .option('--install-cometix-line, -x <value>', `Install CCometixLine statusline tool (true/false), ${i18n.t('cli:help.defaults.prefix')} true`)
-    .option('--api-configs <configs>', 'API configurations as JSON string for multiple profiles')
-    .option('--api-configs-file <file>', 'Path to JSON file containing API configurations')
+    .option('--api-configs, -C <configs>', 'API configurations as JSON string for multiple profiles')
+    .option('--api-configs-file, -F <file>', 'Path to JSON file containing API configurations')
     .action(await withLanguageResolution(async (options) => {
-      await init(options)
+      await init({ ...options, codeType: options.agent || options.codeType })
     }))
 
   // Update command
@@ -299,14 +311,15 @@ export async function setupCommands(cli: CAC): Promise<void> {
   cli
     .command('config-switch [target]', 'Switch Codex provider or Claude Code configuration, or list available configurations')
     .alias('cs')
-    .option('--code-type, -T <type>', 'Code tool type (claude-code, codex, cc, cx)')
-    .option('--lang <lang>', 'ZCF display language (zh-CN, en)')
+    .option('--agent, -a <type>', 'Target agent (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <type>', 'Alias for --agent')
+    .option('--lang, -L <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
     .option('--list, -l', 'List available configurations')
     .action(await withLanguageResolution(async (target, options) => {
       await configSwitchCommand({
         target,
-        codeType: options.codeType,
+        codeType: options.agent || options.codeType,
         list: options.list,
       })
     }))
@@ -316,11 +329,12 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .command('uninstall', 'Remove ZCF configurations and tools')
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--agent, -a <agent>', 'Select target agent (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Alias for --agent')
     .option('--mode, -m <mode>', 'Uninstall mode (complete/custom/interactive), default: interactive')
     .option('--items, -i <items>', 'Comma-separated items for custom uninstall mode')
     .action(await withLanguageResolution(async (options) => {
-      await uninstall(options)
+      await uninstall({ ...options, codeType: options.agent || options.codeType })
     }))
 
   // Check updates command
@@ -329,10 +343,11 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .alias('check')
     .option('--lang, -l <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--code-type, -T <codeType>', 'Select code tool type (claude-code, codex, cc, cx)')
+    .option('--agent, -a <agent>', 'Select target agent (claude-code, codex, cc, cx)')
+    .option('--code-type, -T <codeType>', 'Alias for --agent')
     .option('--skip-prompt, -s', 'Skip all interactive prompts (non-interactive mode)')
     .action(await withLanguageResolution(async (options) => {
-      await checkUpdates(options)
+      await checkUpdates({ ...options, codeType: options.agent || options.codeType })
     }))
 
   // Custom help

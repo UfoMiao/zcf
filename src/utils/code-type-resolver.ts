@@ -3,52 +3,68 @@ import { DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { i18n } from '../i18n'
 import { readZcfConfigAsync } from './zcf-config'
 
-/**
- * Code type abbreviation mapping
- */
-const CODE_TYPE_ABBREVIATIONS: Record<string, CodeToolType> = {
-  cc: 'claude-code',
-  cx: 'codex',
-} as const
+type AdaptersModule = typeof import('../adapters')
+
+let adaptersPromise: Promise<AdaptersModule> | undefined
+
+async function getAdapters(): Promise<AdaptersModule> {
+  if (!adaptersPromise) {
+    adaptersPromise = import('../adapters')
+  }
+  return adaptersPromise
+}
+
+async function ensureAgentsRegistered(): Promise<void> {
+  const adapters = await getAdapters()
+  if (adapters.listAgentIds().length === 0) {
+    adapters.registerAllAgents()
+  }
+}
+
+function getValidOptions(adapters: AdaptersModule): string {
+  const agentList = adapters.listAgents()
+  const ids = agentList.map(a => a.id)
+  const aliases = agentList.flatMap(a => a.aliases)
+  return [...new Set([...ids, ...aliases])].sort().join(', ')
+}
 
 /**
- * Resolve code type from parameter, abbreviation, or default config
+ * Resolve code type from parameter, abbreviation, or default config.
+ *
+ * Phase 0-2 (UFO-131) delegates resolution to the agent registry while
+ * preserving the legacy CodeToolType return type for existing commands.
+ *
  * @param codeTypeParam - Code type parameter from command line
  * @returns Resolved code tool type
  */
 export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolType> {
-  // If parameter is provided, resolve it
+  const adapters = await getAdapters()
+  await ensureAgentsRegistered()
+
+  // If parameter is provided, resolve it via the registry
   if (codeTypeParam) {
     const normalizedParam = codeTypeParam.toLowerCase().trim()
 
-    // Check if it's an abbreviation
-    if (normalizedParam in CODE_TYPE_ABBREVIATIONS) {
-      return CODE_TYPE_ABBREVIATIONS[normalizedParam]
-    }
-
-    // Check if it's a valid full code type
-    if (isValidCodeType(normalizedParam)) {
-      return normalizedParam as CodeToolType
+    if (adapters.isAgentRegistered(normalizedParam)) {
+      const adapter = adapters.resolveAgent(normalizedParam)!
+      return adapter.id as CodeToolType
     }
 
     // Prepare valid options for error message
-    const validAbbreviations = Object.keys(CODE_TYPE_ABBREVIATIONS)
-    const validFullTypes = Object.values(CODE_TYPE_ABBREVIATIONS)
-    const validOptions = [...validAbbreviations, ...validFullTypes].join(', ')
+    const validOptions = getValidOptions(adapters)
 
     // Get the actual default value that will be used
     let defaultValue = DEFAULT_CODE_TOOL_TYPE
     try {
       const config = await readZcfConfigAsync()
-      if (config?.codeToolType && isValidCodeType(config.codeToolType)) {
-        defaultValue = config.codeToolType
+      if (config?.codeToolType && adapters.isAgentRegistered(config.codeToolType)) {
+        defaultValue = adapters.resolveAgent(config.codeToolType)!.id as CodeToolType
       }
     }
     catch {
       // If config reading fails, use DEFAULT_CODE_TOOL_TYPE
     }
 
-    // Use i18n for error message
     throw new Error(
       i18n.t('errors:invalidCodeType', { value: codeTypeParam, validOptions, defaultValue }),
     )
@@ -57,8 +73,8 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
   // No parameter provided, use config default
   try {
     const config = await readZcfConfigAsync()
-    if (config?.codeToolType && isValidCodeType(config.codeToolType)) {
-      return config.codeToolType
+    if (config?.codeToolType && adapters.isAgentRegistered(config.codeToolType)) {
+      return adapters.resolveAgent(config.codeToolType)!.id as CodeToolType
     }
   }
   catch {
@@ -70,10 +86,10 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
 }
 
 /**
- * Check if a value is a valid code tool type
- * @param value - Value to check
- * @returns True if valid code tool type
+ * Check if a value is a valid code tool type or alias.
  */
-function isValidCodeType(value: string): value is CodeToolType {
-  return ['claude-code', 'codex'].includes(value)
+export async function isValidCodeType(value: string): Promise<boolean> {
+  const adapters = await getAdapters()
+  await ensureAgentsRegistered()
+  return adapters.isAgentRegistered(value)
 }

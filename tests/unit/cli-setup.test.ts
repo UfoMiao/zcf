@@ -216,8 +216,8 @@ describe('cli-setup', () => {
         expect(parsed.options.configLang).toBe('zh-CN')
       })
 
-      it('should recognize -a as shortcut for --ai-output-lang', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-a', 'en'], { run: false })
+      it('should recognize -A as shortcut for --ai-output-lang', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-A', 'en'], { run: false })
         expect(parsed.options.aiOutputLang).toBe('en')
       })
 
@@ -282,7 +282,7 @@ describe('cli-setup', () => {
       })
 
       it('should work with multiple new shortcuts together', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-s', '-c', 'zh-CN', '-a', 'en', '-t', 'api_key'], { run: false })
+        const parsed = cli.parse(['node', 'test', 'init', '-s', '-c', 'zh-CN', '-A', 'en', '-t', 'api_key'], { run: false })
         expect(parsed.options.skipPrompt).toBe(true)
         expect(parsed.options.configLang).toBe('zh-CN')
         expect(parsed.options.aiOutputLang).toBe('en')
@@ -310,8 +310,8 @@ describe('cli-setup', () => {
         // All new single-character shortcuts should be present
         expect(optionsSection.body).toContain('-s') // skip-prompt
         expect(optionsSection.body).toContain('-c') // config-lang
-        expect(optionsSection.body).toContain('-a') // ai-output-lang
-        expect(optionsSection.body).toContain('-o') // config-action
+        expect(optionsSection.body).toContain('-A') // ai-output-lang
+        expect(optionsSection.body).toContain('-r') // config-action
         expect(optionsSection.body).toContain('-t') // api-type
         expect(optionsSection.body).toContain('-k') // api-key
         expect(optionsSection.body).toContain('-u') // api-url
@@ -321,6 +321,7 @@ describe('cli-setup', () => {
         expect(optionsSection.body).toContain('-g') // all-lang
         expect(optionsSection.body).toContain('-x') // install-cometix-line
         expect(optionsSection.body).toContain('-T') // code-type
+        expect(optionsSection.body).toContain('-a') // agent
       })
 
       it('should have proper formatting in help text', () => {
@@ -330,8 +331,9 @@ describe('cli-setup', () => {
         // Should contain properly formatted options
         expect(optionsSection.body).toContain('--skip-prompt, -s')
         expect(optionsSection.body).toContain('--config-lang, -c')
-        expect(optionsSection.body).toContain('--ai-output-lang, -a')
+        expect(optionsSection.body).toContain('--ai-output-lang, -A')
         expect(optionsSection.body).toContain('--code-type, -T')
+        expect(optionsSection.body).toContain('--agent, -a')
       })
     })
 

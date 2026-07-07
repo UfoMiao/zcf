@@ -1,0 +1,147 @@
+import type { ConfigMergeStrategy, SkillPackage } from '../adapters/adapter-interface'
+import { dirname, join } from 'pathe'
+import { copyFile, ensureDir, exists, readFile, writeFile } from '../utils/fs-operations'
+import { readJsonConfig, writeJsonConfig } from '../utils/json-config'
+import { parseToml, stringifyToml } from '../utils/toml-edit'
+
+export interface RenderResult {
+  source: string
+  target: string
+  strategy: ConfigMergeStrategy
+  changed: boolean
+}
+
+export interface TemplateEngineOptions {
+  /** Overwrite even when content is unchanged */
+  force?: boolean
+}
+
+/**
+ * Template engine for rendering agent configuration files and skill packages.
+ *
+ * Phase 0-2 (UFO-131) provides the five required strategies as thin wrappers
+ * over existing fs/config utilities. Deep TOML merging and skill transforms
+ * will be hardened in Phase 3-4 (UFO-132).
+ */
+export class TemplateEngine {
+  constructor(private readonly options: TemplateEngineOptions = {}) {}
+
+  /**
+   * Render a single source file to a target path using the configured strategy.
+   */
+  async renderFile(source: string, target: string, strategy: ConfigMergeStrategy): Promise<RenderResult> {
+    ensureDir(dirname(target))
+
+    switch (strategy) {
+      case 'copy':
+        return this.renderCopy(source, target)
+      case 'overwrite':
+        return this.renderOverwrite(source, target)
+      case 'merge':
+        return this.renderMerge(source, target)
+      case 'append':
+        return this.renderAppend(source, target)
+      case 'skip':
+        return { source, target, strategy, changed: false }
+      default:
+        throw new Error(`Unsupported merge strategy: ${strategy}`)
+    }
+  }
+
+  /**
+   * Render a skill package to its target directory.
+   */
+  async renderSkill(skill: SkillPackage): Promise<RenderResult> {
+    const target = join(skill.targetPath, 'SKILL.md')
+    ensureDir(dirname(target))
+
+    const changed = this.writeIfChanged(target, skill.body)
+    return {
+      source: skill.sourcePath,
+      target,
+      strategy: 'copy',
+      changed: changed || !!this.options.force,
+    }
+  }
+
+  private renderCopy(source: string, target: string): RenderResult {
+    const changed = !exists(target) || readFile(source) !== readFile(target)
+    if (changed || this.options.force) {
+      copyFile(source, target)
+    }
+    return { source, target, strategy: 'copy', changed: changed || !!this.options.force }
+  }
+
+  private renderOverwrite(source: string, target: string): RenderResult {
+    const content = readFile(source)
+    const changed = this.writeIfChanged(target, content)
+    return { source, target, strategy: 'overwrite', changed: changed || !!this.options.force }
+  }
+
+  private renderMerge(source: string, target: string): RenderResult {
+    const sourceContent = readFile(source)
+    const ext = this.detectExtension(source)
+
+    if (ext === 'json') {
+      return this.renderJsonMerge(source, target, sourceContent)
+    }
+
+    if (ext === 'toml') {
+      return this.renderTomlMerge(source, target, sourceContent)
+    }
+
+    throw new Error(`Merge strategy is not supported for file extension: ${ext || 'unknown'}`)
+  }
+
+  private renderJsonMerge(source: string, target: string, sourceContent: string): RenderResult {
+    const sourceData = JSON.parse(sourceContent) as Record<string, unknown>
+    const existing = readJsonConfig<Record<string, unknown>>(target, { defaultValue: {} })
+    const merged = { ...(existing || {}), ...sourceData }
+    const changed = JSON.stringify(existing) !== JSON.stringify(merged)
+
+    if (changed || this.options.force || !exists(target)) {
+      writeJsonConfig(target, merged)
+    }
+
+    return { source, target, strategy: 'merge', changed: changed || !!this.options.force }
+  }
+
+  private renderTomlMerge(source: string, target: string, sourceContent: string): RenderResult {
+    const sourceData = parseToml(sourceContent)
+    const existingContent = exists(target) ? readFile(target) : ''
+    const existing = existingContent ? parseToml(existingContent) : {}
+    const merged = { ...(existing as Record<string, unknown>), ...(sourceData as Record<string, unknown>) }
+    const changed = JSON.stringify(existing) !== JSON.stringify(merged)
+
+    if (changed || this.options.force || !exists(target)) {
+      writeFile(target, stringifyToml(merged))
+    }
+
+    return { source, target, strategy: 'merge', changed: changed || !!this.options.force }
+  }
+
+  private renderAppend(source: string, target: string): RenderResult {
+    const content = readFile(source)
+    const existing = exists(target) ? readFile(target) : ''
+
+    if (existing.includes(content)) {
+      return { source, target, strategy: 'append', changed: false }
+    }
+
+    const separator = existing.length && !existing.endsWith('\n') ? '\n' : ''
+    writeFile(target, `${existing}${separator}${content}`)
+    return { source, target, strategy: 'append', changed: true }
+  }
+
+  private writeIfChanged(target: string, content: string): boolean {
+    if (!exists(target) || readFile(target) !== content) {
+      writeFile(target, content)
+      return true
+    }
+    return false
+  }
+
+  private detectExtension(path: string): string {
+    return path.split('.').pop()?.toLowerCase() || ''
+  }
+}
