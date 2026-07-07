@@ -37,6 +37,10 @@ vi.mock('../../src/utils/code-tools/codex', () => ({
   switchToProvider: vi.fn(),
 }))
 
+vi.mock('../../src/utils/code-type-resolver', () => ({
+  resolveCodeType: vi.fn((value?: string) => Promise.resolve(value || 'codex')),
+}))
+
 vi.mock('../../src/utils/prompt-helpers', () => ({
   addNumbersToChoices: vi.fn(choices => choices),
 }))

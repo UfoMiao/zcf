@@ -2,13 +2,12 @@ import type { CodeToolType } from '../constants'
 import process from 'node:process'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
-import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { ClaudeCodeConfigManager } from '../utils/claude-code-config-manager'
 import { listCodexProviders, readCodexConfig, switchToOfficialLogin as switchCodexOfficialLogin, switchCodexProvider, switchToProvider } from '../utils/code-tools/codex'
+import { resolveCodeType } from '../utils/code-type-resolver'
 import { handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
-import { readZcfConfig } from '../utils/zcf-config'
 
 interface ConfigSwitchOptions {
   codeType?: CodeToolType // --code-type, -T
@@ -32,7 +31,7 @@ export async function configSwitchCommand(options: ConfigSwitchOptions): Promise
 
     // Handle direct switch
     if (options.target) {
-      const resolvedCodeType = resolveCodeType(options.codeType)
+      const resolvedCodeType = await resolveCodeToolTypeLocal(options.codeType)
       await handleDirectSwitch(resolvedCodeType, options.target)
       return
     }
@@ -53,27 +52,21 @@ export async function configSwitchCommand(options: ConfigSwitchOptions): Promise
  * Resolve code type with priority: parameter > ZCF config > default value (claude-code)
  * @param codeType - Code type from command line parameter (supports short aliases like 'cc', 'cx')
  */
-function resolveCodeType(codeType?: unknown): CodeToolType {
-  // First try to use the parameter value (supports short aliases)
-  if (codeType !== undefined) {
-    const resolved = resolveCodeToolType(codeType)
-    return resolved
+async function resolveCodeToolTypeLocal(codeType?: unknown): Promise<CodeToolType> {
+  // First try to use the parameter value (supports short aliases) via registry
+  if (codeType !== undefined && typeof codeType === 'string' && codeType.trim() !== '') {
+    return await resolveCodeType(codeType)
   }
 
-  // Fall back to ZCF config
-  const zcfConfig = readZcfConfig()
-  if (zcfConfig?.codeToolType && isCodeToolType(zcfConfig.codeToolType)) {
-    return zcfConfig.codeToolType
-  }
-
-  return DEFAULT_CODE_TOOL_TYPE
+  // Fall back to ZCF config via registry
+  return await resolveCodeType()
 }
 
 /**
  * Handle --list flag to show available configurations
  */
 async function handleList(codeType?: CodeToolType): Promise<void> {
-  const targetCodeType = resolveCodeType(codeType)
+  const targetCodeType = await resolveCodeToolTypeLocal(codeType)
 
   if (targetCodeType === 'claude-code') {
     await listClaudeCodeProfiles()
@@ -152,7 +145,7 @@ async function listClaudeCodeProfiles(): Promise<void> {
  * @param target - Target configuration ID or special value
  */
 async function handleDirectSwitch(codeType: CodeToolType, target: string): Promise<void> {
-  const resolvedCodeType = resolveCodeType(codeType)
+  const resolvedCodeType = await resolveCodeToolTypeLocal(codeType)
 
   if (resolvedCodeType === 'claude-code') {
     await handleClaudeCodeDirectSwitch(target)
@@ -248,7 +241,7 @@ async function handleClaudeCodeDirectSwitch(target: string): Promise<void> {
  * Handle interactive API configuration selection (includes official login + providers)
  */
 async function handleInteractiveSwitch(codeType?: CodeToolType): Promise<void> {
-  const resolvedCodeType = resolveCodeType(codeType)
+  const resolvedCodeType = await resolveCodeToolTypeLocal(codeType)
 
   if (resolvedCodeType === 'claude-code') {
     await handleClaudeCodeInteractiveSwitch()

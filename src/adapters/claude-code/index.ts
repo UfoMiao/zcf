@@ -2,6 +2,7 @@ import type { AgentAdapter, AgentConfigFile, AgentContext, AgentSkillSpec, Insta
 import { join } from 'pathe'
 import { ClAUDE_CONFIG_FILE, CLAUDE_DIR, CLAUDE_MD_FILE, CLAUDE_VSC_CONFIG_FILE, SETTINGS_FILE } from '../../constants'
 import { isClaudeCodeInstalled } from '../../utils/installer'
+import { createTimestampedBackup } from '../backup'
 
 const homeDir = CLAUDE_DIR
 
@@ -61,5 +62,9 @@ export const claudeCodeAdapter: AgentAdapter = {
   async uninstall(options: UninstallOptions, _ctx: AgentContext): Promise<void> {
     const { uninstall } = await import('../../commands/uninstall')
     await uninstall(toUninstallOptions(options) as any)
+  },
+
+  async backup(file: AgentConfigFile): Promise<string | null> {
+    return createTimestampedBackup(file, homeDir)
   },
 }

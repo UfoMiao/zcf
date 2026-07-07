@@ -1,6 +1,7 @@
 import type { AgentAdapter, AgentConfigFile, AgentContext, AgentSkillSpec, InstallOptions, UninstallOptions, UpdateOptions } from '../adapter-interface'
 import { homedir } from 'node:os'
 import { join } from 'pathe'
+import { createTimestampedBackup } from '../backup'
 
 const homeDir = join(homedir(), '.opencode')
 
@@ -53,5 +54,9 @@ export const opencodeAdapter: AgentAdapter = {
 
   async uninstall(_options: UninstallOptions, _ctx: AgentContext): Promise<void> {
     throw new Error('OpenCode uninstall is not implemented in Phase 0-2.')
+  },
+
+  async backup(file: AgentConfigFile): Promise<string | null> {
+    return createTimestampedBackup(file, homeDir)
   },
 }

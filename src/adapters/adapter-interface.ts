@@ -189,6 +189,14 @@ export interface AgentAdapter {
   /** Remove agent-specific ZCF-managed configuration */
   uninstall: (options: UninstallOptions, ctx: AgentContext) => Promise<void>
 
+  /**
+   * Create a timestamped backup of a configuration file before it is modified.
+   *
+   * Returns the backup path on success, or null when no backup was needed
+   * (e.g. the target file does not exist yet).
+   */
+  backup: (file: AgentConfigFile) => Promise<string | null>
+
   /** Optional: list available configurations (providers/profiles) */
   listConfigurations?: () => Promise<ConfigItem[]>
 

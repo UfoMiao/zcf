@@ -10,6 +10,7 @@ import {
   runCodexUpdate,
   switchCodexProvider,
 } from '../../utils/code-tools/codex'
+import { createTimestampedBackup } from '../backup'
 
 const homeDir = CODEX_DIR
 
@@ -30,7 +31,7 @@ function toCodexInitOptions(options: InstallOptions, ctx: AgentContext): Record<
 
   const apiMode = hasApiConfigs
     ? 'skip'
-    : options.apiType === 'auth_token'
+    : options.apiType === 'auth_token' || options.apiType === 'ccr_proxy'
       ? 'official'
       : options.apiType === 'api_key'
         ? 'custom'
@@ -126,5 +127,9 @@ export const codexAdapter: AgentAdapter = {
       currentVersion: info.currentVersion ?? undefined,
       latestVersion: info.latestVersion ?? undefined,
     }
+  },
+
+  async backup(file: AgentConfigFile): Promise<string | null> {
+    return createTimestampedBackup(file, homeDir)
   },
 }

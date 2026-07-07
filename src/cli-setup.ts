@@ -315,7 +315,7 @@ export async function setupCommands(cli: CAC): Promise<void> {
     .option('--code-type, -T <type>', 'Alias for --agent')
     .option('--lang, -L <lang>', 'ZCF display language (zh-CN, en)')
     .option('--all-lang, -g <lang>', 'Set all language parameters to this value')
-    .option('--list, -l', 'List available configurations')
+    .option('--list', 'List available configurations')
     .action(await withLanguageResolution(async (target, options) => {
       await configSwitchCommand({
         target,

@@ -18,6 +18,7 @@ function createStubAdapter(
     install: vi.fn(),
     update: vi.fn(),
     uninstall: vi.fn(),
+    backup: vi.fn().mockResolvedValue(null),
   }
 }
 
