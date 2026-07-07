@@ -5,14 +5,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { withLanguageResolution } from '../../src/cli-setup'
 
 // Mock all dependencies with factory functions to avoid hoisting issues
-vi.mock('../../src/i18n', () => ({
-  i18n: {
-    isInitialized: true,
-    language: 'en',
-  },
-  changeLanguage: vi.fn(),
-  initI18n: vi.fn(),
-}))
+vi.mock('../../src/i18n', () => {
+  const changeLanguage = vi.fn()
+  return {
+    i18n: {
+      isInitialized: true,
+      language: 'en',
+      changeLanguage,
+    },
+    changeLanguage,
+    initI18n: vi.fn(),
+  }
+})
 
 vi.mock('../../src/utils/zcf-config', () => ({
   readZcfConfigAsync: vi.fn(),

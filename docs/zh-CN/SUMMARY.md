@@ -22,6 +22,7 @@
 * [API 提供商预设](advanced/api-providers.md)
 * [模板与输出风格](advanced/templates.md)
 * [国际化与语言](advanced/i18n.md)
+* [社区 Agent Adapter](advanced/community-adapters.md)
 * [故障排除](advanced/troubleshooting.md)
 
 ## CLI 命令

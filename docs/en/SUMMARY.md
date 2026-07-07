@@ -22,6 +22,7 @@
 * [API Provider Presets](advanced/api-providers.md)
 * [Templates and Output Styles](advanced/templates.md)
 * [Internationalization and Language](advanced/i18n.md)
+* [Community Agent Adapters](advanced/community-adapters.md)
 * [Troubleshooting](advanced/troubleshooting.md)
 
 ## CLI Commands

@@ -14,6 +14,10 @@ vi.mock('../../../src/adapters/registry', () => ({
   listAgentIds: vi.fn(() => [...agentIds]),
 }))
 
+vi.mock('../../../src/adapters/loader', () => ({
+  loadExternalAdapters: vi.fn().mockResolvedValue([]),
+}))
+
 vi.mock('../../../src/adapters/claude-code', () => ({
   claudeCodeAdapter: { id: 'claude-code' },
 }))
@@ -34,7 +38,7 @@ describe('adapters/index', () => {
 
   it('registers all built-in adapters when none are present', async () => {
     const { registerAllAgents } = await import('../../../src/adapters/index')
-    registerAllAgents()
+    await registerAllAgents()
 
     expect(registered.map(a => a.id)).toEqual(expect.arrayContaining(['claude-code', 'codex', 'opencode']))
   })
@@ -43,7 +47,7 @@ describe('adapters/index', () => {
     const { registerAllAgents } = await import('../../../src/adapters/index')
     agentIds.push('claude-code')
 
-    registerAllAgents()
+    await registerAllAgents()
 
     expect(registered.map(a => a.id)).toEqual(['codex', 'opencode'])
   })
@@ -52,7 +56,7 @@ describe('adapters/index', () => {
     const { registerAllAgents } = await import('../../../src/adapters/index')
     agentIds.push('claude-code', 'codex', 'opencode')
 
-    registerAllAgents()
+    await registerAllAgents()
 
     expect(registered).toEqual([])
   })

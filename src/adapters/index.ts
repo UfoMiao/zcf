@@ -1,9 +1,11 @@
 import { claudeCodeAdapter } from './claude-code'
 import { codexAdapter } from './codex'
+import { loadExternalAdapters } from './loader'
 import { opencodeAdapter } from './opencode'
 import { listAgentIds, registerAgent } from './registry'
 
 export * from './adapter-interface'
+export * from './loader'
 export * from './registry'
 export { claudeCodeAdapter, codexAdapter, opencodeAdapter }
 
@@ -15,7 +17,7 @@ export { claudeCodeAdapter, codexAdapter, opencodeAdapter }
  * already registered, keeping setup idempotent in long-running or test
  * environments.
  */
-export function registerAllAgents(): void {
+export async function registerAllAgents(): Promise<void> {
   if (!listAgentIds().includes(claudeCodeAdapter.id)) {
     registerAgent(claudeCodeAdapter)
   }
@@ -24,5 +26,17 @@ export function registerAllAgents(): void {
   }
   if (!listAgentIds().includes(opencodeAdapter.id)) {
     registerAgent(opencodeAdapter)
+  }
+
+  try {
+    const external = await loadExternalAdapters()
+    for (const adapter of external) {
+      if (!listAgentIds().includes(adapter.id)) {
+        registerAgent(adapter)
+      }
+    }
+  }
+  catch {
+    // External adapters are best-effort; do not fail startup.
   }
 }

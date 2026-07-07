@@ -1,10 +1,9 @@
-import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../constants'
+import type { AiOutputLanguage, SupportedLang } from '../constants'
 import ansis from 'ansis'
 import { version } from '../../package.json'
-import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType as resolveCodeToolTypeAlias } from '../constants'
+import { DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBanner } from '../utils/banner'
-import { runCodexUpdate } from '../utils/code-tools/codex'
 import { updatePromptOnly } from '../utils/config-operations'
 import { handleExitPromptError, handleGeneralError } from '../utils/error-handler'
 import { resolveAiOutputLanguage } from '../utils/prompts'
@@ -17,24 +16,6 @@ export interface UpdateOptions {
   aiOutputLang?: AiOutputLanguage | string
   skipBanner?: boolean
   skipPrompt?: boolean
-  codeType?: CodeToolType
-}
-
-function resolveCodeToolType(optionValue: unknown, savedValue?: CodeToolType | null): CodeToolType {
-  // First try to use the option value (supports short aliases)
-  if (optionValue !== undefined) {
-    const resolved = resolveCodeToolTypeAlias(optionValue)
-    if (resolved !== DEFAULT_CODE_TOOL_TYPE || optionValue === DEFAULT_CODE_TOOL_TYPE) {
-      return resolved
-    }
-  }
-
-  // Fall back to saved value
-  if (savedValue && isCodeToolType(savedValue)) {
-    return savedValue
-  }
-
-  return DEFAULT_CODE_TOOL_TYPE
 }
 
 export async function update(options: UpdateOptions = {}): Promise<void> {
@@ -46,28 +27,7 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
     // Get configuration
     const zcfConfig = readZcfConfig()
-    const codeToolType = resolveCodeToolType(options.codeType, zcfConfig?.codeToolType)
-    options.codeType = codeToolType
-
-    if (codeToolType === 'codex') {
-      await runCodexUpdate()
-
-      const newPreferredLang = options.configLang || zcfConfig?.preferredLang
-      if (newPreferredLang) {
-        updateZcfConfig({
-          version,
-          preferredLang: newPreferredLang,
-          codeToolType,
-        })
-      }
-      else {
-        updateZcfConfig({
-          version,
-          codeToolType,
-        })
-      }
-      return
-    }
+    const codeToolType = zcfConfig?.codeToolType || DEFAULT_CODE_TOOL_TYPE
 
     // Use intelligent template language selection
     const { resolveTemplateLanguage } = await import('../utils/prompts')

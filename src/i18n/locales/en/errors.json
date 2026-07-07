@@ -25,5 +25,6 @@
   "opencodeUninstallNotImplemented": "OpenCode uninstall is not implemented in Phase 0-2.",
   "invalidProvider": "Invalid provider: {provider}. Available providers: {validProviders}",
   "generalError": "Error",
-  "stackTrace": "Stack"
+  "stackTrace": "Stack",
+  "configSwitchNotSupported": "Configuration switching is not supported for {{agent}}"
 }

@@ -21,7 +21,7 @@ async function getAdapters(): Promise<AdaptersModule> {
 async function ensureAgentsRegistered(): Promise<void> {
   const adapters = await getAdapters()
   if (adapters.listAgentIds().length === 0) {
-    adapters.registerAllAgents()
+    await adapters.registerAllAgents()
   }
 }
 

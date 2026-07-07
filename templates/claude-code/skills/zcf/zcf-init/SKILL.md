@@ -3,7 +3,7 @@ name: zcf-init
 description: Initialize a new project with ZCF conventions and prompt templates.
 version: 1.0.0
 namespace: zcf
-disable-model-invocation: false
+disable-model-invocation: true
 ---
 
 # ZCF Project Initialization

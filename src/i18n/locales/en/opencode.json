@@ -1,0 +1,7 @@
+{
+  "notInstalled": "OpenCode does not appear to be installed.",
+  "installingConfig": "Installing OpenCode configuration...",
+  "updateComplete": "OpenCode configuration updated.",
+  "uninstallComplete": "OpenCode ZCF configuration removed.",
+  "skippedNoConfig": "No OpenCode configuration found to remove."
+}

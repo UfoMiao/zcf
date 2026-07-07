@@ -25,5 +25,6 @@
   "opencodeUninstallNotImplemented": "OpenCode 卸载在 Phase 0-2 尚未实现。",
   "invalidProvider": "无效的提供商：{provider}。可用的提供商：{validProviders}",
   "generalError": "错误",
-  "stackTrace": "堆栈跟踪"
+  "stackTrace": "堆栈跟踪",
+  "configSwitchNotSupported": "{{agent}} 不支持配置切换"
 }
