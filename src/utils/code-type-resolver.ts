@@ -1,7 +1,11 @@
 import type { CodeToolType } from '../constants'
-import { DEFAULT_CODE_TOOL_TYPE } from '../constants'
+import { CODE_TOOL_TYPES, DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { i18n } from '../i18n'
 import { readZcfConfigAsync } from './zcf-config'
+
+function isLegacyCodeToolType(id: string): id is CodeToolType {
+  return (CODE_TOOL_TYPES as readonly string[]).includes(id)
+}
 
 type AdaptersModule = typeof import('../adapters')
 
@@ -22,7 +26,7 @@ async function ensureAgentsRegistered(): Promise<void> {
 }
 
 function getValidOptions(adapters: AdaptersModule): string {
-  const agentList = adapters.listAgents()
+  const agentList = adapters.listAgents().filter(a => isLegacyCodeToolType(a.id))
   const ids = agentList.map(a => a.id)
   const aliases = agentList.flatMap(a => a.aliases)
   return [...new Set([...ids, ...aliases])].sort().join(', ')
@@ -33,6 +37,8 @@ function getValidOptions(adapters: AdaptersModule): string {
  *
  * Phase 0-2 (UFO-131) delegates resolution to the agent registry while
  * preserving the legacy CodeToolType return type for existing commands.
+ * Only adapters whose id is in the legacy CODE_TOOL_TYPES are returned to
+ * avoid leaking pilot agents (e.g. opencode) into downstream commands.
  *
  * @param codeTypeParam - Code type parameter from command line
  * @returns Resolved code tool type
@@ -47,7 +53,9 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
 
     if (adapters.isAgentRegistered(normalizedParam)) {
       const adapter = adapters.resolveAgent(normalizedParam)!
-      return adapter.id as CodeToolType
+      if (isLegacyCodeToolType(adapter.id)) {
+        return adapter.id
+      }
     }
 
     // Prepare valid options for error message
@@ -58,7 +66,10 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
     try {
       const config = await readZcfConfigAsync()
       if (config?.codeToolType && adapters.isAgentRegistered(config.codeToolType)) {
-        defaultValue = adapters.resolveAgent(config.codeToolType)!.id as CodeToolType
+        const adapter = adapters.resolveAgent(config.codeToolType)!
+        if (isLegacyCodeToolType(adapter.id)) {
+          defaultValue = adapter.id
+        }
       }
     }
     catch {
@@ -74,7 +85,10 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
   try {
     const config = await readZcfConfigAsync()
     if (config?.codeToolType && adapters.isAgentRegistered(config.codeToolType)) {
-      return adapters.resolveAgent(config.codeToolType)!.id as CodeToolType
+      const adapter = adapters.resolveAgent(config.codeToolType)!
+      if (isLegacyCodeToolType(adapter.id)) {
+        return adapter.id
+      }
     }
   }
   catch {
@@ -86,10 +100,14 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
 }
 
 /**
- * Check if a value is a valid code tool type or alias.
+ * Check if a value is a valid legacy code tool type or alias.
  */
 export async function isValidCodeType(value: string): Promise<boolean> {
   const adapters = await getAdapters()
   await ensureAgentsRegistered()
-  return adapters.isAgentRegistered(value)
+  if (!adapters.isAgentRegistered(value)) {
+    return false
+  }
+  const adapter = adapters.resolveAgent(value)!
+  return isLegacyCodeToolType(adapter.id)
 }

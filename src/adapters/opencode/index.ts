@@ -1,6 +1,7 @@
 import type { AgentAdapter, AgentConfigFile, AgentContext, AgentSkillSpec, InstallOptions, UninstallOptions, UpdateOptions } from '../adapter-interface'
 import { homedir } from 'node:os'
 import { join } from 'pathe'
+import { i18n } from '../../i18n'
 import { createTimestampedBackup } from '../backup'
 
 const homeDir = join(homedir(), '.opencode')
@@ -45,15 +46,15 @@ export const opencodeAdapter: AgentAdapter = {
   },
 
   async install(_options: InstallOptions, _ctx: AgentContext): Promise<void> {
-    throw new Error('OpenCode install is not implemented in Phase 0-2. Use the skill engine to install skills.')
+    throw new Error(i18n.t('errors:opencodeInstallNotImplemented'))
   },
 
   async update(_options: UpdateOptions, _ctx: AgentContext): Promise<void> {
-    throw new Error('OpenCode update is not implemented in Phase 0-2.')
+    throw new Error(i18n.t('errors:opencodeUpdateNotImplemented'))
   },
 
   async uninstall(_options: UninstallOptions, _ctx: AgentContext): Promise<void> {
-    throw new Error('OpenCode uninstall is not implemented in Phase 0-2.')
+    throw new Error(i18n.t('errors:opencodeUninstallNotImplemented'))
   },
 
   async backup(file: AgentConfigFile): Promise<string | null> {

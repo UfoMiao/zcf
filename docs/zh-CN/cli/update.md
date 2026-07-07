@@ -55,6 +55,9 @@ npx zcf u -s -a zh-CN
 npx zcf u -s -g zh-CN
 
 # 指定代码工具类型
+npx zcf u -s -a codex
+
+# 别名仍可用
 npx zcf u -s -T codex
 ```
 
@@ -66,7 +69,8 @@ npx zcf u -s -T codex
 | `--config-lang, -c` | `-c` | 模板文件语言 | `zh-CN`, `en` | 用户保存的偏好或 `en` |
 | `--ai-output-lang, -a` | `-a` | AI 输出语言 | `zh-CN`, `en`, 自定义字符串 | 用户保存的偏好或 `en` |
 | `--all-lang, -g` | `-g` | 统一设置所有语言参数 | `zh-CN`, `en`, 自定义字符串 | - |
-| `--code-type, -T` | `-T` | 目标代码工具类型 | `claude-code`, `codex`, `cc`, `cx` | ZCF 配置中的当前工具类型 |
+| `--agent, -a` | `-a` | 目标 Agent | `claude-code`, `codex`, `cc`, `cx` | ZCF 配置中的当前工具类型 |
+| `--code-type, -T` | `-T` | `--agent` 的兼容别名 | `claude-code`, `codex`, `cc`, `cx` | ZCF 配置中的当前工具类型 |
 
 > 💡 **提示**：使用 `--all-lang` 可以一次性设置模板语言和 AI 输出语言。
 
@@ -86,10 +90,10 @@ npx zcf u
 
 ```bash
 # 更新 Claude Code 工作流
-npx zcf u -T claude-code -c zh-CN
+npx zcf u -a claude-code -c zh-CN
 
 # 更新 Codex 工作流
-npx zcf u -T codex -c zh-CN
+npx zcf u -a codex -c zh-CN
 ```
 
 ### 场景 3：同步语言设置
@@ -106,7 +110,7 @@ npx zcf u -c zh-CN -a en
 
 ```bash
 # 非交互式更新（适合脚本）
-npx zcf u -s -g zh-CN -T claude-code
+npx zcf u -s -g zh-CN -a claude-code
 ```
 
 ## 执行流程
@@ -236,7 +240,7 @@ ls -la ~/.claude/backup/
 
 ```bash
 # 团队统一的更新命令
-npx zcf u -s -g zh-CN -T claude-code
+npx zcf u -s -g zh-CN -a claude-code
 ```
 
 ## 故障排除

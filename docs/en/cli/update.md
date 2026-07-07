@@ -55,6 +55,9 @@ npx zcf u -s -a zh-CN
 npx zcf u -s -g zh-CN
 
 # Specify code tool type
+npx zcf u -s -a codex
+
+# Alias still works
 npx zcf u -s -T codex
 ```
 
@@ -66,7 +69,8 @@ npx zcf u -s -T codex
 | `--config-lang, -c` | `-c` | Template file language | `zh-CN`, `en` | User saved preference or `en` |
 | `--ai-output-lang, -a` | `-a` | AI output language | `zh-CN`, `en`, custom string | User saved preference or `en` |
 | `--all-lang, -g` | `-g` | Set all language parameters uniformly | `zh-CN`, `en`, custom string | - |
-| `--code-type, -T` | `-T` | Target code tool type | `claude-code`, `codex`, `cc`, `cx` | Current tool type in ZCF configuration |
+| `--agent, -a` | `-a` | Target agent | `claude-code`, `codex`, `cc`, `cx` | Current tool type in ZCF configuration |
+| `--code-type, -T` | `-T` | Alias for `--agent` | `claude-code`, `codex`, `cc`, `cx` | Current tool type in ZCF configuration |
 
 > 💡 **Tip**: Using `--all-lang` can set template language and AI output language at once.
 
@@ -86,10 +90,10 @@ npx zcf u
 
 ```bash
 # Update Claude Code workflows
-npx zcf u -T claude-code -c zh-CN
+npx zcf u -a claude-code -c zh-CN
 
 # Update Codex workflows
-npx zcf u -T codex -c zh-CN
+npx zcf u -a codex -c zh-CN
 ```
 
 ### Scenario 3: Sync Language Settings
@@ -106,7 +110,7 @@ npx zcf u -c zh-CN -a en
 
 ```bash
 # Non-interactive update (suitable for scripts)
-npx zcf u -s -g zh-CN -T claude-code
+npx zcf u -s -g zh-CN -a claude-code
 ```
 
 ## Execution Flow
@@ -236,7 +240,7 @@ In team environments:
 
 ```bash
 # Team unified update command
-npx zcf u -s -g zh-CN -T claude-code
+npx zcf u -s -g zh-CN -a claude-code
 ```
 
 ## Troubleshooting

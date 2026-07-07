@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { resolveCodeType } from '../../../src/utils/code-type-resolver'
+import { isValidCodeType, resolveCodeType } from '../../../src/utils/code-type-resolver'
 
 // Mock readZcfConfigAsync
 vi.mock('../../../src/utils/zcf-config', () => ({
@@ -21,7 +21,7 @@ vi.mock('../../../src/i18n', () => ({
   },
 }))
 
-const VALID_OPTIONS = 'cc, claude, claude-code, codex, cx, oc, openai-codex, opencode'
+const VALID_OPTIONS = 'cc, claude, claude-code, codex, cx, openai-codex'
 
 describe('resolveCodeType', () => {
   beforeEach(() => {
@@ -65,6 +65,12 @@ describe('resolveCodeType', () => {
     )
   })
 
+  it('should reject non-legacy agents such as opencode', async () => {
+    await expect(resolveCodeType('opencode')).rejects.toThrow(
+      `Invalid code type: "opencode". Valid options are: ${VALID_OPTIONS}. Using default: codex.`,
+    )
+  })
+
   it('should return default when no parameter provided', async () => {
     const result = await resolveCodeType()
     expect(result).toBe('codex') // from mocked config
@@ -105,5 +111,27 @@ describe('resolveCodeType', () => {
     await expect(resolveCodeType('wrong')).rejects.toThrow(
       `Invalid code type: "wrong". Valid options are: ${VALID_OPTIONS}. Using default: claude-code.`,
     )
+  })
+})
+
+describe('isValidCodeType', () => {
+  beforeEach(() => {
+    vi.resetModules()
+  })
+
+  it('should accept legacy agent ids and aliases', async () => {
+    expect(await isValidCodeType('claude-code')).toBe(true)
+    expect(await isValidCodeType('cc')).toBe(true)
+    expect(await isValidCodeType('codex')).toBe(true)
+    expect(await isValidCodeType('cx')).toBe(true)
+  })
+
+  it('should reject non-legacy agents', async () => {
+    expect(await isValidCodeType('opencode')).toBe(false)
+    expect(await isValidCodeType('oc')).toBe(false)
+  })
+
+  it('should reject unknown values', async () => {
+    expect(await isValidCodeType('unknown')).toBe(false)
   })
 })

@@ -20,6 +20,9 @@
   "invalidPermissionsConfig": "无效的权限配置：期望对象类型",
   "invalidPermissionsAllow": "无效的 permissions.allow：期望数组类型",
   "invalidCodeType": "无效的代码类型：\"{value}\"。可用的类型：{validOptions}。使用默认值：{defaultValue}。",
+  "opencodeInstallNotImplemented": "OpenCode 安装在 Phase 0-2 尚未实现。请使用 skill engine 安装 skills。",
+  "opencodeUpdateNotImplemented": "OpenCode 更新在 Phase 0-2 尚未实现。",
+  "opencodeUninstallNotImplemented": "OpenCode 卸载在 Phase 0-2 尚未实现。",
   "invalidProvider": "无效的提供商：{provider}。可用的提供商：{validProviders}",
   "generalError": "错误",
   "stackTrace": "堆栈跟踪"

@@ -57,7 +57,7 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 npx zcf i -s \
   --provider 302ai \
   --api-key "sk-xxx" \
-  --code-type claude-code \
+  --agent claude-code \
   --all-lang zh-CN \
   --mcp-services all \
   --workflows all \
@@ -88,17 +88,21 @@ npx zcf i -s \
 
 | 参数 | 缩写 | 说明 | 可选值 |
 |------|------|------|--------|
-| `--code-type, -T` | `-T` | 目标代码工具类型 | `claude-code`, `codex`, `cc`, `cx` |
+| `--agent, -a` | `-a` | 目标 Agent | `claude-code`, `codex`, `cc`, `cx` |
+| `--code-type, -T` | `-T` | `--agent` 的兼容别名 | `claude-code`, `codex`, `cc`, `cx` |
 
 ```bash
 # 初始化 Claude Code（默认）
 npx zcf i
 
 # 初始化 Codex
-npx zcf i -T codex
+npx zcf i -a codex
 
 # 使用缩写
-npx zcf i -T cx
+npx zcf i -a cx
+
+# 别名仍可用
+npx zcf i -T codex
 ```
 
 ### API 配置参数
@@ -293,7 +297,7 @@ npx zcf i -s -p 302ai -k "sk-xxx" -g zh-CN
 
 ```bash
 npx zcf i -s \
-  -T codex \
+  -a codex \
   -p 302ai \
   -k "sk-xxx" \
   -g zh-CN \

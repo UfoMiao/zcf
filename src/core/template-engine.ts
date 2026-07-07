@@ -33,6 +33,12 @@ export class TemplateEngine {
    * {@link renderTemplate} for adapter-aware backup.
    */
   async renderFile(source: string, target: string, strategy: ConfigMergeStrategy): Promise<RenderResult> {
+    // Skip must avoid any filesystem side effects, including creating the
+    // target parent directory.
+    if (strategy === 'skip') {
+      return { source, target, strategy, changed: false }
+    }
+
     ensureDir(dirname(target))
 
     switch (strategy) {
@@ -44,8 +50,6 @@ export class TemplateEngine {
         return this.renderMerge(source, target)
       case 'append':
         return this.renderAppend(source, target)
-      case 'skip':
-        return { source, target, strategy, changed: false }
       default:
         throw new Error(`Unsupported merge strategy: ${strategy}`)
     }

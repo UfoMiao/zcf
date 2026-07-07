@@ -57,7 +57,7 @@ npx zcf i -s -p 302ai -k "sk-xxx"
 npx zcf i -s \
   --provider 302ai \
   --api-key "sk-xxx" \
-  --code-type claude-code \
+  --agent claude-code \
   --all-lang zh-CN \
   --mcp-services all \
   --workflows all \
@@ -88,17 +88,21 @@ npx zcf i -s \
 
 | Parameter | Abbreviation | Description | Optional Values |
 |------|------|------|--------|
-| `--code-type, -T` | `-T` | Target code tool type | `claude-code`, `codex`, `cc`, `cx` |
+| `--agent, -a` | `-a` | Target agent | `claude-code`, `codex`, `cc`, `cx` |
+| `--code-type, -T` | `-T` | Alias for `--agent` | `claude-code`, `codex`, `cc`, `cx` |
 
 ```bash
 # Initialize Claude Code (default)
 npx zcf i
 
 # Initialize Codex
-npx zcf i -T codex
+npx zcf i -a codex
 
 # Use abbreviation
-npx zcf i -T cx
+npx zcf i -a cx
+
+# Alias still works
+npx zcf i -T codex
 ```
 
 ### API Configuration Parameters
@@ -293,7 +297,7 @@ npx zcf i -s -p 302ai -k "sk-xxx" -g zh-CN
 
 ```bash
 npx zcf i -s \
-  -T codex \
+  -a codex \
   -p 302ai \
   -k "sk-xxx" \
   -g zh-CN \

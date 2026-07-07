@@ -11,14 +11,18 @@ export { claudeCodeAdapter, codexAdapter, opencodeAdapter }
  * Register all built-in agent adapters.
  *
  * Call this once at application startup before resolving agents.
- * The registry is process-scoped, so repeated calls are no-ops to
- * keep setup idempotent in long-running or test environments.
+ * Each adapter is registered individually and skipped only if it is
+ * already registered, keeping setup idempotent in long-running or test
+ * environments.
  */
 export function registerAllAgents(): void {
-  if (listAgentIds().length > 0) {
-    return
+  if (!listAgentIds().includes(claudeCodeAdapter.id)) {
+    registerAgent(claudeCodeAdapter)
   }
-  registerAgent(claudeCodeAdapter)
-  registerAgent(codexAdapter)
-  registerAgent(opencodeAdapter)
+  if (!listAgentIds().includes(codexAdapter.id)) {
+    registerAgent(codexAdapter)
+  }
+  if (!listAgentIds().includes(opencodeAdapter.id)) {
+    registerAgent(opencodeAdapter)
+  }
 }
