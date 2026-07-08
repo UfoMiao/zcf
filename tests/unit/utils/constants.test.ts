@@ -6,6 +6,8 @@ import {
   ClAUDE_CONFIG_FILE,
   CLAUDE_DIR,
   CLAUDE_MD_FILE,
+  CODE_TOOL_ALIASES,
+  CODE_TOOL_BANNERS,
   CODE_TOOL_TYPES,
   DEFAULT_CODE_TOOL_TYPE,
   getAiOutputLanguageLabel,
@@ -75,11 +77,23 @@ describe('constants', () => {
 
   describe('code tool constants', () => {
     it('should define supported code tool types', () => {
-      expect(CODE_TOOL_TYPES).toEqual(['claude-code', 'codex'])
+      expect(CODE_TOOL_TYPES).toEqual(['claude-code', 'codex', 'opencode'])
     })
 
     it('should define default code tool type', () => {
       expect(DEFAULT_CODE_TOOL_TYPE).toBe('claude-code')
+    })
+
+    it('should define code tool banners for all tools', () => {
+      expect(CODE_TOOL_BANNERS['claude-code']).toBe('for Claude Code')
+      expect(CODE_TOOL_BANNERS.codex).toBe('for Codex')
+      expect(CODE_TOOL_BANNERS.opencode).toBe('for OpenCode')
+    })
+
+    it('should define code tool aliases', () => {
+      expect(CODE_TOOL_ALIASES.cc).toBe('claude-code')
+      expect(CODE_TOOL_ALIASES.cx).toBe('codex')
+      expect(CODE_TOOL_ALIASES.oc).toBe('opencode')
     })
   })
 
@@ -108,6 +122,7 @@ describe('constants', () => {
     it('should return true for valid code tool types', () => {
       expect(isCodeToolType('claude-code')).toBe(true)
       expect(isCodeToolType('codex')).toBe(true)
+      expect(isCodeToolType('opencode')).toBe(true)
     })
 
     it('should return false for invalid code tool types', () => {
@@ -185,7 +200,7 @@ describe('constants', () => {
 
   describe('constants structure validation', () => {
     it('should have correct array lengths for constants', () => {
-      expect(CODE_TOOL_TYPES).toHaveLength(2)
+      expect(CODE_TOOL_TYPES).toHaveLength(3)
       expect(SUPPORTED_LANGS).toHaveLength(2)
     })
 

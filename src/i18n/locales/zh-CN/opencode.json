@@ -1,0 +1,15 @@
+{
+  "configNotFound": "⚠️ 未找到 OpenCode 配置文件",
+  "currentModel": "当前模型：{{model}}",
+  "listModelsTitle": "可用的 OpenCode 模型：",
+  "modelSwitchPrompt": "输入要使用的 OpenCode 模型（格式：provider/model）",
+  "modelRequired": "模型名称不能为空",
+  "invalidModelFormat": "❌ 模型格式 '{{model}}' 不正确。OpenCode 模型格式为 provider/model（例如 anthropic/claude-sonnet-4）。",
+  "switchSuccess": "✔ 已切换到 OpenCode 模型 {{model}}",
+  "switchFailed": "❌ 切换 OpenCode 模型失败",
+  "noModelConfigured": "⚠️ 尚未配置 OpenCode 模型",
+  "useCustomModel": "使用自定义模型",
+  "backupSuccess": "✔ 已备份到 {{path}}",
+  "statusConfigured": "OpenCode 已配置",
+  "statusNotConfigured": "OpenCode 未配置"
+}

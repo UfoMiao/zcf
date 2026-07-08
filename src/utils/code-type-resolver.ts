@@ -9,7 +9,13 @@ import { readZcfConfigAsync } from './zcf-config'
 const CODE_TYPE_ABBREVIATIONS: Record<string, CodeToolType> = {
   cc: 'claude-code',
   cx: 'codex',
+  oc: 'opencode',
 } as const
+
+/**
+ * Valid code tool type values
+ */
+const VALID_CODE_TYPES: readonly string[] = ['claude-code', 'codex', 'opencode']
 
 /**
  * Resolve code type from parameter, abbreviation, or default config
@@ -75,5 +81,5 @@ export async function resolveCodeType(codeTypeParam?: string): Promise<CodeToolT
  * @returns True if valid code tool type
  */
 function isValidCodeType(value: string): value is CodeToolType {
-  return ['claude-code', 'codex'].includes(value)
+  return VALID_CODE_TYPES.includes(value)
 }

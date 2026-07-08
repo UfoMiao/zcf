@@ -1,0 +1,15 @@
+{
+  "configNotFound": "⚠️ OpenCode configuration file not found",
+  "currentModel": "Current model: {{model}}",
+  "listModelsTitle": "Available OpenCode models:",
+  "modelSwitchPrompt": "Enter the OpenCode model to use (format: provider/model)",
+  "modelRequired": "Model is required",
+  "invalidModelFormat": "❌ Invalid model format '{{model}}'. OpenCode models use provider/model (e.g. anthropic/claude-sonnet-4).",
+  "switchSuccess": "✔ Switched OpenCode model to {{model}}",
+  "switchFailed": "❌ Failed to switch OpenCode model",
+  "noModelConfigured": "⚠️ No OpenCode model configured",
+  "useCustomModel": "Use custom model",
+  "backupSuccess": "✔ Backup created at {{path}}",
+  "statusConfigured": "OpenCode is configured",
+  "statusNotConfigured": "OpenCode is not configured"
+}

@@ -29,6 +29,7 @@ const NAMESPACES = [
   'updater',
   'workflow',
   'codex',
+  'opencode',
 ] as const
 
 // Ensure i18n is initialized - safety check for utility functions

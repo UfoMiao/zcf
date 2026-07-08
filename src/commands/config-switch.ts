@@ -6,6 +6,7 @@ import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType, resolveCodeToolType } from '../
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { ClaudeCodeConfigManager } from '../utils/claude-code-config-manager'
 import { listCodexProviders, readCodexConfig, switchToOfficialLogin as switchCodexOfficialLogin, switchCodexProvider, switchToProvider } from '../utils/code-tools/codex'
+import { getOpenCodeStatus, switchOpenCodeModel } from '../utils/code-tools/opencode'
 import { handleGeneralError } from '../utils/error-handler'
 import { addNumbersToChoices } from '../utils/prompt-helpers'
 import { readZcfConfig } from '../utils/zcf-config'
@@ -81,6 +82,9 @@ async function handleList(codeType?: CodeToolType): Promise<void> {
   else if (targetCodeType === 'codex') {
     await listCodexProvidersWithDisplay()
   }
+  else if (targetCodeType === 'opencode') {
+    await listOpenCodeModelsWithDisplay()
+  }
 }
 
 /**
@@ -147,6 +151,24 @@ async function listClaudeCodeProfiles(): Promise<void> {
 }
 
 /**
+ * List current OpenCode model
+ */
+async function listOpenCodeModelsWithDisplay(): Promise<void> {
+  const status = getOpenCodeStatus()
+
+  console.log(ansis.bold(i18n.t('opencode:listModelsTitle')))
+  console.log()
+
+  if (!status.configured || !status.model) {
+    console.log(ansis.yellow(i18n.t('opencode:noModelConfigured')))
+    return
+  }
+
+  console.log(ansis.cyan(i18n.t('opencode:currentModel', { model: status.model })))
+  console.log()
+}
+
+/**
  * Handle direct configuration switch with specified target
  * @param codeType - Code tool type
  * @param target - Target configuration ID or special value
@@ -160,6 +182,21 @@ async function handleDirectSwitch(codeType: CodeToolType, target: string): Promi
   else if (resolvedCodeType === 'codex') {
     await switchCodexProvider(target)
     // switchCodexProvider already handles success/failure messages
+  }
+  else if (resolvedCodeType === 'opencode') {
+    const result = switchOpenCodeModel(target)
+    if (result.success) {
+      console.log(ansis.green(i18n.t('opencode:switchSuccess', { model: result.model! })))
+      if (result.backupPath) {
+        console.log(ansis.gray(i18n.t('opencode:backupSuccess', { path: result.backupPath })))
+      }
+    }
+    else {
+      console.log(ansis.red(i18n.t('opencode:switchFailed')))
+      if (result.error) {
+        console.log(ansis.red(result.error))
+      }
+    }
   }
 }
 
@@ -255,6 +292,9 @@ async function handleInteractiveSwitch(codeType?: CodeToolType): Promise<void> {
   }
   else if (resolvedCodeType === 'codex') {
     await handleCodexInteractiveSwitch()
+  }
+  else if (resolvedCodeType === 'opencode') {
+    await handleOpenCodeInteractiveSwitch()
   }
 }
 
@@ -404,6 +444,54 @@ async function handleCodexInteractiveSwitch(): Promise<void> {
 
     if (!success) {
       console.log(ansis.red(i18n.t('common:operationFailed')))
+    }
+  }
+  catch (error: any) {
+    // Handle user exit (Ctrl+C)
+    if (error.name === 'ExitPromptError') {
+      console.log(ansis.cyan(`\n${i18n.t('common:goodbye')}`))
+      return
+    }
+    // Re-throw other errors
+    throw error
+  }
+}
+
+/**
+ * Handle interactive OpenCode model selection
+ */
+async function handleOpenCodeInteractiveSwitch(): Promise<void> {
+  const status = getOpenCodeStatus()
+
+  console.log(ansis.cyan(i18n.t('opencode:currentModel', { model: status.model || i18n.t('opencode:noModelConfigured') })))
+
+  try {
+    const { model } = await inquirer.prompt<{ model: string }>([{
+      type: 'input',
+      name: 'model',
+      message: i18n.t('opencode:modelSwitchPrompt'),
+      default: status.model,
+      validate: (input: string) => !!input.trim() || i18n.t('opencode:modelRequired'),
+    }])
+
+    if (!model) {
+      console.log(ansis.yellow(i18n.t('common:cancelled')))
+      return
+    }
+
+    const result = switchOpenCodeModel(model.trim())
+
+    if (result.success) {
+      console.log(ansis.green(i18n.t('opencode:switchSuccess', { model: result.model! })))
+      if (result.backupPath) {
+        console.log(ansis.gray(i18n.t('opencode:backupSuccess', { path: result.backupPath })))
+      }
+    }
+    else {
+      console.log(ansis.red(i18n.t('opencode:switchFailed')))
+      if (result.error) {
+        console.log(ansis.red(result.error))
+      }
     }
   }
   catch (error: any) {
