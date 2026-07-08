@@ -9,7 +9,8 @@ interface SkillFrontmatter {
 }
 
 function parseFrontmatter(content: string): SkillFrontmatter | null {
-  const match = /^---\n([\s\S]*?)\n---\n/.exec(content)
+  const normalized = content.replace(/\r\n/g, '\n')
+  const match = /^---\n([\s\S]*?)\n---\n/.exec(normalized)
   if (!match)
     return null
 
