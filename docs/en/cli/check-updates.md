@@ -6,7 +6,7 @@ title: Version Check
 
 `zcf check-updates` is used to detect and update various components in the ZCF toolchain, including ZCF itself, Claude Code, CCR, CCometixLine, Codex, and other tools.
 
-> **Alias**: `zcf check` provides the same command with a shorter name (`npx zcf check -a cx`).
+> **Alias**: `zcf check` provides the same command with a shorter name (`npx zcf check -T cx`).
 
 ## Command Format
 
@@ -15,9 +15,6 @@ title: Version Check
 npx zcf check
 
 # Check Codex related tool updates
-npx zcf check -a cx
-
-# Alias still works
 npx zcf check -T cx
 
 # Non-interactive mode (auto update, skip confirmation)
@@ -32,15 +29,14 @@ npx zcf
 
 | Parameter | Abbreviation | Description | Optional Values | Default |
 |------|------|------|--------|--------|
-| `--agent, -a` | `-a` | Specify agent | `claude-code`, `codex`, `cc`, `cx` | Read from ZCF configuration |
-| `--code-type, -T` | `-T` | Alias for `--agent` | `claude-code`, `codex`, `cc`, `cx` | Read from ZCF configuration |
+| `--code-type, -T` | `-T` | Specify tool type | `claude-code`, `codex`, `cc`, `cx` | Read from ZCF configuration |
 | `--skip-prompt, -s` | `-s` | Skip interactive confirmation (non-interactive mode) | None | No (interactive mode) |
 
 ## Tools Checked
 
 ### Claude Code Mode
 
-When `-a` is `cc` (or `claude-code`) or not specified, checks the following tools:
+When `-T` is `cc` (or `claude-code`) or not specified, checks the following tools:
 
 1. **CCR (Claude Code Router)**
    - Package name: `@musistudio/claude-code-router`
@@ -56,7 +52,7 @@ When `-a` is `cc` (or `claude-code`) or not specified, checks the following tool
 
 ### Codex Mode
 
-When `-a` is `cx` (or `codex`), checks:
+When `-T` is `cx` (or `codex`), checks:
 
 1. **Codex CLI**
    - Check method: Codex official API
@@ -141,7 +137,7 @@ Only check updates for specific tool types:
 
 ```bash
 # Only check Codex related tools
-npx zcf check -a cx
+npx zcf check -T cx
 ```
 
 ## Update Strategy

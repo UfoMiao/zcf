@@ -167,17 +167,21 @@ describe('update command', () => {
     it('should persist code tool type selection', async () => {
       const { update } = await import('../../../src/commands/update')
       const { readZcfConfig, updateZcfConfig } = await import('../../../src/utils/zcf-config')
+      const codexModule = await import('../../../src/utils/code-tools/codex')
 
-      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'claude-code' } as any)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
+      const codexUpdateSpy = vi.spyOn(codexModule, 'runCodexUpdate').mockResolvedValue(true)
 
-      await update({ configLang: 'en', aiOutputLang: 'english', skipBanner: true })
+      await update({ codeType: 'codex', configLang: 'en', aiOutputLang: 'english', skipBanner: true })
 
       expect(updateZcfConfig).toHaveBeenCalledWith(
         expect.objectContaining({
           codeToolType: 'codex',
         }),
       )
+      expect(codexUpdateSpy).toHaveBeenCalled()
+      codexUpdateSpy.mockRestore()
     })
 
     it('should handle errors gracefully', async () => {

@@ -1,7 +1,0 @@
-{
-  "notInstalled": "OpenCode 似乎尚未安装。",
-  "installingConfig": "正在安装 OpenCode 配置...",
-  "updateComplete": "OpenCode 配置已更新。",
-  "uninstallComplete": "OpenCode ZCF 配置已移除。",
-  "skippedNoConfig": "未找到可移除的 OpenCode 配置。"
-}

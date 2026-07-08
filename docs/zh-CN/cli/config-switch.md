@@ -20,22 +20,18 @@ npx zcf cs --list
 # 直接切换到指定配置（Claude Code）
 npx zcf cs provider1
 
-# 指定 Agent（支持简写 -a cc/cx）
-npx zcf cs --list -a cc      # 列出 Claude Code 配置
-npx zcf cs --list -a cx      # 列出 Codex 配置
-npx zcf cs provider1 -a cx   # 切换 Codex 配置
-
-# 别名仍可用
-npx zcf cs --list -T cc
+# 指定工具类型（支持简写 -T cc/cx）
+npx zcf cs --list -T cc      # 列出 Claude Code 配置
+npx zcf cs --list -T cx      # 列出 Codex 配置
+npx zcf cs provider1 -T cx   # 切换 Codex 配置
 ```
 
 ## 参数说明
 
 | 参数 | 说明 | 可选值 | 默认值 |
 |------|------|--------|--------|
-| `--agent`, `-a` | 指定 Agent | `claude-code` (cc), `codex` (cx) | 从 ZCF 配置读取 |
-| `--code-type`, `-T` | `--agent` 的兼容别名 | `claude-code` (cc), `codex` (cx) | 从 ZCF 配置读取 |
-| `--list` | 仅列出配置，不切换 | 无 | 否 |
+| `--code-type`, `-T` | 指定工具类型 | `claude-code` (cc), `codex` (cx) | 从 ZCF 配置读取 |
+| `--list`, `-l` | 仅列出配置，不切换 | 无 | 否 |
 | `目标配置` | 直接指定要切换的配置名称 | 配置名称或 ID | 无 |
 
 ## 功能特性
@@ -99,10 +95,10 @@ npx zcf cs
 
 ```bash
 # Claude Code 配置
-npx zcf cs --list -a cc
+npx zcf cs --list -T cc
 
 # Codex 配置
-npx zcf cs --list -a cx
+npx zcf cs --list -T cx
 ```
 
 **输出示例**：
@@ -124,7 +120,7 @@ npx zcf cs --list -a cx
 npx zcf cs glm-provider
 
 # Codex 切换提供商
-npx zcf cs glm-provider -a cx
+npx zcf cs glm-provider -T cx
 ```
 
 **支持匹配方式**：
@@ -216,10 +212,10 @@ npx zcf cs glm-provider
 
 ```bash
 # 列出 Codex 提供商
-npx zcf cs -a cx --list
+npx zcf cs -T cx --list
 
 # 切换到指定提供商
-npx zcf cs glm-provider -a cx
+npx zcf cs glm-provider -T cx
 ```
 
 ## 最佳实践

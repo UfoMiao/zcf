@@ -20,22 +20,18 @@ npx zcf cs --list
 # Directly switch to specified configuration (Claude Code)
 npx zcf cs provider1
 
-# Specify agent (supports short alias -a cc/cx)
-npx zcf cs --list -a cc      # List Claude Code configs
-npx zcf cs --list -a cx      # List Codex configs
-npx zcf cs provider1 -a cx   # Switch Codex config
-
-# Alias still works
-npx zcf cs --list -T cc
+# Specify tool type (Supports short alias -T cc/cx)
+npx zcf cs --list -T cc      # List Claude Code configs
+npx zcf cs --list -T cx      # List Codex configs
+npx zcf cs provider1 -T cx   # Switch Codex config
 ```
 
 ## Parameter Descriptions
 
 | Parameter | Description | Optional Values | Default |
 |------|------|--------|--------|
-| `--agent`, `-a` | Specify agent | `claude-code` (cc), `codex` (cx) | Read from ZCF configuration |
-| `--code-type`, `-T` | Alias for `--agent` | `claude-code` (cc), `codex` (cx) | Read from ZCF configuration |
-| `--list` | Only list configurations, don't switch | None | No |
+| `--code-type`, `-T` | Specify tool type | `claude-code` (cc), `codex` (cx) | Read from ZCF configuration |
+| `--list`, `-l` | Only list configurations, don't switch | None | No |
 | `Target Config` | Directly specify configuration name to switch to | Configuration name or ID | None |
 
 ## Features
@@ -99,10 +95,10 @@ View all currently available configurations:
 
 ```bash
 # Claude Code configurations
-npx zcf cs --list -a cc
+npx zcf cs --list -T cc
 
 # Codex configurations
-npx zcf cs --list -a cx
+npx zcf cs --list -T cx
 ```
 
 **Output Example**:
@@ -124,7 +120,7 @@ If you know the configuration name, you can switch directly:
 npx zcf cs glm-provider
 
 # Codex switch provider
-npx zcf cs glm-provider -a cx
+npx zcf cs glm-provider -T cx
 ```
 
 **Supported Matching Methods**:
@@ -216,10 +212,10 @@ npx zcf cs glm-provider
 
 ```bash
 # List Codex providers
-npx zcf cs -a cx --list
+npx zcf cs -T cx --list
 
 # Switch to specified provider
-npx zcf cs glm-provider -a cx
+npx zcf cs glm-provider -T cx
 ```
 
 ## Best Practices

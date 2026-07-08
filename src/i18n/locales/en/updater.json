@@ -21,8 +21,5 @@
   "updateSkipped": "Update skipped",
   "updateSuccess": "{tool} updated successfully!",
   "updateSummary": "Update Summary",
-  "updating": "Updating {tool}...",
-  "checkUpdatesNotSupported": "Update check not supported for {{agent}}",
-  "noUpdateAvailable": "{{agent}} is up to date",
-  "updateAvailable": "Update available for {{agent}}: {{currentVersion}} -> {{latestVersion}}"
+  "updating": "Updating {tool}..."
 }

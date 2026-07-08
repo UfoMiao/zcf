@@ -20,11 +20,7 @@
   "invalidPermissionsConfig": "Invalid permissions configuration: expected object",
   "invalidPermissionsAllow": "Invalid permissions.allow: expected array",
   "invalidCodeType": "Invalid code type: \"{value}\". Valid options are: {validOptions}. Using default: {defaultValue}.",
-  "opencodeInstallNotImplemented": "OpenCode install is not implemented in Phase 0-2. Use the skill engine to install skills.",
-  "opencodeUpdateNotImplemented": "OpenCode update is not implemented in Phase 0-2.",
-  "opencodeUninstallNotImplemented": "OpenCode uninstall is not implemented in Phase 0-2.",
   "invalidProvider": "Invalid provider: {provider}. Available providers: {validProviders}",
   "generalError": "Error",
-  "stackTrace": "Stack",
-  "configSwitchNotSupported": "Configuration switching is not supported for {{agent}}"
+  "stackTrace": "Stack"
 }

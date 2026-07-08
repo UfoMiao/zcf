@@ -21,8 +21,5 @@
   "updateSkipped": "跳过更新",
   "updateSuccess": "{tool} 更新成功！",
   "updateSummary": "更新摘要",
-  "updating": "正在更新 {tool}...",
-  "checkUpdatesNotSupported": "{{agent}} 不支持检查更新",
-  "noUpdateAvailable": "{{agent}} 已是最新版本",
-  "updateAvailable": "{{agent}} 有可用更新：{{currentVersion}} -> {{latestVersion}}"
+  "updating": "正在更新 {tool}..."
 }

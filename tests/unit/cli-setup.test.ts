@@ -20,31 +20,14 @@ vi.mock('../../src/commands/check-updates', () => ({
   checkUpdates: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../src/commands/agent-dispatch', () => ({
-  dispatchInstall: vi.fn().mockResolvedValue(undefined),
-  dispatchUpdate: vi.fn().mockResolvedValue(undefined),
-  dispatchUninstall: vi.fn().mockResolvedValue(undefined),
-  dispatchConfigSwitch: vi.fn().mockResolvedValue(undefined),
-  dispatchCheckUpdates: vi.fn().mockResolvedValue(undefined),
-}))
-
-// Use stable i18n mock so help text tests don't depend on backend loading.
-vi.mock('../../src/i18n', () => {
-  const changeLanguage = vi.fn()
-  const t = vi.fn((key: string, options?: Record<string, unknown>) => {
-    const opts = options || {}
-    const optStr = Object.entries(opts).map(([k, v]) => `${k}=${v}`).join(' ')
-    return optStr ? `${key} ${optStr}` : key
-  })
+// Use real i18n system for better integration testing
+vi.mock('../../src/i18n', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/i18n')>()
   return {
-    i18n: {
-      isInitialized: true,
-      language: 'en',
-      t,
-      changeLanguage,
-    },
+    ...actual,
+    // Only mock initialization functions to avoid setup issues in tests
     initI18n: vi.fn().mockResolvedValue(undefined),
-    changeLanguage,
+    changeLanguage: vi.fn(),
     ensureI18nInitialized: vi.fn(),
   }
 })
@@ -71,8 +54,8 @@ vi.mock('../../src/utils/prompts', () => ({
 }))
 
 const { changeLanguage, i18n } = await import('../../src/i18n')
-const { dispatchCheckUpdates } = await import('../../src/commands/agent-dispatch')
-const mockedDispatchCheckUpdates = vi.mocked(dispatchCheckUpdates)
+const { checkUpdates } = await import('../../src/commands/check-updates')
+const mockedCheckUpdates = vi.mocked(checkUpdates)
 const { readZcfConfigAsync } = await import('../../src/utils/zcf-config')
 const { selectScriptLanguage } = await import('../../src/utils/prompts')
 const mockSelectScriptLanguage = vi.mocked(selectScriptLanguage)
@@ -102,11 +85,11 @@ describe('cli-setup', () => {
 
       // Check that commands were registered
       expect(commandSpy).toHaveBeenCalledWith('', 'Show interactive menu (default)')
-      expect(commandSpy).toHaveBeenCalledWith('init', 'Initialize agent configuration')
-      expect(commandSpy).toHaveBeenCalledWith('update', 'Update agent workflow files')
+      expect(commandSpy).toHaveBeenCalledWith('init', 'Initialize Claude Code configuration')
+      expect(commandSpy).toHaveBeenCalledWith('update', 'Update Claude Code prompts only')
       expect(commandSpy).toHaveBeenCalledWith('ccr', 'Configure Claude Code Router for model proxy')
       expect(commandSpy).toHaveBeenCalledWith('ccu [...args]', 'Run Claude Code usage analysis tool')
-      expect(commandSpy).toHaveBeenCalledWith('check-updates', 'Check and update agent tools to latest versions')
+      expect(commandSpy).toHaveBeenCalledWith('check-updates', 'Check and update Claude Code and CCR to latest versions')
 
       // Check help and version were setup
       expect(helpSpy).toHaveBeenCalled()
@@ -165,24 +148,20 @@ describe('cli-setup', () => {
       expect(result[0].body).toContain('ZCF - Zero-Config Code Flow')
 
       // Should add commands section
-      const commandsSection = result.find(s => s.title && s.title.includes('cli:help.commands'))
+      const commandsSection = result.find(s => s.title.includes('Commands'))
       expect(commandsSection).toBeDefined()
       expect(commandsSection.body).toContain('zcf init')
       expect(commandsSection.body).toContain('zcf update')
 
-      // Should add supported agents section
-      const agentsSection = result.find(s => s.title && s.title.includes('cli:help.section.supportedAgents'))
-      expect(agentsSection).toBeDefined()
-
       // Should add options section
-      const optionsSection = result.find(s => s.title && s.title.includes('cli:help.options'))
+      const optionsSection = result.find(s => s.title.includes('Options'))
       expect(optionsSection).toBeDefined()
       expect(optionsSection.body).toContain('--lang')
       expect(optionsSection.body).toContain('--config-lang')
       expect(optionsSection.body).toContain('--force')
 
       // Should add examples section
-      const examplesSection = result.find(s => s.title && s.title.includes('cli:help.examples'))
+      const examplesSection = result.find(s => s.title.includes('Examples'))
       expect(examplesSection).toBeDefined()
       expect(examplesSection.body).toContain('npx zcf')
       expect(examplesSection.body).toContain('npx zcf init')
@@ -197,8 +176,8 @@ describe('cli-setup', () => {
 
       // Existing section should be present
       expect(result).toContain(existingSection)
-      // Should have header + existing + commands + agents + options + examples
-      expect(result.length).toBe(6)
+      // Should have header + existing + 3 new sections
+      expect(result.length).toBe(5)
     })
   })
 
@@ -237,8 +216,8 @@ describe('cli-setup', () => {
         expect(parsed.options.configLang).toBe('zh-CN')
       })
 
-      it('should recognize -A as shortcut for --ai-output-lang', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-A', 'en'], { run: false })
+      it('should recognize -a as shortcut for --ai-output-lang', () => {
+        const parsed = cli.parse(['node', 'test', 'init', '-a', 'en'], { run: false })
         expect(parsed.options.aiOutputLang).toBe('en')
       })
 
@@ -297,18 +276,13 @@ describe('cli-setup', () => {
         expect(parsed.options.codeType).toBe('codex')
       })
 
-      it('should recognize -a as shortcut for --agent', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-a', 'codex'], { run: false })
-        expect(parsed.options.agent).toBe('codex')
-      })
-
       it('should default code-type to claude-code when not provided', () => {
         const parsed = cli.parse(['node', 'test', 'init'], { run: false })
         expect(parsed.options.codeType).toBeUndefined()
       })
 
       it('should work with multiple new shortcuts together', () => {
-        const parsed = cli.parse(['node', 'test', 'init', '-s', '-c', 'zh-CN', '-A', 'en', '-t', 'api_key'], { run: false })
+        const parsed = cli.parse(['node', 'test', 'init', '-s', '-c', 'zh-CN', '-a', 'en', '-t', 'api_key'], { run: false })
         expect(parsed.options.skipPrompt).toBe(true)
         expect(parsed.options.configLang).toBe('zh-CN')
         expect(parsed.options.aiOutputLang).toBe('en')
@@ -331,14 +305,13 @@ describe('cli-setup', () => {
     describe('help text verification', () => {
       it('should display all shortcuts in help text', () => {
         const helpSections = customizeHelp([])
-        const optionsSection = helpSections.find(s => s.title && s.title.includes('cli:help.options'))
+        const optionsSection = helpSections.find(s => s.title.includes('Options'))
 
-        expect(optionsSection).toBeDefined()
         // All new single-character shortcuts should be present
         expect(optionsSection.body).toContain('-s') // skip-prompt
         expect(optionsSection.body).toContain('-c') // config-lang
-        expect(optionsSection.body).toContain('-A') // ai-output-lang
-        expect(optionsSection.body).toContain('-r') // config-action
+        expect(optionsSection.body).toContain('-a') // ai-output-lang
+        expect(optionsSection.body).toContain('-o') // config-action
         expect(optionsSection.body).toContain('-t') // api-type
         expect(optionsSection.body).toContain('-k') // api-key
         expect(optionsSection.body).toContain('-u') // api-url
@@ -348,20 +321,17 @@ describe('cli-setup', () => {
         expect(optionsSection.body).toContain('-g') // all-lang
         expect(optionsSection.body).toContain('-x') // install-cometix-line
         expect(optionsSection.body).toContain('-T') // code-type
-        expect(optionsSection.body).toContain('-a') // agent
       })
 
       it('should have proper formatting in help text', () => {
         const helpSections = customizeHelp([])
-        const optionsSection = helpSections.find(s => s.title && s.title.includes('cli:help.options'))
+        const optionsSection = helpSections.find(s => s.title.includes('Options'))
 
-        expect(optionsSection).toBeDefined()
         // Should contain properly formatted options
         expect(optionsSection.body).toContain('--skip-prompt, -s')
         expect(optionsSection.body).toContain('--config-lang, -c')
-        expect(optionsSection.body).toContain('--ai-output-lang, -A')
+        expect(optionsSection.body).toContain('--ai-output-lang, -a')
         expect(optionsSection.body).toContain('--code-type, -T')
-        expect(optionsSection.body).toContain('--agent, -a')
       })
     })
 
@@ -371,12 +341,12 @@ describe('cli-setup', () => {
         expect(parsed.options.skipPrompt).toBe(true)
       })
 
-      it('should pass options to dispatchCheckUpdates action', async () => {
+      it('should pass options to checkUpdates action', async () => {
         const checkCommand = cli.commands.find((cmd: any) => cmd.name === 'check-updates')
         expect(checkCommand).toBeDefined()
         if (checkCommand?.commandAction) {
           await checkCommand.commandAction({ skipPrompt: true, codeType: 'cc' })
-          expect(mockedDispatchCheckUpdates).toHaveBeenCalledWith({ skipPrompt: true, codeType: 'cc' })
+          expect(mockedCheckUpdates).toHaveBeenCalledWith({ skipPrompt: true, codeType: 'cc' })
         }
       })
     })

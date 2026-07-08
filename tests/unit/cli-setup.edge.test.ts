@@ -31,21 +31,11 @@ vi.mock('../../src/commands/check-updates', () => ({
   checkUpdates: vi.fn().mockResolvedValue(undefined),
 }))
 
-vi.mock('../../src/commands/agent-dispatch', () => ({
-  dispatchInstall: vi.fn().mockResolvedValue(undefined),
-  dispatchUpdate: vi.fn().mockResolvedValue(undefined),
-  dispatchUninstall: vi.fn().mockResolvedValue(undefined),
-  dispatchConfigSwitch: vi.fn().mockResolvedValue(undefined),
-  dispatchCheckUpdates: vi.fn().mockResolvedValue(undefined),
-}))
-
 vi.mock('../../src/i18n', () => ({
   initI18n: vi.fn(),
   changeLanguage: vi.fn(),
   i18n: {
     t: vi.fn((key: string) => key),
-    isInitialized: true,
-    language: 'en',
   },
 }))
 
@@ -203,7 +193,7 @@ describe('cli-setup - Edge Cases', () => {
 
       await setupCommands(cli)
 
-      expect(commandSpy).toHaveBeenCalledWith('uninstall', 'Remove agent configurations and tools')
+      expect(commandSpy).toHaveBeenCalledWith('uninstall', 'Remove ZCF configurations and tools')
     })
 
     it('should register all command aliases properly', async () => {
@@ -211,9 +201,9 @@ describe('cli-setup - Edge Cases', () => {
       await setupCommands(cli)
 
       // Find commands by their descriptions and check aliases
-      const initCommand = cli.commands.find(cmd => cmd.description === 'Initialize agent configuration')
-      const updateCommand = cli.commands.find(cmd => cmd.description === 'Update agent workflow files')
-      const checkCommand = cli.commands.find(cmd => cmd.description === 'Check and update agent tools to latest versions')
+      const initCommand = cli.commands.find(cmd => cmd.description === 'Initialize Claude Code configuration')
+      const updateCommand = cli.commands.find(cmd => cmd.description === 'Update Claude Code prompts only')
+      const checkCommand = cli.commands.find(cmd => cmd.description === 'Check and update Claude Code and CCR to latest versions')
 
       expect(initCommand?.aliasNames).toContain('i')
       expect(updateCommand?.aliasNames).toContain('u')

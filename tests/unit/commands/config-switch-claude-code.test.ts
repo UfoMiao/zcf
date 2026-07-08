@@ -2,9 +2,9 @@ import inquirer from 'inquirer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { configSwitchCommand } from '../../../src/commands/config-switch'
 
+import { resolveCodeToolType } from '../../../src/constants'
 // Import the mocked module correctly
 import { ClaudeCodeConfigManager } from '../../../src/utils/claude-code-config-manager'
-import { resolveCodeType } from '../../../src/utils/code-type-resolver'
 import { readZcfConfig } from '../../../src/utils/zcf-config'
 
 // Mock external dependencies
@@ -102,10 +102,6 @@ vi.mock('../../../src/utils/error-handler', () => ({
   handleGeneralError: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/code-type-resolver', () => ({
-  resolveCodeType: vi.fn((value?: string) => Promise.resolve(value || 'claude-code')),
-}))
-
 vi.mock('../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(() => ({
     version: '1.0.0',
@@ -123,7 +119,7 @@ vi.mock('../../../src/constants', () => ({
 
 const mockInquirer = vi.mocked(inquirer)
 const mockClaudeCodeConfigManager = vi.mocked(ClaudeCodeConfigManager)
-const mockResolveCodeType = vi.mocked(resolveCodeType)
+const mockResolveCodeToolType = vi.mocked(resolveCodeToolType)
 
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(vi.fn())
 
@@ -357,18 +353,37 @@ describe('config-switch command - Claude Code Support', () => {
 
   describe('code type resolution', () => {
     it('should use provided code type', async () => {
+      const mockResolveCodeToolType = vi.mocked(resolveCodeToolType)
+      mockResolveCodeToolType.mockReturnValue('claude-code')
+
       await configSwitchCommand({ list: true, codeType: 'claude-code' })
 
-      expect(mockResolveCodeType).toHaveBeenCalledWith('claude-code')
+      expect(mockResolveCodeToolType).toHaveBeenCalledWith('claude-code')
     })
 
     it('should fallback to ZCF config code type', async () => {
+      const mockReadZcfConfig = vi.mocked(readZcfConfig)
+      mockReadZcfConfig.mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'zh-CN',
+        codeToolType: 'claude-code',
+        lastUpdated: new Date().toISOString(),
+      })
+
       await configSwitchCommand({ list: true })
 
-      expect(mockResolveCodeType).toHaveBeenCalledWith()
+      expect(mockReadZcfConfig).toHaveBeenCalled()
     })
 
     it('should fallback to default code type', async () => {
+      const mockReadZcfConfig = vi.mocked(readZcfConfig)
+      mockReadZcfConfig.mockReturnValue({
+        version: '1.0.0',
+        preferredLang: 'zh-CN',
+        codeToolType: 'claude-code',
+        lastUpdated: new Date().toISOString(),
+      })
+
       await configSwitchCommand({ list: true })
 
       // Should use DEFAULT_CODE_TOOL_TYPE ('claude-code')
@@ -420,7 +435,7 @@ describe('config-switch command - Claude Code Support', () => {
 describe('config-switch command - Codex Support', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockResolveCodeType.mockImplementation((type: any) => Promise.resolve(type || 'codex'))
+    mockResolveCodeToolType.mockImplementation((type: any) => type || 'claude-code')
     mockClaudeCodeConfigManager.readConfig.mockReturnValue(undefined as any)
     mockListCodexProviders.mockResolvedValue([
       { id: 'provider-1', name: 'Provider One', baseUrl: 'https://one.test', envKey: 'PROVIDER_ONE' },

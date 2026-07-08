@@ -90,13 +90,9 @@ vi.mock('../../../src/utils/zcf-config', () => ({
   updateZcfConfig: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/code-tools/codex', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../src/utils/code-tools/codex')>()
-  return {
-    ...actual,
-    runCodexFullInit: vi.fn(),
-  }
-})
+vi.mock('../../../src/utils/code-tools/codex', () => ({
+  runCodexFullInit: vi.fn(),
+}))
 // Use real i18n system for better integration testing
 vi.mock('../../../src/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/i18n')>()
@@ -149,20 +145,16 @@ vi.mock('node:fs', () => ({
   existsSync: vi.fn(),
 }))
 
-vi.mock('../../../src/constants', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../../src/constants')>()
-  return {
-    ...actual,
-    CLAUDE_DIR: '/test/.claude',
-    DEFAULT_CODE_TOOL_TYPE: 'claude-code',
-    SETTINGS_FILE: '/test/.claude/settings.json',
-    CODE_TOOL_BANNERS: {
-      'claude-code': 'ZCF',
-      'codex': 'Codex',
-    },
-    isCodeToolType: vi.fn((type: string) => ['claude-code', 'codex'].includes(type)),
-  }
-})
+vi.mock('../../../src/constants', () => ({
+  CLAUDE_DIR: '/test/.claude',
+  DEFAULT_CODE_TOOL_TYPE: 'claude-code',
+  SETTINGS_FILE: '/test/.claude/settings.json',
+  CODE_TOOL_BANNERS: {
+    'claude-code': 'ZCF',
+    'codex': 'Codex',
+  },
+  isCodeToolType: vi.fn((type: string) => ['claude-code', 'codex'].includes(type)),
+}))
 
 // Common test setup
 interface TestMocks {

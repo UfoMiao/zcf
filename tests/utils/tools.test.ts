@@ -79,13 +79,13 @@ vi.mock('../../src/i18n', async (importOriginal) => {
     },
   }
 })
-vi.mock('../../src/constants', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../../src/constants')>()
-  return {
-    ...actual,
-    DEFAULT_CODE_TOOL_TYPE: 'claude-code',
-  }
-})
+vi.mock('../../src/constants', () => ({
+  I18N: {
+    'zh-CN': {},
+    'en': {},
+  },
+  DEFAULT_CODE_TOOL_TYPE: 'claude-code',
+}))
 
 const mockInquirer = vi.mocked(inquirer)
 const mockExecuteCcusage = vi.mocked(executeCcusage)

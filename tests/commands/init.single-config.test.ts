@@ -54,7 +54,6 @@ vi.mock('../../src/utils/installer', () => ({
     globalPath: '/usr/local/bin/claude-code',
   })),
   installClaudeCode: vi.fn(),
-  isClaudeCodeInstalled: vi.fn().mockResolvedValue(true),
   verifyInstallation: vi.fn(() => ({
     success: true,
     commandPath: '/usr/local/bin/claude',

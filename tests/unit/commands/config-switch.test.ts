@@ -65,10 +65,6 @@ vi.mock('../../../src/utils/error-handler', () => ({
   handleGeneralError: vi.fn(),
 }))
 
-vi.mock('../../../src/utils/code-type-resolver', () => ({
-  resolveCodeType: vi.fn((value?: string) => Promise.resolve(value || 'codex')),
-}))
-
 vi.mock('../../../src/utils/zcf-config', () => ({
   readZcfConfig: vi.fn(() => ({
     version: '1.0.0',
