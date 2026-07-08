@@ -1,5 +1,5 @@
 import type { SupportedLang } from '../../constants'
-import { join } from 'pathe'
+import { dirname, join } from 'pathe'
 import { OPENCODE_CONFIG_FILE, OPENCODE_DIR } from '../../constants'
 import { ensureI18nInitialized, i18n } from '../../i18n'
 import { ensureDir, exists, readFile, writeFile } from '../fs-operations'
@@ -82,7 +82,7 @@ export function readOpenCodeConfig(): OpenCodeConfig | null {
  * Write the OpenCode global configuration file.
  */
 export function writeOpenCodeConfig(config: OpenCodeConfig): void {
-  ensureDir(join(OPENCODE_CONFIG_FILE, '..'))
+  ensureDir(dirname(OPENCODE_CONFIG_FILE))
   writeJsonConfig(OPENCODE_CONFIG_FILE, config)
 }
 
@@ -134,7 +134,7 @@ export function getOpenCodeStatus(): OpenCodeStatus {
     configured: !!config.model,
     model: config.model,
     smallModel: config.small_model,
-    providers: config.enabled_providers,
+    providers: config.enabled_providers || [],
   }
 }
 
@@ -179,9 +179,10 @@ export function switchOpenCodeModel(
     const backupPath = backupOpenCodeConfig()
     const existing = readOpenCodeConfig() || {}
 
+    const existingProviders = existing.enabled_providers || []
     const updates: Partial<OpenCodeConfig> = {
       model: model.trim(),
-      enabled_providers: [parsed.provider],
+      enabled_providers: Array.from(new Set([...existingProviders, parsed.provider])),
     }
 
     if (options.smallModel) {
@@ -208,10 +209,90 @@ export function switchOpenCodeModel(
 
 /**
  * Entry point for setting up OpenCode templates and configuration.
- * Currently aligns the active code tool type in ZCF config.
+ * Aligns the active code tool type in ZCF config.
  */
 export async function setupOpenCode(_lang: SupportedLang): Promise<void> {
   updateZcfConfig({ codeToolType: 'opencode' })
+}
+
+/**
+ * Ensure the OpenCode global config registers the given skill directories.
+ * Duplicates are removed and existing user paths are preserved.
+ */
+export function updateOpenCodeSkillsPaths(newPaths: string[], options: { remove?: boolean } = {}): void {
+  const config = readOpenCodeConfig() || {}
+  const existingPaths = config.skills?.paths || []
+  let updatedPaths: string[]
+
+  if (options.remove) {
+    updatedPaths = existingPaths.filter(p => !newPaths.includes(p))
+  }
+  else {
+    updatedPaths = Array.from(new Set([...existingPaths, ...newPaths]))
+  }
+
+  const updatedConfig: OpenCodeConfig = {
+    ...config,
+    skills: {
+      ...config.skills,
+      paths: updatedPaths,
+    },
+  }
+
+  writeOpenCodeConfig(updatedConfig)
+}
+
+/**
+ * Remove the given skill directories from OpenCode's skills.paths.
+ */
+export function removeOpenCodeSkillsPaths(paths: string[]): void {
+  updateOpenCodeSkillsPaths(paths, { remove: true })
+}
+
+export interface OpenCodeFullInitOptions {
+  skipPrompt?: boolean
+  workflows?: string[] | string | boolean
+}
+
+/**
+ * Run the full OpenCode initialization flow.
+ * Installs ZCF skills into the OpenCode skills directory and registers them
+ * in opencode.json.
+ */
+export async function runOpenCodeFullInit(options: OpenCodeFullInitOptions = {}): Promise<void> {
+  ensureI18nInitialized()
+  updateZcfConfig({ codeToolType: 'opencode' })
+
+  const { selectAndInstallWorkflows } = await import('../workflow-installer')
+
+  let selectedWorkflows: string[] | undefined
+  if (Array.isArray(options.workflows)) {
+    selectedWorkflows = options.workflows
+  }
+  else if (typeof options.workflows === 'string') {
+    selectedWorkflows = [options.workflows]
+  }
+
+  await selectAndInstallWorkflows('en', selectedWorkflows)
+}
+
+/**
+ * Update OpenCode skills to the latest templates.
+ */
+export async function runOpenCodeUpdate(_force = false, _skipPrompt = false): Promise<boolean> {
+  ensureI18nInitialized()
+  const { selectAndInstallWorkflows } = await import('../workflow-installer')
+  await selectAndInstallWorkflows('en')
+  return true
+}
+
+/**
+ * Uninstall OpenCode skills managed by ZCF.
+ */
+export async function runOpenCodeUninstall(): Promise<void> {
+  ensureI18nInitialized()
+  const { uninstallSkillsForCodeTool } = await import('../workflow-installer')
+  await uninstallSkillsForCodeTool('opencode')
 }
 
 export default {
@@ -223,4 +304,9 @@ export default {
   parseOpenCodeModel,
   switchOpenCodeModel,
   setupOpenCode,
+  updateOpenCodeSkillsPaths,
+  removeOpenCodeSkillsPaths,
+  runOpenCodeFullInit,
+  runOpenCodeUpdate,
+  runOpenCodeUninstall,
 }

@@ -32,6 +32,7 @@
   "outputStyles": "输出风格 - 删除输出风格配置",
   "commands": "自定义指令 - 删除自定义 ZCF 指令",
   "agents": "自定义代理 - 删除自定义 ZCF 代理",
+  "skills": "Skills - 删除 ZCF 技能",
   "claudeMd": "CLAUDE.md - 删除全局记忆文件",
   "permissionsEnvs": "权限和环境变量 - 删除权限配置和环境变量",
   "mcps": "MCP 服务 - 删除 MCP 服务器配置",

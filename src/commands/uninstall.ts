@@ -61,6 +61,13 @@ export async function uninstall(options: UninstallOptions = {}): Promise<void> {
       return
     }
 
+    // For OpenCode, use OpenCode-specific uninstaller
+    if (codeType === 'opencode') {
+      const { runOpenCodeUninstall } = await import('../utils/code-tools/opencode')
+      await runOpenCodeUninstall()
+      return
+    }
+
     // For Claude Code, continue with existing logic
     // Handle non-interactive mode
     if (options.mode && options.mode !== 'interactive') {
@@ -154,6 +161,10 @@ async function showCustomUninstallMenu(uninstaller: ZcfUninstaller): Promise<voi
       {
         name: i18n.t('uninstall:agents'),
         value: 'agents' as const,
+      },
+      {
+        name: i18n.t('uninstall:skills'),
+        value: 'skills' as const,
       },
       {
         name: i18n.t('uninstall:claudeMd'),

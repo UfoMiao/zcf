@@ -32,7 +32,7 @@ When receiving user input, first perform type determination and clearly inform t
 
 - Generate detailed markdown planning document
 
-- Store document in `./.claude/plan` directory, named in plan/xxx.md format
+- Store document in `./.opencode/plan` directory, named in plan/xxx.md format
 
 - Include: objective definition, feature breakdown, implementation steps, acceptance criteria
 

@@ -32,6 +32,7 @@
   "outputStyles": "Output Styles - Remove output style configurations",
   "commands": "Commands - Remove custom ZCF commands",
   "agents": "Agents - Remove custom ZCF agents",
+  "skills": "Skills - Remove ZCF skills",
   "claudeMd": "CLAUDE.md - Remove global memory file",
   "permissionsEnvs": "Permissions & Envs - Remove permissions and environment variables",
   "mcps": "MCPs - Remove MCP server configurations",

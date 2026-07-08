@@ -11,5 +11,6 @@
   "useCustomModel": "使用自定义模型",
   "backupSuccess": "✔ 已备份到 {{path}}",
   "statusConfigured": "OpenCode 已配置",
-  "statusNotConfigured": "OpenCode 未配置"
+  "statusNotConfigured": "OpenCode 未配置",
+  "setupComplete": "OpenCode 配置完成"
 }

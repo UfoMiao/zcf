@@ -4,6 +4,7 @@ import { i18n } from './i18n'
 
 // Claude Code configuration paths
 export const CLAUDE_DIR = join(homedir(), '.claude')
+export const CLAUDE_SKILLS_DIR = join(CLAUDE_DIR, 'skills')
 export const SETTINGS_FILE = join(CLAUDE_DIR, 'settings.json')
 export const CLAUDE_MD_FILE = join(CLAUDE_DIR, 'CLAUDE.md')
 export const ClAUDE_CONFIG_FILE = join(homedir(), '.claude.json')
@@ -15,12 +16,19 @@ export const CODEX_CONFIG_FILE = join(CODEX_DIR, 'config.toml')
 export const CODEX_AUTH_FILE = join(CODEX_DIR, 'auth.json')
 export const CODEX_AGENTS_FILE = join(CODEX_DIR, 'AGENTS.md')
 export const CODEX_PROMPTS_DIR = join(CODEX_DIR, 'prompts')
+export const CODEX_SKILLS_DIR = join(CODEX_DIR, 'skills')
 
 // OpenCode configuration paths
 // Per official docs: https://opencode.ai/docs/config/
 export const OPENCODE_DIR = join(homedir(), '.config', 'opencode')
 export const OPENCODE_CONFIG_FILE = join(OPENCODE_DIR, 'opencode.json')
 export const OPENCODE_SKILLS_DIR = join(OPENCODE_DIR, 'skills')
+
+// OpenCode project-level paths
+export const PROJECT_OPENCODE_DIR = '.opencode'
+export const PROJECT_OPENCODE_CONFIG_FILE = 'opencode.json'
+export const PROJECT_OPENCODE_SKILLS_DIR = join(PROJECT_OPENCODE_DIR, 'skills')
+export const PROJECT_OPENCODE_COMMANDS_DIR = join(PROJECT_OPENCODE_DIR, 'commands')
 
 // ZCF configuration paths
 export const ZCF_CONFIG_DIR = join(homedir(), '.ufomiao', 'zcf')

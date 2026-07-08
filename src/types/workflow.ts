@@ -23,6 +23,8 @@ export interface WorkflowConfig {
   autoInstallAgents: boolean
   category: 'common' | 'plan' | 'sixStep' | 'bmad' | 'git'
   outputDir: string
+  /** Source skill group directory under templates/<code-tool>/skills/ */
+  sourceDir: string
 }
 
 export interface WorkflowInstallResult {
@@ -30,5 +32,6 @@ export interface WorkflowInstallResult {
   success: boolean
   installedCommands: string[]
   installedAgents: string[]
+  installedSkills: string[]
   errors?: string[]
 }

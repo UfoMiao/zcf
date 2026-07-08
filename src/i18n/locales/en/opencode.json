@@ -11,5 +11,6 @@
   "useCustomModel": "Use custom model",
   "backupSuccess": "✔ Backup created at {{path}}",
   "statusConfigured": "OpenCode is configured",
-  "statusNotConfigured": "OpenCode is not configured"
+  "statusNotConfigured": "OpenCode is not configured",
+  "setupComplete": "OpenCode setup complete"
 }

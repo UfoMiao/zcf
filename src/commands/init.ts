@@ -487,6 +487,41 @@ export async function init(options: InitOptions = {}): Promise<void> {
       return
     }
 
+    if (codeToolType === 'opencode') {
+      const { runOpenCodeFullInit, switchOpenCodeModel } = await import('../utils/code-tools/opencode')
+
+      let selectedWorkflows: string[] | undefined
+      if (Array.isArray(options.workflows)) {
+        selectedWorkflows = options.workflows
+      }
+      else if (typeof options.workflows === 'string') {
+        selectedWorkflows = [options.workflows]
+      }
+      else if (options.workflows === true) {
+        selectedWorkflows = undefined
+      }
+
+      if (options.workflows !== false) {
+        await runOpenCodeFullInit({ skipPrompt: options.skipPrompt, workflows: selectedWorkflows })
+      }
+
+      if (options.apiModel) {
+        switchOpenCodeModel(options.apiModel)
+      }
+
+      updateZcfConfig({
+        version,
+        preferredLang: i18n.language as SupportedLang,
+        templateLang: configLang,
+        aiOutputLang: options.aiOutputLang
+          ?? zcfConfig?.aiOutputLang
+          ?? 'en',
+        codeToolType,
+      })
+      console.log(ansis.green(i18n.t('opencode:setupComplete')))
+      return
+    }
+
     // Step 4: Select AI output language
     const aiOutputLang = await resolveAiOutputLanguage(i18n.language as SupportedLang, options.aiOutputLang, zcfConfig, options.skipPrompt)
 

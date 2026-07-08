@@ -12,7 +12,7 @@ This command initializes or updates BMad-Method (V6) in your project.
 
 1. Check if `_bmad/` directory exists to determine if BMad V6 is already installed
 2. Check for legacy V4 installations (`.bmad-core` or `.bmad-method` directories)
-3. Fresh install executes: `npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language English --document-output-language English --yes`
+3. Fresh install executes: `npx bmad-method install --directory . --modules bmm --tools opencode --communication-language English --document-output-language English --yes`
 4. Existing install executes: `npx bmad-method install --directory . --action quick-update --yes`
 5. Fix installer bug: rename `{output_folder}` to `_bmad-output` (Beta known issue)
 6. Automatically update `.gitignore` (remove V4 entries, add V6 entries)
@@ -29,7 +29,7 @@ const path = require('node:path')
 const LEGACY_GITIGNORE_ENTRIES = [
   '.bmad-core',
   '.bmad-method',
-  '.claude/commands/BMad',
+  '.opencode/commands/BMad',
   '{output_folder}',  // v6.0.0-Beta.8 bug artifact
 ]
 
@@ -170,7 +170,7 @@ async function initBmad() {
       'npx bmad-method install',
       '--directory .',
       '--modules bmm',
-      '--tools claude-code',
+      '--tools opencode',
       '--communication-language English',
       '--document-output-language English',
       '--yes',
@@ -232,14 +232,14 @@ async function initBmad() {
     console.log('   • /bmad-bmm-dev-story               — Implement User Story')
 
     // Legacy V4 IDE command cleanup reminder
-    const legacyClaudeAgents = path.join(cwd, '.claude', 'commands', 'BMad', 'agents')
-    const legacyClaudeTasks = path.join(cwd, '.claude', 'commands', 'BMad', 'tasks')
+    const legacyClaudeAgents = path.join(cwd, '.opencode', 'commands', 'BMad', 'agents')
+    const legacyClaudeTasks = path.join(cwd, '.opencode', 'commands', 'BMad', 'tasks')
     if (fs.existsSync(legacyClaudeAgents) || fs.existsSync(legacyClaudeTasks)) {
       console.log('')
       console.log('⚠️  Legacy V4 IDE commands detected, consider removing manually:')
-      if (fs.existsSync(legacyClaudeAgents)) console.log('   • .claude/commands/BMad/agents/')
-      if (fs.existsSync(legacyClaudeTasks)) console.log('   • .claude/commands/BMad/tasks/')
-      console.log('   New V6 commands are installed under .claude/commands/bmad/')
+      if (fs.existsSync(legacyClaudeAgents)) console.log('   • .opencode/commands/BMad/agents/')
+      if (fs.existsSync(legacyClaudeTasks)) console.log('   • .opencode/commands/BMad/tasks/')
+      console.log('   New V6 commands are installed under .opencode/commands/bmad/')
     }
   }
   catch (error) {
@@ -248,7 +248,7 @@ async function initBmad() {
     console.log('🛠️  Manual Installation Guide:')
     console.log('   1. Ensure Node.js 20+ is installed')
     console.log('   2. Non-interactive install:')
-    console.log('      npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language English --document-output-language English --yes')
+    console.log('      npx bmad-method install --directory . --modules bmm --tools opencode --communication-language English --document-output-language English --yes')
     console.log('   3. Quick update existing installation:')
     console.log('      npx bmad-method install --directory . --action quick-update --yes')
     console.log('   4. Or interactive install:')
@@ -265,7 +265,7 @@ initBmad()
 
 ## Usage
 
-Simply type in Claude Code:
+Simply type in OpenCode:
 
 ```
 /bmad-init
@@ -274,7 +274,7 @@ Simply type in Claude Code:
 This command will:
 
 1. Detect current installation status (V6 / V4 legacy / not installed)
-2. Fresh install: non-interactively execute `npx bmad-method install --directory . --modules bmm --tools claude-code --communication-language English --document-output-language English --yes`
+2. Fresh install: non-interactively execute `npx bmad-method install --directory . --modules bmm --tools opencode --communication-language English --document-output-language English --yes`
 3. Existing install: execute `npx bmad-method install --directory . --action quick-update --yes`
 4. Fix `{output_folder}` → `_bmad-output` installer bug
 5. Automatically update `.gitignore` (clean up legacy entries, add V6 entries)

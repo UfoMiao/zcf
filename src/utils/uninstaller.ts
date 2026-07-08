@@ -3,7 +3,8 @@ import { homedir } from 'node:os'
 import { pathExists } from 'fs-extra'
 import { join } from 'pathe'
 import { exec } from 'tinyexec'
-import { ZCF_CONFIG_FILE } from '../constants'
+import { getOrderedWorkflows } from '../config/workflows'
+import { CLAUDE_SKILLS_DIR, ZCF_CONFIG_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { moveToTrash } from './trash'
@@ -12,6 +13,7 @@ export type UninstallItem
   = | 'output-styles'
     | 'commands'
     | 'agents'
+    | 'skills'
     | 'claude-md'
     | 'permissions-envs'
     | 'mcps'
@@ -162,6 +164,43 @@ export class ZcfUninstaller {
     }
     catch (error: any) {
       result.errors.push(`Failed to remove custom agents: ${error.message}`)
+    }
+
+    return result
+  }
+
+  /**
+   * 3.5. Remove skills directories managed by ZCF (~/.claude/skills/<group>/)
+   */
+  async removeSkills(): Promise<UninstallResult> {
+    const result: UninstallResult = {
+      success: false,
+      removed: [],
+      removedConfigs: [],
+      errors: [],
+      warnings: [],
+    }
+
+    try {
+      const workflows = getOrderedWorkflows()
+      const sourceDirs = Array.from(new Set(workflows.map(config => config.sourceDir)))
+
+      for (const sourceDir of sourceDirs) {
+        const skillsPath = join(CLAUDE_SKILLS_DIR, sourceDir)
+
+        if (await pathExists(skillsPath)) {
+          const trashResult = await moveToTrash(skillsPath)
+          if (!trashResult[0]?.success) {
+            result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
+          }
+          result.removed.push(`skills/${sourceDir}/`)
+        }
+      }
+
+      result.success = true
+    }
+    catch (error: any) {
+      result.errors.push(`Failed to remove skills: ${error.message}`)
     }
 
     return result
@@ -624,6 +663,8 @@ export class ZcfUninstaller {
         return await this.removeCustomCommands()
       case 'agents':
         return await this.removeCustomAgents()
+      case 'skills':
+        return await this.removeSkills()
       case 'claude-md':
         return await this.removeClaudeMd()
       case 'permissions-envs':

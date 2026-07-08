@@ -278,7 +278,7 @@ if [ "$HAS_UNCOMMITTED" = true ]; then
         COMMIT_TYPE="docs"
         COMMIT_SCOPE="readme"
         COMMIT_DESCRIPTION="update README documentation"
-      elif echo "$CHANGED_FILES" | grep -E "\.claude/" >/dev/null; then
+      elif echo "$CHANGED_FILES" | grep -E "\.opencode/" >/dev/null; then
         COMMIT_TYPE="docs"
         COMMIT_SCOPE="commands"
         COMMIT_DESCRIPTION="update command documentation"
@@ -318,7 +318,7 @@ if [ "$HAS_UNCOMMITTED" = true ]; then
 "
     done
     COMMIT_BODY="${COMMIT_BODY}
-🤖 Generated with [Claude Code](https://claude.ai/code)
+🤖 Generated with OpenCode
     
     # Create the commit
     git commit -m "${COMMIT_MSG}

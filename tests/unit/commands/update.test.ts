@@ -103,7 +103,7 @@ describe('update command', () => {
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('chinese-simplified')
       vi.mocked(_updatePromptOnly).mockResolvedValue(undefined)
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
-      vi.mocked(selectAndInstallWorkflows).mockResolvedValue(undefined)
+      vi.mocked(selectAndInstallWorkflows).mockResolvedValue([])
 
       await update({ skipBanner: true })
 
@@ -119,7 +119,7 @@ describe('update command', () => {
 
       vi.mocked(resolveTemplateLanguage).mockResolvedValue('en')
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('english')
-      vi.mocked(selectAndInstallWorkflows).mockResolvedValue(undefined)
+      vi.mocked(selectAndInstallWorkflows).mockResolvedValue([])
 
       await update({ skipBanner: true })
 
@@ -155,7 +155,7 @@ describe('update command', () => {
       vi.mocked(updateZcfConfig).mockResolvedValue(undefined)
 
       const { selectAndInstallWorkflows } = await import('../../../src/utils/workflow-installer')
-      vi.mocked(selectAndInstallWorkflows).mockResolvedValue(undefined)
+      vi.mocked(selectAndInstallWorkflows).mockResolvedValue([])
 
       await update({ configLang: 'en', aiOutputLang: 'chinese-simplified', skipBanner: true })
 

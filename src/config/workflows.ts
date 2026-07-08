@@ -11,6 +11,7 @@ export interface WorkflowConfigBase {
   autoInstallAgents: boolean
   category: 'common' | 'plan' | 'sixStep' | 'bmad' | 'git'
   outputDir: string
+  sourceDir: string
 }
 
 export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
@@ -26,6 +27,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     autoInstallAgents: true,
     category: 'common',
     outputDir: 'common',
+    sourceDir: 'zcf',
   },
   {
     id: 'sixStepsWorkflow',
@@ -36,6 +38,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     autoInstallAgents: false,
     category: 'sixStep',
     outputDir: 'workflow',
+    sourceDir: 'zcf',
   },
   {
     id: 'featPlanUx',
@@ -49,6 +52,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     autoInstallAgents: true,
     category: 'plan',
     outputDir: 'feat',
+    sourceDir: 'zcf',
   },
   {
     id: 'gitWorkflow',
@@ -59,6 +63,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     autoInstallAgents: false,
     category: 'git',
     outputDir: 'git',
+    sourceDir: 'zcf',
   },
   {
     id: 'bmadWorkflow',
@@ -69,6 +74,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     autoInstallAgents: false,
     category: 'bmad',
     outputDir: 'bmad',
+    sourceDir: 'bmad',
   },
 ]
 
