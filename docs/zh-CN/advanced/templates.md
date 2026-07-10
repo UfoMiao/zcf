@@ -184,7 +184,7 @@ git commit -m "Add custom output style"
 **命令**：
 - `git-commit.md` - 智能 Git 提交
 - `git-rollback.md` - 安全回滚
-- `git-cleanBranches.md` - 清理已合并分支
+- `git-clean-branches.md` - 清理已合并分支
 - `git-worktree.md` - Git 工作树管理
 
 **用途**：Git 操作自动化

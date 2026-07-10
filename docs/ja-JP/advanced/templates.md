@@ -184,7 +184,7 @@ git commit -m "Add custom output style"
 **コマンド**:
 - `git-commit.md` - スマートGitコミット
 - `git-rollback.md` - 安全なロールバック
-- `git-cleanBranches.md` - マージ済みブランチのクリーンアップ
+- `git-clean-branches.md` - マージ済みブランチのクリーンアップ
 - `git-worktree.md` - Git worktree管理
 
 **目的**: Git操作の自動化

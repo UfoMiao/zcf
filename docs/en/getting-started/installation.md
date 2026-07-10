@@ -357,7 +357,7 @@ According to the tool used, try the following commands in the command palette:
 /prompts:workflow  # Six-stage development workflow
 /prompts:git-commit    # Git commit command
 /prompts:git-rollback  # Git rollback command
-/prompts:git-cleanBranches  # Clean merged branches
+/prompts:git-clean-branches  # Clean merged branches
 /prompts:git-worktree  # Git worktree management
 ```
 

@@ -1,7 +1,6 @@
 ---
-name: git-cleanBranches
+name: git-clean-branches
 description: Safely find and clean up merged or stale Git branches with dry-run mode and custom base/protected branches support
-compatibility: opencode
 ---
 
 # Claude Command: Clean Branches
@@ -15,16 +14,16 @@ Runs in **read-only preview (`--dry-run`)** mode by default, requiring explicit 
 
 ```bash
 # [Safest] Preview branches to be cleaned without executing any deletions
-/git-cleanBranches --dry-run
+/git-clean-branches --dry-run
 
 # Clean local branches merged to main and inactive for over 90 days (requires individual confirmation)
-/git-cleanBranches --stale 90
+/git-clean-branches --stale 90
 
 # Clean local and remote branches merged to release/v2.1 (auto-confirm)
-/git-cleanBranches --base release/v2.1 --remote --yes
+/git-clean-branches --base release/v2.1 --remote --yes
 
 # [Dangerous] Force delete an unmerged local branch
-/git-cleanBranches --force outdated-feature
+/git-clean-branches --force outdated-feature
 ```
 
 ### Options

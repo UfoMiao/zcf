@@ -18,6 +18,6 @@
   "workflowOption.bmadWorkflow": "BMAD-Method Extension Installer (Agile Development Workflow)",
   "workflowOption.commonTools": "Common Tools (Hierarchical Directory Initialization + General-purpose agents)",
   "workflowOption.featPlanUx": "Feature Planning and UX Design (feat + planner + ui-ux-designer)",
-  "workflowOption.gitWorkflow": "Git Commands (commit + rollback + cleanBranches + worktree)",
+  "workflowOption.gitWorkflow": "Git Commands (commit + rollback + clean-branches + worktree)",
   "workflowOption.sixStepsWorkflow": "Six Steps Workflow (workflow)"
 }

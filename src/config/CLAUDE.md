@@ -95,7 +95,7 @@ interface WorkflowCategories {
   }
   git: {
     id: 'gitWorkflow'
-    commands: ['git-commit', 'git-rollback', 'git-cleanBranches', 'git-worktree']
+    commands: ['git-commit', 'git-rollback', 'git-clean-branches', 'git-worktree']
     agents: []
   }
 }

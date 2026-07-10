@@ -18,6 +18,6 @@
   "workflowOption.bmadWorkflow": "BMAD-Method 扩展安装器 (支持敏捷开发工作流)",
   "workflowOption.commonTools": "通用工具 (层级目录初始化 + 通用agents)",
   "workflowOption.featPlanUx": "功能规划和 UX 设计 (feat + planner + ui-ux-designer)",
-  "workflowOption.gitWorkflow": "Git 指令 (commit + rollback + cleanBranches + worktree)",
+  "workflowOption.gitWorkflow": "Git 指令 (commit + rollback + clean-branches + worktree)",
   "workflowOption.sixStepsWorkflow": "六步工作流 (workflow)"
 }

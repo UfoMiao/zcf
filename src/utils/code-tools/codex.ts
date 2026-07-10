@@ -1382,7 +1382,7 @@ function getGitPromptFiles(workflowSrc: string, preferredLang: string): string[]
   const files = [
     'git-commit.md',
     'git-rollback.md',
-    'git-cleanBranches.md',
+    'git-clean-branches.md',
     'git-worktree.md',
   ]
 

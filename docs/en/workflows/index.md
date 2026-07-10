@@ -32,7 +32,7 @@ Use the following commands in Codex (note the `/prompts:` prefix):
 - `/prompts:workflow` - Six-stage workflow
 - `/prompts:git-commit` - Git commit command
 - `/prompts:git-rollback` - Git rollback command
-- `/prompts:git-cleanBranches` - Clean merged branches
+- `/prompts:git-clean-branches` - Clean merged branches
 - `/prompts:git-worktree` - Git worktree management
 
 > ⚠️ **Note**: Codex currently only supports six-stage workflow and Git workflows. Feature development workflow (feat), project initialization (init-project), and BMad workflow are not yet available in Codex.

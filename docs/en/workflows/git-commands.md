@@ -12,7 +12,7 @@ Git workflow provides a series of smart Git operation commands to simplify versi
 |------|------------|-------|------|
 | **Smart Commit** | `/git-commit` | `/prompts:git-commit` | Intelligently generate commit messages and split commits |
 | **Safe Rollback** | `/git-rollback` | `/prompts:git-rollback` | Safely rollback to specified commit |
-| **Clean Branches** | `/git-cleanBranches` | `/prompts:git-cleanBranches` | Clean merged branches |
+| **Clean Branches** | `/git-clean-branches` | `/prompts:git-clean-branches` | Clean merged branches |
 | **Worktree Management** | `/git-worktree` | `/prompts:git-worktree` | Manage Git Worktree, support create, migrate, delete |
 
 > 💡 **Tip**: Codex uses `/prompts:` prefix, while Claude Code directly uses `/` prefix.
@@ -53,7 +53,7 @@ Safe rollback command with features including:
 /prompts:git-rollback
 ```
 
-### `/git-cleanBranches` / `/prompts:git-cleanBranches`
+### `/git-clean-branches` / `/prompts:git-clean-branches`
 
 Safely clean merged branches with features including:
 
@@ -64,9 +64,9 @@ Safely clean merged branches with features including:
 
 **Usage Example**:
 ```
-/git-cleanBranches
+/git-clean-branches
 # Or in Codex:
-/prompts:git-cleanBranches
+/prompts:git-clean-branches
 ```
 
 ### `/git-worktree` / `/prompts:git-worktree`

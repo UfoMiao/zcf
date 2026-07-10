@@ -184,7 +184,7 @@ Workflow templates define structured development processes. Each workflow includ
 **Commands**:
 - `git-commit.md` - Smart Git commit
 - `git-rollback.md` - Safe rollback
-- `git-cleanBranches.md` - Clean merged branches
+- `git-clean-branches.md` - Clean merged branches
 - `git-worktree.md` - Git worktree management
 
 **Purpose**: Git operation automation

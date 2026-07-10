@@ -32,7 +32,7 @@ title: Claude Code 設定
 │      ├─ feat.md                 # 機能開発ワークフローコマンド
 │      ├─ git-commit.md
 │      ├─ git-rollback.md
-│      ├─ git-cleanBranches.md
+│      ├─ git-clean-branches.md
 │      ├─ git-worktree.md
 │      └─ bmad-init.md
 ├─ agents/

@@ -36,7 +36,7 @@ ZCF 针对 Claude Code 的配置包括以下核心能力：
 │       ├── feat.md              # 功能开发工作流命令
 │       ├── git-commit.md
 │       ├── git-rollback.md
-│       ├── git-cleanBranches.md
+│       ├── git-clean-branches.md
 │       ├── git-worktree.md
 │       └── bmad-init.md
 ├── agents/                      # 工作流智能体目录

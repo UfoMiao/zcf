@@ -188,7 +188,7 @@ Codex 目前支持以下工作流模板（使用 `/prompts:` 前缀）：
 | **六阶段工作流** | `/prompts:workflow` | `/zcf:workflow` | 完整的六阶段开发流程（研究→构思→计划→执行→优化→评审） |
 | **Git 工作流** | `/prompts:git-commit` | `/git-commit` | 智能 Git 提交 |
 | | `/prompts:git-rollback` | `/git-rollback` | 安全回滚 |
-| | `/prompts:git-cleanBranches` | `/git-cleanBranches` | 清理已合并分支 |
+| | `/prompts:git-clean-branches` | `/git-clean-branches` | 清理已合并分支 |
 | | `/prompts:git-worktree` | `/git-worktree` | Git 工作树管理 |
 
 > 💡 **提示**：

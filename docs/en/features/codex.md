@@ -188,7 +188,7 @@ Codex currently supports the following workflow templates (using `/prompts:` pre
 | **Six-Stage Workflow** | `/prompts:workflow` | `/zcf:workflow` | Complete six-stage development process (Research→Ideation→Planning→Execution→Optimization→Review) |
 | **Git Workflow** | `/prompts:git-commit` | `/git-commit` | Smart Git commit |
 | | `/prompts:git-rollback` | `/git-rollback` | Safe rollback |
-| | `/prompts:git-cleanBranches` | `/git-cleanBranches` | Clean merged branches |
+| | `/prompts:git-clean-branches` | `/git-clean-branches` | Clean merged branches |
 | | `/prompts:git-worktree` | `/git-worktree` | Git worktree management |
 
 > 💡 **Tip**:

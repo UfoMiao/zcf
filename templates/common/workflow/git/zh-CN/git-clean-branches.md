@@ -3,9 +3,9 @@ description: 安全查找并清理已合并或过期的 Git 分支，支持 dry-
 allowed-tools: Read(**), Exec(git fetch, git config, git branch, git remote, git push, git for-each-ref, git log), Write()
 argument-hint: [--base <branch>] [--stale <days>] [--remote] [--force] [--dry-run] [--yes]
 # examples:
-#   - /git-cleanBranches --dry-run
-#   - /git-cleanBranches --base release/v2.1 --stale 90
-#   - /git-cleanBranches --remote --yes
+#   - /git-clean-branches --dry-run
+#   - /git-clean-branches --base release/v2.1 --stale 90
+#   - /git-clean-branches --remote --yes
 ---
 
 # Claude Command: Clean Branches
@@ -19,16 +19,16 @@ argument-hint: [--base <branch>] [--stale <days>] [--remote] [--force] [--dry-ru
 
 ```bash
 # [最安全] 预览将要清理的分支，不执行任何删除
-/git-cleanBranches --dry-run
+/git-clean-branches --dry-run
 
 # 清理已合并到 main 且超过 90 天未动的本地分支 (需逐一确认)
-/git-cleanBranches --stale 90
+/git-clean-branches --stale 90
 
 # 清理已合并到 release/v2.1 的本地与远程分支 (自动确认)
-/git-cleanBranches --base release/v2.1 --remote --yes
+/git-clean-branches --base release/v2.1 --remote --yes
 
 # [危险] 强制删除一个未合并的本地分支
-/git-cleanBranches --force outdated-feature
+/git-clean-branches --force outdated-feature
 ```
 
 ### Options

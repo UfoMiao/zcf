@@ -32,7 +32,7 @@ ZCF 通过 MCP + 工作流模板帮助团队标准化开发流程。本章介绍
 - `/prompts:workflow` - 六阶段工作流
 - `/prompts:git-commit` - Git 提交命令
 - `/prompts:git-rollback` - Git 回滚命令
-- `/prompts:git-cleanBranches` - 清理已合并分支
+- `/prompts:git-clean-branches` - 清理已合并分支
 - `/prompts:git-worktree` - Git 工作树管理
 
 > ⚠️ **注意**：Codex 目前仅支持六阶段工作流和 Git 工作流。功能开发工作流（feat）、项目初始化（init-project）和 BMad 工作流暂未在 Codex 中提供。

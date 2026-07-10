@@ -24,8 +24,8 @@ describe('translation Files - Workflow', () => {
       expect(enWorkflowData).toHaveProperty('workflowOption.gitWorkflow')
       expect(zhWorkflowData).toHaveProperty('workflowOption.gitWorkflow')
 
-      expect(enWorkflowData['workflowOption.gitWorkflow']).toBe('Git Commands (commit + rollback + cleanBranches + worktree)')
-      expect(zhWorkflowData['workflowOption.gitWorkflow']).toBe('Git 指令 (commit + rollback + cleanBranches + worktree)')
+      expect(enWorkflowData['workflowOption.gitWorkflow']).toBe('Git Commands (commit + rollback + clean-branches + worktree)')
+      expect(zhWorkflowData['workflowOption.gitWorkflow']).toBe('Git 指令 (commit + rollback + clean-branches + worktree)')
     })
   })
 

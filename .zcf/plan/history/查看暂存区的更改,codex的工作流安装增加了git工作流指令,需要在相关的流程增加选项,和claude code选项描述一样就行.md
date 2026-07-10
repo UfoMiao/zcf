@@ -1,14 +1,14 @@
 # 任务计划：为 Codex 工作流安装增加 Git 工作流选项
 
 ## 背景与目标
-- 需求：在 Codex 的“工作流导入/安装”流程中，增加“Git 指令 (commit + rollback + cleanBranches + worktree)”选项，描述与 Claude Code 保持一致；用于包含查看暂存区更改等 Git 能力（由 git-commit.md 实现）。
+- 需求：在 Codex 的“工作流导入/安装”流程中，增加“Git 指令 (commit + rollback + clean-branches + worktree)”选项，描述与 Claude Code 保持一致；用于包含查看暂存区更改等 Git 能力（由 git-commit.md 实现）。
 - 范围：仅改动 Codex 导入逻辑，不改模板与 i18n 文案，不触达 dist。
 
 ## 实施方案（分组选项，一次导入）
 - 在工作流选择列表中新增一个分组项“Git 指令 …”，内部展开为四个 git 提示文件：
   - git-commit.md
   - git-rollback.md
-  - git-cleanBranches.md
+  - git-clean-branches.md
   - git-worktree.md
 - 在交互选择与 skipPrompt 两种模式中，均将该分组展开为具体文件后再复制到 `~/.codex/prompts/`。
 
@@ -21,7 +21,7 @@
   - 在交互模式与 skipPrompt 模式下复制文件前调用展开逻辑
 
 ## 预期结果
-- 运行 Codex 的工作流导入或 Full Init 时，出现“Git 指令 (commit + rollback + cleanBranches + worktree)”选项；选中后在 `~/.codex/prompts/` 中生成四个 git 提示文件。
+- 运行 Codex 的工作流导入或 Full Init 时，出现“Git 指令 (commit + rollback + clean-branches + worktree)”选项；选中后在 `~/.codex/prompts/` 中生成四个 git 提示文件。
 
 ## 验证步骤
 1. 执行导入：在交互模式选择“Git 指令 …”，确认四个文件复制到 `~/.codex/prompts/`。

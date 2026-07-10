@@ -37,12 +37,12 @@ templates/
 │       │   ├── en/          # English git commands
 │       │   │   ├── git-commit.md
 │       │   │   ├── git-worktree.md
-│       │   │   ├── git-cleanBranches.md
+│       │   │   ├── git-clean-branches.md
 │       │   │   └── git-rollback.md
 │       │   └── zh-CN/       # Chinese git commands
 │       │       ├── git-commit.md
 │       │       ├── git-worktree.md
-│       │       ├── git-cleanBranches.md
+│       │       ├── git-clean-branches.md
 │       │       └── git-rollback.md
 │       └── sixStep/         # Six-step workflow
 │           ├── en/          # English workflow
@@ -100,7 +100,7 @@ templates/
 - **Purpose**: Business model and architecture design
 
 ##### Git Workflow
-- **Commands**: `git-commit`, `git-worktree`, `git-cleanBranches`, `git-rollback`
+- **Commands**: `git-commit`, `git-worktree`, `git-clean-branches`, `git-rollback`
 - **Purpose**: Version control management with conventional commits, worktree management, branch cleanup, and rollback operations
 
 ## Key Dependencies and Configuration

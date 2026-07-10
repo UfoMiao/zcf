@@ -36,7 +36,7 @@ After executing `zcf init`, ZCF will automatically create the following director
 │       ├── feat.md              # Feature development workflow command
 │       ├── git-commit.md
 │       ├── git-rollback.md
-│       ├── git-cleanBranches.md
+│       ├── git-clean-branches.md
 │       ├── git-worktree.md
 │       └── bmad-init.md
 ├── agents/                      # Workflow agents

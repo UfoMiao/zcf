@@ -275,7 +275,7 @@ describe('codex - common templates usage', () => {
       const gitFilePaths = capturedReadPaths.filter(p =>
         p.includes('git-commit.md')
         || p.includes('git-rollback.md')
-        || p.includes('git-cleanBranches.md')
+        || p.includes('git-clean-branches.md')
         || p.includes('git-worktree.md'),
       )
 

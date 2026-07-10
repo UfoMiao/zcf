@@ -93,7 +93,7 @@ interface TemplateCategories {
 
 #### Git Workflow (`git/`)
 
-- **Commands**: `git-commit.md`, `git-worktree.md`, `git-cleanBranches.md`, `git-rollback.md`
+- **Commands**: `git-commit.md`, `git-worktree.md`, `git-clean-branches.md`, `git-rollback.md`
 - **Agents**: None - Git operation commands
 
 ### Memory Template Structure

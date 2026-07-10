@@ -30,12 +30,12 @@ templates/
 │           ├── en/
 │           │   ├── git-commit.md
 │           │   ├── git-worktree.md
-│           │   ├── git-cleanBranches.md
+│           │   ├── git-clean-branches.md
 │           │   └── git-rollback.md
 │           └── zh-CN/
 │               ├── git-commit.md
 │               ├── git-worktree.md
-│               ├── git-cleanBranches.md
+│               ├── git-clean-branches.md
 │               └── git-rollback.md
 ├── claude-code/
 │   ├── en/workflow/          # git/ directory removed
@@ -56,12 +56,12 @@ templates/
 ### Step 2: Move English git workflow files
 - Move from `templates/claude-code/en/workflow/git/commands/*.md`
 - To `templates/common/workflow/git/en/`
-- Files: git-commit.md, git-worktree.md, git-cleanBranches.md, git-rollback.md
+- Files: git-commit.md, git-worktree.md, git-clean-branches.md, git-rollback.md
 
 ### Step 3: Move Chinese git workflow files
 - Move from `templates/claude-code/zh-CN/workflow/git/commands/*.md`
 - To `templates/common/workflow/git/zh-CN/`
-- Files: git-commit.md, git-worktree.md, git-cleanBranches.md, git-rollback.md
+- Files: git-commit.md, git-worktree.md, git-clean-branches.md, git-rollback.md
 
 ### Step 4: Delete duplicate files
 - Delete `templates/claude-code/en/workflow/git/` directory
@@ -85,11 +85,11 @@ templates/
 1. **New files to create**:
    - `templates/common/workflow/git/en/git-commit.md`
    - `templates/common/workflow/git/en/git-worktree.md`
-   - `templates/common/workflow/git/en/git-cleanBranches.md`
+   - `templates/common/workflow/git/en/git-clean-branches.md`
    - `templates/common/workflow/git/en/git-rollback.md`
    - `templates/common/workflow/git/zh-CN/git-commit.md`
    - `templates/common/workflow/git/zh-CN/git-worktree.md`
-   - `templates/common/workflow/git/zh-CN/git-cleanBranches.md`
+   - `templates/common/workflow/git/zh-CN/git-clean-branches.md`
    - `templates/common/workflow/git/zh-CN/git-rollback.md`
 
 2. **Files to delete** (12 duplicate files):

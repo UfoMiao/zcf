@@ -13,7 +13,7 @@ vi.mock('../../../../src/i18n', () => ({
         'configuration:outputStyles.ojousama-engineer.name': '傲娇大小姐工程师',
         'configuration:outputStyles.ojousama-engineer.description': '傲娇金发大小姐程序员哈雷酱，融合严谨工程师素养与傲娇大小姐特质',
         'workflow:workflowOption.sixStepsWorkflow': '六步工作流 (workflow)',
-        'workflow:workflowOption.gitWorkflow': 'Git 指令 (commit + rollback + cleanBranches + worktree)',
+        'workflow:workflowOption.gitWorkflow': 'Git 指令 (commit + rollback + clean-branches + worktree)',
         'codex:systemPromptPrompt': '请选择系统提示词风格',
         'codex:workflowSelectionPrompt': '选择要安装的工作流类型（多选）',
         'codex:workflowInstall': '✔ 已安装 Codex 工作流模板',
@@ -2019,7 +2019,7 @@ model_provider = ""
           return true
         // Mock git workflow files exist
         if (path.includes('git-commit.md') || path.includes('git-rollback.md')
-          || path.includes('git-cleanBranches.md') || path.includes('git-worktree.md')) {
+          || path.includes('git-clean-branches.md') || path.includes('git-worktree.md')) {
           return true
         }
         return false
@@ -2063,7 +2063,7 @@ model_provider = ""
         expect.any(String),
       )
       expect(writeFileSpy).toHaveBeenCalledWith(
-        expect.stringContaining('git-cleanBranches.md'),
+        expect.stringContaining('git-clean-branches.md'),
         expect.any(String),
       )
       expect(writeFileSpy).toHaveBeenCalledWith(
@@ -2134,7 +2134,7 @@ model_provider = ""
       // Arrange
       const options = {
         skipPrompt: true,
-        workflows: ['Git 指令 (commit + rollback + cleanBranches + worktree)'], // Git grouped workflow
+        workflows: ['Git 指令 (commit + rollback + clean-branches + worktree)'], // Git grouped workflow
       }
 
       // Spy on writeFile to capture what workflows are installed
@@ -2157,7 +2157,7 @@ model_provider = ""
         expect.any(String),
       )
       expect(writeFileSpy).toHaveBeenCalledWith(
-        expect.stringContaining('git-cleanBranches.md'),
+        expect.stringContaining('git-clean-branches.md'),
         expect.any(String),
       )
       expect(writeFileSpy).toHaveBeenCalledWith(
@@ -2178,7 +2178,7 @@ model_provider = ""
         skipPrompt: true,
         workflows: [
           '六步工作流 (workflow)',
-          'Git 指令 (commit + rollback + cleanBranches + worktree)',
+          'Git 指令 (commit + rollback + clean-branches + worktree)',
         ],
       }
 
@@ -2208,7 +2208,7 @@ model_provider = ""
         expect.any(String),
       )
       expect(writeFileSpy).toHaveBeenCalledWith(
-        expect.stringContaining('git-cleanBranches.md'),
+        expect.stringContaining('git-clean-branches.md'),
         expect.any(String),
       )
       expect(writeFileSpy).toHaveBeenCalledWith(
@@ -2258,7 +2258,7 @@ model_provider = ""
         if (path.includes('git') && path.includes('en'))
           return true
         if (path.includes('git-commit.md') || path.includes('git-rollback.md')
-          || path.includes('git-cleanBranches.md') || path.includes('git-worktree.md')) {
+          || path.includes('git-clean-branches.md') || path.includes('git-worktree.md')) {
           return true
         }
         return false

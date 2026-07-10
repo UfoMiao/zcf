@@ -355,7 +355,7 @@ npx zcf --version
 /prompts:workflow  # 6段階開発ワークフロー
 /prompts:git-commit    # Gitコミットコマンド
 /prompts:git-rollback  # Gitロールバックコマンド
-/prompts:git-cleanBranches  # マージ済みブランチのクリーンアップ
+/prompts:git-clean-branches  # マージ済みブランチのクリーンアップ
 /prompts:git-worktree  # Git worktree管理
 ```
 
