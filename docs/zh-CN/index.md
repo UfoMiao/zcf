@@ -34,13 +34,13 @@ GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元
 
 ---
 
-[![赞助商 code0](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/code0.jpg)](https://code0.ai?source=zcf)
-感谢 [code0.ai](https://code0.ai?source=zcf) 赞助本项目！[code0.ai](http://code0.ai) 是面向开发者与技术团队的 AI 编程工作台，聚合 Claude Code、Codex 等主流 Agent 编程能力，支持代码生成、项目理解、调试修复、代码审查与文档生成等常见研发场景。适合独立开发者、Agent 工程师、开源项目维护者和企业研发团队使用，支持开票和团队对接。通过[专属链接](https://code0.ai?source=zcf)注册后联系客服，可领取免费测试额度，体验更高效的 AI 编程工作流。
+[![赞助商 code0](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/code0.jpg)](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
+感谢 [code0.ai](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) 赞助本项目！[code0.ai](http://code0.ai) 是面向开发者与技术团队的 AI 编程工作台，聚合 Claude Code、Codex 等主流 Agent 编程能力，支持代码生成、项目理解、调试修复、代码审查与文档生成等常见研发场景。适合独立开发者、Agent 工程师、开源项目维护者和企业研发团队使用，支持开票和团队对接。通过[专属链接](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)注册后联系客服，可领取免费测试额度，体验更高效的 AI 编程工作流。
 
 ---
 
-[![赞助商 Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api.jpg)](https://console.claudeapi.com?source=zcf)
-感谢 [Claude API](https://console.claudeapi.com?source=zcf) 赞助本项目！Claude API 是专注 Claude 模型的官方渠道 API 服务商，基于 Anthropic 官方 Key 与 AWS Bedrock 官方渠道，提供稳定的 Claude Code 与 Agent 应用接入体验，支持 Claude 全系列模型，保留 Tool Use、长上下文等官方能力。服务非逆向、非降智，适合 Claude Code 深度用户、Agent 工程师与企业技术团队使用。通过[专属链接](https://console.claudeapi.com?source=zcf)注册后联系客服，可领取免费测试额度，并支持开票和团队对接。
+[![赞助商 Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api.jpg)](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
+感谢 [Claude API](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) 赞助本项目！Claude API 是专注 Claude 模型的官方渠道 API 服务商，基于 Anthropic 官方 Key 与 AWS Bedrock 官方渠道，提供稳定的 Claude Code 与 Agent 应用接入体验，支持 Claude 全系列模型，保留 Tool Use、长上下文等官方能力。服务非逆向、非降智，适合 Claude Code 深度用户、Agent 工程师与企业技术团队使用。通过[专属链接](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)注册后联系客服，可领取免费测试额度，并支持开票和团队对接。
 
 ---
 

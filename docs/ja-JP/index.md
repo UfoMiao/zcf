@@ -33,13 +33,13 @@ GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
-[![スポンサー code0](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/code0-en.jpg)](https://code0.ai?source=zcf)
-[code0.ai](https://code0.ai?source=zcf) がこのプロジェクトをスポンサーしてくれたことに感謝します！[code0.ai](http://code0.ai) は、開発者と技術チーム向けの AI コーディングワークスペースで、Claude Code や Codex などの主流な Agent コーディング能力を集約しています。コード生成、プロジェクト理解、デバッグ、コードレビュー、ドキュメント生成などの一般的な開発シナリオをサポートしており、個人開発者、Agent エンジニア、オープンソースメンテナー、企業の研究開発チームに適しています。請求書発行とチーム導入もサポートしています。[専用リンク](https://code0.ai?source=zcf)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取り、より効率的な AI コーディングワークフローを体験できます。
+[![スポンサー code0](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/code0-en.jpg)](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
+[code0.ai](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) がこのプロジェクトをスポンサーしてくれたことに感謝します！[code0.ai](http://code0.ai) は、開発者と技術チーム向けの AI コーディングワークスペースで、Claude Code や Codex などの主流な Agent コーディング能力を集約しています。コード生成、プロジェクト理解、デバッグ、コードレビュー、ドキュメント生成などの一般的な開発シナリオをサポートしており、個人開発者、Agent エンジニア、オープンソースメンテナー、企業の研究開発チームに適しています。請求書発行とチーム導入もサポートしています。[専用リンク](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取り、より効率的な AI コーディングワークフローを体験できます。
 
 ---
 
-[![スポンサー Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api-en.jpg)](https://console.claudeapi.com?source=zcf)
-[Claude API](https://console.claudeapi.com?source=zcf) がこのプロジェクトをスポンサーしてくれたことに感謝します！Claude API は、Claude モデルに特化した公式チャネルの API プロバイダーです。Anthropic 公式キーと AWS Bedrock 公式チャネルを基盤とし、Claude Code や Agent アプリケーションへの安定した統合体験を提供し、Claude 全シリーズモデルをサポートし、Tool Use や長いコンテキストなどの公式機能を保持しています。サービスはリバースエンジニアリングされておらず、モデル能力を低下させることはありません。Claude Code のヘビーユーザー、Agent エンジニア、企業の技術チームに適しています。[専用リンク](https://console.claudeapi.com?source=zcf)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取れます。請求書発行とチーム導入もサポートされています。
+[![スポンサー Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api-en.jpg)](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
+[Claude API](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) がこのプロジェクトをスポンサーしてくれたことに感謝します！Claude API は、Claude モデルに特化した公式チャネルの API プロバイダーです。Anthropic 公式キーと AWS Bedrock 公式チャネルを基盤とし、Claude Code や Agent アプリケーションへの安定した統合体験を提供し、Claude 全シリーズモデルをサポートし、Tool Use や長いコンテキストなどの公式機能を保持しています。サービスはリバースエンジニアリングされておらず、モデル能力を低下させることはありません。Claude Code のヘビーユーザー、Agent エンジニア、企業の技術チームに適しています。[専用リンク](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取れます。請求書発行とチーム導入もサポートされています。
 
 ---
 

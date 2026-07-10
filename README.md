@@ -55,13 +55,13 @@ Get 10% OFF GLM CODING PLAN：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
-[![Sponsor code0](./src/assets/code0-en.jpg)](https://code0.ai?source=zcf)
-Thanks to [code0.ai](https://code0.ai?source=zcf) for sponsoring this project! [code0.ai](http://code0.ai) is an AI coding workspace for developers and technical teams, bringing together mainstream Agent coding capabilities such as Claude Code and Codex. It supports common development scenarios including code generation, project understanding, debugging, code review, and documentation. It is suitable for independent developers, Agent engineers, open-source maintainers, and enterprise R&D teams, with invoicing and team onboarding supported. Register through the [exclusive link](https://code0.ai?source=zcf) and contact customer support to claim free test credits and experience a more efficient AI coding workflow.
+[![Sponsor code0](./src/assets/code0-en.jpg)](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
+Thanks to [code0.ai](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) for sponsoring this project! [code0.ai](http://code0.ai) is an AI coding workspace for developers and technical teams, bringing together mainstream Agent coding capabilities such as Claude Code and Codex. It supports common development scenarios including code generation, project understanding, debugging, code review, and documentation. It is suitable for independent developers, Agent engineers, open-source maintainers, and enterprise R&D teams, with invoicing and team onboarding supported. Register through the [exclusive link](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) and contact customer support to claim free test credits and experience a more efficient AI coding workflow.
 
 ---
 
-[![Sponsor Claude API](./src/assets/claude-api-en.jpg)](https://console.claudeapi.com?source=zcf)
-Thanks to [Claude API](https://console.claudeapi.com?source=zcf) for sponsoring this project! Claude API is an official-channel API provider focused on Claude models. Built on Anthropic official keys and AWS Bedrock official channels, it provides a stable integration experience for Claude Code and Agent applications, supports the full Claude model family, and preserves official capabilities such as Tool Use and long context. The service is not reverse-engineered and does not downgrade model capabilities, making it suitable for heavy Claude Code users, Agent engineers, and enterprise technical teams. Register through the [exclusive link](https://console.claudeapi.com?source=zcf) and contact customer support to claim free test credits. Invoicing and team onboarding are also supported.
+[![Sponsor Claude API](./src/assets/claude-api-en.jpg)](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
+Thanks to [Claude API](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) for sponsoring this project! Claude API is an official-channel API provider focused on Claude models. Built on Anthropic official keys and AWS Bedrock official channels, it provides a stable integration experience for Claude Code and Agent applications, supports the full Claude model family, and preserves official capabilities such as Tool Use and long context. The service is not reverse-engineered and does not downgrade model capabilities, making it suitable for heavy Claude Code users, Agent engineers, and enterprise technical teams. Register through the [exclusive link](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) and contact customer support to claim free test credits. Invoicing and team onboarding are also supported.
 
 ---
 
@@ -144,8 +144,8 @@ A huge thank you to all our sponsors for their generous support!
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8) (sponsored $100 proxy credits 💰)
 - [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo) (AI API aggregation gateway sponsor 🚀)
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C) (official direct-connect relay service sponsor 🛡️)
-- [code0](https://code0.ai?source=zcf) (AI coding workspace sponsor 🎁)
-- [Claude API](https://console.claudeapi.com?source=zcf) (Claude official API provider sponsor 🎁)
+- [code0](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) (AI coding workspace sponsor 🎁)
+- [Claude API](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) (Claude official API provider sponsor 🎁)
 
 - [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) (high-availability AI API relay platform sponsor 🎁)
 
