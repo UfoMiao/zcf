@@ -346,8 +346,8 @@ npx zcf --version
 
 **Claude Code：**
 ```
-/zcf:workflow  # 六阶段开发工作流
-/zcf:feat      # 功能开发工作流
+/workflow  # 六阶段开发工作流
+/feat      # 功能开发工作流
 /git-commit    # Git 提交命令
 /init-project  # 项目初始化
 ```
@@ -365,7 +365,7 @@ npx zcf --version
 
 > ✅ **成功标志**：如果命令能够正常执行并显示工作流界面，说明工作流导入成功。
 > 
-> 💡 **提示**：Codex 使用 `/prompts:` 前缀，而 Claude Code 使用 `/zcf:` 或直接 `/` 前缀。
+> 💡 **提示**：Codex 使用 `/prompts:`；Claude Code 使用 `/skill-name` 触发 skills（如 `/workflow`）。
 
 ### 3. 验证 MCP 服务
 

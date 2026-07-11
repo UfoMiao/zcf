@@ -16,13 +16,13 @@ ZCF 通过 MCP + 工作流模板帮助团队标准化开发流程。本章介绍
 
 ## 使用方法
 
-根据使用的工具，使用不同的命令前缀：
+根据使用的工具，选择对应的 skill 调用方式：
 
 ### Claude Code
 
-在 Claude Code 中使用以下命令：
-- `/zcf:workflow` - 六阶段工作流
-- `/zcf:feat` - 功能开发工作流
+在 Claude Code 中触发以下 skills：
+- `/workflow` - 六阶段工作流
+- `/feat` - 功能开发工作流
 - `/git-commit` - Git 提交命令
 - `/init-project` - 项目初始化
 

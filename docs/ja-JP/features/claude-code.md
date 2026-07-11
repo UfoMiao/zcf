@@ -59,7 +59,7 @@ title: Claude Code 設定
 
 ## ワークフロー・テンプレート
 
-- `/zcf:workflow` などの skills は `~/.claude/skills/` に配置（本体は `~/.agents/skills/`）
+- `/workflow` などの skills は `~/.claude/skills/` に配置（本体は `~/.agents/skills/`）
 - エージェントは `~/.claude/agents/zcf/` 配下に配置
 - `--workflows all/skip` で導入を制御
 

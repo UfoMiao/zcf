@@ -135,8 +135,8 @@ npx zcf u -s -g zh-CN -T claude-code
 
 ### 工作流模板
 
-- ✅ 六阶段工作流（`/zcf:workflow`）
-- ✅ 功能开发工作流（`/zcf:feat`）
+- ✅ 六阶段工作流（`/workflow`）
+- ✅ 功能开发工作流（`/feat`）
 - ✅ Git 工作流（`/git-commit` 等）
 - ✅ BMad 工作流（`/bmad-init`）
 - ✅ 通用工具（`/init-project`）

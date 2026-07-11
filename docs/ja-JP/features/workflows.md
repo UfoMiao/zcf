@@ -18,7 +18,7 @@ ZCF は開発作業を構造化する複数のワークフローを同梱し、`
 
 - インタラクティブ導入：`npx zcf` → 2 (Import Workflows)  
 - CLI：`npx zcf init -s --workflows all` または `--workflows skip`  
-- 会話中：`/zcf:workflow <内容>`、`/zcf:feat <機能名>`、`/git-commit` など
+- 会話中：`/workflow <内容>`、`/feat <機能名>`、`/git-commit` など
 
 ## ベストプラクティス
 

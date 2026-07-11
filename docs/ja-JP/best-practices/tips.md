@@ -264,16 +264,16 @@ npx zcf config-switch glm-provider --code-type codex
 
 ```bash
 # 1. 機能開発の計画
-/zcf:feat Add user comment functionality
+/feat Add user comment functionality
 
 # 2. 6 段階ワークフローで実装詳細を書く
-/zcf:workflow Implement comment CRUD operations
+/workflow Implement comment CRUD operations
 
 # 3. Git ワークフローでコミット
 /git-commit
 
 # 4. BMad ワークフローでイテレーション
-/zcf:bmad-init
+/bmad-init
 ```
 
 ### 10. 出力スタイル戦略
@@ -423,7 +423,7 @@ tar -xzf team-workflows.tar.gz -C ~/.claude/
 
 ```bash
 # 生成された資料を PR 説明に利用
-/zcf:feat New feature name
+/feat New feature name
 ```
 
 ## トラブルシューティングのヒント

@@ -269,16 +269,16 @@ npx zcf config-switch work --code-type codex
 
 ```bash
 # 1. Use feature development workflow to plan features
-/zcf:feat Add user comment functionality
+/feat Add user comment functionality
 
 # 2. Use six-stage workflow to implement details
-/zcf:workflow Implement comment CRUD operations
+/workflow Implement comment CRUD operations
 
 # 3. Use Git workflow to commit code
 /git-commit
 
 # 4. Use BMad workflow for iteration
-/zcf:bmad-init
+/bmad-init
 ```
 
 ### 10. Output Style Strategy
@@ -429,7 +429,7 @@ tar -xzf team-workflows.tar.gz -C ~/.claude/
 
 ```bash
 # Use workflow-generated content in PR description
-/zcf:feat New feature name
+/feat New feature name
 
 # Generated documents can be directly used for PR description
 ```

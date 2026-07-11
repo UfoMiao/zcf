@@ -20,12 +20,12 @@ The six-stage workflow is ZCF's core development process, covering the complete 
 Use the following command in Claude Code:
 
 ```
-/zcf:workflow <task description>
+/workflow <task description>
 ```
 
 **Example**:
 ```
-/zcf:workflow Implement user login functionality, supporting email and phone number login
+/workflow Implement user login functionality, supporting email and phone number login
 ```
 
 ### Codex
@@ -41,7 +41,7 @@ Use the following command in Codex (note different prefix):
 /prompts:workflow Implement user login functionality, supporting email and phone number login
 ```
 
-> 💡 **Tip**: Codex uses `/prompts:` prefix, while Claude Code uses `/zcf:` prefix.
+> 💡 **Tip**: Codex uses `/prompts:`; Claude Code uses `/skill-name` (e.g. `/workflow`).
 
 ## Six Stages Explained
 
@@ -141,7 +141,7 @@ Use the following command in Codex (note different prefix):
 
 ### Basic Flow
 
-1. **Enter Command**: Enter `/zcf:workflow` or `/prompts:workflow` and describe task
+1. **Invoke skill**: Enter `/workflow` or (Codex) `/prompts:workflow` and describe the task
 2. **Stage Execution**: AI executes six stages in order
 3. **User Confirmation**: Wait for user confirmation after each stage completes
 4. **Continue Next Step**: Enter next stage after user confirmation
@@ -171,16 +171,16 @@ For complex tasks, it's recommended to break down first then execute separately:
 
 ```
 # Main task
-/zcf:workflow Build user management system
+/workflow Build user management system
 
 # Sub-task 1
-/zcf:workflow Implement user registration functionality
+/workflow Implement user registration functionality
 
 # Sub-task 2
-/zcf:workflow Implement user login functionality
+/workflow Implement user login functionality
 
 # Sub-task 3
-/zcf:workflow Implement user information management
+/workflow Implement user information management
 ```
 
 ### 2. Combine with Project Initialization
@@ -195,7 +195,7 @@ Before starting workflow, it's recommended to initialize project configuration:
 # Codex doesn't support init-project yet, can directly use workflow
 
 # 3. Execute workflow
-/zcf:workflow <task description>
+/workflow <task description>
 ```
 
 After initialization, will generate:
@@ -228,10 +228,10 @@ Six-stage workflow can be combined with other workflows:
 
 ```bash
 # 1. Use feature development workflow to plan features
-/zcf:feat User comment functionality
+/feat User comment functionality
 
 # 2. Use six-stage workflow to implement details
-/zcf:workflow Implement comment CRUD operations and permission control
+/workflow Implement comment CRUD operations and permission control
 
 # 3. Use Git workflow to commit code
 /git-commit
@@ -242,7 +242,7 @@ Six-stage workflow can be combined with other workflows:
 ### Example 1: Simple Feature Development
 
 ```
-/zcf:workflow Add user avatar upload functionality
+/workflow Add user avatar upload functionality
 ```
 
 Workflow will:
@@ -256,7 +256,7 @@ Workflow will:
 ### Example 2: Complex System Development
 
 ```
-/zcf:workflow Build microservice architecture user authentication system, supporting OAuth2 and JWT
+/workflow Build microservice architecture user authentication system, supporting OAuth2 and JWT
 ```
 
 Workflow will:
@@ -270,7 +270,7 @@ Workflow will:
 ### Example 3: Code Refactoring
 
 ```
-/zcf:workflow Refactor user module, improve code quality and maintainability
+/workflow Refactor user module, improve code quality and maintainability
 ```
 
 Workflow will:

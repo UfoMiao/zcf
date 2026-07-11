@@ -20,12 +20,12 @@ title: ZCF 六阶段工作流
 在 Claude Code 中使用以下命令：
 
 ```
-/zcf:workflow <任务描述>
+/workflow <任务描述>
 ```
 
 **示例**：
 ```
-/zcf:workflow 实现用户登录功能，支持邮箱和手机号登录
+/workflow 实现用户登录功能，支持邮箱和手机号登录
 ```
 
 ### Codex
@@ -41,7 +41,7 @@ title: ZCF 六阶段工作流
 /prompts:workflow 实现用户登录功能，支持邮箱和手机号登录
 ```
 
-> 💡 **提示**：Codex 使用 `/prompts:` 前缀，而 Claude Code 使用 `/zcf:` 前缀。
+> 💡 **提示**：Codex 使用 `/prompts:`；Claude Code 使用 `/skill-name`（如 `/workflow`）。
 
 ## 六阶段详解
 
@@ -141,7 +141,7 @@ title: ZCF 六阶段工作流
 
 ### 基本流程
 
-1. **输入命令**：输入 `/zcf:workflow` 或 `/prompts:workflow` 并描述任务
+1. **触发 skill**：输入 `/workflow` 或（Codex）`/prompts:workflow` 并描述任务
 2. **阶段执行**：AI 按顺序执行六个阶段
 3. **用户确认**：每个阶段完成后等待用户确认
 4. **继续下一步**：用户确认后进入下一阶段
@@ -171,16 +171,16 @@ title: ZCF 六阶段工作流
 
 ```
 # 主任务
-/zcf:workflow 构建用户管理系统
+/workflow 构建用户管理系统
 
 # 子任务 1
-/zcf:workflow 实现用户注册功能
+/workflow 实现用户注册功能
 
 # 子任务 2
-/zcf:workflow 实现用户登录功能
+/workflow 实现用户登录功能
 
 # 子任务 3
-/zcf:workflow 实现用户信息管理
+/workflow 实现用户信息管理
 ```
 
 ### 2. 结合项目初始化
@@ -195,7 +195,7 @@ title: ZCF 六阶段工作流
 # Codex 暂不支持 init-project，可直接使用工作流
 
 # 3. 执行工作流
-/zcf:workflow <任务描述>
+/workflow <任务描述>
 ```
 
 初始化后会生成：
@@ -228,10 +228,10 @@ title: ZCF 六阶段工作流
 
 ```bash
 # 1. 使用功能开发工作流规划功能
-/zcf:feat 用户评论功能
+/feat 用户评论功能
 
 # 2. 使用六阶段工作流实现细节
-/zcf:workflow 实现评论的 CRUD 操作和权限控制
+/workflow 实现评论的 CRUD 操作和权限控制
 
 # 3. 使用 Git 工作流提交代码
 /git-commit
@@ -242,7 +242,7 @@ title: ZCF 六阶段工作流
 ### 示例 1：简单功能开发
 
 ```
-/zcf:workflow 添加用户头像上传功能
+/workflow 添加用户头像上传功能
 ```
 
 工作流会：
@@ -256,7 +256,7 @@ title: ZCF 六阶段工作流
 ### 示例 2：复杂系统开发
 
 ```
-/zcf:workflow 构建微服务架构的用户认证系统，支持 OAuth2 和 JWT
+/workflow 构建微服务架构的用户认证系统，支持 OAuth2 和 JWT
 ```
 
 工作流会：
@@ -270,7 +270,7 @@ title: ZCF 六阶段工作流
 ### 示例 3：代码重构
 
 ```
-/zcf:workflow 重构用户模块，提升代码质量和可维护性
+/workflow 重构用户模块，提升代码质量和可维护性
 ```
 
 工作流会：

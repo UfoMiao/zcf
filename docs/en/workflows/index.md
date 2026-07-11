@@ -16,13 +16,13 @@ ZCF helps teams standardize development processes through MCP + workflow templat
 
 ## Usage Methods
 
-Use different command prefixes based on the tool used:
+Use the appropriate skill invocation for your tool:
 
 ### Claude Code
 
-Use the following commands in Claude Code:
-- `/zcf:workflow` - Six-stage workflow
-- `/zcf:feat` - Feature development workflow
+Invoke the following skills in Claude Code:
+- `/workflow` - Six-stage workflow
+- `/feat` - Feature development workflow
 - `/git-commit` - Git commit command
 - `/init-project` - Project initialization
 

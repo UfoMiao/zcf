@@ -135,8 +135,8 @@ The execution flow of `zcf update` is as follows:
 
 ### Workflow Templates
 
-- ✅ Six-stage workflow (`/zcf:workflow`)
-- ✅ Feature development workflow (`/zcf:feat`)
+- ✅ Six-stage workflow (`/workflow`)
+- ✅ Feature development workflow (`/feat`)
 - ✅ Git workflow (`/git-commit` etc.)
 - ✅ BMad workflow (`/bmad-init`)
 - ✅ Common tools (`/init-project`)

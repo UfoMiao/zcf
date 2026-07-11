@@ -271,7 +271,7 @@ npm publish @your-org/zcf-templates
 2. **避免上下文过大**：
 - 全局 `CLAUDE.md` 仅保留必要设定
 - 复杂规范放入输出风格或项目记忆
-- 使用 `/zcf:init-project` 生成层级化结构
+- 使用 `/init-project` 生成层级化结构
 
 3. **定期更新**：
 ```bash

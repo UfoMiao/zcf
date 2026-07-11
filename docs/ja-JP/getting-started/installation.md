@@ -344,8 +344,8 @@ npx zcf --version
 
 **Claude Code:**
 ```
-/zcf:workflow  # 6段階開発ワークフロー
-/zcf:feat      # 機能開発ワークフロー
+/workflow  # 6段階開発ワークフロー
+/feat      # 機能開発ワークフロー
 /git-commit    # Gitコミットコマンド
 /init-project  # プロジェクト初期化
 ```
@@ -363,7 +363,7 @@ npx zcf --version
 
 > ✅ **成功の指標**: コマンドが正常に実行され、ワークフローインターフェースが表示される場合、ワークフローのインポートは成功しました。
 > 
-> 💡 **ヒント**: Codexは`/prompts:`プレフィックスを使用し、Claude Codeは`/zcf:`または直接`/`プレフィックスを使用します。
+> 💡 **ヒント**: Codexは`/prompts:`を使用し、Claude Codeは`/skill-name`（例：`/workflow`）でskillsを起動します。
 
 ### 3. MCPサービスの確認
 

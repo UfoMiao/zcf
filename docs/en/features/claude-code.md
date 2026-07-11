@@ -160,10 +160,10 @@ ZCF provides rich workflow templates to help standardize development processes.
 
 ### Default Workflows
 
-| Workflow | Command | Description |
+| Workflow | Skill | Description |
 |--------|------|------|
-| **Six-Stage Workflow** | `/zcf:workflow` | Complete six-stage development process (Research→Ideation→Planning→Execution→Optimization→Review) |
-| **Feature Development Workflow** | `/zcf:feat` | New feature design and implementation, includes planning and UI/UX design |
+| **Six-Stage Workflow** | `/workflow` | Complete six-stage development process (Research→Ideation→Planning→Execution→Optimization→Review) |
+| **Feature Development Workflow** | `/feat` | New feature design and implementation, includes planning and UI/UX design |
 | **Common Tools** | `/init-project` | Project initialization tool |
 | **Git Workflow** | `/git-commit` etc. | Git operation automation commands |
 | **BMad Workflow** | `/bmad-init` | Enterprise-level agile development process |

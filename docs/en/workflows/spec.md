@@ -199,10 +199,10 @@ Spec Workflow can be combined with other ZCF workflows:
 
 ```bash
 # In Claude Code
-/zcf:workflow Develop user comment feature, use Spec Workflow for requirements analysis
+/workflow Develop user comment feature, use Spec Workflow for requirements analysis
 
 # Or use feature development workflow
-/zcf:feat User comment feature
+/feat User comment feature
 ```
 
 In Codex, although Spec Workflow can be used as MCP service, there's no corresponding `/prompts:` command, need to use directly in conversation.

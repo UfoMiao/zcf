@@ -135,8 +135,8 @@ npx zcf u -s -g zh-CN -T claude-code
 
 ### ワークフローテンプレート
 
-- ✅ 6段階ワークフロー（`/zcf:workflow`）
-- ✅ 機能開発ワークフロー（`/zcf:feat`）
+- ✅ 6段階ワークフロー（`/workflow`）
+- ✅ 機能開発ワークフロー（`/feat`）
 - ✅ Git ワークフロー（`/git-commit` など）
 - ✅ BMad ワークフロー（`/bmad-init`）
 - ✅ 共通ツール（`/init-project`）

@@ -206,7 +206,7 @@ cat ~/.claude/skills/workflow/SKILL.md
 
 ### 2. Workflow Skills Not Recognized
 
-**Symptoms**: No response when entering `/zcf:workflow`
+**Symptoms**: No response when entering `/workflow`
 
 **Solutions**:
 
@@ -220,8 +220,8 @@ head -20 ~/.claude/skills/workflow/SKILL.md
 
 # 3. Restart Claude Code or Codex application
 
-# 4. Check command prefix
-# Claude Code: /zcf:workflow or /workflow
+# 4. Check skill invocation
+# Claude Code: /workflow
 # Codex: /prompts:workflow
 ```
 
@@ -458,7 +458,7 @@ cat ~/.codex/auth.json
 npx zcf init -T codex -s -p 302ai -k "sk-xxx"
 ```
 
-### 3. Codex Workflow Command Format
+### 3. Codex Workflow Skill Format
 
 **Symptoms**: Workflow skills cannot be used in Codex
 
@@ -467,7 +467,7 @@ npx zcf init -T codex -s -p 302ai -k "sk-xxx"
 ```bash
 # Codex uses different command prefix
 # Correct format: /prompts:workflow
-# Wrong format: /zcf:workflow
+# Wrong format: /workflow
 
 # Check workflow files
 ls -la ~/.codex/prompts/

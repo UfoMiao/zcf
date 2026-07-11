@@ -185,7 +185,7 @@ Codex currently supports the following workflow templates (using `/prompts:` pre
 
 | Workflow | Codex Command | Claude Code Command | Description |
 |--------|-----------|-----------------|------|
-| **Six-Stage Workflow** | `/prompts:workflow` | `/zcf:workflow` | Complete six-stage development process (Research→Ideation→Planning→Execution→Optimization→Review) |
+| **Six-Stage Workflow** | `/prompts:workflow` | `/workflow` | Complete six-stage development process (Research→Ideation→Planning→Execution→Optimization→Review) |
 | **Git Workflow** | `/prompts:git-commit` | `/git-commit` | Smart Git commit |
 | | `/prompts:git-rollback` | `/git-rollback` | Safe rollback |
 | | `/prompts:git-cleanBranches` | `/git-cleanBranches` | Clean merged branches |
@@ -201,8 +201,8 @@ Although Codex and Claude Code share the same MCP services, there are difference
 
 | Workflow Type | Claude Code | Codex |
 |-----------|------------|-------|
-| Six-Stage Workflow | ✅ `/zcf:workflow` | ✅ `/prompts:workflow` |
-| Feature Development Workflow | ✅ `/zcf:feat` | ❌ Not yet supported |
+| Six-Stage Workflow | ✅ `/workflow` | ✅ `/prompts:workflow` |
+| Feature Development Workflow | ✅ `/feat` | ❌ Not yet supported |
 | Project Initialization | ✅ `/init-project` | ❌ Not yet supported |
 | Git Workflow | ✅ `/git-commit` etc. | ✅ `/prompts:git-commit` etc. |
 | BMad Workflow | ✅ `/bmad-init` | ❌ Not yet supported |

@@ -11,7 +11,7 @@ disable-model-invocation: true
 ## 使用方法
 
 ```bash
-/zcf:workflow <任务描述>
+/workflow <任务描述>
 ```
 
 ## 上下文

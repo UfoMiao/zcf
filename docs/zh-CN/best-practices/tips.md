@@ -269,16 +269,16 @@ npx zcf config-switch work --code-type codex
 
 ```bash
 # 1. 使用功能开发工作流规划功能
-/zcf:feat 添加用户评论功能
+/feat 添加用户评论功能
 
 # 2. 使用六阶段工作流实现细节
-/zcf:workflow 实现评论的 CRUD 操作
+/workflow 实现评论的 CRUD 操作
 
 # 3. 使用 Git 工作流提交代码
 /git-commit
 
 # 4. 使用 BMad 工作流进行迭代
-/zcf:bmad-init
+/bmad-init
 ```
 
 ### 10. 输出风格策略
@@ -429,7 +429,7 @@ tar -xzf team-workflows.tar.gz -C ~/.claude/
 
 ```bash
 # 在 PR 描述中使用工作流生成的内容
-/zcf:feat 新功能名称
+/feat 新功能名称
 
 # 生成的文档可以直接用于 PR 描述
 ```

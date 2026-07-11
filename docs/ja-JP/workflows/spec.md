@@ -17,7 +17,7 @@ title: Spec ワークフロー
 ## 使い方
 
 ```
-/zcf:spec Draft spec for payment webhook handling
+/spec Draft spec for payment webhook handling
 ```
 
 追加すると良い情報：依存システム、SLA、セキュリティ要件、運用/監視の方針など。
@@ -26,4 +26,4 @@ title: Spec ワークフロー
 
 - 仕様ドラフトを Issue/PR に貼ってレビューを先に通す  
 - API/DB 変更が含まれる場合は ER 図や OpenAPI へのリンクを添付  
-- ワークフロー生成後に `/zcf:workflow` で実装計画をさらに具体化する
+- ワークフロー生成後に `/workflow` で実装計画をさらに具体化する

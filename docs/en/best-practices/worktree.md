@@ -142,9 +142,9 @@ Use `/git-worktree` to create multiple work areas, then start Claude Code separa
    ```
 
 2. Run workflows in each Worktree
-   - In solution1: `/zcf:workflow Develop xxx feature`
-   - In solution2: `/zcf:workflow Develop xxx feature, require high performance`
-   - In solution3: `/zcf:workflow Develop xxx feature, require concise code`
+   - In solution1: `/workflow Develop xxx feature`
+   - In solution2: `/workflow Develop xxx feature, require high performance`
+   - In solution3: `/workflow Develop xxx feature, require concise code`
 
 3. Compare results, choose best solution
 
@@ -167,7 +167,7 @@ If generated results deviate too much, it's not recommended to continue letting 
 /git-worktree add solution1-v2 -o
 
 # In new work area, reference work area 2 experience
-/zcf:workflow Develop xxx feature, reference solution2 implementation, but avoid xxx problem
+/workflow Develop xxx feature, reference solution2 implementation, but avoid xxx problem
 ```
 
 ### Combine with ZCF Workflows
@@ -180,13 +180,13 @@ Run workflows independently in each Worktree:
 
 ```text
 # Worktree 1: Basic implementation
-/zcf:workflow Implement user login functionality
+/workflow Implement user login functionality
 
 # Worktree 2: Optimized implementation
-/zcf:workflow Implement user login functionality, use JWT, support refresh token
+/workflow Implement user login functionality, use JWT, support refresh token
 
 # Worktree 3: Test implementation
-/zcf:workflow Implement user login functionality, focus on security
+/workflow Implement user login functionality, focus on security
 ```
 
 ## Best Practices
@@ -240,7 +240,7 @@ Have AI output task progress documents in each Worktree for easy continuation in
 
 ```text
 # Continue task in new Worktree
-/zcf:workflow Continue developing xxx feature, reference previous progress document: progress.md
+/workflow Continue developing xxx feature, reference previous progress document: progress.md
 ```
 
 ## Workflow Recommendations
@@ -254,7 +254,7 @@ Have AI output task progress documents in each Worktree for easy continuation in
 
 2. **Run Workflow**
    ```text
-   /zcf:workflow Develop xxx feature
+   /workflow Develop xxx feature
    ```
 
 3. **Test and Optimize**

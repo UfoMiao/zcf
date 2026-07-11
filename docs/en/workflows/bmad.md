@@ -27,7 +27,7 @@ BMad Method is a universal AI agent framework designed for enterprise-level agil
 Use the following command in Claude Code to initialize BMad workflow:
 
 ```
-/zcf:bmad-init
+/bmad-init
 ```
 
 ### Codex
@@ -40,7 +40,7 @@ If you need similar enterprise-level agile development processes, you can use `/
 
 ### 1. One-Time Import of Complete Workflow
 
-After executing `/zcf:bmad-init`, ZCF will:
+After executing `/bmad-init`, ZCF will:
 
 - ✅ Import all BMad command sets and document templates
 - ✅ Create complete project structure
@@ -74,7 +74,7 @@ Suitable for new projects starting from scratch:
 
 ```bash
 # Execute in project root directory
-/zcf:bmad-init
+/bmad-init
 
 # BMad will guide you:
 # 1. Create PRD (Product Requirements Document)
@@ -89,7 +89,7 @@ Suitable for modernizing existing codebases and feature enhancement:
 
 ```bash
 # Execute in existing project root directory
-/zcf:bmad-init
+/bmad-init
 
 # BMad will:
 # 1. Analyze existing code structure
@@ -144,7 +144,7 @@ In team environments, it's recommended to uniformly use BMad workflow:
 
 ```bash
 # Team members uniformly execute
-/zcf:bmad-init
+/bmad-init
 
 # This ensures:
 # - Workflow standards are consistent
@@ -185,13 +185,13 @@ BMad can be combined with other ZCF workflows:
 
 ```bash
 # 1. Use BMad for project planning
-/zcf:bmad-init
+/bmad-init
 
 # 2. Use six-stage workflow to implement specific features
-/zcf:workflow Implement user login functionality
+/workflow Implement user login functionality
 
 # 3. Use feature development workflow to handle new requirements
-/zcf:feat Add comment functionality
+/feat Add comment functionality
 
 # 4. Use Git workflow to manage code
 /git-commit
@@ -218,7 +218,7 @@ Project Root/
 
 ### Initialization Failure
 
-If `/zcf:bmad-init` execution fails:
+If `/bmad-init` execution fails:
 
 ```bash
 # 1. Check if in project root directory
@@ -247,7 +247,7 @@ cat PRD.md
 cat ARCHITECTURE.md
 
 # 3. Reinitialize (will merge updates, won't overwrite existing content)
-/zcf:bmad-init
+/bmad-init
 ```
 
 ### Agent Team Configuration Issues

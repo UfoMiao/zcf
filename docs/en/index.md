@@ -95,7 +95,7 @@ ZCF (Zero-Config Code Flow) is a CLI tool designed for professional developers, 
 1. **Secure privacy and permission configuration**: Environment variables, permission templates, and backup strategies are automatically implemented, ensuring a minimal yet secure runtime environment.
 2. **API and proxy management**: Supports official login, API Key, and CCR proxy three modes, with built-in presets for 302.AI, GLM, MiniMax, Kimi, etc.
 3. **Global output style and language system**: Set AI output language, project-level/global output styles, and Codex memory instructions from the command line.
-4. **Workflow and skill template collection**: Automatically imports `/zcf:workflow`, `/zcf:feat`, `/git-commit` skills and corresponding agent configurations.
+4. **Workflow and skill template collection**: Automatically imports `/workflow`, `/feat`, `/git-commit` skills and corresponding agent configurations.
 5. **MCP service foundation**: One-click enable mainstream MCP servers, and intelligently prompts environment variable requirements based on whether API Key is needed.
 6. **Auxiliary toolchain**: CCometixLine status bar automatic installation, CCR management menu, Codex CLI installation/upgrade, usage statistics.
 

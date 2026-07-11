@@ -346,8 +346,8 @@ According to the tool used, try the following commands in the command palette:
 
 **Claude Code:**
 ```
-/zcf:workflow  # Six-stage development workflow
-/zcf:feat      # Feature development workflow
+/workflow  # Six-stage development workflow
+/feat      # Feature development workflow
 /git-commit    # Git commit command
 /init-project  # Project initialization
 ```
@@ -365,7 +365,7 @@ According to the tool used, try the following commands in the command palette:
 
 > ✅ **Success Indicator**: If commands can execute normally and display the workflow interface, the workflow import was successful.
 > 
-> 💡 **Tip**: Codex uses `/prompts:` prefix, while Claude Code uses `/zcf:` or direct `/` prefix.
+> 💡 **Tip**: Codex uses `/prompts:`; Claude Code invokes skills with `/skill-name` (e.g. `/workflow`).
 
 ### 3. Verify MCP Services
 

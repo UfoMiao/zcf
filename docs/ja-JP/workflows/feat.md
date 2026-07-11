@@ -17,7 +17,7 @@ title: Feat ワークフロー
 ## 使い方
 
 ```
-/zcf:feat Add user comment feature
+/feat Add user comment feature
 ```
 
 追加すると良い情報：
@@ -28,5 +28,5 @@ title: Feat ワークフロー
 ## ベストプラクティス
 
 - 生成結果を Issue / PR 説明にそのまま貼り付けて合意形成を早める  
-- `/zcf:workflow` と組み合わせて詳細設計やテスト計画を発展させる  
+- `/workflow` と組み合わせて詳細設計やテスト計画を発展させる  
 - 大きな機能は複数の Feat に分け、優先度順に着手する

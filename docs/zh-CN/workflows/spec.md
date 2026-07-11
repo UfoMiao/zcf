@@ -199,10 +199,10 @@ Spec 工作流可以与 ZCF 的其他工作流结合使用：
 
 ```bash
 # 在 Claude Code 中
-/zcf:workflow 开发用户评论功能，使用 Spec 工作流进行需求分析
+/workflow 开发用户评论功能，使用 Spec 工作流进行需求分析
 
 # 或使用功能开发工作流
-/zcf:feat 用户评论功能
+/feat 用户评论功能
 ```
 
 在 Codex 中，虽然 Spec 工作流可以作为 MCP 服务使用，但没有对应的 `/prompts:` 命令，需要直接在对话中使用。

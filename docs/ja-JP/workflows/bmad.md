@@ -17,7 +17,7 @@ title: BMad アジャイルフロー
 ## 使い方
 
 ```
-/zcf:bmad-init Improve onboarding speed for new developers
+/bmad-init Improve onboarding speed for new developers
 ```
 
 オプションで期間、人数、依存サービスなどを付けると計画精度が上がります。

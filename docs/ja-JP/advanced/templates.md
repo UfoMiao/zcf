@@ -271,7 +271,7 @@ npm publish @your-org/zcf-templates
 2. **過度なコンテキストを避ける**:
 - グローバル`CLAUDE.md`は必要な設定のみを保持
 - 複雑な標準は出力スタイルまたはプロジェクトメモリに入れる
-- `/zcf:init-project`を使用して階層構造を生成
+- `/init-project`を使用して階層構造を生成
 
 3. **定期的な更新**:
 ```bash

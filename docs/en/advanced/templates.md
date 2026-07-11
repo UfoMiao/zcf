@@ -271,7 +271,7 @@ Project Root/
 2. **Avoid Excessive Context**:
 - Global `CLAUDE.md` only keeps necessary settings
 - Complex standards go into output styles or project memory
-- Use `/zcf:init-project` to generate hierarchical structure
+- Use `/init-project` to generate hierarchical structure
 
 3. **Regular Updates**:
 ```bash

@@ -206,7 +206,7 @@ cat ~/.claude/skills/workflow/SKILL.md
 
 ### 2. 工作流 skill 不识别
 
-**症状**：输入 `/zcf:workflow` 无响应
+**症状**：输入 `/workflow` 无响应
 
 **解决方案**：
 
@@ -220,8 +220,8 @@ head -20 ~/.claude/skills/workflow/SKILL.md
 
 # 3. 重启 Claude Code 或 Codex 应用
 
-# 4. 检查命令前缀
-# Claude Code: /zcf:workflow 或 /workflow
+# 4. 检查 skill 调用方式
+# Claude Code: /workflow
 # Codex: /prompts:workflow
 ```
 
@@ -467,7 +467,7 @@ npx zcf init -T codex -s -p 302ai -k "sk-xxx"
 ```bash
 # Codex 使用不同的命令前缀
 # 正确格式：/prompts:workflow
-# 错误格式：/zcf:workflow
+# 错误格式：/workflow
 
 # 检查工作流文件
 ls -la ~/.codex/prompts/

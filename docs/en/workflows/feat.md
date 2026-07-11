@@ -25,12 +25,12 @@ The feature development workflow focuses on the complete development cycle of ne
 Use the following command in Claude Code:
 
 ```
-/zcf:feat <feature description>
+/feat <feature description>
 ```
 
 **Example**:
 ```
-/zcf:feat Implement user comment functionality, supporting likes, replies, and deletion
+/feat Implement user comment functionality, supporting likes, replies, and deletion
 ```
 
 ### Codex
@@ -143,7 +143,7 @@ The feature development workflow includes four core stages:
 ### Scenario 1: New Feature Development
 
 ```
-/zcf:feat Add shopping cart functionality, supporting multiple products, quantity modification, and batch checkout
+/feat Add shopping cart functionality, supporting multiple products, quantity modification, and batch checkout
 ```
 
 Suitable for new features requiring complete planning, complete process from requirements to implementation.
@@ -151,7 +151,7 @@ Suitable for new features requiring complete planning, complete process from req
 ### Scenario 2: Feature Enhancement
 
 ```
-/zcf:feat Enhance user profile center, add data statistics and activity history display
+/feat Enhance user profile center, add data statistics and activity history display
 ```
 
 Suitable for enhancements and extensions based on existing features.
@@ -159,7 +159,7 @@ Suitable for enhancements and extensions based on existing features.
 ### Scenario 3: Complex Business Logic
 
 ```
-/zcf:feat Implement order system, supporting multiple payment methods, coupons, and logistics tracking
+/feat Implement order system, supporting multiple payment methods, coupons, and logistics tracking
 ```
 
 Suitable for features containing complex business logic, requiring careful planning and technology selection.
@@ -172,10 +172,10 @@ Providing clear, detailed feature descriptions can yield better planning results
 
 ```
 # Good description
-/zcf:feat Implement user comment functionality, supporting text, images, likes, replies, deletion, administrators can review and delete any comment
+/feat Implement user comment functionality, supporting text, images, likes, replies, deletion, administrators can review and delete any comment
 
 # Not clear enough
-/zcf:feat Comment functionality
+/feat Comment functionality
 ```
 
 ### 2. Combine with Project Context
@@ -187,7 +187,7 @@ Before executing feature development workflow, it's recommended to initialize pr
 /init-project
 
 # 2. Execute feature development workflow
-/zcf:feat <feature description>
+/feat <feature description>
 ```
 
 This ensures feature design is consistent with overall project architecture.
@@ -198,13 +198,13 @@ Feature development workflow output can be directly used for subsequent developm
 
 ```bash
 # 1. Use feature development workflow to plan
-/zcf:feat Implement user comment functionality
+/feat Implement user comment functionality
 
 # 2. Based on planning results, use six-stage workflow to implement
-/zcf:workflow Implement comment data model and API interface
+/workflow Implement comment data model and API interface
 
 # 3. Continue implementing other tasks
-/zcf:workflow Implement comment frontend component and interaction
+/workflow Implement comment frontend component and interaction
 
 # 4. Use Git workflow to commit
 /git-commit
@@ -225,22 +225,22 @@ Feature development is a continuous process:
 
 ```bash
 # Round 1: Overall planning
-/zcf:feat Implement user comment functionality
+/feat Implement user comment functionality
 
 # Round 2: Refine a sub-feature
-/zcf:feat Implement comment reply functionality, supporting nested replies and @ mentions
+/feat Implement comment reply functionality, supporting nested replies and @ mentions
 
 # Round 3: Optimization and enhancement
-/zcf:feat Optimize comment performance, support pagination loading and real-time updates
+/feat Optimize comment performance, support pagination loading and real-time updates
 ```
 
 ## Differences from Other Workflows
 
 | Workflow | Use Case | Features |
 |--------|---------|------|
-| **Feature Development Workflow** (`/zcf:feat`) | New feature planning | Requirements analysis, solution design, UI/UX planning |
-| **Six-Stage Workflow** (`/zcf:workflow`) | Specific implementation | Complete development process, from research to review |
-| **BMad Workflow** (`/zcf:bmad-init`) | Enterprise-level projects | Complete team collaboration and iteration management |
+| **Feature Development Workflow** (`/feat`) | New feature planning | Requirements analysis, solution design, UI/UX planning |
+| **Six-Stage Workflow** (`/workflow`) | Specific implementation | Complete development process, from research to review |
+| **BMad Workflow** (`/bmad-init`) | Enterprise-level projects | Complete team collaboration and iteration management |
 
 ## Notes
 

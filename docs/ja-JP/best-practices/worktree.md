@@ -151,7 +151,7 @@ npx zcf config-switch 302ai-provider
 1. 作業ツリーを作成し IDE を開く  
    `/git-worktree add feat/feature-name -o`
 2. ワークフロー実行  
-   `/zcf:workflow Develop xxx feature`
+   `/workflow Develop xxx feature`
 3. テスト/最適化（必要なら別ツリーで別案を試す）
 4. マージして後片付け  
    ```bash

@@ -185,7 +185,7 @@ Codex 目前支持以下工作流模板（使用 `/prompts:` 前缀）：
 
 | 工作流 | Codex 命令 | Claude Code 命令 | 说明 |
 |--------|-----------|-----------------|------|
-| **六阶段工作流** | `/prompts:workflow` | `/zcf:workflow` | 完整的六阶段开发流程（研究→构思→计划→执行→优化→评审） |
+| **六阶段工作流** | `/prompts:workflow` | `/workflow` | 完整的六阶段开发流程（研究→构思→计划→执行→优化→评审） |
 | **Git 工作流** | `/prompts:git-commit` | `/git-commit` | 智能 Git 提交 |
 | | `/prompts:git-rollback` | `/git-rollback` | 安全回滚 |
 | | `/prompts:git-cleanBranches` | `/git-cleanBranches` | 清理已合并分支 |
@@ -201,8 +201,8 @@ Codex 目前支持以下工作流模板（使用 `/prompts:` 前缀）：
 
 | 工作流类型 | Claude Code | Codex |
 |-----------|------------|-------|
-| 六阶段工作流 | ✅ `/zcf:workflow` | ✅ `/prompts:workflow` |
-| 功能开发工作流 | ✅ `/zcf:feat` | ❌ 暂不支持 |
+| 六阶段工作流 | ✅ `/workflow` | ✅ `/prompts:workflow` |
+| 功能开发工作流 | ✅ `/feat` | ❌ 暂不支持 |
 | 项目初始化 | ✅ `/init-project` | ❌ 暂不支持 |
 | Git 工作流 | ✅ `/git-commit` 等 | ✅ `/prompts:git-commit` 等 |
 | BMad 工作流 | ✅ `/bmad-init` | ❌ 暂不支持 |
