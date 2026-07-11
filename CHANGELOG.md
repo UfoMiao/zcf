@@ -1,5 +1,37 @@
 # Changelog
 
+## 3.7.0
+
+### Minor Changes
+
+- ## New Features
+  - Migrate ZCF templates from commands to skills architecture with unified skills installer
+  - Add MiniMax Codex API provider preset
+  - Add skills-installer utility for symlink-based Claude Code and Codex skill deployment
+
+  ## 新功能
+  - 将 ZCF 模板从 commands 迁移至 skills 架构，并引入统一的 skills 安装器
+  - 新增 MiniMax Codex API 提供商预设
+  - 新增 skills-installer 工具，支持 Claude Code 与 Codex 的符号链接式 skill 部署
+
+  ## Optimization
+  - Route Codex workflow installation through the skills installer for consistent deployment
+  - Use symlink install for Claude Code skills via the skills CLI
+  - Remove bmad from ZCF development configuration to reduce project footprint
+  - Unify command-to-skills naming across uninstall flow and documentation
+
+  ## 优化
+  - Codex 工作流安装改由 skills 安装器统一处理，确保部署一致性
+  - Claude Code 通过 skills CLI 使用符号链接方式安装 skill
+  - 从 ZCF 开发配置中移除 bmad，精简项目体积
+  - 统一卸载流程与文档中的 command→skills 命名
+
+  ## Fixes
+  - Update sponsor links for code0 and Claude API across multilingual README files
+
+  ## 修复
+  - 更新 code0 与 Claude API 赞助商链接，覆盖多语言 README 文件
+
 ## 3.6.10
 
 ### Patch Changes
