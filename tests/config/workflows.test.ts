@@ -30,10 +30,10 @@ describe('workflow Configuration', () => {
       })
     })
 
-    it('should include correct commands for common tools workflow', () => {
+    it('should include correct skills for common tools workflow', () => {
       const commonToolsWorkflow = WORKFLOW_CONFIG_BASE.find(config => config.id === 'commonTools')
 
-      expect(commonToolsWorkflow?.commands).toEqual(['init-project.md'])
+      expect(commonToolsWorkflow?.skills).toEqual(['init-project'])
     })
 
     it('should include correct agents for common tools workflow', () => {

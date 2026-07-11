@@ -137,13 +137,13 @@ describe('zcfUninstaller', () => {
       expect(result.removed).toContain('commands/zcf/')
     })
 
-    it('should handle missing commands directory gracefully', async () => {
+    it('should handle missing skills gracefully', async () => {
       mockFsExtra.pathExists.mockResolvedValue(false)
 
       const result = await uninstaller.removeCustomCommands()
 
       expect(result.success).toBe(true)
-      expect(result.warnings).toContain('commandsNotFound')
+      expect(result.warnings).toContain('skillsNotFound')
     })
   })
 

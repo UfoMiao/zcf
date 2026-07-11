@@ -6,7 +6,7 @@ export interface WorkflowConfigBase {
   id: string
   defaultSelected: boolean
   order: number
-  commands: string[]
+  skills: string[]
   agents: Array<{ id: string, filename: string, required: boolean }>
   autoInstallAgents: boolean
   category: 'common' | 'plan' | 'sixStep' | 'bmad' | 'git'
@@ -18,7 +18,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     id: 'commonTools',
     defaultSelected: true,
     order: 1,
-    commands: ['init-project.md'],
+    skills: ['init-project'],
     agents: [
       { id: 'init-architect', filename: 'init-architect.md', required: true },
       { id: 'get-current-datetime', filename: 'get-current-datetime.md', required: true },
@@ -31,7 +31,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     id: 'sixStepsWorkflow',
     defaultSelected: true,
     order: 2,
-    commands: ['workflow.md'],
+    skills: ['workflow'],
     agents: [],
     autoInstallAgents: false,
     category: 'sixStep',
@@ -41,7 +41,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     id: 'featPlanUx',
     defaultSelected: true,
     order: 3,
-    commands: ['feat.md'],
+    skills: ['feat'],
     agents: [
       { id: 'planner', filename: 'planner.md', required: true },
       { id: 'ui-ux-designer', filename: 'ui-ux-designer.md', required: true },
@@ -54,7 +54,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     id: 'gitWorkflow',
     defaultSelected: true,
     order: 4,
-    commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
+    skills: ['git-commit', 'git-rollback', 'git-clean-branches', 'git-worktree'],
     agents: [],
     autoInstallAgents: false,
     category: 'git',
@@ -64,7 +64,7 @@ export const WORKFLOW_CONFIG_BASE: WorkflowConfigBase[] = [
     id: 'bmadWorkflow',
     defaultSelected: true,
     order: 5,
-    commands: ['bmad-init.md'],
+    skills: ['bmad-init'],
     agents: [],
     autoInstallAgents: false,
     category: 'bmad',
@@ -121,6 +121,15 @@ export function getWorkflowConfig(workflowId: string): WorkflowConfig | undefine
 
 export function getOrderedWorkflows(): WorkflowConfig[] {
   return getWorkflowConfigs().sort((a, b) => a.order - b.order)
+}
+
+export function getAllWorkflowSkillNames(): string[] {
+  const names = new Set<string>()
+  for (const config of WORKFLOW_CONFIG_BASE) {
+    for (const skill of config.skills)
+      names.add(skill)
+  }
+  return [...names]
 }
 
 // Note: WORKFLOW_CONFIGS should not be used directly in new code

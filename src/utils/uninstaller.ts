@@ -98,7 +98,7 @@ export class ZcfUninstaller {
   }
 
   /**
-   * 2. Remove custom commands directory (commands/zcf/)
+   * 2. Remove ZCF workflow skills and legacy commands directory (commands/zcf/)
    */
   async removeCustomCommands(): Promise<UninstallResult> {
     const result: UninstallResult = {
@@ -110,23 +110,41 @@ export class ZcfUninstaller {
     }
 
     try {
-      const commandsPath = join(homedir(), '.claude', 'commands', 'zcf')
+      const { getAllWorkflowSkillNames } = await import('../config/workflows')
+      const skillsDir = join(homedir(), '.claude', 'skills')
+      const legacyCommandsPath = join(homedir(), '.claude', 'commands', 'zcf')
 
-      if (await pathExists(commandsPath)) {
-        const trashResult = await moveToTrash(commandsPath)
+      if (await pathExists(legacyCommandsPath)) {
+        const trashResult = await moveToTrash(legacyCommandsPath)
         if (!trashResult[0]?.success) {
           result.warnings.push(trashResult[0]?.error || 'Failed to move to trash')
         }
         result.removed.push('commands/zcf/')
-        result.success = true
       }
-      else {
-        result.warnings.push(i18n.t('uninstall:commandsNotFound'))
-        result.success = true
+
+      let removedAnySkill = false
+      for (const skillName of getAllWorkflowSkillNames()) {
+        const skillPath = join(skillsDir, skillName)
+        if (await pathExists(skillPath)) {
+          const trashResult = await moveToTrash(skillPath)
+          if (!trashResult[0]?.success) {
+            result.warnings.push(trashResult[0]?.error || `Failed to move skill ${skillName} to trash`)
+          }
+          else {
+            result.removed.push(`skills/${skillName}/`)
+            removedAnySkill = true
+          }
+        }
       }
+
+      if (!removedAnySkill && !(await pathExists(legacyCommandsPath))) {
+        result.warnings.push(i18n.t('uninstall:skillsNotFound'))
+      }
+
+      result.success = true
     }
     catch (error: any) {
-      result.errors.push(`Failed to remove custom commands: ${error.message}`)
+      result.errors.push(`Failed to remove custom skills: ${error.message}`)
     }
 
     return result

@@ -24,9 +24,9 @@ describe('workflows configuration', () => {
       })
     })
 
-    it('should have correct commands for gitWorkflow', () => {
+    it('should have correct skills for gitWorkflow', () => {
       const gitWorkflow = getWorkflowConfigs().find(w => w.id === 'gitWorkflow')
-      expect(gitWorkflow?.commands).toEqual(['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'])
+      expect(gitWorkflow?.skills).toEqual(['git-commit', 'git-rollback', 'git-clean-branches', 'git-worktree'])
     })
 
     it('should have no agents for gitWorkflow', () => {
@@ -54,7 +54,7 @@ describe('workflows configuration', () => {
       expect(config).toBeDefined()
       expect(config?.id).toBe('gitWorkflow')
       expect(config?.category).toBe('git')
-      expect(config?.commands).toContain('git-commit.md')
+      expect(config?.skills).toContain('git-commit')
     })
 
     it('should return undefined for non-existent workflow', () => {
@@ -115,7 +115,7 @@ describe('workflows configuration', () => {
 
       expect(gitWorkflow).toMatchObject({
         id: 'gitWorkflow',
-        commands: ['git-commit.md', 'git-rollback.md', 'git-cleanBranches.md', 'git-worktree.md'],
+        skills: ['git-commit', 'git-rollback', 'git-clean-branches', 'git-worktree'],
         agents: [],
         category: 'git',
       })
@@ -137,7 +137,7 @@ describe('workflows configuration', () => {
         expect(config).toHaveProperty('name')
         expect(config).toHaveProperty('defaultSelected')
         expect(config).toHaveProperty('order')
-        expect(config).toHaveProperty('commands')
+        expect(config).toHaveProperty('skills')
         expect(config).toHaveProperty('agents')
         expect(config).toHaveProperty('autoInstallAgents')
         expect(config).toHaveProperty('category')
@@ -146,14 +146,14 @@ describe('workflows configuration', () => {
         expect(typeof config.id).toBe('string')
         expect(typeof config.defaultSelected).toBe('boolean')
         expect(typeof config.order).toBe('number')
-        expect(Array.isArray(config.commands)).toBe(true)
+        expect(Array.isArray(config.skills)).toBe(true)
         expect(Array.isArray(config.agents)).toBe(true)
       })
     })
 
-    it('should have non-empty commands for all workflows', () => {
+    it('should have non-empty skills for all workflows', () => {
       getWorkflowConfigs().forEach((config) => {
-        expect(config.commands.length).toBeGreaterThan(0)
+        expect(config.skills.length).toBeGreaterThan(0)
       })
     })
 

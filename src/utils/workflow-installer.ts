@@ -1,4 +1,4 @@
-import type { SupportedLang } from '../constants'
+import type { CodeToolType, SupportedLang } from '../constants'
 import type { WorkflowConfig, WorkflowInstallResult, WorkflowType } from '../types/workflow'
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, rm } from 'node:fs/promises'
@@ -7,8 +7,9 @@ import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
 import { getOrderedWorkflows, getWorkflowConfig } from '../config/workflows'
-import { CLAUDE_DIR } from '../constants'
+import { CLAUDE_DIR, DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
+import { installSkills } from './skills-installer'
 
 function getRootDir(): string {
   const currentFilePath = fileURLToPath(import.meta.url)
@@ -18,26 +19,20 @@ function getRootDir(): string {
 
 const DEFAULT_CODE_TOOL_TEMPLATE = 'claude-code'
 
-// Categories that use shared templates from common directory
-const COMMON_TEMPLATE_CATEGORIES = ['git', 'sixStep']
-
 export async function selectAndInstallWorkflows(
   configLang: SupportedLang,
   preselectedWorkflows?: string[],
+  codeToolType: CodeToolType = DEFAULT_CODE_TOOL_TYPE,
 ): Promise<void> {
   ensureI18nInitialized()
   const workflows = getOrderedWorkflows()
 
-  // Build choices from configuration
-  const choices = workflows.map((workflow) => {
-    return {
-      name: workflow.name,
-      value: workflow.id,
-      checked: workflow.defaultSelected,
-    }
-  })
+  const choices = workflows.map(workflow => ({
+    name: workflow.name,
+    value: workflow.id,
+    checked: workflow.defaultSelected,
+  }))
 
-  // Multi-select workflow types or use preselected
   let selectedWorkflows: WorkflowType[]
 
   if (preselectedWorkflows) {
@@ -58,14 +53,33 @@ export async function selectAndInstallWorkflows(
     return
   }
 
-  // Clean up old version files before installation
   await cleanupOldVersionFiles()
 
-  // Install selected workflows with their dependencies
+  const skillNamesToInstall = new Set<string>()
+
   for (const workflowId of selectedWorkflows) {
     const config = getWorkflowConfig(workflowId)
-    if (config) {
-      await installWorkflowWithDependencies(config, configLang)
+    if (config)
+      await installWorkflowWithDependencies(config, configLang, skillNamesToInstall)
+  }
+
+  if (skillNamesToInstall.size > 0) {
+    const rootDir = getRootDir()
+    const skillsSourceDir = join(rootDir, 'templates', 'skills', configLang)
+    const installResult = await installSkills({
+      skillsPath: skillsSourceDir,
+      skillNames: [...skillNamesToInstall],
+      agent: codeToolType,
+      global: true,
+    })
+
+    if (installResult.success) {
+      for (const skill of installResult.installedSkills)
+        console.log(ansis.gray(`  ✔ ${i18n.t('workflow:installedSkill')}: ${skill}`))
+    }
+    else {
+      for (const error of installResult.errors)
+        console.error(ansis.red(`  ✗ ${error}`))
     }
   }
 }
@@ -73,18 +87,18 @@ export async function selectAndInstallWorkflows(
 async function installWorkflowWithDependencies(
   config: WorkflowConfig,
   configLang: SupportedLang,
+  skillNamesToInstall: Set<string>,
 ): Promise<WorkflowInstallResult> {
   const rootDir = getRootDir()
   ensureI18nInitialized()
   const result: WorkflowInstallResult = {
     workflow: config.id,
     success: true,
-    installedCommands: [],
+    installedSkills: [],
     installedAgents: [],
     errors: [],
   }
 
-  // Create static workflow option keys for i18n-ally compatibility
   const WORKFLOW_OPTION_KEYS = {
     commonTools: i18n.t('workflow:workflowOption.commonTools'),
     sixStepsWorkflow: i18n.t('workflow:workflowOption.sixStepsWorkflow'),
@@ -96,60 +110,27 @@ async function installWorkflowWithDependencies(
   const workflowName = WORKFLOW_OPTION_KEYS[config.id as keyof typeof WORKFLOW_OPTION_KEYS] || config.id
   console.log(ansis.cyan(`\n📦 ${i18n.t('workflow:installingWorkflow')}: ${workflowName}...`))
 
-  // Install commands to new structure
-  const commandsDir = join(CLAUDE_DIR, 'commands', 'zcf')
-  if (!existsSync(commandsDir)) {
-    await mkdir(commandsDir, { recursive: true })
-  }
+  for (const skillName of config.skills) {
+    const skillSource = join(rootDir, 'templates', 'skills', configLang, skillName, 'SKILL.md')
 
-  for (const commandFile of config.commands) {
-    // Shared workflows (git, sixStep) use templates from common directory
-    const isCommonTemplate = COMMON_TEMPLATE_CATEGORIES.includes(config.category)
-    const commandSource = isCommonTemplate
-      ? join(
-          rootDir,
-          'templates',
-          'common',
-          'workflow',
-          config.category,
-          configLang,
-          commandFile,
-        )
-      : join(
-          rootDir,
-          'templates',
-          DEFAULT_CODE_TOOL_TEMPLATE,
-          configLang,
-          'workflow',
-          config.category,
-          'commands',
-          commandFile,
-        )
-    // Keep original file names for all commands
-    const destFileName = commandFile
-    const commandDest = join(commandsDir, destFileName)
+    if (!existsSync(skillSource)) {
+      const errorMsg = `${i18n.t('workflow:failedToInstallSkill')} ${skillName}: template not found`
+      result.errors?.push(errorMsg)
+      console.error(ansis.red(`  ✗ ${errorMsg}`))
+      result.success = false
+      continue
+    }
 
-    if (existsSync(commandSource)) {
-      try {
-        await copyFile(commandSource, commandDest)
-        result.installedCommands.push(destFileName)
-        console.log(ansis.gray(`  ✔ ${i18n.t('workflow:installedCommand')}: zcf/${destFileName}`))
-      }
-      catch (error) {
-        const errorMsg = `${i18n.t('workflow:failedToInstallCommand')} ${commandFile}: ${error}`
-        result.errors?.push(errorMsg)
-        console.error(ansis.red(`  ✗ ${errorMsg}`))
-        result.success = false
-      }
+    if (!skillNamesToInstall.has(skillName)) {
+      skillNamesToInstall.add(skillName)
+      result.installedSkills.push(skillName)
     }
   }
 
-  // Install agents if autoInstallAgents is true
   if (config.autoInstallAgents && config.agents.length > 0) {
     const agentsCategoryDir = join(CLAUDE_DIR, 'agents', 'zcf', config.category)
-    if (!existsSync(agentsCategoryDir)) {
+    if (!existsSync(agentsCategoryDir))
       await mkdir(agentsCategoryDir, { recursive: true })
-    }
 
     for (const agent of config.agents) {
       const agentSource = join(
@@ -174,25 +155,20 @@ async function installWorkflowWithDependencies(
           const errorMsg = `${i18n.t('workflow:failedToInstallAgent')} ${agent.filename}: ${error}`
           result.errors?.push(errorMsg)
           console.error(ansis.red(`  ✗ ${errorMsg}`))
-          if (agent.required) {
+          if (agent.required)
             result.success = false
-          }
         }
       }
     }
   }
 
-  if (result.success) {
+  if (result.success)
     console.log(ansis.green(`✔ ${workflowName} ${i18n.t('workflow:workflowInstallSuccess')}`))
-
-    // Show special prompt for BMAD workflow
-    if (config.id === 'bmadWorkflow') {
-      console.log(ansis.cyan(`\n${i18n.t('workflow:bmadInitPrompt')}`))
-    }
-  }
-  else {
+  else
     console.log(ansis.red(`✗ ${workflowName} ${i18n.t('workflow:workflowInstallError')}`))
-  }
+
+  if (config.id === 'bmadWorkflow' && result.success)
+    console.log(ansis.cyan(`\n${i18n.t('workflow:bmadInitPrompt')}`))
 
   return result
 }
@@ -201,36 +177,18 @@ async function cleanupOldVersionFiles(): Promise<void> {
   ensureI18nInitialized()
   console.log(ansis.cyan(`\n🧹 ${i18n.t('workflow:cleaningOldFiles')}...`))
 
-  // Old command files to remove
-  const oldCommandFiles = [
+  const oldPaths = [
     join(CLAUDE_DIR, 'commands', 'workflow.md'),
     join(CLAUDE_DIR, 'commands', 'feat.md'),
-  ]
-
-  // Old agent files to remove
-  const oldAgentFiles = [
+    join(CLAUDE_DIR, 'commands', 'zcf'),
     join(CLAUDE_DIR, 'agents', 'planner.md'),
     join(CLAUDE_DIR, 'agents', 'ui-ux-designer.md'),
   ]
 
-  // Clean up old command files
-  for (const file of oldCommandFiles) {
+  for (const file of oldPaths) {
     if (existsSync(file)) {
       try {
-        await rm(file, { force: true })
-        console.log(ansis.gray(`  ✔ ${i18n.t('workflow:removedOldFile')}: ${file.replace(CLAUDE_DIR, '~/.claude')}`))
-      }
-      catch {
-        console.error(ansis.yellow(`  ⚠ ${i18n.t('errors:failedToRemoveFile')}: ${file.replace(CLAUDE_DIR, '~/.claude')}`))
-      }
-    }
-  }
-
-  // Clean up old agent files
-  for (const file of oldAgentFiles) {
-    if (existsSync(file)) {
-      try {
-        await rm(file, { force: true })
+        await rm(file, { recursive: true, force: true })
         console.log(ansis.gray(`  ✔ ${i18n.t('workflow:removedOldFile')}: ${file.replace(CLAUDE_DIR, '~/.claude')}`))
       }
       catch {

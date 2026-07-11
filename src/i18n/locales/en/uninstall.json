@@ -30,7 +30,7 @@
   "warningsCount": "{{count}} warnings occurred during uninstall.",
 
   "outputStyles": "Output Styles - Remove output style configurations",
-  "commands": "Commands - Remove custom ZCF commands",
+  "commands": "Skills - Remove custom ZCF workflow skills",
   "agents": "Agents - Remove custom ZCF agents",
   "claudeMd": "CLAUDE.md - Remove global memory file",
   "permissionsEnvs": "Permissions & Envs - Remove permissions and environment variables",
@@ -43,6 +43,7 @@
 
   "settingsJsonNotFound": "settings.json not found",
   "commandsNotFound": "Commands directory not found",
+  "skillsNotFound": "ZCF workflow skills not found",
   "agentsNotFound": "Agents directory not found",
   "claudeMdNotFound": "CLAUDE.md file not found",
   "claudeJsonNotFound": ".claude.json file not found",

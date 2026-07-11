@@ -4,29 +4,26 @@ import { describe, expect, it } from 'vitest'
 
 describe('chinese Template Files', () => {
   const templateDir = join(process.cwd(), 'templates', 'claude-code')
+  const skillsDir = join(process.cwd(), 'templates', 'skills', 'zh-CN')
 
   describe('common workflow templates', () => {
-    it('should have Chinese templates directory structure', async () => {
+    it('should have Chinese agents directory structure', async () => {
       const zhCommonDir = join(templateDir, 'zh-CN', 'workflow', 'common')
-
-      expect(async () => await fs.access(zhCommonDir)).not.toThrow()
-
       const agentsDir = join(zhCommonDir, 'agents')
-      const commandsDir = join(zhCommonDir, 'commands')
 
       expect(async () => await fs.access(agentsDir)).not.toThrow()
-      expect(async () => await fs.access(commandsDir)).not.toThrow()
     })
 
-    it('should have Chinese translation for init-project.md command', async () => {
-      const filePath = join(templateDir, 'zh-CN', 'workflow', 'common', 'commands', 'init-project.md')
+    it('should have Chinese init-project skill', async () => {
+      const filePath = join(skillsDir, 'init-project', 'SKILL.md')
 
       expect(async () => await fs.access(filePath)).not.toThrow()
 
       const content = await fs.readFile(filePath, 'utf-8')
+      expect(content).toContain('name: init-project')
+      expect(content).toContain('disable-model-invocation: true')
       expect(content).toContain('初始化项目 AI 上下文')
       expect(content).toContain('生成/更新根级与模块级 CLAUDE.md 索引')
-      expect(content).toContain('argument-hint: <项目摘要或名称>')
     })
 
     it('should have Chinese translation for init-architect.md agent', async () => {

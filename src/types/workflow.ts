@@ -18,7 +18,7 @@ export interface WorkflowConfig {
   description?: string
   defaultSelected: boolean
   order: number
-  commands: string[]
+  skills: string[]
   agents: WorkflowAgent[]
   autoInstallAgents: boolean
   category: 'common' | 'plan' | 'sixStep' | 'bmad' | 'git'
@@ -28,7 +28,7 @@ export interface WorkflowConfig {
 export interface WorkflowInstallResult {
   workflow: string
   success: boolean
-  installedCommands: string[]
+  installedSkills: string[]
   installedAgents: string[]
   errors?: string[]
 }
