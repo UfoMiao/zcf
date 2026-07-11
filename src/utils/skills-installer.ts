@@ -1,10 +1,14 @@
 import type { CodeToolType } from '../constants'
 import { exec } from 'tinyexec'
 
-/** Maps ZCF code tool types to skills CLI agent identifiers. */
-export const CODE_TOOL_TO_SKILLS_AGENT: Record<CodeToolType, string> = {
-  'claude-code': 'claude-code',
-  'codex': 'codex',
+/**
+ * Maps ZCF code tool types to skills CLI agent identifiers.
+ * claude-code includes `universal` so non-interactive `-y` installs use symlink mode
+ * (canonical `~/.agents/skills/` + symlink in `~/.claude/skills/`).
+ */
+export const CODE_TOOL_TO_SKILLS_AGENTS: Record<CodeToolType, string[]> = {
+  'claude-code': ['claude-code', 'universal'],
+  'codex': ['codex'],
 }
 
 export interface SkillsInstallOptions {
@@ -35,17 +39,17 @@ export async function installSkills(options: SkillsInstallOptions): Promise<Skil
   if (skillNames.length === 0)
     return result
 
-  const skillsAgent = CODE_TOOL_TO_SKILLS_AGENT[agent]
+  const skillsAgents = CODE_TOOL_TO_SKILLS_AGENTS[agent]
   const args = [
     '-y',
     'skills',
     'add',
     skillsPath,
-    '-a',
-    skillsAgent,
     '-y',
-    '--copy',
   ]
+
+  for (const skillsAgent of skillsAgents)
+    args.push('-a', skillsAgent)
 
   if (global)
     args.push('-g')
