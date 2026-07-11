@@ -10,7 +10,7 @@ import { moveToTrash } from './trash'
 
 export type UninstallItem
   = | 'output-styles'
-    | 'commands'
+    | 'skills'
     | 'agents'
     | 'claude-md'
     | 'permissions-envs'
@@ -100,7 +100,7 @@ export class ZcfUninstaller {
   /**
    * 2. Remove ZCF workflow skills and legacy commands directory (commands/zcf/)
    */
-  async removeCustomCommands(): Promise<UninstallResult> {
+  async removeWorkflowSkills(): Promise<UninstallResult> {
     const result: UninstallResult = {
       success: false,
       removed: [],
@@ -638,8 +638,8 @@ export class ZcfUninstaller {
     switch (item) {
       case 'output-styles':
         return await this.removeOutputStyles()
-      case 'commands':
-        return await this.removeCustomCommands()
+      case 'skills':
+        return await this.removeWorkflowSkills()
       case 'agents':
         return await this.removeCustomAgents()
       case 'claude-md':

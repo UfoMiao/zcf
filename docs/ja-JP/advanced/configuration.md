@@ -305,7 +305,7 @@ ls -lt ~/.claude/backup/
 cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
 
 # または特定のファイルを復元
-cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/workflows/custom/
+cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/skills/custom/
 ```
 
 ## 設定管理のベストプラクティス
@@ -330,10 +330,10 @@ cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/workflows
 ```bash
 # 方法1: Gitを使用
 git clone ~/zcf-configs
-cp -r zcf-configs/templates/* ~/.claude/workflows/
+cp -r zcf-configs/templates/* ~/.claude/skills/
 
 # 方法2: クラウドストレージを使用
-rsync -av ~/.claude/workflows/ ~/Cloud/.claude/workflows/
+rsync -av ~/.claude/skills/ ~/Cloud/.claude/workflows/
 
 # 方法3: Git Worktreeを使用
 /git-worktree migrate
@@ -348,7 +348,7 @@ rsync -av ~/.claude/workflows/ ~/Cloud/.claude/workflows/
 find ~/.claude/backup -name "*.bak" -mtime +30 -delete
 
 # 未使用の設定をレビュー
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 # 不要になったカスタムワークフローを削除
 ```
 

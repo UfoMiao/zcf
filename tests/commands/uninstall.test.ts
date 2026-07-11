@@ -121,7 +121,7 @@ describe('uninstall command', () => {
     it('should show custom uninstall options when custom is selected', async () => {
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'custom' })
-        .mockResolvedValueOnce({ customItems: ['output-styles', 'commands'] })
+        .mockResolvedValueOnce({ customItems: ['output-styles', 'skills'] })
         .mockResolvedValueOnce({ confirm: true })
       queuePromptBooleans(true)
 
@@ -146,7 +146,7 @@ describe('uninstall command', () => {
       }))
       expect(secondPrompt.choices).toEqual(expect.arrayContaining([
         expect.objectContaining({ value: 'output-styles' }),
-        expect.objectContaining({ value: 'commands' }),
+        expect.objectContaining({ value: 'skills' }),
         expect.objectContaining({ value: 'agents' }),
         expect.objectContaining({ value: 'claude-md' }),
         expect.objectContaining({ value: 'permissions-envs' }),
@@ -158,7 +158,7 @@ describe('uninstall command', () => {
         expect.objectContaining({ value: 'zcf-config' }),
       ]))
 
-      expect(mockCustomUninstall).toHaveBeenCalledWith(['output-styles', 'commands'])
+      expect(mockCustomUninstall).toHaveBeenCalledWith(['output-styles', 'skills'])
     })
 
     it('should validate that at least one item is selected in custom mode', async () => {
@@ -226,14 +226,14 @@ describe('uninstall command', () => {
 
       const options: UninstallOptions = {
         mode: 'custom',
-        items: ['output-styles', 'commands'],
+        items: ['output-styles', 'skills'],
       }
 
       queuePromptBooleans(true)
 
       await uninstall(options)
 
-      expect(mockCustomUninstall).toHaveBeenCalledWith(['output-styles', 'commands'])
+      expect(mockCustomUninstall).toHaveBeenCalledWith(['output-styles', 'skills'])
     })
   })
 

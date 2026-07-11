@@ -305,7 +305,7 @@ ls -lt ~/.claude/backup/
 cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
 
 # 或恢复特定文件
-cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/workflows/custom/
+cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/skills/custom/
 ```
 
 ## 配置管理最佳实践
@@ -330,10 +330,10 @@ cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/workflows
 ```bash
 # 方法 1：使用 Git
 git clone ~/zcf-configs
-cp -r zcf-configs/templates/* ~/.claude/workflows/
+cp -r zcf-configs/templates/* ~/.claude/skills/
 
 # 方法 2：使用云存储
-rsync -av ~/.claude/workflows/ ~/Cloud/.claude/workflows/
+rsync -av ~/.claude/skills/ ~/Cloud/.claude/workflows/
 
 # 方法 3：使用 Git Worktree
 /git-worktree migrate
@@ -348,7 +348,7 @@ rsync -av ~/.claude/workflows/ ~/Cloud/.claude/workflows/
 find ~/.claude/backup -name "*.bak" -mtime +30 -delete
 
 # 审查未使用的配置
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 # 移除不再需要的自定义工作流
 ```
 

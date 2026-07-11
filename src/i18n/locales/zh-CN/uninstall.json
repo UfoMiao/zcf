@@ -30,7 +30,7 @@
   "warningsCount": "卸载过程中发生了 {{count}} 个警告。",
 
   "outputStyles": "输出风格 - 删除输出风格配置",
-  "commands": "工作流技能 - 删除 ZCF 工作流 skills",
+  "skills": "工作流技能 - 删除 ZCF 工作流 skills",
   "agents": "自定义代理 - 删除自定义 ZCF 代理",
   "claudeMd": "CLAUDE.md - 删除全局记忆文件",
   "permissionsEnvs": "权限和环境变量 - 删除权限配置和环境变量",
@@ -42,7 +42,6 @@
   "zcfConfig": "ZCF 配置 - 删除 ZCF 偏好设置配置",
 
   "settingsJsonNotFound": "未找到 settings.json 文件",
-  "commandsNotFound": "未找到指令目录",
   "skillsNotFound": "未找到 ZCF 工作流 skills",
   "agentsNotFound": "未找到代理目录",
   "claudeMdNotFound": "未找到 CLAUDE.md 文件",

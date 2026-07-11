@@ -464,7 +464,7 @@ CCR管理メニューに入ると、以下を選択できます：
 ### Q: 初期化後にワークフローが見つかりませんか？
 
 **A**: 以下の場所を確認してください：
-- Claude Code: `~/.claude/workflows/`
+- Claude Code: `~/.claude/skills/`
 - Codex: `~/.codex/prompts/`
 
 ファイルが存在しない場合、`npx zcf update`を実行して再インポートしてください。

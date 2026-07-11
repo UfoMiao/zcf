@@ -136,7 +136,7 @@ git commit -m "Add custom output style"
 
 ## Workflow Templates
 
-Workflow templates define structured development processes. Each workflow includes command templates and optional agent templates.
+Workflow templates define structured development processes. Each workflow includes skill templates and optional agent templates.
 
 ### Workflow Types
 
@@ -327,20 +327,20 @@ If you modified templates, it's recommended to:
 1. **Backup Custom Templates**:
 ```bash
 # Backup custom templates
-tar -czf my-custom-templates.tar.gz ~/.claude/workflows/custom/
+tar -czf my-custom-templates.tar.gz ~/.claude/skills/custom/
 ```
 
 2. **Use Version Control**:
 ```bash
 # Include custom templates in Git
-git add ~/.claude/workflows/custom/
+git add ~/.claude/skills/custom/
 git commit -m "Add custom workflow templates"
 ```
 
 3. **Check During Updates**:
 ```bash
 # Compare differences before updating
-diff -r ~/.claude/workflows/ ~/.claude/backup/latest/workflows/
+diff -r ~/.claude/skills/ ~/.claude/backup/latest/workflows/
 ```
 
 ## Team Collaboration
@@ -357,7 +357,7 @@ cd team-zcf-templates
 git init
 
 # Add template files
-cp -r ~/.claude/workflows/team-* ./
+cp -r ~/.claude/skills/team-* ./
 git add .
 git commit -m "Initial team templates"
 ```
@@ -366,7 +366,7 @@ git commit -m "Initial team templates"
 ```bash
 # Pull team templates
 git pull origin main
-cp -r team-* ~/.claude/workflows/
+cp -r team-* ~/.claude/skills/
 ```
 
 ### Template Version Management
@@ -387,7 +387,7 @@ If templates are not correctly installed:
 npx zcf init --config-action new
 
 # Check template directories
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ls -la ~/.claude/prompts/output-style/
 ```
 
@@ -397,10 +397,10 @@ If custom templates are lost after update:
 
 ```bash
 # Restore from backup
-cp -r ~/.claude/backup/backup_*/workflows/custom/ ~/.claude/workflows/
+cp -r ~/.claude/backup/backup_*/workflows/custom/ ~/.claude/skills/
 
 # Or restore from version control
-git checkout HEAD -- ~/.claude/workflows/custom/
+git checkout HEAD -- ~/.claude/skills/custom/
 ```
 
 ### Language Mismatch

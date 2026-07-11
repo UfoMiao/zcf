@@ -416,7 +416,7 @@ If workflows are not imported:
 npx zcf update
 
 # Check workflow directories
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ls -la ~/.codex/prompts/
 ```
 

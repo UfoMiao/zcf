@@ -192,7 +192,7 @@ Codex 目前支持以下工作流模板（使用 `/prompts:` 前缀）：
 | | `/prompts:git-worktree` | `/git-worktree` | Git 工作树管理 |
 
 > 💡 **提示**：
-> - Codex 使用 `/prompts:` 前缀来访问工作流命令，这是 Codex 的命令格式规范
+> - Codex 使用 `/prompts:` 前缀来访问工作流 skills，这是 Codex 的调用格式规范
 > - Codex 目前仅支持六阶段工作流和 Git 工作流，功能开发工作流（feat）、项目初始化（init-project）和 BMad 工作流暂未在 Codex 中提供
 
 ### 与 Claude Code 的差异

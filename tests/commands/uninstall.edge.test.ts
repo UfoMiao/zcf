@@ -119,14 +119,14 @@ describe('uninstall command - Edge Cases', () => {
 
       const options: UninstallOptions = {
         mode: 'custom',
-        items: ' output-styles , commands , agents ',
+        items: ' output-styles , skills , agents ',
       }
 
       await uninstall(options)
 
       expect(mockUninstallerInstance.customUninstall).toHaveBeenCalledWith([
         'output-styles',
-        'commands',
+        'skills',
         'agents',
       ])
     })
@@ -167,12 +167,12 @@ describe('uninstall command - Edge Cases', () => {
 
       const options: UninstallOptions = {
         mode: 'custom',
-        items: ['output-styles', 'commands'],
+        items: ['output-styles', 'skills'],
       }
 
       await uninstall(options)
 
-      expect(mockUninstallerInstance.customUninstall).toHaveBeenCalledWith(['output-styles', 'commands'])
+      expect(mockUninstallerInstance.customUninstall).toHaveBeenCalledWith(['output-styles', 'skills'])
     })
   })
 
@@ -418,7 +418,7 @@ describe('uninstall command - Edge Cases', () => {
       ])
       mockInquirer.prompt
         .mockResolvedValueOnce({ mainChoice: 'custom' })
-        .mockResolvedValueOnce({ customItems: ['output-styles', 'commands'] })
+        .mockResolvedValueOnce({ customItems: ['output-styles', 'skills'] })
       mockedPromptBoolean.mockResolvedValueOnce(true) // confirm
 
       await uninstall()

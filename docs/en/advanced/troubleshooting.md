@@ -183,13 +183,14 @@ cat ~/.codex/config.toml | grep modelProvider
 
 ### 1. Workflows Not Imported
 
-**Symptoms**: Workflow commands cannot be used
+**Symptoms**: Workflow skills cannot be used
 
 **Solutions**:
 
 ```bash
-# 1. Check workflow directories
-ls -la ~/.claude/workflows/
+# 1. Check workflow skills directories
+ls -la ~/.claude/skills/
+ls -la ~/.agents/skills/
 ls -la ~/.codex/prompts/
 
 # 2. Reimport workflows
@@ -199,23 +200,23 @@ npx zcf update -w all
 cat ~/.codex/config.toml | grep managed
 # If managed = false, set to true then reimport
 
-# 4. Manually check workflow files
-cat ~/.claude/workflows/zcf-workflow/workflow.md
+# 4. Manually check workflow skill file
+cat ~/.claude/skills/workflow/SKILL.md
 ```
 
-### 2. Workflow Commands Not Recognized
+### 2. Workflow Skills Not Recognized
 
 **Symptoms**: No response when entering `/zcf:workflow`
 
 **Solutions**:
 
 ```bash
-# 1. Check workflow file locations
-# Claude Code: ~/.claude/workflows/
-# Codex: ~/.codex/prompts/
+# 1. Check workflow skill locations
+# Claude Code: ~/.claude/skills/ (symlinks; canonical in ~/.agents/skills/)
+# Codex: ~/.agents/skills/
 
-# 2. Verify workflow file format
-head -20 ~/.claude/workflows/zcf-workflow/workflow.md
+# 2. Verify skill file format
+head -20 ~/.claude/skills/workflow/SKILL.md
 
 # 3. Restart Claude Code or Codex application
 
@@ -459,7 +460,7 @@ npx zcf init -T codex -s -p 302ai -k "sk-xxx"
 
 ### 3. Codex Workflow Command Format
 
-**Symptoms**: Workflow commands cannot be used in Codex
+**Symptoms**: Workflow skills cannot be used in Codex
 
 **Solutions**:
 

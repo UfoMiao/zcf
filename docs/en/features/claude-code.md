@@ -13,7 +13,7 @@ ZCF's configuration for Claude Code includes the following core capabilities:
 | Feature Module | Description | Configuration File Location |
 |---------|------|------------|
 | **API Configuration** | Supports three modes: official login, API Key, and CCR proxy | `~/.claude/settings.json` |
-| **Workflow Commands** | Six-step, Feat, Git, BMAD commands | `~/.claude/commands/zcf/` |
+| **Workflow Skills** | Six-step, Feat, Git, BMAD skills | `~/.claude/skills/` (canonical: `~/.agents/skills/`) |
 | **Workflow Agents** | Planner, UX, common helper agents | `~/.claude/agents/zcf/` |
 | **Output Styles** | Multiple AI personalized output styles | `~/.claude/output-styles/` |
 | **MCP Services** | Integrates Context7, Open Web Search, etc. | `~/.claude/settings.json` |
@@ -29,16 +29,18 @@ After executing `zcf init`, ZCF will automatically create the following director
 ~/.claude/
 ├── settings.json                # Main configuration (API, MCP, permissions, etc.)
 ├── CLAUDE.md                    # System prompts and AI memory
-├── commands/                    # Workflow commands
-│   └── zcf/
-│       ├── init-project.md
-│       ├── workflow.md          # Six-step workflow command
-│       ├── feat.md              # Feature development workflow command
-│       ├── git-commit.md
-│       ├── git-rollback.md
-│       ├── git-cleanBranches.md
-│       ├── git-worktree.md
-│       └── bmad-init.md
+├── skills/                      # Workflow skills (symlinks; canonical in ~/.agents/skills/)
+│   ├── init-project/
+│   │   └── SKILL.md
+│   ├── workflow/                # Six-step workflow skill
+│   │   └── SKILL.md
+│   ├── feat/                    # Feature development workflow skill
+│   │   └── SKILL.md
+│   ├── git-commit/
+│   ├── git-rollback/
+│   ├── git-clean-branches/
+│   ├── git-worktree/
+│   └── bmad-init/
 ├── agents/                      # Workflow agents
 │   └── zcf/
 │       ├── common/

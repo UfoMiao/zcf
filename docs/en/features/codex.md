@@ -192,7 +192,7 @@ Codex currently supports the following workflow templates (using `/prompts:` pre
 | | `/prompts:git-worktree` | `/git-worktree` | Git worktree management |
 
 > 💡 **Tip**:
-> - Codex uses `/prompts:` prefix to access workflow commands, which is Codex's command format specification
+> - Codex uses `/prompts:` prefix to access workflow skills, which is Codex's invocation format specification
 > - Codex currently only supports six-stage workflow and Git workflows. Feature development workflow (feat), project initialization (init-project), and BMad workflow are not yet available in Codex
 
 ### Differences from Claude Code

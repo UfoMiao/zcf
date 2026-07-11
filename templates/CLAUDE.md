@@ -1,11 +1,11 @@
 # Templates Module
 
-**Last Updated**: Sun Dec 15 09:15:34 CST 2025
+**Last Updated**: Sun Jul 12 00:25:00 CST 2026
 [Root](../CLAUDE.md) > **templates**
 
 ## Module Responsibilities
 
-Template system module providing multilingual configuration templates, AI personality styles, and workflow definitions for both Claude Code and Codex environments. Supports Chinese (zh-CN) and English (en) locales with comprehensive workflow coverage.
+Template system module providing multilingual configuration templates, AI personality styles, and workflow skill definitions for both Claude Code and Codex environments. Supports Chinese (zh-CN) and English (en) locales with comprehensive workflow coverage.
 
 ## Entry Points and Startup
 
@@ -13,6 +13,7 @@ Template system module providing multilingual configuration templates, AI person
   - `claude-code/` - Claude Code specific templates
   - `codex/` - Codex specific templates
   - `common/` - Shared configuration templates
+  - `skills/` - ZCF workflow skills (installed via `npx -y skills add`)
 
 ## External Interfaces
 
@@ -21,49 +22,29 @@ Template system module providing multilingual configuration templates, AI person
 ```
 templates/
 ├── common/                   # Shared templates (cross code-tool)
-│   ├── output-styles/       # AI personality styles
-│   │   ├── en/              # English output styles
-│   │   │   ├── engineer-professional.md
-│   │   │   ├── laowang-engineer.md
-│   │   │   ├── nekomata-engineer.md
-│   │   │   └── ojousama-engineer.md
-│   │   └── zh-CN/           # Chinese output styles
-│   │       ├── engineer-professional.md
-│   │       ├── laowang-engineer.md
-│   │       ├── nekomata-engineer.md
-│   │       └── ojousama-engineer.md
-│   └── workflow/
-│       ├── git/             # Git workflow
-│       │   ├── en/          # English git commands
-│       │   │   ├── git-commit.md
-│       │   │   ├── git-worktree.md
-│       │   │   ├── git-cleanBranches.md
-│       │   │   └── git-rollback.md
-│       │   └── zh-CN/       # Chinese git commands
-│       │       ├── git-commit.md
-│       │       ├── git-worktree.md
-│       │       ├── git-cleanBranches.md
-│       │       └── git-rollback.md
-│       └── sixStep/         # Six-step workflow
-│           ├── en/          # English workflow
-│           │   └── workflow.md
-│           └── zh-CN/       # Chinese workflow
-│               └── workflow.md
+│   └── output-styles/       # AI personality styles
+│       ├── en/
+│       └── zh-CN/
+├── skills/                  # ZCF workflow skills (Claude Code skills format)
+│   ├── zh-CN/
+│   │   ├── workflow/SKILL.md
+│   │   ├── feat/SKILL.md
+│   │   ├── init-project/SKILL.md
+│   │   ├── git-commit/SKILL.md
+│   │   ├── git-rollback/SKILL.md
+│   │   ├── git-clean-branches/SKILL.md
+│   │   ├── git-worktree/SKILL.md
+│   │   └── bmad-init/SKILL.md
+│   └── en/
+│       └── ... (same skill set)
 ├── claude-code/              # Claude Code templates
-│   ├── common/              # Common configurations
-│   ├── zh-CN/               # Chinese templates
-│   │   └── workflow/        # Workflow templates
-│   │       ├── common/      # Common tools workflow
-│   │       ├── plan/        # Planning workflow
-│   │       └── bmad/        # BMAD workflow
-│   └── en/                  # English templates
-│       └── workflow/        # Workflow templates
+│   ├── common/
+│   ├── zh-CN/
+│   └── en/
 └── codex/                   # Codex templates
-    ├── common/              # Common configurations
-    ├── zh-CN/               # Chinese templates
-    │   └── workflow/        # Workflow templates
-    └── en/                  # English templates
-        └── workflow/        # Workflow templates
+    ├── common/
+    ├── zh-CN/
+    └── en/
 ```
 
 ### Template Categories
@@ -79,28 +60,28 @@ templates/
 - **explanatory** - Explanatory style
 - **learning** - Learning-focused style
 
-#### 2. Workflow Templates
+#### 2. Workflow Skills
 
 ##### Common Tools Workflow
-- **Commands**: `init-project`
+- **Skills**: `init-project`
 - **Agents**: `init-architect`, `get-current-datetime`
 - **Purpose**: Essential development tools and project initialization
 
 ##### Planning Workflow (Plan)
-- **Commands**: `feat`, `workflow`
+- **Skills**: `feat`, `workflow`
 - **Agents**: `planner`, `ui-ux-designer`
 - **Purpose**: Feature planning and UX design
 
 ##### Six-Step Workflow
-- **Commands**: `zcf-update-docs`, `zcf-pr`, `zcf-release`
+- **Skills**: `zcf-update-docs`, `zcf-pr`, `zcf-release`
 - **Purpose**: Structured development process
 
 ##### BMAD Workflow
-- **Commands**: Enterprise-level workflow commands
+- **Skills**: Enterprise-level workflow skills (BMad uses its own command layout)
 - **Purpose**: Business model and architecture design
 
 ##### Git Workflow
-- **Commands**: `git-commit`, `git-worktree`, `git-cleanBranches`, `git-rollback`
+- **Skills**: `git-commit`, `git-worktree`, `git-clean-branches`, `git-rollback`
 - **Purpose**: Version control management with conventional commits, worktree management, branch cleanup, and rollback operations
 
 ## Key Dependencies and Configuration
@@ -109,12 +90,13 @@ templates/
 
 - **Language Support**: zh-CN and en locales
 - **Code Tool Support**: Claude Code and Codex
-- **Template Format**: Markdown-based configuration files
+- **Template Format**: Markdown-based configuration files (`SKILL.md` for workflow skills)
 - **Variable Substitution**: Dynamic content replacement
 
 ### Configuration Integration
 
 - **Workflow Installer**: Integration with `src/utils/workflow-installer.ts`
+- **Skills Installer**: Integration with `src/utils/skills-installer.ts` (`npx -y skills add`)
 - **Language Detection**: Integration with `src/i18n/` system
 - **Platform Support**: Cross-platform path handling
 
@@ -126,10 +108,10 @@ templates/
 interface TemplateStructure {
   codeTool: 'claude-code' | 'codex'
   locale: 'zh-CN' | 'en'
-  category: 'common' | 'output-styles' | 'workflow'
+  category: 'common' | 'output-styles' | 'skills'
   workflow?: {
     type: 'common' | 'plan' | 'sixStep' | 'bmad' | 'git'
-    commands: string[]
+    skills: string[]
     agents: string[]
   }
 }
@@ -167,11 +149,12 @@ interface OutputStyle {
 - **Path Handling**: Cross-platform path compatibility
 - **Encoding**: UTF-8 encoding for multilingual content
 - **Template Variables**: Proper variable substitution
-- **File Permissions**: Executable permissions for command files
+- **Skills Installation**: Installed via skills CLI to `~/.agents/skills/` with symlinks in `~/.claude/skills/`
 
 ## Related Files
 
 - `src/utils/workflow-installer.ts` - Template installation logic
+- `src/utils/skills-installer.ts` - Skills CLI wrapper
 - `src/config/workflows.ts` - Workflow configuration definitions
 - `src/i18n/` - Internationalization support
 - `tests/templates/` - Template validation tests
@@ -180,24 +163,20 @@ interface OutputStyle {
 
 ### Recent Updates
 
-- Consolidated sixStep workflow templates to `templates/common/workflow/sixStep/` with unified `.zcf` plan directory for both Claude Code and Codex
+- Migrated ZCF workflow templates from commands to skills under `templates/skills/{locale}/`
+- Skills installed via `npx -y skills add` with symlink mode for Claude Code
 - Consolidated output-styles/system-prompt templates to `templates/common/output-styles/`
-- Consolidated git workflow templates to `templates/common/workflow/git/`
 - Added Codex template support for dual code tool architecture
-- Enhanced workflow templates with comprehensive command coverage
-- Improved AI personality styles with professional variations
-- Added cross-platform template compatibility
 - Enhanced template validation and testing coverage
 
 ## FAQ
 
-### Q: How to add a new workflow template?
+### Q: How to add a new workflow skill?
 
-1. Create workflow directory under `templates/{code-tool}/{locale}/workflow/`
-2. Add command files in `commands/` subdirectory
-3. Add agent files in `agents/` subdirectory (if needed)
-4. Update `src/config/workflows.ts` with new workflow definition
-5. Add translations in `src/i18n/locales/{locale}/workflow.ts`
+1. Create skill directory under `templates/skills/{locale}/{skill-name}/`
+2. Add `SKILL.md` with Claude Code skills frontmatter
+3. Update `src/config/workflows.ts` with new workflow definition
+4. Add translations in `src/i18n/locales/{locale}/workflow.ts`
 
 ### Q: How to add a new output style?
 
@@ -208,8 +187,8 @@ interface OutputStyle {
 
 ### Q: How to support a new language?
 
-1. Create new locale directory under `templates/{code-tool}/{new-locale}/`
-2. Copy existing templates and translate content
+1. Create new locale directory under `templates/skills/{new-locale}/`
+2. Copy existing skills and translate `SKILL.md` content
 3. Update i18n system to support new locale
 4. Add locale to supported languages list
 

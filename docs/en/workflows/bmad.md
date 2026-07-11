@@ -225,7 +225,7 @@ If `/zcf:bmad-init` execution fails:
 pwd
 
 # 2. Check if BMad workflow is installed
-ls -la ~/.claude/workflows/bmad/
+ls -la ~/.claude/skills/bmad/
 
 # 3. Reinstall workflow
 npx zcf update -w bmadWorkflow
@@ -256,7 +256,7 @@ If AI agent team cannot work normally:
 
 ```bash
 # 1. Check workflow files
-cat ~/.claude/workflows/bmad/bmad-init.md
+cat ~/.claude/skills/bmad/bmad-init.md
 
 # 2. Check Claude Code configuration
 cat ~/.claude/settings.json | jq .mcpServers

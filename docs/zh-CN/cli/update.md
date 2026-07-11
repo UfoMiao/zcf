@@ -146,7 +146,7 @@ npx zcf u -s -g zh-CN -T claude-code
 ### 提示词内容
 
 - ✅ 系统提示词（`CLAUDE.md`）
-- ✅ 工作流命令模板
+- ✅ 工作流 skill 模板
 - ✅ AI 代理模板
 - ✅ 输出风格模板
 
@@ -212,7 +212,7 @@ npx zcf u -g zh-CN
 
 ```bash
 # 查看当前工作流
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 
 # 查看备份
 ls -la ~/.claude/backup/
@@ -266,7 +266,7 @@ mkdir -p ~/.claude/backup ~/.codex/backup
 npx zcf init --config-action new -w all
 
 # 或手动检查工作流目录
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ```
 
 ### 版本检查不工作

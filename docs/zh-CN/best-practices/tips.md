@@ -417,7 +417,7 @@ npx zcf init -s --api-configs-file team-config.json -k "个人API密钥"
 
 ```bash
 # 导出工作流模板
-tar -czf team-workflows.tar.gz ~/.claude/workflows/
+tar -czf team-workflows.tar.gz ~/.claude/skills/
 
 # 团队成员导入
 tar -xzf team-workflows.tar.gz -C ~/.claude/
@@ -448,7 +448,7 @@ cat ~/.claude/settings.json | jq .
 cat ~/.claude/settings.json | jq .mcpServers
 
 # 检查工作流
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 
 # 检查版本
 npx zcf check-updates

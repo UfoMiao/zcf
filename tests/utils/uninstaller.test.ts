@@ -124,13 +124,13 @@ describe('zcfUninstaller', () => {
     })
   })
 
-  describe('removeCustomCommands', () => {
+  describe('removeWorkflowSkills', () => {
     it('should remove commands/zcf/ directory', async () => {
       const commandsPath = '/home/user/.claude/commands/zcf'
       mockFsExtra.pathExists.mockResolvedValue(true)
       mockTrash.moveToTrash.mockResolvedValue([{ success: true, path: commandsPath }])
 
-      const result = await uninstaller.removeCustomCommands()
+      const result = await uninstaller.removeWorkflowSkills()
 
       expect(mockTrash.moveToTrash).toHaveBeenCalledWith(commandsPath)
       expect(result.success).toBe(true)
@@ -140,7 +140,7 @@ describe('zcfUninstaller', () => {
     it('should handle missing skills gracefully', async () => {
       mockFsExtra.pathExists.mockResolvedValue(false)
 
-      const result = await uninstaller.removeCustomCommands()
+      const result = await uninstaller.removeWorkflowSkills()
 
       expect(result.success).toBe(true)
       expect(result.warnings).toContain('skillsNotFound')
@@ -318,12 +318,12 @@ describe('zcfUninstaller', () => {
 
   describe('customUninstall', () => {
     it('should resolve conflicts between claude-code and mcps', async () => {
-      const items: UninstallItem[] = ['claude-code', 'mcps', 'commands']
+      const items: UninstallItem[] = ['claude-code', 'mcps', 'skills']
 
       // Mock individual methods
       const mockUninstallClaudeCode = vi.spyOn(uninstaller, 'uninstallClaudeCode')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
-      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeCustomCommands')
+      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeWorkflowSkills')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
       const mockRemoveMcps = vi.spyOn(uninstaller, 'removeMcps')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
@@ -339,11 +339,11 @@ describe('zcfUninstaller', () => {
     })
 
     it('should execute mcps removal when claude-code is not selected', async () => {
-      const items: UninstallItem[] = ['mcps', 'commands']
+      const items: UninstallItem[] = ['mcps', 'skills']
 
       const mockRemoveMcps = vi.spyOn(uninstaller, 'removeMcps')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
-      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeCustomCommands')
+      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeWorkflowSkills')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
 
       const results = await uninstaller.customUninstall(items)

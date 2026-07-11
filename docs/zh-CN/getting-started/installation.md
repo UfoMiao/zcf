@@ -466,7 +466,7 @@ npx zcf ccr
 ### Q: 初始化后找不到工作流？
 
 **A**: 检查以下位置：
-- Claude Code：`~/.claude/workflows/`
+- Claude Code：`~/.claude/skills/`
 - Codex：`~/.codex/prompts/`
 
 如果文件不存在，运行 `npx zcf update` 重新导入。

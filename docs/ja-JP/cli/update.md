@@ -212,7 +212,7 @@ npx zcf u -g zh-CN
 
 ```bash
 # 現在のワークフローを確認
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 
 # バックアップを確認
 ls -la ~/.claude/backup/
@@ -266,7 +266,7 @@ mkdir -p ~/.claude/backup ~/.codex/backup
 npx zcf init --config-action new -w all
 
 # または手動でワークフローディレクトリを確認
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ```
 
 ### バージョン確認が動作しない

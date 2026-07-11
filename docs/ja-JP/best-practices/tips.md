@@ -411,7 +411,7 @@ npx zcf init -s --api-configs-file team-config.json -k \"Personal API Key\"
 
 ```bash
 # ワークフローをエクスポート
-tar -czf team-workflows.tar.gz ~/.claude/workflows/
+tar -czf team-workflows.tar.gz ~/.claude/skills/
 
 # メンバー側でインポート
 tar -xzf team-workflows.tar.gz -C ~/.claude/
@@ -440,7 +440,7 @@ cat ~/.claude/settings.json | jq .
 cat ~/.claude/settings.json | jq .mcpServers
 
 # ワークフローを確認
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 
 # バージョンを確認
 npx zcf check-updates

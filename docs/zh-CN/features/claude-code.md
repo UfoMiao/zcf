@@ -13,7 +13,7 @@ ZCF 针对 Claude Code 的配置包括以下核心能力：
 | 功能模块 | 说明 | 配置文件位置 |
 |---------|------|------------|
 | **API 配置** | 支持官方登录、API Key、CCR 代理三种模式 | `~/.claude/settings.json` |
-| **工作流命令** | 预置六阶段、Feat、Git、BMAD 等命令 | `~/.claude/commands/zcf/` |
+| **工作流 Skills** | 预置六阶段、Feat、Git、BMAD 等 skills | `~/.claude/skills/`（canonical：`~/.agents/skills/`） |
 | **工作流智能体** | 规划、UX 等智能体 | `~/.claude/agents/zcf/` |
 | **输出风格** | 多种 AI 个性化输出风格 | `~/.claude/output-styles/` |
 | **MCP 服务** | 集成 Context7、Open Web Search 等 | `~/.claude/settings.json` |
@@ -29,16 +29,18 @@ ZCF 针对 Claude Code 的配置包括以下核心能力：
 ~/.claude/
 ├── settings.json                # Claude Code 主配置文件（API、MCP、权限等）
 ├── CLAUDE.md                    # 系统提示和 AI 记忆配置
-├── commands/                    # 工作流命令目录
-│   └── zcf/
-│       ├── init-project.md
-│       ├── workflow.md          # 六阶段工作流命令
-│       ├── feat.md              # 功能开发工作流命令
-│       ├── git-commit.md
-│       ├── git-rollback.md
-│       ├── git-cleanBranches.md
-│       ├── git-worktree.md
-│       └── bmad-init.md
+├── skills/                      # 工作流 skills 目录（软链，canonical 在 ~/.agents/skills/）
+│   ├── init-project/
+│   │   └── SKILL.md
+│   ├── workflow/                # 六阶段工作流 skill
+│   │   └── SKILL.md
+│   ├── feat/                    # 功能开发工作流 skill
+│   │   └── SKILL.md
+│   ├── git-commit/
+│   ├── git-rollback/
+│   ├── git-clean-branches/
+│   ├── git-worktree/
+│   └── bmad-init/
 ├── agents/                      # 工作流智能体目录
 │   └── zcf/
 │       ├── common/

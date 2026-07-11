@@ -225,7 +225,7 @@ BMad 初始化后会在项目根目录创建以下结构：
 pwd
 
 # 2. 检查 BMad 工作流是否已安装
-ls -la ~/.claude/workflows/bmad/
+ls -la ~/.claude/skills/bmad/
 
 # 3. 重新安装工作流
 npx zcf update -w bmadWorkflow
@@ -256,7 +256,7 @@ cat ARCHITECTURE.md
 
 ```bash
 # 1. 检查工作流文件
-cat ~/.claude/workflows/bmad/bmad-init.md
+cat ~/.claude/skills/bmad/bmad-init.md
 
 # 2. 检查 Claude Code 配置
 cat ~/.claude/settings.json | jq .mcpServers

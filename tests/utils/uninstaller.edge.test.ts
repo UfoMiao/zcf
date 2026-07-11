@@ -172,12 +172,12 @@ describe('zcfUninstaller - Edge Cases', () => {
     })
   })
 
-  describe('removeCustomCommands edge cases', () => {
+  describe('removeWorkflowSkills edge cases', () => {
     it('should handle trash failure with fallback error message', async () => {
       mockFsExtra.pathExists.mockResolvedValue(true)
       mockTrash.moveToTrash.mockResolvedValue([{ success: false }]) // No error message
 
-      const result = await uninstaller.removeCustomCommands()
+      const result = await uninstaller.removeWorkflowSkills()
 
       expect(result.success).toBe(true)
       expect(result.warnings).toContain('Failed to move to trash')
@@ -188,7 +188,7 @@ describe('zcfUninstaller - Edge Cases', () => {
         throw new Error('Unexpected file system error')
       })
 
-      const result = await uninstaller.removeCustomCommands()
+      const result = await uninstaller.removeWorkflowSkills()
 
       expect(result.success).toBe(false)
       expect(result.errors[0]).toContain('Unexpected file system error')
@@ -513,13 +513,13 @@ describe('zcfUninstaller - Edge Cases', () => {
     })
 
     it('should handle complex conflict resolution scenarios', async () => {
-      const items: UninstallItem[] = ['claude-code', 'mcps', 'ccr', 'commands', 'agents']
+      const items: UninstallItem[] = ['claude-code', 'mcps', 'ccr', 'skills', 'agents']
 
       const mockUninstallClaudeCode = vi.spyOn(uninstaller, 'uninstallClaudeCode')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
       const mockUninstallCcr = vi.spyOn(uninstaller, 'uninstallCcr')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
-      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeCustomCommands')
+      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeWorkflowSkills')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
       const mockRemoveAgents = vi.spyOn(uninstaller, 'removeCustomAgents')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
@@ -543,7 +543,7 @@ describe('zcfUninstaller - Edge Cases', () => {
     it('should handle all valid uninstall items without conflicts', async () => {
       const validItems: UninstallItem[] = [
         'output-styles',
-        'commands',
+        'skills',
         'agents',
         'claude-md',
         'permissions-envs',
@@ -557,7 +557,7 @@ describe('zcfUninstaller - Edge Cases', () => {
       // Mock all methods to return success
       const mockMethods = [
         'removeOutputStyles',
-        'removeCustomCommands',
+        'removeWorkflowSkills',
         'removeCustomAgents',
         'removeClaudeMd',
         'removePermissionsAndEnvs',
@@ -593,9 +593,9 @@ describe('zcfUninstaller - Edge Cases', () => {
     })
 
     it('should handle items without conflicts', async () => {
-      const items: UninstallItem[] = ['commands', 'agents', 'backups']
+      const items: UninstallItem[] = ['skills', 'agents', 'backups']
 
-      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeCustomCommands')
+      const mockRemoveCommands = vi.spyOn(uninstaller, 'removeWorkflowSkills')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })
       const mockRemoveAgents = vi.spyOn(uninstaller, 'removeCustomAgents')
         .mockResolvedValue({ success: true, removed: [], removedConfigs: [], errors: [], warnings: [] })

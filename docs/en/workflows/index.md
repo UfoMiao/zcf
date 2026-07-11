@@ -37,7 +37,7 @@ Use the following commands in Codex (note the `/prompts:` prefix):
 
 > ⚠️ **Note**: Codex currently only supports six-stage workflow and Git workflows. Feature development workflow (feat), project initialization (init-project), and BMad workflow are not yet available in Codex.
 
-> 💡 **Tip**: Codex uses `/prompts:` prefix to access all workflow commands, which is Codex's command format specification.
+> 💡 **Tip**: Codex uses `/prompts:` prefix to access all workflow skills, which is Codex's invocation format specification.
 
 ## Usage Recommendations
 

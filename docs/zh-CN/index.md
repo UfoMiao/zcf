@@ -86,7 +86,7 @@ ZCF（Zero-Config Code Flow）是一个面向专业开发者的 CLI 工具，目
 
 - **零配置体验**：自动检测操作系统、语言偏好与安装状态，必要时触发增量配置，避免重复劳动。
 - **多工具统一**：同时支持 Claude Code 与 Codex，两套环境共享一套 CLI，随时切换目标平台。
-- **结构化工作流**：预置六阶段结构化工作流、Feat 规划流、BMad 敏捷流等，内置代理与指令模板。
+- **结构化工作流**：预置六阶段结构化工作流、Feat 规划流、BMad 敏捷流等，内置代理与 skills 模板。
 - **丰富的 MCP 集成**：默认提供 Context7、Open Web Search、Spec Workflow、DeepWiki、Playwright、Serena 等服务。
 - **可视化状态与运维**：包含 CCR（Claude Code Router）配置助手以及 CCometixLine 状态栏安装与升级能力。
 - **可扩展配置体系**：支持多 API 配置并行、输出风格切换、环境权限导入、模板与语言分离管理。
@@ -96,7 +96,7 @@ ZCF（Zero-Config Code Flow）是一个面向专业开发者的 CLI 工具，目
 1. **安全的隐私与权限配置**：环境变量、权限模板与备份策略自动落地，确保极简但安全的运行环境。
 2. **API 与代理管理**：支持官方登录、API Key、CCR 代理三种模式，内置 302.AI、GLM、MiniMax、Kimi 等预设。
 3. **全局输出风格与语言体系**：命令行即可设置 AI 输出语言、项目级/全局输出风格与 Codex 记忆指令。
-4. **工作流与指令模板集**：自动导入 `/zcf:workflow`、`/zcf:feat`、`/git-commit` 等命令以及对应的代理配置。
+4. **工作流与 skills 模板集**：自动导入 `/zcf:workflow`、`/zcf:feat`、`/git-commit` 等 skills 以及对应的代理配置。
 5. **MCP 服务基座**：一键启用主流 MCP Server，并根据是否需要 API Key 智能提示环境变量要求。
 6. **辅助工具链**：CCometixLine 状态栏自动安装、CCR 管理菜单、Codex CLI 安装/升级、使用数据统计。
 

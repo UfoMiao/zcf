@@ -148,8 +148,8 @@ async function showCustomUninstallMenu(uninstaller: ZcfUninstaller): Promise<voi
         value: 'output-styles' as const,
       },
       {
-        name: i18n.t('uninstall:commands'),
-        value: 'commands' as const,
+        name: i18n.t('uninstall:skills'),
+        value: 'skills' as const,
       },
       {
         name: i18n.t('uninstall:agents'),

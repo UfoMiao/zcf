@@ -146,7 +146,7 @@ The execution flow of `zcf update` is as follows:
 ### Prompt Content
 
 - ✅ System prompts (`CLAUDE.md`)
-- ✅ Workflow command templates
+- ✅ Workflow skill templates
 - ✅ AI agent templates
 - ✅ Output style templates
 
@@ -212,7 +212,7 @@ Before updating, you can view current configuration:
 
 ```bash
 # View current workflows
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 
 # View backups
 ls -la ~/.claude/backup/
@@ -266,7 +266,7 @@ If workflows are not updated:
 npx zcf init --config-action new -w all
 
 # Or manually check workflow directory
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ```
 
 ### Version Check Not Working

@@ -11,7 +11,7 @@ title: Claude Code 設定
 | 機能 | 説明 | 設定ファイル |
 |---|---|---|
 | API 設定 | 公式ログイン / API Key / CCR プロキシに対応 | `~/.claude/settings.json` |
-| ワークフローコマンド | 6 段階 / Feat / Git / BMAD コマンド | `~/.claude/commands/zcf/` |
+| ワークフロー Skills | 6 段階 / Feat / Git / BMAD skills | `~/.claude/skills/`（本体：`~/.agents/skills/`） |
 | ワークフローエージェント | プランナー / UX など | `~/.claude/agents/zcf/` |
 | 出力スタイル | 複数のスタイルを同梱 | `~/.claude/output-styles/` |
 | MCP | Context7, Open Web Search など | `~/.claude/settings.json` |
@@ -25,16 +25,15 @@ title: Claude Code 設定
 ~/.claude/
 ├─ settings.json                  # API・MCP・権限などの設定
 ├─ CLAUDE.md                      # システムプロンプト / メモリ
-├─ commands/
-│  └─ zcf/
-│      ├─ init-project.md
-│      ├─ workflow.md             # 6 段階ワークフローコマンド
-│      ├─ feat.md                 # 機能開発ワークフローコマンド
-│      ├─ git-commit.md
-│      ├─ git-rollback.md
-│      ├─ git-cleanBranches.md
-│      ├─ git-worktree.md
-│      └─ bmad-init.md
+├─ skills/                        # ワークフロー skills（シンボリックリンク、本体は ~/.agents/skills/）
+│  ├─ init-project/SKILL.md
+│  ├─ workflow/SKILL.md           # 6 段階ワークフロー skill
+│  ├─ feat/SKILL.md               # 機能開発ワークフロー skill
+│  ├─ git-commit/
+│  ├─ git-rollback/
+│  ├─ git-clean-branches/
+│  ├─ git-worktree/
+│  └─ bmad-init/
 ├─ agents/
 │  └─ zcf/
 │      ├─ common/
@@ -60,7 +59,7 @@ title: Claude Code 設定
 
 ## ワークフロー・テンプレート
 
-- `/zcf:workflow` などのコマンドは `~/.claude/commands/zcf/` に配置
+- `/zcf:workflow` などの skills は `~/.claude/skills/` に配置（本体は `~/.agents/skills/`）
 - エージェントは `~/.claude/agents/zcf/` 配下に配置
 - `--workflows all/skip` で導入を制御
 

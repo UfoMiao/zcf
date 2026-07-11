@@ -38,7 +38,7 @@ ZCF workflows use different command prefixes in different tools:
 | **Claude Code** | `/zcf:` or `/` | `/zcf:workflow`, `/git-commit` |
 | **Codex** | `/prompts:` | `/prompts:workflow`, `/prompts:git-commit` |
 
-> 💡 **Tip**: Codex uses `/prompts:` prefix to access all workflow commands, while Claude Code uses `/zcf:` prefix or direct `/` prefix.
+> 💡 **Tip**: Codex uses `/prompts:` prefix to access all workflow skills, while Claude Code uses `/zcf:` prefix or direct `/` prefix.
 
 ## Usage Recommendations
 

@@ -327,20 +327,20 @@ npx zcf update -c en
 1. **カスタムテンプレートをバックアップ**:
 ```bash
 # カスタムテンプレートをバックアップ
-tar -czf my-custom-templates.tar.gz ~/.claude/workflows/custom/
+tar -czf my-custom-templates.tar.gz ~/.claude/skills/custom/
 ```
 
 2. **バージョン管理を使用**:
 ```bash
 # カスタムテンプレートをGitに含める
-git add ~/.claude/workflows/custom/
+git add ~/.claude/skills/custom/
 git commit -m "Add custom workflow templates"
 ```
 
 3. **更新時に確認**:
 ```bash
 # 更新前に差分を比較
-diff -r ~/.claude/workflows/ ~/.claude/backup/latest/workflows/
+diff -r ~/.claude/skills/ ~/.claude/backup/latest/workflows/
 ```
 
 ## チーム協力
@@ -357,7 +357,7 @@ cd team-zcf-templates
 git init
 
 # テンプレートファイルを追加
-cp -r ~/.claude/workflows/team-* ./
+cp -r ~/.claude/skills/team-* ./
 git add .
 git commit -m "Initial team templates"
 ```
@@ -366,7 +366,7 @@ git commit -m "Initial team templates"
 ```bash
 # チームテンプレートをプル
 git pull origin main
-cp -r team-* ~/.claude/workflows/
+cp -r team-* ~/.claude/skills/
 ```
 
 ### テンプレートバージョン管理
@@ -387,7 +387,7 @@ cp -r team-* ~/.claude/workflows/
 npx zcf init --config-action new
 
 # テンプレートディレクトリを確認
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ls -la ~/.claude/prompts/output-style/
 ```
 
@@ -397,10 +397,10 @@ ls -la ~/.claude/prompts/output-style/
 
 ```bash
 # バックアップから復元
-cp -r ~/.claude/backup/backup_*/workflows/custom/ ~/.claude/workflows/
+cp -r ~/.claude/backup/backup_*/workflows/custom/ ~/.claude/skills/
 
 # またはバージョン管理から復元
-git checkout HEAD -- ~/.claude/workflows/custom/
+git checkout HEAD -- ~/.claude/skills/custom/
 ```
 
 ### 言語の不一致

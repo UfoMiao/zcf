@@ -305,7 +305,7 @@ ls -lt ~/.claude/backup/
 cp -r ~/.claude/backup/backup_2025-01-15_10-30-45/* ~/.claude/
 
 # Or restore specific file
-cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/workflows/custom/
+cp ~/.claude/backup/backup_*/workflows/custom/my-workflow.md ~/.claude/skills/custom/
 ```
 
 ## Configuration Management Best Practices
@@ -330,10 +330,10 @@ Synchronize configurations across multiple devices:
 ```bash
 # Method 1: Use Git
 git clone ~/zcf-configs
-cp -r zcf-configs/templates/* ~/.claude/workflows/
+cp -r zcf-configs/templates/* ~/.claude/skills/
 
 # Method 2: Use cloud storage
-rsync -av ~/.claude/workflows/ ~/Cloud/.claude/workflows/
+rsync -av ~/.claude/skills/ ~/Cloud/.claude/workflows/
 
 # Method 3: Use Git Worktree
 /git-worktree migrate
@@ -348,7 +348,7 @@ Regularly review and clean configurations:
 find ~/.claude/backup -name "*.bak" -mtime +30 -delete
 
 # Review unused configurations
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 # Remove custom workflows that are no longer needed
 ```
 

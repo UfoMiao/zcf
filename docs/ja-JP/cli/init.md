@@ -416,7 +416,7 @@ cat ~/.codex/config.toml | grep -A 5 modelProvider
 npx zcf update
 
 # ワークフローディレクトリを確認
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ls -la ~/.codex/prompts/
 ```
 

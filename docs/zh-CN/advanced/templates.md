@@ -327,20 +327,20 @@ npx zcf update -c en
 1. **备份自定义模板**：
 ```bash
 # 备份自定义模板
-tar -czf my-custom-templates.tar.gz ~/.claude/workflows/custom/
+tar -czf my-custom-templates.tar.gz ~/.claude/skills/custom/
 ```
 
 2. **使用版本控制**：
 ```bash
 # 将自定义模板纳入 Git
-git add ~/.claude/workflows/custom/
+git add ~/.claude/skills/custom/
 git commit -m "Add custom workflow templates"
 ```
 
 3. **更新时检查**：
 ```bash
 # 更新前对比差异
-diff -r ~/.claude/workflows/ ~/.claude/backup/latest/workflows/
+diff -r ~/.claude/skills/ ~/.claude/backup/latest/workflows/
 ```
 
 ## 团队协作
@@ -357,7 +357,7 @@ cd team-zcf-templates
 git init
 
 # 添加模板文件
-cp -r ~/.claude/workflows/team-* ./
+cp -r ~/.claude/skills/team-* ./
 git add .
 git commit -m "Initial team templates"
 ```
@@ -366,7 +366,7 @@ git commit -m "Initial team templates"
 ```bash
 # 拉取团队模板
 git pull origin main
-cp -r team-* ~/.claude/workflows/
+cp -r team-* ~/.claude/skills/
 ```
 
 ### 模板版本管理
@@ -387,7 +387,7 @@ cp -r team-* ~/.claude/workflows/
 npx zcf init --config-action new
 
 # 检查模板目录
-ls -la ~/.claude/workflows/
+ls -la ~/.claude/skills/
 ls -la ~/.claude/prompts/output-style/
 ```
 
@@ -397,10 +397,10 @@ ls -la ~/.claude/prompts/output-style/
 
 ```bash
 # 从备份恢复
-cp -r ~/.claude/backup/backup_*/workflows/custom/ ~/.claude/workflows/
+cp -r ~/.claude/backup/backup_*/workflows/custom/ ~/.claude/skills/
 
 # 或从版本控制恢复
-git checkout HEAD -- ~/.claude/workflows/custom/
+git checkout HEAD -- ~/.claude/skills/custom/
 ```
 
 ### 语言不匹配

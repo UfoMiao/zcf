@@ -183,13 +183,14 @@ cat ~/.codex/config.toml | grep modelProvider
 
 ### 1. 工作流未导入
 
-**症状**：工作流命令无法使用
+**症状**：工作流 skills 无法使用
 
 **解决方案**：
 
 ```bash
-# 1. 检查工作流目录
-ls -la ~/.claude/workflows/
+# 1. 检查工作流 skills 目录
+ls -la ~/.claude/skills/
+ls -la ~/.agents/skills/
 ls -la ~/.codex/prompts/
 
 # 2. 重新导入工作流
@@ -199,23 +200,23 @@ npx zcf update -w all
 cat ~/.codex/config.toml | grep managed
 # 如果 managed = false，设置为 true 后重新导入
 
-# 4. 手动检查工作流文件
-cat ~/.claude/workflows/zcf-workflow/workflow.md
+# 4. 手动检查工作流 skill 文件
+cat ~/.claude/skills/workflow/SKILL.md
 ```
 
-### 2. 工作流命令不识别
+### 2. 工作流 skill 不识别
 
 **症状**：输入 `/zcf:workflow` 无响应
 
 **解决方案**：
 
 ```bash
-# 1. 检查工作流文件位置
-# Claude Code: ~/.claude/workflows/
-# Codex: ~/.codex/prompts/
+# 1. 检查工作流 skill 位置
+# Claude Code: ~/.claude/skills/（软链，canonical 在 ~/.agents/skills/）
+# Codex: ~/.agents/skills/
 
-# 2. 验证工作流文件格式
-head -20 ~/.claude/workflows/zcf-workflow/workflow.md
+# 2. 验证 skill 文件格式
+head -20 ~/.claude/skills/workflow/SKILL.md
 
 # 3. 重启 Claude Code 或 Codex 应用
 
@@ -457,9 +458,9 @@ cat ~/.codex/auth.json
 npx zcf init -T codex -s -p 302ai -k "sk-xxx"
 ```
 
-### 3. Codex 工作流命令格式
+### 3. Codex 工作流 skill 格式
 
-**症状**：Codex 中工作流命令无法使用
+**症状**：Codex 中工作流 skills 无法使用
 
 **解决方案**：
 

@@ -38,7 +38,7 @@ ZCF 工作流在不同工具中使用不同的命令前缀：
 | **Claude Code** | `/zcf:` 或 `/` | `/zcf:workflow`, `/git-commit` |
 | **Codex** | `/prompts:` | `/prompts:workflow`, `/prompts:git-commit` |
 
-> 💡 **提示**：Codex 使用 `/prompts:` 前缀访问所有工作流命令，而 Claude Code 使用 `/zcf:` 前缀或直接 `/` 前缀。
+> 💡 **提示**：Codex 使用 `/prompts:` 前缀访问所有工作流 skills，而 Claude Code 使用 `/zcf:` 前缀或直接 `/` 前缀。
 
 ## 使用建议
 

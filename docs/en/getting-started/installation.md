@@ -466,7 +466,7 @@ After entering the CCR management menu, you can choose:
 ### Q: Can't find workflows after initialization?
 
 **A**: Check the following locations:
-- Claude Code: `~/.claude/workflows/`
+- Claude Code: `~/.claude/skills/`
 - Codex: `~/.codex/prompts/`
 
 If files don't exist, run `npx zcf update` to re-import.
