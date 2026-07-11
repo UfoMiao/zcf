@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { configureCodexApi, configureCodexMcp, runCodexWorkflowImportWithLanguageSelection, runCodexWorkflowSelection } from '../../../../src/utils/code-tools/codex'
 import { applyAiLanguageDirective } from '../../../../src/utils/config'
 import { exists, readFile, writeFile } from '../../../../src/utils/fs-operations'
-import { resolveAiOutputLanguage, resolveTemplateLanguage } from '../../../../src/utils/prompts'
+import { resolveAiOutputLanguage, resolveSystemPromptStyle, resolveTemplateLanguage } from '../../../../src/utils/prompts'
+import { selectAndInstallWorkflows } from '../../../../src/utils/workflow-installer'
 import { readZcfConfig, updateZcfConfig } from '../../../../src/utils/zcf-config'
 
 // Mock i18n
@@ -81,10 +82,15 @@ vi.mock('../../../../src/utils/prompt-helpers', () => ({
   addNumbersToChoices: vi.fn(choices => choices),
 }))
 
+vi.mock('../../../../src/utils/workflow-installer', () => ({
+  selectAndInstallWorkflows: vi.fn(() => Promise.resolve(undefined)),
+}))
+
 describe('codex Language Selection', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(resolveTemplateLanguage).mockResolvedValue('zh-CN')
+    vi.mocked(resolveSystemPromptStyle).mockResolvedValue('engineer-professional')
   })
 
   describe('configureCodexApi with skipPrompt', () => {
@@ -351,8 +357,8 @@ model_provider = "official"
       expect(updateZcfConfig).toHaveBeenCalledWith({ templateLang: 'zh-CN' })
       expect(applyAiLanguageDirective).toHaveBeenCalledWith(mockAiOutputLang)
 
-      const agentsWriteCall = vi.mocked(writeFile).mock.calls.find(call => call[0]?.includes('AGENTS.md'))
-      expect(agentsWriteCall?.[1]).toContain('**Most Important:Always respond in Chinese-simplified**')
+      const agentsWriteCalls = vi.mocked(writeFile).mock.calls.filter(call => call[0]?.includes('AGENTS.md'))
+      expect(agentsWriteCalls.at(-1)?.[1]).toContain('**Most Important:Always respond in Chinese-simplified**')
     })
 
     it('should use saved AI output language from config if available', async () => {
@@ -415,8 +421,7 @@ model_provider = "official"
       expect(updateZcfConfig).toHaveBeenCalledWith({ aiOutputLang: 'zh-CN' })
     })
 
-    it('should use correct template language directory based on preferredLang', async () => {
-      // Arrange
+    it('should route workflow installation through skills installer with template language', async () => {
       const mockZcfConfig = {
         preferredLang: 'en' as const,
         version: '2.12.13',
@@ -426,27 +431,16 @@ model_provider = "official"
 
       vi.mocked(readZcfConfig).mockReturnValue(mockZcfConfig)
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('en')
-      vi.mocked(exists).mockImplementation((path: string) => {
-        return path.includes('/en/') || path.includes('system-prompt') || path.includes('workflow') // English template exists
-      })
+      vi.mocked(resolveTemplateLanguage).mockResolvedValue('en')
+      vi.mocked(exists).mockReturnValue(true)
       vi.mocked(readFile).mockReturnValue('# System prompt content')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ systemPrompt: 'engineer-professional' })
 
-      // Act
       await runCodexWorkflowImportWithLanguageSelection()
 
-      // Assert
-      // Check that English template paths were checked (common workflow templates)
-      const existsCalls = vi.mocked(exists).mock.calls.map(call => call[0])
-      const hasEnglishWorkflowPath = existsCalls.some(path =>
-        (path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
-        && (path.includes('/en/') || path.includes('\\en\\')),
-      )
-      expect(hasEnglishWorkflowPath).toBe(true)
+      expect(selectAndInstallWorkflows).toHaveBeenCalledWith('en', undefined, 'codex')
     })
 
-    it('should fallback to zh-CN template if preferred language template does not exist', async () => {
-      // Arrange
+    it('should use resolved template language when installing codex workflows', async () => {
       const mockZcfConfig = {
         preferredLang: 'en' as const,
         version: '2.12.13',
@@ -456,40 +450,14 @@ model_provider = "official"
 
       vi.mocked(readZcfConfig).mockReturnValue(mockZcfConfig)
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('en')
-      vi.mocked(exists).mockImplementation((path: string) => {
-        // Base workflow directory exists
-        if (path.endsWith('/common/workflow') || path.endsWith('\\common\\workflow'))
-          return true
-        // English common workflow templates don't exist
-        if ((path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
-          && (path.includes('/en/') || path.includes('\\en\\'))
-          && !path.includes('system-prompt')) {
-          return false
-        }
-        // Chinese templates and system prompts exist
-        if (path.includes('/zh-CN/') || path.includes('\\zh-CN\\') || path.includes('system-prompt'))
-          return true
-        return false
-      })
+      vi.mocked(resolveTemplateLanguage).mockResolvedValue('zh-CN')
+      vi.mocked(exists).mockReturnValue(true)
       vi.mocked(readFile).mockReturnValue('# System prompt content')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ systemPrompt: 'engineer-professional' })
 
-      // Act
       await runCodexWorkflowImportWithLanguageSelection()
 
-      // Assert
-      // Check that both English and Chinese template paths were checked (fallback behavior)
-      const existsCalls = vi.mocked(exists).mock.calls.map(call => call[0])
-      const hasEnglishPath = existsCalls.some(path =>
-        (path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
-        && (path.includes('/en/') || path.includes('\\en\\')),
-      )
-      const hasChinesePath = existsCalls.some(path =>
-        (path.includes('/common/workflow/') || path.includes('\\common\\workflow\\'))
-        && (path.includes('/zh-CN/') || path.includes('\\zh-CN\\')),
-      )
-      expect(hasEnglishPath).toBe(true)
-      expect(hasChinesePath).toBe(true)
+      expect(resolveTemplateLanguage).toHaveBeenCalled()
+      expect(selectAndInstallWorkflows).toHaveBeenCalledWith('zh-CN', undefined, 'codex')
     })
 
     it('should handle error when AI output language selection fails', async () => {

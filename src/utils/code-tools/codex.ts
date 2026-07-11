@@ -1235,164 +1235,27 @@ export async function runCodexSystemPromptSelection(skipPrompt = false): Promise
 export async function runCodexWorkflowSelection(options?: CodexFullInitOptions): Promise<void> {
   ensureI18nInitialized()
 
-  const { skipPrompt = false, workflows: presetWorkflows = [] } = options ?? {}
-  const rootDir = getRootDir()
+  const { skipPrompt = false, workflows: presetWorkflows } = options ?? {}
+
+  if (presetWorkflows === false)
+    return
 
   const zcfConfig = readZcfConfig()
-  // Use templateLang with fallback to preferredLang for backward compatibility
-  const templateLang = zcfConfig?.templateLang || zcfConfig?.preferredLang || 'en'
-  let preferredLang = templateLang === 'en' ? 'en' : 'zh-CN'
+  const { resolveTemplateLanguage } = await import('../prompts')
+  const templateLang = await resolveTemplateLanguage(undefined, zcfConfig, skipPrompt)
 
-  // Workflows are now in templates/common/workflow/{category}/{lang}
-  const workflowSrc = join(rootDir, 'templates', 'common', 'workflow')
-  if (!exists(workflowSrc))
-    return
+  updateZcfConfig({ templateLang })
 
-  // Get available workflow files (recursively)
-  let allWorkflows = getAllWorkflowFiles(workflowSrc, preferredLang)
+  const { WORKFLOW_CONFIG_BASE } = await import('../../config/workflows')
+  const { selectAndInstallWorkflows } = await import('../workflow-installer')
 
-  // If no workflows found for preferred language, fallback to zh-CN
-  if (allWorkflows.length === 0 && preferredLang === 'en') {
-    preferredLang = 'zh-CN'
-    allWorkflows = getAllWorkflowFiles(workflowSrc, preferredLang)
-  }
+  const preselected = skipPrompt
+    ? (presetWorkflows && presetWorkflows.length > 0
+        ? presetWorkflows
+        : WORKFLOW_CONFIG_BASE.map(w => w.id))
+    : undefined
 
-  if (allWorkflows.length === 0)
-    return
-
-  // Handle skipPrompt mode
-  if (skipPrompt) {
-    // Ensure prompts directory exists
-    ensureDir(CODEX_PROMPTS_DIR)
-
-    // Create backup before modifying prompts directory
-    const backupPath = backupCodexPrompts()
-    if (backupPath) {
-      console.log(ansis.gray(getBackupMessage(backupPath)))
-    }
-
-    let workflowsToInstall: string[]
-
-    // If specific workflows are provided, install only those
-    if (presetWorkflows.length > 0) {
-      const selectedWorkflows = allWorkflows.filter(workflow =>
-        presetWorkflows.includes(workflow.name),
-      )
-      // Expand grouped selections (e.g., Git) to concrete files
-      workflowsToInstall = expandSelectedWorkflowPaths(selectedWorkflows.map(w => w.path), workflowSrc, preferredLang)
-    }
-    else {
-      // If no specific workflows provided, install all available workflows
-      workflowsToInstall = expandSelectedWorkflowPaths(allWorkflows.map(w => w.path), workflowSrc, preferredLang)
-    }
-
-    // Copy selected workflow files to prompts directory (flattened)
-    for (const workflowPath of workflowsToInstall) {
-      const content = readFile(workflowPath)
-      const filename = workflowPath.split('/').pop() || 'workflow.md'
-      const targetPath = join(CODEX_PROMPTS_DIR, filename)
-      writeFile(targetPath, content)
-    }
-
-    return
-  }
-
-  // Prompt user to select workflows (multi-select, default all selected)
-  const { workflows } = await inquirer.prompt<{ workflows: string[] }>([{
-    type: 'checkbox',
-    name: 'workflows',
-    message: i18n.t('codex:workflowSelectionPrompt'),
-    choices: addNumbersToChoices(allWorkflows.map(workflow => ({
-      name: workflow.name,
-      value: workflow.path,
-      checked: true, // Default all selected
-    }))),
-  }])
-
-  if (!workflows || workflows.length === 0)
-    return
-
-  // Ensure prompts directory exists
-  ensureDir(CODEX_PROMPTS_DIR)
-
-  // Create backup before modifying prompts directory
-  const backupPath = backupCodexPrompts()
-  if (backupPath) {
-    console.log(ansis.gray(getBackupMessage(backupPath)))
-  }
-
-  // Expand grouped selections (e.g., Git) to concrete files
-  const finalWorkflowPaths = expandSelectedWorkflowPaths(workflows, workflowSrc, preferredLang)
-
-  // Copy selected workflow files to prompts directory (flattened)
-  for (const workflowPath of finalWorkflowPaths) {
-    const content = readFile(workflowPath)
-    const filename = workflowPath.split('/').pop() || 'workflow.md'
-    const targetPath = join(CODEX_PROMPTS_DIR, filename)
-    writeFile(targetPath, content)
-  }
-}
-
-// Sentinel value for grouped Git workflow option
-const GIT_GROUP_SENTINEL = '::gitGroup'
-
-function getAllWorkflowFiles(workflowSrc: string, preferredLang: string): Array<{ name: string, path: string }> {
-  const workflows: Array<{ name: string, path: string }> = []
-
-  // workflowSrc is templates/common/workflow/
-  // Check for sixStep workflow (single file, use real path directly)
-  const sixStepFile = join(workflowSrc, 'sixStep', preferredLang, 'workflow.md')
-  if (exists(sixStepFile)) {
-    workflows.push({
-      name: i18n.t('workflow:workflowOption.sixStepsWorkflow'),
-      path: sixStepFile,
-    })
-  }
-
-  // Add Git workflow as a grouped option mirroring Claude Code's description
-  const gitPromptsDir = join(workflowSrc, 'git', preferredLang)
-  if (exists(gitPromptsDir)) {
-    workflows.push({
-      name: i18n.t('workflow:workflowOption.gitWorkflow'),
-      // Use sentinel path for grouped selection; expanded later
-      path: GIT_GROUP_SENTINEL,
-    })
-  }
-
-  return workflows
-}
-
-// Expand grouped selections to actual file paths
-function expandSelectedWorkflowPaths(paths: string[], workflowSrc: string, preferredLang: string): string[] {
-  const expanded: string[] = []
-  for (const p of paths) {
-    if (p === GIT_GROUP_SENTINEL) {
-      expanded.push(...getGitPromptFiles(workflowSrc, preferredLang))
-    }
-    else {
-      expanded.push(p)
-    }
-  }
-  return expanded
-}
-
-// Resolve actual Git prompt files from templates
-function getGitPromptFiles(workflowSrc: string, preferredLang: string): string[] {
-  const gitPromptsDir = join(workflowSrc, 'git', preferredLang)
-  const files = [
-    'git-commit.md',
-    'git-rollback.md',
-    'git-cleanBranches.md',
-    'git-worktree.md',
-  ]
-
-  const resolved: string[] = []
-  for (const f of files) {
-    const full = join(gitPromptsDir, f)
-    if (exists(full))
-      resolved.push(full)
-  }
-  return resolved
+  await selectAndInstallWorkflows(templateLang, preselected, 'codex')
 }
 
 function toProvidersList(providers: CodexProvider[]): Array<{ name: string, value: string }> {
@@ -1801,8 +1664,8 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
 export { configureCodexMcp }
 
 export interface CodexFullInitOptions extends CodexWorkflowLanguageOptions {
-  // Workflow selection options
-  workflows?: string[] // Specific workflows to install, empty means all
+  // Workflow selection options (workflow ids from WORKFLOW_CONFIG_BASE; false skips install)
+  workflows?: string[] | false
   // MCP service options
   mcpServices?: string[] | false // Specific MCP services to install, false means skip
   // API configuration options

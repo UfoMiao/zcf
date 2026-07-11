@@ -471,7 +471,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
         skipPrompt: options.skipPrompt,
         apiMode,
         customApiConfig,
-        workflows: selectedWorkflows,
+        workflows: options.workflows === false ? false : selectedWorkflows,
       })
       updateZcfConfig({
         version,
