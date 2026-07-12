@@ -2,6 +2,7 @@ import type { CodeToolType, SupportedLang } from '../constants'
 import type { UninstallItem } from '../utils/uninstaller'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
+import { getCodeTool, registerBuiltinCodeTools } from '../code-tools'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { resolveCodeType } from '../utils/code-type-resolver'
@@ -54,10 +55,11 @@ export async function uninstall(options: UninstallOptions = {}): Promise<void> {
     // Initialize uninstaller
     const uninstaller = new ZcfUninstaller(options.lang || 'en')
 
-    // For Codex, use Codex-specific uninstaller
+    // Route through code-tool registry when adapter owns uninstall
     if (codeType === 'codex') {
-      const { runCodexUninstall } = await import('../utils/code-tools/codex')
-      await runCodexUninstall()
+      registerBuiltinCodeTools()
+      const adapter = getCodeTool(codeType)
+      await adapter.uninstall({}, { lang: options.lang || 'en' })
       return
     }
 

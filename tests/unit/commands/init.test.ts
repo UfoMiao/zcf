@@ -93,6 +93,24 @@ vi.mock('../../../src/utils/zcf-config', () => ({
 vi.mock('../../../src/utils/code-tools/codex', () => ({
   runCodexFullInit: vi.fn(),
 }))
+
+vi.mock('../../../src/code-tools', async (importOriginal) => {
+  const { codexAdapter } = await import('../../../src/code-tools/codex/adapter')
+  const actual = await importOriginal<typeof import('../../../src/code-tools')>()
+  return {
+    ...actual,
+    registerBuiltinCodeTools: vi.fn(),
+    getCodeToolBanners: vi.fn(() => ({
+      'claude-code': 'for Claude Code',
+      'codex': 'for Codex',
+    })),
+    getCodeTool: vi.fn((id: string) => {
+      if (id === 'codex')
+        return codexAdapter
+      return actual.getCodeTool(id)
+    }),
+  }
+})
 // Use real i18n system for better integration testing
 vi.mock('../../../src/i18n', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../../src/i18n')>()
@@ -147,8 +165,17 @@ vi.mock('node:fs', () => ({
 
 vi.mock('../../../src/constants', () => ({
   CLAUDE_DIR: '/test/.claude',
+  CODEX_DIR: '/test/.codex',
+  CODEX_CONFIG_FILE: '/test/.codex/config.toml',
+  CODEX_AUTH_FILE: '/test/.codex/auth.json',
+  CODEX_AGENTS_FILE: '/test/.codex/AGENTS.md',
   DEFAULT_CODE_TOOL_TYPE: 'claude-code',
   SETTINGS_FILE: '/test/.claude/settings.json',
+  CODE_TOOL_TYPES: ['claude-code', 'codex'],
+  CODE_TOOL_ALIASES: {
+    cc: 'claude-code',
+    cx: 'codex',
+  },
   CODE_TOOL_BANNERS: {
     'claude-code': 'ZCF',
     'codex': 'Codex',
@@ -528,7 +555,7 @@ describe('init command', () => {
         } as any)
 
         // Should call displayBannerWithInfo with codex banner
-        expect(displayBannerSpy).toHaveBeenCalledWith('Codex')
+        expect(displayBannerSpy).toHaveBeenCalledWith('for Codex')
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
           aiOutputLang: 'en',
           skipPrompt: true,
@@ -748,7 +775,7 @@ describe('init command', () => {
         })
 
         // Should call displayBannerWithInfo with 'ZCF' (fallback)
-        expect(displayBannerSpy).toHaveBeenCalledWith('ZCF')
+        expect(displayBannerSpy).toHaveBeenCalledWith('for Claude Code')
       })
 
       it('should call resolveTemplateLanguage for claude-code in interactive mode', async () => {

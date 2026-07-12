@@ -85,6 +85,11 @@ vi.mock('../../src/constants', () => ({
     'en': {},
   },
   DEFAULT_CODE_TOOL_TYPE: 'claude-code',
+  CODE_TOOL_TYPES: ['claude-code', 'codex'],
+  CODE_TOOL_ALIASES: {
+    cc: 'claude-code',
+    cx: 'codex',
+  },
 }))
 
 const mockInquirer = vi.mocked(inquirer)

@@ -1,8 +1,8 @@
 import { exec } from 'tinyexec'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
-  CODE_TOOL_TO_SKILLS_AGENTS,
   commandFileToSkillName,
+  getSkillsAgentsForCodeTool,
   installSkills,
 } from '../../../src/utils/skills-installer'
 
@@ -25,9 +25,9 @@ describe('skills-installer utilities', () => {
   })
 
   describe('code tool to skills agents mapping', () => {
-    it('should include universal for claude-code to enable symlink installs', () => {
-      expect(CODE_TOOL_TO_SKILLS_AGENTS['claude-code']).toEqual(['claude-code', 'universal'])
-      expect(CODE_TOOL_TO_SKILLS_AGENTS.codex).toEqual(['codex'])
+    it('should include universal for claude-code to enable symlink installs', async () => {
+      expect(await getSkillsAgentsForCodeTool('claude-code')).toEqual(['claude-code', 'universal'])
+      expect(await getSkillsAgentsForCodeTool('codex')).toEqual(['codex'])
     })
   })
 
