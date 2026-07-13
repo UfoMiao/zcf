@@ -156,22 +156,34 @@ npx zcf init -s -T codex -p glm -k "your-auth-token"
 **Official Link**: [MiniMax Platform](https://platform.minimax.io)
 
 **Features**:
-- 🎯 Peak performance AI models (MiniMax-M3)
-- 💡 204,800 tokens context window with up to 192K output
-- 🔧 Anthropic-compatible API for Claude Code
+- MiniMax-M3 with a 1,000,000-token context window
+- MiniMax-M2.7 with a 204,800-token context window
+- Anthropic-compatible API for Claude Code and OpenAI-compatible Responses API for Codex
 
 **Configuration Information**:
-- **Claude Code Base URL**: `https://api.minimax.io/anthropic`
+- **Claude Code Base URL (Global)**: `https://api.minimax.io/anthropic`
+- **Codex Base URL (Global)**: `https://api.minimax.io/v1`
+- **Claude Code Base URL (China)**: `https://api.minimaxi.com/anthropic`
+- **Codex Base URL (China)**: `https://api.minimaxi.com/v1`
 - **Authentication Method**: `auth_token`
-- **Claude Code Default Model**: `MiniMax-M3` (primary), `MiniMax-M2.7-highspeed` (fast)
+- **Claude Code Default Models**: `MiniMax-M3` (primary), `MiniMax-M2.7` (secondary)
+- **Codex Default Model**: `MiniMax-M3`
 
 **Usage Example**:
 ```bash
-# Claude Code
+# Claude Code with the global endpoint
 npx zcf init -s -p minimax -k "your-auth-token"
 
-# Codex
+# Codex with the global endpoint
 npx zcf init -s -T codex -p minimax -k "your-auth-token"
+
+# Claude Code with the China endpoint
+npx zcf init -s -p custom -t auth_token -k "your-auth-token" \
+  -u "https://api.minimaxi.com/anthropic" -M "MiniMax-M3"
+
+# Codex with the China endpoint
+npx zcf init -s -T codex -p custom -k "your-api-key" \
+  -u "https://api.minimaxi.com/v1" -M "MiniMax-M3"
 ```
 
 ### Kimi (Moonshot)
@@ -439,5 +451,4 @@ vim ~/.claude/settings.json
 - [Config Switch](../cli/config-switch.md) - Multi-configuration switch command
 
 > 💡 **Tip**: Using API provider presets can greatly simplify the configuration process. It's recommended to prefer presets, only use custom configuration when necessary. Regularly check provider documentation to get latest configuration information.
-
 
