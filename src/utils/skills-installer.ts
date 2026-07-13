@@ -1,12 +1,8 @@
 import type { CodeToolType } from '../constants'
 import { exec } from 'tinyexec'
 
-/**
- * Maps ZCF code tool types to skills CLI agent identifiers.
- * claude-code includes `universal` so non-interactive `-y` installs use symlink mode
- * (canonical `~/.agents/skills/` + symlink in `~/.claude/skills/`).
- */
-export const CODE_TOOL_TO_SKILLS_AGENTS: Record<CodeToolType, string[]> = {
+/** Registry-backed skills agent map (lazy-loaded to keep unit tests mock-friendly). */
+const FALLBACK_SKILLS_AGENTS: Record<CodeToolType, string[]> = {
   'claude-code': ['claude-code', 'universal'],
   'codex': ['codex'],
 }
@@ -26,7 +22,6 @@ export interface SkillsInstallResult {
 
 /**
  * Install skills via the open skills CLI (`npx -y skills add`).
- * Thin wrapper aligned with CodeToolRegistry routing — extend here when registry lands.
  */
 export async function installSkills(options: SkillsInstallOptions): Promise<SkillsInstallResult> {
   const { skillsPath, skillNames, agent, global = true } = options
@@ -39,7 +34,7 @@ export async function installSkills(options: SkillsInstallOptions): Promise<Skil
   if (skillNames.length === 0)
     return result
 
-  const skillsAgents = CODE_TOOL_TO_SKILLS_AGENTS[agent]
+  const skillsAgents = await getSkillsAgentsForCodeTool(agent)
   const args = [
     '-y',
     'skills',
@@ -75,4 +70,17 @@ export async function installSkills(options: SkillsInstallOptions): Promise<Skil
 export function commandFileToSkillName(filename: string): string {
   const base = filename.replace(/\.md$/, '')
   return base.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()
+}
+
+/**
+ * Skills CLI agent identifiers for a code tool (registry-backed with static fallback).
+ */
+export async function getSkillsAgentsForCodeTool(agent: CodeToolType): Promise<readonly string[]> {
+  try {
+    const { getCodeTool } = await import('../code-tools')
+    return getCodeTool(agent).skillsAgents
+  }
+  catch {
+    return FALLBACK_SKILLS_AGENTS[agent]
+  }
 }

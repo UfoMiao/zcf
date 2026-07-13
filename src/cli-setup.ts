@@ -2,6 +2,7 @@ import type { CAC } from 'cac'
 import type { CodeToolType, SupportedLang } from './constants'
 import ansis from 'ansis'
 import { version } from '../package.json'
+import { registerBuiltinCodeTools } from './code-tools/register-builtins'
 import { ccr } from './commands/ccr'
 import { executeCcusage } from './commands/ccu'
 import { checkUpdates } from './commands/check-updates'
@@ -210,6 +211,7 @@ export function customizeHelp(sections: any[]): any[] {
 }
 
 export async function setupCommands(cli: CAC): Promise<void> {
+  registerBuiltinCodeTools()
   // Use async initialization to ensure help text displays correctly
   try {
     // Try to get language from existing config for help system

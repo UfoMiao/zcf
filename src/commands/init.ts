@@ -9,7 +9,7 @@ import inquirer from 'inquirer'
 import { version } from '../../package.json'
 import { getMcpServices, MCP_SERVICE_CONFIGS } from '../config/mcp-services'
 import { WORKFLOW_CONFIG_BASE } from '../config/workflows'
-import { API_DEFAULT_URL, CLAUDE_DIR, CODE_TOOL_BANNERS, DEFAULT_CODE_TOOL_TYPE, SETTINGS_FILE } from '../constants'
+import { API_DEFAULT_URL, CLAUDE_DIR, DEFAULT_CODE_TOOL_TYPE, SETTINGS_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { backupCcrConfig, configureCcrProxy, createDefaultCcrConfig, readCcrConfig, setupCcrConfiguration, writeCcrConfig } from '../utils/ccr/config'
@@ -24,7 +24,6 @@ import {
   setPrimaryApiKey,
   writeMcpConfig,
 } from '../utils/claude-config'
-import { runCodexFullInit } from '../utils/code-tools/codex'
 import { resolveCodeType } from '../utils/code-type-resolver'
 import { installCometixLine, isCometixLineInstalled } from '../utils/cometix/installer'
 import {
@@ -387,7 +386,10 @@ export async function init(options: InitOptions = {}): Promise<void> {
 
     // Display banner based on selected code tool
     if (!options.skipBanner) {
-      displayBannerWithInfo(CODE_TOOL_BANNERS[codeToolType] || 'ZCF')
+      const { getCodeToolBanners, registerBuiltinCodeTools } = await import('../code-tools')
+      registerBuiltinCodeTools()
+      const banners = getCodeToolBanners()
+      displayBannerWithInfo(banners[codeToolType] || 'ZCF')
     }
 
     // Show Termux environment info if detected
@@ -429,54 +431,20 @@ export async function init(options: InitOptions = {}): Promise<void> {
 
       const hasApiConfigs = Boolean(options.apiConfigs || options.apiConfigsFile)
 
-      // Map InitOptions to CodexFullInitOptions
-      const apiMode = hasApiConfigs
-        ? 'skip' // Multi-config already handles providers; skip built-in API setup
-        : options.apiType === 'auth_token'
-          ? 'official'
-          : options.apiType === 'api_key'
-            ? 'custom'
-            : options.apiType === 'skip'
-              ? 'skip'
-              : options.skipPrompt ? 'skip' : undefined
-
-      const customApiConfig = (!hasApiConfigs && options.apiType === 'api_key' && options.apiKey)
-        ? {
-            type: 'api_key' as const,
-            token: options.apiKey,
-            baseUrl: options.apiUrl,
-            model: options.apiModel, // Add model parameter for Codex
-          }
-        : undefined
-
-      // Convert workflows parameter to string array
-      let selectedWorkflows: string[] | undefined
-      if (Array.isArray(options.workflows)) {
-        selectedWorkflows = options.workflows
-      }
-      else if (typeof options.workflows === 'string') {
-        selectedWorkflows = [options.workflows]
-      }
-      else if (options.workflows === true) {
-        selectedWorkflows = [] // Empty array means install all workflows
-      }
-
-      // Handle multi-config providers before running full init
-      if (hasApiConfigs) {
+      if (hasApiConfigs)
         await handleMultiConfigurations(options, 'codex')
-      }
 
-      const resolvedAiOutputLang = await runCodexFullInit({
-        aiOutputLang: options.aiOutputLang,
-        skipPrompt: options.skipPrompt,
-        apiMode,
-        customApiConfig,
-        workflows: options.workflows === false ? false : selectedWorkflows,
-      })
+      const { getCodeTool, registerBuiltinCodeTools } = await import('../code-tools')
+      registerBuiltinCodeTools()
+      const codexAdapter = getCodeTool('codex')
+      const resolvedAiOutputLang = await codexAdapter.init!(
+        options,
+        { lang: configLang, skipPrompt: options.skipPrompt },
+      )
       updateZcfConfig({
         version,
-        preferredLang: i18n.language as SupportedLang, // ZCF界面语言
-        templateLang: configLang, // 模板语言
+        preferredLang: i18n.language as SupportedLang,
+        templateLang: configLang,
         aiOutputLang: resolvedAiOutputLang
           ?? options.aiOutputLang
           ?? zcfConfig?.aiOutputLang
