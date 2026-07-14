@@ -3,6 +3,8 @@
   "menuDescriptions.ccusage": "Claude Code usage analysis",
   "menuDescriptions.changeLanguage": "Change ZCF interface language",
   "menuDescriptions.checkUpdates": "Check and update Claude Code, CCR and CCometixLine versions",
+  "menuDescriptions.exportConfig": "Export current configuration to portable ZIP package",
+  "menuDescriptions.importConfig": "Import configuration from ZIP package",
   "menuDescriptions.uninstall": "Remove Claude Code configurations and tools from your system",
   "menuDescriptions.cometixLine": "High-performance Claude Code statusline tool with Git integration and real-time usage tracking",
   "menuDescriptions.configureAiMemory": "Configure AI output language and output styles",
@@ -16,6 +18,8 @@
   "menuOptions.ccusage": "ccusage",
   "menuOptions.changeLanguage": "Select display language / 更改显示语言",
   "menuOptions.checkUpdates": "Check updates",
+  "menuOptions.exportConfig": "Export config",
+  "menuOptions.importConfig": "Import config",
   "menuOptions.uninstall": "Uninstall & Remove Configurations",
   "menuOptions.cometixLine": "CCometixLine",
   "menuOptions.configureAiMemory": "Configure Claude global memory",
@@ -47,5 +51,6 @@
   "menuDescriptions.codexCheckUpdates": "Check and update Codex",
   "switchCodeToolPrompt": "Select code tool type",
   "codeToolSwitched": "Code tool switched to {{tool}}",
-  "selectFunction": "Select function"
+  "selectFunction": "Select function",
+  "pressAnyKeyToReturn": "Press any key to return to main menu..."
 }
