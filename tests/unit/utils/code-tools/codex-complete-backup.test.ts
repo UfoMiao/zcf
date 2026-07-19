@@ -1,9 +1,11 @@
 import { join } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR } from '../../../../src/constants'
 
 // Mock all external dependencies
 vi.mock('../../../../src/utils/fs-operations', () => ({
   copyDir: vi.fn(),
+  copyFile: vi.fn(),
   ensureDir: vi.fn(),
   exists: vi.fn(),
 }))
@@ -19,135 +21,88 @@ const mockedDayjs = (await import('dayjs')).default
 
 const mockedExists = vi.mocked(mockedFsOps.exists)
 const mockedCopyDir = vi.mocked(mockedFsOps.copyDir)
+const mockedCopyFile = vi.mocked(mockedFsOps.copyFile)
 const mockedEnsureDir = vi.mocked(mockedFsOps.ensureDir)
 
-// Import the functions to test after mocks are set up
-const { backupCodexComplete, CODEX_DIR } = await import('../../../../src/utils/code-tools/codex')
+const { backupCodexComplete, backupCodexTargets } = await import('../../../../src/utils/code-tools/codex')
 
-describe('backupCodexComplete', () => {
+describe('backupCodexTargets', () => {
   const expectedTimestamp = '2024-01-01_12-00-00'
   const expectedBackupDir = join(CODEX_DIR, 'backup', `backup_${expectedTimestamp}`)
 
   beforeEach(() => {
     vi.clearAllMocks()
+    delete process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP
 
-    // Setup dayjs mock to return consistent timestamp
     vi.mocked(mockedDayjs).mockReturnValue({
       format: vi.fn().mockReturnValue(expectedTimestamp),
     } as any)
   })
 
-  afterEach(() => {
-    vi.restoreAllMocks()
+  it('should backup only requested config and auth files', () => {
+    mockedExists.mockImplementation((path: string) => {
+      return path === CODEX_CONFIG_FILE || path === CODEX_AUTH_FILE
+    })
+    mockedCopyFile.mockImplementation(() => {})
+    mockedEnsureDir.mockImplementation(() => {})
+
+    const result = backupCodexTargets(['config', 'auth'])
+
+    expect(mockedCopyFile).toHaveBeenCalledWith(CODEX_CONFIG_FILE, join(expectedBackupDir, 'config.toml'))
+    expect(mockedCopyFile).toHaveBeenCalledWith(CODEX_AUTH_FILE, join(expectedBackupDir, 'auth.json'))
+    expect(mockedCopyDir).not.toHaveBeenCalled()
+    expect(result).toBe(join(expectedBackupDir, 'config.toml'))
   })
 
-  it('should backup complete codex directory with timestamp', async () => {
-    // Arrange
-    mockedExists.mockImplementation(() => true)
+  it('should backup agents and prompts directories when requested', () => {
+    mockedExists.mockImplementation((path: string) => {
+      return path === CODEX_AGENTS_FILE || path === CODEX_PROMPTS_DIR
+    })
+    mockedCopyFile.mockImplementation(() => {})
     mockedCopyDir.mockImplementation(() => {})
     mockedEnsureDir.mockImplementation(() => {})
 
-    // Act
-    const result = backupCodexComplete()
+    const result = backupCodexTargets(['agents', 'prompts'])
 
-    // Assert - Test core behavior
-    expect(mockedExists).toHaveBeenCalledWith(CODEX_DIR)
-    expect(mockedEnsureDir).toHaveBeenCalled() // createBackupDirectory calls ensureDir
-    expect(mockedCopyDir).toHaveBeenCalledWith(
-      CODEX_DIR,
-      expectedBackupDir,
-      expect.objectContaining({
-        filter: expect.any(Function),
-      }),
-    )
-    expect(result).toBe(expectedBackupDir)
+    expect(mockedCopyFile).toHaveBeenCalledWith(CODEX_AGENTS_FILE, join(expectedBackupDir, 'AGENTS.md'))
+    expect(mockedCopyDir).toHaveBeenCalledWith(CODEX_PROMPTS_DIR, join(expectedBackupDir, 'prompts'))
+    expect(result).toBe(join(expectedBackupDir, 'AGENTS.md'))
   })
 
-  it('should exclude backup directory from backup using filter', async () => {
-    // Arrange
-    mockedExists.mockImplementation(() => true)
-    mockedCopyDir.mockImplementation(() => {})
-    mockedEnsureDir.mockImplementation(() => {})
-
-    // Act
-    backupCodexComplete()
-
-    // Assert - Check filter function excludes backup paths
-    expect(mockedCopyDir).toHaveBeenCalled()
-    const copyDirCall = mockedCopyDir.mock.calls[0]
-    const options = copyDirCall[2] as any
-    const filterFunction = options.filter
-
-    // Test filter function
-    expect(filterFunction('/some/path/file.txt')).toBe(true)
-    expect(filterFunction('/some/path/backup/file.txt')).toBe(false)
-    expect(filterFunction('/home/.codex/backup/old')).toBe(false)
-    expect(filterFunction('/home/.codex/config.toml')).toBe(true)
-  })
-
-  it('should return backup path on success', async () => {
-    // Arrange
-    mockedExists.mockImplementation(() => true)
-    mockedCopyDir.mockImplementation(() => {})
-    mockedEnsureDir.mockImplementation(() => {})
-
-    // Act
-    const result = backupCodexComplete()
-
-    // Assert
-    expect(result).toBe(expectedBackupDir)
-    expect(typeof result).toBe('string')
-  })
-
-  it('should return null when codex directory not exists', async () => {
-    // Arrange
+  it('should return null when no target files exist', () => {
     mockedExists.mockImplementation(() => false)
 
-    // Act
-    const result = backupCodexComplete()
+    const result = backupCodexTargets(['config', 'auth'])
 
-    // Assert
     expect(result).toBeNull()
+    expect(mockedCopyFile).not.toHaveBeenCalled()
     expect(mockedCopyDir).not.toHaveBeenCalled()
-    expect(mockedEnsureDir).not.toHaveBeenCalled()
   })
 
-  it('should handle backup creation errors gracefully', async () => {
-    // Arrange
-    mockedExists.mockImplementation(() => true)
+  it('should reuse backup directory in skip-prompt mode', () => {
+    process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP = 'true'
+    mockedExists.mockImplementation((path: string) => path === CODEX_CONFIG_FILE || path === CODEX_AUTH_FILE)
+    mockedCopyFile.mockImplementation(() => {})
     mockedEnsureDir.mockImplementation(() => {})
-    mockedCopyDir.mockImplementation(() => {
-      throw new Error('Permission denied')
-    })
 
-    // Act & Assert - Should throw the error since backupCodexFiles doesn't catch it
-    expect(() => backupCodexComplete()).toThrow('Permission denied')
+    backupCodexTargets(['config'])
+    backupCodexTargets(['auth'])
+
+    expect(mockedEnsureDir).toHaveBeenCalledTimes(1)
+    expect(mockedCopyFile).toHaveBeenCalledTimes(2)
   })
 
-  it('should handle directory creation errors gracefully', async () => {
-    // Arrange
+  it('backupCodexComplete should include all known codex targets', () => {
     mockedExists.mockImplementation(() => true)
-    mockedEnsureDir.mockImplementation(() => {
-      throw new Error('Disk full')
-    })
-
-    // Act & Assert - Should throw the error since backupCodexFiles doesn't catch it
-    expect(() => backupCodexComplete()).toThrow('Disk full')
-    expect(mockedCopyDir).not.toHaveBeenCalled()
-  })
-
-  it('should use correct timestamp format', async () => {
-    // Arrange
-    mockedExists.mockImplementation(() => true)
+    mockedCopyFile.mockImplementation(() => {})
     mockedCopyDir.mockImplementation(() => {})
     mockedEnsureDir.mockImplementation(() => {})
 
-    // Act
     backupCodexComplete()
 
-    // Assert - Check dayjs format call
-    expect(vi.mocked(mockedDayjs)).toHaveBeenCalled()
-    const dayjsInstance = vi.mocked(mockedDayjs).mock.results[0].value
-    expect(dayjsInstance.format).toHaveBeenCalledWith('YYYY-MM-DD_HH-mm-ss')
+    expect(mockedCopyFile).toHaveBeenCalledWith(CODEX_CONFIG_FILE, join(expectedBackupDir, 'config.toml'))
+    expect(mockedCopyFile).toHaveBeenCalledWith(CODEX_AUTH_FILE, join(expectedBackupDir, 'auth.json'))
+    expect(mockedCopyFile).toHaveBeenCalledWith(CODEX_AGENTS_FILE, join(expectedBackupDir, 'AGENTS.md'))
+    expect(mockedCopyDir).toHaveBeenCalledWith(CODEX_PROMPTS_DIR, join(expectedBackupDir, 'prompts'))
   })
 })

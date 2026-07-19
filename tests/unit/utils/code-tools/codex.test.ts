@@ -355,9 +355,9 @@ describe('codex code tool utilities', () => {
 
     const codexModule = await import('../../../../src/utils/code-tools/codex')
     const writeFileMock = vi.mocked(fsOps.writeFile)
-    const copyDirMock = vi.mocked(fsOps.copyDir)
+    const copyFileMock = vi.mocked(fsOps.copyFile)
     writeFileMock.mockClear()
-    copyDirMock.mockClear()
+    copyFileMock.mockClear()
 
     // Mock promptBoolean (not used in official mode, but clear any previous mocks)
     mockedPromptBoolean.mockClear()
@@ -367,9 +367,8 @@ describe('codex code tool utilities', () => {
     // Verify that writeJsonConfig was called
     expect(jsonModule.writeJsonConfig).toHaveBeenCalled()
 
-    // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
-    // This test validates the core functionality but backup verification is handled by dedicated backup tests
-    expect(copyDirMock).toHaveBeenCalled() // Verify backup functionality is called
+    // Backup should only copy files that will be modified
+    expect(copyFileMock).toHaveBeenCalled()
     const configContent = writeFileMock.mock.calls[0][1] as string
     // In official mode, model_provider should be commented but providers should be preserved
     expect(configContent).toContain('# model_provider = "packycode"')
@@ -402,15 +401,14 @@ describe('codex code tool utilities', () => {
 
     const codexModule = await import('../../../../src/utils/code-tools/codex-configure')
     const writeFileMock = vi.mocked(fsOps.writeFile)
-    const copyDirMock = vi.mocked(fsOps.copyDir)
+    const copyFileMock = vi.mocked(fsOps.copyFile)
     writeFileMock.mockClear()
-    copyDirMock.mockClear()
+    copyFileMock.mockClear()
 
     await codexModule.configureCodexMcp()
 
-    // Note: Backup now uses complete backup (copyDir) instead of partial backup (copyFile)
-    // This test validates the core functionality but backup verification is handled by dedicated backup tests
-    expect(copyDirMock).toHaveBeenCalled() // Verify backup functionality is called
+    // Backup should only copy files that will be modified
+    expect(copyFileMock).toHaveBeenCalled()
     expect(writeFileMock).toHaveBeenCalledTimes(1)
     const updated = writeFileMock.mock.calls[0][1] as string
     expect(updated).toContain('[mcp_servers.context7]')
@@ -846,9 +844,10 @@ describe('codex code tool utilities', () => {
       expect(result).toBeNull()
     })
 
-    it('backupCodexComplete should create full configuration backup', async () => {
+    it('backupCodexComplete should create targeted configuration backup', async () => {
       const fsOps = await import('../../../../src/utils/fs-operations')
       vi.mocked(fsOps.exists).mockReturnValue(true)
+      vi.mocked(fsOps.copyFile).mockImplementation(() => {})
       vi.mocked(fsOps.copyDir).mockImplementation(() => {})
       vi.mocked(fsOps.ensureDir).mockImplementation(() => {})
 
@@ -856,6 +855,7 @@ describe('codex code tool utilities', () => {
       const result = codexModule.backupCodexComplete()
 
       expect(result).toMatch(/backup.*backup_20\d{2}-/)
+      expect(fsOps.copyFile).toHaveBeenCalled()
       expect(fsOps.copyDir).toHaveBeenCalled()
     })
 
@@ -1963,8 +1963,8 @@ model_provider = ""
         const result = await codexModule.switchToProvider('test-provider')
 
         expect(result).toBe(true)
-        // Should create backup
-        expect(fsOps.copyDir).toHaveBeenCalled()
+        // Should create targeted backup for config/auth
+        expect(fsOps.copyFile).toHaveBeenCalled()
         // Should write updated config
         expect(fsOps.writeFile).toHaveBeenCalled()
         // Should update auth file with OPENAI_API_KEY set to TEST_KEY value

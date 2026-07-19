@@ -36,7 +36,7 @@ vi.mock('../../../../src/utils/zcf-config', () => ({
 }))
 
 vi.mock('../../../../src/utils/code-tools/codex', () => ({
-  backupCodexComplete: vi.fn(),
+  backupCodexTargets: vi.fn(),
   getBackupMessage: vi.fn((path: string) => `Backup created: ${path}`),
   readCodexConfig: vi.fn(),
   runCodexWorkflowSelection: vi.fn(),
@@ -69,9 +69,9 @@ describe('codex-configure', () => {
     it('should skip MCP installation when mcpServices is false', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { updateZcfConfig } = vi.mocked(await import('../../../../src/utils/zcf-config'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
 
       const options: CodexFullInitOptions = {
@@ -86,11 +86,11 @@ describe('codex-configure', () => {
 
     it('should use provided mcpServices list in skipPrompt mode', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
-      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { readCodexConfig, backupCodexTargets } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       readCodexConfig.mockReturnValue(null)
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
 
       const options: CodexFullInitOptions = {
         skipPrompt: true,
@@ -104,11 +104,11 @@ describe('codex-configure', () => {
 
     it('should handle serena with --context already present in args', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
-      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { readCodexConfig, backupCodexTargets } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       readCodexConfig.mockReturnValue(null)
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
 
       const options: CodexFullInitOptions = {
         skipPrompt: true,
@@ -123,13 +123,13 @@ describe('codex-configure', () => {
     it('should handle Windows environment with SYSTEMROOT', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { isWindows, getSystemRoot } = vi.mocked(await import('../../../../src/utils/platform'))
-      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { readCodexConfig, backupCodexTargets } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       isWindows.mockReturnValue(true)
       getSystemRoot.mockReturnValue('C:\\Windows')
       readCodexConfig.mockReturnValue(null)
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
 
       const options: CodexFullInitOptions = {
         skipPrompt: true,
@@ -146,13 +146,13 @@ describe('codex-configure', () => {
     it('should handle Windows environment when getSystemRoot returns null', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { isWindows, getSystemRoot } = vi.mocked(await import('../../../../src/utils/platform'))
-      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { readCodexConfig, backupCodexTargets } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       isWindows.mockReturnValue(true)
       getSystemRoot.mockReturnValue(null)
       readCodexConfig.mockReturnValue(null)
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
 
       const options: CodexFullInitOptions = {
         skipPrompt: true,
@@ -169,7 +169,7 @@ describe('codex-configure', () => {
 
     it('should merge existing MCP services with new services', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
-      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { readCodexConfig, backupCodexTargets } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       const existingConfig: CodexConfigData = {
@@ -182,7 +182,7 @@ describe('codex-configure', () => {
       }
 
       readCodexConfig.mockReturnValue(existingConfig)
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
 
       const options: CodexFullInitOptions = {
         skipPrompt: true,
@@ -200,7 +200,7 @@ describe('codex-configure', () => {
     it('should handle Windows environment in finalServices mapping', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { isWindows, getSystemRoot } = vi.mocked(await import('../../../../src/utils/platform'))
-      const { readCodexConfig, backupCodexComplete } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { readCodexConfig, backupCodexTargets } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       isWindows.mockReturnValue(true)
@@ -216,7 +216,7 @@ describe('codex-configure', () => {
       }
 
       readCodexConfig.mockReturnValue(existingConfig)
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
 
       const options: CodexFullInitOptions = {
         skipPrompt: true,
@@ -233,10 +233,10 @@ describe('codex-configure', () => {
     it('should return early when selectMcpServices returns undefined', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue(undefined)
 
@@ -248,11 +248,11 @@ describe('codex-configure', () => {
     it('should handle empty selection in interactive mode', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
       const { updateZcfConfig } = vi.mocked(await import('../../../../src/utils/zcf-config'))
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue([])
 
@@ -266,12 +266,12 @@ describe('codex-configure', () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
       const { isWindows, getSystemRoot } = vi.mocked(await import('../../../../src/utils/platform'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       isWindows.mockReturnValue(true)
       getSystemRoot.mockReturnValue('C:\\Windows')
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
 
       const existingConfig: CodexConfigData = {
         model: null,
@@ -295,10 +295,10 @@ describe('codex-configure', () => {
     it('should handle services selection with non-API-key services', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue(['context7'])
 
@@ -310,10 +310,10 @@ describe('codex-configure', () => {
     it('should handle serena service context modification in interactive mode', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue(['serena'])
 
@@ -325,10 +325,10 @@ describe('codex-configure', () => {
     it('should modify existing --context value for serena in interactive mode', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue(['serena'])
 
@@ -344,11 +344,11 @@ describe('codex-configure', () => {
     it('should handle API key service with prompt in interactive mode', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
       const inquirer = await import('inquirer')
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue(['exa'])
       vi.mocked(inquirer.default.prompt).mockResolvedValue({ apiKey: 'test-api-key' })
@@ -361,11 +361,11 @@ describe('codex-configure', () => {
     it('should skip API key service when no key provided', async () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
       const inquirer = await import('inquirer')
 
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue(['exa'])
       vi.mocked(inquirer.default.prompt).mockResolvedValue({ apiKey: '' })
@@ -382,12 +382,12 @@ describe('codex-configure', () => {
       const { configureCodexMcp } = await import('../../../../src/utils/code-tools/codex-configure')
       const { selectMcpServices } = vi.mocked(await import('../../../../src/utils/mcp-selector'))
       const { isWindows, getSystemRoot } = vi.mocked(await import('../../../../src/utils/platform'))
-      const { backupCodexComplete, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
+      const { backupCodexTargets, readCodexConfig } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const { batchUpdateCodexMcpServices } = vi.mocked(await import('../../../../src/utils/code-tools/codex-toml-updater'))
 
       isWindows.mockReturnValue(true)
       getSystemRoot.mockReturnValue('C:\\Windows')
-      backupCodexComplete.mockReturnValue('/backup/path')
+      backupCodexTargets.mockReturnValue('/backup/path')
       readCodexConfig.mockReturnValue(null)
       selectMcpServices.mockResolvedValue(['context7'])
 

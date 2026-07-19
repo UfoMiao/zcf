@@ -12,7 +12,6 @@ import { x } from 'tinyexec'
 // Removed MCP config imports; MCP configuration moved to codex-configure.ts
 import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
-import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { normalizeTomlPath, wrapCommandWithSudo } from '../platform'
@@ -25,8 +24,10 @@ import { readDefaultTomlConfig, readZcfConfig, updateTomlConfig, updateZcfConfig
 import { detectConfigManagementMode } from './codex-config-detector'
 import { configureCodexMcp } from './codex-configure'
 
-// Cache to avoid repeated backups in skip-prompt mode
-let cachedSkipPromptBackup: string | null = null
+// Cache backup directory to avoid repeated backups in skip-prompt mode
+let cachedSkipPromptBackupDir: string | null = null
+
+export type CodexBackupTarget = 'config' | 'auth' | 'agents' | 'prompts'
 
 // Public export for easy reuse and testing
 export { applyCodexPlatformCommand } from './codex-platform'
@@ -200,91 +201,84 @@ export function createBackupDirectory(timestamp: string): string {
 }
 
 export function backupCodexFiles(): string | null {
-  if (!exists(CODEX_DIR))
-    return null
-
-  // Skip-prompt模式：只在首次调用时创建备份，其余复用
-  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true' && cachedSkipPromptBackup)
-    return cachedSkipPromptBackup
-
-  const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
-  const backupDir = createBackupDirectory(timestamp)
-
-  const tmpDir = join(CODEX_DIR, 'tmp')
-  const filter = (path: string): boolean => {
-    // Skip backup directories and temp directory (runtime artifacts, dangling symlinks)
-    // Use precise path matching to avoid false positives like 'tmp-config.toml'
-    return !path.includes('/backup') && !path.startsWith(tmpDir)
-  }
-
-  copyDir(CODEX_DIR, backupDir, { filter })
-  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true')
-    cachedSkipPromptBackup = backupDir
-
-  return backupDir
+  return backupCodexTargets(['config', 'auth', 'agents', 'prompts'])
 }
 
 /**
- * Backup complete Codex directory with all configuration files
- * This provides the same comprehensive backup functionality as Claude Code
- *
- * Note: This is an alias for backupCodexFiles() to maintain API consistency
- * while following DRY principles (Don't Repeat Yourself)
+ * Backup only the Codex files that will be modified.
+ * In skip-prompt mode, reuses the same backup directory across calls.
+ */
+export function backupCodexTargets(targets: CodexBackupTarget[]): string | null {
+  const entries: Array<{ source: string, relativePath: string, isDir?: boolean }> = []
+
+  for (const target of targets) {
+    switch (target) {
+      case 'config':
+        if (exists(CODEX_CONFIG_FILE))
+          entries.push({ source: CODEX_CONFIG_FILE, relativePath: 'config.toml' })
+        break
+      case 'auth':
+        if (exists(CODEX_AUTH_FILE))
+          entries.push({ source: CODEX_AUTH_FILE, relativePath: 'auth.json' })
+        break
+      case 'agents':
+        if (exists(CODEX_AGENTS_FILE))
+          entries.push({ source: CODEX_AGENTS_FILE, relativePath: 'AGENTS.md' })
+        break
+      case 'prompts':
+        if (exists(CODEX_PROMPTS_DIR))
+          entries.push({ source: CODEX_PROMPTS_DIR, relativePath: 'prompts', isDir: true })
+        break
+    }
+  }
+
+  if (entries.length === 0)
+    return null
+
+  try {
+    let backupDir: string
+    if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true' && cachedSkipPromptBackupDir) {
+      backupDir = cachedSkipPromptBackupDir
+    }
+    else {
+      const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
+      backupDir = createBackupDirectory(timestamp)
+      if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true')
+        cachedSkipPromptBackupDir = backupDir
+    }
+
+    for (const entry of entries) {
+      const dest = join(backupDir, entry.relativePath)
+      if (entry.isDir)
+        copyDir(entry.source, dest)
+      else
+        copyFile(entry.source, dest)
+    }
+
+    return join(backupDir, entries[0].relativePath)
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * @deprecated Prefer backupCodexTargets() for targeted backups.
  */
 export function backupCodexComplete(): string | null {
   return backupCodexFiles()
 }
 
 export function backupCodexConfig(): string | null {
-  if (!exists(CODEX_CONFIG_FILE))
-    return null
-
-  try {
-    const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
-    const backupDir = createBackupDirectory(timestamp)
-    const backupPath = join(backupDir, 'config.toml')
-    copyFile(CODEX_CONFIG_FILE, backupPath)
-    return backupPath
-  }
-  catch {
-    return null
-  }
+  return backupCodexTargets(['config'])
 }
 
 export function backupCodexAgents(): string | null {
-  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true' && cachedSkipPromptBackup)
-    return cachedSkipPromptBackup
-  if (!exists(CODEX_AGENTS_FILE))
-    return null
-
-  try {
-    const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
-    const backupDir = createBackupDirectory(timestamp)
-    const backupPath = join(backupDir, 'AGENTS.md')
-    copyFile(CODEX_AGENTS_FILE, backupPath)
-    return backupPath
-  }
-  catch {
-    return null
-  }
+  return backupCodexTargets(['agents'])
 }
 
 export function backupCodexPrompts(): string | null {
-  if (process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP === 'true' && cachedSkipPromptBackup)
-    return cachedSkipPromptBackup
-  if (!exists(CODEX_PROMPTS_DIR))
-    return null
-
-  try {
-    const timestamp = dayjs().format('YYYY-MM-DD_HH-mm-ss')
-    const backupDir = createBackupDirectory(timestamp)
-    const backupPath = join(backupDir, 'prompts')
-    copyDir(CODEX_PROMPTS_DIR, backupPath)
-    return backupPath
-  }
-  catch {
-    return null
-  }
+  return backupCodexTargets(['prompts'])
 }
 
 export function getBackupMessage(path: string | null): string {
@@ -1121,7 +1115,7 @@ export async function runCodexWorkflowImportWithLanguageSelection(
 
   // Step 2: Save AI output language to global config
   updateZcfConfig({ aiOutputLang })
-  applyAiLanguageDirective(aiOutputLang)
+  // Language directive is applied to Codex AGENTS.md via ensureCodexAgentsLanguageDirective
 
   // Step 3: Continue with original workflow (system prompt + workflow selection)
   await runCodexSystemPromptSelection(skipPrompt)
@@ -1303,7 +1297,7 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
   const { type, token, baseUrl, model } = customApiConfig
 
   // Always backup existing config before modification
-  const backupPath = backupCodexComplete()
+  const backupPath = backupCodexTargets(['config', 'auth'])
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -1389,6 +1383,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
   const hasProviders = existingConfig?.providers && existingConfig.providers.length > 0
 
   const modeChoices = [
+    { name: i18n.t('api:skipApi'), value: 'skip' },
     { name: i18n.t('codex:apiModeOfficial'), value: 'official' },
     { name: i18n.t('codex:apiModeCustom'), value: 'custom' },
   ]
@@ -1398,7 +1393,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
     modeChoices.push({ name: i18n.t('codex:configSwitchMode'), value: 'switch' })
   }
 
-  const { mode } = await inquirer.prompt<{ mode: 'official' | 'custom' | 'switch' }>([{
+  const { mode } = await inquirer.prompt<{ mode: 'official' | 'custom' | 'switch' | 'skip' }>([{
     type: 'list',
     name: 'mode',
     message: i18n.t('codex:apiModePrompt'),
@@ -1408,6 +1403,11 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
 
   if (!mode) {
     console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  if (mode === 'skip') {
+    console.log(ansis.yellow(i18n.t('common:skip')))
     return
   }
 
@@ -1468,7 +1468,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
   }
 
   // Always backup existing config before modification
-  const backupPath = backupCodexComplete()
+  const backupPath = backupCodexTargets(['config', 'auth'])
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -1942,7 +1942,7 @@ export async function switchCodexProvider(providerId: string): Promise<boolean> 
   }
 
   // Create backup before modification
-  const backupPath = backupCodexComplete()
+  const backupPath = backupCodexTargets(['config'])
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -1977,7 +1977,7 @@ export async function switchToOfficialLogin(): Promise<boolean> {
   }
 
   // Create backup before modification
-  const backupPath = backupCodexComplete()
+  const backupPath = backupCodexTargets(['config', 'auth'])
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }
@@ -2041,7 +2041,7 @@ export async function switchToProvider(providerId: string): Promise<boolean> {
   }
 
   // Create backup before modification
-  const backupPath = backupCodexComplete()
+  const backupPath = backupCodexTargets(['config', 'auth'])
   if (backupPath) {
     console.log(ansis.gray(getBackupMessage(backupPath)))
   }

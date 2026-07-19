@@ -708,11 +708,20 @@ describe('prompts utilities', () => {
       expect(inquirer.prompt).toHaveBeenCalled()
     })
 
-    it('should exit when cancelled', async () => {
+    it('should return empty string when user skips selection', async () => {
+      vi.mocked(inquirer.prompt).mockResolvedValue({ systemPrompt: 'skip' })
+
+      const result = await resolveSystemPromptStyle(availablePrompts, undefined, null)
+
+      expect(result).toBe('')
+    })
+
+    it('should return empty string when selection is cancelled', async () => {
       vi.mocked(inquirer.prompt).mockResolvedValue({ systemPrompt: undefined })
 
-      await expect(resolveSystemPromptStyle(availablePrompts, undefined, null)).rejects.toThrow('process.exit called')
-      expect(exitSpy).toHaveBeenCalledWith(0)
+      const result = await resolveSystemPromptStyle(availablePrompts, undefined, null)
+
+      expect(result).toBe('')
     })
   })
 })

@@ -10,7 +10,7 @@ import {
 // Mock the codex module functions
 vi.mock('../../../../src/utils/code-tools/codex', () => ({
   readCodexConfig: vi.fn(),
-  backupCodexComplete: vi.fn(),
+  backupCodexTargets: vi.fn(),
   writeAuthFile: vi.fn(),
 }))
 
@@ -65,7 +65,7 @@ describe('codex-incremental-config integration', () => {
       // Arrange
       const {
         readCodexConfig,
-        backupCodexComplete,
+        backupCodexTargets,
         writeAuthFile,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const {
@@ -75,7 +75,7 @@ describe('codex-incremental-config integration', () => {
 
       // Initial configuration exists
       readCodexConfig.mockReturnValue(initialConfig)
-      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
+      backupCodexTargets.mockReturnValue('/backup/path/config.toml')
 
       // Step 1: Detect management mode
       const detectionResult = detectConfigManagementMode()
@@ -141,7 +141,7 @@ describe('codex-incremental-config integration', () => {
       expect(deleteCodexProvider).toHaveBeenCalledWith('provider-2')
 
       // Verify all operations created backups
-      expect(backupCodexComplete).toHaveBeenCalledTimes(3)
+      expect(backupCodexTargets).toHaveBeenCalledTimes(3)
     })
 
     it('should detect initial mode for fresh installations', async () => {
@@ -166,7 +166,7 @@ describe('codex-incremental-config integration', () => {
       // Arrange
       const {
         readCodexConfig,
-        backupCodexComplete,
+        backupCodexTargets,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const {
         upsertCodexProvider,
@@ -205,7 +205,7 @@ describe('codex-incremental-config integration', () => {
       }
 
       readCodexConfig.mockReturnValue(complexConfig)
-      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
+      backupCodexTargets.mockReturnValue('/backup/path/config.toml')
 
       const newProviderToAdd = {
         id: 'provider-3',
@@ -276,7 +276,7 @@ describe('codex-incremental-config integration', () => {
       // Arrange
       const {
         readCodexConfig,
-        backupCodexComplete,
+        backupCodexTargets,
       } = vi.mocked(await import('../../../../src/utils/code-tools/codex'))
       const {
         updateCodexApiFields,
@@ -310,7 +310,7 @@ describe('codex-incremental-config integration', () => {
       }
 
       readCodexConfig.mockReturnValue(multiProviderConfig)
-      backupCodexComplete.mockReturnValue('/backup/path/config.toml')
+      backupCodexTargets.mockReturnValue('/backup/path/config.toml')
 
       // Act: Delete the current default provider
       const deleteResult = await deleteProviders(['provider-1'])

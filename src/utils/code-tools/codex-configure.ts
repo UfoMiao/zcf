@@ -6,7 +6,7 @@ import { ensureI18nInitialized, i18n } from '../../i18n'
 import { selectMcpServices } from '../mcp-selector'
 import { getSystemRoot, isWindows } from '../platform'
 import { updateZcfConfig } from '../zcf-config'
-import { backupCodexComplete, getBackupMessage, readCodexConfig } from './codex'
+import { backupCodexTargets, getBackupMessage, readCodexConfig } from './codex'
 import { applyCodexPlatformCommand } from './codex-platform'
 import { batchUpdateCodexMcpServices } from './codex-toml-updater'
 
@@ -15,9 +15,6 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
 
   const { skipPrompt = false } = options ?? {}
   const existingConfig = readCodexConfig()
-  const backupPath = backupCodexComplete()
-  if (backupPath)
-    console.log(ansis.gray(getBackupMessage(backupPath)))
 
   // Skip-prompt 模式：自动安装无 API Key 的默认 MCP
   if (skipPrompt) {
@@ -105,6 +102,10 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
     })
 
     // Use targeted MCP updates - preserves existing SSE-type services
+    const backupPath = backupCodexTargets(['config'])
+    if (backupPath)
+      console.log(ansis.gray(getBackupMessage(backupPath)))
+
     batchUpdateCodexMcpServices(finalServices)
     updateZcfConfig({ codeToolType: 'codex' })
     console.log(ansis.green(i18n.t('codex:mcpConfigured')))
@@ -140,6 +141,10 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
     })
 
     // Use targeted MCP updates - preserves existing SSE-type services
+    const backupPath = backupCodexTargets(['config'])
+    if (backupPath)
+      console.log(ansis.gray(getBackupMessage(backupPath)))
+
     batchUpdateCodexMcpServices(preserved)
     updateZcfConfig({ codeToolType: 'codex' })
     return
@@ -225,6 +230,10 @@ export async function configureCodexMcp(options?: CodexFullInitOptions): Promise
   })
 
   // Use targeted MCP updates - preserves existing SSE-type services
+  const backupPath = backupCodexTargets(['config'])
+  if (backupPath)
+    console.log(ansis.gray(getBackupMessage(backupPath)))
+
   batchUpdateCodexMcpServices(finalServices)
 
   updateZcfConfig({ codeToolType: 'codex' })

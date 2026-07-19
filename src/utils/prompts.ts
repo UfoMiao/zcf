@@ -329,16 +329,19 @@ export async function resolveSystemPromptStyle(
     type: 'list',
     name: 'systemPrompt',
     message: i18n.t('codex:systemPromptPrompt'),
-    choices: addNumbersToChoices(availablePrompts.map(style => ({
-      name: `${style.name} - ${ansis.gray(style.description)}`,
-      value: style.id,
-    }))),
+    choices: addNumbersToChoices([
+      ...availablePrompts.map(style => ({
+        name: `${style.name} - ${ansis.gray(style.description)}`,
+        value: style.id,
+      })),
+      { name: i18n.t('common:skip'), value: 'skip' },
+    ]),
     default: 'engineer-professional', // Default to engineer-professional
   }])
 
-  if (!systemPrompt) {
-    console.log(ansis.yellow(i18n.t('common:cancelled')))
-    process.exit(0)
+  if (!systemPrompt || systemPrompt === 'skip') {
+    console.log(ansis.yellow(i18n.t('common:skip')))
+    return ''
   }
 
   return systemPrompt

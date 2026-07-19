@@ -1,6 +1,6 @@
 import type { CodexProvider } from './codex'
 import { ensureI18nInitialized, i18n } from '../../i18n'
-import { backupCodexComplete, readCodexConfig, writeAuthFile } from './codex'
+import { backupCodexTargets, readCodexConfig, writeAuthFile } from './codex'
 
 export interface ProviderOperationResult {
   success: boolean
@@ -49,7 +49,7 @@ export async function addProviderToExisting(
     // Create backup only when config already exists
     let backupPath: string | undefined
     if (existingConfig) {
-      const backup = backupCodexComplete()
+      const backup = backupCodexTargets(['config', 'auth'])
       if (!backup) {
         return {
           success: false,
@@ -131,7 +131,7 @@ export async function editExistingProvider(
     }
 
     // Create backup
-    const backupPath = backupCodexComplete()
+    const backupPath = backupCodexTargets(['config', 'auth'])
     if (!backupPath) {
       return {
         success: false,
@@ -225,7 +225,7 @@ export async function deleteProviders(
     }
 
     // Create backup
-    const backupPath = backupCodexComplete()
+    const backupPath = backupCodexTargets(['config', 'auth'])
     if (!backupPath) {
       return {
         success: false,

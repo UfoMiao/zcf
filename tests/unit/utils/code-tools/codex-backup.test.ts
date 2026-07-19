@@ -39,73 +39,41 @@ describe('codex backup mechanism', () => {
   })
 
   describe('backupCodexFiles', () => {
-    it('should create backup with timestamp when .codex directory exists', async () => {
-      // Arrange
+    it('should create targeted backup when codex files exist', async () => {
       mockExists.mockReturnValue(true)
 
-      // Act
       const { backupCodexFiles } = await import('../../../../src/utils/code-tools/codex')
       const result = backupCodexFiles()
 
-      // Assert
       const expectedBackupDir = join(BACKUP_BASE_DIR, 'backup_2024-01-01_14-30-00')
-      expect(result).toBe(expectedBackupDir)
+      expect(result).toBe(join(expectedBackupDir, 'config.toml'))
       expect(mockEnsureDir).toHaveBeenCalledWith(expectedBackupDir)
-      expect(mockCopyDir).toHaveBeenCalledWith(
-        CODEX_DIR,
-        expectedBackupDir,
-        expect.objectContaining({
-          filter: expect.any(Function),
-        }),
-      )
+      expect(mockCopyFile).toHaveBeenCalled()
+      expect(mockCopyDir).toHaveBeenCalled()
     })
 
-    it('should return null when .codex directory does not exist', async () => {
-      // Arrange
+    it('should return null when no codex files exist', async () => {
       mockExists.mockReturnValue(false)
 
-      // Act
       const { backupCodexFiles } = await import('../../../../src/utils/code-tools/codex')
       const result = backupCodexFiles()
 
-      // Assert
       expect(result).toBeNull()
       expect(mockEnsureDir).not.toHaveBeenCalled()
+      expect(mockCopyFile).not.toHaveBeenCalled()
       expect(mockCopyDir).not.toHaveBeenCalled()
     })
 
-    it('should filter out backup directory when copying', async () => {
-      // Arrange
-      mockExists.mockReturnValue(true)
-      let filterFunction: ((path: string) => boolean) | undefined
-
-      mockCopyDir.mockImplementation((_src, _dest, options) => {
-        filterFunction = options?.filter
-      })
-
-      // Act
-      const { backupCodexFiles } = await import('../../../../src/utils/code-tools/codex')
-      backupCodexFiles()
-
-      // Assert
-      expect(filterFunction).toBeDefined()
-      if (filterFunction) {
-        expect(filterFunction('/home/user/.codex/config.toml')).toBe(true)
-        expect(filterFunction('/home/user/.codex/backup/old-backup')).toBe(false)
-        expect(filterFunction('/home/user/.codex/some/backup/nested')).toBe(false)
-      }
-    })
-
     it('should handle copy errors gracefully', async () => {
-      // Arrange
       mockExists.mockReturnValue(true)
-      mockCopyDir.mockImplementation(() => {
+      mockCopyFile.mockImplementation(() => {
         throw new Error('Copy failed')
       })
 
-      // Act & Assert
       const { backupCodexFiles } = await import('../../../../src/utils/code-tools/codex')
-      expect(() => backupCodexFiles()).toThrow('Copy failed')
+      const result = backupCodexFiles()
+
+      expect(result).toBeNull()
     })
   })
 

@@ -355,7 +355,7 @@ model_provider = "official"
       )
       expect(updateZcfConfig).toHaveBeenCalledWith({ aiOutputLang: mockAiOutputLang })
       expect(updateZcfConfig).toHaveBeenCalledWith({ templateLang: 'zh-CN' })
-      expect(applyAiLanguageDirective).toHaveBeenCalledWith(mockAiOutputLang)
+      expect(applyAiLanguageDirective).not.toHaveBeenCalled()
 
       const agentsWriteCalls = vi.mocked(writeFile).mock.calls.filter(call => call[0]?.includes('AGENTS.md'))
       expect(agentsWriteCalls.at(-1)?.[1]).toContain('**Most Important:Always respond in Chinese-simplified**')
