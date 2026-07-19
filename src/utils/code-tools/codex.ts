@@ -12,7 +12,6 @@ import { x } from 'tinyexec'
 // Removed MCP config imports; MCP configuration moved to codex-configure.ts
 import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
-import { applyAiLanguageDirective } from '../config'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { normalizeTomlPath, wrapCommandWithSudo } from '../platform'
@@ -1101,6 +1100,53 @@ export async function runCodexWorkflowImport(): Promise<void> {
 export interface CodexWorkflowLanguageOptions {
   aiOutputLang?: AiOutputLanguage | string
   skipPrompt?: boolean
+  configAction?: 'new' | 'backup' | 'merge' | 'docs-only' | 'skip'
+  systemPromptStyle?: string | false
+}
+
+type CodexConfigAction = NonNullable<CodexWorkflowLanguageOptions['configAction']>
+
+function hasExistingCodexConfig(): boolean {
+  return exists(CODEX_AGENTS_FILE) || exists(CODEX_CONFIG_FILE)
+}
+
+async function resolveCodexConfigAction(options?: CodexFullInitOptions): Promise<'proceed' | 'skip'> {
+  const { skipPrompt = false, configAction } = options ?? {}
+
+  if (!hasExistingCodexConfig())
+    return 'proceed'
+
+  if (skipPrompt) {
+    if (configAction === 'skip') {
+      console.log(ansis.yellow(i18n.t('common:skip')))
+      return 'skip'
+    }
+    return 'proceed'
+  }
+
+  const { action } = await inquirer.prompt<{ action: CodexConfigAction }>({
+    type: 'list',
+    name: 'action',
+    message: i18n.t('configuration:existingConfig'),
+    choices: addNumbersToChoices([
+      { name: i18n.t('configuration:backupAndOverwrite'), value: 'backup' },
+      { name: i18n.t('configuration:updateDocsOnly'), value: 'docs-only' },
+      { name: i18n.t('configuration:mergeConfig'), value: 'merge' },
+      { name: i18n.t('common:skip'), value: 'skip' },
+    ]),
+  })
+
+  if (!action) {
+    console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return 'skip'
+  }
+
+  if (action === 'skip') {
+    console.log(ansis.yellow(i18n.t('common:skip')))
+    return 'skip'
+  }
+
+  return 'proceed'
 }
 
 export async function runCodexWorkflowImportWithLanguageSelection(
@@ -1119,12 +1165,15 @@ export async function runCodexWorkflowImportWithLanguageSelection(
     skipPrompt,
   )
 
-  // Step 2: Save AI output language to global config
+  // Step 2: Save AI output language to global config (ZCF metadata only — never touch ~/.claude/CLAUDE.md)
   updateZcfConfig({ aiOutputLang })
-  applyAiLanguageDirective(aiOutputLang)
 
-  // Step 3: Continue with original workflow (system prompt + workflow selection)
-  await runCodexSystemPromptSelection(skipPrompt)
+  const configAction = await resolveCodexConfigAction(options)
+  if (configAction === 'skip')
+    return aiOutputLang
+
+  // Step 3: System prompt + workflow selection (Codex-side files only)
+  await runCodexSystemPromptSelection(options)
   ensureCodexAgentsLanguageDirective(aiOutputLang)
   await runCodexWorkflowSelection(options)
   console.log(ansis.green(i18n.t('codex:workflowInstall')))
@@ -1132,7 +1181,11 @@ export async function runCodexWorkflowImportWithLanguageSelection(
   return aiOutputLang
 }
 
-export async function runCodexSystemPromptSelection(skipPrompt = false): Promise<void> {
+export async function runCodexSystemPromptSelection(options?: Pick<CodexFullInitOptions, 'skipPrompt' | 'systemPromptStyle'>): Promise<void> {
+  const { skipPrompt = false, systemPromptStyle } = options ?? {}
+
+  if (systemPromptStyle === false)
+    return
   ensureI18nInitialized()
   const rootDir = getRootDir()
 
@@ -1189,11 +1242,12 @@ export async function runCodexSystemPromptSelection(skipPrompt = false): Promise
 
   // Use the new intelligent detection function
   const { resolveSystemPromptStyle } = await import('../prompts')
+  const systemPromptOption = typeof systemPromptStyle === 'string' ? systemPromptStyle : undefined
   const systemPrompt = await resolveSystemPromptStyle(
     availablePrompts,
-    undefined, // No command line option for this function
+    systemPromptOption,
     tomlConfig,
-    skipPrompt, // Pass skipPrompt flag
+    skipPrompt,
   )
 
   if (!systemPrompt)
@@ -1391,6 +1445,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
   const modeChoices = [
     { name: i18n.t('codex:apiModeOfficial'), value: 'official' },
     { name: i18n.t('codex:apiModeCustom'), value: 'custom' },
+    { name: i18n.t('common:skip'), value: 'skip' },
   ]
 
   // Add switch option if providers exist
@@ -1398,7 +1453,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
     modeChoices.push({ name: i18n.t('codex:configSwitchMode'), value: 'switch' })
   }
 
-  const { mode } = await inquirer.prompt<{ mode: 'official' | 'custom' | 'switch' }>([{
+  const { mode } = await inquirer.prompt<{ mode: 'official' | 'custom' | 'switch' | 'skip' }>([{
     type: 'list',
     name: 'mode',
     message: i18n.t('codex:apiModePrompt'),
@@ -1408,6 +1463,11 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
 
   if (!mode) {
     console.log(ansis.yellow(i18n.t('common:cancelled')))
+    return
+  }
+
+  if (mode === 'skip') {
+    console.log(ansis.yellow(i18n.t('common:skip')))
     return
   }
 

@@ -284,7 +284,7 @@ export async function resolveSystemPromptStyle(
   commandLineOption?: string,
   savedConfig?: ZcfTomlConfig | null,
   skipPrompt?: boolean,
-): Promise<string> {
+): Promise<string | null> {
   ensureI18nInitialized()
 
   // Priority 1: Command line option
@@ -313,7 +313,7 @@ export async function resolveSystemPromptStyle(
 
       if (!shouldModify) {
         console.log(ansis.gray(`✔ ${i18n.t('language:currentSystemPromptFound')}: ${currentStyle.name}`))
-        return currentStyleId
+        return null
       }
     }
   }

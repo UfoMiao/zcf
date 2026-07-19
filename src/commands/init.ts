@@ -469,9 +469,11 @@ export async function init(options: InitOptions = {}): Promise<void> {
       const resolvedAiOutputLang = await runCodexFullInit({
         aiOutputLang: options.aiOutputLang,
         skipPrompt: options.skipPrompt,
+        configAction: options.configAction,
         apiMode,
         customApiConfig,
         workflows: options.workflows === false ? false : selectedWorkflows,
+        systemPromptStyle: options.outputStyles === false ? false : undefined,
       })
       updateZcfConfig({
         version,

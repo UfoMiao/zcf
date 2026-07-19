@@ -651,7 +651,7 @@ describe('prompts utilities', () => {
         },
       )
 
-      expect(result).toBe('nekomata-engineer')
+      expect(result).toBeNull()
       expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('language:currentSystemPromptFound'))
       expect(promptBoolean).toHaveBeenCalledWith(expect.objectContaining({
         message: expect.stringContaining('language:modifySystemPromptPrompt'),

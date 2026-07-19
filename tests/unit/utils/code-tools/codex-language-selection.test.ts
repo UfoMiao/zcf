@@ -341,7 +341,9 @@ model_provider = "official"
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue(mockAiOutputLang)
       vi.mocked(exists).mockReturnValue(true)
       vi.mocked(readFile).mockReturnValue('# System prompt content')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ systemPrompt: 'engineer-professional' })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'backup' })
+        .mockResolvedValue({ systemPrompt: 'engineer-professional' })
 
       // Act
       await runCodexWorkflowImportWithLanguageSelection()
@@ -355,7 +357,7 @@ model_provider = "official"
       )
       expect(updateZcfConfig).toHaveBeenCalledWith({ aiOutputLang: mockAiOutputLang })
       expect(updateZcfConfig).toHaveBeenCalledWith({ templateLang: 'zh-CN' })
-      expect(applyAiLanguageDirective).toHaveBeenCalledWith(mockAiOutputLang)
+      expect(applyAiLanguageDirective).not.toHaveBeenCalled()
 
       const agentsWriteCalls = vi.mocked(writeFile).mock.calls.filter(call => call[0]?.includes('AGENTS.md'))
       expect(agentsWriteCalls.at(-1)?.[1]).toContain('**Most Important:Always respond in Chinese-simplified**')
@@ -375,7 +377,9 @@ model_provider = "official"
       vi.mocked(resolveAiOutputLanguage).mockResolvedValue('en') // Should return saved config
       vi.mocked(exists).mockReturnValue(true)
       vi.mocked(readFile).mockReturnValue('# System prompt content')
-      vi.mocked(inquirer.prompt).mockResolvedValue({ systemPrompt: 'engineer-professional' })
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'backup' })
+        .mockResolvedValue({ systemPrompt: 'engineer-professional' })
 
       // Act
       await runCodexWorkflowImportWithLanguageSelection()
@@ -434,6 +438,9 @@ model_provider = "official"
       vi.mocked(resolveTemplateLanguage).mockResolvedValue('en')
       vi.mocked(exists).mockReturnValue(true)
       vi.mocked(readFile).mockReturnValue('# System prompt content')
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'backup' })
+        .mockResolvedValue({ systemPrompt: 'engineer-professional' })
 
       await runCodexWorkflowImportWithLanguageSelection()
 
@@ -453,6 +460,9 @@ model_provider = "official"
       vi.mocked(resolveTemplateLanguage).mockResolvedValue('zh-CN')
       vi.mocked(exists).mockReturnValue(true)
       vi.mocked(readFile).mockReturnValue('# System prompt content')
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ action: 'backup' })
+        .mockResolvedValue({ systemPrompt: 'engineer-professional' })
 
       await runCodexWorkflowImportWithLanguageSelection()
 
@@ -474,6 +484,47 @@ model_provider = "official"
 
       // Act & Assert
       await expect(runCodexWorkflowImportWithLanguageSelection()).rejects.toThrow('Language selection failed')
+    })
+
+    it('should not call applyAiLanguageDirective during Codex workflow import', async () => {
+      const mockZcfConfig = {
+        preferredLang: 'zh-CN' as const,
+        version: '2.12.13',
+        codeToolType: 'codex' as const,
+        lastUpdated: '2025-01-15',
+      }
+
+      vi.mocked(readZcfConfig).mockReturnValue(mockZcfConfig)
+      vi.mocked(resolveAiOutputLanguage).mockResolvedValue('zh-CN')
+      vi.mocked(exists).mockReturnValue(false)
+      vi.mocked(readFile).mockReturnValue('# System prompt content')
+      vi.mocked(inquirer.prompt).mockResolvedValue({ systemPrompt: 'engineer-professional' })
+
+      await runCodexWorkflowImportWithLanguageSelection({ skipPrompt: true })
+
+      expect(applyAiLanguageDirective).not.toHaveBeenCalled()
+    })
+
+    it('should skip workflow import when configAction is skip in skip-prompt mode', async () => {
+      const mockZcfConfig = {
+        preferredLang: 'zh-CN' as const,
+        version: '2.12.13',
+        codeToolType: 'codex' as const,
+        lastUpdated: '2025-01-15',
+      }
+
+      vi.mocked(readZcfConfig).mockReturnValue(mockZcfConfig)
+      vi.mocked(resolveAiOutputLanguage).mockResolvedValue('zh-CN')
+      vi.mocked(exists).mockImplementation((path: string) => path.includes('AGENTS.md') || path.includes('config.toml'))
+
+      await runCodexWorkflowImportWithLanguageSelection({
+        skipPrompt: true,
+        configAction: 'skip',
+      })
+
+      expect(applyAiLanguageDirective).not.toHaveBeenCalled()
+      expect(resolveSystemPromptStyle).not.toHaveBeenCalled()
+      expect(inquirer.prompt).not.toHaveBeenCalled()
     })
   })
 })

@@ -532,9 +532,11 @@ describe('init command', () => {
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
           aiOutputLang: 'en',
           skipPrompt: true,
+          configAction: 'backup',
           apiMode: 'skip',
           customApiConfig: undefined,
           workflows: ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
+          systemPromptStyle: undefined,
         })
       })
 
@@ -564,9 +566,11 @@ describe('init command', () => {
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
           aiOutputLang: undefined,
           skipPrompt: true,
+          configAction: 'backup',
           apiMode: 'skip',
           customApiConfig: undefined,
           workflows: ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
+          systemPromptStyle: undefined,
         })
         // Should not call resolveTemplateLanguage for codex when skipPrompt is true
         expect(testMocks.resolveTemplateLanguage).not.toHaveBeenCalled()
@@ -637,9 +641,11 @@ describe('init command', () => {
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
           aiOutputLang: 'japanese',
           skipPrompt: true,
+          configAction: 'backup',
           apiMode: 'skip',
           customApiConfig: undefined,
           workflows: ['commonTools', 'sixStepsWorkflow', 'featPlanUx', 'gitWorkflow', 'bmadWorkflow'],
+          systemPromptStyle: undefined,
         })
 
         expect(runCodexFullInitSpy).toHaveBeenCalled()
