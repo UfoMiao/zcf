@@ -1102,9 +1102,11 @@ export interface CodexWorkflowLanguageOptions {
   skipPrompt?: boolean
   configAction?: 'new' | 'backup' | 'merge' | 'docs-only' | 'skip'
   systemPromptStyle?: string | false
+  /** When true, skip AI language resolution (caller already resolved and saved) */
+  skipLanguageSelection?: boolean
 }
 
-type CodexConfigAction = NonNullable<CodexWorkflowLanguageOptions['configAction']>
+type CodexConfigAction = 'continue' | 'skip'
 
 function hasExistingCodexConfig(): boolean {
   return exists(CODEX_AGENTS_FILE) || exists(CODEX_CONFIG_FILE)
@@ -1129,9 +1131,7 @@ async function resolveCodexConfigAction(options?: CodexFullInitOptions): Promise
     name: 'action',
     message: i18n.t('configuration:existingConfig'),
     choices: addNumbersToChoices([
-      { name: i18n.t('configuration:backupAndOverwrite'), value: 'backup' },
-      { name: i18n.t('configuration:updateDocsOnly'), value: 'docs-only' },
-      { name: i18n.t('configuration:mergeConfig'), value: 'merge' },
+      { name: i18n.t('codex:continueConfig'), value: 'continue' },
       { name: i18n.t('common:skip'), value: 'skip' },
     ]),
   })
@@ -1156,21 +1156,20 @@ export async function runCodexWorkflowImportWithLanguageSelection(
 
   // Step 1: Select AI output language (uses global config memory)
   const zcfConfig = readZcfConfig()
-  const { aiOutputLang: commandLineOption, skipPrompt = false } = options ?? {}
+  const { aiOutputLang: commandLineOption, skipPrompt = false, skipLanguageSelection = false } = options ?? {}
 
-  const aiOutputLang = await resolveAiOutputLanguage(
-    i18n.language as SupportedLang,
-    commandLineOption,
-    zcfConfig,
-    skipPrompt,
-  )
+  const aiOutputLang = skipLanguageSelection
+    ? (commandLineOption ?? zcfConfig?.aiOutputLang ?? 'en')
+    : await resolveAiOutputLanguage(
+        i18n.language as SupportedLang,
+        commandLineOption,
+        zcfConfig,
+        skipPrompt,
+      )
 
   // Step 2: Save AI output language to global config (ZCF metadata only — never touch ~/.claude/CLAUDE.md)
-  updateZcfConfig({ aiOutputLang })
-
-  const configAction = await resolveCodexConfigAction(options)
-  if (configAction === 'skip')
-    return aiOutputLang
+  if (!skipLanguageSelection)
+    updateZcfConfig({ aiOutputLang })
 
   // Step 3: System prompt + workflow selection (Codex-side files only)
   await runCodexSystemPromptSelection(options)
@@ -1744,7 +1743,25 @@ export async function runCodexFullInit(
   ensureI18nInitialized()
 
   await installCodexCli(options?.skipPrompt || false)
-  const aiOutputLang = await runCodexWorkflowImportWithLanguageSelection(options)
+
+  const zcfConfig = readZcfConfig()
+  const aiOutputLang = await resolveAiOutputLanguage(
+    i18n.language as SupportedLang,
+    options?.aiOutputLang,
+    zcfConfig,
+    options?.skipPrompt ?? false,
+  )
+  updateZcfConfig({ aiOutputLang })
+
+  const configAction = await resolveCodexConfigAction(options)
+  if (configAction === 'skip')
+    return aiOutputLang
+
+  await runCodexWorkflowImportWithLanguageSelection({
+    ...options,
+    aiOutputLang,
+    skipLanguageSelection: true,
+  })
   await configureCodexApi(options)
   await configureCodexMcp(options)
 

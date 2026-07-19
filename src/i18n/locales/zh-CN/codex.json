@@ -8,6 +8,7 @@
   "unknownInstallMethod": "⚠️ 无法检测 Codex 安装方式",
   "fallingBackToNpm": "回退到 npm 更新方式",
   "workflowInstall": "✔ 已安装 Codex 工作流模板",
+  "continueConfig": "继续配置",
   "backupSuccess": "✔ 已创建备份 {{path}}",
   "apiModePrompt": "请选择 API 配置模式",
   "apiModeOfficial": "使用官方登录（不配置 API）",

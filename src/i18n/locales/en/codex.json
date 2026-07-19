@@ -8,6 +8,7 @@
   "unknownInstallMethod": "⚠️ Unable to detect Codex installation method",
   "fallingBackToNpm": "Falling back to npm update method",
   "workflowInstall": "✔ Codex workflow templates installed",
+  "continueConfig": "Continue configuration",
   "backupSuccess": "✔ Backup created at {{path}}",
   "apiModePrompt": "Select API configuration mode",
   "apiModeOfficial": "Use official login (no API configuration)",
