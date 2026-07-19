@@ -76,6 +76,7 @@ vi.mock('../../../../src/utils/platform', () => ({
   getSystemRoot: vi.fn(() => 'C:\\Windows'),
   normalizeTomlPath: vi.fn((str: string) => str),
   wrapCommandWithSudo: vi.fn((command: string, args: string[]) => ({ command, args, usedSudo: false })),
+  commandExists: vi.fn(async () => true),
 }))
 
 // Mock prompt helpers
