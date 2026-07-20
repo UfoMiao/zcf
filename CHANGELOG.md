@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.7.1
+
+### Patch Changes
+
+- ## Fixes
+  - Correct MiniMax API provider preset base URL and default models
+  - Prevent Codex init from overwriting Claude Code CLAUDE.md during workflow import
+  - Route Codex language directives to AGENTS.md only and preserve existing AGENTS.md when user declines changes
+  - Hoist configAction skip to runCodexFullInit so API/MCP steps are skipped with workflow import
+
+  ## 修复
+  - 修正 MiniMax API 提供商预设的 base URL 与默认模型
+  - 修复 Codex 初始化时工作流导入误覆盖 Claude Code CLAUDE.md 的问题
+  - Codex 语言指令仅写入 AGENTS.md，用户拒绝系统提示变更时保留现有 AGENTS.md
+  - 将 configAction 跳过逻辑提升至 runCodexFullInit，工作流导入时同步跳过 API/MCP 步骤
+
+  ## Documentation
+  - Replace legacy `/zcf:` command prefixes with skill invocation syntax across docs and workflow templates
+
+  ## 文档
+  - 文档与工作流模板中，将旧版 `/zcf:` 命令前缀统一改为 skill 调用语法
+
 ## 3.7.0
 
 ### Minor Changes
