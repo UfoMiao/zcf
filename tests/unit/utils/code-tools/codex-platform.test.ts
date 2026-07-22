@@ -1,3 +1,4 @@
+import type { CodexConfigData } from '../../../../src/utils/code-tools/codex'
 import { describe, expect, it, vi } from 'vitest'
 
 const mockSelectMcpServices = vi.fn()
@@ -74,6 +75,19 @@ const codexModule = await import('../../../../src/utils/code-tools/codex')
 const { configureCodexMcp } = codexModule
 const { writeFile } = await import('../../../../src/utils/fs-operations')
 
+function createMockCodexConfig(overrides: Partial<CodexConfigData> = {}): CodexConfigData {
+  return {
+    model: null,
+    modelProvider: null,
+    providers: [],
+    mcpServices: [],
+    managed: false,
+    otherConfig: [],
+    modelProviderCommented: undefined,
+    ...overrides,
+  }
+}
+
 describe('applyCodexPlatformCommand integration', () => {
   it('should rewrite npx commands using platform-specific MCP command', async () => {
     mockSelectMcpServices.mockResolvedValue(['SERVICE'])
@@ -81,11 +95,7 @@ describe('applyCodexPlatformCommand integration', () => {
       { id: 'SERVICE', name: 'Service', description: 'desc' },
     ])
 
-    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-      providers: [],
-      mcpServices: [],
-      managed: false,
-    } as any)
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
 
     await configureCodexMcp()
@@ -108,11 +118,7 @@ describe('applyCodexPlatformCommand integration', () => {
       { id: 'serena', name: 'Serena', description: 'Serena MCP service' },
     ])
 
-    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue({
-      providers: [],
-      mcpServices: [],
-      managed: false,
-    } as any)
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
     vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
 
     await configureCodexMcp()
@@ -127,5 +133,112 @@ describe('applyCodexPlatformCommand integration', () => {
     const lastConfigContent = configCalls[configCalls.length - 1][1] as string
     expect(lastConfigContent).toContain('[mcp_servers.serena]')
     expect(lastConfigContent).toContain('command = "cmd"')
+  })
+
+  it('should preserve existing node_repl env tables when adding MCP services', async () => {
+    mockSelectMcpServices.mockResolvedValue(['SERVICE'])
+    mockGetMcpServices.mockResolvedValue([
+      { id: 'SERVICE', name: 'Service', description: 'desc' },
+    ])
+
+    const { readFile } = await import('../../../../src/utils/fs-operations')
+    vi.mocked(readFile).mockReturnValue(`model_provider = "jjj"
+model = "gpt-5.2"
+
+[mcp_servers.node_repl]
+args = []
+command = 'C:/Users/yukaidi/AppData/Local/OpenAI/Codex/bin/node_repl.exe'
+startup_timeout_sec = 120
+
+[mcp_servers.node_repl.env]
+NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS = "1000"
+NODE_REPL_NODE_MODULE_DIRS = ""
+NODE_REPL_NODE_PATH = 'C:/Users/yukaidi/AppData/Local/OpenAI/Codex/bin/node.exe'
+CODEX_HOME = 'C:/Users/yukaidi/.codex'
+`)
+
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
+    vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
+
+    await configureCodexMcp()
+
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+
+    expect(lastConfigContent).toContain('[mcp_servers.node_repl.env]')
+    expect(lastConfigContent).not.toContain('{ NODE_REPL_NATIVE_PIPE_CONNECT_TIMEOUT_MS')
+    expect(lastConfigContent).not.toContain('[mcp_servers.node_repl]\nenv = {')
+    expect(lastConfigContent).toContain('[mcp_servers.service]')
+  })
+
+  it('should preserve existing SSE MCP url and extra fields during updates', async () => {
+    mockSelectMcpServices.mockResolvedValue([])
+    mockGetMcpServices.mockResolvedValue([])
+
+    const { readFile } = await import('../../../../src/utils/fs-operations')
+    vi.mocked(readFile).mockReturnValue(`
+[mcp_servers.remote-docs]
+url = "https://example.com/sse"
+startup_timeout_sec = 15
+retries = 3
+`)
+
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig({
+      mcpServices: [{
+        id: 'remote-docs',
+        command: 'remote-docs',
+        args: [],
+        startup_timeout_sec: 15,
+        extraFields: {
+          url: 'https://example.com/sse',
+          retries: 3,
+        },
+      }],
+    }))
+    vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
+
+    await configureCodexMcp()
+
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+
+    expect(lastConfigContent).toContain('[mcp_servers.remote-docs]')
+    expect(lastConfigContent).toContain('url = "https://example.com/sse"')
+    expect(lastConfigContent).toContain('retries = 3')
+  })
+
+  it('should stop at indented non-MCP section headers when replacing MCP sections', async () => {
+    mockSelectMcpServices.mockResolvedValue(['SERVICE'])
+    mockGetMcpServices.mockResolvedValue([
+      { id: 'SERVICE', name: 'Service', description: 'desc' },
+    ])
+
+    const { readFile } = await import('../../../../src/utils/fs-operations')
+    vi.mocked(readFile).mockReturnValue(`
+  [mcp_servers.service]
+  command = "old-command"
+  args = []
+
+  [custom_section]
+  key = "must-stay"
+`)
+
+    vi.spyOn(codexModule, 'readCodexConfig').mockReturnValue(createMockCodexConfig())
+    vi.spyOn(codexModule, 'backupCodexComplete').mockReturnValue(null)
+
+    await configureCodexMcp()
+
+    const writeFileMock = vi.mocked(writeFile)
+    const configCalls = writeFileMock.mock.calls.filter(call => call[0].includes('config.toml'))
+    expect(configCalls.length).toBeGreaterThan(0)
+    const lastConfigContent = configCalls[configCalls.length - 1][1] as string
+
+    expect(lastConfigContent).toContain('[mcp_servers.service]')
+    expect(lastConfigContent).toContain('[custom_section]')
+    expect(lastConfigContent).toContain('key = "must-stay"')
   })
 })
