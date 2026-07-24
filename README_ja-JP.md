@@ -83,8 +83,8 @@ PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化し
 <td>APIKEY.FUN のご支援に感謝します！APIKEY.FUN は企業および個人開発者向けに、安定・高効率・低コストな AI モデル API 接続を提供する、プロフェッショナルなエンタープライズ向け AI 中継プラットフォームです。Claude、OpenAI、Gemini などの主要モデルに対応し、価格は公式の 7% まで低減可能です。<a href="https://apikey.fun/register?aff=ZCFZCF">この専用リンク</a>から登録すると、チャージ永久 95 折（5% オフ）の特典を受けられます。</td>
 </tr>
 <tr>
-<td width="180"><a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF"><img src="./src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
-<td>AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude Code/Codex/Gemini CLI の公式高安定性中継サービスを提供し、エンタープライズレベルの高並行処理、迅速な請求書発行、7x24 専用技術サポートをサポートしています。Claude Code/Codex/Gemini の公式チャネルは最大 3.8/0.2/10.9 割引で、チャージでさらに割引があります！AICodeMirror は ZCF ユーザーに特別な特典を提供しています：<a href="https://www.aicodemirror.com/register?invitecode=ZCFZCF">このリンク</a>から登録したユーザーは初回チャージ 20% オフ、企業顧客は最大 25% オフを享受できます！</td>
+<td width="180"><a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF"><img src="./src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
+<td>AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude Code/Codex/Gemini CLI の公式高安定性中継サービスを提供し、エンタープライズレベルの高並行処理、迅速な請求書発行、7x24 専用技術サポートをサポートしています。Claude Code/Codex/Gemini の公式チャネルは最大 3.8/0.2/10.9 割引で、チャージでさらに割引があります！AICodeMirror は ZCF ユーザーに特別な特典を提供しています：<a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">このリンク</a>から登録したユーザーは初回チャージ 20% オフ、企業顧客は最大 25% オフを享受できます！</td>
 </tr>
 <tr>
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="./src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
@@ -140,7 +140,7 @@ Telegramグループに参加して、サポートやディスカッション、
 - [GLM](https://z.ai/subscribe?ic=8JVLJQFSKB)（最初のAIモデルスポンサー 🤖）
 - [PackyCode](https://www.packyapi.com/register?aff=zcf)（最初のAPIプロキシサービススポンサー 🧝🏻‍♀️）
 - [APIKEY.FUN](https://apikey.fun/register?aff=ZCFZCF)（企業向け AI 中継スポンサー 🎁）
-- [AICodeMirror](https://www.aicodemirror.com/register?invitecode=ZCFZCF)（公式高安定性中継サービススポンサー 🪞）
+- [AICodeMirror](https://www.aicodemirror.ai/register?invitecode=ZCFZCF)（公式高安定性中継サービススポンサー 🪞）
 - [UUCode](https://www.uucode.org/auth?ref=JQ2DJ1T8)（$100 プロキシクレジットを提供 💰）
 - [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo)（AI API 集約ゲートウェイスポンサー 🚀）
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)（公式直接接続中継サービススポンサー 🛡️）
