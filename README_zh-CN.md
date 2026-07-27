@@ -61,8 +61,8 @@ GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元
 
 ---
 
-[![Claude API](./src/assets/claude-api.jpg)](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
-感谢 [Claude API](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) 赞助本项目！Claude API 是专注 Claude 模型的官方渠道 API 服务商，基于 Anthropic 官方 Key 与 AWS Bedrock 官方渠道，提供稳定的 Claude Code 与 Agent 应用接入体验，支持 Claude 全系列模型，保留 Tool Use、长上下文等官方能力。服务非逆向、非降智，适合 Claude Code 深度用户、Agent 工程师与企业技术团队使用。通过[专属链接](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)注册后联系客服，可领取免费测试额度，并支持开票和团队对接。
+[![Claude API](./src/assets/claude-api.jpg)](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)
+感谢 [Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r) 赞助本项目！Claude API 是专注 Claude 模型的官方渠道 API 服务商，基于 Anthropic 官方 Key 与 AWS Bedrock 官方渠道，提供稳定的 Claude Code 与 Agent 应用接入体验，支持 Claude 全系列模型，保留 Tool Use、长上下文等官方能力。服务非逆向、非降智，适合 Claude Code 深度用户、Agent 工程师与企业技术团队使用。通过[专属链接](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)注册后联系客服，可领取免费测试额度，并支持开票和团队对接。
 
 ---
 
@@ -147,7 +147,7 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 - [Crazyrouter](https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo)（AI API 聚合网关赞助商 🚀）
 - [PatewayAI](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)（官方直连中转服务赞助商 🛡️）
 - [code0](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)（AI 编程工作台赞助商 🎁）
-- [Claude API](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)（Claude 官方 API 服务商赞助商 🎁）
+- [Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)（Claude 官方 API 服务商赞助商 🎁）
 
 - [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8)（高可用 AI 模型 API 中转平台赞助商 🎁）
 

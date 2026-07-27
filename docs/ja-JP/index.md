@@ -38,8 +38,8 @@ GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
 
 ---
 
-[![スポンサー Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api-en.jpg)](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
-[Claude API](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) がこのプロジェクトをスポンサーしてくれたことに感謝します！Claude API は、Claude モデルに特化した公式チャネルの API プロバイダーです。Anthropic 公式キーと AWS Bedrock 公式チャネルを基盤とし、Claude Code や Agent アプリケーションへの安定した統合体験を提供し、Claude 全シリーズモデルをサポートし、Tool Use や長いコンテキストなどの公式機能を保持しています。サービスはリバースエンジニアリングされておらず、モデル能力を低下させることはありません。Claude Code のヘビーユーザー、Agent エンジニア、企業の技術チームに適しています。[専用リンク](https://console.claudeapi.com/agent/register/kTwXd83JyKRSZk6r?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取れます。請求書発行とチーム導入もサポートされています。
+[![スポンサー Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api-en.jpg)](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)
+[Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r) がこのプロジェクトをスポンサーしてくれたことに感謝します！Claude API は、Claude モデルに特化した公式チャネルの API プロバイダーです。Anthropic 公式キーと AWS Bedrock 公式チャネルを基盤とし、Claude Code や Agent アプリケーションへの安定した統合体験を提供し、Claude 全シリーズモデルをサポートし、Tool Use や長いコンテキストなどの公式機能を保持しています。サービスはリバースエンジニアリングされておらず、モデル能力を低下させることはありません。Claude Code のヘビーユーザー、Agent エンジニア、企業の技術チームに適しています。[専用リンク](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取れます。請求書発行とチーム導入もサポートされています。
 
 ---
 
