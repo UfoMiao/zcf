@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.7.2
+
+### Patch Changes
+
+- ## Fixes
+  - Skip special filesystem entries (e.g. sockets) during recursive directory copy to avoid copy failures
+
+  ## 修复
+  - 递归复制目录时跳过特殊文件系统条目（如 socket），避免复制失败
+
+  ## Documentation
+  - Update Claude API sponsor links to console.apito.ai
+  - Update AICodeMirror sponsor links to aicodemirror.ai
+
+  ## 文档
+  - 将 Claude API 赞助商链接更新为 console.apito.ai
+  - 将 AICodeMirror 赞助商链接更新为 aicodemirror.ai
+
 ## 3.7.1
 
 ### Patch Changes
