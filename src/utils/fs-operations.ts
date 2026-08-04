@@ -227,7 +227,7 @@ export function copyDir(src: string, dest: string, options: CopyDirOptions = {})
         if (targetStats.isDirectory()) {
           copyDir(srcPath, destPath, options)
         }
-        else {
+        else if (targetStats.isFile()) {
           if (!overwrite && exists(destPath)) {
             continue
           }
@@ -244,7 +244,7 @@ export function copyDir(src: string, dest: string, options: CopyDirOptions = {})
     if (stats.isDirectory()) {
       copyDir(srcPath, destPath, options)
     }
-    else {
+    else if (stats.isFile()) {
       if (!overwrite && exists(destPath)) {
         continue
       }

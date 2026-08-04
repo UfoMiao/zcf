@@ -211,6 +211,17 @@ describe('fs-operations utilities', () => {
       expect(copyFileSync).toHaveBeenCalledTimes(2)
     })
 
+    it('should skip special filesystem entries such as sockets', () => {
+      const socketStats = { isDirectory: () => false, isFile: () => false, isSymbolicLink: () => false, isSocket: () => true }
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(readdirSync).mockReturnValue(['ipc.sock'] as any)
+      vi.mocked(lstatSync).mockReturnValue(socketStats as any)
+
+      copyDir('/source', '/dest')
+
+      expect(copyFileSync).not.toHaveBeenCalled()
+    })
+
     it('should handle subdirectories', () => {
       const fileStats = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false }
       const dirStats = { isDirectory: () => true, isFile: () => false, isSymbolicLink: () => false }
