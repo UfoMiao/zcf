@@ -26,6 +26,11 @@ title: ZCF - Zero-Config Code Flow
 
 ## ♥️ スポンサー AI API
 
+[![スポンサー AICodeMirror](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.png)](https://www.aicodemirror.ai/register?invitecode=ZCFZCF)
+AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude / Codex / Gemini の公式高安定中継サービスを提供し、エンタープライズ級の高並行処理、迅速な請求書発行、7×24 専用テクニカルサポートに対応しています。Codex 公式チャネルは標準価格の 7% から利用可能で、チャージでさらに割引があります！AICodeMirror は ZCF プロジェクトのユーザー向けに特別特典を用意しています：<a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">このリンク</a>から登録すると、初回チャージ 20% オフを受けられます。
+
+---
+
 [![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
 このプロジェクトは Z.ai のスポンサーを受けており、GLM CODING PLAN をサポートしています。
 GLM CODING PLAN は AI コーディング向けに設計されたサブスクリプションサービスで、月額わずか 10 ドルから利用できます。Claude Code、Cline、Roo Code など 10 以上の人気 AI コーディングツールで、フラグシップの GLM-4.7 および（GLM-5 は Pro ユーザーのみ利用可能）にアクセスでき、開発者に最高級で高速かつ安定したコーディング体験を提供します。
@@ -60,10 +65,6 @@ PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化し
 <tr>
 <td width="180"><a href="https://apikey.fun/register?aff=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
 <td>APIKEY.FUN のご支援に感謝します！APIKEY.FUN は企業および個人開発者向けに、安定・高効率・低コストな AI モデル API 接続を提供する、プロフェッショナルなエンタープライズ向け AI 中継プラットフォームです。Claude、OpenAI、Gemini などの主要モデルに対応し、価格は公式の 7% まで低減可能です。<a href="https://apikey.fun/register?aff=ZCFZCF">この専用リンク</a>から登録すると、チャージ永久 95 折（5% オフ）の特典を受けられます。</td>
-</tr>
-<tr>
-<td width="180"><a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
-<td>AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude Code/Codex/Gemini CLI の公式高安定性中継サービスを提供し、エンタープライズレベルの高並行処理、迅速な請求書発行、7x24 専用技術サポートをサポートしています。Claude Code/Codex/Gemini の公式チャネルは最大 3.8/0.2/10.9 割引で、チャージでさらに割引があります！AICodeMirror は ZCF ユーザーに特別な特典を提供しています：<a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">このリンク</a>から登録したユーザーは初回チャージ 20% オフ、企業顧客は最大 25% オフを享受できます！</td>
 </tr>
 <tr>
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>

@@ -26,6 +26,11 @@ title: ZCF - Zero-Config Code Flow
 
 ## ♥️ Sponsor AI API
 
+[![Sponsor AICodeMirror](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.png)](https://www.aicodemirror.ai/register?invitecode=ZCFZCF)
+Thanks to AICodeMirror for sponsoring this project! AICodeMirror provides highly reliable official relay services for Claude, Codex, and Gemini, supporting enterprise-grade concurrency, fast invoice issuance, and dedicated 24/7 technical support. Official Codex access is available for as little as 7% of the standard price, with additional discounts on account top-ups! AICodeMirror also offers an exclusive benefit to users of the ZCF project: register through <a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">this link</a> to receive 20% off your first top-up.
+
+---
+
 [![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
 This project is sponsored by Z.ai, supporting us with their GLM CODING PLAN.
 GLM CODING PLAN is a subscription service designed for AI coding, starting at just $10/month. It provides access to their flagship GLM-4.7 & （GLM-5 Only Available  for Pro Users）model across 10+ popular AI coding tools (Claude Code, Cline, Roo Code, etc.), offering developers top-tier, fast, and stable coding experiences.
@@ -60,10 +65,6 @@ PatewayAI is a high-quality model API relay service provider focused on official
 <tr>
 <td width="180"><a href="https://apikey.fun/register?aff=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
 <td>Thanks to APIKEY.FUN for sponsoring this project! APIKEY.FUN is a professional enterprise-grade AI relay platform dedicated to providing stable, efficient, and low-cost API access for both companies and individual developers. The platform supports popular models including Claude, OpenAI, and Gemini, with pricing as low as 7% of official rates. Register via <a href="https://apikey.fun/register?aff=ZCFZCF">this link</a> to enjoy an exclusive offer of up to permanent 95% recharge pricing (5% off).</td>
-</tr>
-<tr>
-<td width="180"><a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.jpg" alt="AICodeMirror" width="150"></a></td>
-<td>Thanks to AICodeMirror for sponsoring this project! AICodeMirror provides official high-stability relay services for Claude Code/Codex/Gemini CLI, supporting enterprise-level high concurrency, fast invoicing, and 7x24 dedicated technical support. Official channels for Claude Code/Codex/Gemini at discounts as low as 38%/2%/10.9% off, with additional discounts on top-ups! AICodeMirror offers special benefits for ZCF users: users who register through <a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">this link</a> can enjoy 20% off on first top-up, and enterprise customers can get up to 25% off!</td>
 </tr>
 <tr>
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
