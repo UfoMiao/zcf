@@ -109,14 +109,14 @@ ZCF supports API provider presets, which can greatly simplify configuration:
 
 | Parameter | Abbreviation | Description | Supported Providers |
 |------|------|------|------------|
-| `--provider, -p` | `-p` | API provider preset | `302ai`, `glm`, `minimax`, `kimi`, `custom` |
+| `--provider, -p` | `-p` | API provider preset | `302ai`, `z-ai`, `minimax`, `kimi`, `custom` |
 
 ```bash
 # Use 302.AI provider
 npx zcf i -s -p 302ai -k "sk-xxx"
 
 # Use GLM provider
-npx zcf i -s -p glm -k "sk-xxx"
+npx zcf i -s -p z-ai -k "sk-xxx"
 
 # Use MiniMax provider
 npx zcf i -s -p minimax -k "sk-xxx"
@@ -170,7 +170,7 @@ npx zcf i -s --api-configs '[
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "z-ai",
     "key": "sk-yyy"
   },
   {
@@ -313,7 +313,7 @@ cat > api-configs.json << EOF
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "z-ai",
     "key": "sk-glm-yyy"
   },
   {

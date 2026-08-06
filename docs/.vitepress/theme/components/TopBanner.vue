@@ -31,17 +31,17 @@ function closeBanner() {
 // Get content based on language
 const bannerContent = {
   'zh-CN': {
-    text: '🚀 GLM-5 代码编程专享计划',
+    text: '🚀 GLM-5.2 代码编程专享计划',
     linkText: '特惠折上折 ➞',
     linkUrl: 'https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII',
   },
   'en': {
-    text: '🚀 GLM-5 Code Programming Exclusive Plan',
+    text: '🚀 GLM-5.2 Code Programming Exclusive Plan',
     linkText: 'Special Discount ➞',
     linkUrl: 'https://z.ai/subscribe?ic=8JVLJQFSKB',
   },
   'ja-JP': {
-    text: '🚀 GLM-5 コードプログラミング専享プラン',
+    text: '🚀 GLM-5.2 コードプログラミング専享プラン',
     linkText: '特別割引 ➞',
     linkUrl: 'https://z.ai/subscribe?ic=8JVLJQFSKB',
   },

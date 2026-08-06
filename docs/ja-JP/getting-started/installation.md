@@ -198,7 +198,7 @@ ZCFはAPIプロバイダープリセットをサポートしており、設定�
 npx zcf i -s -p 302ai -k "sk-xxx"
 
 # その他のプロバイダー
-npx zcf i -s -p glm -k "sk-xxx"        # GLM
+npx zcf i -s -p z-ai -k "sk-xxx"        # GLM
 npx zcf i -s -p minimax -k "sk-xxx"    # MiniMax
 npx zcf i -s -p kimi -k "sk-xxx"       # Kimi
 ```
@@ -233,7 +233,7 @@ ZCFは複数のAPIを設定することをサポートしており、異なる�
 # JSON文字列を使用して複数のAPIを設定
 npx zcf i -s --api-configs '[
   {"provider":"302ai","key":"sk-xxx"},
-  {"provider":"glm","key":"sk-yyy"},
+  {"provider":"z-ai","key":"sk-yyy"},
   {"name":"custom","type":"api_key","key":"sk-zzz","url":"https://custom.api.com","primaryModel":"claude-sonnet-4-5","fastModel":"claude-haiku-4-5","default":true}
 ]'
 
@@ -266,7 +266,7 @@ npx zcf i -s --api-configs-file ./api-configs.json
 | パラメータ | 省略形 | 説明 | 一般的な値 |
 |------|------|------|--------|
 | `--skip-prompt` | `-s` | すべての対話プロンプトをスキップ | - |
-| `--provider` | `-p` | APIプロバイダープリセット | `302ai`, `glm`, `minimax`, `kimi` |
+| `--provider` | `-p` | APIプロバイダープリセット | `302ai`, `z-ai`, `minimax`, `kimi` |
 | `--api-key` | `-k` | APIキー | あなたのAPI Key |
 | `--all-lang` | `-g` | すべての言語パラメータを統一設定 | `zh-CN`, `en` |
 | `--workflows` | `-w` | インストールするワークフロー | `all`, `skip` またはカンマ区切りリスト |

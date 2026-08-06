@@ -107,7 +107,7 @@ npx zcf i -s -t api_key -k "sk-xxx" -u "https://api.example.com"
 
 支持的提供商预设：
 - `302ai` - [302.AI](https://share.302.ai/gAT9VG) API 服务
-- `glm` - GLM（智谱AI）
+- `glm-cn` - GLM（智谱AI）
 - `minimax` - MiniMax API 服务
 - `kimi` - Kimi（月之暗面）
 
@@ -147,7 +147,7 @@ ZCF 支持配置多个 API，方便在不同场景下切换：
 ```bash
 npx zcf i -s --api-configs '[
   {"provider":"302ai","key":"sk-xxx","default":true},
-  {"provider":"glm","key":"sk-yyy"},
+  {"provider":"glm-cn","key":"sk-yyy"},
   {"name":"custom","type":"api_key","key":"sk-zzz","url":"https://custom.api.com"}
 ]'
 ```

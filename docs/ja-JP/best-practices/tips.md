@@ -232,7 +232,7 @@ npx zcf init -s \\
 npx zcf init -s -p 302ai -k \"sk-xxx\"
 ```
 
-**対応プロバイダー**：`302ai`, `glm`, `minimax`, `kimi`, `custom`
+**対応プロバイダー**：`302ai`, `z-ai`, `minimax`, `kimi`, `custom`
 
 ### 8. 複数設定の切り替え
 
@@ -243,17 +243,17 @@ npx zcf init -s -p 302ai -k \"sk-xxx\"
 npx zcf config-switch --list
 
 # GLM プロバイダーに切替
-npx zcf config-switch glm-provider
+npx zcf config-switch z-ai-provider
 
 # 302.AI プロバイダーに切替
 npx zcf config-switch 302ai-provider
 
 # Codex での切り替え
-npx zcf config-switch glm-provider --code-type codex
+npx zcf config-switch minimax-provider --code-type codex
 ```
 
 **命名例**（プロバイダーの英語名を使用）：
-- `glm-provider` - GLM プロバイダー
+- `z-ai-provider` - GLM プロバイダー
 - `302ai-provider` - 302.AI プロバイダー
 - `minimax-provider` - MiniMax プロバイダー
 - `kimi-provider` - Kimi プロバイダー

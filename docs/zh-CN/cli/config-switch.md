@@ -75,7 +75,7 @@ npx zcf cs
 ? 选择 Claude Code 配置：
   ❯ ● 使用官方登录 (current)
     CCR 代理
-    GLM Provider (glm-provider)
+    GLM Provider (glm-cn-provider)
     302.AI Provider (302ai-provider)
     MiniMax Provider (minimax-provider)
 ```
@@ -107,7 +107,7 @@ npx zcf cs --list -T cx
 
 1. 官方登录 (current)
 2. CCR 代理
-3. GLM Provider - glm-provider
+3. GLM Provider - glm-cn-provider
 4. 302.AI Provider - 302ai-provider
 ```
 
@@ -117,14 +117,14 @@ npx zcf cs --list -T cx
 
 ```bash
 # 切换到指定 Profile（使用渠道英文名）
-npx zcf cs glm-provider
+npx zcf cs glm-cn-provider
 
 # Codex 切换提供商
-npx zcf cs glm-provider -T cx
+npx zcf cs minimax-provider -T cx
 ```
 
 **支持匹配方式**：
-- 配置 ID（如 `glm-provider`）
+- 配置 ID（如 `glm-cn-provider`）
 - 配置名称（如 `GLM Provider`）
 
 ## 配置管理
@@ -138,7 +138,7 @@ npx zcf cs glm-provider -T cx
 npx zcf init --api-configs '[
   {
     "name": "GLM Provider",
-    "provider": "glm",
+    "provider": "glm-cn",
     "type": "api_key",
     "key": "sk-glm-xxx",
     "primaryModel": "glm-4"
@@ -158,7 +158,7 @@ npx zcf init --api-configs '[
 推荐使用渠道（Provider）的英文名称，便于识别和管理：
 
 ✅ **推荐**：
-- `glm-provider` - GLM 提供商
+- `glm-cn-provider` - GLM 提供商
 - `302ai-provider` - 302.AI 提供商
 - `minimax-provider` - MiniMax 提供商
 - `kimi-provider` - Kimi 提供商
@@ -189,7 +189,7 @@ npx zcf init --api-configs '[
 
 ```bash
 # 项目 A 使用 GLM
-npx zcf cs glm-provider
+npx zcf cs glm-cn-provider
 
 # 项目 B 使用 302.AI
 npx zcf cs 302ai-provider
@@ -205,7 +205,7 @@ npx zcf cs minimax-provider
 npx zcf cs kimi-provider
 
 # 测试完成后切换回去
-npx zcf cs glm-provider
+npx zcf cs glm-cn-provider
 ```
 
 ### 3. 切换 Codex 提供商
@@ -215,7 +215,7 @@ npx zcf cs glm-provider
 npx zcf cs -T cx --list
 
 # 切换到指定提供商
-npx zcf cs glm-provider -T cx
+npx zcf cs minimax-provider -T cx
 ```
 
 ## 最佳实践
@@ -223,7 +223,7 @@ npx zcf cs glm-provider -T cx
 ### 配置组织
 
 1. **按提供商分类**：GLM、302.AI、MiniMax、Kimi、PackyCode
-2. **使用标准命名**：`{provider}-provider` 格式（如 `glm-provider`）
+2. **使用标准命名**：`{provider}-provider` 格式（如 `glm-cn-provider`）
 3. **保持一致性**：同一提供商在不同项目中保持相同的配置名称
 
 ### 切换前准备
@@ -238,7 +238,7 @@ npx zcf cs glm-provider -T cx
 
 ```bash
 # 主分支使用 GLM 配置
-npx zcf cs glm-provider
+npx zcf cs glm-cn-provider
 
 # 创建功能分支 Worktree
 /git-worktree add feat/new-feature -o

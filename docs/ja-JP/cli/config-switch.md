@@ -75,7 +75,7 @@ npx zcf cs
 ? Claude Code 設定を選択：
   ❯ ● 公式ログインを使用 (current)
     CCR プロキシ
-    GLM Provider (glm-provider)
+    GLM Provider (z-ai-provider)
     302.AI Provider (302ai-provider)
     MiniMax Provider (minimax-provider)
 ```
@@ -107,7 +107,7 @@ npx zcf cs --list --code-type codex
 
 1. 公式ログイン (current)
 2. CCR プロキシ
-3. GLM Provider - glm-provider
+3. GLM Provider - z-ai-provider
 4. 302.AI Provider - 302ai-provider
 ```
 
@@ -117,14 +117,14 @@ npx zcf cs --list --code-type codex
 
 ```bash
 # 指定されたプロファイルに切替（プロバイダーの英語名を使用）
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 
 # Codex プロバイダーを切替
-npx zcf cs glm-provider --code-type codex
+npx zcf cs minimax-provider --code-type codex
 ```
 
 **サポートされるマッチング方法**：
-- 設定 ID（`glm-provider` など）
+- 設定 ID（`z-ai-provider` など）
 - 設定名（`GLM Provider` など）
 
 ## 設定管理
@@ -138,7 +138,7 @@ npx zcf cs glm-provider --code-type codex
 npx zcf init --api-configs '[
   {
     "name": "GLM Provider",
-    "provider": "glm",
+    "provider": "z-ai",
     "type": "api_key",
     "key": "sk-glm-xxx",
     "primaryModel": "glm-4"
@@ -158,7 +158,7 @@ npx zcf init --api-configs '[
 識別と管理を容易にするため、プロバイダー（Provider）の英語名を使用することを推奨します：
 
 ✅ **推奨**：
-- `glm-provider` - GLM プロバイダー
+- `z-ai-provider` - GLM プロバイダー
 - `302ai-provider` - 302.AI プロバイダー
 - `minimax-provider` - MiniMax プロバイダー
 - `kimi-provider` - Kimi プロバイダー
@@ -189,7 +189,7 @@ npx zcf init --api-configs '[
 
 ```bash
 # プロジェクト A は GLM を使用
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 
 # プロジェクト B は 302.AI を使用
 npx zcf cs 302ai-provider
@@ -205,7 +205,7 @@ npx zcf cs minimax-provider
 npx zcf cs kimi-provider
 
 # テスト完了後に戻す
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 ```
 
 ### 3. Codex プロバイダーを切替
@@ -215,7 +215,7 @@ npx zcf cs glm-provider
 npx zcf cs --code-type codex --list
 
 # 指定されたプロバイダーに切替
-npx zcf cs glm-provider --code-type codex
+npx zcf cs minimax-provider --code-type codex
 ```
 
 ## ベストプラクティス
@@ -223,7 +223,7 @@ npx zcf cs glm-provider --code-type codex
 ### 設定の整理
 
 1. **プロバイダー別に分類**：GLM、302.AI、MiniMax、Kimi、PackyCode
-2. **標準命名を使用**：`{provider}-provider` 形式（例：`glm-provider`）
+2. **標準命名を使用**：`{provider}-provider` 形式（例：`z-ai-provider`）
 3. **一貫性を維持**：同じプロバイダーを異なるプロジェクトで同じ設定名を維持
 
 ### 切替前の準備
@@ -238,7 +238,7 @@ npx zcf cs glm-provider --code-type codex
 
 ```bash
 # メインブランチは GLM 設定を使用
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 
 # 機能ブランチ Worktree を作成
 /git-worktree add feat/new-feature -o

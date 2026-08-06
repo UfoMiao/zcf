@@ -17,7 +17,7 @@ ZCFは現在、以下のAPIプロバイダープリセットをサポートし�
 | `aicodemirror` | AICodeMirror | グローバル高品質回線 | ✅ | ✅ | `auth_token` |
 | `aicodemirror-cn` | AICodeMirror CN | 中国最適化回線 | ✅ | ✅ | `auth_token` |
 | `crazyrouter` | Crazyrouter | AI API 集約ゲートウェイ | ✅ | ✅ | `api_key` |
-| `glm` | GLM (智譜AI) | 智譜AIサービス | ✅ | ✅ | `auth_token` |
+| `z-ai` | Z.ai | Z.ai API サービス | ✅ | ❌ | `auth_token` |
 | `minimax` | MiniMax | MiniMax APIサービス | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (月の暗面) | Moonshot AIサービス | ✅ | ✅ | `auth_token` |
 | `custom` | カスタム | カスタムAPIエンドポイント | ✅ | ✅ | 指定必須 |
@@ -123,30 +123,24 @@ npx zcf init -s -p crazyrouter -k "your-api-key"
 npx zcf init -s -T codex -p crazyrouter -k "your-api-key"
 ```
 
-### GLM (智譜AI)
+### Z.ai
 
-**プロバイダー名**: 智譜AI (GLM)
+**プロバイダー名**: Z.ai
 
 **特徴**:
-- 🇨🇳 国内AIサービス
-- 💰 コストパフォーマンスが高い
-- 🚀 複数のモデルをサポート
-- 📚 包括的なドキュメントサポート
+- 🌍 グローバル向け GLM コーディング API サービス
+- 💰 コストパフォーマンスの高いサブスクリプションプラン
+- 🚀 Claude Code 連携をサポート
+- 📚 GLM CODING PLAN に対応
 
 **設定情報**:
-- **Claude Code Base URL**: `https://open.bigmodel.cn/api/anthropic`
-- **Codex Base URL**: `https://open.bigmodel.cn/api/coding/paas/v4`
+- **Claude Code Base URL**: `https://api.z.ai/api/anthropic`
 - **認証方式**: `auth_token`
-- **Codex Wire API**: `chat`
-- **Codex デフォルトモデル**: `GLM-4.7`
 
 **使用例**:
 ```bash
 # Claude Code
-npx zcf init -s -p glm -k "your-auth-token"
-
-# Codex
-npx zcf init -s -T codex -p glm -k "your-auth-token"
+npx zcf init -s -p z-ai -k "your-auth-token"
 ```
 
 ### MiniMax
@@ -271,7 +265,7 @@ npx zcf init -s --api-configs '[
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "z-ai",
     "key": "sk-glm-yyy"
   },
   {
@@ -328,7 +322,7 @@ npx zcf config-switch 302ai-config
 npx zcf config-switch --code-type codex --list
 
 # 指定されたプロバイダーに切り替え
-npx zcf config-switch glm-provider --code-type codex
+npx zcf config-switch minimax-provider --code-type codex
 ```
 
 ## ベストプラクティス
@@ -371,8 +365,8 @@ npx zcf init -s -p 302ai -k "production-key"
 # プロジェクト A: 302.AI プロバイダーを使用
 npx zcf config-switch 302ai-provider
 
-# プロジェクト B: GLM プロバイダーを使用
-npx zcf config-switch glm-provider
+# プロジェクト B: Z.ai プロバイダーを使用
+npx zcf config-switch z-ai-provider
 
 # プロジェクト C: MiniMax プロバイダーを使用
 npx zcf config-switch minimax-provider
@@ -403,7 +397,7 @@ npx zcf init -s -p 302ai -k "$(cat ~/.zcf/api-key)"
 ```bash
 # エラーメッセージにすべての有効な値が表示されます
 npx zcf init -s -p invalid-provider -k "sk-xxx"
-# エラー: Invalid provider 'invalid-provider'. Valid providers: 302ai, glm, minimax, kimi, custom
+# エラー: Invalid provider 'invalid-provider'. Valid providers: 302ai, z-ai, minimax, kimi, custom
 ```
 
 ### 認証失敗

@@ -237,7 +237,7 @@ npx zcf init -s \
 npx zcf init -s -p 302ai -k "sk-xxx"
 ```
 
-**支持的提供商**：`302ai`, `glm`, `minimax`, `kimi`, `custom`
+**支持的提供商**：`302ai`, `glm-cn`, `minimax`, `kimi`, `custom`
 
 ### 8. 多配置管理
 

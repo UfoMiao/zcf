@@ -27,29 +27,29 @@ title: ZCF - Zero-Config Code Flow
 ## ♥️ 赞助商 AI API
 
 [![赞助商 AICodeMirror](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.png)](https://www.aicodemirror.ai/register?invitecode=ZCFZCF)
-感谢 AICodeMirror 赞助了本项目！AICodeMirror 提供 Claude / Codex / Gemini 官方高稳定中转服务，支持企业级高并发、极速开票、7×24 专属技术支持。Codex 官方渠道低至 0.7折，充值更有折上折！AICodeMirror 为 ZCF 项目的用户提供了特别福利，通过<a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">此链接</a>注册的用户，可享受首充8折。
+感谢 [AICodeMirror](https://www.aicodemirror.ai/register?invitecode=ZCFZCF) 赞助了本项目！AICodeMirror 提供 Claude / Codex / Gemini 官方高稳定中转服务，支持企业级高并发、极速开票、7×24 专属技术支持。Codex 官方渠道低至 0.7折，充值更有折上折！**AICodeMirror 为 ZCF 项目的用户提供了特别福利，通过<a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">此链接</a>注册的用户，可享受首充8折。**
 
 ---
 
 [![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM.png)](https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII)
 本项目由 Z智谱 提供赞助, 他们通过 GLM CODING PLAN 对本项目提供技术支持。
-GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元，即可在十余款主流AI编码工具如 Claude Code、Cline、Roo Code 中畅享智谱旗舰模型GLM-4.7（受限于算力，GLM-5 目前仅限Pro用户开放），为开发者提供顶尖的编码体验。
-智谱AI为本产品提供了特别优惠，使用以下链接购买可以享受九折优惠：https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII
+GLM CODING PLAN 是专为AI编码打造的订阅套餐，每月最低仅需20元，即可在十余款主流AI编码工具如 Claude Code、Cline、Roo Code 中畅享智谱旗舰模型 GLM-5.2，为开发者提供顶尖的编码体验。
+**智谱AI为本产品提供了特别优惠，使用以下链接购买可以享受九折优惠：https://www.bigmodel.cn/claude-code?ic=RRVJPB5SII**
 
 ---
 
 [![赞助商 code0](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/code0.jpg)](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
-感谢 [code0.ai](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) 赞助本项目！[code0.ai](http://code0.ai) 是面向开发者与技术团队的 AI 编程工作台，聚合 Claude Code、Codex 等主流 Agent 编程能力，支持代码生成、项目理解、调试修复、代码审查与文档生成等常见研发场景。适合独立开发者、Agent 工程师、开源项目维护者和企业研发团队使用，支持开票和团队对接。通过[专属链接](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)注册后联系客服，可领取免费测试额度，体验更高效的 AI 编程工作流。
+感谢 [code0.ai](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) 赞助本项目！[code0.ai](http://code0.ai) 是面向开发者与技术团队的 AI 编程工作台，聚合 Claude Code、Codex 等主流 Agent 编程能力，支持代码生成、项目理解、调试修复、代码审查与文档生成等常见研发场景。适合独立开发者、Agent 工程师、开源项目维护者和企业研发团队使用，支持开票和团队对接。**通过[专属链接](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)注册后联系客服，可领取免费测试额度，体验更高效的 AI 编程工作流。**
 
 ---
 
 [![赞助商 Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api.jpg)](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)
-感谢 [Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r) 赞助本项目！Claude API 是专注 Claude 模型的官方渠道 API 服务商，基于 Anthropic 官方 Key 与 AWS Bedrock 官方渠道，提供稳定的 Claude Code 与 Agent 应用接入体验，支持 Claude 全系列模型，保留 Tool Use、长上下文等官方能力。服务非逆向、非降智，适合 Claude Code 深度用户、Agent 工程师与企业技术团队使用。通过[专属链接](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)注册后联系客服，可领取免费测试额度，并支持开票和团队对接。
+感谢 [Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r) 赞助本项目！Claude API 是专注 Claude 模型的官方渠道 API 服务商，基于 Anthropic 官方 Key 与 AWS Bedrock 官方渠道，提供稳定的 Claude Code 与 Agent 应用接入体验，支持 Claude 全系列模型，保留 Tool Use、长上下文等官方能力。服务非逆向、非降智，适合 Claude Code 深度用户、Agent 工程师与企业技术团队使用。**通过[专属链接](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)注册后联系客服，可领取免费测试额度，并支持开票和团队对接。**
 
 ---
 
 [![赞助商 PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
-PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模型 API 中转服务商，提供 Claude 全系列与 Codex 系列模型，100% 官方源直供，不掺假不注水，欢迎检验。计费透明，Token 级账单可逐笔核验。同时支持企业级高并发，并为企业客户提供专业的管理平台，企业客户可签订正式合同并开具发票。PatewayAI 为 ZCF 用户提供了专属福利，通过<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">此链接</a>注册即送 $3 试用额度，用户充值低至 6 折，邀请好友双向赠送，邀请奖励可达 $150！
+PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模型 API 中转服务商，提供 Claude 全系列与 Codex 系列模型，100% 官方源直供，不掺假不注水，欢迎检验。计费透明，Token 级账单可逐笔核验。同时支持企业级高并发，并为企业客户提供专业的管理平台，企业客户可签订正式合同并开具发票。**PatewayAI 为 ZCF 用户提供了专属福利，通过<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">此链接</a>注册即送 $3 试用额度，用户充值低至 6 折，邀请好友双向赠送，邀请奖励可达 $150！**
 
 ---
 
@@ -60,19 +60,19 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 <tbody>
 <tr>
 <td width="180"><a href="https://www.packyapi.com/register?aff=zcf"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/packycode.png" alt="PackyCode" width="150"></a></td>
-<td>感谢 PackyCode 赞助了本项目！PackyCode 是一家稳定、高效的API中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务。PackyCode 为本软件的用户提供了特别优惠，使用<a href="https://www.packyapi.com/register?aff=zcf">此链接</a>注册并在充值时填写"zcf"优惠码，可以享受9折优惠。</td>
+<td>感谢 PackyCode 赞助了本项目！PackyCode 是一家稳定、高效的API中转服务商，提供 Claude Code、Codex、Gemini 等多种中转服务。<strong>PackyCode 为本软件的用户提供了特别优惠，使用<a href="https://www.packyapi.com/register?aff=zcf">此链接</a>注册并在充值时填写"zcf"优惠码，可以享受9折优惠。</strong></td>
 </tr>
 <tr>
 <td width="180"><a href="https://apikey.fun/register?aff=ZCFZCF"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/apikey-fun.png" alt="APIKEY.FUN" width="150"></a></td>
-<td>感谢 APIKEY.FUN 赞助本项目！APIKEY.FUN 是一家专业的企业级 AI 中转站，致力于为企业和个人开发者提供稳定、高效、低成本的 AI 模型 API 接入服务。平台支持 Claude、OpenAI、Gemini 等主流热门模型，价格低至官方原价的 7%。通过<a href="https://apikey.fun/register?aff=ZCFZCF">本项目专属链接</a>注册，可享受最高充值永久 95 折专属优惠。</td>
+<td>感谢 APIKEY.FUN 赞助本项目！APIKEY.FUN 是一家专业的企业级 AI 中转站，致力于为企业和个人开发者提供稳定、高效、低成本的 AI 模型 API 接入服务。平台支持 Claude、OpenAI、Gemini 等主流热门模型，价格低至官方原价的 7%。<strong>通过<a href="https://apikey.fun/register?aff=ZCFZCF">本项目专属链接</a>注册，可享受最高充值永久 95 折专属优惠。</strong></td>
 </tr>
 <tr>
 <td width="180"><a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/crazyrouter.svg" alt="Crazyrouter" width="150"></a></td>
-<td>感谢 Crazyrouter 赞助了本项目！Crazyrouter 是一个高性能 AI API 聚合网关 — 一个 Key 调用 300+ 模型（GPT、Claude、Gemini、DeepSeek 等），所有模型低至官方价格 5.5 折，支持自动故障转移、智能路由和无限并发。完全兼容 OpenAI 格式，可无缝接入 Claude Code、Codex 和 Gemini CLI。Crazyrouter 为 ZCF 用户提供了专属福利，通过<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">此链接</a>注册即送 $2 免费额度！</td>
+<td>感谢 Crazyrouter 赞助了本项目！Crazyrouter 是一个高性能 AI API 聚合网关 — 一个 Key 调用 300+ 模型（GPT、Claude、Gemini、DeepSeek 等），所有模型低至官方价格 5.5 折，支持自动故障转移、智能路由和无限并发。完全兼容 OpenAI 格式，可无缝接入 Claude Code、Codex 和 Gemini CLI。<strong>Crazyrouter 为 ZCF 用户提供了专属福利，通过<a href="https://crazyrouter.com/?utm_source=github&utm_medium=sponsor&utm_campaign=zcf&aff=yJFo">此链接</a>注册即送 $2 免费额度！</strong></td>
 </tr>
 <tr>
 <td width="180"><a href="https://aihub.top/register?aff=ZYD5VXBARHD8"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/aihub.jpg" alt="AIHub" width="150"></a></td>
-<td>感谢 AIHub 赞助本项目！AIHub 是一家面向个人开发者和企业团队的高可用 AI 模型 API 中转平台，支持 Codex / Claude Code，价格低至官方约 1 折。通过<a href="https://aihub.top/register?aff=ZYD5VXBARHD8">此链接</a>注册并填写优惠码 <strong>ZCF</strong>，即可领取 $3 测试额度。</td>
+<td>感谢 AIHub 赞助本项目！AIHub 是一家面向个人开发者和企业团队的高可用 AI 模型 API 中转平台，支持 Codex / Claude Code，价格低至官方约 1 折。<strong>通过<a href="https://aihub.top/register?aff=ZYD5VXBARHD8">此链接</a>注册并填写优惠码 ZCF，即可领取 $3 测试额度。</strong></td>
 </tr>
 
 </tbody>

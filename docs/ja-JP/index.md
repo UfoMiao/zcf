@@ -27,29 +27,29 @@ title: ZCF - Zero-Config Code Flow
 ## ♥️ スポンサー AI API
 
 [![スポンサー AICodeMirror](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/AICodeMirror.png)](https://www.aicodemirror.ai/register?invitecode=ZCFZCF)
-AICodeMirror がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude / Codex / Gemini の公式高安定中継サービスを提供し、エンタープライズ級の高並行処理、迅速な請求書発行、7×24 専用テクニカルサポートに対応しています。Codex 公式チャネルは標準価格の 7% から利用可能で、チャージでさらに割引があります！AICodeMirror は ZCF プロジェクトのユーザー向けに特別特典を用意しています：<a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">このリンク</a>から登録すると、初回チャージ 20% オフを受けられます。
+[AICodeMirror](https://www.aicodemirror.ai/register?invitecode=ZCFZCF) がこのプロジェクトをスポンサーしてくれたことに感謝します！AICodeMirror は Claude / Codex / Gemini の公式高安定中継サービスを提供し、エンタープライズ級の高並行処理、迅速な請求書発行、7×24 専用テクニカルサポートに対応しています。Codex 公式チャネルは標準価格の 7% から利用可能で、チャージでさらに割引があります！**AICodeMirror は ZCF プロジェクトのユーザー向けに特別特典を用意しています：<a href="https://www.aicodemirror.ai/register?invitecode=ZCFZCF">このリンク</a>から登録すると、初回チャージ 20% オフを受けられます。**
 
 ---
 
 [![GLM](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/GLM-en.png)](https://z.ai/subscribe?ic=8JVLJQFSKB)
 このプロジェクトは Z.ai のスポンサーを受けており、GLM CODING PLAN をサポートしています。
-GLM CODING PLAN は AI コーディング向けに設計されたサブスクリプションサービスで、月額わずか 10 ドルから利用できます。Claude Code、Cline、Roo Code など 10 以上の人気 AI コーディングツールで、フラグシップの GLM-4.7 および（GLM-5 は Pro ユーザーのみ利用可能）にアクセスでき、開発者に最高級で高速かつ安定したコーディング体験を提供します。
-GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB
+GLM CODING PLAN は AI コーディング向けに設計されたサブスクリプションサービスで、月額わずか 10 ドルから利用できます。Claude Code、Cline、Roo Code など 10 以上の人気 AI コーディングツールで、フラグシップの GLM-5.2 にアクセスでき、開発者に最高級で高速かつ安定したコーディング体験を提供します。
+**GLM CODING PLAN を 10% オフで入手：https://z.ai/subscribe?ic=8JVLJQFSKB**
 
 ---
 
 [![スポンサー code0](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/code0-en.jpg)](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)
-[code0.ai](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) がこのプロジェクトをスポンサーしてくれたことに感謝します！[code0.ai](http://code0.ai) は、開発者と技術チーム向けの AI コーディングワークスペースで、Claude Code や Codex などの主流な Agent コーディング能力を集約しています。コード生成、プロジェクト理解、デバッグ、コードレビュー、ドキュメント生成などの一般的な開発シナリオをサポートしており、個人開発者、Agent エンジニア、オープンソースメンテナー、企業の研究開発チームに適しています。請求書発行とチーム導入もサポートしています。[専用リンク](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取り、より効率的な AI コーディングワークフローを体験できます。
+[code0.ai](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default) がこのプロジェクトをスポンサーしてくれたことに感謝します！[code0.ai](http://code0.ai) は、開発者と技術チーム向けの AI コーディングワークスペースで、Claude Code や Codex などの主流な Agent コーディング能力を集約しています。コード生成、プロジェクト理解、デバッグ、コードレビュー、ドキュメント生成などの一般的な開発シナリオをサポートしており、個人開発者、Agent エンジニア、オープンソースメンテナー、企業の研究開発チームに適しています。請求書発行とチーム導入もサポートしています。**[専用リンク](https://code0.ai/agent/register/nBQjR8p1WL0G982z?utm_source=zcf&utm_medium=partner&utm_campaign=zcf_2026&utm_content=default)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取り、より効率的な AI コーディングワークフローを体験できます。**
 
 ---
 
 [![スポンサー Claude API](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/claude-api-en.jpg)](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)
-[Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r) がこのプロジェクトをスポンサーしてくれたことに感謝します！Claude API は、Claude モデルに特化した公式チャネルの API プロバイダーです。Anthropic 公式キーと AWS Bedrock 公式チャネルを基盤とし、Claude Code や Agent アプリケーションへの安定した統合体験を提供し、Claude 全シリーズモデルをサポートし、Tool Use や長いコンテキストなどの公式機能を保持しています。サービスはリバースエンジニアリングされておらず、モデル能力を低下させることはありません。Claude Code のヘビーユーザー、Agent エンジニア、企業の技術チームに適しています。[専用リンク](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取れます。請求書発行とチーム導入もサポートされています。
+[Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r) がこのプロジェクトをスポンサーしてくれたことに感謝します！Claude API は、Claude モデルに特化した公式チャネルの API プロバイダーです。Anthropic 公式キーと AWS Bedrock 公式チャネルを基盤とし、Claude Code や Agent アプリケーションへの安定した統合体験を提供し、Claude 全シリーズモデルをサポートし、Tool Use や長いコンテキストなどの公式機能を保持しています。サービスはリバースエンジニアリングされておらず、モデル能力を低下させることはありません。Claude Code のヘビーユーザー、Agent エンジニア、企業の技術チームに適しています。**[専用リンク](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r)から登録し、カスタマーサポートに連絡すると、無料のテストクレジットを受け取れます。請求書発行とチーム導入もサポートされています。**
 
 ---
 
 [![スポンサー PatewayAI](https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/pateway.ai-en.png)](https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C)
-PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化した高品質モデル API 中継サービスプロバイダーで、Claude 全系列と Codex 系列モデルを提供します。100% 公式ソース直供給で、不純物なし、検証可能。課金は透明で、トークンレベルの請求書を 1 件ずつ照合できます。エンタープライズレベルの高並行性に対応し、企業顧客向けに専用管理プラットフォームを提供、正式契約締結と請求書発行も可能です。PatewayAI は ZCF ユーザー専用特典を提供：<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">このリンク</a>から登録すると $3 のトライアルクレジットを即時プレゼント、チャージは最大 60% オフ、招待は双方向ボーナスで報酬は最大 $150！
+PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化した高品質モデル API 中継サービスプロバイダーで、Claude 全系列と Codex 系列モデルを提供します。100% 公式ソース直供給で、不純物なし、検証可能。課金は透明で、トークンレベルの請求書を 1 件ずつ照合できます。エンタープライズレベルの高並行性に対応し、企業顧客向けに専用管理プラットフォームを提供、正式契約締結と請求書発行も可能です。**PatewayAI は ZCF ユーザー専用特典を提供：<a href="https://pateway.ai/?ch=vnr0h5&aff=9AWWH87C">このリンク</a>から登録すると $3 のトライアルクレジットを即時プレゼント、チャージは最大 60% オフ、招待は双方向ボーナスで報酬は最大 $150！**
 
 ---
 

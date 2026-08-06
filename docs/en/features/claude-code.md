@@ -107,7 +107,7 @@ npx zcf i -s -t api_key -k "sk-xxx" -u "https://api.example.com"
 
 Supported provider presets:
 - `302ai` - [302.AI](https://share.302.ai/gAT9VG) API service
-- `glm` - GLM (Zhipu AI)
+- `z-ai` - Z.ai
 - `minimax` - MiniMax API service
 - `kimi` - Kimi (Moonshot AI)
 
@@ -147,7 +147,7 @@ ZCF supports configuring multiple APIs for easy switching in different scenarios
 ```bash
 npx zcf i -s --api-configs '[
   {"provider":"302ai","key":"sk-xxx","default":true},
-  {"provider":"glm","key":"sk-yyy"},
+  {"provider":"z-ai","key":"sk-yyy"},
   {"name":"custom","type":"api_key","key":"sk-zzz","url":"https://custom.api.com"}
 ]'
 ```

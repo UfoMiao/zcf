@@ -227,7 +227,7 @@ ZCF 的 Worktree 默认创建在项目平级的 `../.zcf/项目名/` 目录下�
 
 ```bash
 # 主分支使用 GLM 提供商配置
-npx zcf config-switch glm-provider
+npx zcf config-switch glm-cn-provider
 
 # Worktree 中使用 302.AI 提供商配置
 cd ../.zcf/project-name/feat/test

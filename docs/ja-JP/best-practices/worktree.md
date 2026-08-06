@@ -135,7 +135,7 @@ Project/
 
 ```bash
 # メインは GLM プロバイダー設定
-npx zcf config-switch glm-provider
+npx zcf config-switch z-ai-provider
 
 # Worktree では 302.AI プロバイダー設定
 cd ../.zcf/project-name/feat/test

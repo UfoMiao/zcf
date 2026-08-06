@@ -17,7 +17,7 @@ ZCF 目前支持以下 API 提供商预设：
 | `aicodemirror` | AICodeMirror | 全球高保线路 | ✅ | ✅ | `auth_token` |
 | `aicodemirror-cn` | AICodeMirror CN | 国内优化线路 | ✅ | ✅ | `auth_token` |
 | `crazyrouter` | Crazyrouter | AI API 聚合网关 | ✅ | ✅ | `api_key` |
-| `glm` | GLM (智谱AI) | 智谱 AI 服务 | ✅ | ✅ | `auth_token` |
+| `glm-cn` | GLM (智谱AI) | 智谱 AI 服务 | ✅ | ❌ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API 服务 | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (月之暗面) | Moonshot AI 服务 | ✅ | ✅ | `auth_token` |
 | `custom` | 自定义 | 自定义 API 端点 | ✅ | ✅ | 需指定 |
@@ -135,18 +135,12 @@ npx zcf init -s -T codex -p crazyrouter -k "your-api-key"
 
 **配置信息**：
 - **Claude Code Base URL**: `https://open.bigmodel.cn/api/anthropic`
-- **Codex Base URL**: `https://open.bigmodel.cn/api/coding/paas/v4`
 - **认证方式**: `auth_token`
-- **Codex Wire API**: `chat`
-- **Codex 默认模型**: `GLM-4.7`
 
 **使用示例**：
 ```bash
 # Claude Code
-npx zcf init -s -p glm -k "your-auth-token"
-
-# Codex
-npx zcf init -s -T codex -p glm -k "your-auth-token"
+npx zcf init -s -p glm-cn -k "your-auth-token"
 ```
 
 ### MiniMax
@@ -271,7 +265,7 @@ npx zcf init -s --api-configs '[
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "glm-cn",
     "key": "sk-glm-yyy"
   },
   {
@@ -328,7 +322,7 @@ npx zcf config-switch 302ai-config
 npx zcf config-switch --code-type codex --list
 
 # 切换到指定提供商
-npx zcf config-switch glm-provider --code-type codex
+npx zcf config-switch minimax-provider --code-type codex
 ```
 
 ## 最佳实践
@@ -372,7 +366,7 @@ npx zcf init -s -p 302ai -k "production-key"
 npx zcf config-switch 302ai-provider
 
 # 项目 B：使用 GLM 提供商
-npx zcf config-switch glm-provider
+npx zcf config-switch glm-cn-provider
 
 # 项目 C：使用 MiniMax 提供商
 npx zcf config-switch minimax-provider
@@ -403,7 +397,7 @@ npx zcf init -s -p 302ai -k "$(cat ~/.zcf/api-key)"
 ```bash
 # 错误信息会显示所有有效值
 npx zcf init -s -p invalid-provider -k "sk-xxx"
-# 错误：Invalid provider 'invalid-provider'. Valid providers: 302ai, glm, minimax, kimi, custom
+# 错误：Invalid provider 'invalid-provider'. Valid providers: 302ai, glm-cn, minimax, kimi, custom
 ```
 
 ### 认证失败

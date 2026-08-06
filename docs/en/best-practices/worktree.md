@@ -227,7 +227,7 @@ Use different API configurations in different Worktrees:
 
 ```bash
 # Main branch uses GLM provider configuration
-npx zcf config-switch glm-provider
+npx zcf config-switch z-ai-provider
 
 # Worktree uses 302.AI provider configuration
 cd ../.zcf/project-name/feat/test

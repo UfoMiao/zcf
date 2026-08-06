@@ -237,7 +237,7 @@ npx zcf init -s \
 npx zcf init -s -p 302ai -k "sk-xxx"
 ```
 
-**Supported Providers**: `302ai`, `glm`, `minimax`, `kimi`, `custom`
+**Supported Providers**: `302ai`, `z-ai`, `minimax`, `kimi`, `custom`
 
 ### 8. Multi-Configuration Management
 

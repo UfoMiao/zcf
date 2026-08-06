@@ -109,14 +109,14 @@ ZCF は API プロバイダープリセットをサポートし、設定を大�
 
 | パラメータ | 省略形 | 説明 | サポートされるプロバイダー |
 |------|------|------|------------|
-| `--provider, -p` | `-p` | API プロバイダープリセット | `302ai`, `glm`, `minimax`, `kimi`, `custom` |
+| `--provider, -p` | `-p` | API プロバイダープリセット | `302ai`, `z-ai`, `minimax`, `kimi`, `custom` |
 
 ```bash
 # 302.AI プロバイダーを使用
 npx zcf i -s -p 302ai -k "sk-xxx"
 
 # GLM プロバイダーを使用
-npx zcf i -s -p glm -k "sk-xxx"
+npx zcf i -s -p z-ai -k "sk-xxx"
 
 # MiniMax プロバイダーを使用
 npx zcf i -s -p minimax -k "sk-xxx"
@@ -170,7 +170,7 @@ npx zcf i -s --api-configs '[
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "z-ai",
     "key": "sk-yyy"
   },
   {
@@ -313,7 +313,7 @@ cat > api-configs.json << EOF
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "z-ai",
     "key": "sk-glm-yyy"
   },
   {

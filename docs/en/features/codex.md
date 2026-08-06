@@ -100,7 +100,6 @@ Codex supports the same API configuration methods as Claude Code:
 npx zcf i -s -T codex -p 302ai -k "sk-xxx"
 
 # Use other providers
-npx zcf i -s -T codex -p glm -k "sk-xxx"
 npx zcf i -s -T codex -p minimax -k "sk-xxx"
 ```
 

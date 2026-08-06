@@ -17,7 +17,7 @@ ZCF currently supports the following API provider presets:
 | `aicodemirror` | AICodeMirror | Global High-Quality Line | ✅ | ✅ | `auth_token` |
 | `aicodemirror-cn` | AICodeMirror CN | China Optimized Line | ✅ | ✅ | `auth_token` |
 | `crazyrouter` | Crazyrouter | AI API aggregation gateway | ✅ | ✅ | `api_key` |
-| `glm` | GLM (Zhipu AI) | Zhipu AI service | ✅ | ✅ | `auth_token` |
+| `z-ai` | Z.ai | Z.ai API service | ✅ | ❌ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API service | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (Moonshot) | Moonshot AI service | ✅ | ✅ | `auth_token` |
 | `custom` | Custom | Custom API endpoint | ✅ | ✅ | Must specify |
@@ -123,30 +123,24 @@ npx zcf init -s -p crazyrouter -k "your-api-key"
 npx zcf init -s -T codex -p crazyrouter -k "your-api-key"
 ```
 
-### GLM (Zhipu AI)
+### Z.ai
 
-**Provider Name**: Zhipu AI (GLM)
+**Provider Name**: Z.ai
 
 **Features**:
-- 🇨🇳 Domestic AI service
-- 💰 Cost-effective
-- 🚀 Supports multiple models
-- 📚 Comprehensive documentation support
+- 🌍 Global GLM coding API service
+- 💰 Cost-effective subscription plans
+- 🚀 Supports Claude Code integration
+- 📚 GLM CODING PLAN support
 
 **Configuration Information**:
-- **Claude Code Base URL**: `https://open.bigmodel.cn/api/anthropic`
-- **Codex Base URL**: `https://open.bigmodel.cn/api/coding/paas/v4`
+- **Claude Code Base URL**: `https://api.z.ai/api/anthropic`
 - **Authentication Method**: `auth_token`
-- **Codex Wire API**: `chat`
-- **Codex Default Model**: `GLM-4.7`
 
 **Usage Example**:
 ```bash
 # Claude Code
-npx zcf init -s -p glm -k "your-auth-token"
-
-# Codex
-npx zcf init -s -T codex -p glm -k "your-auth-token"
+npx zcf init -s -p z-ai -k "your-auth-token"
 ```
 
 ### MiniMax
@@ -283,7 +277,7 @@ npx zcf init -s --api-configs '[
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "z-ai",
     "key": "sk-glm-yyy"
   },
   {
@@ -340,7 +334,7 @@ npx zcf config-switch 302ai-config
 npx zcf config-switch --code-type codex --list
 
 # Switch to specified provider
-npx zcf config-switch glm-provider --code-type codex
+npx zcf config-switch minimax-provider --code-type codex
 ```
 
 ## Best Practices
@@ -383,8 +377,8 @@ Configure different providers for different projects:
 # Project A: Use 302.AI provider
 npx zcf config-switch 302ai-provider
 
-# Project B: Use GLM provider
-npx zcf config-switch glm-provider
+# Project B: Use Z.ai provider
+npx zcf config-switch z-ai-provider
 
 # Project C: Use MiniMax provider
 npx zcf config-switch minimax-provider
@@ -415,7 +409,7 @@ If using unsupported provider ID:
 ```bash
 # Error message will display all valid values
 npx zcf init -s -p invalid-provider -k "sk-xxx"
-# Error: Invalid provider 'invalid-provider'. Valid providers: 302ai, glm, minimax, kimi, custom
+# Error: Invalid provider 'invalid-provider'. Valid providers: 302ai, z-ai, minimax, kimi, custom
 ```
 
 ### Authentication Failed

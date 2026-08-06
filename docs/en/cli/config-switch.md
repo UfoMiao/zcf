@@ -75,7 +75,7 @@ npx zcf cs
 ? Select Claude Code configuration:
   ❯ ● Use Official Login (current)
     CCR Proxy
-    GLM Provider (glm-provider)
+    GLM Provider (z-ai-provider)
     302.AI Provider (302ai-provider)
     MiniMax Provider (minimax-provider)
 ```
@@ -107,7 +107,7 @@ Available Claude Code configurations:
 
 1. Official Login (current)
 2. CCR Proxy
-3. GLM Provider - glm-provider
+3. GLM Provider - z-ai-provider
 4. 302.AI Provider - 302ai-provider
 ```
 
@@ -117,14 +117,14 @@ If you know the configuration name, you can switch directly:
 
 ```bash
 # Switch to specified Profile (using provider English name)
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 
 # Codex switch provider
-npx zcf cs glm-provider -T cx
+npx zcf cs minimax-provider -T cx
 ```
 
 **Supported Matching Methods**:
-- Configuration ID (like `glm-provider`)
+- Configuration ID (like `z-ai-provider`)
 - Configuration name (like `GLM Provider`)
 
 ## Configuration Management
@@ -138,7 +138,7 @@ Create multiple API configurations during initialization:
 npx zcf init --api-configs '[
   {
     "name": "GLM Provider",
-    "provider": "glm",
+    "provider": "z-ai",
     "type": "api_key",
     "key": "sk-glm-xxx",
     "primaryModel": "glm-4"
@@ -158,7 +158,7 @@ npx zcf init --api-configs '[
 Use provider English names for easy identification and management:
 
 ✅ **Recommended**:
-- `glm-provider` - GLM Provider
+- `z-ai-provider` - GLM Provider
 - `302ai-provider` - 302.AI Provider
 - `minimax-provider` - MiniMax Provider
 - `kimi-provider` - Kimi Provider
@@ -189,7 +189,7 @@ After switching configuration:
 
 ```bash
 # Project A uses GLM
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 
 # Project B uses 302.AI
 npx zcf cs 302ai-provider
@@ -205,7 +205,7 @@ npx zcf cs minimax-provider
 npx zcf cs kimi-provider
 
 # Switch back after testing
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 ```
 
 ### 3. Switch Codex Provider
@@ -215,7 +215,7 @@ npx zcf cs glm-provider
 npx zcf cs -T cx --list
 
 # Switch to specified provider
-npx zcf cs glm-provider -T cx
+npx zcf cs minimax-provider -T cx
 ```
 
 ## Best Practices
@@ -223,7 +223,7 @@ npx zcf cs glm-provider -T cx
 ### Configuration Organization
 
 1. **Categorize by Provider**: GLM, 302.AI, MiniMax, Kimi, PackyCode
-2. **Use Standard Naming**: `{provider}-provider` format (e.g., `glm-provider`)
+2. **Use Standard Naming**: `{provider}-provider` format (e.g., `z-ai-provider`)
 3. **Maintain Consistency**: Keep the same configuration name for the same provider across different projects
 
 ### Preparation Before Switch
@@ -238,7 +238,7 @@ Use different configurations in different Worktrees:
 
 ```bash
 # Main branch uses GLM configuration
-npx zcf cs glm-provider
+npx zcf cs z-ai-provider
 
 # Create feature branch Worktree
 /git-worktree add feat/new-feature -o

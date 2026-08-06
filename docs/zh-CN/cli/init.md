@@ -109,14 +109,14 @@ ZCF 支持 API 提供商预设，可以大大简化配置：
 
 | 参数 | 缩写 | 说明 | 支持的提供商 |
 |------|------|------|------------|
-| `--provider, -p` | `-p` | API 提供商预设 | `302ai`, `glm`, `minimax`, `kimi`, `custom` |
+| `--provider, -p` | `-p` | API 提供商预设 | `302ai`, `glm-cn`, `minimax`, `kimi`, `custom` |
 
 ```bash
 # 使用 302.AI 提供商
 npx zcf i -s -p 302ai -k "sk-xxx"
 
 # 使用 GLM 提供商
-npx zcf i -s -p glm -k "sk-xxx"
+npx zcf i -s -p glm-cn -k "sk-xxx"
 
 # 使用 MiniMax 提供商
 npx zcf i -s -p minimax -k "sk-xxx"
@@ -170,7 +170,7 @@ npx zcf i -s --api-configs '[
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "glm-cn",
     "key": "sk-yyy"
   },
   {
@@ -313,7 +313,7 @@ cat > api-configs.json << EOF
     "default": true
   },
   {
-    "provider": "glm",
+    "provider": "glm-cn",
     "key": "sk-glm-yyy"
   },
   {

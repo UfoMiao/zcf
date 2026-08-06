@@ -100,7 +100,6 @@ Codex 支持与 Claude Code 相同的 API 配置方式：
 npx zcf i -s -T codex -p 302ai -k "sk-xxx"
 
 # 使用其他提供商
-npx zcf i -s -T codex -p glm -k "sk-xxx"
 npx zcf i -s -T codex -p minimax -k "sk-xxx"
 ```
 

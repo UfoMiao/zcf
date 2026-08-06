@@ -200,7 +200,7 @@ ZCF 支持 API 提供商预设，可将配置从 5+ 个参数简化为仅需 2 �
 npx zcf i -s -p 302ai -k "sk-xxx"
 
 # 其他提供商
-npx zcf i -s -p glm -k "sk-xxx"        # GLM
+npx zcf i -s -p glm-cn -k "sk-xxx"        # GLM
 npx zcf i -s -p minimax -k "sk-xxx"    # MiniMax
 npx zcf i -s -p kimi -k "sk-xxx"       # Kimi
 ```
@@ -235,7 +235,7 @@ ZCF 支持配置多个 API，方便在不同场景下切换：
 # 使用 JSON 字符串配置多个 API
 npx zcf i -s --api-configs '[
   {"provider":"302ai","key":"sk-xxx"},
-  {"provider":"glm","key":"sk-yyy"},
+  {"provider":"glm-cn","key":"sk-yyy"},
   {"name":"custom","type":"api_key","key":"sk-zzz","url":"https://custom.api.com","primaryModel":"claude-sonnet-4-5","fastModel":"claude-haiku-4-5","default":true}
 ]'
 
@@ -268,7 +268,7 @@ npx zcf i -s --api-configs-file ./api-configs.json
 | 参数 | 缩写 | 说明 | 常用值 |
 |------|------|------|--------|
 | `--skip-prompt` | `-s` | 跳过所有交互提示 | - |
-| `--provider` | `-p` | API 提供商预设 | `302ai`, `glm`, `minimax`, `kimi` |
+| `--provider` | `-p` | API 提供商预设 | `302ai`, `glm-cn`, `minimax`, `kimi` |
 | `--api-key` | `-k` | API 密钥 | 您的 API Key |
 | `--all-lang` | `-g` | 统一设置所有语言参数 | `zh-CN`, `en` |
 | `--workflows` | `-w` | 要安装的工作流 | `all`, `skip` 或逗号分隔列表 |
