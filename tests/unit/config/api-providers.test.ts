@@ -94,6 +94,26 @@ describe('aPI Provider Configuration', () => {
       expect(provider!.codex?.defaultModel).toBe('MiniMax-M3')
     })
 
+    it('orcarouter provider should have correct configuration', () => {
+      const provider = API_PROVIDER_PRESETS.find(p => p.id === 'orcarouter')
+      expect(provider).toBeDefined()
+      expect(provider!.name).toBe('OrcaRouter')
+      expect(provider!.supportedCodeTools).toContain('claude-code')
+      expect(provider!.supportedCodeTools).toContain('codex')
+      expect(provider!.claudeCode?.baseUrl).toBe('https://api.orcarouter.ai')
+      expect(provider!.claudeCode?.authType).toBe('auth_token')
+      // Order matters: [primary, haiku, sonnet, opus] — Anthropic-namespaced models
+      expect(provider!.claudeCode?.defaultModels).toEqual([
+        'anthropic/claude-sonnet-5',
+        'anthropic/claude-haiku-4.5',
+        'anthropic/claude-sonnet-5',
+        'anthropic/claude-opus-5',
+      ])
+      expect(provider!.codex?.baseUrl).toBe('https://api.orcarouter.ai/v1')
+      expect(provider!.codex?.wireApi).toBe('responses')
+      expect(provider!.codex?.defaultModel).toBe('openai/gpt-5.5')
+    })
+
     it('bailian-coding provider should use lowercase glm-5 default model', () => {
       const provider = API_PROVIDER_PRESETS.find(p => p.id === 'bailian-coding')
       expect(provider).toBeDefined()

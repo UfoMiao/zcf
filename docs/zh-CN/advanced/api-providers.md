@@ -17,6 +17,7 @@ ZCF 目前支持以下 API 提供商预设：
 | `aicodemirror` | AICodeMirror | 全球高保线路 | ✅ | ✅ | `auth_token` |
 | `aicodemirror-cn` | AICodeMirror CN | 国内优化线路 | ✅ | ✅ | `auth_token` |
 | `crazyrouter` | Crazyrouter | AI API 聚合网关 | ✅ | ✅ | `api_key` |
+| `orcarouter` | OrcaRouter | AI 模型路由网关 | ✅ | ✅ | `auth_token` |
 | `glm-cn` | GLM (智谱AI) | 智谱 AI 服务 | ✅ | ❌ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API 服务 | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (月之暗面) | Moonshot AI 服务 | ✅ | ✅ | `auth_token` |
@@ -121,6 +122,33 @@ npx zcf init -s -p crazyrouter -k "your-api-key"
 
 # Codex
 npx zcf init -s -T codex -p crazyrouter -k "your-api-key"
+```
+
+### OrcaRouter
+
+**官方链接**：[OrcaRouter](https://www.orcarouter.ai)
+
+**特点**：
+- 🚀 AI 模型路由网关 —— 一个 Key 调用 150+ 模型（OpenAI、Anthropic、Google、DeepSeek、Qwen、MiniMax、xAI 等）
+- 🌐 单一端点同时支持 Claude Code（Anthropic 兼容）与 Codex（OpenAI 兼容）
+- 🛡️ 同一端点为 AI agent 提供网关级安全控制
+- 🔄 自动路由到最佳上游
+
+**配置信息**：
+- **Claude Code Base URL**: `https://api.orcarouter.ai`
+- **Codex Base URL**: `https://api.orcarouter.ai/v1`
+- **认证方式**: `auth_token`（Key 以 `sk-orca-` 开头）
+- **Codex Wire API**: `responses`
+- **Claude Code 默认模型**: `anthropic/claude-sonnet-5`（主模型）、`anthropic/claude-haiku-4.5`（快速）
+- **Codex 默认模型**: `openai/gpt-5.5`
+
+**使用示例**：
+```bash
+# Claude Code
+npx zcf init -s -p orcarouter -k "sk-orca-xxx"
+
+# Codex
+npx zcf init -s -T codex -p orcarouter -k "sk-orca-xxx"
 ```
 
 ### GLM (智谱AI)

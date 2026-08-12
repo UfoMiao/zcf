@@ -17,6 +17,7 @@ ZCF currently supports the following API provider presets:
 | `aicodemirror` | AICodeMirror | Global High-Quality Line | ✅ | ✅ | `auth_token` |
 | `aicodemirror-cn` | AICodeMirror CN | China Optimized Line | ✅ | ✅ | `auth_token` |
 | `crazyrouter` | Crazyrouter | AI API aggregation gateway | ✅ | ✅ | `api_key` |
+| `orcarouter` | OrcaRouter | AI model routing gateway | ✅ | ✅ | `auth_token` |
 | `z-ai` | Z.ai | Z.ai API service | ✅ | ❌ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API service | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (Moonshot) | Moonshot AI service | ✅ | ✅ | `auth_token` |
@@ -121,6 +122,33 @@ npx zcf init -s -p crazyrouter -k "your-api-key"
 
 # Codex
 npx zcf init -s -T codex -p crazyrouter -k "your-api-key"
+```
+
+### OrcaRouter
+
+**Official Link**: [OrcaRouter](https://www.orcarouter.ai)
+
+**Features**:
+- 🚀 AI model routing gateway — one API key for 150+ models (OpenAI, Anthropic, Google, DeepSeek, Qwen, MiniMax, xAI, etc.)
+- 🌐 Single endpoint for both Claude Code (Anthropic-compatible) and Codex (OpenAI-compatible)
+- 🛡️ Gateway-level security controls for AI agents on the same endpoint
+- 🔄 Auto-routing to the best available upstream
+
+**Configuration Information**:
+- **Claude Code Base URL**: `https://api.orcarouter.ai`
+- **Codex Base URL**: `https://api.orcarouter.ai/v1`
+- **Authentication Method**: `auth_token` (keys start with `sk-orca-`)
+- **Codex Wire API**: `responses`
+- **Claude Code Default Models**: `anthropic/claude-sonnet-5` (primary), `anthropic/claude-haiku-4.5` (fast)
+- **Codex Default Model**: `openai/gpt-5.5`
+
+**Usage Example**:
+```bash
+# Claude Code
+npx zcf init -s -p orcarouter -k "sk-orca-xxx"
+
+# Codex
+npx zcf init -s -T codex -p orcarouter -k "sk-orca-xxx"
 ```
 
 ### Z.ai

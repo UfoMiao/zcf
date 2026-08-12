@@ -17,6 +17,7 @@ ZCFは現在、以下のAPIプロバイダープリセットをサポートし�
 | `aicodemirror` | AICodeMirror | グローバル高品質回線 | ✅ | ✅ | `auth_token` |
 | `aicodemirror-cn` | AICodeMirror CN | 中国最適化回線 | ✅ | ✅ | `auth_token` |
 | `crazyrouter` | Crazyrouter | AI API 集約ゲートウェイ | ✅ | ✅ | `api_key` |
+| `orcarouter` | OrcaRouter | AI モデルルーティングゲートウェイ | ✅ | ✅ | `auth_token` |
 | `z-ai` | Z.ai | Z.ai API サービス | ✅ | ❌ | `auth_token` |
 | `minimax` | MiniMax | MiniMax APIサービス | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (月の暗面) | Moonshot AIサービス | ✅ | ✅ | `auth_token` |
@@ -121,6 +122,33 @@ npx zcf init -s -p crazyrouter -k "your-api-key"
 
 # Codex
 npx zcf init -s -T codex -p crazyrouter -k "your-api-key"
+```
+
+### OrcaRouter
+
+**公式リンク**: [OrcaRouter](https://www.orcarouter.ai)
+
+**特徴**:
+- 🚀 AI モデルルーティングゲートウェイ — 1つの API キーで 150+ モデル（OpenAI、Anthropic、Google、DeepSeek、Qwen、MiniMax、xAI など）
+- 🌐 単一エンドポイントで Claude Code（Anthropic 互換）と Codex（OpenAI 互換）の両方をサポート
+- 🛡️ 同じエンドポイントで AI エージェント向けゲートウェイレベルのセキュリティ制御
+- 🔄 最適な上流モデルへ自動ルーティング
+
+**設定情報**:
+- **Claude Code Base URL**: `https://api.orcarouter.ai`
+- **Codex Base URL**: `https://api.orcarouter.ai/v1`
+- **認証方式**: `auth_token`（キーは `sk-orca-` で始まる）
+- **Codex Wire API**: `responses`
+- **Claude Code デフォルトモデル**: `anthropic/claude-sonnet-5`（プライマリ）、`anthropic/claude-haiku-4.5`（高速）
+- **Codex デフォルトモデル**: `openai/gpt-5.5`
+
+**使用例**:
+```bash
+# Claude Code
+npx zcf init -s -p orcarouter -k "sk-orca-xxx"
+
+# Codex
+npx zcf init -s -T codex -p orcarouter -k "sk-orca-xxx"
 ```
 
 ### Z.ai

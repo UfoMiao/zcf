@@ -161,6 +161,23 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
   },
 
   {
+    id: 'orcarouter',
+    name: 'OrcaRouter',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.orcarouter.ai',
+      authType: 'auth_token',
+      defaultModels: ['anthropic/claude-sonnet-5', 'anthropic/claude-haiku-4.5', 'anthropic/claude-sonnet-5', 'anthropic/claude-opus-5'],
+    },
+    codex: {
+      baseUrl: 'https://api.orcarouter.ai/v1',
+      wireApi: 'responses',
+      defaultModel: 'openai/gpt-5.5',
+    },
+    description: 'OrcaRouter AI model routing gateway',
+  },
+
+  {
     id: 'aihub',
     name: 'AIHub',
     supportedCodeTools: ['claude-code', 'codex'],
