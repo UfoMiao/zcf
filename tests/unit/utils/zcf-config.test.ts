@@ -189,6 +189,34 @@ system_prompt_style = "engineer-professional"`
       expect(result).toBeNull()
       expect(mockExists).toHaveBeenCalled()
     })
+
+    it('should keep reading shared config when Claude section was removed', () => {
+      mockExists.mockReturnValue(true)
+      mockReadFile.mockReturnValue('[general]\npreferredLang = "en"\n\n[codex]\nenabled = true')
+      mockParseToml.mockReturnValue({
+        version: '1.0.0',
+        lastUpdated: '2024-01-01',
+        general: {
+          preferredLang: 'en' as const,
+          currentTool: 'codex' as const,
+        },
+        codex: {
+          enabled: true,
+          systemPromptStyle: 'engineer-professional',
+        },
+      })
+
+      const result = readZcfConfig()
+
+      expect(result).toEqual({
+        version: '1.0.0',
+        preferredLang: 'en',
+        codeToolType: 'codex',
+        lastUpdated: '2024-01-01',
+        outputStyles: [],
+        defaultOutputStyle: undefined,
+      })
+    })
   })
 
   describe('writeZcfConfig', () => {

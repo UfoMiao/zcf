@@ -79,7 +79,7 @@ export async function addProviderToExisting(
     }
 
     // Add/update the provider section
-    upsertCodexProvider(provider.id, provider)
+    upsertCodexProvider(provider.id, provider, apiKey)
 
     // Write API key to auth file
     const authEntries: Record<string, string> = {}
@@ -150,7 +150,10 @@ export async function editExistingProvider(
 
     // Use targeted update - preserve MCP configs
     const { upsertCodexProvider } = await import('./codex-toml-updater')
-    upsertCodexProvider(providerId, updatedProvider)
+    if (updates.apiKey)
+      upsertCodexProvider(providerId, updatedProvider, updates.apiKey)
+    else
+      upsertCodexProvider(providerId, updatedProvider)
 
     // Update API key if provided
     if (updates.apiKey) {

@@ -17,6 +17,8 @@ import {
   updateCustomModel,
   updateDefaultModel,
 } from '../../../src/utils/config'
+// Usage: Verify ownership markers recorded for generated language directives.
+import { markZcfLanguageDirective } from '../../../src/utils/config-ownership'
 import * as fsOps from '../../../src/utils/fs-operations'
 import * as jsonConfig from '../../../src/utils/json-config'
 import * as permissionCleaner from '../../../src/utils/permission-cleaner'
@@ -193,6 +195,32 @@ describe('config utilities', () => {
       expect(writtenSettings.env.ANTHROPIC_DEFAULT_OPUS_MODEL).toBe('claude-3-opus-202412')
       expect(writtenSettings.env.ANTHROPIC_API_KEY).toBe('new-api-key')
       expect(writtenSettings.env.OTHER_ENV).toBe('keep-me')
+    })
+
+    it('should mark only API env values written by ZCF as managed', () => {
+      const defaultSettings = { env: {} }
+      const existingSettings = {
+        env: {
+          ANTHROPIC_MODEL: 'user-selected-model',
+          ANTHROPIC_DEFAULT_HAIKU_MODEL: 'user-selected-haiku',
+          OTHER_ENV: 'keep-me',
+        },
+      }
+
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce(defaultSettings)
+        .mockReturnValueOnce(existingSettings)
+
+      configureApi({
+        authType: 'api_key',
+        key: 'new-api-key',
+        url: 'https://api.test.com',
+      })
+
+      expect(claudeConfig.setPrimaryApiKey).toHaveBeenCalledWith({
+        ANTHROPIC_API_KEY: 'new-api-key',
+        ANTHROPIC_BASE_URL: 'https://api.test.com',
+      })
     })
 
     describe('claude Code 2.0 API enhancements', () => {
@@ -565,7 +593,7 @@ describe('config utilities', () => {
 
       expect(fsOps.writeFile).toHaveBeenCalledWith(
         join(CLAUDE_DIR, 'CLAUDE.md'),
-        'Always respond in Chinese-simplified',
+        markZcfLanguageDirective('Always respond in Chinese-simplified'),
       )
     })
 
@@ -574,7 +602,7 @@ describe('config utilities', () => {
 
       expect(fsOps.writeFile).toHaveBeenCalledWith(
         join(CLAUDE_DIR, 'CLAUDE.md'),
-        'Always respond in French',
+        markZcfLanguageDirective('Always respond in French'),
       )
     })
   })
@@ -637,6 +665,51 @@ describe('config utilities', () => {
         ['read', 'write'],
         ['write', 'execute'],
       )
+      expect(claudeConfig.markZcfPermissionEntries).toHaveBeenCalledWith(['read'])
+    })
+
+    it('records ownership for template includeCoAuthoredBy and hooks when they were absent', () => {
+      const templateSettings = {
+        includeCoAuthoredBy: false,
+        hooks: {},
+      }
+      const existingSettings = {
+        env: { USER_ENV: 'keep' },
+      }
+
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce(templateSettings)
+        .mockReturnValueOnce(existingSettings)
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+
+      mergeSettingsFile('/template/settings.json', '/target/settings.json')
+
+      expect(claudeConfig.markZcfSettingsField).toHaveBeenCalledWith('includeCoAuthoredBy', false)
+      expect(claudeConfig.markZcfSettingsField).toHaveBeenCalledWith('hooks', {})
+    })
+
+    it('does not claim pre-existing includeCoAuthoredBy or hooks values', () => {
+      const templateSettings = {
+        includeCoAuthoredBy: false,
+        hooks: {},
+      }
+      const existingSettings = {
+        includeCoAuthoredBy: false,
+        hooks: { Stop: [] },
+      }
+
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce(templateSettings)
+        .mockReturnValueOnce(existingSettings)
+      vi.mocked(fsOps.exists).mockReturnValue(true)
+
+      mergeSettingsFile('/template/settings.json', '/target/settings.json')
+
+      expect(claudeConfig.markZcfSettingsField).not.toHaveBeenCalledWith(
+        'includeCoAuthoredBy',
+        expect.anything(),
+      )
+      expect(claudeConfig.markZcfSettingsField).not.toHaveBeenCalledWith('hooks', expect.anything())
     })
   })
 
@@ -784,6 +857,17 @@ describe('config utilities', () => {
           primaryApiKey: expect.any(String),
         }),
       )
+    })
+
+    it('should not infer ownership metadata for pre-existing template settings', () => {
+      vi.mocked(jsonConfig.readJsonConfig)
+        .mockReturnValueOnce({ includeCoAuthoredBy: false, hooks: {} })
+        .mockReturnValueOnce({ primaryApiKey: 'zcf', zcfManagedEnvHashes: { ANTHROPIC_API_KEY: 'hash' } })
+        .mockReturnValueOnce({})
+
+      switchToOfficialLogin()
+
+      expect(jsonConfig.writeJsonConfig).toHaveBeenLastCalledWith(CLAUDE_VSC_CONFIG_FILE, {})
     })
 
     it('should keep hasCompletedOnboarding flag in ~/.claude.json', () => {

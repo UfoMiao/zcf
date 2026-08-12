@@ -22,6 +22,8 @@ export interface McpServerConfig {
 
 export interface ClaudeConfiguration {
   mcpServers: Record<string, McpServerConfig>
+  /** Ownership markers or SHA-256 fingerprints for MCP servers written by ZCF. */
+  zcfManagedMcpServers?: Record<string, string>
   hasCompletedOnboarding?: boolean
   customApiKeyResponses?: {
     approved: string[]

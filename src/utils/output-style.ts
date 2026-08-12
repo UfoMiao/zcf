@@ -6,7 +6,12 @@ import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
 import { CLAUDE_DIR, SETTINGS_FILE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
-import { copyFile, ensureDir, exists, removeFile } from './fs-operations'
+// Usage: Track ownership of the generated output-style setting.
+import { markZcfSettingsField } from './claude-config'
+// Usage: Mark generated style files and recognize files owned by ZCF.
+import { isZcfResourceContent, markZcfResourceContent } from './config-ownership'
+// Usage: Read, write, copy, and remove output-style files.
+import { copyFile, ensureDir, exists, readFile, removeFile, writeFile } from './fs-operations'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { addNumbersToChoices } from './prompt-helpers'
 import { promptBoolean } from './toggle-prompt'
@@ -93,6 +98,9 @@ export async function copyOutputStyles(selectedStyles: string[], lang: Supported
 
     if (exists(sourcePath)) {
       copyFile(sourcePath, destPath)
+      const content = typeof readFile === 'function' ? readFile(destPath) : null
+      if (content !== null && !isZcfResourceContent(content) && typeof writeFile === 'function')
+        writeFile(destPath, markZcfResourceContent(content))
     }
   }
 }
@@ -106,6 +114,8 @@ export function setGlobalDefaultOutputStyle(styleId: string): void {
   }
 
   writeJsonConfig(SETTINGS_FILE, updatedSettings)
+  if (OUTPUT_STYLES.find(style => style.id === styleId)?.isCustom)
+    markZcfSettingsField('outputStyle', styleId)
 }
 
 export function clearGlobalOutputStyle(): void {

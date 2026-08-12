@@ -8,6 +8,10 @@ const testConfigDir = mkdtempSync(join(tmpdir(), 'zcf-config-manager-test-'))
 const testConfigFile = join(testConfigDir, 'config.toml')
 const testSettingsFile = join(testConfigDir, 'settings.json')
 
+interface TestSettings {
+  env: Record<string, string | undefined>
+}
+
 vi.mock('../../../src/constants', async () => {
   const actual = await vi.importActual<typeof import('../../../src/constants')>('../../../src/constants')
   return {
@@ -271,8 +275,8 @@ describe('claudeCodeConfigManager', () => {
     it('api_key 模式应该写入API Key并清理旧Token', async () => {
       const settings = { env: { ANTHROPIC_AUTH_TOKEN: 'old-token', ANTHROPIC_BASE_URL: 'https://old.example.com' } }
       mockReadJsonConfig.mockImplementationOnce(() => settings)
-      let writtenSettings: any
-      mockWriteJsonConfig.mockImplementationOnce((_path, data) => {
+      let writtenSettings: TestSettings = { env: {} }
+      mockWriteJsonConfig.mockImplementationOnce((_path: string, data: TestSettings) => {
         writtenSettings = data
       })
 
@@ -294,8 +298,8 @@ describe('claudeCodeConfigManager', () => {
     it('auth_token 模式应该写入Token并清理API Key', async () => {
       const settings = { env: { ANTHROPIC_API_KEY: 'old-key', ANTHROPIC_BASE_URL: 'https://custom.example.com' } }
       mockReadJsonConfig.mockImplementationOnce(() => settings)
-      let writtenSettings: any
-      mockWriteJsonConfig.mockImplementationOnce((_path, data) => {
+      let writtenSettings: TestSettings = { env: {} }
+      mockWriteJsonConfig.mockImplementationOnce((_path: string, data: TestSettings) => {
         writtenSettings = data
       })
 
@@ -394,6 +398,39 @@ describe('claudeCodeConfigManager', () => {
       expect(writtenSettings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL).toBeUndefined()
       expect(writtenSettings.env.ANTHROPIC_DEFAULT_SONNET_MODEL).toBeUndefined()
       expect(writtenSettings.env.ANTHROPIC_DEFAULT_OPUS_MODEL).toBeUndefined()
+    })
+
+    it('模型配置应写入所有指定的模型环境变量并记录为ZCF管理项', async () => {
+      mockReadJsonConfig.mockImplementationOnce(() => ({ env: { CUSTOM_ENV: 'keep' } }))
+      let writtenSettings: TestSettings = { env: {} }
+      mockWriteJsonConfig.mockImplementationOnce((_path: string, data: TestSettings) => {
+        writtenSettings = data
+      })
+
+      await ClaudeCodeConfigManager.applyProfileSettings({
+        id: 'models',
+        name: 'Models',
+        authType: 'api_key',
+        apiKey: 'sk-models',
+        primaryModel: 'claude-primary',
+        defaultHaikuModel: 'claude-haiku',
+        defaultSonnetModel: 'claude-sonnet',
+        defaultOpusModel: 'claude-opus',
+      })
+
+      expect(writtenSettings.env).toMatchObject({
+        CUSTOM_ENV: 'keep',
+        ANTHROPIC_MODEL: 'claude-primary',
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku',
+        ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet',
+        ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus',
+      })
+      expect(mockSetPrimaryApiKey).toHaveBeenCalledWith(expect.objectContaining({
+        ANTHROPIC_MODEL: 'claude-primary',
+        ANTHROPIC_DEFAULT_HAIKU_MODEL: 'claude-haiku',
+        ANTHROPIC_DEFAULT_SONNET_MODEL: 'claude-sonnet',
+        ANTHROPIC_DEFAULT_OPUS_MODEL: 'claude-opus',
+      }))
     })
   })
 

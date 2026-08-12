@@ -9,7 +9,16 @@ import inquirer from 'inquirer'
 import { dirname, join } from 'pathe'
 import { AI_OUTPUT_LANGUAGES, CLAUDE_DIR, CLAUDE_VSC_CONFIG_FILE, SETTINGS_FILE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
-import { addCompletedOnboarding, setPrimaryApiKey } from './claude-config'
+// Usage: Manage Claude settings and record ownership of ZCF-managed entries.
+import {
+  addCompletedOnboarding,
+  markZcfPermissionEntries,
+  markZcfSettingsField,
+  markZcfTemplateEnvValues,
+  setPrimaryApiKey,
+} from './claude-config'
+// Usage: Track ownership of the generated language directive.
+import { markZcfLanguageDirective } from './config-ownership'
 import { clearModelEnv, MODEL_ENV_KEYS } from './config.model-keys'
 import {
   copyDir,
@@ -87,12 +96,36 @@ function getDefaultSettings(): ClaudeSettings {
   }
 }
 
+function markTemplateOwnership(
+  templateSettings: ClaudeSettings,
+  existingSettings: ClaudeSettings | null | undefined,
+  mergedSettings: ClaudeSettings,
+): void {
+  markZcfTemplateEnvValues(templateSettings.env, existingSettings?.env)
+
+  for (const field of ['includeCoAuthoredBy', 'hooks'] as const) {
+    if (!Object.prototype.hasOwnProperty.call(existingSettings || {}, field)
+      && Object.prototype.hasOwnProperty.call(mergedSettings, field)) {
+      markZcfSettingsField(field, mergedSettings[field])
+    }
+  }
+
+  const templateAllow = Array.isArray(templateSettings.permissions?.allow)
+    ? templateSettings.permissions.allow
+    : []
+  const existingAllow = Array.isArray(existingSettings?.permissions?.allow)
+    ? existingSettings.permissions.allow
+    : []
+  markZcfPermissionEntries(templateAllow.filter(permission => !existingAllow.includes(permission)))
+}
+
 export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
   if (!apiConfig)
     return null
 
   // Get default configuration from template
-  let settings = getDefaultSettings()
+  const templateSettings = getDefaultSettings()
+  let settings = templateSettings
 
   // Merge with existing user configuration if available
   const existingSettings = readJsonConfig<ClaudeSettings>(SETTINGS_FILE)
@@ -106,14 +139,18 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
     settings.env = {}
   }
 
+  const managedEnv: Record<string, string> = {}
+
   // Update API configuration based on auth type
   if (apiConfig.authType === 'api_key') {
     settings.env.ANTHROPIC_API_KEY = apiConfig.key
+    managedEnv.ANTHROPIC_API_KEY = apiConfig.key
     // Remove auth token if switching to API key
     delete settings.env.ANTHROPIC_AUTH_TOKEN
   }
   else if (apiConfig.authType === 'auth_token') {
     settings.env.ANTHROPIC_AUTH_TOKEN = apiConfig.key
+    managedEnv.ANTHROPIC_AUTH_TOKEN = apiConfig.key
     // Remove API key if switching to auth token
     delete settings.env.ANTHROPIC_API_KEY
   }
@@ -121,14 +158,20 @@ export function configureApi(apiConfig: ApiConfig | null): ApiConfig | null {
   // Always update URL if provided
   if (apiConfig.url) {
     settings.env.ANTHROPIC_BASE_URL = apiConfig.url
+    managedEnv.ANTHROPIC_BASE_URL = apiConfig.url
   }
 
   writeJsonConfig(SETTINGS_FILE, settings)
 
+  // The template is merged into the user's settings during API setup. Record
+  // only fields and permission entries that were absent beforehand so a later
+  // ZCF-only uninstall cannot remove user-owned values.
+  markTemplateOwnership(templateSettings, existingSettings, settings)
+
   // Set primaryApiKey for third-party API (Claude Code 2.0 requirement)
   if (apiConfig.authType) {
     try {
-      setPrimaryApiKey()
+      setPrimaryApiKey(managedEnv)
     }
     catch (error) {
       ensureI18nInitialized()
@@ -261,6 +304,7 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
     // If target doesn't exist, just copy template
     if (!exists(targetPath)) {
       writeJsonConfig(targetPath, templateSettings)
+      markTemplateOwnership(templateSettings, undefined, templateSettings)
       return
     }
 
@@ -292,6 +336,7 @@ export function mergeSettingsFile(templatePath: string, targetPath: string): voi
 
     // Write merged settings
     writeJsonConfig(targetPath, mergedSettings)
+    markTemplateOwnership(templateSettings, existingSettings, mergedSettings)
   }
   catch (error) {
     console.error('Failed to merge settings', error)
@@ -391,8 +436,9 @@ export function applyAiLanguageDirective(aiOutputLang: AiOutputLanguage | string
     directive = `Always respond in ${aiOutputLang}`
   }
 
-  // Write to CLAUDE.md file directly without markers
-  writeFile(claudeFile, directive)
+  // Keep an ownership fingerprint so ZCF-only uninstall can distinguish this
+  // directive from a user-authored CLAUDE.md file.
+  writeFile(claudeFile, markZcfLanguageDirective(directive))
 }
 
 /**
@@ -414,9 +460,24 @@ export function switchToOfficialLogin(): boolean {
     writeJsonConfig(SETTINGS_FILE, settings)
 
     // 2. Clean ~/.claude/config.json - remove primaryApiKey
-    const vscConfig = readJsonConfig<{ primaryApiKey?: string }>(CLAUDE_VSC_CONFIG_FILE)
+    const vscConfig = readJsonConfig<{
+      primaryApiKey?: string
+      zcfManagedEnvHashes?: Record<string, string>
+      zcfManagedSettingsFields?: string[]
+      zcfManagedSettingsHashes?: Record<string, string>
+    }>(CLAUDE_VSC_CONFIG_FILE)
     if (vscConfig) {
+      if (vscConfig.primaryApiKey === 'zcf') {
+        const managedSettingsFields = new Set(vscConfig.zcfManagedSettingsFields || [])
+        const managedSettingsHashes = { ...(vscConfig.zcfManagedSettingsHashes || {}) }
+
+        if (managedSettingsFields.size > 0)
+          vscConfig.zcfManagedSettingsFields = [...managedSettingsFields]
+        if (Object.keys(managedSettingsHashes).length > 0)
+          vscConfig.zcfManagedSettingsHashes = managedSettingsHashes
+      }
       delete vscConfig.primaryApiKey
+      delete vscConfig.zcfManagedEnvHashes
       writeJsonConfig(CLAUDE_VSC_CONFIG_FILE, vscConfig)
     }
 

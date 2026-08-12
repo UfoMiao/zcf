@@ -1,5 +1,7 @@
 import type { ClaudeSettings } from '../types/config'
 import { SETTINGS_FILE } from '../constants'
+// Usage: Track ownership of the generated status-line setting.
+import { markZcfSettingsField } from './claude-config'
 import { exists } from './fs-operations'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { getPlatformStatusLineConfig } from './statusline-validator'
@@ -23,6 +25,7 @@ export function addCCometixLineConfig(): boolean {
 
     // Write updated settings
     writeJsonConfig(SETTINGS_FILE, settings)
+    markZcfSettingsField('statusLine', statusLineConfig)
 
     return true
   }

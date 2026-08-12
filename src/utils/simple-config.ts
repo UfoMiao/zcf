@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'pathe'
 import { exec } from 'tinyexec'
 import { CLAUDE_DIR, SETTINGS_FILE } from '../constants.js'
+// Usage: Track ownership of generated permissions and settings fields.
+import { markZcfPermissionEntries, markZcfSettingsField, markZcfTemplateEnvValues } from './claude-config.js'
 import { ensureDir } from './fs-operations.js'
 import { mergeAndCleanPermissions } from './permission-cleaner.js'
 import { getPlatform } from './platform.js'
@@ -41,6 +43,7 @@ function saveSettings(settings: any): void {
 export async function importRecommendedEnv(): Promise<void> {
   const templateSettings = getTemplateSettings()
   const currentSettings = loadCurrentSettings()
+  const existingEnv = currentSettings.env
 
   // Merge env variables
   currentSettings.env = {
@@ -49,12 +52,19 @@ export async function importRecommendedEnv(): Promise<void> {
   }
 
   saveSettings(currentSettings)
+  markZcfTemplateEnvValues(templateSettings.env, existingEnv)
 }
 
 // Import recommended permissions
 export async function importRecommendedPermissions(): Promise<void> {
   const templateSettings = getTemplateSettings()
   const currentSettings = loadCurrentSettings()
+  const existingAllow = Array.isArray(currentSettings.permissions?.allow)
+    ? currentSettings.permissions.allow
+    : []
+  const templateAllow = Array.isArray(templateSettings.permissions?.allow)
+    ? templateSettings.permissions.allow
+    : []
 
   // Merge permissions with cleanup
   if (templateSettings.permissions && templateSettings.permissions.allow) {
@@ -71,6 +81,8 @@ export async function importRecommendedPermissions(): Promise<void> {
   }
 
   saveSettings(currentSettings)
+  markZcfSettingsField('permissions')
+  markZcfPermissionEntries(templateAllow.filter((permission: string) => !existingAllow.includes(permission)))
 }
 
 // Open settings.json in system editor

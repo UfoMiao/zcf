@@ -11,6 +11,8 @@
 
 import type { CodexMcpService, CodexProvider } from './codex'
 import { CODEX_CONFIG_FILE, CODEX_DIR } from '../../constants'
+// Usage: Fingerprint provider credentials without persisting their plaintext values.
+import { hashConfigValue } from '../config-ownership'
 import { ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { normalizeTomlPath } from '../platform'
 import { editToml, parseToml } from '../toml-edit'
@@ -107,6 +109,7 @@ export function updateCodexApiFields(fields: {
 
   if (fields.model !== undefined) {
     content = updateTopLevelTomlField(content, 'model', fields.model)
+    content = updateTopLevelOwnershipMarker(content, 'model', fields.model)
   }
 
   if (fields.modelProvider !== undefined) {
@@ -116,9 +119,167 @@ export function updateCodexApiFields(fields: {
       fields.modelProvider,
       { commented: fields.modelProviderCommented },
     )
+    content = updateTopLevelOwnershipMarker(content, 'model_provider', fields.modelProvider)
   }
 
   writeFile(CODEX_CONFIG_FILE, content)
+}
+
+const ZCF_PROVIDER_MARKER_PREFIX = '# ZCF managed provider:'
+const ZCF_PROVIDER_SNAPSHOT_PREFIX = '# ZCF managed provider snapshot:'
+const ZCF_TOP_LEVEL_MARKER_PREFIX = '# ZCF managed top-level:'
+const ZCF_MCP_MARKER_PREFIX = '# ZCF managed MCP:'
+
+function updateTopLevelOwnershipMarker(content: string, field: string, value: string | null): string {
+  const firstSectionMatch = content.match(/^\[/m)
+  const topLevelEnd = firstSectionMatch?.index ?? content.length
+  let topLevel = content.slice(0, topLevelEnd)
+  const rest = content.slice(topLevelEnd)
+  const markerPattern = new RegExp(
+    `^${escapeRegex(ZCF_TOP_LEVEL_MARKER_PREFIX)}\\s*${escapeRegex(field)}\\s+`
+    + '[a-f0-9]{64}\\s*$',
+    'im',
+  )
+
+  if (value === null) {
+    topLevel = topLevel.replace(markerPattern, '').replace(/\n{3,}/g, '\n\n')
+  }
+  else {
+    const marker = `${ZCF_TOP_LEVEL_MARKER_PREFIX} ${field} ${hashConfigValue(value)}`
+    if (markerPattern.test(topLevel)) {
+      topLevel = topLevel.replace(markerPattern, marker)
+    }
+    else {
+      const fieldPattern = new RegExp(`^(#\\s*)?${escapeRegex(field)}\\s*=`, 'm')
+      const fieldMatch = fieldPattern.exec(topLevel)
+      if (fieldMatch && fieldMatch.index !== undefined) {
+        topLevel = `${topLevel.slice(0, fieldMatch.index)}${marker}\n${topLevel.slice(fieldMatch.index)}`
+      }
+      else {
+        topLevel = `${topLevel.trimEnd()}\n${marker}\n`
+      }
+    }
+  }
+
+  return topLevel + rest
+}
+
+function getMcpSectionBounds(content: string, serviceId: string): { start: number, end: number } | null {
+  const lines = content.split('\n')
+  const headerPattern = new RegExp(`^\\[mcp_servers\\.${escapeRegex(serviceId)}\\]\\s*$`, 'i')
+  const start = lines.findIndex(line => headerPattern.test(line.trim()))
+  if (start < 0)
+    return null
+
+  const nextSection = lines.findIndex((line, index) => index > start && /^\s*\[/.test(line))
+  return { start, end: nextSection >= 0 ? nextSection : lines.length }
+}
+
+function getMcpOwnershipMarker(serviceId: string, service: CodexMcpService): string {
+  const apiKey = serviceId.toLowerCase() === 'exa' ? service.env?.EXA_API_KEY : undefined
+  return typeof apiKey === 'string'
+    ? `${ZCF_MCP_MARKER_PREFIX} ${serviceId} ${hashConfigValue(apiKey)}`
+    : `${ZCF_MCP_MARKER_PREFIX} ${serviceId}`
+}
+
+function ensureZcfMcpMarker(content: string, serviceId: string, service: CodexMcpService): string {
+  const bounds = getMcpSectionBounds(content, serviceId)
+  if (!bounds)
+    return content
+
+  const lines = content.split('\n')
+  const markerPattern = new RegExp(
+    `^${escapeRegex(ZCF_MCP_MARKER_PREFIX)}\\s*${escapeRegex(serviceId)}(?:\\s+[a-f0-9]{64})?\\s*$`,
+    'i',
+  )
+  const markerIndex = lines.findIndex((line, index) => index >= bounds.start
+    && index < bounds.end
+    && markerPattern.test(line.trim()))
+  if (markerIndex >= 0) {
+    if (serviceId.toLowerCase() === 'exa' && typeof service.env?.EXA_API_KEY === 'string')
+      lines[markerIndex] = getMcpOwnershipMarker(serviceId, service)
+    return lines.join('\n')
+  }
+
+  lines.splice(bounds.start + 1, 0, getMcpOwnershipMarker(serviceId, service))
+  return lines.join('\n')
+}
+
+function getProviderSectionBounds(content: string, providerId: string): { start: number, end: number } | null {
+  const lines = content.split('\n')
+  const headerPattern = new RegExp(`^\\[model_providers\\.${escapeRegex(providerId)}\\]\\s*$`, 'i')
+  const start = lines.findIndex(line => headerPattern.test(line.trim()))
+  if (start < 0)
+    return null
+
+  const nextSection = lines.findIndex((line, index) => index > start && /^\s*\[/.test(line))
+  return { start, end: nextSection >= 0 ? nextSection : lines.length }
+}
+
+function ensureZcfProviderMarker(content: string, providerId: string, managedCredential?: string): string {
+  const bounds = getProviderSectionBounds(content, providerId)
+  if (!bounds)
+    return content
+
+  const lines = content.split('\n')
+  const markerPattern = new RegExp(
+    `^${escapeRegex(ZCF_PROVIDER_MARKER_PREFIX)}\\s*${escapeRegex(providerId)}(?:\\s+[a-f0-9]{64})?\\s*$`,
+    'i',
+  )
+  const markerIndex = lines.findIndex((line, index) => index >= bounds.start
+    && index < bounds.end
+    && markerPattern.test(line.trim()))
+  const marker = typeof managedCredential === 'string'
+    ? `${ZCF_PROVIDER_MARKER_PREFIX} ${providerId} ${hashConfigValue(managedCredential)}`
+    : `${ZCF_PROVIDER_MARKER_PREFIX} ${providerId}`
+
+  if (markerIndex >= 0) {
+    if (typeof managedCredential === 'string')
+      lines[markerIndex] = marker
+    return lines.join('\n')
+  }
+
+  lines.splice(bounds.start + 1, 0, marker)
+  return lines.join('\n')
+}
+
+function ensureZcfProviderSnapshotMarker(content: string, providerId: string): string {
+  const bounds = getProviderSectionBounds(content, providerId)
+  if (!bounds)
+    return content
+
+  const lines = content.split('\n')
+  const isOwnershipMarker = (line: string): boolean => {
+    const trimmed = line.trim()
+    const providerPattern = new RegExp(
+      `^${escapeRegex(ZCF_PROVIDER_MARKER_PREFIX)}\\s*${escapeRegex(providerId)}`
+      + '(?:\\s+[a-f0-9]{64})?\\s*$',
+      'i',
+    )
+    const snapshotPattern = new RegExp(
+      `^${escapeRegex(ZCF_PROVIDER_SNAPSHOT_PREFIX)}\\s*${escapeRegex(providerId)}`
+      + '(?:\\s+[a-f0-9]{64})?\\s*$',
+      'i',
+    )
+    return providerPattern.test(trimmed) || snapshotPattern.test(trimmed)
+  }
+  const body = lines.slice(bounds.start + 1, bounds.end)
+    .filter(line => !isOwnershipMarker(line))
+    .join('\n')
+    .trim()
+  const marker = `${ZCF_PROVIDER_SNAPSHOT_PREFIX} ${providerId} ${hashConfigValue(body)}`
+  const markerPattern = new RegExp(
+    `^${escapeRegex(ZCF_PROVIDER_SNAPSHOT_PREFIX)}\\s*${escapeRegex(providerId)}(?:\\s+[a-f0-9]{64})?\\s*$`,
+    'i',
+  )
+  const markerIndex = lines.findIndex((line, index) => index >= bounds.start
+    && index < bounds.end
+    && markerPattern.test(line.trim()))
+  if (markerIndex >= 0)
+    lines[markerIndex] = marker
+  else
+    lines.splice(bounds.start + 1, 0, marker)
+  return lines.join('\n')
 }
 
 /**
@@ -129,13 +290,24 @@ export function updateCodexApiFields(fields: {
  * @param providerId - Provider ID
  * @param provider - Provider configuration
  */
-export function upsertCodexProvider(providerId: string, provider: CodexProvider): void {
+export function upsertCodexProvider(
+  providerId: string,
+  provider: CodexProvider,
+  managedCredential?: string,
+): void {
   if (!exists(CODEX_CONFIG_FILE)) {
     ensureDir(CODEX_DIR)
     writeFile(CODEX_CONFIG_FILE, '')
   }
 
   let content = readFile(CODEX_CONFIG_FILE) || ''
+  const existingSection = getProviderSectionBounds(content, providerId)
+  const existingLines = existingSection ? content.split('\n').slice(existingSection.start, existingSection.end) : []
+  const markerPattern = new RegExp(
+    `^${escapeRegex(ZCF_PROVIDER_MARKER_PREFIX)}\\s*${escapeRegex(providerId)}(?:\\s+[a-f0-9]{64})?\\s*$`,
+    'i',
+  )
+  const hasZcfMarker = existingLines.some(line => markerPattern.test(line.trim()))
   const basePath = `model_providers.${providerId}`
 
   // Update each field individually to preserve formatting
@@ -148,6 +320,14 @@ export function upsertCodexProvider(providerId: string, provider: CodexProvider)
   if (provider.model) {
     content = editToml(content, `${basePath}.model`, provider.model)
   }
+
+  // New provider sections need an ownership marker so ZCF-only uninstall can
+  // remove arbitrary provider IDs without mistaking existing user sections
+  // for ZCF-managed configuration.
+  if (!existingSection || hasZcfMarker)
+    content = ensureZcfProviderMarker(content, providerId, managedCredential)
+  if (!existingSection || hasZcfMarker)
+    content = ensureZcfProviderSnapshotMarker(content, providerId)
 
   writeFile(CODEX_CONFIG_FILE, content)
 }
@@ -195,6 +375,13 @@ export function upsertCodexMcpService(serviceId: string, service: CodexMcpServic
 
   let content = readFile(CODEX_CONFIG_FILE) || ''
   const basePath = `mcp_servers.${serviceId}`
+  const existingSection = getMcpSectionBounds(content, serviceId)
+  const existingLines = existingSection ? content.split('\n').slice(existingSection.start, existingSection.end) : []
+  const markerPattern = new RegExp(
+    `^${escapeRegex(ZCF_MCP_MARKER_PREFIX)}\\s*${escapeRegex(serviceId)}(?:\\s+[a-f0-9]{64})?\\s*$`,
+    'i',
+  )
+  const hasZcfMarker = existingLines.some(line => markerPattern.test(line.trim()))
 
   // Check if this is an existing service with 'url' field (SSE protocol)
   // If so, we should NOT add command/args fields
@@ -224,6 +411,11 @@ export function upsertCodexMcpService(serviceId: string, service: CodexMcpServic
     }
   }
 
+  // Existing unmarked services are user-owned, even when ZCF updates their
+  // managed fields. Only new sections or previously marked sections may be
+  // claimed for ZCF-only cleanup.
+  if (!existingSection || hasZcfMarker)
+    content = ensureZcfMcpMarker(content, serviceId, service)
   writeFile(CODEX_CONFIG_FILE, content)
 }
 

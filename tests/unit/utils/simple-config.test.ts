@@ -7,6 +7,9 @@ vi.mock('node:fs')
 vi.mock('tinyexec')
 vi.mock('../../../src/utils/fs-operations', () => ({
   ensureDir: vi.fn(),
+  exists: vi.fn(() => false),
+  readFile: vi.fn(() => '{}'),
+  writeFile: vi.fn(),
 }))
 vi.mock('../../../src/utils/platform', () => ({
   getPlatform: vi.fn().mockReturnValue('macos'),
@@ -21,6 +24,11 @@ vi.mock('../../../src/utils/permission-cleaner', () => ({
     })
     return result
   }),
+}))
+vi.mock('../../../src/utils/claude-config.js', () => ({
+  markZcfPermissionEntries: vi.fn(),
+  markZcfSettingsField: vi.fn(),
+  markZcfTemplateEnvValues: vi.fn(),
 }))
 
 describe('simple-config utilities', () => {
@@ -152,6 +160,32 @@ describe('simple-config utilities', () => {
       expect(savedSettings.permissions.allow).toContain('Read')
       expect(savedSettings.permissions.allow).toContain('Write')
       expect(savedSettings.permissions.allow).toContain('Bash')
+    })
+
+    it('records only permissions that were not already present', async () => {
+      const templateSettings = {
+        permissions: {
+          allow: ['Bash', 'Read', 'Write'],
+        },
+      }
+      const currentSettings = {
+        permissions: {
+          allow: ['Bash', 'Read'],
+        },
+      }
+
+      vi.mocked(fs.existsSync).mockReturnValue(true)
+      vi.mocked(fs.readFileSync).mockImplementation((path) => {
+        if (path.toString().includes('templates/claude-code/common/settings.json')) {
+          return JSON.stringify(templateSettings)
+        }
+        return JSON.stringify(currentSettings)
+      })
+
+      const { markZcfPermissionEntries } = await import('../../../src/utils/claude-config.js')
+      await importRecommendedPermissions()
+
+      expect(markZcfPermissionEntries).toHaveBeenCalledWith(['Write'])
     })
 
     it('should handle missing permissions in template', async () => {

@@ -222,14 +222,19 @@ export class ClaudeCodeConfigManager {
       // Clean model variables upfront; will re-set based on profile below
       clearModelEnv(settings.env)
 
+      const managedEnv: Record<string, string> = {}
       let shouldRestartCcr = false
 
       if (profile.authType === 'api_key') {
         settings.env.ANTHROPIC_API_KEY = profile.apiKey
+        if (profile.apiKey)
+          managedEnv.ANTHROPIC_API_KEY = profile.apiKey
         delete settings.env.ANTHROPIC_AUTH_TOKEN
       }
       else if (profile.authType === 'auth_token') {
         settings.env.ANTHROPIC_AUTH_TOKEN = profile.apiKey
+        if (profile.apiKey)
+          managedEnv.ANTHROPIC_AUTH_TOKEN = profile.apiKey
         delete settings.env.ANTHROPIC_API_KEY
       }
       else if (profile.authType === 'ccr_proxy') {
@@ -243,17 +248,23 @@ export class ClaudeCodeConfigManager {
         const port = ccrConfig.PORT || 3456
         const apiKey = ccrConfig.APIKEY || 'sk-zcf-x-ccr'
 
-        settings.env.ANTHROPIC_BASE_URL = `http://${host}:${port}`
+        const baseUrl = `http://${host}:${port}`
+        settings.env.ANTHROPIC_BASE_URL = baseUrl
         settings.env.ANTHROPIC_API_KEY = apiKey
+        managedEnv.ANTHROPIC_BASE_URL = baseUrl
+        managedEnv.ANTHROPIC_API_KEY = apiKey
         delete settings.env.ANTHROPIC_AUTH_TOKEN
         shouldRestartCcr = true
       }
 
       if (profile.authType !== 'ccr_proxy') {
-        if (profile.baseUrl)
+        if (profile.baseUrl) {
           settings.env.ANTHROPIC_BASE_URL = profile.baseUrl
-        else
+          managedEnv.ANTHROPIC_BASE_URL = profile.baseUrl
+        }
+        else {
           delete settings.env.ANTHROPIC_BASE_URL
+        }
       }
 
       // Apply model configuration if provided
@@ -265,14 +276,22 @@ export class ClaudeCodeConfigManager {
       )
 
       if (hasModelConfig) {
-        if (profile.primaryModel)
+        if (profile.primaryModel) {
           settings.env.ANTHROPIC_MODEL = profile.primaryModel
-        if (profile.defaultHaikuModel)
+          managedEnv.ANTHROPIC_MODEL = profile.primaryModel
+        }
+        if (profile.defaultHaikuModel) {
           settings.env.ANTHROPIC_DEFAULT_HAIKU_MODEL = profile.defaultHaikuModel
-        if (profile.defaultSonnetModel)
+          managedEnv.ANTHROPIC_DEFAULT_HAIKU_MODEL = profile.defaultHaikuModel
+        }
+        if (profile.defaultSonnetModel) {
           settings.env.ANTHROPIC_DEFAULT_SONNET_MODEL = profile.defaultSonnetModel
-        if (profile.defaultOpusModel)
+          managedEnv.ANTHROPIC_DEFAULT_SONNET_MODEL = profile.defaultSonnetModel
+        }
+        if (profile.defaultOpusModel) {
           settings.env.ANTHROPIC_DEFAULT_OPUS_MODEL = profile.defaultOpusModel
+          managedEnv.ANTHROPIC_DEFAULT_OPUS_MODEL = profile.defaultOpusModel
+        }
       }
       else {
         // No model config in profile, ensure all model envs are removed
@@ -282,7 +301,7 @@ export class ClaudeCodeConfigManager {
       writeJsonConfig(SETTINGS_FILE, settings)
 
       const { setPrimaryApiKey, addCompletedOnboarding } = await import('./claude-config')
-      setPrimaryApiKey()
+      setPrimaryApiKey(managedEnv)
       addCompletedOnboarding()
 
       if (shouldRestartCcr) {

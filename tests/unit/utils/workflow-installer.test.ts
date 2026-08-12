@@ -1,20 +1,20 @@
 import type { WorkflowConfig, WorkflowType } from '../../../src/types/workflow'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, rm } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import inquirer from 'inquirer'
-import { dirname, join } from 'pathe'
+import { dirname } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as workflowConfig from '../../../src/config/workflows'
-import { CLAUDE_DIR } from '../../../src/constants'
 import * as skillsInstaller from '../../../src/utils/skills-installer'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
+
+const mockRemoveZcfWorkflowArtifacts = vi.hoisted(() => vi.fn())
 
 vi.mock('node:fs')
 vi.mock('node:fs/promises', () => ({
   copyFile: vi.fn(),
   mkdir: vi.fn(),
-  rm: vi.fn(),
   readFile: vi.fn(),
   writeFile: vi.fn(),
 }))
@@ -23,6 +23,11 @@ vi.mock('inquirer')
 vi.mock('../../../src/utils/skills-installer', () => ({
   installSkills: vi.fn(),
   commandFileToSkillName: vi.fn((filename: string) => filename.replace(/\.md$/, '').replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()),
+}))
+vi.mock('../../../src/utils/uninstaller', () => ({
+  ZcfUninstaller: vi.fn(() => ({
+    removeZcfWorkflowArtifacts: mockRemoveZcfWorkflowArtifacts,
+  })),
 }))
 vi.mock('../../../src/config/workflows', () => ({
   getOrderedWorkflows: vi.fn(),
@@ -48,6 +53,13 @@ vi.mock('../../../src/i18n', async (importOriginal) => {
 describe('workflow-installer utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockRemoveZcfWorkflowArtifacts.mockResolvedValue({
+      success: true,
+      removed: [],
+      removedConfigs: [],
+      errors: [],
+      warnings: [],
+    })
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(skillsInstaller.installSkills).mockResolvedValue({
@@ -170,7 +182,6 @@ describe('workflow-installer utilities', () => {
         selectedWorkflows: ['commonTools'],
       })
       vi.mocked(existsSync).mockReturnValue(true)
-      vi.mocked(rm).mockResolvedValue(undefined)
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
       vi.mocked(skillsInstaller.installSkills).mockResolvedValue({
@@ -178,17 +189,19 @@ describe('workflow-installer utilities', () => {
         installedSkills: ['init-project'],
         errors: [],
       })
+      mockRemoveZcfWorkflowArtifacts.mockResolvedValue({
+        success: true,
+        removed: ['~/.claude/commands/workflow.md', '~/.claude/agents/planner.md'],
+        removedConfigs: [],
+        errors: [],
+        warnings: [],
+      })
 
       await selectAndInstallWorkflows('zh-CN')
 
-      expect(rm).toHaveBeenCalledWith(
-        join(CLAUDE_DIR, 'commands', 'workflow.md'),
-        { recursive: true, force: true },
-      )
-      expect(rm).toHaveBeenCalledWith(
-        join(CLAUDE_DIR, 'agents', 'planner.md'),
-        { recursive: true, force: true },
-      )
+      expect(mockRemoveZcfWorkflowArtifacts).toHaveBeenCalledOnce()
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('~/.claude/commands/workflow.md'))
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining('~/.claude/agents/planner.md'))
     })
 
     it('should install skills via skills CLI for selected workflows', async () => {

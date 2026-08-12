@@ -93,7 +93,7 @@ describe('codex-incremental-config integration', () => {
       expect(addResult.addedProvider).toEqual(newProvider)
 
       // Verify add operation calls - new implementation uses targeted upsertCodexProvider
-      expect(upsertCodexProvider).toHaveBeenCalledWith(newProvider.id, newProvider)
+      expect(upsertCodexProvider).toHaveBeenCalledWith(newProvider.id, newProvider, 'api-key-2')
       expect(writeAuthFile).toHaveBeenCalledWith({
         [newProvider.tempEnvKey]: 'api-key-2',
       })
@@ -226,7 +226,7 @@ describe('codex-incremental-config integration', () => {
       expect(addResult.success).toBe(true)
       // New implementation uses targeted upsertCodexProvider - only modifies provider section
       // This preserves MCP services and other config automatically
-      expect(upsertCodexProvider).toHaveBeenCalledWith('provider-3', newProviderToAdd)
+      expect(upsertCodexProvider).toHaveBeenCalledWith('provider-3', newProviderToAdd, 'api-key-3')
 
       // Note: The new implementation doesn't use writeCodexConfig anymore
       // Instead, it uses targeted TOML updates that preserve other sections automatically
@@ -249,7 +249,7 @@ describe('codex-incremental-config integration', () => {
       expect(addResult1.addedProvider).toEqual(newProvider)
       // New implementation uses targeted updates
       expect(updateCodexApiFields).toHaveBeenCalled()
-      expect(upsertCodexProvider).toHaveBeenCalledWith(newProvider.id, newProvider)
+      expect(upsertCodexProvider).toHaveBeenCalledWith(newProvider.id, newProvider, 'api-key')
 
       // Test 2: Duplicate provider
       readCodexConfig.mockReturnValue(initialConfig)

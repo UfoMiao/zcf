@@ -16,7 +16,9 @@ vi.mock('../../../src/utils/fs-operations', () => ({
   ensureDir: vi.fn(),
   copyFile: vi.fn(),
   exists: vi.fn(),
+  readFile: vi.fn(() => ''),
   removeFile: vi.fn(),
+  writeFile: vi.fn(),
 }))
 vi.mock('../../../src/utils/json-config', () => ({
   readJsonConfig: vi.fn(),

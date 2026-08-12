@@ -373,13 +373,14 @@ function updateTomlConfig(configPath: string, updates: PartialZcfTomlConfig): Zc
  * Convert TOML config to legacy ZcfConfig format for backward compatibility
  */
 function convertTomlToLegacyConfig(tomlConfig: ZcfTomlConfig): ZcfConfig {
+  const claudeCodeConfig = tomlConfig.claudeCode || { outputStyles: [] }
   return {
     version: tomlConfig.version,
     preferredLang: tomlConfig.general.preferredLang,
     templateLang: tomlConfig.general.templateLang,
     aiOutputLang: tomlConfig.general.aiOutputLang,
-    outputStyles: tomlConfig.claudeCode.outputStyles,
-    defaultOutputStyle: tomlConfig.claudeCode.defaultOutputStyle,
+    outputStyles: claudeCodeConfig.outputStyles,
+    defaultOutputStyle: claudeCodeConfig.defaultOutputStyle,
     codeToolType: tomlConfig.general.currentTool,
     lastUpdated: tomlConfig.lastUpdated,
   }

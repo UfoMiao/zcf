@@ -1,6 +1,6 @@
 import type { WorkflowConfig } from '../../../src/types/workflow'
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, rm } from 'node:fs/promises'
+import { copyFile, mkdir } from 'node:fs/promises'
 import inquirer from 'inquirer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -11,6 +11,8 @@ import { ensureI18nInitialized } from '../../../src/i18n'
 import * as skillsInstaller from '../../../src/utils/skills-installer'
 import { selectAndInstallWorkflows } from '../../../src/utils/workflow-installer'
 
+const mockRemoveZcfWorkflowArtifacts = vi.hoisted(() => vi.fn())
+
 vi.mock('node:fs')
 vi.mock('node:fs/promises')
 vi.mock('inquirer')
@@ -18,11 +20,23 @@ vi.mock('../../../src/utils/skills-installer', () => ({
   installSkills: vi.fn(),
   commandFileToSkillName: vi.fn((filename: string) => filename.replace(/\.md$/, '').replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase()),
 }))
+vi.mock('../../../src/utils/uninstaller', () => ({
+  ZcfUninstaller: vi.fn(() => ({
+    removeZcfWorkflowArtifacts: mockRemoveZcfWorkflowArtifacts,
+  })),
+}))
 
 describe('workflows edge cases and error handling', () => {
   beforeEach(() => {
     ensureI18nInitialized()
     vi.clearAllMocks()
+    mockRemoveZcfWorkflowArtifacts.mockResolvedValue({
+      success: true,
+      removed: [],
+      removedConfigs: [],
+      errors: [],
+      warnings: [],
+    })
     vi.spyOn(console, 'log').mockImplementation(() => {})
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.mocked(skillsInstaller.installSkills).mockResolvedValue({
@@ -118,21 +132,16 @@ describe('workflows edge cases and error handling', () => {
 
   describe('cleanup edge cases', () => {
     it('should handle partial cleanup failures', async () => {
-      vi.mocked(existsSync)
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(true)
-        .mockReturnValue(true)
-
-      vi.mocked(rm)
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error('Permission denied'))
-        .mockResolvedValueOnce(undefined)
-        .mockRejectedValueOnce(new Error('Permission denied'))
-
+      vi.mocked(existsSync).mockReturnValue(true)
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
+      mockRemoveZcfWorkflowArtifacts.mockResolvedValue({
+        success: false,
+        removed: [],
+        removedConfigs: [],
+        errors: ['Failed to remove file: Permission denied'],
+        warnings: [],
+      })
       vi.mocked(skillsInstaller.installSkills).mockResolvedValue({
         success: true,
         installedSkills: ['git-commit'],
@@ -149,9 +158,15 @@ describe('workflows edge cases and error handling', () => {
 
     it('should handle cleanup with symlinks', async () => {
       vi.mocked(existsSync).mockReturnValue(true)
-      vi.mocked(rm).mockRejectedValue(new Error('EISDIR: illegal operation on a directory'))
       vi.mocked(copyFile).mockResolvedValue(undefined)
       vi.mocked(mkdir).mockResolvedValue(undefined)
+      mockRemoveZcfWorkflowArtifacts.mockResolvedValue({
+        success: false,
+        removed: [],
+        removedConfigs: [],
+        errors: ['Failed to remove file: EISDIR: illegal operation on a directory'],
+        warnings: [],
+      })
       vi.mocked(skillsInstaller.installSkills).mockResolvedValue({
         success: true,
         installedSkills: ['git-commit'],

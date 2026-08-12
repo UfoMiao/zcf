@@ -1,7 +1,9 @@
 import type { CodeToolType, SupportedLang } from '../constants'
 import type { WorkflowConfig, WorkflowInstallResult, WorkflowType } from '../types/workflow'
+// Usage: Inspect installed workflow files and update their ownership markers.
 import { existsSync } from 'node:fs'
-import { copyFile, mkdir, rm } from 'node:fs/promises'
+// Usage: Copy and update workflow files on disk.
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
@@ -9,7 +11,11 @@ import { dirname, join } from 'pathe'
 import { getOrderedWorkflows, getWorkflowConfig } from '../config/workflows'
 import { CLAUDE_DIR, DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
+// Usage: Mark generated workflow files and recognize files already owned by ZCF.
+import { isZcfResourceContent, markZcfResourceContent } from './config-ownership'
 import { installSkills } from './skills-installer'
+// Usage: Remove legacy workflow artifacts only after ownership verification.
+import { ZcfUninstaller } from './uninstaller'
 
 function getRootDir(): string {
   const currentFilePath = fileURLToPath(import.meta.url)
@@ -148,6 +154,9 @@ async function installWorkflowWithDependencies(
       if (existsSync(agentSource)) {
         try {
           await copyFile(agentSource, agentDest)
+          const agentContent = await readFile(agentDest, 'utf8')
+          if (typeof agentContent === 'string' && !isZcfResourceContent(agentContent))
+            await writeFile(agentDest, markZcfResourceContent(agentContent), 'utf8')
           result.installedAgents.push(agent.filename)
           console.log(ansis.gray(`  ✔ ${i18n.t('workflow:installedAgent')}: zcf/${config.category}/${agent.filename}`))
         }
@@ -177,23 +186,11 @@ async function cleanupOldVersionFiles(): Promise<void> {
   ensureI18nInitialized()
   console.log(ansis.cyan(`\n🧹 ${i18n.t('workflow:cleaningOldFiles')}...`))
 
-  const oldPaths = [
-    join(CLAUDE_DIR, 'commands', 'workflow.md'),
-    join(CLAUDE_DIR, 'commands', 'feat.md'),
-    join(CLAUDE_DIR, 'commands', 'zcf'),
-    join(CLAUDE_DIR, 'agents', 'planner.md'),
-    join(CLAUDE_DIR, 'agents', 'ui-ux-designer.md'),
-  ]
-
-  for (const file of oldPaths) {
-    if (existsSync(file)) {
-      try {
-        await rm(file, { recursive: true, force: true })
-        console.log(ansis.gray(`  ✔ ${i18n.t('workflow:removedOldFile')}: ${file.replace(CLAUDE_DIR, '~/.claude')}`))
-      }
-      catch {
-        console.error(ansis.yellow(`  ⚠ ${i18n.t('errors:failedToRemoveFile')}: ${file.replace(CLAUDE_DIR, '~/.claude')}`))
-      }
-    }
-  }
+  const cleanupResult = await new ZcfUninstaller().removeZcfWorkflowArtifacts()
+  for (const file of cleanupResult.removed)
+    console.log(ansis.gray(`  ✔ ${i18n.t('workflow:removedOldFile')}: ${file}`))
+  for (const warning of cleanupResult.warnings)
+    console.error(ansis.yellow(`  ⚠ ${warning}`))
+  for (const error of cleanupResult.errors)
+    console.error(ansis.yellow(`  ⚠ ${error}`))
 }

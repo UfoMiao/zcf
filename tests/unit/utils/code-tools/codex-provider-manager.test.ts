@@ -81,7 +81,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(backupCodexComplete).toHaveBeenCalledOnce()
       // New implementation uses targeted upsertCodexProvider instead of writeCodexConfig
-      expect(upsertCodexProvider).toHaveBeenCalledWith(mockNewProvider.id, mockNewProvider)
+      expect(upsertCodexProvider).toHaveBeenCalledWith(mockNewProvider.id, mockNewProvider, 'new-api-key-value')
       expect(writeAuthFile).toHaveBeenCalledWith({
         [mockNewProvider.tempEnvKey]: 'new-api-key-value',
       })
@@ -140,7 +140,7 @@ describe('codex-provider-manager', () => {
       // Assert
       expect(result.success).toBe(true)
       // New implementation uses upsertCodexProvider for targeted updates
-      expect(upsertCodexProvider).toHaveBeenCalledWith('existing-provider', duplicateProvider)
+      expect(upsertCodexProvider).toHaveBeenCalledWith('existing-provider', duplicateProvider, 'api-key')
     })
 
     it('should use provider.id as modelProvider when existingConfig.modelProvider is null during overwrite', async () => {
@@ -191,7 +191,7 @@ describe('codex-provider-manager', () => {
       expect(updateCodexApiFields).toHaveBeenCalledWith(expect.objectContaining({
         modelProvider: 'existing-provider',
       }))
-      expect(upsertCodexProvider).toHaveBeenCalledWith('existing-provider', duplicateProvider)
+      expect(upsertCodexProvider).toHaveBeenCalledWith('existing-provider', duplicateProvider, 'api-key')
     })
 
     it('should create new configuration when none exists', async () => {
@@ -216,7 +216,7 @@ describe('codex-provider-manager', () => {
         model: mockNewProvider.model,
         modelProvider: mockNewProvider.id,
       }))
-      expect(upsertCodexProvider).toHaveBeenCalledWith(mockNewProvider.id, mockNewProvider)
+      expect(upsertCodexProvider).toHaveBeenCalledWith(mockNewProvider.id, mockNewProvider, 'api-key')
     })
 
     it('should handle backup creation failure', async () => {
@@ -297,7 +297,7 @@ describe('codex-provider-manager', () => {
         name: updates.name,
         baseUrl: updates.baseUrl,
         wireApi: updates.wireApi,
-      })
+      }, updates.apiKey)
       expect(writeAuthFile).toHaveBeenCalledWith({
         [mockExistingConfig.providers[0].tempEnvKey]: updates.apiKey,
       })

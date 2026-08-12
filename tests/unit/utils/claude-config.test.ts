@@ -8,12 +8,16 @@ import {
   fixWindowsMcpConfig,
   getMcpConfigPath,
   manageApiKeyApproval,
+  markZcfPermissionEntries,
+  markZcfSettingsField,
   mergeMcpServers,
   readMcpConfig,
   removeApiKeyFromRejected,
   setPrimaryApiKey,
   writeMcpConfig,
 } from '../../../src/utils/claude-config'
+// Usage: Verify ownership fingerprints recorded for managed configuration values.
+import { createConfigValueHashes, hashConfigValue } from '../../../src/utils/config-ownership'
 
 // Mock dependencies
 vi.mock('../../../src/constants', () => ({
@@ -177,6 +181,53 @@ describe('claude-config', () => {
         type: 'stdio',
         command: 'new',
         args: ['new'],
+      })
+    })
+
+    it('should not claim ownership of an existing canonical server without a marker', () => {
+      const existingConfig: ClaudeConfiguration = {
+        mcpServers: {
+          context7: {
+            type: 'stdio',
+            command: 'custom-context7',
+          },
+        },
+      }
+
+      const result = mergeMcpServers(existingConfig, {
+        context7: {
+          type: 'stdio',
+          command: 'npx',
+          args: ['-y', '@upstash/context7-mcp@latest'],
+          env: {},
+        },
+      })
+
+      expect(result.zcfManagedMcpServers).toBeUndefined()
+    })
+
+    it('should fingerprint ZCF-managed Exa credentials', () => {
+      const result = mergeMcpServers(null, {
+        exa: {
+          type: 'stdio',
+          command: 'npx',
+          args: ['-y', 'exa-mcp-server@latest'],
+          env: { EXA_API_KEY: 'zcf-key' },
+        },
+      })
+
+      expect(result.zcfManagedMcpServers).toEqual({ exa: hashConfigValue('zcf-key') })
+    })
+
+    it('should hash only supported string API environment values', () => {
+      expect(createConfigValueHashes({
+        ANTHROPIC_API_KEY: 'api-key',
+        ANTHROPIC_BASE_URL: 'https://example.com',
+        ANTHROPIC_MODEL: 42,
+        USER_SETTING: 'keep',
+      })).toEqual({
+        ANTHROPIC_API_KEY: hashConfigValue('api-key'),
+        ANTHROPIC_BASE_URL: hashConfigValue('https://example.com'),
       })
     })
   })
@@ -625,6 +676,26 @@ describe('claude-config', () => {
       })
     })
 
+    it('should preserve omitted managed environment fingerprints when rotating credentials', () => {
+      mockJsonConfig.readJsonConfig.mockReturnValue({
+        primaryApiKey: 'zcf',
+        zcfManagedEnvHashes: {
+          ANTHROPIC_API_KEY: hashConfigValue('old-key'),
+          ANTHROPIC_BASE_URL: hashConfigValue('old-url'),
+        },
+      })
+
+      setPrimaryApiKey({ ANTHROPIC_API_KEY: 'new-key' })
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith('/test/.claude/config.json', {
+        primaryApiKey: 'zcf',
+        zcfManagedEnvHashes: {
+          ANTHROPIC_API_KEY: hashConfigValue('new-key'),
+          ANTHROPIC_BASE_URL: hashConfigValue('old-url'),
+        },
+      })
+    })
+
     it('should handle errors gracefully without throwing', () => {
       mockJsonConfig.readJsonConfig.mockImplementation(() => {
         throw new Error('Read failed')
@@ -648,6 +719,46 @@ describe('claude-config', () => {
       expect(consoleSpy).toHaveBeenCalled()
 
       consoleSpy.mockRestore()
+    })
+  })
+
+  describe('markZcfSettingsField', () => {
+    it('records field ownership and an optional value fingerprint', () => {
+      const statusLine = {
+        type: 'command' as const,
+        command: '~/.claude/ccline/ccline',
+        padding: 0,
+      }
+      mockJsonConfig.readJsonConfig.mockReturnValue({
+        zcfManagedSettingsFields: ['hooks'],
+        zcfManagedSettingsHashes: { hooks: 'existing-hash' },
+      })
+
+      markZcfSettingsField('statusLine', statusLine)
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith('/test/.claude/config.json', {
+        zcfManagedSettingsFields: ['hooks', 'statusLine'],
+        zcfManagedSettingsHashes: {
+          hooks: 'existing-hash',
+          statusLine: hashConfigValue(JSON.stringify(statusLine)),
+        },
+      })
+    })
+  })
+
+  describe('markZcfPermissionEntries', () => {
+    it('records permission ownership without duplicating existing entries', () => {
+      mockJsonConfig.readJsonConfig.mockReturnValue({
+        zcfManagedSettingsFields: ['hooks'],
+        zcfManagedPermissionEntries: ['Bash'],
+      })
+
+      markZcfPermissionEntries(['Bash', 'Read'])
+
+      expect(mockJsonConfig.writeJsonConfig).toHaveBeenCalledWith('/test/.claude/config.json', {
+        zcfManagedSettingsFields: ['hooks', 'permissions'],
+        zcfManagedPermissionEntries: ['Bash', 'Read'],
+      })
     })
   })
 })

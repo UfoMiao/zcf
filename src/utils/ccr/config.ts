@@ -84,11 +84,16 @@ export async function configureCcrProxy(ccrConfig: CcrConfig): Promise<void> {
     settings.env = {}
   }
 
+  const managedEnv = {
+    ANTHROPIC_BASE_URL: `http://${host}:${port}`,
+    ANTHROPIC_API_KEY: apiKey,
+  }
+
   // Remove ANTHROPIC_AUTH_TOKEN when switching to CCR proxy to avoid conflicts
   delete settings.env.ANTHROPIC_AUTH_TOKEN
 
   // Set CCR proxy configuration
-  settings.env.ANTHROPIC_BASE_URL = `http://${host}:${port}`
+  settings.env.ANTHROPIC_BASE_URL = managedEnv.ANTHROPIC_BASE_URL
   settings.env.ANTHROPIC_API_KEY = apiKey
 
   // Write back to settings
@@ -96,7 +101,7 @@ export async function configureCcrProxy(ccrConfig: CcrConfig): Promise<void> {
 
   // Set primaryApiKey for CCR proxy (Claude Code 2.0 requirement)
   try {
-    setPrimaryApiKey()
+    setPrimaryApiKey(managedEnv)
   }
   catch (error) {
     ensureI18nInitialized()

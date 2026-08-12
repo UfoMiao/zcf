@@ -732,6 +732,15 @@ async function ensureLanguageDirectiveInAgents(aiOutputLang: string): Promise<vo
 
   // Read current content
   const content = readFile(CODEX_AGENTS_FILE)
+  const {
+    getZcfSystemPromptContent,
+    isZcfSystemPromptContent,
+    markZcfLanguageDirective,
+    markZcfSystemPrompt,
+  } = await import('./config-ownership')
+  const promptOwnership = getZcfSystemPromptContent(content)
+  const ownsWholePrompt = promptOwnership !== null && isZcfSystemPromptContent(content)
+  const contentBody = promptOwnership?.body ?? content
 
   // Language mapping for display
   const languageLabels: Record<string, string> = {
@@ -744,7 +753,7 @@ async function ensureLanguageDirectiveInAgents(aiOutputLang: string): Promise<vo
   const langLabel = languageLabels[aiOutputLang] || aiOutputLang
 
   // Check if language directive already exists
-  const hasLanguageDirective = /\*\*Most Important:\s*Always respond in [^*]+\*\*/i.test(content)
+  const hasLanguageDirective = /\*\*Most Important:\s*Always respond in [^*]+\*\*/i.test(contentBody)
 
   if (!hasLanguageDirective) {
     // Add language directive if not present
@@ -756,13 +765,13 @@ async function ensureLanguageDirectiveInAgents(aiOutputLang: string): Promise<vo
       console.log(ansis.gray(getBackupMessage(backupPath)))
     }
 
-    let updatedContent = content
+    let updatedContent = contentBody
     if (!updatedContent.endsWith('\n')) {
       updatedContent += '\n'
     }
-    updatedContent += `\n**Most Important:Always respond in ${langLabel}**\n`
+    updatedContent += `\n${markZcfLanguageDirective(`**Most Important:Always respond in ${langLabel}**`)}`
 
-    writeFile(CODEX_AGENTS_FILE, updatedContent)
+    writeFile(CODEX_AGENTS_FILE, ownsWholePrompt ? markZcfSystemPrompt(updatedContent) : updatedContent)
     console.log(ansis.gray(`  ${i18n.t('configuration:addedLanguageDirective')}: ${langLabel}`))
   }
 }
@@ -789,6 +798,16 @@ async function updateCodexLanguageDirective(aiOutputLang: string): Promise<void>
 
   // Read current content
   let content = readFile(CODEX_AGENTS_FILE)
+  const {
+    getZcfSystemPromptContent,
+    isZcfSystemPromptContent,
+    markZcfLanguageDirective,
+    markZcfSystemPrompt,
+    stripZcfLanguageDirective,
+  } = await import('./config-ownership')
+  const promptOwnership = getZcfSystemPromptContent(content)
+  const ownsWholePrompt = promptOwnership !== null && isZcfSystemPromptContent(content)
+  content = promptOwnership?.body ?? content
 
   // Language mapping for display
   const languageLabels: Record<string, string> = {
@@ -800,18 +819,23 @@ async function updateCodexLanguageDirective(aiOutputLang: string): Promise<void>
 
   const langLabel = languageLabels[aiOutputLang] || aiOutputLang
 
-  // Remove existing language directive if present
-  content = content.replace(/\*\*Most Important:\s*Always respond in [^*]+\*\*\s*/g, '')
+  // Remove only a marked directive, or a legacy directive inside a ZCF-owned
+  // system prompt. Unmarked user instructions must remain untouched.
+  const markedContent = stripZcfLanguageDirective(content)
+  if (markedContent !== null)
+    content = markedContent
+  else if (ownsWholePrompt)
+    content = content.replace(/\*\*Most Important:\s*Always respond in [^*]+\*\*\s*/g, '')
 
   // Add new language directive at the end
   if (!content.endsWith('\n')) {
     content += '\n'
   }
 
-  content += `\n**Most Important:Always respond in ${langLabel}**\n`
+  content += `\n${markZcfLanguageDirective(`**Most Important:Always respond in ${langLabel}**`)}`
 
   // Write updated content
-  writeFile(CODEX_AGENTS_FILE, content)
+  writeFile(CODEX_AGENTS_FILE, ownsWholePrompt ? markZcfSystemPrompt(content) : content)
 }
 
 // Configure environment variables and permissions

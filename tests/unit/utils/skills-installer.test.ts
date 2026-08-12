@@ -1,3 +1,4 @@
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { exec } from 'tinyexec'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -10,10 +11,17 @@ vi.mock('tinyexec', () => ({
   exec: vi.fn(),
 }))
 
+vi.mock('node:fs', () => ({
+  existsSync: vi.fn(),
+  readFileSync: vi.fn(),
+  writeFileSync: vi.fn(),
+}))
+
 describe('skills-installer utilities', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(exec).mockResolvedValue({ exitCode: 0 } as never)
+    vi.mocked(existsSync).mockReturnValue(false)
   })
 
   describe('commandFileToSkillName', () => {
@@ -32,6 +40,73 @@ describe('skills-installer utilities', () => {
   })
 
   describe('installSkills', () => {
+    it('marks only newly installed skills whose content matches the template', async () => {
+      let installed = false
+      const template = '---\nname: workflow\n---\nZCF workflow\n'
+      vi.mocked(exec).mockImplementation((() => {
+        installed = true
+        return { exitCode: 0 } as never
+      }) as never)
+      vi.mocked(existsSync).mockImplementation((filePath) => {
+        const path = String(filePath)
+        return path.startsWith('/pkg/templates/skills') || installed
+      })
+      vi.mocked(readFileSync).mockReturnValue(template)
+
+      await installSkills({
+        skillsPath: '/pkg/templates/skills/en',
+        skillNames: ['workflow'],
+        agent: 'codex',
+        global: true,
+      })
+
+      expect(writeFileSync).toHaveBeenCalledWith(
+        expect.stringContaining('/.agents/skills/workflow/SKILL.md'),
+        expect.stringContaining('ZCF managed resource:'),
+        'utf8',
+      )
+    })
+
+    it('does not claim an existing user skill', async () => {
+      const userSkill = '---\nname: workflow\n---\nUser workflow\n'
+      vi.mocked(existsSync).mockReturnValue(true)
+      vi.mocked(readFileSync).mockReturnValue(userSkill)
+
+      await installSkills({
+        skillsPath: '/pkg/templates/skills/en',
+        skillNames: ['workflow'],
+        agent: 'codex',
+        global: true,
+      })
+
+      expect(writeFileSync).not.toHaveBeenCalled()
+    })
+
+    it('does not claim a user skill when the second global root is newly linked', async () => {
+      let installed = false
+      const userSkill = '---\nname: workflow\n---\nUser workflow\n'
+      vi.mocked(exec).mockImplementation((() => {
+        installed = true
+        return { exitCode: 0 } as never
+      }) as never)
+      vi.mocked(existsSync).mockImplementation((filePath) => {
+        const path = String(filePath)
+        if (path.includes('/.agents/skills/workflow/SKILL.md'))
+          return true
+        return path.startsWith('/pkg/templates/skills') || installed
+      })
+      vi.mocked(readFileSync).mockReturnValue(userSkill)
+
+      await installSkills({
+        skillsPath: '/pkg/templates/skills/en',
+        skillNames: ['workflow'],
+        agent: 'claude-code',
+        global: true,
+      })
+
+      expect(writeFileSync).not.toHaveBeenCalled()
+    })
+
     it('should call skills CLI without --copy for claude-code', async () => {
       await installSkills({
         skillsPath: '/pkg/templates/skills/zh-CN',
