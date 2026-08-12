@@ -223,6 +223,22 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     description: 'MiniMax API Service',
   },
   {
+    id: 'minimax-cn',
+    name: 'MiniMax CN',
+    supportedCodeTools: ['claude-code', 'codex'],
+    claudeCode: {
+      baseUrl: 'https://api.minimaxi.com/anthropic',
+      authType: 'auth_token',
+      defaultModels: ['MiniMax-M3', 'MiniMax-M2.7'],
+    },
+    codex: {
+      baseUrl: 'https://api.minimaxi.com/v1',
+      wireApi: 'responses',
+      defaultModel: 'MiniMax-M3',
+    },
+    description: 'MiniMax China API Service',
+  },
+  {
     id: 'kimi-coding',
     name: 'Kimi Coding',
     supportedCodeTools: ['claude-code'],

@@ -19,6 +19,7 @@ ZCF currently supports the following API provider presets:
 | `crazyrouter` | Crazyrouter | AI API aggregation gateway | ✅ | ✅ | `api_key` |
 | `z-ai` | Z.ai | Z.ai API service | ✅ | ❌ | `auth_token` |
 | `minimax` | MiniMax | MiniMax API service | ✅ | ✅ | `auth_token` |
+| `minimax-cn` | MiniMax CN | MiniMax China API service | ✅ | ✅ | `auth_token` |
 | `kimi` | Kimi (Moonshot) | Moonshot AI service | ✅ | ✅ | `auth_token` |
 | `custom` | Custom | Custom API endpoint | ✅ | ✅ | Must specify |
 
@@ -172,12 +173,10 @@ npx zcf init -s -p minimax -k "your-auth-token"
 npx zcf init -s -T codex -p minimax -k "your-auth-token"
 
 # Claude Code with the China endpoint
-npx zcf init -s -p custom -t auth_token -k "your-auth-token" \
-  -u "https://api.minimaxi.com/anthropic" -M "MiniMax-M3"
+npx zcf init -s -p minimax-cn -k "your-auth-token"
 
 # Codex with the China endpoint
-npx zcf init -s -T codex -p custom -k "your-api-key" \
-  -u "https://api.minimaxi.com/v1" -M "MiniMax-M3"
+npx zcf init -s -T codex -p minimax-cn -k "your-auth-token"
 ```
 
 ### Kimi (Moonshot)
@@ -445,4 +444,3 @@ vim ~/.claude/settings.json
 - [Config Switch](../cli/config-switch.md) - Multi-configuration switch command
 
 > 💡 **Tip**: Using API provider presets can greatly simplify the configuration process. It's recommended to prefer presets, only use custom configuration when necessary. Regularly check provider documentation to get latest configuration information.
-
