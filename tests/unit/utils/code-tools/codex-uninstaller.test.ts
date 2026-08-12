@@ -58,7 +58,21 @@ describe('codexUninstaller', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    mockI18nT.mockImplementation(((key: string) => `mocked_${key}`) as any)
+    mockI18nT.mockImplementation(((key: string, options?: Record<string, unknown>) => {
+      const error = String(options?.error || '')
+      const item = String(options?.item || '')
+      const messages: Record<string, string> = {
+        'codex:completeTrashFailed': `Failed to move ~/.codex/ to trash: ${error}`,
+        'codex:configRemovalFailed': `Failed to remove config: ${error}`,
+        'codex:apiConfigRemovalFailed': `Failed to remove API config: ${error}`,
+        'codex:mcpConfigRemovalFailed': `Failed to remove MCP config: ${error}`,
+        'codex:backupRemovalFailed': `Failed to remove backups: ${error}`,
+        'codex:completeUninstallFailed': `Complete uninstall failed: ${error}`,
+        'codex:customUninstallItemFailed': `Failed to execute ${item}: ${error}`,
+        'codex:unknownUninstallItem': `Unknown uninstall item: ${item}`,
+      }
+      return messages[key] || `mocked_${key}`
+    }) as any)
     mockMoveToTrash.mockResolvedValue([{ success: true, path: 'test' }])
     mockPathExists.mockResolvedValue(true as any)
     mockUninstallCodeTool.mockResolvedValue(true)
@@ -104,8 +118,9 @@ describe('codexUninstaller', () => {
 
       const result = await uninstaller.removeConfig()
 
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
       expect(result.warnings).toContain('Permission denied')
+      expect(result.removed).not.toContain('config.toml')
     })
   })
 
@@ -132,28 +147,50 @@ describe('codexUninstaller', () => {
   })
 
   describe('removeSystemPrompt', () => {
-    it('should successfully remove system prompt file', async () => {
-      mockPathExists.mockResolvedValue(true as any)
+    it('should remove the complete system prompt for custom uninstall', async () => {
+      mockPathExists.mockImplementation(async (filePath: string) => filePath === CODEX_AGENTS_FILE)
 
       const result = await uninstaller.removeSystemPrompt()
 
       expect(mockPathExists).toHaveBeenCalledWith(CODEX_AGENTS_FILE)
       expect(mockMoveToTrash).toHaveBeenCalledWith(CODEX_AGENTS_FILE)
       expect(result.success).toBe(true)
-      expect(result.removed).toContain('AGENTS.md')
+      expect(result.removed).toEqual(['AGENTS.md'])
+    })
+
+    it('should preserve an unreadable user system prompt in ZCF-only mode', async () => {
+      mockPathExists.mockImplementation(async (filePath: string) => filePath === CODEX_AGENTS_FILE)
+
+      const result = await uninstaller.removeZcfSystemPrompt()
+
+      expect(mockPathExists).toHaveBeenCalledWith(CODEX_AGENTS_FILE)
+      expect(mockMoveToTrash).not.toHaveBeenCalled()
+      expect(result.success).toBe(true)
+      expect(result.removed).toEqual([])
     })
   })
 
   describe('removeWorkflow', () => {
-    it('should successfully remove workflow directory', async () => {
-      mockPathExists.mockResolvedValue(true as any)
+    it('should remove the complete workflow directory for custom uninstall', async () => {
+      mockPathExists.mockImplementation(async (filePath: string) => filePath === CODEX_PROMPTS_DIR)
 
       const result = await uninstaller.removeWorkflow()
 
       expect(mockPathExists).toHaveBeenCalledWith(CODEX_PROMPTS_DIR)
       expect(mockMoveToTrash).toHaveBeenCalledWith(CODEX_PROMPTS_DIR)
       expect(result.success).toBe(true)
-      expect(result.removed).toContain('prompts/')
+      expect(result.removed).toEqual(['prompts/'])
+    })
+
+    it('should preserve the workflow directory when its contents are not inspected in ZCF-only mode', async () => {
+      mockPathExists.mockImplementation(async (filePath: string) => filePath === CODEX_PROMPTS_DIR)
+
+      const result = await uninstaller.removeZcfWorkflow()
+
+      expect(mockPathExists).toHaveBeenCalledWith(CODEX_PROMPTS_DIR)
+      expect(mockMoveToTrash).not.toHaveBeenCalled()
+      expect(result.success).toBe(true)
+      expect(result.removed).toEqual([])
     })
   })
 
@@ -214,7 +251,7 @@ describe('codexUninstaller', () => {
 
       const result = await uninstaller.completeUninstall()
 
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
       expect(result.warnings).toContain('Failed to move ~/.codex/ to trash: Permission denied')
       expect(result.removed).toContain('@openai/codex')
     })
@@ -510,9 +547,9 @@ key = "value"
 
       const result = await uninstaller.removeBackups()
 
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
       expect(result.warnings).toContain('Access denied')
-      expect(result.removed).toContain('backup/')
+      expect(result.removed).not.toContain('backup/')
     })
 
     it('should handle backup removal exceptions', async () => {

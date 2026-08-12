@@ -29,7 +29,7 @@ Running `npx zcf` enters the interactive menu system. The menu is ZCF's core int
 | `L` | CCometixLine Management | - | Status bar tool management |
 | `0` | Switch Script Language | - | Switch CLI interface language (zh-CN/en) |
 | `S` | Switch Code Tool | - | Switch between Claude Code ↔ Codex |
-| `-` | Uninstall Current Tool Configuration | `zcf uninstall` | Uninstall Claude Code configuration |
+| `-` | Uninstall Current Tool Configuration | `zcf uninstall` | Complete, ZCF-only, or custom uninstall |
 | `+` | Check Updates | `zcf check-updates` | Check tool versions and update |
 | `Q` | Exit | - | Exit menu |
 
@@ -207,6 +207,7 @@ Check and update tools:
 Safely uninstall configuration:
 
 - Complete uninstall of all configurations
+- ZCF-only cleanup that preserves user settings and the CLI
 - Custom uninstall of specific components
 - Backup preservation options
 
@@ -325,5 +326,4 @@ npx zcf init -T claude-code  # Switch to Claude Code
 - [Quick Start](../getting-started/installation.md) - Installation and usage guide
 
 > 💡 **Tip**: The menu is ZCF's most user-friendly way to use, especially suitable for users unfamiliar with command line. It's recommended to complete configuration through the menu on first use, and after familiarizing yourself, you can combine direct commands to improve efficiency.
-
 

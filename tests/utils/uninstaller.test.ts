@@ -42,7 +42,15 @@ const mockOs = vi.hoisted(() => ({
 
 const mockI18n = vi.hoisted(() => ({
   i18n: {
-    t: vi.fn((key: string) => {
+    t: vi.fn((key: string, options?: Record<string, unknown>) => {
+      const messages: Record<string, string> = {
+        'uninstall:outputStylesRemovalFailed': `Failed to remove output styles: ${String(options?.error ?? '')}`,
+        'uninstall:cclineRemovalFailed': `Failed to uninstall CCometixLine: ${String(options?.error ?? '')}`,
+      }
+
+      if (messages[key])
+        return messages[key]
+
       // Return just the last part of the key (after ':')
       const parts = key.split(':')
       return parts[parts.length - 1]

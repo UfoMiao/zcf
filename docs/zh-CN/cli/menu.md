@@ -29,7 +29,7 @@ title: 主菜单
 | `L` | CCometixLine 管理 | - | 状态栏工具管理 |
 | `0` | 切换脚本语言 | - | 切换 CLI 界面语言（zh-CN/en） |
 | `S` | 切换代码工具 | - | 在 Claude Code ↔ Codex 之间切换 |
-| `-` | 卸载当前工具配置 | `zcf uninstall` | 卸载 Claude Code 配置 |
+| `-` | 卸载当前工具配置 | `zcf uninstall` | 完整卸载、仅清理 ZCF 配置或自定义卸载 |
 | `+` | 检查更新 | `zcf check-updates` | 检查工具版本并更新 |
 | `Q` | 退出 | - | 退出菜单 |
 
@@ -207,6 +207,7 @@ npx zcf
 安全卸载配置：
 
 - 完整卸载所有配置
+- 仅清理 ZCF 配置，同时保留用户设置和 CLI
 - 自定义卸载特定组件
 - 保留备份选项
 

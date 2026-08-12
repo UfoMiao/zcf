@@ -1,5 +1,6 @@
 import type { CodeToolType, SupportedLang } from '../constants'
-import type { UninstallItem } from '../utils/uninstaller'
+// Usage: Render uninstall results with the same explicit contract returned by the uninstaller.
+import type { UninstallItem, UninstallResult } from '../utils/uninstaller'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
 import { DEFAULT_CODE_TOOL_TYPE, isCodeToolType } from '../constants'
@@ -14,7 +15,7 @@ import { readZcfConfig } from '../utils/zcf-config'
 export interface UninstallOptions {
   lang?: SupportedLang
   codeType?: CodeToolType | string
-  mode?: 'complete' | 'custom' | 'interactive'
+  mode?: 'complete' | 'custom' | 'zcf' | 'zcf-only' | 'interactive'
   items?: UninstallItem[] | string // Can be array or comma-separated string from CLI
 }
 
@@ -57,7 +58,11 @@ export async function uninstall(options: UninstallOptions = {}): Promise<void> {
     // For Codex, use Codex-specific uninstaller
     if (codeType === 'codex') {
       const { runCodexUninstall } = await import('../utils/code-tools/codex')
-      await runCodexUninstall()
+      await runCodexUninstall({
+        lang: options.lang,
+        mode: options.mode,
+        items: typeof options.items === 'string' ? options.items : options.items?.join(','),
+      })
       return
     }
 
@@ -66,6 +71,10 @@ export async function uninstall(options: UninstallOptions = {}): Promise<void> {
     if (options.mode && options.mode !== 'interactive') {
       if (options.mode === 'complete') {
         await executeCompleteUninstall(uninstaller)
+        return
+      }
+      else if (options.mode === 'zcf' || options.mode === 'zcf-only') {
+        await executeZcfOnlyUninstall(uninstaller)
         return
       }
       else if (options.mode === 'custom' && options.items) {
@@ -100,7 +109,7 @@ async function showInteractiveUninstall(uninstaller: ZcfUninstaller): Promise<vo
   console.log('')
 
   // Main choice: complete vs custom
-  const { mainChoice } = await inquirer.prompt<{ mainChoice: 'complete' | 'custom' }>({
+  const { mainChoice } = await inquirer.prompt<{ mainChoice: 'complete' | 'zcf' | 'custom' }>({
     type: 'list',
     name: 'mainChoice',
     message: i18n.t('uninstall:selectMainOption'),
@@ -109,6 +118,11 @@ async function showInteractiveUninstall(uninstaller: ZcfUninstaller): Promise<vo
         name: `${i18n.t('uninstall:completeUninstall')} - ${ansis.gray(i18n.t('uninstall:completeUninstallDesc'))}`,
         value: 'complete',
         short: i18n.t('uninstall:completeUninstall'),
+      },
+      {
+        name: `${i18n.t('uninstall:zcfOnlyUninstall')} - ${ansis.gray(i18n.t('uninstall:zcfOnlyUninstallDesc'))}`,
+        value: 'zcf',
+        short: i18n.t('uninstall:zcfOnlyUninstall'),
       },
       {
         name: `${i18n.t('uninstall:customUninstall')} - ${ansis.gray(i18n.t('uninstall:customUninstallDesc'))}`,
@@ -125,6 +139,9 @@ async function showInteractiveUninstall(uninstaller: ZcfUninstaller): Promise<vo
 
   if (mainChoice === 'complete') {
     await executeCompleteUninstall(uninstaller)
+  }
+  else if (mainChoice === 'zcf') {
+    await executeZcfOnlyUninstall(uninstaller)
   }
   else {
     await showCustomUninstallMenu(uninstaller)
@@ -212,9 +229,37 @@ async function executeCompleteUninstall(uninstaller: ZcfUninstaller): Promise<vo
   console.log(ansis.red.bold(i18n.t('uninstall:executingComplete')))
   console.log(ansis.yellow(i18n.t('uninstall:completeWarning')))
 
-  // Final confirmation
+  await executeConfirmedUninstall(
+    'uninstall:confirmComplete',
+    'complete',
+    () => console.log(ansis.cyan(i18n.t('uninstall:processingComplete'))),
+    () => uninstaller.completeUninstall(),
+  )
+}
+
+/**
+ * Execute ZCF-only uninstall without removing the code tool or user config.
+ */
+async function executeZcfOnlyUninstall(uninstaller: ZcfUninstaller): Promise<void> {
+  console.log('')
+  console.log(ansis.yellow.bold(i18n.t('uninstall:executingZcfOnly')))
+
+  await executeConfirmedUninstall(
+    'uninstall:confirmZcfOnly',
+    'zcf',
+    () => console.log(ansis.cyan(i18n.t('uninstall:processingZcfOnly'))),
+    () => uninstaller.uninstallZcfConfig(),
+  )
+}
+
+async function executeConfirmedUninstall(
+  confirmKey: string,
+  mode: 'complete' | 'zcf',
+  onConfirmed: () => void,
+  operation: () => Promise<UninstallResult>,
+): Promise<void> {
   const confirm = await promptBoolean({
-    message: i18n.t('uninstall:confirmComplete'),
+    message: i18n.t(confirmKey),
     defaultValue: false,
   })
 
@@ -224,10 +269,10 @@ async function executeCompleteUninstall(uninstaller: ZcfUninstaller): Promise<vo
   }
 
   console.log('')
-  console.log(ansis.cyan(i18n.t('uninstall:processingComplete')))
+  onConfirmed()
 
-  const result = await uninstaller.completeUninstall()
-  displayUninstallResult('complete', [result])
+  const result = await operation()
+  displayUninstallResult(mode, [result])
 }
 
 /**
@@ -264,7 +309,7 @@ async function executeCustomUninstall(uninstaller: ZcfUninstaller, items: Uninst
 /**
  * Display uninstall results with proper formatting
  */
-function displayUninstallResult(mode: 'complete' | 'custom', results: any[]): void {
+function displayUninstallResult(mode: 'complete' | 'custom' | 'zcf', results: UninstallResult[]): void {
   console.log('')
   console.log(ansis.cyan('─'.repeat(50)))
 
@@ -328,6 +373,18 @@ function displayUninstallResult(mode: 'complete' | 'custom', results: any[]): vo
     }
     else {
       console.log(ansis.yellow.bold(`⚠ ${i18n.t('uninstall:completePartialSuccess')}`))
+    }
+  }
+  else if (mode === 'zcf') {
+    const hasFailure = results.some(result => !result.success)
+    if (!hasFailure) {
+      console.log(ansis.green.bold(`✔ ${i18n.t('uninstall:zcfOnlySuccess')}`))
+    }
+    else if (totalRemovedFiles > 0 || totalRemovedConfigs > 0) {
+      console.log(ansis.yellow.bold(`⚠ ${i18n.t('uninstall:zcfOnlyPartialSuccess')}`))
+    }
+    else {
+      console.log(ansis.red.bold(`✖ ${i18n.t('uninstall:zcfOnlyFailed')}`))
     }
   }
   else {

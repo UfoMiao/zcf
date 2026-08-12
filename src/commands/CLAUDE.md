@@ -78,7 +78,7 @@ export interface ConfigSwitchOptions {
 
 // Uninstall options
 export interface UninstallOptions {
-  mode?: 'complete' | 'custom' | 'interactive'
+  mode?: 'complete' | 'custom' | 'zcf' | 'zcf-only' | 'interactive'
   items?: string
   lang?: SupportedLang
 }

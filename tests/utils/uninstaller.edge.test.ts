@@ -35,8 +35,33 @@ const mockOs = vi.hoisted(() => ({
 
 const mockI18n = vi.hoisted(() => ({
   i18n: {
-    t: vi.fn((key: string) => {
+    t: vi.fn((key: string, options?: Record<string, unknown>) => {
       const parts = key.split(':')
+      const error = String(options?.error || '')
+      const resource = String(options?.resource || '')
+      const item = String(options?.item || '')
+      const packageName = String(options?.package || '')
+      const messages: Record<string, string> = {
+        'uninstall:trashMoveFailed': 'Failed to move to trash',
+        'uninstall:resourceTrashFailed': `Failed to move ${resource} to trash: ${error}`,
+        'uninstall:resourceRemovalFailed': `Failed to remove ${resource}: ${error}`,
+        'uninstall:packageRemovalFailed': `Failed to uninstall ${packageName}: ${error}`,
+        'uninstall:outputStylesRemovalFailed': `Failed to remove output styles: ${error}`,
+        'uninstall:customSkillsRemovalFailed': `Failed to remove custom skills: ${error}`,
+        'uninstall:customAgentsRemovalFailed': `Failed to remove custom agents: ${error}`,
+        'uninstall:claudeMdRemovalFailed': `Failed to remove CLAUDE.md: ${error}`,
+        'uninstall:permissionsEnvsRemovalFailed': `Failed to remove permissions and envs: ${error}`,
+        'uninstall:mcpsRemovalFailed': `Failed to remove MCP servers: ${error}`,
+        'uninstall:ccrPackageRemovalFailed': `Failed to uninstall CCR package: ${error}`,
+        'uninstall:ccrRemovalFailed': `Failed to uninstall CCR: ${error}`,
+        'uninstall:cclineRemovalFailed': `Failed to uninstall CCometixLine: ${error}`,
+        'uninstall:backupsRemovalFailed': `Failed to remove backups: ${error}`,
+        'uninstall:completeUninstallFailed': `Complete uninstall failed: ${error}`,
+        'uninstall:customUninstallItemFailed': `Failed to execute ${item}: ${error}`,
+        'uninstall:unknownUninstallItem': `Unknown uninstall item: ${item}`,
+      }
+      if (messages[key])
+        return messages[key]
       return parts[parts.length - 1]
     }),
     init: vi.fn(),
@@ -62,6 +87,8 @@ vi.mocked(await import('node:os')).homedir = mockOs.homedir
 vi.mocked(await import('pathe')).join = vi.fn().mockImplementation((...parts) => parts.join('/'))
 vi.mocked(await import('../../src/i18n')).i18n = mockI18n.i18n
 vi.mocked(await import('../../src/utils/trash')).moveToTrash = mockTrash.moveToTrash
+const mockReadFileSync = vi.mocked((await import('node:fs')).readFileSync)
+const mockWriteFileSync = vi.mocked((await import('node:fs')).writeFileSync)
 const installerModule = await import('../../src/utils/installer')
 const mockUninstallCodeTool = vi.mocked(installerModule.uninstallCodeTool)
 
@@ -88,6 +115,8 @@ describe('zcfUninstaller - Edge Cases', () => {
     mockJsonConfig.writeJsonConfig.mockReturnValue(undefined)
     mockExec.exec.mockResolvedValue({ stdout: '', stderr: '' })
     mockUninstallCodeTool.mockReset()
+    mockReadFileSync.mockReturnValue('')
+    mockWriteFileSync.mockImplementation(() => {})
   })
 
   describe('constructor edge cases', () => {
@@ -400,12 +429,15 @@ describe('zcfUninstaller - Edge Cases', () => {
   describe('removeZcfConfig edge cases', () => {
     it('should handle zcf config file access issues', async () => {
       mockFsExtra.pathExists.mockResolvedValue(true)
-      mockTrash.moveToTrash.mockResolvedValue([{ success: false, error: 'File is locked' }])
+      mockReadFileSync.mockReturnValue('[claudeCode]\nenabled = true\n')
+      mockWriteFileSync.mockImplementation(() => {
+        throw new Error('File is locked')
+      })
 
       const result = await uninstaller.removeZcfConfig()
 
-      expect(result.success).toBe(true)
-      expect(result.warnings).toContain('File is locked')
+      expect(result.success).toBe(false)
+      expect(result.errors[0]).toContain('zcfConfigRemovalFailed')
     })
   })
 

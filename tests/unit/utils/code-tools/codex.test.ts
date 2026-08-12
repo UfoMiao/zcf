@@ -1086,6 +1086,7 @@ describe('codex code tool utilities', () => {
       expect(result).toContain('model = "gpt-4"')
       expect(result).toContain('model_provider = "test-provider"')
       expect(result).toContain('[model_providers.test]')
+      expect(result).toMatch(/# ZCF managed provider snapshot: test [a-f0-9]{64}/)
     })
   })
 

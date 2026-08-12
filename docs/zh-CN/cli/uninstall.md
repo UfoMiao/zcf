@@ -4,7 +4,7 @@ title: 卸载与清理
 
 # 卸载与清理
 
-`zcf uninstall` 提供安全的卸载流程，支持选择性卸载、完整卸载和冲突解决。适合需要重置环境、迁移设备或清理配置的场景。
+`zcf uninstall` 提供安全的卸载流程，支持仅清理 ZCF 配置、选择性卸载、完整卸载和冲突解决。适合需要重置环境、迁移设备或清理配置的场景。
 
 ## 功能概述
 
@@ -12,9 +12,10 @@ title: 卸载与清理
 
 1. 🗑️ **选择性卸载**：选择性地删除特定组件
 2. 🔄 **完整卸载**：完全移除所有 ZCF 配置和工具
-3. 💾 **备份保留**：支持保留备份以便恢复
-4. 🔍 **冲突检测**：检测并解决文件冲突
-5. 🗂️ **回收站支持**：使用系统回收站安全删除（支持 macOS、Windows、Linux）
+3. 🧹 **仅清理 ZCF 配置**：删除 ZCF 管理的配置，同时保留 Claude Code 或 Codex CLI、用户配置和备份
+4. 💾 **备份保留**：支持保留备份以便恢复
+5. 🔍 **冲突检测**：检测并解决文件冲突
+6. 🗂️ **回收站支持**：使用系统回收站安全删除（支持 macOS、Windows、Linux）
 
 ## 基本用法
 
@@ -31,7 +32,7 @@ npx zcf
 
 交互式模式下，ZCF 会引导你：
 
-1. 选择卸载模式（完整卸载或自定义卸载）
+1. 选择卸载模式（完整卸载、仅卸载 ZCF 配置或自定义卸载）
 2. 选择要卸载的组件（如果选择自定义）
 3. 确认卸载操作
 4. 选择是否保留备份
@@ -66,6 +67,19 @@ npx zcf uninstall --mode custom --items "ccr,backups,cometix"
 
 # 使用数组格式（在代码中）
 npx zcf uninstall --mode custom --items '["ccr","backups"]'
+```
+
+### 仅卸载 ZCF 配置
+
+仅删除 ZCF 管理的配置，保留代码工具 CLI、无关的用户配置和备份。Claude Code 与 Codex 均支持此模式：
+
+```bash
+# 使用已配置的代码工具
+npx zcf uninstall --mode zcf
+
+# 显式选择代码工具
+npx zcf uninstall --mode zcf --code-type claude-code
+npx zcf uninstall --mode zcf --code-type codex
 ```
 
 ## 卸载模式
@@ -111,11 +125,17 @@ npx zcf uninstall --mode custom --items "ccr,cometix,backups"
 npx zcf uninstall --mode custom --items backups
 ```
 
+### 仅卸载 ZCF 配置模式
+
+该模式会删除 ZCF 管理的文件和字段，包括生成的工作流/提示词、输出风格、ZCF API/MCP 条目和 ZCF 偏好设置文件；保留无关配置、CLI 包和备份目录。共享的 Claude Code 与 Codex 配置中的用户条目会被保留。
+
+系统通过 ownership 标记和配置值指纹区分 ZCF 资源与同名用户资源；未标记或已被用户修改的资源不会被删除。
+
 ## 常用参数
 
 | 参数 | 说明 | 可选值 | 默认值 |
 |------|------|--------|--------|
-| `--mode, -m` | 卸载模式 | `complete`, `custom`, `interactive` | `interactive` |
+| `--mode, -m` | 卸载模式 | `complete`, `zcf`, `custom`, `interactive` | `interactive` |
 | `--items, -i` | 要卸载的组件（自定义模式） | 逗号分隔的组件名称或 JSON 数组 | - |
 | `--lang, -l` | 界面语言 | `zh-CN`, `en` | `en` |
 

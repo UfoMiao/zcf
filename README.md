@@ -30,6 +30,7 @@
 ```bash
 npx zcf i        # Full initialization: install + workflows + API/CCR + MCP
 npx zcf u        # Update workflows only
+npx zcf uninstall --mode zcf  # Remove only ZCF-managed configuration
 npx zcf --lang zh-CN  # Switch interface language (example)
 ```
 

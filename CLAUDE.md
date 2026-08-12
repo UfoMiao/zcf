@@ -212,7 +212,7 @@ The project uses Vitest with a comprehensive layered testing approach:
 
 - **Documentation Language**: Except for README_zh-CN, all code comments and documentation should be written in English
   - Code comments must be in English
-  - All documentation files (*.md) must be in English except README_zh-CN
+  - All documentation files (*.md) must be in English except README_zh-CN and locale-specific docs under docs/<locale>, which must remain in their locale
   - API documentation and inline documentation must use English
   - Git commit messages should be in English
 

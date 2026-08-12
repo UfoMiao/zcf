@@ -235,6 +235,60 @@ describe('uninstall command', () => {
 
       expect(mockCustomUninstall).toHaveBeenCalledWith(['output-styles', 'skills'])
     })
+
+    it('should remove only ZCF configuration when mode is zcf', async () => {
+      const mockZcfOnlyUninstall = vi.fn().mockResolvedValue({
+        success: true,
+        removed: [],
+        removedConfigs: ['ZCF settings'],
+        errors: [],
+        warnings: [],
+      })
+
+      mockUninstaller.ZcfUninstaller.mockImplementation(() => ({
+        uninstallZcfConfig: mockZcfOnlyUninstall,
+      }))
+      queuePromptBooleans(true)
+
+      await uninstall({ mode: 'zcf' })
+
+      expect(mockZcfOnlyUninstall).toHaveBeenCalledTimes(1)
+    })
+
+    it('should cancel ZCF-only uninstall when confirmation is declined', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const mockZcfOnlyUninstall = vi.fn()
+      mockUninstaller.ZcfUninstaller.mockImplementation(() => ({
+        uninstallZcfConfig: mockZcfOnlyUninstall,
+      }))
+      mockedPromptBoolean.mockResolvedValueOnce(false)
+
+      await uninstall({ mode: 'zcf' })
+
+      expect(mockZcfOnlyUninstall).not.toHaveBeenCalled()
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('common:cancelled'))
+      logSpy.mockRestore()
+    })
+
+    it('should show the failed ZCF-only summary when nothing was removed', async () => {
+      const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+      const mockZcfOnlyUninstall = vi.fn().mockResolvedValue({
+        success: false,
+        removed: [],
+        removedConfigs: [],
+        errors: ['ZCF cleanup failed'],
+        warnings: [],
+      })
+      mockUninstaller.ZcfUninstaller.mockImplementation(() => ({
+        uninstallZcfConfig: mockZcfOnlyUninstall,
+      }))
+      mockedPromptBoolean.mockResolvedValueOnce(true)
+
+      await uninstall({ mode: 'zcf' })
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('uninstall:zcfOnlyFailed'))
+      logSpy.mockRestore()
+    })
   })
 
   describe('language support', () => {

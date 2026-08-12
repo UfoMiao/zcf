@@ -12,6 +12,15 @@ import { x } from 'tinyexec'
 // Removed MCP config imports; MCP configuration moved to codex-configure.ts
 import { AI_OUTPUT_LANGUAGES, CODEX_AGENTS_FILE, CODEX_AUTH_FILE, CODEX_CONFIG_FILE, CODEX_DIR, CODEX_PROMPTS_DIR, SUPPORTED_LANGS, ZCF_CONFIG_FILE } from '../../constants'
 import { ensureI18nInitialized, format, i18n } from '../../i18n'
+// Usage: Track ownership of generated Codex prompts and provider credentials.
+import {
+  getZcfSystemPromptContent,
+  hashConfigValue,
+  isZcfSystemPromptContent,
+  markZcfLanguageDirective,
+  markZcfSystemPrompt,
+  stripZcfLanguageDirective,
+} from '../config-ownership'
 import { copyDir, copyFile, ensureDir, exists, readFile, writeFile } from '../fs-operations'
 import { readJsonConfig, writeJsonConfig } from '../json-config'
 import { normalizeTomlPath, wrapCommandWithSudo } from '../platform'
@@ -189,6 +198,13 @@ function getUninstallOptions(): Array<{ name: string, value: CodexUninstallItem 
  */
 function handleUninstallCancellation(): void {
   console.log(ansis.yellow(i18n.t('codex:uninstallCancelled')))
+}
+
+/** Options for interactive or non-interactive Codex uninstall. */
+export interface CodexUninstallOptions {
+  lang?: SupportedLang
+  mode?: 'complete' | 'custom' | 'zcf' | 'zcf-only' | 'interactive'
+  items?: CodexUninstallItem[] | string
 }
 
 export function createBackupDirectory(timestamp: string): string {
@@ -869,15 +885,19 @@ export function renderCodexConfig(data: CodexConfigData): string {
     for (const provider of data.providers) {
       lines.push('')
       lines.push(`[model_providers.${provider.id}]`)
-      lines.push(`name = "${provider.name}"`)
-      lines.push(`base_url = "${provider.baseUrl}"`)
-      lines.push(`wire_api = "${provider.wireApi}"`)
-      lines.push(`temp_env_key = "${provider.tempEnvKey}"`)
-      lines.push(`requires_openai_auth = ${provider.requiresOpenaiAuth}`)
+      lines.push(`# ZCF managed provider: ${provider.id}`)
+      const providerBody = [
+        `name = "${provider.name}"`,
+        `base_url = "${provider.baseUrl}"`,
+        `wire_api = "${provider.wireApi}"`,
+        `temp_env_key = "${provider.tempEnvKey}"`,
+        `requires_openai_auth = ${provider.requiresOpenaiAuth}`,
+      ]
       // Add model field if present
-      if (provider.model) {
-        lines.push(`model = "${provider.model}"`)
-      }
+      if (provider.model)
+        providerBody.push(`model = "${provider.model}"`)
+      lines.push(`# ZCF managed provider snapshot: ${provider.id} ${hashConfigValue(providerBody.join('\n'))}`)
+      lines.push(...providerBody)
     }
   }
 
@@ -887,6 +907,10 @@ export function renderCodexConfig(data: CodexConfigData): string {
     lines.push('# --- MCP servers added by ZCF ---')
     for (const service of data.mcpServices) {
       lines.push(`[mcp_servers.${service.id}]`)
+      const apiKey = service.id.toLowerCase() === 'exa' ? service.env?.EXA_API_KEY : undefined
+      lines.push(typeof apiKey === 'string'
+        ? `# ZCF managed MCP: ${service.id} ${hashConfigValue(apiKey)}`
+        : `# ZCF managed MCP: ${service.id}`)
       // Normalize Windows paths: convert backslashes to forward slashes
       // Same approach as getSystemRoot() for consistency
       const normalizedCommand = normalizeTomlPath(service.command)
@@ -1266,7 +1290,7 @@ export async function runCodexSystemPromptSelection(options?: Pick<CodexFullInit
   }
 
   // Write to AGENTS.md
-  writeFile(CODEX_AGENTS_FILE, content)
+  writeFile(CODEX_AGENTS_FILE, markZcfSystemPrompt(content))
 
   // Update ZCF configuration to save the selected system prompt style
   try {
@@ -1398,7 +1422,7 @@ async function applyCustomApiConfig(customApiConfig: NonNullable<CodexFullInitOp
   })
 
   // Add/update the provider section
-  upsertCodexProvider(providerId, newProvider)
+  upsertCodexProvider(providerId, newProvider, token)
 
   // Auth file remains JSON format
   writeJsonConfig(CODEX_AUTH_FILE, authEntries)
@@ -1712,7 +1736,7 @@ export async function configureCodexApi(options?: CodexFullInitOptions): Promise
 
   // Add/update each provider section
   for (const provider of providers) {
-    upsertCodexProvider(provider.id, provider)
+    upsertCodexProvider(provider.id, provider, authEntries[provider.tempEnvKey])
   }
 
   writeAuthFile(authEntries)
@@ -1773,25 +1797,35 @@ function ensureCodexAgentsLanguageDirective(aiOutputLang: AiOutputLanguage | str
     return
 
   const content = readFile(CODEX_AGENTS_FILE)
+  const managedPrompt = getZcfSystemPromptContent(content)
+  const ownsWholePrompt = managedPrompt !== null && isZcfSystemPromptContent(content)
   const targetLabel = resolveCodexLanguageLabel(aiOutputLang)
   const directiveRegex = /\*\*Most Important:\s*Always respond in ([^*]+)\*\*/i
-  const existingMatch = directiveRegex.exec(content)
+  const contentBody = managedPrompt?.body ?? content
+  const existingMatch = directiveRegex.exec(contentBody)
 
   if (existingMatch && normalizeLanguageLabel(existingMatch[1]) === normalizeLanguageLabel(targetLabel))
     return
+  const hasManagedLanguageDirective = stripZcfLanguageDirective(contentBody) !== null
+  if (existingMatch && !managedPrompt && !hasManagedLanguageDirective)
+    return
 
-  let updatedContent = content.replace(/\*\*Most Important:\s*Always respond in [^*]+\*\*\s*/gi, '').trimEnd()
+  const markedContent = stripZcfLanguageDirective(contentBody)
+  let updatedContent = (markedContent
+    ?? (ownsWholePrompt
+      ? contentBody.replace(/\*\*Most Important:\s*Always respond in [^*]+\*\*\s*/gi, '')
+      : contentBody)).trimEnd()
 
   if (updatedContent.length > 0 && !updatedContent.endsWith('\n'))
     updatedContent += '\n'
 
-  updatedContent += `\n**Most Important:Always respond in ${targetLabel}**\n`
+  updatedContent += `\n${markZcfLanguageDirective(`**Most Important:Always respond in ${targetLabel}**`)}`
 
   const backupPath = backupCodexAgents()
   if (backupPath)
     console.log(ansis.gray(getBackupMessage(backupPath)))
 
-  writeFile(CODEX_AGENTS_FILE, updatedContent)
+  writeFile(CODEX_AGENTS_FILE, ownsWholePrompt ? markZcfSystemPrompt(updatedContent) : updatedContent)
   console.log(ansis.gray(`  ${i18n.t('configuration:addedLanguageDirective')}: ${targetLabel}`))
 }
 
@@ -1880,7 +1914,7 @@ export async function runCodexUpdate(force = false, skipPrompt = false): Promise
   }
 }
 
-export async function runCodexUninstall(): Promise<void> {
+export async function runCodexUninstall(options: CodexUninstallOptions = {}): Promise<void> {
   ensureI18nInitialized()
 
   // Import CodexUninstaller dynamically to avoid circular dependency
@@ -1888,18 +1922,79 @@ export async function runCodexUninstall(): Promise<void> {
   const zcfConfig = readZcfConfig()
   const preferredLang = zcfConfig?.preferredLang
   const uninstallLang: SupportedLang
-    = preferredLang && SUPPORTED_LANGS.includes(preferredLang as SupportedLang)
-      ? preferredLang as SupportedLang
-      : 'en'
+    = options.lang && SUPPORTED_LANGS.includes(options.lang)
+      ? options.lang
+      : preferredLang && SUPPORTED_LANGS.includes(preferredLang as SupportedLang)
+        ? preferredLang as SupportedLang
+        : 'en'
   const uninstaller = new CodexUninstaller(uninstallLang)
 
+  const executeConfirmed = async (
+    promptKey: string,
+    operation: () => Promise<CodexUninstallResult>,
+  ): Promise<void> => {
+    const confirm = await promptBoolean({
+      message: i18n.t(promptKey),
+      defaultValue: false,
+    })
+
+    if (!confirm) {
+      handleUninstallCancellation()
+      return
+    }
+
+    const result = await operation()
+    displayUninstallResults([result])
+    displayUninstallStatus([result])
+  }
+
+  const executeComplete = (): Promise<void> => executeConfirmed(
+    'codex:uninstallPrompt',
+    () => uninstaller.completeUninstall(),
+  )
+
+  const executeZcfOnly = (): Promise<void> => executeConfirmed(
+    'codex:zcfOnlyUninstallPrompt',
+    () => uninstaller.uninstallZcfConfig(),
+  )
+
+  const executeCustom = async (items: CodexUninstallItem[]): Promise<void> => {
+    if (items.length === 0) {
+      handleUninstallCancellation()
+      return
+    }
+
+    const results = await uninstaller.customUninstall(items)
+    displayUninstallResults(results)
+    displayUninstallStatus(results)
+  }
+
+  if (options.mode && options.mode !== 'interactive') {
+    if (options.mode === 'complete') {
+      await executeComplete()
+      return
+    }
+    if (options.mode === 'zcf' || options.mode === 'zcf-only') {
+      await executeZcfOnly()
+      return
+    }
+    if (options.mode === 'custom' && options.items) {
+      const items = typeof options.items === 'string'
+        ? options.items.split(',').map(item => item.trim()).filter(Boolean) as CodexUninstallItem[]
+        : options.items
+      await executeCustom(items)
+      return
+    }
+  }
+
   // Step 1: Mode selection
-  const { mode } = await inquirer.prompt<{ mode: 'complete' | 'custom' | null }>([{
+  const { mode } = await inquirer.prompt<{ mode: 'complete' | 'zcf' | 'custom' | null }>([{
     type: 'list',
     name: 'mode',
     message: i18n.t('codex:uninstallModePrompt'),
     choices: addNumbersToChoices([
       { name: i18n.t('codex:uninstallModeComplete'), value: 'complete' },
+      { name: i18n.t('codex:uninstallModeZcfOnly'), value: 'zcf' },
       { name: i18n.t('codex:uninstallModeCustom'), value: 'custom' },
     ]),
     default: 'complete',
@@ -1912,19 +2007,10 @@ export async function runCodexUninstall(): Promise<void> {
 
   try {
     if (mode === 'complete') {
-      // Step 2a: Complete uninstall
-      const confirm = await promptBoolean({
-        message: i18n.t('codex:uninstallPrompt'),
-        defaultValue: false,
-      })
-
-      if (!confirm) {
-        handleUninstallCancellation()
-        return
-      }
-
-      const result = await uninstaller.completeUninstall()
-      displayUninstallResults([result])
+      await executeComplete()
+    }
+    else if (mode === 'zcf') {
+      await executeZcfOnly()
     }
     else if (mode === 'custom') {
       // Step 2b: Custom uninstall
@@ -1935,19 +2021,13 @@ export async function runCodexUninstall(): Promise<void> {
         choices: addNumbersToChoices(getUninstallOptions()),
       }])
 
-      if (!items || items.length === 0) {
-        handleUninstallCancellation()
-        return
-      }
-
-      const results = await uninstaller.customUninstall(items)
-      displayUninstallResults(results)
+      await executeCustom(items || [])
     }
-
-    console.log(ansis.green(i18n.t('codex:uninstallSuccess')))
   }
-  catch (error: any) {
-    console.error(ansis.red(`Error during uninstall: ${error.message}`))
+  catch (error: unknown) {
+    console.error(ansis.red(i18n.t('codex:uninstallError', {
+      error: error instanceof Error ? error.message : String(error),
+    })))
     throw error
   }
 }
@@ -1977,6 +2057,13 @@ function displayUninstallResults(results: CodexUninstallResult[]): void {
       console.log(ansis.red(`❌ ${error}`))
     }
   }
+}
+
+function displayUninstallStatus(results: CodexUninstallResult[]): void {
+  if (results.length > 0 && results.every(result => result.success))
+    console.log(ansis.green(i18n.t('codex:uninstallSuccess')))
+  else
+    console.log(ansis.red(i18n.t('codex:uninstallFailed')))
 }
 
 /**

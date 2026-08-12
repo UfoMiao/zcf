@@ -92,6 +92,7 @@ describe('uninstall command - Edge Cases', () => {
   beforeEach(async () => {
     mockUninstallerInstance = {
       completeUninstall: vi.fn(),
+      uninstallZcfConfig: vi.fn(),
       customUninstall: vi.fn(),
     }
     mockUninstaller.ZcfUninstaller.mockReturnValue(mockUninstallerInstance)
@@ -363,6 +364,23 @@ describe('uninstall command - Edge Cases', () => {
   })
 
   describe('displayUninstallResult edge cases', () => {
+    it('should use the ZCF-only result and partial-failure message', async () => {
+      mockUninstallerInstance.uninstallZcfConfig.mockResolvedValue({
+        success: false,
+        removed: ['~/.claude/config.json'],
+        removedConfigs: [],
+        errors: [],
+        warnings: ['Unable to move resource to trash'],
+      })
+      mockedPromptBoolean.mockResolvedValueOnce(true)
+
+      await uninstall({ mode: 'zcf' })
+
+      expect(mockUninstallerInstance.uninstallZcfConfig).toHaveBeenCalledTimes(1)
+      expect(mockI18n.i18n.t).toHaveBeenCalledWith('uninstall:zcfOnlyPartialSuccess')
+      expect(mockAnsis.yellow.bold).toHaveBeenCalled()
+    })
+
     it('should handle complete uninstall success display', async () => {
       mockUninstallerInstance.completeUninstall.mockResolvedValue({
         success: true,

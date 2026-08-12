@@ -34,6 +34,7 @@ vi.mock('../../../src/i18n', () => ({
 
 // Mock MCP services config
 vi.mock('../../../src/config/mcp-services', () => ({
+  MCP_SERVICE_CONFIGS: [],
   getMcpServices: vi.fn().mockReturnValue([]),
   getMcpService: vi.fn().mockReturnValue(undefined),
 }))

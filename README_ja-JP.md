@@ -30,6 +30,7 @@
 ```bash
 npx zcf i        # フル初期化：インストール + ワークフロー + API/CCR + MCP
 npx zcf u        # ワークフローのみ更新
+npx zcf uninstall --mode zcf  # ZCF 管理の設定のみ削除
 npx zcf --lang ja  # インターフェース言語を切り替え（例）
 ```
 

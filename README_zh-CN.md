@@ -30,6 +30,7 @@
 ```bash
 npx zcf i        # 完整初始化：安装 + 工作流 + API/CCR + MCP
 npx zcf u        # 仅更新工作流
+npx zcf uninstall --mode zcf  # 仅移除 ZCF 管理的配置
 npx zcf --lang zh-CN  # 切换界面语言示例
 ```
 

@@ -1,4 +1,6 @@
 import type { CodexUninstallItem } from '../../../../src/utils/code-tools/codex-uninstaller'
+// Usage: Type the mocked persisted ZCF configuration used by uninstall tests.
+import type { ZcfConfig } from '../../../../src/utils/zcf-config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runCodexUninstall } from '../../../../src/utils/code-tools/codex'
 import { promptBoolean } from '../../../../src/utils/toggle-prompt'
@@ -30,6 +32,7 @@ vi.mock('../../../../src/utils/code-tools/codex-uninstaller', () => ({
   CodexUninstaller: vi.fn().mockImplementation(() => ({
     completeUninstall: vi.fn(),
     customUninstall: vi.fn(),
+    uninstallZcfConfig: vi.fn(),
   })),
 }))
 
@@ -37,13 +40,13 @@ vi.mock('../../../../src/utils/prompt-helpers', () => ({
   addNumbersToChoices: vi.fn(choices => choices),
 }))
 
-const mockReadZcfConfig = vi.hoisted(() => vi.fn(() => ({
+const mockReadZcfConfig = vi.hoisted(() => vi.fn<() => ZcfConfig>(() => ({
   version: '1.0.0',
   preferredLang: 'en',
   templateLang: 'en',
   codeToolType: 'codex',
   lastUpdated: new Date().toISOString(),
-} as any)))
+})))
 vi.mock('../../../../src/utils/zcf-config', () => ({
   readZcfConfig: mockReadZcfConfig,
 }))
@@ -74,6 +77,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
   let mockUninstaller: {
     completeUninstall: ReturnType<typeof vi.fn>
     customUninstall: ReturnType<typeof vi.fn>
+    uninstallZcfConfig: ReturnType<typeof vi.fn>
   }
 
   beforeEach(() => {
@@ -82,6 +86,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
     mockUninstaller = {
       completeUninstall: vi.fn(),
       customUninstall: vi.fn(),
+      uninstallZcfConfig: vi.fn(),
     }
 
     mockCodexUninstaller.mockImplementation(() => mockUninstaller as any)
@@ -123,6 +128,7 @@ describe('runCodexUninstall - Enhanced Version', () => {
         message: 'mocked_codex:uninstallModePrompt',
         choices: [
           { name: 'mocked_codex:uninstallModeComplete', value: 'complete' },
+          { name: 'mocked_codex:uninstallModeZcfOnly', value: 'zcf' },
           { name: 'mocked_codex:uninstallModeCustom', value: 'custom' },
         ],
         default: 'complete',
@@ -214,6 +220,90 @@ describe('runCodexUninstall - Enhanced Version', () => {
       expect(mockConsoleLog).toHaveBeenCalledWith('⚠️ Permission denied for backup')
       expect(mockConsoleLog).toHaveBeenCalledWith('❌ Failed to uninstall package')
       expect(mockConsoleLog).toHaveBeenCalledWith('❌ Network error')
+      expect(mockConsoleLog).toHaveBeenCalledWith('mocked_codex:uninstallFailed')
+      expect(mockConsoleLog).not.toHaveBeenCalledWith('mocked_codex:uninstallSuccess')
+    })
+  })
+
+  describe('zcf-only uninstall mode', () => {
+    it('should remove only ZCF configuration with confirmation', async () => {
+      mockInquirerPrompt.mockResolvedValueOnce({ mode: 'zcf' })
+      vi.mocked(promptBoolean).mockResolvedValueOnce(true)
+      mockUninstaller.uninstallZcfConfig.mockResolvedValue({
+        success: true,
+        removed: ['AGENTS.md'],
+        removedConfigs: ['ZCF API configuration'],
+        errors: [],
+        warnings: [],
+      })
+
+      await runCodexUninstall()
+
+      expect(promptBoolean).toHaveBeenCalledWith({
+        message: 'mocked_codex:zcfOnlyUninstallPrompt',
+        defaultValue: false,
+      })
+      expect(mockUninstaller.uninstallZcfConfig).toHaveBeenCalledTimes(1)
+      expect(mockUninstaller.completeUninstall).not.toHaveBeenCalled()
+      expect(mockUninstaller.customUninstall).not.toHaveBeenCalled()
+    })
+
+    it('supports non-interactive complete and ZCF-only modes', async () => {
+      mockUninstaller.completeUninstall.mockResolvedValue({
+        success: true,
+        removed: [],
+        removedConfigs: [],
+        errors: [],
+        warnings: [],
+      })
+      mockUninstaller.uninstallZcfConfig.mockResolvedValue({
+        success: true,
+        removed: [],
+        removedConfigs: [],
+        errors: [],
+        warnings: [],
+      })
+      vi.mocked(promptBoolean).mockResolvedValue(true)
+
+      await runCodexUninstall({ mode: 'complete' })
+      await runCodexUninstall({ mode: 'zcf-only' })
+
+      expect(mockInquirerPrompt).not.toHaveBeenCalled()
+      expect(mockUninstaller.completeUninstall).toHaveBeenCalledTimes(1)
+      expect(mockUninstaller.uninstallZcfConfig).toHaveBeenCalledTimes(1)
+    })
+
+    it('supports non-interactive custom items and cancellation', async () => {
+      mockUninstaller.customUninstall.mockResolvedValue([
+        { success: true, removed: [], removedConfigs: [], errors: [], warnings: [] },
+      ])
+
+      await runCodexUninstall({ mode: 'custom', items: 'config, auth' })
+      expect(mockUninstaller.customUninstall).toHaveBeenCalledWith(['config', 'auth'])
+
+      await runCodexUninstall({ mode: 'custom', items: [] })
+      expect(mockConsoleLog).toHaveBeenCalledWith('mocked_codex:uninstallCancelled')
+    })
+
+    it('falls back to English for an invalid preferred language', async () => {
+      const invalidConfig = mockReadZcfConfig()
+      Reflect.set(invalidConfig, 'preferredLang', 'invalid-language')
+      mockReadZcfConfig.mockReturnValueOnce(invalidConfig)
+      mockUninstaller.customUninstall.mockResolvedValue([
+        { success: true, removed: [], removedConfigs: [], errors: [], warnings: [] },
+      ])
+      await runCodexUninstall({ mode: 'custom', items: 'config' })
+
+      expect(mockCodexUninstaller).toHaveBeenCalledWith('en')
+    })
+
+    it('cancels a non-interactive ZCF-only confirmation', async () => {
+      vi.mocked(promptBoolean).mockResolvedValue(false)
+
+      await runCodexUninstall({ mode: 'zcf' })
+
+      expect(mockUninstaller.uninstallZcfConfig).not.toHaveBeenCalled()
+      expect(mockConsoleLog).toHaveBeenCalledWith('mocked_codex:uninstallCancelled')
     })
   })
 

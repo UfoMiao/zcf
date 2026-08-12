@@ -4,7 +4,7 @@ title: Uninstall and Cleanup
 
 # Uninstall and Cleanup
 
-`zcf uninstall` provides a safe uninstallation process, supporting selective uninstall, complete uninstall, and conflict resolution. Suitable for scenarios requiring environment reset, device migration, or configuration cleanup.
+`zcf uninstall` provides a safe uninstallation process, supporting ZCF-only cleanup, selective uninstall, complete uninstall, and conflict resolution. Suitable for scenarios requiring environment reset, device migration, or configuration cleanup.
 
 ## Feature Overview
 
@@ -12,9 +12,10 @@ The `zcf uninstall` command supports:
 
 1. 🗑️ **Selective Uninstall**: Selectively delete specific components
 2. 🔄 **Complete Uninstall**: Completely remove all ZCF configurations and tools
-3. 💾 **Backup Preservation**: Support preserving backups for restoration
-4. 🔍 **Conflict Detection**: Detect and resolve file conflicts
-5. 🗂️ **Trash Support**: Use system trash for safe deletion (supports macOS, Windows, Linux)
+3. 🧹 **ZCF-only Cleanup**: Remove ZCF-managed configuration while keeping the Claude Code or Codex CLI, user configuration, and backups
+4. 💾 **Backup Preservation**: Support preserving backups for restoration
+5. 🔍 **Conflict Detection**: Detect and resolve file conflicts
+6. 🗂️ **Trash Support**: Use system trash for safe deletion (supports macOS, Windows, Linux)
 
 ## Basic Usage
 
@@ -31,7 +32,7 @@ npx zcf
 
 In interactive mode, ZCF will guide you:
 
-1. Select uninstall mode (complete uninstall or custom uninstall)
+1. Select uninstall mode (complete, ZCF-only, or custom uninstall)
 2. Select components to uninstall (if custom selected)
 3. Confirm uninstall operation
 4. Choose whether to preserve backups
@@ -66,6 +67,19 @@ npx zcf uninstall --mode custom --items "ccr,backups,cometix"
 
 # Use array format (in code)
 npx zcf uninstall --mode custom --items '["ccr","backups"]'
+```
+
+### ZCF-only Cleanup
+
+Remove configuration managed by ZCF while preserving the code-tool CLI, unrelated user settings, and backups. This mode works for both Claude Code and Codex:
+
+```bash
+# Use the configured code tool
+npx zcf uninstall --mode zcf
+
+# Select the code tool explicitly
+npx zcf uninstall --mode zcf --code-type claude-code
+npx zcf uninstall --mode zcf --code-type codex
 ```
 
 ## Uninstall Modes
@@ -111,11 +125,17 @@ npx zcf uninstall --mode custom --items "ccr,cometix,backups"
 npx zcf uninstall --mode custom --items backups
 ```
 
+### ZCF-only Cleanup Mode
+
+The ZCF-only mode removes ZCF-managed files and fields, including generated workflows/prompts, output styles, ZCF API/MCP entries, and ZCF preference files. It preserves unrelated settings, the CLI package, and backup directories. User-owned entries in shared Claude Code and Codex configuration files are retained.
+
+Ownership markers and value fingerprints distinguish ZCF resources from same-name user resources; unmarked or user-modified resources are left untouched.
+
 ## Common Parameters
 
 | Parameter | Description | Optional Values | Default |
 |------|------|--------|--------|
-| `--mode, -m` | Uninstall mode | `complete`, `custom`, `interactive` | `interactive` |
+| `--mode, -m` | Uninstall mode | `complete`, `zcf`, `custom`, `interactive` | `interactive` |
 | `--items, -i` | Components to uninstall (custom mode) | Comma-separated component names or JSON array | - |
 | `--lang, -l` | Interface language | `zh-CN`, `en` | `en` |
 
@@ -324,5 +344,3 @@ If restore backup fails:
 - [Troubleshooting](../advanced/troubleshooting.md) - Common problem solutions
 
 > ⚠️ **Warning**: Uninstall operations are irreversible. Please ensure important configurations are backed up before execution. If you only need to reset part of the configuration, it's recommended to use `zcf init`'s `--config-action` option rather than complete uninstall.
-
-
