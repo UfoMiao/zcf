@@ -74,6 +74,10 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 <td width="180"><a href="https://aihub.top/register?aff=ZYD5VXBARHD8"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/aihub.jpg" alt="AIHub" width="150"></a></td>
 <td>感谢 AIHub 赞助本项目！AIHub 是一家面向个人开发者和企业团队的高可用 AI 模型 API 中转平台，支持 Codex / Claude Code，价格低至官方约 1 折。<strong>通过<a href="https://aihub.top/register?aff=ZYD5VXBARHD8">此链接</a>注册并填写优惠码 ZCF，即可领取 $3 测试额度。</strong></td>
 </tr>
+<tr>
+<td width="180"><a href="https://api.sublyx.org/register?aff=S8FQQ8FPM5BP"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/Sublyx.png" alt="Sublyx" width="150"></a></td>
+<td>感谢 Sublyx 赞助本项目！Sublyx 是一个稳定高效的 AI API 聚合网关，通过一个 API Key 即可统一接入 GPT、Claude、Gemini、Grok 等主流大模型，兼容 Codex、Claude Code、OpenAI SDK 等常用 AI 开发工具。<strong>Sublyx 为本项目用户提供专属福利：通过<a href="https://api.sublyx.org/register?aff=S8FQQ8FPM5BP">此链接</a>注册并使用优惠码 ZCF，即可额外领取 10 美元额度。</strong></td>
+</tr>
 
 </tbody>
 </table>

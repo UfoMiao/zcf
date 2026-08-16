@@ -74,6 +74,10 @@ PatewayAI はヘビーな AI 開発者向けに、公式直接接続に特化し
 <td width="180"><a href="https://aihub.top/register?aff=ZYD5VXBARHD8"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/aihub.jpg" alt="AIHub" width="150"></a></td>
 <td>AIHub のスポンサーに感謝します！AIHub は、個人開発者と企業チーム向けの高可用性 AI モデル API 中継プラットフォームで、Codex および Claude Code を公式価格の約 1 割以下で提供します。<a href="https://aihub.top/register?aff=ZYD5VXBARHD8">このリンク</a>から登録し、プロモーションコード <strong>ZCF</strong> を入力すると、$3 のテストクレジットを受け取れます。</td>
 </tr>
+<tr>
+<td width="180"><a href="https://api.sublyx.org/register?aff=S8FQQ8FPM5BP"><img src="https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/Sublyx.png" alt="Sublyx" width="150"></a></td>
+<td>Sublyx のスポンサーに感謝します！Sublyx は安定性と効率性に優れた AI API 集約ゲートウェイで、1つの API Key で GPT、Claude、Gemini、Grok などの主流大規模モデルに統一アクセスできます。Codex、Claude Code、OpenAI SDK などの一般的な AI 開発ツールと互換性があります。<strong>Sublyx は本プロジェクトのユーザー向けに専用特典を用意しています：<a href="https://api.sublyx.org/register?aff=S8FQQ8FPM5BP">このリンク</a>から登録し、プロモーションコード ZCF を使用すると、追加で $10 のクレジットを受け取れます。</strong></td>
+</tr>
 
 </tbody>
 </table>

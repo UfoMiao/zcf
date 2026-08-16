@@ -96,6 +96,10 @@ PatewayAI is a high-quality model API relay service provider focused on official
 <td width="180"><a href="https://aihub.top/register?aff=ZYD5VXBARHD8"><img src="./src/assets/aihub.jpg" alt="AIHub" width="150"></a></td>
 <td>Thanks to AIHub for sponsoring this project! AIHub is a high-availability AI model API relay platform for individual developers and enterprise teams, supporting Codex and Claude Code at prices below ~10% of official rates. <strong>Register via <a href="https://aihub.top/register?aff=ZYD5VXBARHD8">this link</a> and enter the promo code ZCF to claim $3 trial credit.</strong></td>
 </tr>
+<tr>
+<td width="180"><a href="https://api.sublyx.org/register?aff=S8FQQ8FPM5BP"><img src="./src/assets/Sublyx.png" alt="Sublyx" width="150"></a></td>
+<td>Thanks to Sublyx for sponsoring this project! Sublyx is a reliable AI API aggregation gateway, providing unified access to popular models including GPT, Claude, Gemini, Grok, and more through a single API key. It is compatible with Codex, Claude Code, OpenAI SDK, and other common AI development tools. <strong>Sublyx offers an exclusive benefit for our users: register via <a href="https://api.sublyx.org/register?aff=S8FQQ8FPM5BP">this link</a> and use the promo code ZCF to receive an additional $10 in credit.</strong></td>
+</tr>
 
 </tbody>
 </table>
@@ -149,6 +153,7 @@ A huge thank you to all our sponsors for their generous support!
 - [Claude API](https://console.apito.ai/agent/register/kTwXd83JyKRSZk6r) (Claude official API provider sponsor 🎁)
 
 - [AIHub](https://aihub.top/register?aff=ZYD5VXBARHD8) (high-availability AI API relay platform sponsor 🎁)
+- [Sublyx](https://api.sublyx.org/register?aff=S8FQQ8FPM5BP) (AI API aggregation gateway sponsor 🎁)
 
 【Individual Sponsors】
 
