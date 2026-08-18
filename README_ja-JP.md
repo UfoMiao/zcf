@@ -196,7 +196,7 @@ Telegramグループに参加して、サポートやディスカッション、
 
 このプロジェクトが役立った場合は、⭐️ Starをお願いします！
 
-[![Star History Chart](https://api.star-history.com/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.com/#UfoMiao/zcf&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.dera.page/#UfoMiao/zcf&type=date)
 
 <!-- Badges -->
 

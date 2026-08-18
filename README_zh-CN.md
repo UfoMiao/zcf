@@ -197,7 +197,7 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 ## ⭐️ Star 历史
 
 如果这个项目对你有帮助，请给我一个 ⭐️ Star！
-[![Star History Chart](https://api.star-history.com/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.com/#UfoMiao/zcf&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.dera.page/#UfoMiao/zcf&type=date)
 
 <!-- Badges -->
 

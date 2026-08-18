@@ -196,7 +196,7 @@ Thanks to the following authors for promoting this project:
 
 If this project helps you, please give me a ⭐️ Star!
 
-[![Star History Chart](https://api.star-history.com/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.com/#UfoMiao/zcf&Date)
+[![Star History Chart](https://star-history.dera.page/svg?repos=UfoMiao/zcf&type=Date)](https://star-history.dera.page/#UfoMiao/zcf&type=date)
 
 <!-- Badges -->
 
