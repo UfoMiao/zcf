@@ -250,6 +250,19 @@ describe('features utilities', () => {
       expect(console.error).toHaveBeenCalled()
     })
 
+    it('switches profiles through the adapter instead of the command handler', async () => {
+      const { configureApiFeature } = await import('../../../src/utils/features')
+      const { getCodeToolRegistry } = await import('../../../src/code-tools')
+      const adapter = getCodeToolRegistry().get('claude-code')
+      const interactiveSwitch = vi.spyOn(adapter.configurations as any, 'interactiveSwitch').mockResolvedValue(undefined)
+
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ mode: 'switch' })
+      await configureApiFeature()
+
+      expect(interactiveSwitch).toHaveBeenCalled()
+      interactiveSwitch.mockRestore()
+    })
+
     it('should handle skip mode', async () => {
       const { configureApiFeature } = await import('../../../src/utils/features')
 

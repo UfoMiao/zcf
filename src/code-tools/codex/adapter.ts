@@ -8,7 +8,7 @@ import type {
 import process from 'node:process'
 import { version } from '../../../package.json'
 import { getCodeToolDefinition } from '../definitions'
-import { applyAllLang, applySkipPromptInitDefaults, parseWorkflows } from '../init-options'
+import { applyAllLang, applySkipPromptInitDefaults, parseAndValidateOutputStyles, parseWorkflows } from '../init-options'
 import { codexMenu } from './menu'
 
 const definition = getCodeToolDefinition('codex')
@@ -93,6 +93,9 @@ export const codexAdapter: CodeToolAdapter = {
     applySkipPromptInitDefaults(options)
     if (typeof options.installCometixLine === 'string')
       options.installCometixLine = options.installCometixLine.toLowerCase() === 'true'
+    // Same as main skip-prompt: reject illegal -o before init writes Codex files.
+    if (options.skipPrompt)
+      parseAndValidateOutputStyles(options)
   },
 
   async init(options: CodeToolInitOptions) {

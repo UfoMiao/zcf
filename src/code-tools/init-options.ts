@@ -41,6 +41,45 @@ export function parseWorkflows(options: CodeToolInitOptions): void {
   }
 }
 
+const VALID_OUTPUT_STYLES = [
+  'engineer-professional',
+  'nekomata-engineer',
+  'laowang-engineer',
+  'default',
+  'explanatory',
+  'learning',
+] as const
+
+export function parseAndValidateOutputStyles(options: CodeToolInitOptions): void {
+  if (typeof options.outputStyles === 'string') {
+    if (options.outputStyles === 'skip')
+      options.outputStyles = false
+    else if (options.outputStyles === 'all')
+      options.outputStyles = ['engineer-professional', 'nekomata-engineer', 'laowang-engineer']
+    else
+      options.outputStyles = options.outputStyles.split(',').map(item => item.trim())
+  }
+
+  const validStyles = VALID_OUTPUT_STYLES as readonly string[]
+  if (Array.isArray(options.outputStyles)) {
+    for (const style of options.outputStyles) {
+      if (!validStyles.includes(style)) {
+        throw new Error(i18n.t('errors:invalidOutputStyle', {
+          style,
+          validStyles: validStyles.join(', '),
+        }))
+      }
+    }
+  }
+
+  if (options.defaultOutputStyle && !validStyles.includes(options.defaultOutputStyle)) {
+    throw new Error(i18n.t('errors:invalidDefaultOutputStyle', {
+      style: options.defaultOutputStyle,
+      validStyles: validStyles.join(', '),
+    }))
+  }
+}
+
 export function applySkipPromptInitDefaults(options: CodeToolInitOptions): void {
   if (!options.skipPrompt)
     return
