@@ -380,6 +380,22 @@ describe('menu command - Edge Cases', () => {
       expect(inquirer.prompt).toHaveBeenCalled()
     })
 
+    it('routes Codex + through updateTools without the update command', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { update } = await import('../../../src/commands/update')
+      const { runCodexUpdate } = await import('../../../src/utils/code-tools/codex')
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'codex' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: '+' })
+        .mockResolvedValueOnce({ choice: 'q' })
+
+      await showMainMenu()
+
+      expect(update).not.toHaveBeenCalled()
+      expect(runCodexUpdate).toHaveBeenCalledWith(false, false)
+    })
+
     it.each(['2', '3', '4', '5', '6'])('routes Codex choice %s through its specialized action', async (choice) => {
       const { showMainMenu } = await import('../../../src/commands/menu')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')

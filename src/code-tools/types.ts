@@ -14,24 +14,7 @@ export type CodeToolCapability
     | 'tool-update'
     | 'menu'
 
-export type CodeToolMenuAction
-  = | 'init'
-    | 'update'
-    | 'uninstall'
-    | 'check-updates'
-    | 'configure-api'
-    | 'configure-mcp'
-    | 'configure-model'
-    | 'configure-ai-memory'
-    | 'configure-env-permission'
-    | 'ccr-menu'
-    | 'ccusage'
-    | 'cometix-menu'
-    | 'codex-workflow'
-    | 'codex-configure-api'
-    | 'codex-configure-mcp'
-    | 'codex-configure-model'
-    | 'codex-configure-ai-memory'
+export type CodeToolMenuAction = string
 
 export interface CodeToolMenuItem {
   key: string
@@ -48,7 +31,7 @@ export interface CodeToolMenuCapability {
   uninstallDescriptionKey: string
   updateLabelKey: string
   updateDescriptionKey: string
-  updateAction: 'update' | 'check-updates'
+  updateAction: 'update' | 'check-updates' | 'tool-update'
   run: (action: CodeToolMenuAction) => Promise<void>
 }
 

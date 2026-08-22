@@ -94,7 +94,7 @@ function printZcfSection(options: {
   console.log('')
 }
 
-const CORE_MENU_ACTIONS = new Set<CodeToolMenuAction>(['init', 'update', 'uninstall', 'check-updates'])
+const CORE_MENU_ACTIONS = new Set<CodeToolMenuAction>(['init', 'update', 'uninstall', 'check-updates', 'tool-update'])
 
 async function dispatchCoreMenuAction(action: CodeToolMenuAction, codeTool: CodeToolType): Promise<void> {
   switch (action) {
@@ -110,6 +110,17 @@ async function dispatchCoreMenuAction(action: CodeToolMenuAction, codeTool: Code
     case 'check-updates':
       await checkUpdates({ codeType: codeTool })
       return
+    case 'tool-update': {
+      const adapter = getCodeToolRegistry().get(codeTool)
+      if (!adapter.updateTools) {
+        throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
+          tool: i18n.t(adapter.definition.displayNameKey),
+          capability: 'tool-update',
+        }))
+      }
+      await adapter.updateTools(false, { lang: i18n.language as SupportedLang })
+      return
+    }
     default:
       throw new Error(i18n.t('errors:unsupportedMenuAction', { action }))
   }

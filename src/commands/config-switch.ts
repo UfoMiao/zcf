@@ -1,8 +1,8 @@
 import type { CodeToolType, SupportedLang } from '../constants'
 import process from 'node:process'
 import { getCodeToolRegistry } from '../code-tools'
+import { DEFAULT_CODE_TOOL_TYPE, resolveCodeToolType } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
-import { resolveCodeType } from '../utils/code-type-resolver'
 import { handleGeneralError } from '../utils/error-handler'
 import { readZcfConfig } from '../utils/zcf-config'
 
@@ -15,12 +15,13 @@ interface ConfigSwitchOptions {
 export async function configSwitchCommand(options: ConfigSwitchOptions): Promise<void> {
   try {
     ensureI18nInitialized()
-    const savedCodeToolType = readZcfConfig()?.codeToolType
     const registry = getCodeToolRegistry()
-    const savedType = savedCodeToolType && registry.has(savedCodeToolType)
-      ? savedCodeToolType
-      : undefined
-    const codeToolType = await resolveCodeType(options.codeType ?? savedType)
+    const savedCodeToolType = readZcfConfig()?.codeToolType
+    const codeToolType = options.codeType !== undefined
+      ? resolveCodeToolType(options.codeType)
+      : savedCodeToolType && registry.has(savedCodeToolType)
+        ? savedCodeToolType
+        : DEFAULT_CODE_TOOL_TYPE
     const adapter = registry.get(codeToolType)
     const capability = adapter.configurations
 

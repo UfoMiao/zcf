@@ -8,7 +8,7 @@ import type {
 import process from 'node:process'
 import { version } from '../../../package.json'
 import { getCodeToolDefinition } from '../definitions'
-import { applyAllLang, applySkipPromptInitDefaults, isExplicitlyEnabled, parseWorkflows } from '../init-options'
+import { applyAllLang, applySkipPromptInitDefaults, parseWorkflows } from '../init-options'
 import { codexMenu } from './menu'
 
 const definition = getCodeToolDefinition('codex')
@@ -51,7 +51,9 @@ function toCodexInitOptions(options: CodeToolInitOptions): Record<string, unknow
     apiMode,
     customApiConfig,
     workflows: options.workflows === false ? false : selectedWorkflows,
-    systemPromptStyle: options.outputStyles === false ? false : undefined,
+    systemPromptStyle: options.outputStyles === false || options.outputStyles === 'skip' || options.outputStyles === 'false'
+      ? false
+      : undefined,
   }
 }
 
@@ -94,14 +96,8 @@ export const codexAdapter: CodeToolAdapter = {
       options.installCometixLine = options.installCometixLine.toLowerCase() === 'true'
 
     const tool = i18n.t(definition.displayNameKey)
-    // skip/false means "do not apply this Claude-only extra"; only reject an
-    // explicit request to enable a capability Codex does not own.
-    if (isExplicitlyEnabled(options.outputStyles) || options.defaultOutputStyle) {
-      throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
-        tool,
-        capability: 'output-styles',
-      }))
-    }
+    // Output styles stay Claude-only extras: skip maps to "do not apply",
+    // any other value is ignored so Codex init still succeeds like main.
     if (options.installCometixLine === true) {
       throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
         tool,
@@ -120,7 +116,7 @@ export const codexAdapter: CodeToolAdapter = {
       ?? zcfConfig?.templateLang
       ?? (i18n.language as 'zh-CN' | 'en')
     if (typeof options.apiConfigs === 'string' || options.apiConfigsFile) {
-      const { handleMultiConfigurations } = await import('../../commands/init')
+      const { handleMultiConfigurations } = await import('../multi-config')
       await handleMultiConfigurations(options, 'codex')
     }
 

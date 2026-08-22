@@ -345,6 +345,7 @@ describe('menu command', () => {
       const { showMainMenu } = await import('../../../src/commands/menu')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')
       const { update } = await import('../../../src/commands/update')
+      const { runCodexUpdate } = await import('../../../src/utils/code-tools/codex')
 
       vi.mocked(readZcfConfig).mockReturnValue({
         preferredLang: 'en',
@@ -358,7 +359,8 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(update).toHaveBeenCalledWith({ codeType: 'codex', skipBanner: true })
+      expect(update).not.toHaveBeenCalled()
+      expect(runCodexUpdate).toHaveBeenCalledWith(false, false)
     })
 
     it('should handle errors gracefully', async () => {

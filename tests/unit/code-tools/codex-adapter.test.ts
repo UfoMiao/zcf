@@ -39,6 +39,9 @@ vi.mock('../../../src/code-tools/configuration-ui', () => ({
   handleCodexInteractiveSwitch: vi.fn(),
   listCodexProvidersWithDisplay: vi.fn(),
 }))
+vi.mock('../../../src/code-tools/multi-config', () => ({
+  handleMultiConfigurations: vi.fn(),
+}))
 vi.mock('../../../src/i18n', () => ({
   i18n: {
     language: 'en',
@@ -100,6 +103,32 @@ describe('codex adapter', () => {
       workflows: false,
     }))
     expect(updateZcfConfig).toHaveBeenCalledTimes(4)
+  })
+
+  it('keeps Codex -o skip from writing a system prompt and ignores explicit styles', async () => {
+    await expect(codexAdapter.validateInitOptions({
+      skipPrompt: true,
+      outputStyles: 'skip',
+    })).resolves.toBeUndefined()
+    await expect(codexAdapter.validateInitOptions({
+      skipPrompt: true,
+      outputStyles: 'engineer-professional',
+      defaultOutputStyle: 'engineer-professional',
+    })).resolves.toBeUndefined()
+
+    await codexAdapter.init({ skipPrompt: true, outputStyles: 'skip' }, { lang: 'en' })
+    await codexAdapter.init({
+      skipPrompt: true,
+      outputStyles: 'engineer-professional',
+      defaultOutputStyle: 'engineer-professional',
+    }, { lang: 'en' })
+
+    expect(runCodexFullInit).toHaveBeenNthCalledWith(1, expect.objectContaining({
+      systemPromptStyle: false,
+    }))
+    expect(runCodexFullInit).toHaveBeenNthCalledWith(2, expect.objectContaining({
+      systemPromptStyle: undefined,
+    }))
   })
 
   it('pins skip-prompt init to a single backup and restores the env afterward', async () => {
