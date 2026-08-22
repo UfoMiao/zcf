@@ -62,7 +62,7 @@ describe('moveToTrash', () => {
       expect(results[0]).toEqual({
         success: false,
         path: testPath,
-        error: 'Path does not exist',
+        skipped: 'missing',
       })
       expect(mockFsExtra.pathExists).toHaveBeenCalledWith(testPath)
       expect(mockTrash).not.toHaveBeenCalled()
@@ -127,7 +127,7 @@ describe('moveToTrash', () => {
       expect(results[1]).toEqual({
         success: false,
         path: testPaths[1],
-        error: 'Path does not exist',
+        skipped: 'missing',
       })
       expect(results[2]).toEqual({
         success: false,

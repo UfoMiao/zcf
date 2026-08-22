@@ -108,6 +108,7 @@ describe('constants', () => {
     it('should return true for valid code tool types', () => {
       expect(isCodeToolType('claude-code')).toBe(true)
       expect(isCodeToolType('codex')).toBe(true)
+      expect(isCodeToolType('gemini')).toBe(false)
     })
 
     it('should return false for invalid code tool types', () => {

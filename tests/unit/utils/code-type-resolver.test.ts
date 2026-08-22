@@ -50,7 +50,7 @@ describe('resolveCodeType', () => {
 
   it('should throw error for invalid code type', async () => {
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: codex.',
+      'Invalid code type: "invalid". Valid options are: claude-code, cc, codex, cx. Using default: codex.',
     )
   })
 
@@ -66,7 +66,7 @@ describe('resolveCodeType', () => {
     vi.mocked(readZcfConfigAsync).mockRejectedValueOnce(new Error('Config read failed'))
 
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.',
+      'Invalid code type: "invalid". Valid options are: claude-code, cc, codex, cx. Using default: claude-code.',
     )
   })
 
@@ -79,7 +79,7 @@ describe('resolveCodeType', () => {
     } as any)
 
     await expect(resolveCodeType('invalid')).rejects.toThrow(
-      'Invalid code type: "invalid". Valid options are: cc, cx, claude-code, codex. Using default: codex.',
+      'Invalid code type: "invalid". Valid options are: claude-code, cc, codex, cx. Using default: codex.',
     )
   })
 
@@ -92,7 +92,7 @@ describe('resolveCodeType', () => {
     } as any)
 
     await expect(resolveCodeType('wrong')).rejects.toThrow(
-      'Invalid code type: "wrong". Valid options are: cc, cx, claude-code, codex. Using default: claude-code.',
+      'Invalid code type: "wrong". Valid options are: claude-code, cc, codex, cx. Using default: claude-code.',
     )
   })
 })

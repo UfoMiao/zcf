@@ -506,7 +506,7 @@ describe('uninstall command - Edge Cases', () => {
         'uninstall:completeSuccess',
       ]
       for (const key of expectedKeys)
-        expect(mockI18n.i18n.t).toHaveBeenCalledWith(key)
+        expect(mockI18n.i18n.t.mock.calls.some((call: unknown[]) => call[0] === key)).toBe(true)
     })
   })
 

@@ -30,6 +30,10 @@ vi.mock('../../../src/commands/update', () => ({
   update: vi.fn(),
 }))
 
+vi.mock('../../../src/commands/uninstall', () => ({
+  uninstall: vi.fn(),
+}))
+
 vi.mock('../../../src/utils/features', () => ({
   configureApiFeature: vi.fn(),
   configureMcpFeature: vi.fn(),
@@ -38,11 +42,14 @@ vi.mock('../../../src/utils/features', () => ({
   clearZcfCacheFeature: vi.fn(),
   changeScriptLanguageFeature: vi.fn(),
   configureEnvPermissionFeature: vi.fn(),
+  configureCodexAiMemoryFeature: vi.fn(),
+  configureCodexDefaultModelFeature: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/tools', () => ({
   runCcusageFeature: vi.fn(),
   runCcrMenuFeature: vi.fn(),
+  runCometixMenuFeature: vi.fn(),
 }))
 
 vi.mock('../../../src/utils/code-tools/codex', () => ({
@@ -79,7 +86,11 @@ vi.mock('../../../src/i18n', () => ({
   initI18n: vi.fn().mockResolvedValue(undefined),
   changeLanguage: vi.fn().mockResolvedValue(undefined),
   i18n: {
-    t: vi.fn((key: string) => key),
+    t: vi.fn((key: string, options?: { tool?: string }) => {
+      if (key === 'common:codeToolBanner' && options?.tool)
+        return `for ${options.tool}`
+      return key
+    }),
     isInitialized: true,
     language: 'en',
   },
@@ -266,7 +277,7 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(checkUpdates).toHaveBeenCalledWith()
+      expect(checkUpdates).toHaveBeenCalledWith({ codeType: 'claude-code' })
     })
 
     it('should handle check updates option in English', async () => {
@@ -282,7 +293,7 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(checkUpdates).toHaveBeenCalledWith()
+      expect(checkUpdates).toHaveBeenCalledWith({ codeType: 'claude-code' })
     })
 
     it('should allow switching code tool type', async () => {
@@ -303,7 +314,7 @@ describe('menu command', () => {
     it('should route codex menu actions', async () => {
       const { showMainMenu } = await import('../../../src/commands/menu')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')
-      const { runCodexFullInit } = await import('../../../src/utils/code-tools/codex')
+      const { init } = await import('../../../src/commands/init')
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
       vi.mocked(inquirer.prompt)
@@ -312,13 +323,13 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(runCodexFullInit).toHaveBeenCalled()
+      expect(init).toHaveBeenCalledWith({ codeType: 'codex', skipBanner: true })
     })
 
     it('should handle codex uninstall option', async () => {
       const { showMainMenu } = await import('../../../src/commands/menu')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')
-      const { runCodexUninstall } = await import('../../../src/utils/code-tools/codex')
+      const { uninstall } = await import('../../../src/commands/uninstall')
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
       vi.mocked(inquirer.prompt)
@@ -327,14 +338,14 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(runCodexUninstall).toHaveBeenCalled()
+      expect(uninstall).toHaveBeenCalledWith({ codeType: 'codex' })
     })
 
     it('should handle codex update option', async () => {
       const { showMainMenu } = await import('../../../src/commands/menu')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { update } = await import('../../../src/commands/update')
 
-      // Simply test that the menu handles the update option without error
       vi.mocked(readZcfConfig).mockReturnValue({
         preferredLang: 'en',
         codeToolType: 'codex',
@@ -342,13 +353,12 @@ describe('menu command', () => {
         lastUpdated: '2024-01-01',
       } as any)
 
-      // Mock inquirer calls - test that menu handles '+' choice correctly
       vi.mocked(inquirer.prompt)
-        .mockResolvedValueOnce({ choice: '+' }) // User chooses update option
-        .mockResolvedValueOnce({ choice: '0' }) // User chooses exit (0)
+        .mockResolvedValueOnce({ choice: '+' })
 
-      // Test should not throw error
-      await expect(showMainMenu()).resolves.not.toThrow()
+      await showMainMenu()
+
+      expect(update).toHaveBeenCalledWith({ codeType: 'codex', skipBanner: true })
     })
 
     it('should handle errors gracefully', async () => {
@@ -485,7 +495,7 @@ describe('menu command', () => {
     it('should handle codex menu navigation', async () => {
       const { showMainMenu } = await import('../../../src/commands/menu')
       const { readZcfConfig } = await import('../../../src/utils/zcf-config')
-      const { runCodexFullInit } = await import('../../../src/utils/code-tools/codex')
+      const { init } = await import('../../../src/commands/init')
 
       vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
       vi.mocked(inquirer.prompt)
@@ -494,7 +504,7 @@ describe('menu command', () => {
 
       await showMainMenu()
 
-      expect(runCodexFullInit).toHaveBeenCalled()
+      expect(init).toHaveBeenCalledWith({ codeType: 'codex', skipBanner: true })
     })
 
     it('should handle unknown menu actions gracefully', async () => {

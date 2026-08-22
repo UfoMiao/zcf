@@ -528,7 +528,7 @@ describe('init command', () => {
         } as any)
 
         // Should call displayBannerWithInfo with codex banner
-        expect(displayBannerSpy).toHaveBeenCalledWith('Codex')
+        expect(displayBannerSpy).toHaveBeenCalledWith('for Codex')
         expect(runCodexFullInitSpy).toHaveBeenCalledWith({
           aiOutputLang: 'en',
           skipPrompt: true,
@@ -753,8 +753,7 @@ describe('init command', () => {
           configLang: 'zh-CN',
         })
 
-        // Should call displayBannerWithInfo with 'ZCF' (fallback)
-        expect(displayBannerSpy).toHaveBeenCalledWith('ZCF')
+        expect(displayBannerSpy).toHaveBeenCalledWith('for Claude Code')
       })
 
       it('should call resolveTemplateLanguage for claude-code in interactive mode', async () => {
@@ -786,6 +785,7 @@ describe('init command', () => {
           undefined,
           { codeToolType: 'claude-code' },
           false,
+          expect.any(String),
         )
       })
 
@@ -818,6 +818,7 @@ describe('init command', () => {
           undefined,
           { codeToolType: 'claude-code' },
           true,
+          expect.any(String),
         )
         // Should use 'en' as default configLang
         expect(testMocks.copyConfigFiles).toHaveBeenCalled()

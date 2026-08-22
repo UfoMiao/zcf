@@ -2,7 +2,6 @@ import inquirer from 'inquirer'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { configSwitchCommand } from '../../../src/commands/config-switch'
 
-import { resolveCodeToolType } from '../../../src/constants'
 // Import the mocked module correctly
 import { ClaudeCodeConfigManager } from '../../../src/utils/claude-code-config-manager'
 import { readZcfConfig } from '../../../src/utils/zcf-config'
@@ -119,8 +118,6 @@ vi.mock('../../../src/constants', () => ({
 
 const mockInquirer = vi.mocked(inquirer)
 const mockClaudeCodeConfigManager = vi.mocked(ClaudeCodeConfigManager)
-const mockResolveCodeToolType = vi.mocked(resolveCodeToolType)
-
 const mockConsoleLog = vi.spyOn(console, 'log').mockImplementation(vi.fn())
 
 const mockListCodexProviders = vi.mocked(mockListCodexProvidersFn)
@@ -353,12 +350,9 @@ describe('config-switch command - Claude Code Support', () => {
 
   describe('code type resolution', () => {
     it('should use provided code type', async () => {
-      const mockResolveCodeToolType = vi.mocked(resolveCodeToolType)
-      mockResolveCodeToolType.mockReturnValue('claude-code')
-
       await configSwitchCommand({ list: true, codeType: 'claude-code' })
 
-      expect(mockResolveCodeToolType).toHaveBeenCalledWith('claude-code')
+      expect(mockClaudeCodeConfigManager.readConfig).toHaveBeenCalled()
     })
 
     it('should fallback to ZCF config code type', async () => {
@@ -435,7 +429,6 @@ describe('config-switch command - Claude Code Support', () => {
 describe('config-switch command - Codex Support', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockResolveCodeToolType.mockImplementation((type: any) => type || 'claude-code')
     mockClaudeCodeConfigManager.readConfig.mockReturnValue(undefined as any)
     mockListCodexProviders.mockResolvedValue([
       { id: 'provider-1', name: 'Provider One', baseUrl: 'https://one.test', envKey: 'PROVIDER_ONE' },
