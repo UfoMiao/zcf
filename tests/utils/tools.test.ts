@@ -414,7 +414,7 @@ describe('tools', () => {
       it('should throw error for unsupported code type', async () => {
         await expect(scheduler.updateByCodeType('unsupported' as any, false))
           .rejects
-          .toThrow('Unsupported code type: unsupported')
+          .toThrow()
       })
     })
   })

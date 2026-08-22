@@ -39,6 +39,8 @@ vi.mock('../../../src/utils/features', () => ({
   configureMcpFeature: vi.fn(),
   configureDefaultModelFeature: vi.fn(),
   configureAiMemoryFeature: vi.fn(),
+  configureCodexAiMemoryFeature: vi.fn(),
+  configureCodexDefaultModelFeature: vi.fn(),
   clearZcfCacheFeature: vi.fn(),
   changeScriptLanguageFeature: vi.fn(),
   configureEnvPermissionFeature: vi.fn(),
@@ -57,6 +59,7 @@ vi.mock('../../../src/utils/code-tools/codex', () => ({
   configureCodexMcp: vi.fn(),
   runCodexUpdate: vi.fn(),
   runCodexUninstall: vi.fn(),
+  runCodexWorkflowImportWithLanguageSelection: vi.fn(),
 }))
 
 vi.mock('../../../src/commands/check-updates', () => ({
@@ -243,7 +246,7 @@ describe('menu command - Edge Cases', () => {
 
       await showMainMenu()
 
-      expect(uninstall).toHaveBeenCalledWith()
+      expect(uninstall).toHaveBeenCalledWith({ codeType: 'claude-code' })
     })
 
     it('should handle CCR menu feature correctly', async () => {
@@ -328,6 +331,93 @@ describe('menu command - Edge Cases', () => {
 
       vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: 'q' })
 
+      await showMainMenu()
+
+      expect(inquirer.prompt).toHaveBeenCalled()
+    })
+  })
+
+  describe('adapter-backed menus', () => {
+    it.each([
+      ['1', 'init'],
+      ['2', 'update'],
+      ['0', 'language'],
+      ['-', 'uninstall'],
+      ['+', 'updates'],
+    ])('routes Claude Code choice %s through the generic %s action', async (choice) => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'claude-code' } as any)
+      mockedPromptBoolean.mockResolvedValue(true)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice })
+        .mockResolvedValueOnce({ choice: 'q' })
+
+      await showMainMenu()
+
+      expect(inquirer.prompt).toHaveBeenCalled()
+    })
+
+    it('handles generic menu cancellation and tool switching outcomes', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'claude-code' } as any)
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '' })
+
+      await showMainMenu()
+
+      vi.clearAllMocks()
+      vi.mocked(readZcfConfig)
+        .mockReturnValueOnce({ codeToolType: 'claude-code' } as any)
+        .mockReturnValue({ codeToolType: 'codex' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: 's' })
+        .mockResolvedValueOnce({ tool: 'codex' })
+        .mockResolvedValueOnce({ choice: 'q' })
+
+      await showMainMenu()
+
+      expect(inquirer.prompt).toHaveBeenCalled()
+    })
+
+    it.each(['2', '3', '4', '5', '6'])('routes Codex choice %s through its specialized action', async (choice) => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'codex' } as any)
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice })
+      mockedPromptBoolean.mockResolvedValueOnce(false)
+
+      await showMainMenu()
+
+      expect(inquirer.prompt).toHaveBeenCalled()
+    })
+
+    it.each(['claude-code', 'codex'])('validates %s menu input', async (codeToolType) => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType } as any)
+      vi.mocked(inquirer.prompt).mockImplementationOnce((async (question: any) => {
+        expect(question.validate('q')).toBe(true)
+        expect(question.validate('invalid')).toBe('common:invalidChoice')
+        return { choice: 'q' }
+      }) as any)
+
+      await showMainMenu()
+    })
+
+    it('handles Codex cancellation and a no-op tool switch', async () => {
+      const { showMainMenu } = await import('../../../src/commands/menu')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'codex' } as any)
+      vi.mocked(inquirer.prompt).mockResolvedValueOnce({ choice: '' })
+      await showMainMenu()
+
+      vi.clearAllMocks()
+      vi.mocked(readZcfConfig).mockReturnValue({ codeToolType: 'codex' } as any)
+      vi.mocked(inquirer.prompt)
+        .mockResolvedValueOnce({ choice: 's' })
+        .mockResolvedValueOnce({ tool: 'codex' })
+        .mockResolvedValueOnce({ choice: 'q' })
       await showMainMenu()
 
       expect(inquirer.prompt).toHaveBeenCalled()

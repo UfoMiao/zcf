@@ -48,7 +48,7 @@ vi.mock('../../../src/utils/platform', () => ({
 vi.mock('../../../src/i18n', () => ({
   initI18n: vi.fn().mockResolvedValue(undefined),
   i18n: {
-    t: vi.fn((key: string) => key),
+    t: vi.fn((key: string, opts?: { tool?: string }) => (opts?.tool ? `${key}:${opts.tool}` : key)),
     isInitialized: true,
     language: 'en',
   },
@@ -159,7 +159,7 @@ describe('update command', () => {
 
       await update({ configLang: 'en', aiOutputLang: 'chinese-simplified', skipBanner: true })
 
-      expect(resolveTemplateLanguage).toHaveBeenCalledWith('en', expect.any(Object), undefined)
+      expect(resolveTemplateLanguage).toHaveBeenCalledWith('en', expect.any(Object), undefined, expect.any(String))
       expect(selectAndInstallWorkflows).toHaveBeenCalled()
       expect(_updatePromptOnly).toHaveBeenCalledWith('chinese-simplified')
     })
@@ -182,6 +182,26 @@ describe('update command', () => {
       )
       expect(codexUpdateSpy).toHaveBeenCalled()
       codexUpdateSpy.mockRestore()
+    })
+
+    it('renders the same Claude Code update banner as main', async () => {
+      const { update } = await import('../../../src/commands/update')
+      const { displayBanner } = await import('../../../src/utils/banner')
+      const { readZcfConfig } = await import('../../../src/utils/zcf-config')
+      const { getCodeToolRegistry } = await import('../../../src/code-tools')
+
+      vi.mocked(readZcfConfig).mockReturnValue({ preferredLang: 'en', codeToolType: 'codex' } as any)
+      const adapter = getCodeToolRegistry().get('codex')
+      const updateSpy = vi.spyOn(adapter, 'update').mockResolvedValue(undefined)
+
+      try {
+        await update({ codeType: 'codex' })
+      }
+      finally {
+        updateSpy.mockRestore()
+      }
+
+      expect(displayBanner).toHaveBeenCalledWith('cli:banner.updateSubtitle')
     })
 
     it('should handle errors gracefully', async () => {
