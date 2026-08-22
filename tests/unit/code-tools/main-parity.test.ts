@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { customizeHelp } from '../../../src/cli-setup'
 import { getCodeToolRegistry } from '../../../src/code-tools'
-import { CODE_TOOL_DEFINITIONS } from '../../../src/code-tools/definitions'
-import { CODE_TOOL_ALIASES, CODE_TOOL_BANNERS, CODE_TOOL_TYPES, resolveCodeToolType } from '../../../src/constants'
+import { CODE_TOOL_DEFINITIONS, getCodeToolDefinition } from '../../../src/code-tools/definitions'
+import { CLAUDE_DIR, CODE_TOOL_ALIASES, CODE_TOOL_BANNERS, CODE_TOOL_TYPES, CODEX_DIR, resolveCodeToolType } from '../../../src/constants'
 import { i18n, initI18n } from '../../../src/i18n'
 import { resolveCodeType } from '../../../src/utils/code-type-resolver'
 
@@ -88,6 +88,11 @@ describe('claude/codex main parity', () => {
     validate.mockRestore()
     claudeInit.mockRestore()
     displayList.mockRestore()
+  })
+
+  it('derives Claude/Codex path constants from definitions only', () => {
+    expect(CLAUDE_DIR).toBe(getCodeToolDefinition('claude-code').paths.homeDir)
+    expect(CODEX_DIR).toBe(getCodeToolDefinition('codex').paths.homeDir)
   })
 
   it('keeps --api-configs success copy and sinks tool-owned menu/provider contracts', () => {

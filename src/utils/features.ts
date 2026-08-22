@@ -212,9 +212,19 @@ async function handleCcrProxyMode(): Promise<void> {
 async function handleSwitchConfigMode(): Promise<void> {
   ensureI18nInitialized()
 
-  // Import and call the interactive switch function from config-switch command
-  const { configSwitchCommand } = await import('../commands/config-switch')
-  await configSwitchCommand({ codeType: 'claude-code' })
+  // Adapter owns interactive switch. Calling the command handler here would
+  // recreate adapter → command → adapter.
+  const { getCodeToolRegistry } = await import('../code-tools')
+  const adapter = getCodeToolRegistry().get('claude-code')
+  if (!adapter.configurations?.interactiveSwitch) {
+    throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
+      tool: i18n.t(adapter.definition.displayNameKey),
+      capability: 'configurations',
+    }))
+  }
+  await adapter.configurations.interactiveSwitch({
+    lang: i18n.language as SupportedLang,
+  })
 }
 
 // Configure API

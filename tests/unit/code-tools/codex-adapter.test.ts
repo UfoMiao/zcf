@@ -133,6 +133,15 @@ describe('codex adapter', () => {
     }))
   })
 
+  it('rejects illegal Codex output styles before init can write files', async () => {
+    await expect(codexAdapter.validateInitOptions({
+      skipPrompt: true,
+      outputStyles: 'totally-invalid',
+    })).rejects.toThrow(/invalidOutputStyle|Invalid output style/)
+
+    expect(runCodexFullInit).not.toHaveBeenCalled()
+  })
+
   it('pins skip-prompt init to a single backup and restores the env afterward', async () => {
     vi.mocked(runCodexFullInit).mockImplementation(async () => {
       expect(process.env.ZCF_CODEX_SKIP_PROMPT_SINGLE_BACKUP).toBe('true')

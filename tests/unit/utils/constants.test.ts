@@ -1,12 +1,14 @@
 import { homedir } from 'node:os'
 import { join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { getCodeToolDefinition } from '../../../src/code-tools/definitions'
 import {
   AI_OUTPUT_LANGUAGES,
   ClAUDE_CONFIG_FILE,
   CLAUDE_DIR,
   CLAUDE_MD_FILE,
   CODE_TOOL_TYPES,
+  CODEX_DIR,
   DEFAULT_CODE_TOOL_TYPE,
   getAiOutputLanguageLabel,
   isCodeToolType,
@@ -42,7 +44,13 @@ describe('constants', () => {
 
   describe('path constants', () => {
     it('should define correct Claude directory path', () => {
+      expect(CLAUDE_DIR).toBe(getCodeToolDefinition('claude-code').paths.homeDir)
       expect(CLAUDE_DIR).toBe(join(homedir(), '.claude'))
+    })
+
+    it('should define correct Codex directory path from the same definition', () => {
+      expect(CODEX_DIR).toBe(getCodeToolDefinition('codex').paths.homeDir)
+      expect(CODEX_DIR).toBe(join(homedir(), '.codex'))
     })
 
     it('should define correct settings file path', () => {
