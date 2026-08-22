@@ -1,15 +1,19 @@
 import type { CodeToolType } from '../constants'
 import { exec } from 'tinyexec'
+import { CODE_TOOL_DEFINITIONS, getCodeToolDefinition } from '../code-tools/definitions'
 
 /**
  * Maps ZCF code tool types to skills CLI agent identifiers.
  * claude-code includes `universal` so non-interactive `-y` installs use symlink mode
  * (canonical `~/.agents/skills/` + symlink in `~/.claude/skills/`).
  */
-export const CODE_TOOL_TO_SKILLS_AGENTS: Record<CodeToolType, string[]> = {
-  'claude-code': ['claude-code', 'universal'],
-  'codex': ['codex'],
+export function getSkillsAgentsForCodeTool(codeTool: CodeToolType): readonly string[] {
+  return getCodeToolDefinition(codeTool).skillsAgents
 }
+
+export const CODE_TOOL_TO_SKILLS_AGENTS = Object.fromEntries(
+  CODE_TOOL_DEFINITIONS.map(definition => [definition.id, [...definition.skillsAgents]]),
+) as Record<CodeToolType, string[]>
 
 export interface SkillsInstallOptions {
   skillsPath: string
@@ -39,7 +43,7 @@ export async function installSkills(options: SkillsInstallOptions): Promise<Skil
   if (skillNames.length === 0)
     return result
 
-  const skillsAgents = CODE_TOOL_TO_SKILLS_AGENTS[agent]
+  const skillsAgents = getSkillsAgentsForCodeTool(agent)
   const args = [
     '-y',
     'skills',

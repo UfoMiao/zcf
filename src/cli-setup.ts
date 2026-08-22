@@ -20,7 +20,7 @@ export interface CliOptions {
   aiOutputLang?: string
   force?: boolean
   skipPrompt?: boolean
-  codeType?: CodeToolType
+  codeType?: CodeToolType | string
   // Non-interactive parameters
   configAction?: string // default: backup
   apiType?: string

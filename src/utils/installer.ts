@@ -7,13 +7,14 @@ import inquirer from 'inquirer'
 import ora from 'ora'
 import { join } from 'pathe'
 import { exec } from 'tinyexec'
+import { getCodeToolDefinition } from '../code-tools/definitions'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { updateClaudeCode } from './auto-updater'
 import { exists, isExecutable, remove } from './fs-operations'
 import { commandExists, findCommandPath, getHomebrewCommandPaths, getPlatform, getRecommendedInstallMethods, getTermuxPrefix, getWSLInfo, isTermux, isWSL, wrapCommandWithSudo } from './platform'
 
 export async function isClaudeCodeInstalled(): Promise<boolean> {
-  return await commandExists('claude')
+  return await commandExists(getCodeToolDefinition('claude-code').installation.command)
 }
 
 /**
@@ -75,7 +76,8 @@ export async function installClaudeCode(skipMethodSelection: boolean = false): P
 
     try {
       // Use --force to handle EEXIST errors when files already exist
-      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@anthropic-ai/claude-code', '--force'])
+      const definition = getCodeToolDefinition(codeType)
+      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', definition.installation.npmPackage, '--force'])
       if (usedSudo) {
         console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
       }
@@ -135,7 +137,7 @@ export async function installClaudeCode(skipMethodSelection: boolean = false): P
  * Check if Codex is installed
  */
 export async function isCodexInstalled(): Promise<boolean> {
-  return await commandExists('codex')
+  return await commandExists(getCodeToolDefinition('codex').installation.command)
 }
 
 /**
@@ -168,7 +170,8 @@ export async function installCodex(skipMethodSelection: boolean = false): Promis
 
     try {
       // Use --force to handle EEXIST errors when files already exist
-      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', '@openai/codex', '--force'])
+      const definition = getCodeToolDefinition(codeType)
+      const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', definition.installation.npmPackage, '--force'])
       if (usedSudo) {
         console.log(ansis.yellow(`ℹ ${i18n.t('installation:usingSudo')}`))
       }
@@ -266,7 +269,7 @@ export async function removeLocalClaudeCode(): Promise<void> {
  */
 async function getInstallMethodFromConfig(codeType: CodeType): Promise<InstallMethod | 'npm-global' | 'native' | null> {
   try {
-    if (codeType === 'claude-code') {
+    if (getCodeToolDefinition(codeType).installation.storesInstallMethodInMcpConfig) {
       const { readMcpConfig } = await import('./claude-config')
       const config = readMcpConfig()
       return config?.installMethod || null
@@ -286,7 +289,8 @@ async function getInstallMethodFromConfig(codeType: CodeType): Promise<InstallMe
 export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const definition = getCodeToolDefinition(codeType)
+  const codeTypeName = i18n.t(definition.displayNameKey)
 
   // Try to detect install method from config
   type ExtendedInstallMethod = InstallMethod | 'npm-global' | 'native' | 'manual' | null
@@ -294,25 +298,11 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
 
   // If method not in config, try to detect from system
   if (!method) {
-    // Check if installed via Homebrew
-    if (codeType === 'claude-code') {
+    if (definition.installation.homebrewCask) {
       try {
-        const result = await exec('brew', ['list', '--cask', 'claude-code'])
-        if (result.exitCode === 0) {
+        const result = await exec('brew', ['list', '--cask', definition.installation.homebrewCask])
+        if (result.exitCode === 0)
           method = 'homebrew'
-        }
-      }
-      catch {
-        // Not installed via Homebrew
-      }
-    }
-    else if (codeType === 'codex') {
-      try {
-        // Codex is installed as a cask
-        const result = await exec('brew', ['list', '--cask', 'codex'])
-        if (result.exitCode === 0) {
-          method = 'homebrew'
-        }
       }
       catch {
         // Not installed via Homebrew
@@ -331,10 +321,10 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
     if (platform === 'macos' || platform === 'linux') {
       // Try Homebrew first, then fall back to manual removal
       try {
-        // Both Claude Code and Codex are installed as casks
-        const testResult = codeType === 'claude-code'
-          ? await exec('brew', ['list', '--cask', 'claude-code'])
-          : await exec('brew', ['list', '--cask', 'codex'])
+        const cask = definition.installation.homebrewCask
+        const testResult = cask
+          ? await exec('brew', ['list', '--cask', cask])
+          : { exitCode: 1 }
         if (testResult.exitCode === 0) {
           method = 'homebrew'
         }
@@ -356,8 +346,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
     switch (method) {
       case 'npm':
       case 'npm-global': {
-        const packageName = codeType === 'claude-code' ? '@anthropic-ai/claude-code' : '@openai/codex'
-        const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['uninstall', '-g', packageName])
+        const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['uninstall', '-g', definition.installation.npmPackage])
         if (usedSudo) {
           spinner.info(i18n.t('installation:usingSudo'))
           spinner.start()
@@ -367,13 +356,9 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
       }
 
       case 'homebrew': {
-        if (codeType === 'claude-code') {
-          await exec('brew', ['uninstall', '--cask', 'claude-code'])
-        }
-        else {
-          // Codex is also installed as a cask
-          await exec('brew', ['uninstall', '--cask', 'codex'])
-        }
+        if (!definition.installation.homebrewCask)
+          throw new Error(i18n.t('installation:uninstallFailed'))
+        await exec('brew', ['uninstall', '--cask', definition.installation.homebrewCask])
         break
       }
 
@@ -384,7 +369,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
         spinner.warn(i18n.t('installation:manualUninstallRequired', { codeType: codeTypeName }))
 
         // Try to find binary location
-        const command = codeType === 'claude-code' ? 'claude' : 'codex'
+        const command = definition.installation.command
         try {
           const whichCmd = getPlatform() === 'windows' ? 'where' : 'which'
           const result = await exec(whichCmd, [command])
@@ -436,7 +421,7 @@ export async function uninstallCodeTool(codeType: CodeType): Promise<boolean> {
 export async function setInstallMethod(method: InstallMethod, codeType: CodeType = 'claude-code'): Promise<void> {
   try {
     // Save to Claude Code config for auto-update compatibility
-    if (codeType === 'claude-code') {
+    if (getCodeToolDefinition(codeType).installation.storesInstallMethodInMcpConfig) {
       const { readMcpConfig, writeMcpConfig } = await import('./claude-config')
       let config = readMcpConfig()
       if (!config) {
@@ -462,7 +447,7 @@ export async function setInstallMethod(method: InstallMethod, codeType: CodeType
  */
 export async function detectInstalledVersion(codeType: CodeType): Promise<string | null> {
   try {
-    const command = codeType === 'claude-code' ? 'claude' : 'codex'
+    const command = getCodeToolDefinition(codeType).installation.command
     const result = await exec(command, ['--version'])
 
     if (result.exitCode === 0 && result.stdout) {
@@ -505,13 +490,12 @@ function getInstallMethodLabel(method: InstallMethod): string {
 function getInstallMethodOptions(codeType: CodeType, recommendedMethods: InstallMethod[]): Array<{ title: string, value: InstallMethod, description?: string }> {
   const allMethods: InstallMethod[] = ['npm', 'homebrew', 'curl', 'powershell', 'cmd']
   const platform = getPlatform()
+  const supportedMethods = new Set(getCodeToolDefinition(codeType).installation.supportedMethods)
 
   // Filter methods by platform availability and code type support
   const availableMethods = allMethods.filter((method) => {
-    // Codex only supports npm and homebrew
-    if (codeType === 'codex' && !['npm', 'homebrew'].includes(method)) {
+    if (!supportedMethods.has(method))
       return false
-    }
 
     if (method === 'homebrew')
       return platform === 'macos' || platform === 'linux'
@@ -545,7 +529,7 @@ function getInstallMethodOptions(codeType: CodeType, recommendedMethods: Install
 export async function selectInstallMethod(codeType: CodeType, excludeMethods: InstallMethod[] = []): Promise<InstallMethod | null> {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const codeTypeName = i18n.t(getCodeToolDefinition(codeType).displayNameKey)
   const recommendedMethods = getRecommendedInstallMethods(codeType) as InstallMethod[]
   const methodOptions = getInstallMethodOptions(codeType, recommendedMethods)
     .filter(option => !excludeMethods.includes(option.value))
@@ -574,15 +558,15 @@ export async function selectInstallMethod(codeType: CodeType, excludeMethods: In
 export async function executeInstallMethod(method: InstallMethod, codeType: CodeType): Promise<boolean> {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const definition = getCodeToolDefinition(codeType)
+  const codeTypeName = i18n.t(definition.displayNameKey)
   const spinner = ora(i18n.t('installation:installingWith', { method, codeType: codeTypeName })).start()
 
   try {
     switch (method) {
       case 'npm': {
-        const packageName = codeType === 'claude-code' ? '@anthropic-ai/claude-code' : '@openai/codex'
         // Use --force to handle EEXIST errors when files already exist
-        const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', packageName, '--force'])
+        const { command, args, usedSudo } = wrapCommandWithSudo('npm', ['install', '-g', definition.installation.npmPackage, '--force'])
         if (usedSudo) {
           spinner.info(i18n.t('installation:usingSudo'))
           spinner.start()
@@ -593,50 +577,42 @@ export async function executeInstallMethod(method: InstallMethod, codeType: Code
       }
 
       case 'homebrew': {
-        if (codeType === 'claude-code') {
-          await exec('brew', ['install', '--cask', 'claude-code'])
-        }
-        else {
-          // Codex is also installed as a cask
-          await exec('brew', ['install', '--cask', 'codex'])
-        }
+        if (!definition.installation.homebrewCask)
+          throw new Error(i18n.t('installation:installMethodFailed', { method }))
+        await exec('brew', ['install', '--cask', definition.installation.homebrewCask])
         await setInstallMethod('homebrew', codeType)
         break
       }
 
       case 'curl': {
-        if (codeType === 'claude-code') {
-          await exec('bash', ['-c', 'curl -fsSL https://claude.ai/install.sh | bash'])
-        }
-        else {
-          // Codex doesn't have curl install method, fallback to npm
+        const command = definition.installation.nativeCommands?.curl
+        if (!command) {
           spinner.stop()
           return await executeInstallMethod('npm', codeType)
         }
+        await exec(command.command, [...command.args])
         await setInstallMethod('curl', codeType)
         break
       }
 
       case 'powershell': {
-        if (codeType === 'claude-code') {
-          await exec('powershell', ['-Command', 'irm https://claude.ai/install.ps1 | iex'])
-        }
-        else {
+        const command = definition.installation.nativeCommands?.powershell
+        if (!command) {
           spinner.stop()
           return await executeInstallMethod('npm', codeType)
         }
+        await exec(command.command, [...command.args])
         await setInstallMethod('powershell', codeType)
         break
       }
 
       case 'cmd': {
-        if (codeType === 'claude-code') {
-          await exec('cmd', ['/c', 'curl -fsSL https://claude.ai/install.cmd -o install.cmd && install.cmd && del install.cmd'])
-        }
-        else {
+        const command = definition.installation.nativeCommands?.cmd
+        if (!command) {
           spinner.stop()
           return await executeInstallMethod('npm', codeType)
         }
+        await exec(command.command, [...command.args])
         await setInstallMethod('cmd', codeType)
         break
       }
@@ -729,7 +705,7 @@ async function isCommandInPath(command: string): Promise<boolean> {
  * If command is not in PATH but found in Homebrew paths, attempt to create symlink
  */
 export async function verifyInstallation(codeType: CodeType): Promise<VerificationResult> {
-  const command = codeType === 'claude-code' ? 'claude' : 'codex'
+  const command = getCodeToolDefinition(codeType).installation.command
 
   // Step 1: Check if command is accessible via which (directly in PATH)
   // Use isCommandInPath instead of commandExists to avoid detecting Caskroom paths
@@ -928,7 +904,7 @@ export async function createHomebrewSymlink(command: string, sourcePath: string)
 export function displayVerificationResult(result: VerificationResult, codeType: CodeType): void {
   ensureI18nInitialized()
 
-  const codeTypeName = codeType === 'claude-code' ? i18n.t('common:claudeCode') : i18n.t('common:codex')
+  const codeTypeName = i18n.t(getCodeToolDefinition(codeType).displayNameKey)
 
   if (result.success) {
     if (result.symlinkCreated) {

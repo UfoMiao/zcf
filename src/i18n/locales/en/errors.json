@@ -21,6 +21,16 @@
   "invalidPermissionsAllow": "Invalid permissions.allow: expected array",
   "invalidCodeType": "Invalid code type: \"{value}\". Valid options are: {validOptions}. Using default: {defaultValue}.",
   "invalidProvider": "Invalid provider: {provider}. Available providers: {validProviders}",
+  "duplicateCodeToolAlias": "Code tool \"{{id}}\" defines duplicate aliases.",
+  "codeToolKeyAlreadyRegistered": "Code tool key \"{{key}}\" is already registered.",
+  "codeToolAlreadyRegistered": "Code tool \"{{id}}\" is already registered.",
+  "unknownCodeTool": "Unknown code tool: \"{{value}}\".",
+  "unsupportedCodeToolCapability": "{{tool}} does not support {{capability}}.",
+  "unsupportedMenuAction": "Unsupported menu action: {{action}}.",
+  "packageUpdateFailed": "Failed to update {{tool}} via {{method}} (exit code {{code}}).",
+  "packageInstallFailed": "Failed to install via {{method}} (exit code {{code}}).",
+  "packageUninstallFailed": "Failed to uninstall via {{method}} (exit code {{code}}).",
+  "defaultingCodeTool": "Defaulting to \"{{tool}}\".",
   "generalError": "Error",
   "stackTrace": "Stack"
 }

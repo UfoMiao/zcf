@@ -1,5 +1,7 @@
+import type { CodeToolType } from './code-tools/definitions'
 import { homedir } from 'node:os'
 import { join } from 'pathe'
+import { CODE_TOOL_DEFINITIONS, DEFAULT_CODE_TOOL_TYPE } from './code-tools/definitions'
 import { i18n } from './i18n'
 
 // Claude Code configuration paths
@@ -24,9 +26,9 @@ export const LEGACY_ZCF_CONFIG_FILES = [
   join(homedir(), '.zcf.json'),
 ]
 
-export const CODE_TOOL_TYPES = ['claude-code', 'codex'] as const
-export type CodeToolType = (typeof CODE_TOOL_TYPES)[number]
-export const DEFAULT_CODE_TOOL_TYPE: CodeToolType = 'claude-code'
+export const CODE_TOOL_TYPES = CODE_TOOL_DEFINITIONS.map(definition => definition.id)
+export type { CodeToolType } from './code-tools/definitions'
+export { DEFAULT_CODE_TOOL_TYPE } from './code-tools/definitions'
 
 export const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
   'claude-code': 'for Claude Code',
@@ -34,10 +36,11 @@ export const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
 }
 
 // Short aliases for code tool types
-export const CODE_TOOL_ALIASES: Record<string, CodeToolType> = {
-  cc: 'claude-code',
-  cx: 'codex',
-}
+export const CODE_TOOL_ALIASES: Record<string, CodeToolType> = Object.fromEntries(
+  CODE_TOOL_DEFINITIONS.flatMap(definition =>
+    definition.aliases.map(alias => [alias, definition.id] as const),
+  ),
+) as Record<string, CodeToolType>
 
 export function isCodeToolType(value: any): value is CodeToolType {
   return CODE_TOOL_TYPES.includes(value as CodeToolType)

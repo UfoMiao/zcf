@@ -36,7 +36,7 @@
   "menuOptions.codexUninstall": "卸载 Codex",
   "menuOptions.codexCheckUpdates": "检查 Codex 更新",
   "menuSections.otherTools": "其他工具",
-  "menuDescriptions.switchCodeTool": "在支持的代码工具之间切换 (Claude Code, Codex)",
+  "menuDescriptions.switchCodeTool": "在支持的代码工具之间切换（Claude Code、Codex）",
   "menuDescriptions.codexFullInit": "安装 Codex + 导入工作流 + 配置 API + 配置 MCP 服务",
   "menuDescriptions.codexImportWorkflow": "仅导入/更新 Codex 工作流相关文件",
   "menuDescriptions.codexConfigureApi": "配置 Codex 的 API 提供商",

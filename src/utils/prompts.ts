@@ -208,6 +208,7 @@ export async function resolveTemplateLanguage(
   commandLineOption?: SupportedLang,
   savedConfig?: ZcfConfig | null,
   skipPrompt?: boolean,
+  _tool?: string,
 ): Promise<SupportedLang> {
   ensureI18nInitialized()
 

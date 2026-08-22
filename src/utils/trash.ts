@@ -1,10 +1,13 @@
 import { pathExists } from 'fs-extra'
 import trash from 'trash'
 
+export type TrashSkipReason = 'missing'
+
 export interface TrashResult {
   success: boolean
   path: string
   error?: string
+  skipped?: TrashSkipReason
 }
 
 /**
@@ -24,7 +27,7 @@ export async function moveToTrash(paths: string | string[]): Promise<TrashResult
         results.push({
           success: false,
           path,
-          error: 'Path does not exist',
+          skipped: 'missing',
         })
         continue
       }

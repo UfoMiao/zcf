@@ -1199,6 +1199,7 @@ export async function runCodexSystemPromptSelection(options?: Pick<CodexFullInit
     undefined, // No command line option for this function
     zcfConfig,
     skipPrompt, // Pass skipPrompt flag
+    i18n.t('common:codex'),
   )
 
   updateZcfConfig({ templateLang: preferredLang })
@@ -1295,7 +1296,7 @@ export async function runCodexWorkflowSelection(options?: CodexFullInitOptions):
 
   const zcfConfig = readZcfConfig()
   const { resolveTemplateLanguage } = await import('../prompts')
-  const templateLang = await resolveTemplateLanguage(undefined, zcfConfig, skipPrompt)
+  const templateLang = await resolveTemplateLanguage(undefined, zcfConfig, skipPrompt, i18n.t('common:codex'))
 
   updateZcfConfig({ templateLang })
 
@@ -1741,6 +1742,10 @@ export async function runCodexFullInit(
   options?: CodexFullInitOptions,
 ): Promise<AiOutputLanguage | string> {
   ensureI18nInitialized()
+
+  // A leftover cache from a previous skip-prompt run would skip snapshotting this init's files.
+  if (options?.skipPrompt)
+    cachedSkipPromptBackup = null
 
   await installCodexCli(options?.skipPrompt || false)
 

@@ -5,9 +5,10 @@ import { copyFile, mkdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
-import { dirname, join } from 'pathe'
+import { basename, dirname, join } from 'pathe'
+import { getCodeToolDefinition } from '../code-tools/definitions'
 import { getOrderedWorkflows, getWorkflowConfig } from '../config/workflows'
-import { CLAUDE_DIR, DEFAULT_CODE_TOOL_TYPE } from '../constants'
+import { DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { installSkills } from './skills-installer'
 
@@ -16,8 +17,6 @@ function getRootDir(): string {
   const distDir = dirname(dirname(currentFilePath))
   return dirname(distDir)
 }
-
-const DEFAULT_CODE_TOOL_TEMPLATE = 'claude-code'
 
 export async function selectAndInstallWorkflows(
   configLang: SupportedLang,
@@ -53,14 +52,15 @@ export async function selectAndInstallWorkflows(
     return
   }
 
-  await cleanupOldVersionFiles()
+  const codeTool = getCodeToolDefinition(codeToolType)
+  await cleanupOldVersionFiles(codeTool.paths.legacyWorkflowPaths || [], codeTool.paths.homeDir)
 
   const skillNamesToInstall = new Set<string>()
 
   for (const workflowId of selectedWorkflows) {
     const config = getWorkflowConfig(workflowId)
     if (config)
-      await installWorkflowWithDependencies(config, configLang, skillNamesToInstall)
+      await installWorkflowWithDependencies(config, configLang, skillNamesToInstall, codeToolType)
   }
 
   if (skillNamesToInstall.size > 0) {
@@ -88,8 +88,10 @@ async function installWorkflowWithDependencies(
   config: WorkflowConfig,
   configLang: SupportedLang,
   skillNamesToInstall: Set<string>,
+  codeToolType: CodeToolType,
 ): Promise<WorkflowInstallResult> {
   const rootDir = getRootDir()
+  const codeTool = getCodeToolDefinition(codeToolType)
   ensureI18nInitialized()
   const result: WorkflowInstallResult = {
     workflow: config.id,
@@ -127,16 +129,15 @@ async function installWorkflowWithDependencies(
     }
   }
 
-  if (config.autoInstallAgents && config.agents.length > 0) {
-    const agentsCategoryDir = join(CLAUDE_DIR, 'agents', 'zcf', config.category)
+  if (config.autoInstallAgents && config.agents.length > 0 && codeTool.paths.agentsDir && codeTool.paths.templateDir) {
+    const agentsCategoryDir = join(codeTool.paths.agentsDir, 'zcf', config.category)
     if (!existsSync(agentsCategoryDir))
       await mkdir(agentsCategoryDir, { recursive: true })
 
     for (const agent of config.agents) {
       const agentSource = join(
         rootDir,
-        'templates',
-        DEFAULT_CODE_TOOL_TEMPLATE,
+        codeTool.paths.templateDir,
         configLang,
         'workflow',
         config.category,
@@ -173,26 +174,18 @@ async function installWorkflowWithDependencies(
   return result
 }
 
-async function cleanupOldVersionFiles(): Promise<void> {
+async function cleanupOldVersionFiles(oldPaths: readonly string[], homeDir: string): Promise<void> {
   ensureI18nInitialized()
   console.log(ansis.cyan(`\n🧹 ${i18n.t('workflow:cleaningOldFiles')}...`))
-
-  const oldPaths = [
-    join(CLAUDE_DIR, 'commands', 'workflow.md'),
-    join(CLAUDE_DIR, 'commands', 'feat.md'),
-    join(CLAUDE_DIR, 'commands', 'zcf'),
-    join(CLAUDE_DIR, 'agents', 'planner.md'),
-    join(CLAUDE_DIR, 'agents', 'ui-ux-designer.md'),
-  ]
 
   for (const file of oldPaths) {
     if (existsSync(file)) {
       try {
         await rm(file, { recursive: true, force: true })
-        console.log(ansis.gray(`  ✔ ${i18n.t('workflow:removedOldFile')}: ${file.replace(CLAUDE_DIR, '~/.claude')}`))
+        console.log(ansis.gray(`  ✔ ${i18n.t('workflow:removedOldFile')}: ${file.replace(homeDir, `~/${basename(homeDir)}`)}`))
       }
       catch {
-        console.error(ansis.yellow(`  ⚠ ${i18n.t('errors:failedToRemoveFile')}: ${file.replace(CLAUDE_DIR, '~/.claude')}`))
+        console.error(ansis.yellow(`  ⚠ ${i18n.t('errors:failedToRemoveFile')}: ${file.replace(homeDir, `~/${basename(homeDir)}`)}`))
       }
     }
   }

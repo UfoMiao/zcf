@@ -1,6 +1,7 @@
 import type { CodeToolType } from '../constants'
 import process from 'node:process'
 import ansis from 'ansis'
+import { DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { i18n } from '../i18n'
 import { resolveCodeType } from '../utils/code-type-resolver'
 import { ToolUpdateScheduler } from '../utils/tool-update-scheduler'
@@ -23,8 +24,10 @@ export async function checkUpdates(options: CheckUpdatesOptions = {}): Promise<v
     catch (err) {
       // If invalid, default to a safe value
       const errorMessage = err instanceof Error ? err.message : String(err)
-      console.error(ansis.red(`${errorMessage}\nDefaulting to "claude-code".`))
-      codeType = 'claude-code'
+      console.error(ansis.red(`${errorMessage}\n${i18n.t('errors:defaultingCodeTool', {
+        tool: DEFAULT_CODE_TOOL_TYPE,
+      })}`))
+      codeType = DEFAULT_CODE_TOOL_TYPE
     }
 
     // Use the new scheduler for updates

@@ -73,6 +73,7 @@
   "ccrProxyReserved": "CCR代理类型为保留类型，不能手动添加（配置：\"{{name}}\"）",
   "configProfileAddFailed": "添加配置文件 \"{{name}}\" 失败：{{error}}",
   "providerAddFailed": "添加提供商 \"{{name}}\" 失败：{{error}}",
+  "providerNotAdded": "提供商尚未添加",
   "invalidJson": "无效的API配置JSON：{{error}}",
   "fileReadFailed": "读取API配置文件失败：{{error}}",
   "providerOrTypeRequired": "必须提供 provider 或 type 字段"

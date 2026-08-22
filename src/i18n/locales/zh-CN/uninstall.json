@@ -40,6 +40,7 @@
   "claudeCode": "Claude Code - 卸载 Claude Code 和配置",
   "backups": "备份文件 - 删除备份文件",
   "zcfConfig": "ZCF 配置 - 删除 ZCF 偏好设置配置",
+  "unknownUninstallItem": "未知卸载项：{{item}}",
 
   "settingsJsonNotFound": "未找到 settings.json 文件",
   "skillsNotFound": "未找到 ZCF 工作流 skills",
