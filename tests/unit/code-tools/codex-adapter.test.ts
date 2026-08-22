@@ -114,6 +114,7 @@ describe('codex adapter', () => {
       skipPrompt: true,
       outputStyles: 'engineer-professional',
       defaultOutputStyle: 'engineer-professional',
+      installCometixLine: true,
     })).resolves.toBeUndefined()
 
     await codexAdapter.init({ skipPrompt: true, outputStyles: 'skip' }, { lang: 'en' })
