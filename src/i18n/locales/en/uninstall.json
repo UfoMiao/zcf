@@ -40,6 +40,7 @@
   "claudeCode": "Claude Code - Uninstall Claude Code and configurations",
   "backups": "Backups - Remove backup files",
   "zcfConfig": "ZCF Config - Remove ZCF preference configurations",
+  "unknownUninstallItem": "Unknown uninstall item: {{item}}",
 
   "settingsJsonNotFound": "settings.json not found",
   "skillsNotFound": "ZCF workflow skills not found",

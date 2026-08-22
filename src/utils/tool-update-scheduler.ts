@@ -1,7 +1,6 @@
-import type { CodeToolType } from '../constants'
-import { ensureI18nInitialized } from '../i18n'
-import { checkAndUpdateTools } from './auto-updater'
-import { runCodexUpdate } from './code-tools/codex'
+import type { CodeToolType, SupportedLang } from '../constants'
+import { getCodeToolRegistry } from '../code-tools'
+import { ensureI18nInitialized, i18n } from '../i18n'
 
 /**
  * Tool update scheduler that manages updates for different code tools
@@ -16,37 +15,16 @@ export class ToolUpdateScheduler {
     // Ensure i18n is initialized before any operations
     await ensureI18nInitialized()
 
-    switch (codeType) {
-      case 'claude-code':
-        await this.updateClaudeCodeTools(skipPrompt)
-        break
-      case 'codex':
-        await this.updateCodexTools(skipPrompt)
-        break
-      default:
-        throw new Error(`Unsupported code type: ${codeType}`)
+    const adapter = getCodeToolRegistry().get(codeType)
+    if (!adapter.updateTools) {
+      throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
+        tool: i18n.t(adapter.definition.displayNameKey),
+        capability: 'tool-update',
+      }))
     }
-  }
-
-  /**
-   * Update Claude Code related tools
-   * @param skipPrompt - Whether to skip interactive prompts
-   */
-  private async updateClaudeCodeTools(skipPrompt: boolean): Promise<void> {
-    await checkAndUpdateTools(skipPrompt)
-  }
-
-  /**
-   * Update Codex tools
-   * @param skipPrompt - Whether to skip interactive prompts
-   */
-  private async updateCodexTools(skipPrompt: boolean): Promise<void> {
-    const success = await runCodexUpdate(false, skipPrompt)
-    // runCodexUpdate returns boolean, but we don't need to handle the result
-    // The function itself handles logging and error reporting
-    if (!success) {
-      // Don't throw error for unsuccessful updates, as runCodexUpdate handles error reporting
-      // This maintains consistency with checkAndUpdateTools behavior
-    }
+    await adapter.updateTools(skipPrompt, {
+      lang: i18n.language as SupportedLang,
+      skipPrompt,
+    })
   }
 }

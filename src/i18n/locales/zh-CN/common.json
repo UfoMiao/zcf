@@ -16,5 +16,6 @@
   "current": "当前",
   "claudeCode": "Claude Code",
   "codex": "Codex",
+  "codeToolBanner": "用于 {{tool}}",
   "yes": "是"
 }

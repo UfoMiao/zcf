@@ -73,6 +73,7 @@
   "ccrProxyReserved": "CCR proxy type is reserved and cannot be added manually (config: \"{{name}}\")",
   "configProfileAddFailed": "Failed to add profile \"{{name}}\": {{error}}",
   "providerAddFailed": "Failed to add provider \"{{name}}\": {{error}}",
+  "providerNotAdded": "The provider was not added",
   "invalidJson": "Invalid API configs JSON: {{error}}",
   "fileReadFailed": "Failed to read API configs file: {{error}}",
   "providerOrTypeRequired": "Must provide either provider or type field"

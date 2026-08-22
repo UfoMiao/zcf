@@ -21,6 +21,16 @@
   "invalidPermissionsAllow": "无效的 permissions.allow：期望数组类型",
   "invalidCodeType": "无效的代码类型：\"{value}\"。可用的类型：{validOptions}。使用默认值：{defaultValue}。",
   "invalidProvider": "无效的提供商：{provider}。可用的提供商：{validProviders}",
+  "duplicateCodeToolAlias": "代码工具“{{id}}”定义了重复别名。",
+  "codeToolKeyAlreadyRegistered": "代码工具键“{{key}}”已被注册。",
+  "codeToolAlreadyRegistered": "代码工具“{{id}}”已被注册。",
+  "unknownCodeTool": "未知代码工具：“{{value}}”。",
+  "unsupportedCodeToolCapability": "{{tool}} 不支持 {{capability}}。",
+  "unsupportedMenuAction": "不支持的菜单操作：{{action}}。",
+  "packageUpdateFailed": "通过 {{method}} 更新 {{tool}} 失败（退出码 {{code}}）。",
+  "packageInstallFailed": "通过 {{method}} 安装失败（退出码 {{code}}）。",
+  "packageUninstallFailed": "通过 {{method}} 卸载失败（退出码 {{code}}）。",
+  "defaultingCodeTool": "将使用默认工具“{{tool}}”。",
   "generalError": "错误",
   "stackTrace": "堆栈跟踪"
 }

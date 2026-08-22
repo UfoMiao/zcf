@@ -3,6 +3,7 @@ import { platform } from 'node:os'
 import process from 'node:process'
 import { dirname } from 'pathe'
 import { exec } from 'tinyexec'
+import { CODE_TOOL_DEFINITIONS } from '../code-tools/definitions'
 
 /**
  * Commands that require cmd /c wrapper on Windows for proper execution context
@@ -342,12 +343,10 @@ export async function getHomebrewCommandPaths(command: string): Promise<string[]
   // Check Homebrew Caskroom for cask-installed applications
   // This handles the case where apps are installed via `brew install --cask`
   // e.g., /opt/homebrew/Caskroom/claude-code/2.0.56/claude
-  const caskNameMap: Record<string, string> = {
-    claude: 'claude-code',
-    codex: 'codex',
-  }
-
-  const caskName = caskNameMap[command]
+  const caskName = CODE_TOOL_DEFINITIONS
+    .find(definition => definition.installation.command === command)
+    ?.installation
+    .homebrewCask
   if (caskName) {
     for (const prefix of homebrewPrefixes) {
       const caskroomPath = `${prefix}/Caskroom/${caskName}`
@@ -432,36 +431,14 @@ export async function findCommandPath(command: string): Promise<string | null> {
  * Get recommended install methods for a code tool based on current platform
  * Returns methods in priority order (most recommended first)
  */
-export type CodeType = 'claude-code' | 'codex'
+export type CodeType = import('../code-tools/definitions').CodeToolType
 export type InstallMethod = 'npm' | 'homebrew' | 'curl' | 'powershell' | 'cmd' | 'npm-global' | 'native'
 
 export function getRecommendedInstallMethods(codeType: CodeType): InstallMethod[] {
-  const platform = getPlatform()
-  const wsl = isWSL()
+  const definition = CODE_TOOL_DEFINITIONS.find(item => item.id === codeType)
+  if (!definition)
+    return ['npm']
 
-  // Claude Code recommendations
-  if (codeType === 'claude-code') {
-    if (platform === 'macos') {
-      return ['homebrew', 'curl', 'npm']
-    }
-    if (platform === 'linux' || wsl) {
-      return ['curl', 'npm']
-    }
-    if (platform === 'windows') {
-      return ['powershell', 'npm']
-    }
-  }
-
-  // Codex recommendations
-  if (codeType === 'codex') {
-    if (platform === 'macos') {
-      return ['homebrew', 'npm']
-    }
-    if (platform === 'linux' || wsl || platform === 'windows') {
-      return ['npm']
-    }
-  }
-
-  // Default fallback
-  return ['npm']
+  const platform = isWSL() ? 'linux' : getPlatform()
+  return [...(definition.installation.recommendedMethods[platform] || ['npm'])]
 }

@@ -16,5 +16,6 @@
   "current": "current",
   "claudeCode": "Claude Code",
   "codex": "Codex",
+  "codeToolBanner": "for {{tool}}",
   "yes": "Yes"
 }
