@@ -3,6 +3,7 @@ import type { McpServerConfig } from '../types'
 import process from 'node:process'
 import ansis from 'ansis'
 import inquirer from 'inquirer'
+import { getCodeToolDefinition } from '../code-tools/definitions'
 import { getMcpServices } from '../config/mcp-services'
 import { LANG_LABELS, SUPPORTED_LANGS } from '../constants'
 import { changeLanguage, ensureI18nInitialized, i18n } from '../i18n'
@@ -730,10 +731,7 @@ async function updateCodexModelProvider(modelProvider: string): Promise<void> {
 // Helper function to ensure language directive exists in AGENTS.md
 async function ensureLanguageDirectiveInAgents(aiOutputLang: string): Promise<void> {
   const { readFile, writeFile, exists } = await import('./fs-operations')
-  const { homedir } = await import('node:os')
-  const { join } = await import('pathe')
-
-  const CODEX_AGENTS_FILE = join(homedir(), '.codex', 'AGENTS.md')
+  const CODEX_AGENTS_FILE = getCodeToolDefinition('codex').paths.memoryFile!
 
   if (!exists(CODEX_AGENTS_FILE)) {
     console.log(ansis.yellow(i18n.t('codex:agentsFileNotFound')))
@@ -781,10 +779,7 @@ async function ensureLanguageDirectiveInAgents(aiOutputLang: string): Promise<vo
 async function updateCodexLanguageDirective(aiOutputLang: string): Promise<void> {
   const { readFile, writeFile, exists } = await import('./fs-operations')
   const { backupCodexAgents, getBackupMessage } = await import('./code-tools/codex')
-  const { homedir } = await import('node:os')
-  const { join } = await import('pathe')
-
-  const CODEX_AGENTS_FILE = join(homedir(), '.codex', 'AGENTS.md')
+  const CODEX_AGENTS_FILE = getCodeToolDefinition('codex').paths.memoryFile!
 
   if (!exists(CODEX_AGENTS_FILE)) {
     console.log(ansis.yellow(i18n.t('codex:agentsFileNotFound')))

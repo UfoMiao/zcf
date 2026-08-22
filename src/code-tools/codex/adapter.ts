@@ -1,3 +1,4 @@
+import type { CodexFullInitOptions } from '../../utils/code-tools/codex'
 import type {
   CodeToolAdapter,
   CodeToolContext,
@@ -13,7 +14,7 @@ import { codexMenu } from './menu'
 
 const definition = getCodeToolDefinition('codex')
 
-function toCodexInitOptions(options: CodeToolInitOptions): Record<string, unknown> {
+function toCodexInitOptions(options: CodeToolInitOptions): CodexFullInitOptions {
   const hasApiConfigs = Boolean(options.apiConfigs || options.apiConfigsFile)
   const apiMode = hasApiConfigs
     ? 'skip'

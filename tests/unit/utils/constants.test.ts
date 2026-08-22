@@ -54,6 +54,7 @@ describe('constants', () => {
     })
 
     it('should define correct settings file path', () => {
+      expect(SETTINGS_FILE).toBe(getCodeToolDefinition('claude-code').paths.configFiles.find(file => file.id === 'settings')!.path)
       expect(SETTINGS_FILE).toBe(join(CLAUDE_DIR, 'settings.json'))
     })
 
