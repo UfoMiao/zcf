@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'pathe'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { customizeHelp } from '../../../src/cli-setup'
 import { getCodeToolRegistry } from '../../../src/code-tools'
@@ -93,6 +95,18 @@ describe('claude/codex main parity', () => {
   it('derives Claude/Codex path constants from definitions only', () => {
     expect(CLAUDE_DIR).toBe(getCodeToolDefinition('claude-code').paths.homeDir)
     expect(CODEX_DIR).toBe(getCodeToolDefinition('codex').paths.homeDir)
+    expect(getCodeToolDefinition('claude-code').paths.configFiles.map(file => file.path)).toContain(
+      join(CLAUDE_DIR, 'settings.json'),
+    )
+    expect(getCodeToolDefinition('codex').paths.configFiles.map(file => file.path)).toContain(
+      join(CODEX_DIR, 'config.toml'),
+    )
+  })
+
+  it('keeps Claude menu switch on the adapter and off the command handler', () => {
+    const featuresSource = readFileSync(join(process.cwd(), 'src/utils/features.ts'), 'utf8')
+    expect(featuresSource).not.toContain('commands/config-switch')
+    expect(featuresSource).toContain('interactiveSwitch')
   })
 
   it('keeps --api-configs success copy and sinks tool-owned menu/provider contracts', () => {
