@@ -3,10 +3,15 @@ import { homedir } from 'node:os'
 import { pathExists } from 'fs-extra'
 import { join } from 'pathe'
 import { exec } from 'tinyexec'
+import { getCodeToolDefinition } from '../code-tools/definitions'
 import { ZCF_CONFIG_FILE } from '../constants'
 import { i18n } from '../i18n'
 import { readJsonConfig, writeJsonConfig } from './json-config'
 import { moveToTrash } from './trash'
+
+const claudePaths = getCodeToolDefinition('claude-code').paths
+const CLAUDE_SETTINGS_FILE = claudePaths.configFiles.find(file => file.id === 'settings')!.path
+const CLAUDE_JSON_FILE = claudePaths.configFiles.find(file => file.id === 'claude-json')!.path
 
 export type UninstallItem
   = | 'output-styles'
@@ -59,8 +64,8 @@ export class ZcfUninstaller {
     }
 
     try {
-      const settingsPath = join(homedir(), '.claude', 'settings.json')
-      const outputStylesPath = join(homedir(), '.claude', 'output-styles')
+      const settingsPath = CLAUDE_SETTINGS_FILE
+      const outputStylesPath = join(claudePaths.homeDir, 'output-styles')
 
       // Remove outputStyle field from settings.json
       if (await pathExists(settingsPath)) {
@@ -111,8 +116,8 @@ export class ZcfUninstaller {
 
     try {
       const { getAllWorkflowSkillNames } = await import('../config/workflows')
-      const skillsDir = join(homedir(), '.claude', 'skills')
-      const legacyCommandsPath = join(homedir(), '.claude', 'commands', 'zcf')
+      const skillsDir = claudePaths.skillsDir!
+      const legacyCommandsPath = join(claudePaths.homeDir, 'commands', 'zcf')
 
       if (await pathExists(legacyCommandsPath)) {
         const trashResult = await moveToTrash(legacyCommandsPath)
@@ -163,7 +168,7 @@ export class ZcfUninstaller {
     }
 
     try {
-      const agentsPath = join(homedir(), '.claude', 'agents', 'zcf')
+      const agentsPath = join(claudePaths.agentsDir!, 'zcf')
 
       if (await pathExists(agentsPath)) {
         const trashResult = await moveToTrash(agentsPath)
@@ -198,7 +203,7 @@ export class ZcfUninstaller {
     }
 
     try {
-      const claudeMdPath = join(homedir(), '.claude', 'CLAUDE.md')
+      const claudeMdPath = claudePaths.memoryFile!
 
       if (await pathExists(claudeMdPath)) {
         const trashResult = await moveToTrash(claudeMdPath)
@@ -233,7 +238,7 @@ export class ZcfUninstaller {
     }
 
     try {
-      const settingsPath = join(homedir(), '.claude', 'settings.json')
+      const settingsPath = CLAUDE_SETTINGS_FILE
 
       if (await pathExists(settingsPath)) {
         const settings = readJsonConfig<any>(settingsPath) || {}
@@ -283,7 +288,7 @@ export class ZcfUninstaller {
     }
 
     try {
-      const claudeJsonPath = join(homedir(), '.claude.json')
+      const claudeJsonPath = CLAUDE_JSON_FILE
 
       if (await pathExists(claudeJsonPath)) {
         const config = readJsonConfig<any>(claudeJsonPath) || {}
@@ -398,7 +403,7 @@ export class ZcfUninstaller {
 
     try {
       // Remove entire .claude.json file (includes MCP removal)
-      const claudeJsonPath = join(homedir(), '.claude.json')
+      const claudeJsonPath = CLAUDE_JSON_FILE
 
       if (await pathExists(claudeJsonPath)) {
         const trashResult = await moveToTrash(claudeJsonPath)
@@ -451,7 +456,7 @@ export class ZcfUninstaller {
     }
 
     try {
-      const backupPath = join(homedir(), '.claude', 'backup')
+      const backupPath = join(claudePaths.homeDir, 'backup')
 
       if (await pathExists(backupPath)) {
         const trashResult = await moveToTrash(backupPath)
@@ -524,8 +529,8 @@ export class ZcfUninstaller {
     try {
       // Remove all directories
       const directoriesToRemove = [
-        { path: join(homedir(), '.claude'), name: '~/.claude/' },
-        { path: join(homedir(), '.claude.json'), name: '~/.claude.json' },
+        { path: claudePaths.homeDir, name: '~/.claude/' },
+        { path: CLAUDE_JSON_FILE, name: '~/.claude.json' },
         { path: join(homedir(), '.claude-code-router'), name: '~/.claude-code-router/' },
       ]
 

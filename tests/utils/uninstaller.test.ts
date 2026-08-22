@@ -6,8 +6,12 @@ import { ZcfUninstaller } from '../../src/utils/uninstaller'
 vi.mock('node:fs')
 vi.mock('fs-extra')
 vi.mock('tinyexec')
-vi.mock('pathe')
-vi.mock('node:os')
+vi.mock('pathe', () => ({
+  join: vi.fn((...parts: string[]) => parts.join('/')),
+}))
+vi.mock('node:os', () => ({
+  homedir: vi.fn(() => '/home/user'),
+}))
 vi.mock('../../src/utils/json-config')
 vi.mock('../../src/i18n')
 vi.mock('../../src/utils/trash')

@@ -104,6 +104,21 @@ describe('codex adapter', () => {
       workflows: false,
     }))
     expect(updateZcfConfig).toHaveBeenCalledTimes(4)
+
+    const mappedKeys = new Set(vi.mocked(runCodexFullInit).mock.calls.flatMap(([mapped]) => Object.keys(mapped ?? {})))
+    for (const key of mappedKeys) {
+      expect([
+        'aiOutputLang',
+        'skipPrompt',
+        'configAction',
+        'systemPromptStyle',
+        'skipLanguageSelection',
+        'workflows',
+        'mcpServices',
+        'apiMode',
+        'customApiConfig',
+      ]).toContain(key)
+    }
   })
 
   it('keeps Codex -o skip from writing a system prompt and ignores explicit styles', async () => {

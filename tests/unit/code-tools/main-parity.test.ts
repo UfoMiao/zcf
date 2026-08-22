@@ -109,6 +109,24 @@ describe('claude/codex main parity', () => {
     expect(featuresSource).toContain('interactiveSwitch')
   })
 
+  it('types Codex adapter init options and derives reachable Claude/Codex paths from definitions', () => {
+    const adapterSource = readFileSync(join(process.cwd(), 'src/code-tools/codex/adapter.ts'), 'utf8')
+    const featuresSource = readFileSync(join(process.cwd(), 'src/utils/features.ts'), 'utf8')
+    const uninstallerSource = readFileSync(join(process.cwd(), 'src/utils/uninstaller.ts'), 'utf8')
+    const claude = getCodeToolDefinition('claude-code')
+    const codex = getCodeToolDefinition('codex')
+
+    expect(adapterSource).toContain('CodexFullInitOptions')
+    expect(adapterSource).not.toContain('Record<string, unknown>')
+    expect(featuresSource).not.toMatch(/join\(homedir\(\),\s*'\.codex'/)
+    expect(uninstallerSource).not.toMatch(/join\(homedir\(\),\s*'\.claude'(,|\))/)
+    expect(uninstallerSource).not.toMatch(/join\(homedir\(\),\s*'\.claude\.json'/)
+    expect(featuresSource).toContain('getCodeToolDefinition')
+    expect(uninstallerSource).toContain('getCodeToolDefinition')
+    expect(claude.paths.memoryFile).toBe(join(claude.paths.homeDir, 'CLAUDE.md'))
+    expect(codex.paths.memoryFile).toBe(join(codex.paths.homeDir, 'AGENTS.md'))
+  })
+
   it('keeps --api-configs success copy and sinks tool-owned menu/provider contracts', () => {
     expect(i18n.t('multi-config:configsAddedSuccessfully')).toBe('API configurations added successfully')
 
