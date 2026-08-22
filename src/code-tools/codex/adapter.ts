@@ -88,22 +88,11 @@ export const codexAdapter: CodeToolAdapter = {
   },
 
   async validateInitOptions(options: CodeToolInitOptions) {
-    const { i18n } = await import('../../i18n')
     applyAllLang(options)
     parseWorkflows(options)
     applySkipPromptInitDefaults(options)
     if (typeof options.installCometixLine === 'string')
       options.installCometixLine = options.installCometixLine.toLowerCase() === 'true'
-
-    const tool = i18n.t(definition.displayNameKey)
-    // Output styles stay Claude-only extras: skip maps to "do not apply",
-    // any other value is ignored so Codex init still succeeds like main.
-    if (options.installCometixLine === true) {
-      throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
-        tool,
-        capability: 'cometix',
-      }))
-    }
   },
 
   async init(options: CodeToolInitOptions) {
