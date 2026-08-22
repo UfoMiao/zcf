@@ -468,7 +468,7 @@ export async function runClaudeCodeInit(options: InitOptions = {}): Promise<void
       if (options.skipPrompt) {
         // Handle multi-configuration parameters (priority over traditional single config)
         if (options.apiConfigs || options.apiConfigsFile) {
-          const { handleMultiConfigurations } = await import('../../commands/init')
+          const { handleMultiConfigurations } = await import('../multi-config')
           await handleMultiConfigurations(options, 'claude-code')
           apiConfig = null
         }

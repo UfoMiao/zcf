@@ -30,10 +30,9 @@ export const CODE_TOOL_TYPES = CODE_TOOL_DEFINITIONS.map(definition => definitio
 export type { CodeToolType } from './code-tools/definitions'
 export { DEFAULT_CODE_TOOL_TYPE } from './code-tools/definitions'
 
-export const CODE_TOOL_BANNERS: Record<CodeToolType, string> = {
-  'claude-code': 'for Claude Code',
-  'codex': 'for Codex',
-}
+export const CODE_TOOL_BANNERS = Object.fromEntries(
+  CODE_TOOL_DEFINITIONS.map(definition => [definition.id, `for ${definition.displayName}`] as const),
+) as Record<CodeToolType, string>
 
 // Short aliases for code tool types
 export const CODE_TOOL_ALIASES: Record<string, CodeToolType> = Object.fromEntries(

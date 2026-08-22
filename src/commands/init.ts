@@ -1,12 +1,13 @@
 import type { CodeToolInitOptions } from '../code-tools'
 import type { CodeToolType, SupportedLang } from '../constants'
+import ansis from 'ansis'
 import { getCodeToolRegistry } from '../code-tools'
 import {
   validateApiConfigs,
   validateSkipPromptOptions,
 } from '../code-tools/claude-code/legacy-init'
 import { getCodeToolBanner } from '../code-tools/presentation'
-import { readProviderDefinitions } from '../code-tools/provider-profiles'
+import { DEFAULT_CODE_TOOL_TYPE } from '../constants'
 import { i18n } from '../i18n'
 import { displayBannerWithInfo } from '../utils/banner'
 import { resolveCodeType } from '../utils/code-type-resolver'
@@ -14,39 +15,19 @@ import { handleExitPromptError, handleGeneralError } from '../utils/error-handle
 
 export type { InitOptions } from '../code-tools/claude-code/legacy-init'
 export { validateApiConfigs, validateSkipPromptOptions }
-
-export async function handleMultiConfigurations(
-  options: CodeToolInitOptions,
-  codeToolType: CodeToolType,
-): Promise<void> {
-  try {
-    const adapter = getCodeToolRegistry().get(codeToolType)
-    if (!adapter.providers) {
-      throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
-        tool: i18n.t(adapter.definition.displayNameKey),
-        capability: 'providers',
-      }))
-    }
-
-    const definitions = readProviderDefinitions(options)
-    await validateApiConfigs(definitions)
-    await adapter.providers.importDefinitions(definitions, {
-      lang: i18n.language as SupportedLang,
-      skipPrompt: options.skipPrompt,
-    })
-  }
-  catch (error) {
-    console.error(i18n.t('multi-config:configsFailed', {
-      error: error instanceof Error ? error.message : String(error),
-    }))
-    throw error
-  }
-}
+export { handleMultiConfigurations } from '../code-tools/multi-config'
 
 export async function init(options: CodeToolInitOptions & { codeType?: CodeToolType | string } = {}): Promise<void> {
-  // Validate before banner, install prompts, or any other side effect — both
-  // interactive and skip-prompt entry points share this adapter contract.
-  const codeToolType = await resolveCodeType(options.codeType)
+  // Match main: unknown -T prints and falls back to Claude instead of aborting.
+  let codeToolType: CodeToolType
+  try {
+    codeToolType = await resolveCodeType(options.codeType)
+  }
+  catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(ansis.red(`${i18n.t('errors:generalError')} ${errorMessage}`))
+    codeToolType = DEFAULT_CODE_TOOL_TYPE
+  }
   const adapter = getCodeToolRegistry().get(codeToolType)
   await adapter.validateInitOptions(options)
 

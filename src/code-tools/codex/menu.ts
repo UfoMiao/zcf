@@ -13,7 +13,7 @@ export const codexMenu: CodeToolMenuCapability = {
   uninstallDescriptionKey: 'menu:menuDescriptions.codexUninstall',
   updateLabelKey: 'menu:menuOptions.codexCheckUpdates',
   updateDescriptionKey: 'menu:menuDescriptions.codexCheckUpdates',
-  updateAction: 'update',
+  updateAction: 'tool-update',
   async run(action: CodeToolMenuAction) {
     const codex = await import('../../utils/code-tools/codex')
     const features = await import('../../utils/features')

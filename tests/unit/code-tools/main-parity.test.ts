@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { customizeHelp } from '../../../src/cli-setup'
 import { getCodeToolRegistry } from '../../../src/code-tools'
 import { CODE_TOOL_DEFINITIONS } from '../../../src/code-tools/definitions'
@@ -66,5 +66,27 @@ describe('claude/codex main parity', () => {
     expect(text).toContain('claude-code, codex, cc=claude-code, cx=codex')
     expect(text).not.toMatch(/gemini/i)
     expect(text).not.toContain('-T gm')
+  })
+
+  it('falls back to Claude Code for illegal -T on init and config-switch', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { init } = await import('../../../src/commands/init')
+    const { configSwitchCommand } = await import('../../../src/commands/config-switch')
+    const claude = getCodeToolRegistry().get('claude-code')
+    const validate = vi.spyOn(claude, 'validateInitOptions').mockResolvedValue(undefined)
+    const claudeInit = vi.spyOn(claude, 'init').mockResolvedValue(undefined)
+    const displayList = vi.spyOn(claude.configurations as any, 'displayList').mockResolvedValue(undefined)
+
+    await init({ codeType: 'invalid', skipBanner: true, skipPrompt: true })
+    await configSwitchCommand({ codeType: 'invalid' as any, list: true })
+
+    expect(errorSpy).toHaveBeenCalled()
+    expect(validate).toHaveBeenCalled()
+    expect(claudeInit).toHaveBeenCalled()
+    expect(displayList).toHaveBeenCalled()
+    errorSpy.mockRestore()
+    validate.mockRestore()
+    claudeInit.mockRestore()
+    displayList.mockRestore()
   })
 })
