@@ -166,9 +166,13 @@ export const codexAdapter: CodeToolAdapter = {
   },
 
   providers: {
-    async importDefinitions(definitions) {
+    async toProfiles(definitions) {
+      const { createCodexProviderProfile } = await import('./providers')
+      return definitions.map(definition => createCodexProviderProfile(definition))
+    },
+    async importDefinitions(profiles) {
       const { importCodexProviderDefinitions } = await import('./providers')
-      await importCodexProviderDefinitions(definitions)
+      await importCodexProviderDefinitions(profiles)
     },
   },
 

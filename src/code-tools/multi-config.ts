@@ -20,7 +20,8 @@ export async function handleMultiConfigurations(
 
     const definitions = readProviderDefinitions(options)
     await validateProviderDefinitions(definitions)
-    await adapter.providers.importDefinitions(definitions, {
+    const profiles = await adapter.providers.toProfiles(definitions)
+    await adapter.providers.importDefinitions(profiles, {
       lang: i18n.language as SupportedLang,
       skipPrompt: options.skipPrompt,
     })

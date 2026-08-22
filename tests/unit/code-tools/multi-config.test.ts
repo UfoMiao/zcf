@@ -24,6 +24,7 @@ vi.mock('ansis', () => ({
 
 describe('handleMultiConfigurations', () => {
   const importDefinitions = vi.fn()
+  const toProfiles = vi.fn()
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -31,17 +32,22 @@ describe('handleMultiConfigurations', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {})
     vi.spyOn(getCodeToolRegistry(), 'get').mockReturnValue({
       definition: { displayNameKey: 'common:codex' },
-      providers: { importDefinitions },
+      providers: { toProfiles, importDefinitions },
     } as any)
     vi.mocked(readProviderDefinitions).mockReturnValue([{ name: 'one' }] as any)
     vi.mocked(validateProviderDefinitions).mockResolvedValue(undefined)
+    toProfiles.mockResolvedValue([{ id: 'one', name: 'one' }])
     importDefinitions.mockResolvedValue(undefined)
   })
 
   it('prints the same success notice as main after a provider import', async () => {
     await handleMultiConfigurations({ apiConfigs: '[]' }, 'codex')
 
-    expect(importDefinitions).toHaveBeenCalled()
+    expect(toProfiles).toHaveBeenCalledWith([{ name: 'one' }])
+    expect(importDefinitions).toHaveBeenCalledWith(
+      [{ id: 'one', name: 'one' }],
+      expect.objectContaining({ lang: 'en' }),
+    )
     expect(console.log).toHaveBeenCalledWith(expect.stringContaining('multi-config:configsAddedSuccessfully'))
   })
 

@@ -94,7 +94,8 @@ function printZcfSection(options: {
   console.log('')
 }
 
-const CORE_MENU_ACTIONS = new Set<CodeToolMenuAction>(['init', 'update', 'uninstall', 'check-updates', 'tool-update'])
+// Shared command actions only. Adapter-owned `+` actions (e.g. Codex update-tools) go through menu.run.
+const CORE_MENU_ACTIONS = new Set<CodeToolMenuAction>(['init', 'update', 'uninstall', 'check-updates'])
 
 async function dispatchCoreMenuAction(action: CodeToolMenuAction, codeTool: CodeToolType): Promise<void> {
   switch (action) {
@@ -110,17 +111,6 @@ async function dispatchCoreMenuAction(action: CodeToolMenuAction, codeTool: Code
     case 'check-updates':
       await checkUpdates({ codeType: codeTool })
       return
-    case 'tool-update': {
-      const adapter = getCodeToolRegistry().get(codeTool)
-      if (!adapter.updateTools) {
-        throw new Error(i18n.t('errors:unsupportedCodeToolCapability', {
-          tool: i18n.t(adapter.definition.displayNameKey),
-          capability: 'tool-update',
-        }))
-      }
-      await adapter.updateTools(false, { lang: i18n.language as SupportedLang })
-      return
-    }
     default:
       throw new Error(i18n.t('errors:unsupportedMenuAction', { action }))
   }
@@ -203,7 +193,10 @@ async function showAdapterMenu(codeTool: CodeToolType): Promise<MenuResult> {
     return undefined
   }
   if (normalized === '+') {
-    await dispatchCoreMenuAction(menu.updateAction, codeTool)
+    if (CORE_MENU_ACTIONS.has(menu.updateAction))
+      await dispatchCoreMenuAction(menu.updateAction, codeTool)
+    else
+      await menu.run(menu.updateAction)
     printSeparator()
     return undefined
   }

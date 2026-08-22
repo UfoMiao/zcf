@@ -1,4 +1,4 @@
-import type { ApiConfigDefinition } from '../types/claude-code-config'
+import type { ProviderDefinition } from './types'
 import { getValidProviderIds } from '../config/api-providers'
 import { i18n } from '../i18n'
 import { readFile } from '../utils/fs-operations'
@@ -8,10 +8,10 @@ export interface ProviderDefinitionSource {
   apiConfigsFile?: string
 }
 
-export function readProviderDefinitions(options: ProviderDefinitionSource): ApiConfigDefinition[] {
+export function readProviderDefinitions(options: ProviderDefinitionSource): ProviderDefinition[] {
   if (options.apiConfigs) {
     try {
-      return JSON.parse(options.apiConfigs) as ApiConfigDefinition[]
+      return JSON.parse(options.apiConfigs) as ProviderDefinition[]
     }
     catch (error) {
       throw new Error(i18n.t('multi-config:invalidJson', {
@@ -22,7 +22,7 @@ export function readProviderDefinitions(options: ProviderDefinitionSource): ApiC
 
   if (options.apiConfigsFile) {
     try {
-      return JSON.parse(readFile(options.apiConfigsFile)) as ApiConfigDefinition[]
+      return JSON.parse(readFile(options.apiConfigsFile)) as ProviderDefinition[]
     }
     catch (error) {
       throw new Error(i18n.t('multi-config:fileReadFailed', {
@@ -34,7 +34,7 @@ export function readProviderDefinitions(options: ProviderDefinitionSource): ApiC
   return []
 }
 
-export async function validateProviderDefinitions(configs: ApiConfigDefinition[]): Promise<void> {
+export async function validateProviderDefinitions(configs: ProviderDefinition[]): Promise<void> {
   if (!Array.isArray(configs))
     throw new TypeError(i18n.t('multi-config:mustBeArray'))
 

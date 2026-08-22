@@ -20,6 +20,7 @@ export type {
   CodeToolUninstallOptions,
   CodeToolUpdateOptions,
   ConfigItem,
+  ProviderDefinition,
   ProviderProfile,
   UpdateCheckResult,
 } from './types'

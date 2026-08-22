@@ -107,6 +107,7 @@ describe('handleMultiConfigurations', () => {
     expect(ClaudeCodeConfigManager.applyProfileSettings).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Test Config', id: 'Test Config-id' }),
     )
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('API configurations added successfully'))
   })
 
   it('should omit description when converting Claude Code configs', async () => {
@@ -165,6 +166,7 @@ describe('handleMultiConfigurations', () => {
       }),
       'sk-codex-key',
     )
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('API configurations added successfully'))
   })
 
   it('should handle API configurations from file', async () => {

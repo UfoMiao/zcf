@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTimestampedBackup } from '../../../src/code-tools/backup'
 import { claudeCodeAdapter } from '../../../src/code-tools/claude-code/adapter'
 import { runClaudeCodeInit } from '../../../src/code-tools/claude-code/init'
-import { importClaudeProviderDefinitions } from '../../../src/code-tools/claude-code/legacy-init'
+import { createClaudeCodeProviderProfile, importClaudeProviderDefinitions } from '../../../src/code-tools/claude-code/legacy-init'
 import { runClaudeCodeUninstall } from '../../../src/code-tools/claude-code/uninstall'
 import {
   handleClaudeCodeDirectSwitch,
@@ -35,6 +35,7 @@ vi.mock('../../../src/utils/auto-updater', () => ({
 }))
 vi.mock('../../../src/code-tools/claude-code/legacy-init', () => ({
   importClaudeProviderDefinitions: vi.fn(),
+  createClaudeCodeProviderProfile: vi.fn(),
 }))
 vi.mock('../../../src/utils/claude-code-config-manager', () => ({
   ClaudeCodeConfigManager: {
@@ -145,6 +146,9 @@ describe('claude Code adapter', () => {
     expect(createTimestampedBackup).toHaveBeenCalledWith(configFile, claudeCodeAdapter.definition.paths.homeDir)
     expect(checkAndUpdateTools).toHaveBeenCalledWith(true)
     expect(importClaudeProviderDefinitions).toHaveBeenCalledWith([])
+    vi.mocked(createClaudeCodeProviderProfile).mockResolvedValue({ id: 'one', name: 'One' } as any)
+    await expect(claudeCodeAdapter.providers?.toProfiles([{ name: 'One' }])).resolves.toEqual([{ id: 'one', name: 'One' }])
+    expect(createClaudeCodeProviderProfile).toHaveBeenCalledWith({ name: 'One' })
     expect(handleClaudeCodeDirectSwitch).toHaveBeenCalledWith('one')
     expect(listClaudeCodeProfiles).toHaveBeenCalled()
     expect(handleClaudeCodeInteractiveSwitch).toHaveBeenCalled()

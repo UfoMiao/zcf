@@ -13,7 +13,7 @@ export const codexMenu: CodeToolMenuCapability = {
   uninstallDescriptionKey: 'menu:menuDescriptions.codexUninstall',
   updateLabelKey: 'menu:menuOptions.codexCheckUpdates',
   updateDescriptionKey: 'menu:menuDescriptions.codexCheckUpdates',
-  updateAction: 'tool-update',
+  updateAction: 'update-tools',
   async run(action: CodeToolMenuAction) {
     const codex = await import('../../utils/code-tools/codex')
     const features = await import('../../utils/features')
@@ -32,6 +32,10 @@ export const codexMenu: CodeToolMenuCapability = {
         return
       case 'codex-configure-ai-memory':
         await features.configureCodexAiMemoryFeature()
+        return
+      case 'update-tools':
+        // Same as main `+`: Codex package update only, no ZCF config write.
+        await codex.runCodexUpdate(false, false)
         return
       default: {
         const { i18n } = await import('../../i18n')
