@@ -38,6 +38,7 @@ describe('provider profile serialization boundaries', () => {
         medium: 'medium',
         large: 'large',
       },
+      default: undefined,
     })
     expect(serializeClaudeCodeProviderProfile(profile, 'stored-id')).toMatchObject({
       id: 'stored-id',

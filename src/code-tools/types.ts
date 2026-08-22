@@ -1,5 +1,4 @@
 import type { AiOutputLanguage, SupportedLang } from '../constants'
-import type { ApiConfigDefinition } from '../types/claude-code-config'
 import type { InstallMethod } from '../types/config'
 import type { UninstallItem } from '../utils/uninstaller'
 import type { CodeToolType } from './definitions'
@@ -31,7 +30,7 @@ export interface CodeToolMenuCapability {
   uninstallDescriptionKey: string
   updateLabelKey: string
   updateDescriptionKey: string
-  updateAction: 'update' | 'check-updates' | 'tool-update'
+  updateAction: CodeToolMenuAction
   run: (action: CodeToolMenuAction) => Promise<void>
 }
 
@@ -135,6 +134,20 @@ export interface UpdateCheckResult {
   latestVersion?: string
 }
 
+/** CLI `--api-configs` JSON item before an adapter normalizes it to ProviderProfile. */
+export interface ProviderDefinition {
+  name?: string
+  type?: 'api_key' | 'auth_token' | 'ccr_proxy'
+  key?: string
+  url?: string
+  default?: boolean
+  primaryModel?: string
+  defaultHaikuModel?: string
+  defaultSonnetModel?: string
+  defaultOpusModel?: string
+  provider?: string
+}
+
 export interface ProviderProfile {
   id: string
   name: string
@@ -152,6 +165,8 @@ export interface ProviderProfile {
     large?: string
   }
   protocol?: string
+  /** Import-time default only; adapters persist it through their own switch API. */
+  default?: boolean
 }
 
 export interface CodeToolConfigurationCapability {
@@ -162,7 +177,8 @@ export interface CodeToolConfigurationCapability {
 }
 
 export interface CodeToolProviderCapability {
-  importDefinitions: (definitions: ApiConfigDefinition[], ctx: CodeToolContext) => Promise<void>
+  toProfiles: (definitions: ProviderDefinition[]) => Promise<ProviderProfile[]>
+  importDefinitions: (profiles: ProviderProfile[], ctx: CodeToolContext) => Promise<void>
 }
 
 export interface CodeToolAdapter {

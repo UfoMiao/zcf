@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createTimestampedBackup } from '../../../src/code-tools/backup'
 import { codexAdapter } from '../../../src/code-tools/codex/adapter'
-import { importCodexProviderDefinitions } from '../../../src/code-tools/codex/providers'
+import { createCodexProviderProfile, importCodexProviderDefinitions } from '../../../src/code-tools/codex/providers'
 import { handleCodexInteractiveSwitch, listCodexProvidersWithDisplay } from '../../../src/code-tools/configuration-ui'
 import {
   checkCodexUpdate,
@@ -34,6 +34,7 @@ vi.mock('../../../src/code-tools/backup', () => ({
 }))
 vi.mock('../../../src/code-tools/codex/providers', () => ({
   importCodexProviderDefinitions: vi.fn(),
+  createCodexProviderProfile: vi.fn(),
 }))
 vi.mock('../../../src/code-tools/configuration-ui', () => ({
   handleCodexInteractiveSwitch: vi.fn(),
@@ -218,6 +219,9 @@ describe('codex adapter', () => {
     expect(runCodexUninstall).toHaveBeenCalled()
     expect(createTimestampedBackup).toHaveBeenCalledWith(configFile, codexAdapter.definition.paths.homeDir)
     expect(importCodexProviderDefinitions).toHaveBeenCalledWith([])
+    vi.mocked(createCodexProviderProfile).mockReturnValue({ id: 'one', name: 'One' } as any)
+    await expect(codexAdapter.providers?.toProfiles([{ name: 'One' }])).resolves.toEqual([{ id: 'one', name: 'One' }])
+    expect(createCodexProviderProfile).toHaveBeenCalledWith({ name: 'One' })
     expect(switchCodexProvider).toHaveBeenCalledWith('provider-a')
     expect(listCodexProvidersWithDisplay).toHaveBeenCalled()
     expect(handleCodexInteractiveSwitch).toHaveBeenCalled()

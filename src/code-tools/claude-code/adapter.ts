@@ -89,9 +89,13 @@ export const claudeCodeAdapter: CodeToolAdapter = {
   },
 
   providers: {
-    async importDefinitions(definitions) {
+    async toProfiles(definitions) {
+      const { createClaudeCodeProviderProfile } = await import('./legacy-init')
+      return Promise.all(definitions.map(definition => createClaudeCodeProviderProfile(definition)))
+    },
+    async importDefinitions(profiles) {
       const { importClaudeProviderDefinitions } = await import('./legacy-init')
-      await importClaudeProviderDefinitions(definitions)
+      await importClaudeProviderDefinitions(profiles)
     },
   },
 

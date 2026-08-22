@@ -1,7 +1,7 @@
 import type { AiOutputLanguage, CodeToolType, SupportedLang } from '../../constants'
 import type { McpServerConfig } from '../../types'
 import type { ApiConfigDefinition, ClaudeCodeProfile } from '../../types/claude-code-config'
-import type { ProviderProfile } from '../types'
+import type { ProviderDefinition, ProviderProfile } from '../types'
 import { existsSync } from 'node:fs'
 import process from 'node:process'
 import ansis from 'ansis'
@@ -905,7 +905,8 @@ export async function handleMultiConfigurations(options: InitOptions): Promise<v
   try {
     const configs = readProviderDefinitions(options)
     await validateApiConfigs(configs)
-    await importClaudeProviderDefinitions(configs)
+    const profiles = await Promise.all(configs.map(config => createClaudeCodeProviderProfile(config)))
+    await importClaudeProviderDefinitions(profiles)
 
     console.log(ansis.green(`✔ ${i18n.t('multi-config:configsAddedSuccessfully')}`))
   }
@@ -925,66 +926,56 @@ export async function validateApiConfigs(configs: ApiConfigDefinition[]): Promis
 
 /**
  * Handle Claude Code API configurations
- * @param configs - Array of API configurations
+ * @param profiles - Normalized provider profiles
  */
-export async function importClaudeProviderDefinitions(configs: ApiConfigDefinition[]): Promise<void> {
+export async function importClaudeProviderDefinitions(profiles: ProviderProfile[]): Promise<void> {
   const { ClaudeCodeConfigManager } = await import('../../utils/claude-code-config-manager')
   const addedProfiles: ClaudeCodeProfile[] = []
 
-  for (const config of configs) {
-    if (config.type === 'ccr_proxy') {
-      throw new Error(i18n.t('multi-config:ccrProxyReserved', { name: config.name }))
+  for (const profile of profiles) {
+    if (profile.auth.type === 'ccr_proxy') {
+      throw new Error(i18n.t('multi-config:ccrProxyReserved', { name: profile.name }))
     }
 
-    const profile = await convertToClaudeCodeProfile(config)
-    const result = await ClaudeCodeConfigManager.addProfile(profile)
+    const claudeProfile = serializeClaudeCodeProviderProfile(
+      profile,
+      ClaudeCodeConfigManager.generateProfileId(profile.name),
+    )
+    const result = await ClaudeCodeConfigManager.addProfile(claudeProfile)
 
     if (!result.success) {
-      throw new Error(i18n.t('multi-config:configProfileAddFailed', { name: config.name, error: result.error }))
+      throw new Error(i18n.t('multi-config:configProfileAddFailed', { name: profile.name, error: result.error }))
     }
 
     const storedProfile = result.addedProfile
-      || ClaudeCodeConfigManager.getProfileByName(config.name!)
-      || profile
+      || ClaudeCodeConfigManager.getProfileByName(profile.name)
+      || claudeProfile
     addedProfiles.push(storedProfile)
 
-    console.log(ansis.green(`✔ ${i18n.t('multi-config:profileAdded', { name: config.name })}`))
+    console.log(ansis.green(`✔ ${i18n.t('multi-config:profileAdded', { name: profile.name })}`))
   }
 
   if (addedProfiles.length > 0) {
     const summary = addedProfiles
-      .map(profile => `${profile.name} [${profile.authType}]`)
+      .map(item => `${item.name} [${item.authType}]`)
       .join(', ')
     console.log(ansis.gray(`  • ${ClaudeCodeConfigManager.CONFIG_FILE}: ${summary}`))
   }
 
-  // Set default profile if specified
-  const defaultConfig = configs.find(c => c.default)
-  if (defaultConfig) {
-    const profile = addedProfiles.find(p => p.name === defaultConfig.name)
-      || ClaudeCodeConfigManager.getProfileByName(defaultConfig.name!)
+  const defaultProfile = profiles.find(item => item.default)
+  if (defaultProfile) {
+    const profile = addedProfiles.find(item => item.name === defaultProfile.name)
+      || ClaudeCodeConfigManager.getProfileByName(defaultProfile.name)
     if (profile && profile.id) {
       await ClaudeCodeConfigManager.switchProfile(profile.id)
       await ClaudeCodeConfigManager.applyProfileSettings(profile)
-      console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProfileSet', { name: defaultConfig.name })}`))
+      console.log(ansis.green(`✔ ${i18n.t('multi-config:defaultProfileSet', { name: defaultProfile.name })}`))
     }
   }
 
-  // Sync CCR configuration if needed
   await ClaudeCodeConfigManager.syncCcrProfile()
 }
 
-/**
- * Convert API config definition to Claude Code profile
- * @param config - API configuration definition
- */
-/**
- * Convert single API configuration to Claude Code profile
- * Used in skip-prompt mode for provider-based or traditional API configurations
- * @param apiConfig - Basic API configuration object
- * @param provider - Optional provider name
- * @param options - Command line options for models
- */
 /**
  * Save single API configuration to ZCF TOML config
  * Handles profile creation, switching, and error reporting
@@ -1079,16 +1070,7 @@ async function convertSingleConfigToProfile(
   return profile
 }
 
-async function convertToClaudeCodeProfile(config: ApiConfigDefinition): Promise<ClaudeCodeProfile> {
-  const { ClaudeCodeConfigManager } = await import('../../utils/claude-code-config-manager')
-
-  return serializeClaudeCodeProviderProfile(
-    await createClaudeCodeProviderProfile(config),
-    ClaudeCodeConfigManager.generateProfileId(config.name!),
-  )
-}
-
-export async function createClaudeCodeProviderProfile(config: ApiConfigDefinition): Promise<ProviderProfile> {
+export async function createClaudeCodeProviderProfile(config: ProviderDefinition): Promise<ProviderProfile> {
   let baseUrl = config.url
   let primaryModel = config.primaryModel
   let smallModel = config.defaultHaikuModel
@@ -1137,6 +1119,7 @@ export async function createClaudeCodeProviderProfile(config: ApiConfigDefinitio
       medium: mediumModel,
       large: largeModel,
     },
+    default: config.default,
   }
 }
 

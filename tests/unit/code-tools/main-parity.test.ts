@@ -89,4 +89,17 @@ describe('claude/codex main parity', () => {
     claudeInit.mockRestore()
     displayList.mockRestore()
   })
+
+  it('keeps --api-configs success copy and sinks tool-owned menu/provider contracts', () => {
+    expect(i18n.t('multi-config:configsAddedSuccessfully')).toBe('API configurations added successfully')
+
+    const claude = getCodeToolRegistry().get('claude-code')
+    const codex = getCodeToolRegistry().get('codex')
+    const coreActions = ['init', 'update', 'uninstall', 'check-updates']
+
+    expect(claude.menu.updateAction).toBe('check-updates')
+    expect(coreActions).not.toContain(codex.menu.updateAction)
+    expect(typeof claude.providers?.toProfiles).toBe('function')
+    expect(typeof codex.providers?.toProfiles).toBe('function')
+  })
 })

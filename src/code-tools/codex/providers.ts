@@ -1,12 +1,11 @@
-import type { ApiConfigDefinition } from '../../types/claude-code-config'
 import type { CodexProvider } from '../../utils/code-tools/codex'
-import type { ProviderProfile } from '../types'
+import type { ProviderDefinition, ProviderProfile } from '../types'
 import ansis from 'ansis'
 import { getProviderPreset } from '../../config/api-providers'
 import { API_DEFAULT_URL } from '../../constants'
 import { i18n } from '../../i18n'
 
-export function createCodexProviderProfile(config: ApiConfigDefinition): ProviderProfile {
+export function createCodexProviderProfile(config: ProviderDefinition): ProviderProfile {
   const displayName = config.name || config.provider || 'custom'
   const preset = config.provider && config.provider !== 'custom'
     ? getProviderPreset(config.provider)?.codex
@@ -30,6 +29,7 @@ export function createCodexProviderProfile(config: ApiConfigDefinition): Provide
       primary: config.primaryModel || preset?.defaultModel || 'gpt-5.2',
     },
     protocol: preset?.wireApi || 'responses',
+    default: config.default,
   }
 }
 
@@ -45,40 +45,38 @@ export function serializeCodexProvider(profile: ProviderProfile): CodexProvider 
   }
 }
 
-export async function importCodexProviderDefinitions(configs: ApiConfigDefinition[]): Promise<void> {
+export async function importCodexProviderDefinitions(profiles: ProviderProfile[]): Promise<void> {
   const { addProviderToExisting } = await import('../../utils/code-tools/codex-provider-manager')
   const addedProviderIds: string[] = []
 
-  for (const config of configs) {
+  for (const profile of profiles) {
     try {
-      const profile = createCodexProviderProfile(config)
       const result = await addProviderToExisting(
         serializeCodexProvider(profile),
         profile.auth.credential || '',
       )
       if (!result.success) {
         throw new Error(i18n.t('multi-config:providerAddFailed', {
-          name: config.name,
+          name: profile.name,
           error: result.error,
         }))
       }
       addedProviderIds.push(profile.id)
-      console.log(ansis.green(`✔ ${i18n.t('multi-config:providerAdded', { name: config.name })}`))
+      console.log(ansis.green(`✔ ${i18n.t('multi-config:providerAdded', { name: profile.name })}`))
     }
     catch (error) {
       console.error(ansis.red(i18n.t('multi-config:providerAddFailed', {
-        name: config.name,
+        name: profile.name,
         error: error instanceof Error ? error.message : String(error),
       })))
       throw error
     }
   }
 
-  const defaultConfig = configs.find(config => config.default)
-  if (!defaultConfig)
+  const defaultProfile = profiles.find(profile => profile.default)
+  if (!defaultProfile)
     return
 
-  const defaultProfile = createCodexProviderProfile(defaultConfig)
   if (!addedProviderIds.includes(defaultProfile.id)) {
     throw new Error(i18n.t('multi-config:providerAddFailed', {
       name: defaultProfile.name,
