@@ -1,4 +1,4 @@
-import { join } from 'node:path'
+import { join } from 'pathe'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compareVersions, shouldUpdate } from '../../../src/utils/version-checker'
 

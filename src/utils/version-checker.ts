@@ -1,8 +1,8 @@
 import { exec } from 'node:child_process'
 import * as nodeFs from 'node:fs'
-import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
+import { dirname, join } from 'pathe'
 import semver from 'semver'
 import { findCommandPath, getHomebrewCommandPaths, getPlatform } from './platform'
 
@@ -27,7 +27,7 @@ function readCcrPackageVersion(packageJsonPath: string): string | null {
   }
 }
 
-function getPackageJsonPaths(commandPath: string): string[] {
+function getCcrPackageJsonPaths(commandPath: string): string[] {
   const packageJsonPaths: string[] = []
 
   try {
@@ -67,7 +67,7 @@ export async function getCcrInstalledVersion(): Promise<string | null> {
   if (!commandPath)
     return null
 
-  for (const packageJsonPath of getPackageJsonPaths(commandPath)) {
+  for (const packageJsonPath of getCcrPackageJsonPaths(commandPath)) {
     const version = readCcrPackageVersion(packageJsonPath)
     if (version)
       return version
