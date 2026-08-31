@@ -736,11 +736,11 @@ ID=ubuntu`)
   })
 
   describe('findCommandPath - additional scenarios', () => {
-    it('should return first line when multiple paths returned by where', async () => {
+    it('should trim the first path when where returns multiple CRLF-separated results', async () => {
       vi.mocked(platform).mockReturnValue('win32')
       vi.mocked(exec).mockResolvedValue({
         exitCode: 0,
-        stdout: 'C:\\path\\to\\claude.exe\nC:\\another\\path\\claude.exe',
+        stdout: 'C:\\path\\to\\claude.exe\r\nC:\\another\\path\\claude.exe\r\n',
         stderr: '',
       } as any)
 

@@ -379,7 +379,7 @@ export async function findCommandPath(command: string): Promise<string | null> {
     const cmd = getPlatform() === 'windows' ? 'where' : 'which'
     const res = await exec(cmd, [command])
     if (res.exitCode === 0 && res.stdout) {
-      return res.stdout.trim().split('\n')[0]
+      return res.stdout.split(/\r?\n/, 1)[0].trim() || null
     }
   }
   catch {
