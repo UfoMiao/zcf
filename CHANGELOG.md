@@ -1,5 +1,47 @@
 # Changelog
 
+## 3.7.3
+
+### Patch Changes
+
+- ## New Features
+  - Introduce built-in code-tool adapter/registry and migrate Claude Code / Codex command handlers to adapter dispatch
+  - Add MiniMax China (`minimax-cn`) API provider preset
+
+  ## 新功能
+  - 引入内置 code-tool adapter/registry 架构，将 Claude Code / Codex 命令处理迁移为 adapter 分发
+  - 新增 MiniMax 国内版（`minimax-cn`）API 提供商预设
+
+  ## Optimization
+  - Derive Claude/Codex paths, leftover cleanup, and provider contracts from adapter definitions
+  - Align Claude/Codex CLI with main for skip/output-style, illegal `-T` fallback, menu update, and provider import feedback
+
+  ## 优化
+  - 从 adapter 定义派生 Claude/Codex 路径、残留清理与 provider 契约
+  - 对齐 Claude/Codex CLI 与 main 的 skip/output-style、非法 `-T` 回退、菜单更新与 provider 导入反馈
+
+  ## Fixes
+  - Normalize Windows command paths by trimming CRLF-separated `where` results and aligning CCR path handling with pathe
+  - Read CCR installed version from package metadata without executing the CLI, preventing CCR 3.x probes from mutating Codex config
+  - Reject illegal Codex `-o` output styles before writes
+  - Restore `--api-configs` success summary and main-equivalent Claude/Codex CLI behavior
+
+  ## 修复
+  - 规范化 Windows 命令路径：裁剪 CRLF 分隔的 `where` 结果，CCR 路径处理与 pathe 约定对齐
+  - 从包元数据读取已安装 CCR 版本，避免执行 CLI 探测导致 CCR 3.x 改写用户 Codex 配置
+  - 非法 Codex `-o` 输出风格在写入前即拒绝
+  - 恢复 `--api-configs` 成功摘要，以及 Claude/Codex 与 main 等价的 CLI 行为
+
+  ## Documentation
+  - Record code-tool plugin architecture decision (ADR 001)
+  - Add Sublyx sponsor and promote AICodeMirror to the top banner
+  - Refresh GLM provider docs (`glm-cn` for zh-CN, `z-ai` for en/ja) and fix star history chart links
+
+  ## 文档
+  - 记录 code-tool 插件架构决策（ADR 001）
+  - 新增 Sublyx 赞助商，并将 AICodeMirror 提升为顶部横幅
+  - 更新 GLM 提供商文档（zh-CN 使用 glm-cn，en/ja 使用 z-ai），并修复 star history 图表链接
+
 ## 3.7.2
 
 ### Patch Changes
