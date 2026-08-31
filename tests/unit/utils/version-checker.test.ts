@@ -17,6 +17,8 @@ const mockWrapCommandWithSudo = vi.hoisted(() => vi.fn((command: string, args: s
 // Create hoisted mock for fs functions
 const mockExistsSync = vi.hoisted(() => vi.fn())
 const mockReaddirSync = vi.hoisted(() => vi.fn())
+const mockReadFileSync = vi.hoisted(() => vi.fn())
+const mockRealpathSync = vi.hoisted(() => vi.fn())
 
 // Additional hoisted mocks
 const mockTinyExec = vi.hoisted(() => vi.fn())
@@ -36,6 +38,8 @@ vi.mock('node:util', () => ({
 vi.mock('node:fs', () => ({
   existsSync: mockExistsSync,
   readdirSync: mockReaddirSync,
+  readFileSync: mockReadFileSync,
+  realpathSync: mockRealpathSync,
 }))
 
 // Mock platform functions
@@ -136,6 +140,8 @@ describe('version-checker', () => {
     mockGetHomebrewCommandPaths.mockReset()
     mockExistsSync.mockReset()
     mockReaddirSync.mockReset()
+    mockReadFileSync.mockReset()
+    mockRealpathSync.mockReset()
     mockWrapCommandWithSudo.mockImplementation((command: string, args: string[]) => ({ command, args, usedSudo: false }))
     mockTinyExec.mockReset()
     mockTinyExec.mockResolvedValue({ stdout: '', stderr: '' })
@@ -478,11 +484,11 @@ describe('version-checker', () => {
         })
 
       const { getInstalledVersion } = await import('../../../src/utils/version-checker')
-      const result = await getInstalledVersion('ccr')
+      const result = await getInstalledVersion('tool')
 
       expect(result).toBe('2.0.0')
-      expect(mockExecAsync).toHaveBeenCalledWith('ccr -v')
-      expect(mockExecAsync).toHaveBeenCalledWith('ccr --version')
+      expect(mockExecAsync).toHaveBeenCalledWith('tool -v')
+      expect(mockExecAsync).toHaveBeenCalledWith('tool --version')
     })
 
     it('should return null after max retries when command fails', async () => {
@@ -621,9 +627,18 @@ describe('version-checker', () => {
     })
 
     it('should return version info for installed CCR', async () => {
-      mockExecAsync
-        .mockResolvedValueOnce({ stdout: '1.0.0', stderr: '' }) // getInstalledVersion
-        .mockResolvedValueOnce({ stdout: '1.1.0\n', stderr: '' }) // getLatestVersion
+      mockFindCommandPath.mockResolvedValue('/usr/local/bin/ccr')
+      mockRealpathSync.mockReturnValue('/usr/local/lib/node_modules/@musistudio/claude-code-router/dist/main/cli.js')
+      mockReadFileSync.mockImplementation((path: string) => {
+        if (path === '/usr/local/lib/node_modules/@musistudio/claude-code-router/package.json') {
+          return JSON.stringify({
+            name: '@musistudio/claude-code-router',
+            version: '1.0.0',
+          })
+        }
+        throw new Error('File not found')
+      })
+      mockExecAsync.mockResolvedValueOnce({ stdout: '1.1.0\n', stderr: '' }) // getLatestVersion
 
       const { checkCcrVersion } = await import('../../../src/utils/version-checker')
       const result = await checkCcrVersion()
