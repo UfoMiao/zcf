@@ -1,3 +1,4 @@
+import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { compareVersions, shouldUpdate } from '../../../src/utils/version-checker'
 
@@ -627,10 +628,12 @@ describe('version-checker', () => {
     })
 
     it('should return version info for installed CCR', async () => {
-      mockFindCommandPath.mockResolvedValue('/usr/local/bin/ccr')
-      mockRealpathSync.mockReturnValue('/usr/local/lib/node_modules/@musistudio/claude-code-router/dist/main/cli.js')
+      const commandPath = join('/usr', 'local', 'bin', 'ccr')
+      const packageRoot = join('/usr', 'local', 'lib', 'node_modules', '@musistudio', 'claude-code-router')
+      mockFindCommandPath.mockResolvedValue(commandPath)
+      mockRealpathSync.mockReturnValue(join(packageRoot, 'dist', 'main', 'cli.js'))
       mockReadFileSync.mockImplementation((path: string) => {
-        if (path === '/usr/local/lib/node_modules/@musistudio/claude-code-router/package.json') {
+        if (path === join(packageRoot, 'package.json')) {
           return JSON.stringify({
             name: '@musistudio/claude-code-router',
             version: '1.0.0',
