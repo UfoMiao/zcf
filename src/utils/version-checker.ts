@@ -1,11 +1,80 @@
 import { exec } from 'node:child_process'
 import * as nodeFs from 'node:fs'
+import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { promisify } from 'node:util'
 import semver from 'semver'
 import { findCommandPath, getHomebrewCommandPaths, getPlatform } from './platform'
 
 const execAsync = promisify(exec)
+const CCR_PACKAGE_NAME = '@musistudio/claude-code-router'
+
+interface PackageMetadata {
+  name?: string
+  version?: string
+}
+
+function readCcrPackageVersion(packageJsonPath: string): string | null {
+  try {
+    const metadata = JSON.parse(nodeFs.readFileSync(packageJsonPath, 'utf8')) as PackageMetadata
+    if (metadata.name !== CCR_PACKAGE_NAME || !metadata.version || !semver.valid(metadata.version))
+      return null
+
+    return metadata.version
+  }
+  catch {
+    return null
+  }
+}
+
+function getPackageJsonPaths(commandPath: string): string[] {
+  const packageJsonPaths: string[] = []
+
+  try {
+    let currentDirectory = dirname(nodeFs.realpathSync(commandPath))
+    while (true) {
+      packageJsonPaths.push(join(currentDirectory, 'package.json'))
+      const parentDirectory = dirname(currentDirectory)
+      if (parentDirectory === currentDirectory)
+        break
+      currentDirectory = parentDirectory
+    }
+  }
+  catch {
+    // The standard npm prefix candidates below still cover non-symlink shims.
+  }
+
+  const commandDirectory = dirname(commandPath)
+  const packageSegments = ['@musistudio', 'claude-code-router', 'package.json']
+  packageJsonPaths.push(
+    join(commandDirectory, 'node_modules', ...packageSegments),
+    join(commandDirectory, '..', 'lib', 'node_modules', ...packageSegments),
+  )
+
+  return [...new Set(packageJsonPaths)]
+}
+
+/**
+ * Get the installed CCR version without executing the CCR CLI.
+ *
+ * CCR 3.x treats version flags as profile names and may apply that profile before
+ * validation, so even a failed version probe can rewrite the user's Codex config.
+ * Resolve the active command to its npm package metadata instead. The direct npm
+ * prefix candidates cover Unix symlinks and Windows .cmd shims.
+ */
+export async function getCcrInstalledVersion(): Promise<string | null> {
+  const commandPath = await findCommandPath('ccr')
+  if (!commandPath)
+    return null
+
+  for (const packageJsonPath of getPackageJsonPaths(commandPath)) {
+    const version = readCcrPackageVersion(packageJsonPath)
+    if (version)
+      return version
+  }
+
+  return null
+}
 
 /**
  * Get installed version of a command-line tool
@@ -644,9 +713,9 @@ export async function checkCcrVersion(): Promise<{
   latestVersion: string | null
   needsUpdate: boolean
 }> {
-  const currentVersion = await getInstalledVersion('ccr')
+  const currentVersion = await getCcrInstalledVersion()
   // Get the latest version from npm
-  const latestVersion = await getLatestVersion('@musistudio/claude-code-router')
+  const latestVersion = await getLatestVersion(CCR_PACKAGE_NAME)
 
   return {
     installed: currentVersion !== null,
