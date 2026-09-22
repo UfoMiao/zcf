@@ -34,6 +34,42 @@ export function isWindows(): boolean {
   return getPlatform() === 'windows'
 }
 
+/**
+ * Refresh the current process PATH from the Windows environment.
+ *
+ * Native installers can persist a new user PATH entry while the running Node
+ * process keeps its old environment snapshot. Refreshing both scopes lets the
+ * post-install command check observe launchers created by the installer
+ * without assuming a particular install directory.
+ */
+export async function refreshWindowsPath(): Promise<void> {
+  if (getPlatform() !== 'windows')
+    return
+
+  try {
+    const result = await exec('powershell', [
+      '-NoProfile',
+      '-NonInteractive',
+      '-Command',
+      '[Environment]::GetEnvironmentVariable(\'Path\', \'User\'); [Environment]::GetEnvironmentVariable(\'Path\', \'Machine\')',
+    ])
+
+    if (result.exitCode !== 0 || !result.stdout)
+      return
+
+    const persistedEntries = result.stdout
+      .split(/\r?\n/)
+      .flatMap(value => value.split(';'))
+      .map(value => value.trim())
+      .filter(Boolean)
+    const currentEntries = (process.env.PATH || '').split(';').map(value => value.trim()).filter(Boolean)
+    process.env.PATH = [...new Set([...persistedEntries, ...currentEntries])].join(';')
+  }
+  catch {
+    // PATH refresh is best-effort; installation verification still runs.
+  }
+}
+
 export interface WSLInfo {
   isWSL: true
   distro: string | null
