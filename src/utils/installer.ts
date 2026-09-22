@@ -11,7 +11,7 @@ import { getCodeToolDefinition } from '../code-tools/definitions'
 import { ensureI18nInitialized, i18n } from '../i18n'
 import { updateClaudeCode } from './auto-updater'
 import { exists, isExecutable, remove } from './fs-operations'
-import { commandExists, findCommandPath, getHomebrewCommandPaths, getPlatform, getRecommendedInstallMethods, getTermuxPrefix, getWSLInfo, isTermux, isWSL, wrapCommandWithSudo } from './platform'
+import { commandExists, findCommandPath, getHomebrewCommandPaths, getPlatform, getRecommendedInstallMethods, getTermuxPrefix, getWSLInfo, isTermux, isWSL, refreshWindowsPath, wrapCommandWithSudo } from './platform'
 
 export async function isClaudeCodeInstalled(): Promise<boolean> {
   return await commandExists(getCodeToolDefinition('claude-code').installation.command)
@@ -622,6 +622,9 @@ export async function executeInstallMethod(method: InstallMethod, codeType: Code
     }
 
     spinner.succeed(i18n.t('installation:installMethodSuccess', { method }))
+
+    if (getPlatform() === 'windows')
+      await refreshWindowsPath()
 
     // Verify installation and create symlink if needed
     // Verification is informational only - don't fail the installation if verification fails

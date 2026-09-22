@@ -17,6 +17,7 @@ import {
   isTermux,
   isWindows,
   isWSL,
+  refreshWindowsPath,
   shouldUseSudoForGlobalInstall,
 } from '../../../src/utils/platform'
 
@@ -481,6 +482,36 @@ ID=ubuntu`)
       const result = await commandExists('claude')
 
       expect(result).toBe(true)
+    })
+  })
+
+  describe('refreshWindowsPath', () => {
+    it('merges persisted Windows PATH entries into the current process', async () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      process.env.PATH = 'C:\\existing'
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: 'C:\\Users\\user\\.local\\bin;C:\\Windows\\System32\nC:\\Machine\\bin',
+        stderr: '',
+      } as any)
+
+      await refreshWindowsPath()
+
+      expect(exec).toHaveBeenCalledWith('powershell', [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        '[Environment]::GetEnvironmentVariable(\'Path\', \'User\'); [Environment]::GetEnvironmentVariable(\'Path\', \'Machine\')',
+      ])
+      expect(process.env.PATH).toBe('C:\\Users\\user\\.local\\bin;C:\\Windows\\System32;C:\\Machine\\bin;C:\\existing')
+    })
+
+    it('does nothing outside Windows', async () => {
+      vi.mocked(platform).mockReturnValue('darwin')
+
+      await refreshWindowsPath()
+
+      expect(exec).not.toHaveBeenCalled()
     })
   })
 
