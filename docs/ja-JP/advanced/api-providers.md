@@ -150,14 +150,19 @@ npx zcf init -s -p z-ai -k "your-auth-token"
 **公式リンク**: [MiniMax プラットフォーム](https://platform.minimax.io)
 
 **特徴**:
-- 🎯 高性能AIモデル (MiniMax-M3)
-- 💡 204,800トークンのコンテキストウィンドウ、最大192K出力
-- 🔧 Anthropic互換API、Claude Code対応
+- 🎯 MiniMax-M3.1-Flash（デフォルト）と MiniMax-M3
+- 💡 両モデルとも1,000,000トークンのコンテキストウィンドウ
+- 🔧 Claude Code は Anthropic API、Codex は Responses API を使用
 
 **設定情報**:
 - **Claude Code Base URL**: `https://api.minimax.io/anthropic`
+- **Codex Base URL**: `https://api.minimax.io/v1`
+- **中国リージョン（`minimax-cn`）**: `https://api.minimax.cn/anthropic` / `https://api.minimax.cn/v1`
 - **認証方式**: `auth_token`
-- **Claude Code デフォルトモデル**: `MiniMax-M3`（メイン）、`MiniMax-M2.7-highspeed`（高速）
+- **Claude Code デフォルトモデル**: `MiniMax-M3.1-Flash`（メイン）、`MiniMax-M3`（Haiku ロール）
+- **Codex デフォルトモデル**: `MiniMax-M3.1-Flash`
+
+明示的なモデルと URL の指定（保存済みの旧モデル設定を含む）は維持されます。ZCF はクライアント設定を生成し、thinking 履歴、ツール呼び出し、画像リクエストはクライアントが処理します。Flash は thinking の無効化や `none` effort をサポートしません。
 
 **使用例**:
 ```bash

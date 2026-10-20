@@ -213,12 +213,12 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     claudeCode: {
       baseUrl: 'https://api.minimax.io/anthropic',
       authType: 'auth_token',
-      defaultModels: ['MiniMax-M3', 'MiniMax-M2.7'],
+      defaultModels: ['MiniMax-M3.1-Flash', 'MiniMax-M3'],
     },
     codex: {
       baseUrl: 'https://api.minimax.io/v1',
       wireApi: 'responses',
-      defaultModel: 'MiniMax-M3',
+      defaultModel: 'MiniMax-M3.1-Flash',
     },
     description: 'MiniMax API Service',
   },
@@ -227,14 +227,14 @@ export const API_PROVIDER_PRESETS: ApiProviderPreset[] = [
     name: 'MiniMax CN',
     supportedCodeTools: ['claude-code', 'codex'],
     claudeCode: {
-      baseUrl: 'https://api.minimaxi.com/anthropic',
+      baseUrl: 'https://api.minimax.cn/anthropic',
       authType: 'auth_token',
-      defaultModels: ['MiniMax-M3', 'MiniMax-M2.7'],
+      defaultModels: ['MiniMax-M3.1-Flash', 'MiniMax-M3'],
     },
     codex: {
-      baseUrl: 'https://api.minimaxi.com/v1',
+      baseUrl: 'https://api.minimax.cn/v1',
       wireApi: 'responses',
-      defaultModel: 'MiniMax-M3',
+      defaultModel: 'MiniMax-M3.1-Flash',
     },
     description: 'MiniMax China API Service',
   },

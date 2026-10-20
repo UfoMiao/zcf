@@ -150,14 +150,19 @@ npx zcf init -s -p glm-cn -k "your-auth-token"
 **官方链接**：[MiniMax 平台](https://platform.minimax.io)
 
 **特点**：
-- 🎯 高性能 AI 模型 (MiniMax-M3)
-- 💡 204,800 tokens 上下文窗口，最大 192K 输出
-- 🔧 兼容 Anthropic API，适配 Claude Code
+- 🎯 MiniMax-M3.1-Flash（默认）和 MiniMax-M3
+- 💡 两个模型均支持 1,000,000 tokens 上下文窗口
+- 🔧 Claude Code 使用 Anthropic API，Codex 使用 Responses API
 
 **配置信息**：
 - **Claude Code Base URL**: `https://api.minimax.io/anthropic`
+- **Codex Base URL**: `https://api.minimax.io/v1`
+- **中国区（`minimax-cn`）**: `https://api.minimax.cn/anthropic` / `https://api.minimax.cn/v1`
 - **认证方式**: `auth_token`
-- **Claude Code 默认模型**: `MiniMax-M3`（主力）、`MiniMax-M2.7-highspeed`（高速）
+- **Claude Code 默认模型**: `MiniMax-M3.1-Flash`（主力）、`MiniMax-M3`（Haiku 角色）
+- **Codex 默认模型**: `MiniMax-M3.1-Flash`
+
+显式指定的模型和 URL（包括已保存的旧模型配置）保持不变。ZCF 生成客户端配置，thinking 历史、工具调用和图片请求由客户端处理。Flash 不支持禁用 thinking 或 `none` effort。
 
 **使用示例**：
 ```bash

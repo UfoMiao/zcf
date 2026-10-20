@@ -88,10 +88,10 @@ describe('aPI Provider Configuration', () => {
       expect(provider!.supportedCodeTools).toContain('codex')
       expect(provider!.claudeCode?.baseUrl).toBe('https://api.minimax.io/anthropic')
       expect(provider!.claudeCode?.authType).toBe('auth_token')
-      expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M3', 'MiniMax-M2.7'])
+      expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M3.1-Flash', 'MiniMax-M3'])
       expect(provider!.codex?.baseUrl).toBe('https://api.minimax.io/v1')
       expect(provider!.codex?.wireApi).toBe('responses')
-      expect(provider!.codex?.defaultModel).toBe('MiniMax-M3')
+      expect(provider!.codex?.defaultModel).toBe('MiniMax-M3.1-Flash')
     })
 
     it('minimax-cn provider should have correct regional configuration', () => {
@@ -100,12 +100,12 @@ describe('aPI Provider Configuration', () => {
       expect(provider!.name).toBe('MiniMax CN')
       expect(provider!.supportedCodeTools).toContain('claude-code')
       expect(provider!.supportedCodeTools).toContain('codex')
-      expect(provider!.claudeCode?.baseUrl).toBe('https://api.minimaxi.com/anthropic')
+      expect(provider!.claudeCode?.baseUrl).toBe('https://api.minimax.cn/anthropic')
       expect(provider!.claudeCode?.authType).toBe('auth_token')
-      expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M3', 'MiniMax-M2.7'])
-      expect(provider!.codex?.baseUrl).toBe('https://api.minimaxi.com/v1')
+      expect(provider!.claudeCode?.defaultModels).toEqual(['MiniMax-M3.1-Flash', 'MiniMax-M3'])
+      expect(provider!.codex?.baseUrl).toBe('https://api.minimax.cn/v1')
       expect(provider!.codex?.wireApi).toBe('responses')
-      expect(provider!.codex?.defaultModel).toBe('MiniMax-M3')
+      expect(provider!.codex?.defaultModel).toBe('MiniMax-M3.1-Flash')
     })
 
     it('bailian-coding provider should use lowercase glm-5 default model', () => {

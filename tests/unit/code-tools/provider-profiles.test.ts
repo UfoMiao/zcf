@@ -9,6 +9,51 @@ import {
 } from '../../../src/code-tools/codex/providers'
 
 describe('provider profile serialization boundaries', () => {
+  describe.each([
+    ['minimax', 'https://api.minimax.io'],
+    ['minimax-cn', 'https://api.minimax.cn'],
+  ])('%s model defaults', (provider, baseUrl) => {
+    it('serializes Flash first for new configurations', async () => {
+      const config = { name: provider, provider, key: 'test-key' }
+      const claude = serializeClaudeCodeProviderProfile(await createClaudeCodeProviderProfile(config))
+      expect(claude).toMatchObject({
+        baseUrl: `${baseUrl}/anthropic`,
+        authType: 'auth_token',
+        primaryModel: 'MiniMax-M3.1-Flash',
+        defaultHaikuModel: 'MiniMax-M3',
+      })
+      expect(serializeCodexProvider(createCodexProviderProfile(config))).toMatchObject({
+        baseUrl: `${baseUrl}/v1`,
+        model: 'MiniMax-M3.1-Flash',
+        wireApi: 'responses',
+      })
+    })
+
+    it.each(['MiniMax-M3', 'MiniMax-M2.7', 'saved-custom-model'])('preserves explicit %s and endpoint overrides', async (model) => {
+      const config = {
+        name: provider,
+        provider,
+        key: 'test-key',
+        url: 'https://saved.example.test/api',
+        primaryModel: model,
+        defaultHaikuModel: model,
+        defaultSonnetModel: model,
+        defaultOpusModel: model,
+      }
+      expect(serializeClaudeCodeProviderProfile(await createClaudeCodeProviderProfile(config))).toMatchObject({
+        baseUrl: config.url,
+        primaryModel: model,
+        defaultHaikuModel: model,
+        defaultSonnetModel: model,
+        defaultOpusModel: model,
+      })
+      expect(serializeCodexProvider(createCodexProviderProfile(config))).toMatchObject({
+        baseUrl: config.url,
+        model,
+      })
+    })
+  })
+
   it('normalizes and serializes Claude Code provider data', async () => {
     const profile = await createClaudeCodeProviderProfile({
       name: 'Internal Claude',

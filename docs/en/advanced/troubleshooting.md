@@ -155,7 +155,7 @@ export HTTPS_PROXY=http://127.0.0.1:7890
 # 3. Verify endpoint URL
 # 302.AI: https://api.302.ai/cc
 # GLM: https://open.bigmodel.cn/api/anthropic
-# MiniMax: https://api.minimaxi.com/anthropic
+# MiniMax CN: https://api.minimax.cn/anthropic
 
 # 4. Use provider preset (recommended)
 npx zcf init -s -p 302ai -k "sk-xxx"
