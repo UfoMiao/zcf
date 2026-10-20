@@ -151,18 +151,19 @@ npx zcf init -s -p z-ai -k "your-auth-token"
 **Official Link**: [MiniMax Platform](https://platform.minimax.io)
 
 **Features**:
-- MiniMax-M3 with a 1,000,000-token context window
-- MiniMax-M2.7 with a 204,800-token context window
+- MiniMax-M3.1-Flash (default) and MiniMax-M3, each with a 1,000,000-token context window
 - Anthropic-compatible API for Claude Code and OpenAI-compatible Responses API for Codex
 
 **Configuration Information**:
 - **Claude Code Base URL (Global)**: `https://api.minimax.io/anthropic`
 - **Codex Base URL (Global)**: `https://api.minimax.io/v1`
-- **Claude Code Base URL (China)**: `https://api.minimaxi.com/anthropic`
-- **Codex Base URL (China)**: `https://api.minimaxi.com/v1`
+- **Claude Code Base URL (China)**: `https://api.minimax.cn/anthropic`
+- **Codex Base URL (China)**: `https://api.minimax.cn/v1`
 - **Authentication Method**: `auth_token`
-- **Claude Code Default Models**: `MiniMax-M3` (primary), `MiniMax-M2.7` (secondary)
-- **Codex Default Model**: `MiniMax-M3`
+- **Claude Code Default Models**: `MiniMax-M3.1-Flash` (primary), `MiniMax-M3` (Haiku role)
+- **Codex Default Model**: `MiniMax-M3.1-Flash`
+
+Explicit model and URL overrides, including saved legacy configurations, remain unchanged. ZCF writes client configuration; Claude Code and Codex manage requests, thinking history, tools, and image inputs. Flash requires thinking (do not disable it or select `none` effort). See the official [Anthropic API](https://platform.minimax.io/docs/api-reference/text-anthropic-api.md) and [Responses API](https://platform.minimax.io/docs/api-reference/responses-create.md) contracts.
 
 **Usage Example**:
 ```bash

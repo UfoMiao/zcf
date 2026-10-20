@@ -97,6 +97,32 @@ vi.mock('../../../src/utils/ccr/commands', () => ({
 }))
 
 describe('claudeCodeConfigManager', () => {
+  it.each(['minimax', 'minimax-cn'])('writes %s defaults and preserves saved model settings', async (provider) => {
+    const { createClaudeCodeProviderProfile, serializeClaudeCodeProviderProfile } = await import('../../../src/code-tools/claude-code/legacy-init')
+    const profile = serializeClaudeCodeProviderProfile(await createClaudeCodeProviderProfile({
+      name: provider,
+      provider,
+      key: 'test-key',
+    }))
+    await ClaudeCodeConfigManager.applyProfileSettings(profile)
+    expect(JSON.parse(readFileSync(testSettingsFile, 'utf8')).env).toMatchObject({
+      ANTHROPIC_MODEL: 'MiniMax-M3.1-Flash',
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: 'MiniMax-M3',
+      ANTHROPIC_BASE_URL: provider === 'minimax' ? 'https://api.minimax.io/anthropic' : 'https://api.minimax.cn/anthropic',
+      ANTHROPIC_AUTH_TOKEN: 'test-key',
+    })
+
+    await ClaudeCodeConfigManager.applyProfileSettings({
+      ...profile,
+      primaryModel: 'MiniMax-M2.7',
+      baseUrl: 'https://saved.example.test/anthropic',
+    })
+    expect(JSON.parse(readFileSync(testSettingsFile, 'utf8')).env).toMatchObject({
+      ANTHROPIC_MODEL: 'MiniMax-M2.7',
+      ANTHROPIC_BASE_URL: 'https://saved.example.test/anthropic',
+    })
+  })
+
   beforeEach(() => {
     cleanConfigDir()
     vi.clearAllMocks()
