@@ -121,8 +121,8 @@ describe('aPI Provider Configuration', () => {
       expect(provider!.supportedCodeTools).toContain('claude-code')
       expect(provider!.claudeCode?.baseUrl).toBe('https://api.deepseek.com/anthropic')
       expect(provider!.claudeCode?.authType).toBe('auth_token')
-      // Order matters: [primary, haiku, sonnet, opus] — pro is the primary, flash maps to haiku
-      expect(provider!.claudeCode?.defaultModels).toEqual(['deepseek-v4-pro', 'deepseek-v4-flash'])
+      // Order matters: [primary, haiku, sonnet, opus] — flash fills every default tier, pro is the explicit "opus" escalation
+      expect(provider!.claudeCode?.defaultModels).toEqual(['deepseek-flash', 'deepseek-flash', 'deepseek-flash', 'deepseek-v4-pro'])
     })
 
     it('providers with claudeCode config should have valid authType', () => {
