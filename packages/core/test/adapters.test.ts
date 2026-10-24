@@ -59,6 +59,20 @@ describe('planUpdates', () => {
     ])
     expect(plan.tools[1]!.notices[0]!.message.key).toBe('notice.toolNotSupported')
   })
+
+  it('reaches the Codex and Gemini CLI adapters', async () => {
+    const tools = createContext({
+      ...ctx,
+      runner: fakeRunner({
+        'codex --version': { stdout: 'codex-cli 0.164.0' },
+        'gemini --version': { stdout: '0.65.0' },
+      }),
+    })
+    const plan = await planUpdates(['codex', 'gemini-cli'], tools)
+    expect(
+      plan.tools.map(tool => tool.steps.map(step => step.kind === 'command' && [step.command, ...step.args])),
+    ).toEqual([[['codex', 'update']], [['npm', 'install', '-g', '@google/gemini-cli@latest']]])
+  })
 })
 
 describe('detectTools', () => {
