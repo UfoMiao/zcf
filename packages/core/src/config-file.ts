@@ -1,5 +1,5 @@
 import type { ParseError } from 'jsonc-parser'
-import { parse, printParseErrorCode } from 'jsonc-parser'
+import { parse } from 'jsonc-parser'
 import { join } from 'pathe'
 
 import { readTextIfExists } from './io/fs'
@@ -27,8 +27,11 @@ export async function loadConfigFile(path: string): Promise<LoadConfigResult> {
       success: false,
       issues: [
         {
-          path: `line ${lines.length}, column ${lines.at(-1)!.length + 1}`,
-          message: printParseErrorCode(first.error),
+          path: '',
+          message: {
+            key: 'configIssue.syntax',
+            params: { line: lines.length, column: lines.at(-1)!.length + 1 },
+          },
         },
       ],
     }

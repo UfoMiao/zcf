@@ -72,7 +72,7 @@ describe('parseZcfConfig', () => {
     expect(paths).toEqual(
       expect.arrayContaining(['version', 'tools.0', 'provider.apiKey', 'provider.anthropic.baseUrl']),
     )
-    expect(result.issues.some(issue => issue.message.includes('MCP server names'))).toBe(true)
+    expect(result.issues).toContainEqual({ path: 'mcpServers.bad name', message: { key: 'configIssue.mcpServerName' } })
   })
 
   it('rejects input that is not an object', () => {
@@ -83,17 +83,32 @@ describe('parseZcfConfig', () => {
     })
   })
 
-  it('leaves the rejected value out of messages, since it may be a credential', () => {
+  it('returns message keys without the rejected value, which may be a credential', () => {
     const result = parseZcfConfig({
-      version: 1,
-      provider: { name: 'x', apiKey: 12345, anthropic: { baseUrl: 'sk-pasted-into-the-wrong-field' } },
+      version: 2,
+      tools: ['cursor'],
+      provider: { name: ' ', apiKey: 12345, anthropic: { baseUrl: 'sk-pasted-into-the-wrong-field' } },
+      mcpServers: { ok: { type: 'stdio' } },
+      skills: 'x',
     })
     expect(result).toEqual({
       success: false,
       issues: [
-        { path: 'provider.apiKey', message: 'Invalid type: Expected string' },
-        { path: 'provider.anthropic.baseUrl', message: 'Invalid URL' },
+        { path: 'version', message: { key: 'configIssue.expected', params: { expected: '1' } } },
+        {
+          path: 'tools.0',
+          message: {
+            key: 'configIssue.expected',
+            params: { expected: '"claude-code" | "codex" | "gemini-cli" | "opencode"' },
+          },
+        },
+        { path: 'provider.name', message: { key: 'configIssue.empty' } },
+        { path: 'provider.apiKey', message: { key: 'configIssue.expected', params: { expected: 'string' } } },
+        { path: 'provider.anthropic.baseUrl', message: { key: 'configIssue.url' } },
+        { path: 'mcpServers.ok.command', message: { key: 'configIssue.missing' } },
+        { path: 'skills', message: { key: 'configIssue.expected', params: { expected: 'array' } } },
       ],
     })
+    expect(JSON.stringify(result)).not.toContain('sk-pasted')
   })
 })

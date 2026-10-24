@@ -1,5 +1,7 @@
 import * as v from 'valibot'
 
+import type { Message } from '../plan/types'
+
 export const TOOL_IDS = ['claude-code', 'codex', 'gemini-cli', 'opencode'] as const
 
 export const ToolIdSchema = v.picklist(TOOL_IDS)
@@ -67,7 +69,8 @@ export type McpServer = v.InferOutput<typeof McpServerSchema>
 
 const McpServerNameSchema = v.pipe(
   v.string(),
-  v.regex(/^[\w-]+$/, 'MCP server names may only contain letters, digits, "_" and "-"'),
+  // A custom message is a message key; front ends translate it.
+  v.regex(/^[\w-]+$/, 'configIssue.mcpServerName'),
 )
 
 export const SkillSourceSchema = v.object({
@@ -90,16 +93,32 @@ export type ZcfConfig = v.InferOutput<typeof ZcfConfigSchema>
 export type ZcfConfigInput = v.InferInput<typeof ZcfConfigSchema>
 
 export interface ConfigIssue {
+  /** Dot path of the field, or empty for the whole file. */
   path: string
-  message: string
+  message: Message
 }
 
 export type ParseConfigResult = { success: true; config: ZcfConfig } | { success: false; issues: ConfigIssue[] }
 
-/** Drop valibot's "received <value>" clause: the value may be a credential pasted into the wrong field. */
-function withoutReceived(message: string, received: string): string {
-  const at = message.lastIndexOf(received)
-  return at > 0 ? message.slice(0, at).replace(/:?\s*(?:but\s+)?received\s*$/i, '') : message
+/** valibot writes `Object`, `Array` and `("a" | "b")`; front ends show `object`, `array` and `"a" | "b"`. */
+function readableExpected(expected: string): string {
+  if (expected === 'Object' || expected === 'Array') return expected.toLowerCase()
+  return expected.replace(/^\((.*)\)$/, '$1')
+}
+
+/**
+ * Turn an issue into a message key. valibot's own text is never passed on: it is English
+ * only, and it quotes the rejected value, which may be a credential pasted into the wrong field.
+ */
+function issueMessage(issue: v.BaseIssue<unknown>): Message {
+  if (issue.message.startsWith('configIssue.')) return { key: issue.message }
+  if (issue.type === 'min_length') return { key: 'configIssue.empty' }
+  if (issue.type === 'url') return { key: 'configIssue.url' }
+  if (issue.kind === 'schema') {
+    if (issue.received === 'undefined') return { key: 'configIssue.missing' }
+    if (issue.expected) return { key: 'configIssue.expected', params: { expected: readableExpected(issue.expected) } }
+  }
+  return { key: 'configIssue.invalid' }
 }
 
 export function parseZcfConfig(input: unknown): ParseConfigResult {
@@ -110,7 +129,7 @@ export function parseZcfConfig(input: unknown): ParseConfigResult {
     success: false,
     issues: result.issues.map(issue => ({
       path: v.getDotPath(issue) ?? '',
-      message: withoutReceived(issue.message, issue.received),
+      message: issueMessage(issue),
     })),
   }
 }
