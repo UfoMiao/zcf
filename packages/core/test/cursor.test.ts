@@ -88,6 +88,8 @@ describe('cursor.plan', () => {
         mcpServers: {
           docs: { type: 'http', url: 'https://docs.example.com/mcp', headers: { Authorization: 'Bearer t' } },
           local: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { TOKEN: 't' } },
+          bare: { type: 'stdio', command: 'server' },
+          open: { type: 'http', url: 'https://open.example.com/mcp' },
         },
       }),
       installed,
@@ -96,6 +98,8 @@ describe('cursor.plan', () => {
     expect(plan.steps).toMatchObject([
       { kind: 'file', path: MCP_FILE, title: { key: 'step.mcpAdd', params: { name: 'docs' } } },
       { kind: 'file', path: MCP_FILE, title: { key: 'step.mcpAdd', params: { name: 'local' } } },
+      { kind: 'file', path: MCP_FILE, title: { key: 'step.mcpAdd', params: { name: 'bare' } } },
+      { kind: 'file', path: MCP_FILE, title: { key: 'step.mcpAdd', params: { name: 'open' } } },
     ])
     let text = before
     for (const step of plan.steps as FileStep[]) text = editJson(text, step.edits)
@@ -104,6 +108,8 @@ describe('cursor.plan', () => {
         keep: { url: 'https://keep.example.com' },
         docs: { url: 'https://docs.example.com/mcp', headers: { Authorization: 'Bearer t' } },
         local: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { TOKEN: 't' } },
+        bare: { type: 'stdio', command: 'server' },
+        open: { url: 'https://open.example.com/mcp' },
       },
     })
   })

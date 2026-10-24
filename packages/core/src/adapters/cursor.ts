@@ -50,10 +50,15 @@ function cursorDir(ctx: AdapterContext): string {
   return join(ctx.home, '.cursor')
 }
 
+/** Empty lists and records are left out; Cursor treats `args`, `env` and `headers` as optional. */
+function filled<T extends object>(value: T): T | undefined {
+  return Object.keys(value).length > 0 ? value : undefined
+}
+
 /** The server definition in the shape Cursor stores in `mcp.json`. */
 function cursorMcpServer(server: McpServer): Record<string, unknown> {
-  if (server.type === 'http') return { url: server.url, headers: server.headers }
-  return { type: 'stdio', command: server.command, args: server.args, env: server.env }
+  if (server.type === 'http') return { url: server.url, headers: filled(server.headers) }
+  return { type: 'stdio', command: server.command, args: filled(server.args), env: filled(server.env) }
 }
 
 export const cursor: ToolAdapter = {
