@@ -5,7 +5,9 @@ import {
   editDotenv,
   editJson,
   editToml,
+  editYaml,
   FileSyntaxError,
+  parseConfigText,
   parseDotenv,
   setAtPath,
 } from '../src/io/editors'
@@ -296,5 +298,72 @@ describe('editDotenv', () => {
 
   it('is picked by applyKeyEdits', async () => {
     expect(await applyKeyEdits('env', 'X=1\n', [{ path: ['Y'], value: 2 }])).toBe('X=1\nY=2\n')
+  })
+})
+
+describe('editYaml', () => {
+  const before = [
+    '# my overrides',
+    '- id: hmr',
+    "  disabled: !!js '!ctx.get(''profileContext'')' # keep",
+    '- id: llm',
+    '  config:',
+    '    providers:',
+    '      mine: { models: [{ id: a }] }',
+    '',
+  ].join('\n')
+
+  it('keeps comments and !!js tags while editing and appending entries', async () => {
+    const after = await editYaml(before, [
+      { path: [1, 'config', 'providers', 'zcf'], value: { models: [{ id: 'm' }] } },
+      { path: [2], value: { insert: [{ id: 'zcf-a', name: '@scope/plugin' }] } },
+    ])
+    expect(after).toBe(
+      [
+        '# my overrides',
+        '- id: hmr',
+        "  disabled: !!js '!ctx.get(''profileContext'')' # keep",
+        '- id: llm',
+        '  config:',
+        '    providers:',
+        // The yaml library writes flow collections with spaces inside the brackets.
+        '      mine: { models: [ { id: a } ] }',
+        '      zcf:',
+        '        models:',
+        '          - id: m',
+        '- insert:',
+        '    - id: zcf-a',
+        '      name: "@scope/plugin"',
+        '',
+      ].join('\n'),
+    )
+  })
+
+  it('removes keys, ignoring ones that are not there', async () => {
+    const after = await editYaml(before, [
+      { path: [0, 'disabled'], value: undefined },
+      { path: [5, 'config'], value: undefined },
+    ])
+    expect(after).not.toContain('disabled')
+    expect(after).toContain('mine:')
+  })
+
+  it('starts a block list in a missing, empty or `[]` file', async () => {
+    const edits = [{ path: [0], value: { id: 'x', config: { a: 1 } } }]
+    const expected = '- id: x\n  config:\n    a: 1\n'
+    expect(await editYaml(undefined, edits)).toBe(expected)
+    expect(await editYaml('# comment\n[]\n', edits)).toBe(`# comment\n${expected}`)
+    expect(await editYaml('', [])).toBe('')
+  })
+
+  it('reports the position of a syntax error and refuses unsafe keys', async () => {
+    await expect(editYaml('- id: a\n  b: [\n', [])).rejects.toMatchObject({ name: 'FileSyntaxError', format: 'yaml' })
+    await expect(editYaml('a: 1\n', [{ path: ['__proto__', 'x'], value: 1 }])).rejects.toThrow('Unsafe key')
+  })
+
+  it('is picked by applyKeyEdits and parseConfigText', async () => {
+    expect(await applyKeyEdits('yaml', 'a: 1\n', [{ path: ['b'], value: 2 }])).toBe('a: 1\nb: 2\n')
+    expect(await parseConfigText('yaml', "- a: !!js 'x'\n")).toEqual([{ a: 'x' }])
+    expect(await parseConfigText('yaml', 'a: [\n')).toBeUndefined()
   })
 })

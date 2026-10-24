@@ -18,6 +18,7 @@ export default defineConfig({
       'pathe',
       'tinyexec',
       'valibot',
+      'yaml',
       // The terminal UI: Ink, React and their dependencies, loaded only by `zcf tui`.
       'ink',
       'react',

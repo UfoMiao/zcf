@@ -260,12 +260,53 @@ export function editDotenv(content: string | undefined, edits: readonly KeyEdit[
   return lines.length === 0 ? '' : `${lines.join(eol)}${eol}`
 }
 
+type YamlModule = typeof import('yaml')
+let yamlModule: Promise<YamlModule> | undefined
+
+async function parseYaml(text: string) {
+  // Only plans that touch YAML files pay for loading the YAML parser.
+  yamlModule ??= import('yaml')
+  const yaml = await yamlModule
+  const doc = yaml.parseDocument(text)
+  const error = doc.errors[0]
+  if (error) {
+    const position = error.linePos?.[0]
+    throw new FileSyntaxError('yaml', position?.line ?? 1, position?.col ?? 1)
+  }
+  return { yaml, doc }
+}
+
+/**
+ * Edit YAML key by key while keeping comments, layout and custom tags such as `!!js`.
+ * A number in a key path indexes a sequence; the index one past the end appends.
+ */
+export async function editYaml(content: string | undefined, edits: readonly KeyEdit[]): Promise<string> {
+  const { yaml, doc } = await parseYaml(content ?? '')
+  // An empty flow collection (`[]` or `{}`) would otherwise keep every added entry on one line.
+  if (yaml.isCollection(doc.contents) && doc.contents.items.length === 0) doc.contents.flow = false
+
+  for (const edit of edits) {
+    const unsafe = edit.path.find(key => UNSAFE_KEYS.has(String(key)))
+    if (unsafe !== undefined) throw new Error(`Unsafe key in path: ${unsafe}`)
+    if (edit.value === undefined) {
+      if (doc.hasIn(edit.path)) doc.deleteIn(edit.path)
+      continue
+    }
+    doc.setIn(edit.path, doc.createNode(edit.value))
+  }
+
+  // A file with nothing but comments, and no edits that add content, stays as it was.
+  if (doc.contents === null) return content ?? ''
+  return withTrailingNewline(doc.toString())
+}
+
 /** Parse a native config file; `undefined` when it is missing or not valid. */
 export async function parseConfigText(format: FileFormat, text: string | undefined): Promise<unknown> {
   if (!text?.trim()) return undefined
   try {
     if (format === 'json') return parse(text, [], { allowTrailingComma: true })
     if (format === 'env') return parseDotenv(text)
+    if (format === 'yaml') return (await parseYaml(text)).doc.toJS()
     tomlModule ??= import('@decimalturn/toml-patch')
     return (await tomlModule).parse(text)
   } catch {
@@ -280,5 +321,6 @@ export async function applyKeyEdits(
 ): Promise<string> {
   if (format === 'json') return editJson(content, edits)
   if (format === 'env') return editDotenv(content, edits)
+  if (format === 'yaml') return editYaml(content, edits)
   return editToml(content, edits)
 }

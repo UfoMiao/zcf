@@ -14,6 +14,7 @@
     "jsonc-parser": "catalog:runtime",
     "pathe": "catalog:runtime",
     "tinyexec": "catalog:runtime",
-    "valibot": "catalog:runtime"
+    "valibot": "catalog:runtime",
+    "yaml": "catalog:runtime"
   }
 }
