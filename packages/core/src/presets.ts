@@ -26,6 +26,8 @@ export interface PresetList {
 
 interface CacheFile {
   fetchedAt: number
+  /** ZCF_PRESETS_URL when the copy came from it, so a changed setting never serves another list. */
+  url?: string
   data: unknown
 }
 
@@ -41,12 +43,15 @@ export interface LoadPresetsOptions {
   mirror?: Mirror
 }
 
-async function readCache(path: string): Promise<CacheFile | undefined> {
+const CacheSchema = v.object({ fetchedAt: v.number(), url: v.optional(v.string()), data: v.unknown() })
+
+/** The saved copy, when there is one and it came from `url` (or the ZCF repository when undefined). */
+async function readCache(path: string, url: string | undefined): Promise<CacheFile | undefined> {
   try {
     const text = await readTextIfExists(path)
     const cache: unknown = text && JSON.parse(text)
-    const parsed = v.safeParse(v.object({ fetchedAt: v.number(), data: v.unknown() }), cache)
-    return parsed.success ? parsed.output : undefined
+    const parsed = v.safeParse(CacheSchema, cache)
+    return parsed.success && parsed.output.url === url ? parsed.output : undefined
   } catch {
     return undefined
   }
@@ -63,13 +68,13 @@ export async function loadPresets(options: LoadPresetsOptions): Promise<PresetLi
   const now = options.now ?? Date.now
   const fetcher = options.fetch ?? globalThis.fetch
   const cachePath = join(options.cacheDir, 'providers.json')
-  const cache = await readCache(cachePath)
+  const override = options.env?.ZCF_PRESETS_URL || undefined
+  const cache = await readCache(cachePath, override)
   const cached = cache && parsePresets(cache.data)
 
   if (cached && !options.refresh && now() - cache.fetchedAt < PRESET_MAX_AGE_MS)
     return { presets: cached, source: 'cache' }
 
-  const override = options.env?.ZCF_PRESETS_URL
   for (const url of override ? [override] : githubFileUrls(PRESET_FILE, options.mirror ?? 'official')) {
     try {
       // Try the sources one after another; the first is usually the fastest.
@@ -78,9 +83,10 @@ export async function loadPresets(options: LoadPresetsOptions): Promise<PresetLi
       const presets = parsePresets(data)
       if (!presets) continue
       // oxlint-disable-next-line no-await-in-loop
-      await writeFileAtomic(cachePath, `${JSON.stringify({ fetchedAt: now(), data } satisfies CacheFile)}\n`).catch(
-        () => undefined,
-      )
+      await writeFileAtomic(
+        cachePath,
+        `${JSON.stringify({ fetchedAt: now(), url: override, data } satisfies CacheFile)}\n`,
+      ).catch(() => undefined)
       return { presets, source: 'remote' }
     } catch {
       // Unreachable or broken; try the next source.
