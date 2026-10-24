@@ -233,6 +233,8 @@ describe('editDotenv', () => {
       'KEY = new   # managed by team\n',
     )
     expect(editDotenv("KEY='old' # note\n", [{ path: ['KEY'], value: 'a b' }])).toBe("KEY='a b' # note\n")
+    expect(parseDotenv('KEY= # configure here\n')).toEqual({ KEY: '' })
+    expect(editDotenv('KEY= # configure here\n', [{ path: ['KEY'], value: 'new' }])).toBe('KEY= new # configure here\n')
   })
 
   it('rejects names that are not variable names', () => {

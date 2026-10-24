@@ -113,7 +113,7 @@ export async function editToml(content: string | undefined, edits: readonly KeyE
   return withTrailingNewline(toml.patch(text, data))
 }
 
-const ENV_LINE = /^(\s*(?:export\s+)?)([A-Za-z_][\w.-]*)(\s*=\s*)(.*)$/
+const ENV_LINE = /^(\s*(?:export\s+)?)([A-Za-z_][\w.-]*)(\s*=)(.*)$/
 const ENV_NAME = /^[A-Za-z_][\w.-]*$/
 // What may follow a closing quote: spacing and an optional comment.
 const ENV_REST = /^\s*(?:#.*)?$/
@@ -175,15 +175,18 @@ export function dotenvEntries(content: string): DotenvEntry[] {
   for (let first = 0; first < lines.length; first++) {
     const match = ENV_LINE.exec(lines[first]!)
     if (!match) continue
-    const [, prefix = '', key = '', separator = '', rest = ''] = match
+    const [, prefix = '', key = '', equals = '', after = ''] = match
+    const lead = /^\s*/.exec(after)![0]
+    const separator = equals + lead
+    const rest = after.slice(lead.length)
     const quoted = quotedValue(lines, first, rest)
     if (quoted) {
       entries.push({ key, prefix, separator, first, ...quoted })
       first = quoted.last
       continue
     }
-    // An unquoted value ends at an inline comment.
-    const [, value = '', suffix = ''] = /^(.*?)(\s+#.*|\s*)$/.exec(rest)!
+    // An unquoted value ends at an inline comment; a comment right after `=` means an empty value.
+    const [, value = '', suffix = ''] = /^(.*?)(\s+#.*|^#.*|\s*)$/.exec(rest)!
     entries.push({ key, value, raw: value, first, last: first, prefix, separator, suffix })
   }
   return entries
@@ -227,7 +230,8 @@ export function editDotenv(content: string | undefined, edits: readonly KeyEdit[
         throw new Error(`A dotenv value must be a string, number or boolean: ${key}`)
       }
       const value = quoteEnv(key, String(raw))
-      line = keep ? `${keep.prefix}${key}${keep.separator}${value}${keep.suffix}` : `${key}=${value}`
+      const suffix = keep?.suffix.startsWith('#') ? ` ${keep.suffix}` : keep?.suffix
+      line = keep ? `${keep.prefix}${key}${keep.separator}${value}${suffix}` : `${key}=${value}`
     }
     if (keep && line !== undefined) lines.splice(keep.first, keep.last - keep.first + 1, line)
     else if (line !== undefined) lines.push(line)
