@@ -70,6 +70,11 @@ describe('loadPresets', () => {
     expect(offline.source).toBe('cache')
     expect(offline.presets).toHaveLength(2)
     expect(again.calls).toHaveLength(2)
+
+    // A copy saved while the clock ran ahead is not trusted as fresh.
+    const skewed = fakeFetch({})
+    expect(await loadPresets({ cacheDir, fetch: skewed.fetcher, now: () => 0 })).toMatchObject({ source: 'cache' })
+    expect(skewed.calls).toEqual(PRESET_URLS)
   })
 
   it('uses ZCF_PRESETS_URL instead, skips invalid answers, and reports when nothing is available', async () => {
@@ -112,14 +117,22 @@ describe('loadPresets', () => {
 })
 
 describe('applyPreset', () => {
-  it("replaces the provider with the preset's settings and keeps the API key", () => {
+  it("replaces the provider with the preset's settings, keeping the API key only for the same host", () => {
     const [relay, openaiOnly] = parsePresets(file)!
-    expect(applyPreset(openaiOnly!, { name: 'old', apiKey: 'sk-1', anthropic: { baseUrl: 'https://old' } })).toEqual({
+    const current = {
+      name: 'old',
+      apiKey: 'sk-1',
+      openai: { baseUrl: 'https://o.example.com/old' },
+      models: { opus: 'x' },
+    }
+    expect(applyPreset(openaiOnly!, current)).toEqual({
       name: 'OpenAI only',
       apiKey: 'sk-1',
       openai: { baseUrl: 'https://o.example.com/v1', model: 'm' },
       models: { default: 'd' },
     })
+    // A key is never carried to another provider's host.
+    expect(applyPreset(relay!, current)).not.toHaveProperty('apiKey')
     expect(applyPreset(relay!, undefined)).toEqual({
       name: 'Relay',
       anthropic: { baseUrl: 'https://relay.example.com', authType: 'api_key' },

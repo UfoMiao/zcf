@@ -29,14 +29,31 @@ export function parsePresets(data: unknown): ProviderPreset[] | undefined {
   return presets
 }
 
+/** The hosts a provider or preset sends requests to. */
+function endpointHosts(provider: unknown): string[] {
+  if (typeof provider !== 'object' || provider === null) return []
+  const hosts = new Set<string>()
+  const entries: [string, unknown][] = Object.entries(provider)
+  for (const [protocol, block] of entries) {
+    if (protocol !== 'anthropic' && protocol !== 'openai' && protocol !== 'gemini') continue
+    const url = typeof block === 'object' && block !== null && 'baseUrl' in block ? block.baseUrl : undefined
+    if (typeof url === 'string' && URL.canParse(url)) hosts.add(new URL(url).host)
+  }
+  return [...hosts]
+}
+
 /**
- * The provider a preset describes, keeping the user's API key. Protocol blocks and
- * models come from the preset, so nothing from the previous provider is left behind.
+ * The provider a preset describes. Protocol blocks and models come from the preset, so
+ * nothing from the previous provider is left behind. The API key stays only when the
+ * preset talks to the same hosts, so a key is never sent to a provider it was not issued for.
  */
 export function applyPreset(preset: ProviderPreset, current: unknown): Record<string, unknown> {
   const provider: Record<string, unknown> = { name: preset.name }
   const apiKey = typeof current === 'object' && current !== null && 'apiKey' in current ? current.apiKey : undefined
-  if (typeof apiKey === 'string' && apiKey) provider.apiKey = apiKey
+  const knownHosts = endpointHosts(current)
+  const presetHosts = endpointHosts(preset)
+  const sameHosts = presetHosts.length > 0 && presetHosts.every(host => knownHosts.includes(host))
+  if (typeof apiKey === 'string' && apiKey && sameHosts) provider.apiKey = apiKey
   if (preset.anthropic) provider.anthropic = { ...preset.anthropic }
   if (preset.openai) provider.openai = { ...preset.openai }
   if (preset.gemini) provider.gemini = { ...preset.gemini }
@@ -49,8 +66,7 @@ export function applyPreset(preset: ProviderPreset, current: unknown): Record<st
  * The hosts come first so a user sees where their API key would go before picking it.
  */
 export function presetSummary(preset: ProviderPreset, lang: string): string {
-  const urls = [preset.anthropic?.baseUrl, preset.openai?.baseUrl, preset.gemini?.baseUrl]
-  const hosts = [...new Set(urls.filter(url => url !== undefined).map(url => new URL(url).host))]
+  const hosts = endpointHosts(preset)
   const description = preset.description[lang] ?? preset.description.en
   return [hosts.join(', '), description].filter(Boolean).join(' · ')
 }

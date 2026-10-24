@@ -121,7 +121,16 @@ describe('terminal UI', () => {
 
   it('fills the provider from a preset and keeps the API key', async () => {
     const { service, saved } = fakeService(
-      { version: 1, tools: [], provider: { name: 'old', apiKey: 'sk-very-secret', models: { opus: 'x' } } },
+      {
+        version: 1,
+        tools: [],
+        provider: {
+          name: 'old',
+          apiKey: 'sk-very-secret',
+          anthropic: { baseUrl: 'https://relay.example.com/v0' },
+          models: { opus: 'x' },
+        },
+      },
       {
         presets: async () => ({
           source: 'cache',
