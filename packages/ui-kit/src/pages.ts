@@ -1,12 +1,12 @@
 import type { ToolId } from '@zcf/core/schema'
-import { TOOL_IDS } from '@zcf/core/schema'
+import { MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
 import { isTable } from './draft'
 
-export type PageId = 'tools' | 'provider' | 'mcp' | 'skills' | 'apply'
+export type PageId = 'tools' | 'provider' | 'mcp' | 'skills' | 'settings' | 'apply'
 
-export const PAGES: readonly PageId[] = ['tools', 'provider', 'mcp', 'skills', 'apply']
+export const PAGES: readonly PageId[] = ['tools', 'provider', 'mcp', 'skills', 'settings', 'apply']
 
 /** The config key each editing page works on, so a page can be flagged when it has problems. */
 export const PAGE_ROOTS: Readonly<Record<PageId, string | undefined>> = {
@@ -14,6 +14,7 @@ export const PAGE_ROOTS: Readonly<Record<PageId, string | undefined>> = {
   provider: 'provider',
   mcp: 'mcpServers',
   skills: 'skills',
+  settings: 'mirror',
   apply: undefined,
 }
 
@@ -30,6 +31,8 @@ export interface Field {
   path: DraftPath
   kind: FieldKind
   options?: readonly string[]
+  /** Message key prefix for the options' labels: option `x` is shown as `<prefix>.x`. Without it the option itself is shown. */
+  optionLabel?: string
   /** Message key of a short hint shown under the field. */
   hint?: string
   required?: boolean
@@ -96,6 +99,18 @@ export function mcpFields(type: McpType): readonly Field[] {
     { label: 'field.mcp.env', path: ['env'], kind: 'record' },
   ]
 }
+
+/** ZCF's own settings, such as where it downloads from. */
+export const SETTINGS_FIELDS: readonly Field[] = [
+  {
+    label: 'field.mirror',
+    path: ['mirror'],
+    kind: 'select',
+    options: MIRRORS,
+    optionLabel: 'mirror',
+    hint: 'hint.mirror',
+  },
+]
 
 /** The fields of one skill source, relative to `skills.<index>`. */
 export const SKILL_FIELDS: readonly Field[] = [

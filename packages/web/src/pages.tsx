@@ -10,6 +10,7 @@ import {
   newMcpServer,
   PROVIDER_FIELDS,
   renameKey,
+  SETTINGS_FIELDS,
   SKILL_FIELDS,
   TOOL_OPTIONS,
   withMcpType,
@@ -23,6 +24,19 @@ import { FieldInput } from './fields'
 interface PageProps {
   editor: ConfigEditor
   t: Translate
+}
+
+export function SettingsPage({ editor, t }: PageProps) {
+  return (
+    <section>
+      <p className="intro">{t('tui.settings.intro')}</p>
+      <div className="form">
+        {SETTINGS_FIELDS.map(field => (
+          <FieldInput key={field.label} editor={editor} root={[]} field={field} t={t} />
+        ))}
+      </div>
+    </section>
+  )
 }
 
 export function ToolsPage({ editor, t, detected }: PageProps & { detected?: Partial<Record<ToolId, ToolStatus>> }) {

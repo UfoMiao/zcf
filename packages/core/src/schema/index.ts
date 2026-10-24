@@ -1,2 +1,4 @@
 export * from './config'
 export * from './presets'
+export { isMirror, MIRRORS } from '../mirror'
+export type { Mirror } from '../mirror'

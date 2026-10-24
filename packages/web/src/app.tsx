@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 
 import type { Translate } from './api'
 import { httpService, tildify } from './api'
-import { ApplyPage, McpPage, ProviderPage, SkillsPage, ToolsPage } from './pages'
+import { ApplyPage, McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
 
 export function App({ t, lang }: { t: Translate; lang: string }) {
   const editor = useConfigEditor(httpService)
@@ -100,6 +100,7 @@ export function App({ t, lang }: { t: Translate; lang: string }) {
         {page === 'provider' && <ProviderPage editor={editor} t={t} lang={lang} />}
         {page === 'mcp' && <McpPage editor={editor} t={t} />}
         {page === 'skills' && <SkillsPage editor={editor} t={t} />}
+        {page === 'settings' && <SettingsPage editor={editor} t={t} />}
         {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} />}
       </main>
     </div>
