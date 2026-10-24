@@ -321,6 +321,51 @@ describe('mirrors', () => {
     expect(await readFile(configFile(), 'utf8')).toBe(
       '{\n  // mine\n  "version": 1,\n  "mirror": "official",\n  "tools": ["codex"]\n}\n',
     )
+    // The previous version is backed up like any other file ZCF changes.
+    expect(stdout).toContain('~/.ufomiao/zcf/backups/2026-10-24T08-00-00-000Z')
+    expect(
+      await readFile(
+        join(home, '.ufomiao', 'zcf', 'backups', '2026-10-24T08-00-00-000Z', '.ufomiao', 'zcf', 'zcf.json'),
+        'utf8',
+      ),
+    ).toContain('"mirror": "china"')
+  })
+
+  it('credits the config only when it names a mirror', async () => {
+    await writeConfig({ version: 1 })
+    expect((await run('mirror')).stdout).toContain('Download mirror: official - official sources (default)')
+    expect((await run('mirror', 'CN')).stdout).toContain('Download mirror set to China mirrors')
+  })
+
+  it('leaves a broken config alone and names it', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), '{ "version": 1,, }')
+    expect(await run('mirror', 'china')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('~/.ufomiao/zcf/zcf.json is not valid JSON (line 1, column 16)'),
+    })
+    expect(await readFile(configFile(), 'utf8')).toBe('{ "version": 1,, }')
+  })
+
+  it('starts an empty config afresh and refuses one that is not an object', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), '\n')
+    expect((await run('mirror', 'china')).code).toBe(EXIT_OK)
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1, mirror: 'china' })
+
+    await writeFile(configFile(), '[]')
+    expect(await run('mirror', 'china')).toMatchObject({
+      code: EXIT_INVALID_CONFIG,
+      stderr: expect.stringContaining('is not valid'),
+    })
+    expect(await readFile(configFile(), 'utf8')).toBe('[]')
+  })
+
+  it('warns about a ZCF_MIRROR it does not know', async () => {
+    env = { ZCF_MIRROR: 'chian' }
+    expect((await run('mirror')).stdout).toContain(
+      'ZCF_MIRROR=chian is not a mirror (official, china), so it is ignored.',
+    )
   })
 
   it('says when ZCF_MIRROR overrides the config, and rejects unknown mirrors', async () => {
@@ -353,16 +398,27 @@ describe('mirrors', () => {
     expect((await run('plan', '--mirror', 'china')).stdout).toContain(
       'npm packages come from https://registry.npmmirror.com',
     )
-    env = { npm_config_registry: 'https://npm.example.com' }
-    expect((await run('plan', '--mirror', 'china')).stdout).toContain('npm packages come from https://npm.example.com')
+    env = { npm_config_registry: 'https://me:s3cret@npm.example.com/path/?token=abc' }
+    const own = await run('plan', '--mirror', 'china')
+    expect(own.stdout).toContain('npm packages come from https://npm.example.com.')
+    expect(own.stdout).not.toContain('s3cret')
+    expect(own.stdout).not.toContain('abc')
   })
 
   it("updates through the config's mirror, also with --tools", async () => {
     await writeConfig({ version: 1, mirror: 'china' })
     responses['claude update'] = {}
-    expect((await run('update', '--tools', 'claude-code')).code).toBe(EXIT_OK)
+    const china = await run('update', '--tools', 'claude-code')
+    expect(china.code).toBe(EXIT_OK)
+    expect(china.stdout).toContain('a native install still downloads from its official servers')
     expect(envs.at(-1)).toEqual(registry)
     expect((await run('update', '--tools', 'claude-code', '--mirror', 'official')).code).toBe(EXIT_OK)
+    expect(envs.at(-1)).toBeUndefined()
+
+    // With --tools a broken config does not stop the update, but its mirror is not used.
+    await writeConfig({ version: 1, mirror: 'china', tools: ['nope'] })
+    const broken = await run('update', '--tools', 'claude-code')
+    expect(broken.stdout).toContain('could not be read, so its mirror setting is not used')
     expect(envs.at(-1)).toBeUndefined()
   })
 })

@@ -8,16 +8,19 @@ import {
   editJson,
   envMirror,
   FileSyntaxError,
-  isMirror,
+  isTable,
   loadConfigFile,
   MIRRORS,
   mirrorEnv,
+  parseConfigText,
+  parseMirrorName,
   planTools,
   planUpdates,
   previewPlan,
   isToolId,
   readTextIfExists,
   resolveMirror,
+  snapshotFile,
   TOOL_IDS,
   writeFileAtomic,
 } from '@zcf/core'
@@ -84,9 +87,19 @@ function parseTools(value: unknown, t: ReturnType<typeof createTranslator>): Too
 
 function parseMirror(value: unknown, t: Translate): Mirror | undefined {
   if (value === undefined) return undefined
-  if (isMirror(value)) return value
-  const mirror = typeof value === 'string' ? value : ''
-  throw new CliError(t('cli.unknownMirror', { mirror, known: MIRRORS.join(', ') }), EXIT_ERROR)
+  const name = typeof value === 'string' ? value : ''
+  const mirror = parseMirrorName(name)
+  if (mirror) return mirror
+  throw new CliError(t('cli.unknownMirror', { mirror: name, known: MIRRORS.join(', ') }), EXIT_ERROR)
+}
+
+/** A registry URL without credentials, path or query, which may hold a token. */
+function registryOrigin(registry: string): string {
+  try {
+    return new URL(registry).origin
+  } catch {
+    return '***'
+  }
 }
 
 function hasWork(plan: Plan, previews: Map<PlanStep, FilePreview>): boolean {
@@ -149,13 +162,24 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     return { config, plan, previews, renderer }
   }
 
-  /** Say so when downloads go through a mirror. The registry npm will use is the user's own when they set one. */
+  /** A misspelled ZCF_MIRROR would otherwise be ignored without a word. */
+  function warnUnknownEnvMirror(renderer: Renderer): void {
+    const value = ctx.env.ZCF_MIRROR?.trim()
+    if (value && !envMirror(ctx.env))
+      renderer.line(yellow(t('cli.unknownEnvMirror', { value, known: MIRRORS.join(', ') })))
+  }
+
+  /**
+   * Say so when downloads go through a mirror. The registry shown is the user's own when they set
+   * `npm_config_registry`; a registry in `.npmrc` gives way to the mirror they chose.
+   */
   function showMirror(renderer: Renderer, mirror: Mirror): void {
+    warnUnknownEnvMirror(renderer)
     if (mirror === 'official') return
     const registry =
       mirrorEnv(mirror, ctx.env).npm_config_registry ??
       Object.entries(ctx.env).find(([key]) => key.toLowerCase() === 'npm_config_registry')?.[1]
-    renderer.line(dim(t('cli.mirrorInUse', { registry: registry ?? '' })))
+    renderer.line(dim(t('cli.mirrorInUse', { registry: registryOrigin(registry ?? '') })))
     renderer.line()
   }
 
@@ -239,6 +263,8 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       const tools = listed ?? config?.tools ?? []
       if (tools.length === 0) throw new CliError(t('cli.noTools'), EXIT_ERROR)
       const renderer = new Renderer(stdout, t, [], ctx.home)
+      if (loaded && !loaded.success && !('missing' in loaded))
+        renderer.line(yellow(t('cli.configMirrorIgnored', { path: tildify(configPath(flags.file), ctx.home) })))
       const mirror = resolveMirror({ override, env: ctx.env, config })
       showMirror(renderer, mirror)
       const plan = await planUpdates(tools, { ...ctx, mirror })
@@ -256,13 +282,16 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       const renderer = new Renderer(stdout, t, [], ctx.home)
       const fromEnv = envMirror(ctx.env)
       if (value === undefined) {
-        const result = await loadConfigFile(path)
-        if (!result.success && !('missing' in result)) await loadConfig(flags.file)
-        const configured = result.success ? result.config.mirror : undefined
+        warnUnknownEnvMirror(renderer)
+        const text = await readTextIfExists(path)
+        // Only a mirror the file names comes from it; the schema fills in `official` otherwise.
+        const config = text === undefined ? undefined : await loadConfig(flags.file)
+        const raw = text === undefined ? undefined : await parseConfigText('json', text)
+        const configured = isTable(raw) && raw.mirror !== undefined ? config?.mirror : undefined
         const mirror = fromEnv ?? configured ?? 'official'
         const source = fromEnv
           ? t('cli.mirrorSource.env')
-          : result.success
+          : configured
             ? t('cli.mirrorSource.config', { path: tildify(path, ctx.home) })
             : t('cli.mirrorSource.default')
         renderer.line(t('cli.mirrorCurrent', { mirror: `${mirror} - ${t(`mirror.${mirror}`)}`, source }))
@@ -271,11 +300,23 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       }
 
       const mirror = parseMirror(value, t)!
-      const text = await readTextIfExists(path)
-      // A missing config starts as the smallest valid one; an existing one keeps everything but this key.
-      const next = editJson(text ?? '{\n  "version": 1\n}\n', [{ path: ['mirror'], value: mirror }])
+      const existing = await readTextIfExists(path)
+      // A missing or empty config starts as the smallest valid one; an existing one keeps everything but this key.
+      const text = existing?.trim() ? existing : undefined
+      let next: string
+      try {
+        if (text !== undefined && !isTable(await parseConfigText('json', text)))
+          throw new CliError(t('cli.configInvalid', { path }), EXIT_INVALID_CONFIG)
+        next = editJson(text ?? '{\n  "version": 1\n}\n', [{ path: ['mirror'], value: mirror }])
+      } catch (error) {
+        if (!(error instanceof FileSyntaxError)) throw error
+        throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
+      }
+      const backupDir = backupFolder(ctx.home, now())
+      const backup = next === existing ? undefined : await snapshotFile(path, backupDir, ctx.home)
       await writeFileAtomic(path, next)
       renderer.line(t('cli.mirrorSet', { mirror: t(`mirror.${mirror}`), path: tildify(path, ctx.home) }))
+      if (backup) renderer.line(dim(t('cli.backups', { path: tildify(backupDir, ctx.home) })))
       if (fromEnv && fromEnv !== mirror)
         renderer.line(yellow(t('cli.mirrorEnvOverrides', { value: ctx.env.ZCF_MIRROR ?? '' })))
       return EXIT_OK

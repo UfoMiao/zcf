@@ -80,15 +80,15 @@ The provider has one block per protocol (`anthropic`, `openai`, `gemini`). Each 
 
 ### Mirrors
 
-`mirror` in the config (`official` or `china`, overridden by `ZCF_MIRROR` and by `--mirror` for one run, and set with `zcf mirror`) decides where downloads come from, after magpie's 「国内镜像」 switch. Only mirrors that serve the very same files are used, never a proxy such as gh-proxy that could hand back anything.
+`mirror` in the config (`official` or `china`, overridden by `ZCF_MIRROR` (`cn` also means `china`) and by `--mirror` for one run, and set with `zcf mirror`) decides where downloads come from, after magpie's China mirror switch (「国内镜像」). Only mirrors that serve the very same files are used, never a proxy such as gh-proxy that could hand back anything.
 
 | Download | `china` |
 |----------|---------|
-| npm (`npm install -g`, `npx skills`, a tool's own updater on an npm install) | `planTools` and `planUpdates` give every command step `npm_config_registry=https://registry.npmmirror.com`, unless the user already set `npm_config_registry`. The value is never printed |
+| npm (`npm install -g`, `npx skills`, a tool's own updater on an npm install) | `planTools` and `planUpdates` give every command step `npm_config_registry=https://registry.npmmirror.com`, unless the user already set `npm_config_registry`; it outranks a registry in `.npmrc`. The value is never printed |
 | Claude Code install | `npm install -g @anthropic-ai/claude-code` (the same native binary) instead of `install.sh`, which downloads from Google Cloud Storage |
 | Files in a GitHub repository, such as provider presets | `githubFileUrls` lists `fastly.jsdelivr.net` and `gcore.jsdelivr.net` before `cdn.jsdelivr.net` and `raw.githubusercontent.com` |
 
-Not covered: git clones that `npx skills add owner/repo` makes, native self-updates such as `claude update` on an `install.sh` install, and the `npx` an MCP server runs inside a tool.
+Not covered: git clones that `npx skills add owner/repo` makes, native self-updates such as `claude update` on an `install.sh` install (`zcf update` says so), and the `npx` an MCP server runs inside a tool.
 
 ### Tooling
 
