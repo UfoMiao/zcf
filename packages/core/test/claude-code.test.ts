@@ -88,6 +88,23 @@ describe('claudeCode.plan', () => {
     })
   })
 
+  it('installs from npm with the China mirror, on every platform, and then calls claude from PATH', async () => {
+    const mcp = config({ mcpServers: { ctx: { type: 'http', url: 'https://mcp.example.com' } } })
+    for (const platform of ['linux', 'win32'] as const) {
+      // oxlint-disable-next-line no-await-in-loop
+      const plan = await claudeCode.plan(
+        mcp,
+        { installed: false, command: 'x' },
+        context({ platform, mirror: 'china' }),
+      )
+      expect(plan.steps.map(step => step.kind === 'command' && [step.command, ...step.args.slice(0, 2)])).toEqual([
+        ['npm', 'install', '-g'],
+        ['claude', 'mcp', 'add-json'],
+      ])
+      expect((plan.steps[0] as CommandStep).args).toEqual(['install', '-g', '@anthropic-ai/claude-code'])
+    }
+  })
+
   it('does nothing for an empty config on an installed tool', async () => {
     expect(await claudeCode.plan(config({}), installed, context())).toEqual({
       tool: 'claude-code',

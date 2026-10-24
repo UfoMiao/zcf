@@ -1,5 +1,6 @@
 import * as v from 'valibot'
 
+import { MIRRORS } from '../mirror'
 import type { Message } from '../plan/types'
 
 export const TOOL_IDS = ['claude-code', 'codex', 'gemini-cli', 'opencode', 'cursor', 'pi', 'dsh'] as const
@@ -107,6 +108,8 @@ export const ZcfConfigSchema = v.object({
   provider: v.optional(ProviderSchema),
   mcpServers: v.optional(v.record(McpServerNameSchema, McpServerSchema), {}),
   skills: v.optional(v.array(SkillSourceSchema), []),
+  /** Where ZCF downloads tools and packages from; `china` uses mirrors in mainland China. */
+  mirror: v.optional(v.picklist(MIRRORS), 'official'),
 })
 export type ZcfConfig = v.InferOutput<typeof ZcfConfigSchema>
 export type ZcfConfigInput = v.InferInput<typeof ZcfConfigSchema>

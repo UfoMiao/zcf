@@ -28,11 +28,17 @@ function nativeBinary(ctx: AdapterContext): string {
   return join(ctx.home, '.local', 'bin', ctx.platform === 'win32' ? 'claude.exe' : 'claude')
 }
 
+/** The npm package that ships the same native binary as the official installer. */
+const NPM_PACKAGE = '@anthropic-ai/claude-code'
+
 function installStep(ctx: AdapterContext): CommandStep {
   const title = {
     key: 'step.install',
     params: { tool: TOOL },
   }
+  // The native installer downloads from Google Cloud Storage, which mainland China cannot
+  // reach; npm through the mirror's registry installs the same binary.
+  if (ctx.mirror === 'china') return { kind: 'command', title, command: 'npm', args: ['install', '-g', NPM_PACKAGE] }
   // The official native installer; it also keeps Claude Code updated in the background.
   if (ctx.platform === 'win32') {
     return {
@@ -164,6 +170,8 @@ export const claudeCode: ToolAdapter = {
     const notices: Notice[] = []
 
     if (!status.installed) steps.push(installStep(ctx))
+    // npm puts `claude` on PATH, unlike the native installer.
+    const command = !status.installed && ctx.mirror === 'china' ? 'claude' : status.command
 
     if (config.provider) {
       if (config.provider.anthropic) {
@@ -186,7 +194,7 @@ export const claudeCode: ToolAdapter = {
       }
     }
 
-    steps.push(...(await mcpSteps(config.mcpServers, status.command, ctx)))
+    steps.push(...(await mcpSteps(config.mcpServers, command, ctx)))
     steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(settingsDir(ctx), 'skills') })))
 
     return { tool: TOOL, steps, notices }

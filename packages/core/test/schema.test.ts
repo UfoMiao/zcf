@@ -12,7 +12,21 @@ describe('parseZcfConfig', () => {
         tools: [],
         mcpServers: {},
         skills: [],
+        mirror: 'official',
       },
+    })
+  })
+
+  it('accepts the China mirror and points at an unknown one', () => {
+    expect(parseZcfConfig({ version: 1, mirror: 'china' })).toMatchObject({
+      success: true,
+      config: { mirror: 'china' },
+    })
+    expect(parseZcfConfig({ version: 1, mirror: 'mars' })).toEqual({
+      success: false,
+      issues: [
+        { path: 'mirror', message: { key: 'configIssue.expected', params: { expected: '"official" | "china"' } } },
+      ],
     })
   })
 

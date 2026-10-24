@@ -7,15 +7,24 @@ export interface CommandResult {
   stderr: string
 }
 
+export interface RunOptions {
+  /** Added to the current environment. */
+  env?: Record<string, string>
+}
+
 export interface CommandRunner {
-  run: (command: string, args: readonly string[]) => Promise<CommandResult>
+  run: (command: string, args: readonly string[], options?: RunOptions) => Promise<CommandResult>
 }
 
 /** Runs real processes. tinyexec takes care of Windows `.cmd` shims and PATHEXT. */
 export const processRunner: CommandRunner = {
-  async run(command, args) {
+  async run(command, args, options = {}) {
     try {
-      const { exitCode, stdout, stderr } = await x(command, args, { throwOnError: false })
+      // tinyexec merges `env` over the current environment.
+      const { exitCode, stdout, stderr } = await x(command, args, {
+        throwOnError: false,
+        nodeOptions: options.env ? { env: options.env } : undefined,
+      })
       return { exitCode, stdout, stderr }
     } catch (error) {
       return {

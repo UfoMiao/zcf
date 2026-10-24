@@ -13,11 +13,14 @@ const plain = (text: string) => text.replace(/\x1B\[[\d;]*m/g, '')
 
 let home: string
 let calls: string[][]
+let envs: (Record<string, string> | undefined)[]
+let env: Record<string, string>
 let responses: Record<string, Partial<CommandResult>>
 
 const runner: CommandRunner = {
-  async run(command, args) {
+  async run(command, args, options) {
     calls.push([command, ...args])
+    envs.push(options?.env)
     const response = responses[[command, ...args].join(' ')]
     return response
       ? {
@@ -40,7 +43,7 @@ async function run(...argv: string[]) {
     stderr: {
       write: text => void (stderr += text),
     },
-    context: { home, platform: 'linux', env: {}, runner },
+    context: { home, platform: 'linux', env, runner },
     now: () => new Date('2026-10-24T08:00:00.000Z'),
   })
   return {
@@ -75,6 +78,8 @@ const fullConfig = {
 beforeEach(async () => {
   home = await mkdtemp(join(tmpdir(), 'zcf-cli-'))
   calls = []
+  envs = []
+  env = {}
   responses = {
     'claude --version': { stdout: '2.1.0' },
   }
@@ -281,6 +286,84 @@ describe('zcf update', () => {
       code: EXIT_ERROR,
       stderr: expect.stringContaining('No tools selected'),
     })
+  })
+})
+
+function configFile() {
+  return join(home, '.ufomiao', 'zcf', 'zcf.json')
+}
+
+describe('mirrors', () => {
+  const registry = { npm_config_registry: 'https://registry.npmmirror.com' }
+
+  it('shows the official sources by default', async () => {
+    expect(await run('mirror')).toMatchObject({
+      code: EXIT_OK,
+      stdout: expect.stringContaining('Download mirror: official - official sources (default)'),
+    })
+  })
+
+  it('switches the mirror in the config, creating it when missing', async () => {
+    const set = await run('mirror', 'china')
+    expect(set.code).toBe(EXIT_OK)
+    expect(set.stdout).toContain('Download mirror set to China mirrors in ~/.ufomiao/zcf/zcf.json.')
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1, mirror: 'china' })
+    expect((await run('mirror')).stdout).toContain(
+      'Download mirror: china - China mirrors (from ~/.ufomiao/zcf/zcf.json)',
+    )
+  })
+
+  it('changes only the mirror key of an existing config', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), '{\n  // mine\n  "version": 1,\n  "mirror": "china",\n  "tools": ["codex"]\n}\n')
+    const { stdout } = await run('mirror', 'official', '--lang', 'zh-CN')
+    expect(stdout).toContain('已在 ~/.ufomiao/zcf/zcf.json 中把下载源设为官方源。')
+    expect(await readFile(configFile(), 'utf8')).toBe(
+      '{\n  // mine\n  "version": 1,\n  "mirror": "official",\n  "tools": ["codex"]\n}\n',
+    )
+  })
+
+  it('says when ZCF_MIRROR overrides the config, and rejects unknown mirrors', async () => {
+    env = { ZCF_MIRROR: 'china' }
+    expect((await run('mirror')).stdout).toContain('Download mirror: china - China mirrors (from ZCF_MIRROR)')
+    expect((await run('mirror', 'official')).stdout).toContain('ZCF_MIRROR=china is set, so it still decides')
+    expect(await run('mirror', 'mars')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('Unknown mirror: mars. Choose from official, china.'),
+    })
+    expect(await run('plan', '--mirror', 'mars')).toMatchObject({ code: EXIT_ERROR })
+  })
+
+  it('installs through the mirror set in the config', async () => {
+    await writeConfig({ version: 1, tools: ['claude-code'], mirror: 'china' })
+    responses = { 'npm install -g @anthropic-ai/claude-code': {} }
+    const { code, stdout } = await run('apply', '--yes')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain(
+      'Downloading through China mirrors: npm packages come from https://registry.npmmirror.com.',
+    )
+    expect(stdout).toContain('$ npm install -g @anthropic-ai/claude-code')
+    expect(calls.at(-1)).toEqual(['npm', 'install', '-g', '@anthropic-ai/claude-code'])
+    expect(envs.at(-1)).toEqual(registry)
+  })
+
+  it('uses --mirror for one run, and the npm registry the user set', async () => {
+    await writeConfig({ version: 1, tools: ['claude-code'] })
+    expect((await run('plan')).stdout).not.toContain('China mirrors')
+    expect((await run('plan', '--mirror', 'china')).stdout).toContain(
+      'npm packages come from https://registry.npmmirror.com',
+    )
+    env = { npm_config_registry: 'https://npm.example.com' }
+    expect((await run('plan', '--mirror', 'china')).stdout).toContain('npm packages come from https://npm.example.com')
+  })
+
+  it("updates through the config's mirror, also with --tools", async () => {
+    await writeConfig({ version: 1, mirror: 'china' })
+    responses['claude update'] = {}
+    expect((await run('update', '--tools', 'claude-code')).code).toBe(EXIT_OK)
+    expect(envs.at(-1)).toEqual(registry)
+    expect((await run('update', '--tools', 'claude-code', '--mirror', 'official')).code).toBe(EXIT_OK)
+    expect(envs.at(-1)).toBeUndefined()
   })
 })
 

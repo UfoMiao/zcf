@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 import { detectTools, planTools, planUpdates } from '../src/adapters'
 import { createContext } from '../src/context'
+import { githubFileUrls } from '../src/mirror'
+import type { Plan } from '../src/plan/types'
 import { parseZcfConfig } from '../src/schema/config'
 import { fakeRunner } from './helpers'
 
@@ -72,6 +74,69 @@ describe('planUpdates', () => {
     expect(
       plan.tools.map(tool => tool.steps.map(step => step.kind === 'command' && [step.command, ...step.args])),
     ).toEqual([[['codex', 'update']], [['npm', 'install', '-g', '@google/gemini-cli@latest']]])
+  })
+})
+
+function commandEnvs(plan: Plan) {
+  return plan.tools.flatMap(tool => tool.steps.map(step => step.kind === 'command' && step.env))
+}
+
+function mirrorConfig(mirror: 'official' | 'china') {
+  const result = parseZcfConfig({ version: 1, tools: ['claude-code', 'codex'], skills: [{ source: 'a/b' }], mirror })
+  return result.success ? result.config : undefined!
+}
+
+describe('mirrors', () => {
+  const registry = { npm_config_registry: 'https://registry.npmmirror.com' }
+
+  it("points every command at the China mirror's npm registry", async () => {
+    const plan = await planTools(mirrorConfig('china'), ctx)
+    // Codex is missing here: npm install, then npx skills, for both tools.
+    expect(commandEnvs(plan)).toEqual([registry, registry, registry])
+    expect(plan.tools[0]!.steps[0]).toMatchObject({ command: 'npx', args: expect.arrayContaining(['skills']) })
+  })
+
+  it('uses the official sources by default', async () => {
+    expect(commandEnvs(await planTools(mirrorConfig('official'), ctx))).toEqual([undefined, undefined, undefined])
+  })
+
+  it('lets ZCF_MIRROR, then the caller, override the config', async () => {
+    const envCtx = createContext({ ...ctx, env: { ZCF_MIRROR: 'cn' } })
+    expect(commandEnvs(await planTools(mirrorConfig('official'), envCtx))).toEqual([registry, registry, registry])
+    const callerCtx = createContext({ ...envCtx, mirror: 'official' })
+    expect(commandEnvs(await planTools(mirrorConfig('china'), callerCtx))).toEqual([undefined, undefined, undefined])
+  })
+
+  it('keeps an npm registry the user already chose', async () => {
+    const own = createContext({ ...ctx, env: { NPM_CONFIG_REGISTRY: 'https://npm.example.com' } })
+    expect(commandEnvs(await planTools(mirrorConfig('china'), own))).toEqual([undefined, undefined, undefined])
+  })
+
+  it("sends tools' own updaters through the mirror, which they use on npm installs", async () => {
+    const plan = await planUpdates(['claude-code'], createContext({ ...ctx, mirror: 'china' }))
+    expect(plan.tools[0]!.steps).toEqual([
+      expect.objectContaining({ command: 'claude', args: ['update'], env: registry }),
+    ])
+  })
+})
+
+describe('githubFileUrls', () => {
+  const file = { repo: 'UfoMiao/zcf', ref: 'main', path: 'presets/providers.json' }
+
+  it('tries jsDelivr, then GitHub itself', () => {
+    expect(githubFileUrls(file, 'official')).toEqual([
+      'https://cdn.jsdelivr.net/gh/UfoMiao/zcf@main/presets/providers.json',
+      'https://raw.githubusercontent.com/UfoMiao/zcf/main/presets/providers.json',
+    ])
+  })
+
+  it('puts the jsDelivr hosts that mainland China reaches first', () => {
+    expect(githubFileUrls(file, 'china')).toEqual([
+      'https://fastly.jsdelivr.net/gh/UfoMiao/zcf@main/presets/providers.json',
+      'https://gcore.jsdelivr.net/gh/UfoMiao/zcf@main/presets/providers.json',
+      'https://cdn.jsdelivr.net/gh/UfoMiao/zcf@main/presets/providers.json',
+      'https://raw.githubusercontent.com/UfoMiao/zcf/main/presets/providers.json',
+    ])
   })
 })
 

@@ -40,6 +40,7 @@ describe('render helpers', () => {
       tools: [],
       mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'abc' } } },
       skills: [],
+      mirror: 'official',
     })
     const json = JSON.stringify({ env: { PASSWORD: 'abc' } })
     expect(maskSecrets(quoteArg(json), secrets)).toBe(`'{"env":{"PASSWORD":"***"}}'`)
