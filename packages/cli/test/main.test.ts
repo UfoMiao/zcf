@@ -473,16 +473,24 @@ describe('help and unknown commands', () => {
     const webRoot = join(home, 'web')
     await mkdir(webRoot, { recursive: true })
     await writeFile(join(webRoot, 'index.html'), '<!doctype html>')
-    const result = await runWith({ webRoot, stop: Promise.resolve() }, 'ui')
+    const opened: string[][] = []
+    const openUrl = (command: string, args: string[]) => void opened.push([command, ...args])
+    const result = await runWith({ webRoot, stop: Promise.resolve(), openUrl }, 'ui')
     expect(result).toMatchObject({
       code: EXIT_OK,
       stdout: expect.stringMatching(/ZCF is ready at http:\/\/127\.0\.0\.1:\d+\/#token=/),
     })
-    expect(calls.at(-1)).toEqual(['xdg-open', [expect.stringContaining('http://127.0.0.1:')]].flat())
+    expect(opened).toEqual([['xdg-open', expect.stringContaining('http://127.0.0.1:')]])
 
-    calls = []
-    expect((await runWith({ webRoot, stop: Promise.resolve() }, 'ui', '--no-open')).code).toBe(EXIT_OK)
-    expect(calls).toEqual([])
+    expect((await runWith({ webRoot, stop: Promise.resolve(), openUrl }, 'ui', '--no-open')).code).toBe(EXIT_OK)
+    expect(opened).toHaveLength(1)
+  })
+
+  it('refuses a port that is not a number', async () => {
+    expect(await runWith({ stop: Promise.resolve() }, 'ui', '--port', '43l8')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('Not a port number: 43l8'),
+    })
   })
 
   it('says so when the web UI files are missing', async () => {

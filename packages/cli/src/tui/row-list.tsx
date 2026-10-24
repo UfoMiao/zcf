@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { TextInput } from './text-input'
 
 export type RowAction =
-  | { type: 'text'; initial: string; placeholder?: string; commit: (text: string) => void }
+  | { type: 'text'; initial: string; placeholder?: string; mask?: boolean; commit: (text: string) => void }
   | { type: 'cycle'; next: () => void; previous?: () => void }
   | { type: 'run'; run: () => void }
 
@@ -83,6 +83,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
             <TextInput
               initial={item.action.initial}
               placeholder={item.action.placeholder}
+              mask={item.action.mask}
               onSubmit={text => {
                 setEdit(false)
                 if (item.action.type === 'text') item.action.commit(text)

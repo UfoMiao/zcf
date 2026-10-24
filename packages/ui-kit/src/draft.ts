@@ -19,31 +19,25 @@ export function getAt(draft: unknown, path: DraftPath): unknown {
   return value
 }
 
-function isEmpty(value: unknown): boolean {
-  return value === undefined || value === '' || (isTable(value) && Object.keys(value).length === 0)
-}
-
 function setIn(container: unknown, path: DraftPath, value: unknown): unknown {
   const [key, ...rest] = path
   if (key === undefined) return value
   if (typeof key === 'number') {
     const list = Array.isArray(container) ? [...container] : []
-    const next = setIn(list[key], rest, value)
-    if (isEmpty(next)) list.splice(key, 1)
-    else list[key] = next
+    // Only removing the item itself removes it; an item left empty stays, so its form stays open.
+    if (value === undefined && (rest.length === 0 || list[key] === undefined)) list.splice(key, 1)
+    else list[key] = setIn(list[key], rest, value) ?? {}
     return list
   }
   const table = isTable(container) ? { ...container } : {}
   const next = setIn(table[key], rest, value)
-  if (isEmpty(next)) delete table[key]
+  if (next === undefined) delete table[key]
   else table[key] = next
-  return table
+  // A table emptied by a removal goes too, so a cleared optional block never makes the config invalid.
+  return value === undefined && Object.keys(table).length === 0 ? undefined : table
 }
 
-/**
- * Set a value without changing `draft`. An empty string or an object left empty
- * removes the key, so a cleared optional field never makes the config invalid.
- */
+/** Set a value without changing `draft`; `undefined` removes the key. Strings, even empty ones, are kept. */
 export function setAt(draft: Draft, path: DraftPath, value: unknown): Draft {
   const next = setIn(draft, path, value)
   return isTable(next) ? next : {}

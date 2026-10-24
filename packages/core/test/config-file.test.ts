@@ -88,6 +88,20 @@ describe('config drafts', () => {
     expect(text).toContain('"tools": [\n    "claude-code",\n    "codex"\n  ]')
   })
 
+  it('keeps changes made to the file after it was loaded', async () => {
+    const path = join(await tempDir(), 'zcf.json')
+    const base = { version: 1, tools: ['claude-code'] }
+    // Someone adds an MCP server by hand while the draft is open.
+    await writeFile(path, '{"version": 1, "tools": ["claude-code"], "mcpServers": {"a": {"command": "x"}}}\n')
+    await saveConfigDraft(path, { ...base, provider: { name: 'p', apiKey: 'k' } }, base)
+    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({
+      version: 1,
+      tools: ['claude-code'],
+      mcpServers: { a: { command: 'x' } },
+      provider: { name: 'p', apiKey: 'k' },
+    })
+  })
+
   it('computes the smallest edits', () => {
     expect(jsonEditsBetween({ a: { b: 1, c: 2 }, d: [1] }, { a: { b: 1 }, d: [1, 2], e: true })).toEqual([
       { path: ['a', 'c'], value: undefined },

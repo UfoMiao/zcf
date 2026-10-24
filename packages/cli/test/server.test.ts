@@ -3,6 +3,7 @@ import { request } from 'node:http'
 import { tmpdir } from 'node:os'
 
 import type { Plan } from '@zcf/core'
+import { MessageError } from '@zcf/core'
 import type { Draft, ZcfService } from '@zcf/ui-kit'
 import { join } from 'pathe'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -168,6 +169,25 @@ describe('startUiServer', () => {
       asset: async () => undefined,
     })
     expect(await call('/api/config')).toMatchObject({ status: 500, text: '{"error":"disk on fire"}' })
+  })
+
+  it('translates a failing apply and sends it as the last event', async () => {
+    server = await startUiServer({
+      service: {
+        ...service,
+        apply: () => Promise.reject(new MessageError({ key: 'service.configInvalid', params: { path: '/z.json' } })),
+      },
+      lang: 'en',
+      home: '/home/me',
+      token: TOKEN,
+      asset: async () => undefined,
+    })
+    const applied = await call('/api/apply', { method: 'POST' })
+    expect(applied.status).toBe(200)
+    expect(JSON.parse(applied.text)).toEqual({
+      type: 'error',
+      error: 'The config at /z.json has problems. Fix them and save before planning.',
+    })
   })
 })
 

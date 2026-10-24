@@ -85,6 +85,6 @@ describe('createLocalService', () => {
   })
 
   it('refuses to plan a config that is not saved', async () => {
-    await expect(service().plan()).rejects.toThrow('missing or not valid')
+    await expect(service().plan()).rejects.toMatchObject({ detail: { key: 'service.configInvalid' } })
   })
 })

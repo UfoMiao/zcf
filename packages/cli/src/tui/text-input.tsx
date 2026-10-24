@@ -6,6 +6,8 @@ export interface TextInputProps {
   onSubmit: (value: string) => void
   onCancel: () => void
   placeholder?: string
+  /** Show each character as `*`, for API keys and other secrets. */
+  mask?: boolean
 }
 
 interface Editing {
@@ -20,7 +22,7 @@ function insertAt({ value, cursor }: Editing, text: string): Editing {
 }
 
 /** A one-line editor: arrows, Home/End, Backspace, Ctrl+U, paste; Enter submits and Esc cancels. */
-export function TextInput({ initial, onSubmit, onCancel, placeholder = '' }: TextInputProps) {
+export function TextInput({ initial, onSubmit, onCancel, placeholder = '', mask = false }: TextInputProps) {
   const [state, setState] = useState<Editing>({ value: initial, cursor: initial.length })
   // Several keys can arrive before React re-renders, so updates read the latest state from here.
   const latest = useRef(state)
@@ -50,7 +52,8 @@ export function TextInput({ initial, onSubmit, onCancel, placeholder = '' }: Tex
     }
   })
 
-  const { value, cursor } = state
+  const { cursor } = state
+  const value = mask ? '*'.repeat(state.value.length) : state.value
   if (value === '') {
     return (
       <Text>

@@ -1,5 +1,7 @@
 import process from 'node:process'
 
+import { MessageError } from '@zcf/core'
+
 export const LANGS = ['en', 'zh-CN'] as const
 export type Lang = (typeof LANGS)[number]
 
@@ -49,6 +51,8 @@ const en = {
   'cli.unusedArgs': 'Unexpected arguments: {args}. Run zcf --help to see the usage.',
   'cli.badArguments': '{message}. Run zcf --help to see the usage.',
   'cli.unexpectedError': 'Unexpected error: {message}',
+  'cli.invalidPort': 'Not a port number: {port}. Use a whole number from 0 to 65535.',
+  'service.configInvalid': 'The config at {path} has problems. Fix them and save before planning.',
   'cli.noTools': 'No tools selected. List them under "tools" in the config, or pass --tools.',
   'cli.nothingToDo': 'Everything is already up to date.',
   'cli.confirmHint': 'Nothing was changed. Run again with --yes to apply.',
@@ -205,6 +209,8 @@ const zhCN: Record<MessageKey, string> = {
   'cli.unusedArgs': '多余的参数：{args}。运行 zcf --help 查看用法。',
   'cli.badArguments': '{message}。运行 zcf --help 查看用法。',
   'cli.unexpectedError': '意外错误：{message}',
+  'cli.invalidPort': '不是有效的端口号：{port}。请使用 0 到 65535 之间的整数。',
+  'service.configInvalid': '{path} 中的配置有问题。请先修正并保存，再生成计划。',
   'cli.noTools': '没有选择工具。请在配置的 "tools" 中列出，或使用 --tools。',
   'cli.nothingToDo': '所有内容都已是最新。',
   'cli.confirmHint': '尚未做任何改动。加上 --yes 再运行一次即可应用。',
@@ -337,6 +343,12 @@ export function createTranslator(lang: Lang): Translate {
     const template = dictionary[key] ?? english[key] ?? key
     return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match))
   }
+}
+
+/** The text of an error, translated when it carries a message key. */
+export function errorText(error: unknown, t: Translate): string {
+  if (error instanceof MessageError) return t(error.detail.key, error.detail.params)
+  return error instanceof Error ? error.message : String(error)
 }
 
 /** Every message in `lang`, with English for any it lacks; the web UI translates with these. */

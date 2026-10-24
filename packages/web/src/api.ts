@@ -74,8 +74,12 @@ export const httpService: ZcfService = {
       buffer = lines.pop() ?? ''
       for (const line of lines.filter(Boolean)) {
         // oxlint-disable-next-line typescript/no-unsafe-type-assertion
-        const event = JSON.parse(line) as ({ type: 'step' } & StepEvent) | ({ type: 'done' } & ApplyOutcome)
+        const event = JSON.parse(line) as
+          | ({ type: 'step' } & StepEvent)
+          | ({ type: 'done' } & ApplyOutcome)
+          | { type: 'error'; error: string }
         if (event.type === 'step') onStep?.(event)
+        else if (event.type === 'error') throw new Error(event.error)
         else outcome = event
       }
     }
