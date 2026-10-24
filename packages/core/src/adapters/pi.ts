@@ -2,7 +2,7 @@ import { parse } from 'jsonc-parser'
 import { join } from 'pathe'
 
 import { isTable } from '../io/editors'
-import type { CommandStep, Notice, PlanStep } from '../plan/types'
+import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import { expandHome, piAiRoute } from './pi-ai'
@@ -36,31 +36,64 @@ function literalKey(key: string): string {
   return escaped.startsWith('!') ? `$${escaped}` : escaped
 }
 
-function providerSteps(provider: Provider, ctx: AdapterContext): { steps: PlanStep[]; notices: Notice[] } {
+/**
+ * pi resolves MCP `env` and header values the same way. A `${NAME}` reference is kept, as Claude
+ * Code and `.mcp.json` files use it; any other `$` and a leading `!` stay literal.
+ */
+function literalMcpValue(value: string): string {
+  const escaped = value.replaceAll(/\$(?!\{)/g, () => '$$')
+  return escaped.startsWith('!') ? `$${escaped}` : escaped
+}
+
+function literalMcpValues(values: Record<string, string>): Record<string, string> {
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, literalMcpValue(value)]))
+}
+
+async function providerSteps(
+  provider: Provider,
+  ctx: AdapterContext,
+): Promise<{ steps: PlanStep[]; notices: Notice[] }> {
   const found = piAiRoute(provider, TOOL)
   if ('notice' in found) return { steps: [], notices: [found.notice] }
 
   const { route } = found
+  const file = join(agentDir(ctx), 'models.json')
+  const text = await ctx.readFile(file)
+  const data: unknown = text ? parse(text) : undefined
+  const providers = isTable(data) && isTable(data.providers) ? data.providers : {}
+  const current = providers[PROVIDER_ID]
+  const fields = {
+    name: provider.name,
+    baseUrl: route.baseUrl,
+    api: route.api,
+    apiKey: literalKey(provider.apiKey),
+    authHeader: route.bearer ? true : undefined,
+  }
+  const model = { id: route.model }
+
+  // Edit ZCF's provider key by key, so model settings added in pi, such as `reasoning`, stay.
+  const edits: KeyEdit[] = []
+  const base = ['providers', PROVIDER_ID]
+  if (!isTable(current)) {
+    const defined = Object.entries(fields).filter(([, value]) => value !== undefined)
+    edits.push({ path: base, value: { ...Object.fromEntries(defined), models: [model] } })
+  } else {
+    for (const [key, value] of Object.entries(fields)) edits.push({ path: [...base, key], value })
+    const models: unknown = current.models
+    if (!Array.isArray(models)) edits.push({ path: [...base, 'models'], value: [model] })
+    else if (!models.some(entry => isTable(entry) && entry.id === route.model)) {
+      edits.push({ path: [...base, 'models', models.length], value: model })
+    }
+  }
+
   return {
     steps: [
       {
         kind: 'file',
         title: { key: 'step.provider', params: { tool: TOOL, provider: provider.name } },
-        path: join(agentDir(ctx), 'models.json'),
+        path: file,
         format: 'json',
-        edits: [
-          {
-            path: ['providers', PROVIDER_ID],
-            value: {
-              name: provider.name,
-              baseUrl: route.baseUrl,
-              api: route.api,
-              apiKey: literalKey(provider.apiKey),
-              ...(route.bearer ? { authHeader: true } : {}),
-              models: [{ id: route.model }],
-            },
-          },
-        ],
+        edits,
       },
       {
         kind: 'file',
@@ -79,8 +112,8 @@ function providerSteps(provider: Provider, ctx: AdapterContext): { steps: PlanSt
 
 /** The fields `pi mcp add` writes, so a server already in `mcp.json` can be compared with the config. */
 function piMcpServer(server: McpServer): Record<string, unknown> {
-  if (server.type === 'http') return { url: server.url, headers: server.headers }
-  return { command: server.command, args: server.args, env: server.env }
+  if (server.type === 'http') return { url: server.url, headers: literalMcpValues(server.headers) }
+  return { command: server.command, args: server.args, env: literalMcpValues(server.env) }
 }
 
 function comparable(existing: unknown, type: McpServer['type']): unknown {
@@ -97,7 +130,7 @@ function mcpAddArgs(name: string, server: McpServer): string[] {
       name,
       '--url',
       server.url,
-      ...Object.entries(server.headers).flatMap(([key, value]) => ['--header', `${key}=${value}`]),
+      ...Object.entries(literalMcpValues(server.headers)).flatMap(([key, value]) => ['--header', `${key}=${value}`]),
     ]
   }
   // pi spawns stdio servers with cross-spawn, so Windows `.cmd` shims such as `npx` need no `cmd /c`.
@@ -105,7 +138,7 @@ function mcpAddArgs(name: string, server: McpServer): string[] {
     'mcp',
     'add',
     name,
-    ...Object.entries(server.env).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
+    ...Object.entries(literalMcpValues(server.env)).flatMap(([key, value]) => ['--env', `${key}=${value}`]),
     '--',
     server.command,
     ...server.args,
@@ -149,7 +182,7 @@ export const pi: ToolAdapter = {
     if (!status.installed) steps.push(installStep())
 
     if (config.provider) {
-      const provider = providerSteps(config.provider, ctx)
+      const provider = await providerSteps(config.provider, ctx)
       steps.push(...provider.steps)
       notices.push(...provider.notices)
     }
