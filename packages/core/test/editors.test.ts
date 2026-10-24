@@ -234,6 +234,8 @@ describe('editDotenv', () => {
     )
     expect(editDotenv("KEY='old' # note\n", [{ path: ['KEY'], value: 'a b' }])).toBe("KEY='a b' # note\n")
     expect(parseDotenv('KEY= # configure here\n')).toEqual({ KEY: '' })
+    expect(parseDotenv('KEY=old#team\n')).toEqual({ KEY: 'old' })
+    expect(editDotenv('KEY=old#team\n', [{ path: ['KEY'], value: 'new' }])).toBe('KEY=new #team\n')
     expect(editDotenv('KEY= # configure here\n', [{ path: ['KEY'], value: 'new' }])).toBe('KEY= new # configure here\n')
   })
 
@@ -253,6 +255,8 @@ describe('editDotenv', () => {
   it('reads quoted values across lines and past escaped quotes', () => {
     const content = 'A="first\nsecond" # note\nB="x\\"y"\nC=\'it\'s\nD=after\n'
     expect(parseDotenv(content)).toEqual({ A: 'first\nsecond', B: 'x"y', C: "'it's", D: 'after' })
+    expect(parseDotenv('E=`one\ntwo` # note\nF=1\n')).toEqual({ E: 'one\ntwo', F: '1' })
+    expect(editDotenv('E=`one\ntwo`\nF=1\n', [{ path: ['E'], value: 'x' }])).toBe('E=x\nF=1\n')
     expect(editDotenv(content, [{ path: ['A'], value: 'one' }])).toBe('A=one # note\nB="x\\"y"\nC=\'it\'s\nD=after\n')
   })
 
