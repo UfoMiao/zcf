@@ -28,22 +28,9 @@ const parsed = parseZcfConfig({
 const config = parsed.success ? parsed.config : undefined!
 
 describe('planTools', () => {
-  it('plans each selected tool once and flags unsupported ones', async () => {
+  it('plans each selected tool once', async () => {
     const plan = await planTools(config, ctx)
     expect(plan.tools.map(tool => tool.tool)).toEqual(['claude-code', 'dsh'])
-    expect(plan.tools[1]).toEqual({
-      tool: 'dsh',
-      steps: [],
-      notices: [
-        {
-          level: 'warning',
-          message: {
-            key: 'notice.toolNotSupported',
-            params: { tool: 'dsh' },
-          },
-        },
-      ],
-    })
   })
 
   it('lets the caller override the tools', async () => {
@@ -61,7 +48,7 @@ describe('planUpdates', () => {
         args: ['update'],
       },
     ])
-    expect(plan.tools[1]!.notices[0]!.message.key).toBe('notice.toolNotSupported')
+    expect(plan.tools[1]!.notices[0]!.message.key).toBe('notice.notInstalled')
   })
 
   it('reaches the Codex and Gemini CLI adapters', async () => {
@@ -174,9 +161,10 @@ describe('githubFileUrls', () => {
 })
 
 describe('detectTools', () => {
-  it('reports supported tools only', async () => {
+  it('reports each selected tool', async () => {
     expect(await detectTools(['claude-code', 'dsh'], ctx)).toEqual({
       'claude-code': { installed: true, command: 'claude', version: '2.1.0' },
+      dsh: { installed: false, command: 'dsh' },
     })
   })
 })

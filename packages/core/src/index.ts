@@ -1,5 +1,6 @@
 export * from './adapters'
 export { claudeCode } from './adapters/claude-code'
+export { dsh } from './adapters/dsh'
 export { pi } from './adapters/pi'
 export type * from './adapters/types'
 export * from './config-file'

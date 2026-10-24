@@ -73,7 +73,7 @@ const en = {
   'step.mcpEnv': 'Set the environment variables of MCP server "{name}"',
   'step.mcpHeaders': 'Set the HTTP headers of MCP server "{name}"',
   'step.defaultModel': 'Use model "{model}" by default',
-  'notice.toolNotSupported': '{tool} is not supported yet.',
+  'step.writeConfig': 'Update {file}',
   'notice.notInstalled': '{tool} is not installed.',
   'notice.nativeUpdateNotMirrored':
     '{tool} installed with npm updates through the mirror; a native install still downloads from its official servers.',
@@ -248,7 +248,7 @@ const zhCN: Record<MessageKey, string> = {
   'step.mcpEnv': '设置 MCP 服务「{name}」的环境变量',
   'step.mcpHeaders': '设置 MCP 服务「{name}」的 HTTP 请求头',
   'step.defaultModel': '默认使用模型「{model}」',
-  'notice.toolNotSupported': '暂不支持 {tool}。',
+  'step.writeConfig': '更新 {file}',
   'notice.notInstalled': '{tool} 尚未安装。',
   'notice.nativeUpdateNotMirrored': '通过 npm 安装的 {tool} 会经镜像更新；原生安装版仍从官方服务器下载。',
   'notice.providerMissingProtocol': '供应商没有 "{protocol}" 配置，{tool} 将保留当前的供应商。',
