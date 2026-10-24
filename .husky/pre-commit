@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Agent runtimes (e.g. Multica) inject local-only blocks into CLAUDE.md / AGENTS.md
+if git diff --cached -U0 -- '*.md' | grep -q '^+.*BEGIN MULTICA-RUNTIME'; then
+  echo "❌ Staged changes contain an auto-managed MULTICA-RUNTIME block. Unstage it before committing."
+  exit 1
+fi
+
+lint-staged || exit 1
+
+pnpm typecheck || exit 1

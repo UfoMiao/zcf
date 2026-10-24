@@ -90,13 +90,14 @@ test/                   # Test files
 
 ## 🧪 Testing Guidelines
 
-We use **Test-Driven Development (TDD)** methodology:
+Tests come with the change they cover:
 
-### TDD Workflow
+- **Bug fix**: write a test that reproduces the bug and fails, then fix it (red → green)
+- **New behavior**: add tests in the same PR
+- **Refactor**: existing tests must stay green
+- **Docs, templates, translations**: covered by the existing integrity tests
 
-1. **Red**: Write a failing test first
-2. **Green**: Write minimal code to make the test pass
-3. **Refactor**: Improve code while keeping tests green
+See the verification tiers in [AGENTS.md](AGENTS.md#tests-and-verification) for which checks to run for a given change.
 
 ### Test Structure
 
@@ -108,7 +109,7 @@ We use **Test-Driven Development (TDD)** methodology:
 
 ```bash
 # Run specific test file
-pnpm vitest src/utils/config.test.ts
+pnpm vitest run tests/unit/utils/config.test.ts
 
 # Run tests matching pattern
 pnpm vitest --grep "should handle"
@@ -119,7 +120,7 @@ pnpm test:coverage
 
 ### Test Writing Guidelines
 
-1. Always write tests **before** implementing functionality
+1. For bug fixes, write the failing test first
 2. Use descriptive test names: `should handle invalid config gracefully`
 3. Mock external dependencies (file system, commands, prompts)
 4. Test both success and error scenarios
@@ -182,9 +183,9 @@ import { createConfig, validateConfig } from './utils/config.ts'
 ### Before Submitting
 
 1. **Fork & Branch**: Create a feature branch from `main`
-2. **Write Tests**: Follow TDD methodology
-3. **Implement**: Write minimal code to pass tests
-4. **Test**: Run full test suite and ensure coverage
+2. **Implement with tests**: See [Testing Guidelines](#-testing-guidelines)
+3. **Keep the scope small**: One feature or fix per PR
+4. **Test**: Run `pnpm test:run`; CI checks coverage on all platforms
 5. **Type Check**: Run `pnpm typecheck`
 6. **Build**: Run `pnpm build` successfully
 
@@ -271,32 +272,15 @@ ZCF supports bilingual functionality (English/Chinese):
 
 ### Adding Translations
 
-1. **Structure**: Translations organized in `src/i18n/locales/{lang}/`
-2. **Modules**: Separate files for different features (common, api, menu, etc.)
-3. **Usage**: Use `t()` function from `utils/i18n.ts`
-4. **Formatting**: Use `format()` for string interpolation
+1. **Structure**: Translations live in JSON namespaces under `src/i18n/locales/{en,zh-CN}/` (`common.json`, `menu.json`, `errors.json`, ...)
+2. **Usage**: `import { i18n } from '../i18n'`, then `i18n.t('namespace:key')`
+3. **Interpolation**: i18next placeholders, e.g. `"invalidFormat": "Invalid configuration format: {{error}}"` with `i18n.t('errors:invalidFormat', { error })`
 
 ### Translation Guidelines
 
-- Add new keys to both `zh-CN` and `en` languages
-- Use descriptive key names: `errors.config.invalidFormat`
-- Test both language flows
-- Update `TranslationKeys` interface for new keys
-
-Example:
-
-```typescript
-// In src/i18n/locales/en/errors.ts
-// Usage
-import { format, t } from '../utils/i18n.ts'
-
-export default {
-  config: {
-    invalidFormat: 'Invalid configuration format: {error}',
-  },
-}
-const message = format(t('errors.config.invalidFormat'), { error: 'missing field' })
-```
+- Add every new key to both `en` and `zh-CN`; `tests/i18n` fails otherwise
+- Use descriptive key names
+- Check both language flows for user-facing changes
 
 ## 🤝 Community Guidelines
 
