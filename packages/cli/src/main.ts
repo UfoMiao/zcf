@@ -233,7 +233,12 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       stderr.write(`${argumentMessage}\n`)
       return EXIT_ERROR
     }
-    stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
-    return error instanceof CliError ? error.exitCode : EXIT_ERROR
+    if (error instanceof CliError) {
+      stderr.write(`${error.message}\n`)
+      return error.exitCode
+    }
+    const message = error instanceof Error ? error.message : String(error)
+    stderr.write(`${t('cli.unexpectedError', { message })}\n`)
+    return EXIT_ERROR
   }
 }

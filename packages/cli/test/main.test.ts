@@ -176,6 +176,12 @@ describe('zcf plan', () => {
     expect(broken.stderr).toContain('  - JSON 语法错误：第 2 行，第 14 列')
   })
 
+  it('labels unexpected errors in the chosen language', async () => {
+    const { code, stderr } = await run('plan', '--lang', 'zh-CN', '--file', home)
+    expect(code).toBe(EXIT_ERROR)
+    expect(stderr).toMatch(/^意外错误：.*EISDIR/)
+  })
+
   it('exits 1 for unknown or missing tools', async () => {
     await writeConfig({ version: 1 })
     expect(await run('plan', '--tools', 'claude-code,cursor')).toMatchObject({
