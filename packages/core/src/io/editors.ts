@@ -113,39 +113,99 @@ export async function editToml(content: string | undefined, edits: readonly KeyE
   return withTrailingNewline(toml.patch(text, data))
 }
 
-const ENV_LINE = /^(\s*(?:export\s+)?)([A-Za-z_][\w.-]*)\s*=\s*(.*)$/
+const ENV_LINE = /^(\s*(?:export\s+)?)([A-Za-z_][\w.-]*)(\s*=\s*)(.*)$/
+const ENV_NAME = /^[A-Za-z_][\w.-]*$/
+// What may follow a closing quote: spacing and an optional comment.
+const ENV_REST = /^\s*(?:#.*)?$/
 
-function unquoteEnv(raw: string): string {
-  const value = raw.trim()
-  const quote = value[0]
-  const end = quote === '"' || quote === "'" ? value.indexOf(quote, 1) : -1
-  if (end > 0) {
-    const inner = value.slice(1, end)
-    return quote === '"' ? inner.replaceAll('\\n', '\n') : inner
-  }
-  // An unquoted value ends at an inline comment.
-  return value.replace(/\s+#.*$/, '')
+/** One assignment in a dotenv file. A quoted value can span lines `first` to `last`. */
+export interface DotenvEntry {
+  key: string
+  /** The value as dotenv readers see it. */
+  value: string
+  /** The value's text as written between its quotes, or bare. */
+  raw: string
+  first: number
+  last: number
+  prefix: string
+  separator: string
+  /** Spacing and an inline comment after the value. */
+  suffix: string
 }
 
-function quoteEnv(value: string): string {
+/** Where `quote` closes in `text` after `from`, skipping backslash escapes inside double quotes. */
+function closingQuote(text: string, quote: string, from: number): number {
+  for (let index = from; index < text.length; index++) {
+    if (quote === '"' && text[index] === '\\') index++
+    else if (text[index] === quote) return index
+  }
+  return -1
+}
+
+function decodeDouble(inner: string): string {
+  return inner.replaceAll(/\\([\\"nr])/g, (_, char: string) => (char === 'n' ? '\n' : char === 'r' ? '\r' : char))
+}
+
+/** A quoted value that starts on `lines[first]`, possibly continuing on the next lines. */
+function quotedValue(
+  lines: readonly string[],
+  first: number,
+  rest: string,
+): { value: string; raw: string; last: number; suffix: string } | undefined {
+  const quote = rest[0]
+  if (quote !== '"' && quote !== "'") return undefined
+  let text = rest
+  for (let last = first; last < lines.length; last++) {
+    if (last > first) text += `\n${lines[last]}`
+    const end = closingQuote(text, quote, 1)
+    if (end < 0) continue
+    // Text after the closing quote other than a comment means the value was not quoted after all.
+    const suffix = text.slice(end + 1)
+    if (!ENV_REST.test(suffix)) return undefined
+    const raw = text.slice(1, end)
+    return { value: quote === '"' ? decodeDouble(raw) : raw, raw, last, suffix }
+  }
+  return undefined
+}
+
+/** Every assignment in a dotenv file, in order and including duplicates. */
+export function dotenvEntries(content: string): DotenvEntry[] {
+  const lines = content.split(/\r?\n/)
+  const entries: DotenvEntry[] = []
+  for (let first = 0; first < lines.length; first++) {
+    const match = ENV_LINE.exec(lines[first]!)
+    if (!match) continue
+    const [, prefix = '', key = '', separator = '', rest = ''] = match
+    const quoted = quotedValue(lines, first, rest)
+    if (quoted) {
+      entries.push({ key, prefix, separator, first, ...quoted })
+      first = quoted.last
+      continue
+    }
+    // An unquoted value ends at an inline comment.
+    const [, value = '', suffix = ''] = /^(.*?)(\s+#.*|\s*)$/.exec(rest)!
+    entries.push({ key, value, raw: value, first, last: first, prefix, separator, suffix })
+  }
+  return entries
+}
+
+/** Quote a value so that dotenv readers, which do not unescape `\"` or `\\`, read it back unchanged. */
+function quoteEnv(key: string, value: string): string {
   if (/^[\w@%+=:,./-]*$/.test(value)) return value
-  if (!value.includes("'") && !value.includes('\n')) return `'${value}'`
-  return `"${value.replaceAll('\n', '\\n')}"`
+  if (!/['\r\n]/.test(value)) return `'${value}'`
+  if (!/["\\]/.test(value)) return `"${value.replaceAll('\n', '\\n').replaceAll('\r', '\\r')}"`
+  throw new Error(`This value cannot be written to a dotenv file: ${key}`)
 }
 
 /** Read a dotenv file into variables; a later line wins, as in dotenv. */
 export function parseDotenv(content: string): Record<string, string> {
-  const result: Record<string, string> = {}
-  for (const line of content.split(/\r?\n/)) {
-    const match = ENV_LINE.exec(line)
-    if (match) result[match[2]!] = unquoteEnv(match[3]!)
-  }
-  return result
+  return Object.fromEntries(dotenvEntries(content).map(entry => [entry.key, entry.value]))
 }
 
 /**
  * Edit a dotenv file variable by variable. Comments, blank lines and other
- * variables stay as they are; new variables are added at the end.
+ * variables stay as they are; new variables are added at the end. Setting a
+ * variable keeps its last line and drops earlier duplicates.
  */
 export function editDotenv(content: string | undefined, edits: readonly KeyEdit[]): string {
   const eol = content?.includes('\r\n') ? '\r\n' : '\n'
@@ -154,20 +214,24 @@ export function editDotenv(content: string | undefined, edits: readonly KeyEdit[
 
   for (const edit of edits) {
     if (edit.path.length !== 1) throw new Error(`A dotenv key path has one element: ${edit.path.join('.')}`)
-    const key = String(edit.path[0])
-    const matches = lines.flatMap((line, index) => (ENV_LINE.exec(line)?.[2] === key ? [index] : []))
-    if (edit.value === undefined) {
-      for (const index of matches.toReversed()) lines.splice(index, 1)
-      continue
+    const [key] = edit.path
+    if (typeof key !== 'string' || !ENV_NAME.test(key)) {
+      throw new Error(`Not a dotenv variable name: ${JSON.stringify(key)}`)
     }
-    const raw = edit.value
-    if (typeof raw !== 'string' && typeof raw !== 'number' && typeof raw !== 'boolean') {
-      throw new Error(`A dotenv value must be a string, number or boolean: ${key}`)
+    const matches = dotenvEntries(lines.join('\n')).filter(entry => entry.key === key)
+    const keep = edit.value === undefined ? undefined : matches.pop()
+    let line: string | undefined
+    if (edit.value !== undefined) {
+      const raw = edit.value
+      if (typeof raw !== 'string' && typeof raw !== 'number' && typeof raw !== 'boolean') {
+        throw new Error(`A dotenv value must be a string, number or boolean: ${key}`)
+      }
+      const value = quoteEnv(key, String(raw))
+      line = keep ? `${keep.prefix}${key}${keep.separator}${value}${keep.suffix}` : `${key}=${value}`
     }
-    const value = quoteEnv(String(raw))
-    const last = matches.at(-1)
-    if (last === undefined) lines.push(`${key}=${value}`)
-    else lines[last] = `${ENV_LINE.exec(lines[last]!)![1]}${key}=${value}`
+    if (keep && line !== undefined) lines.splice(keep.first, keep.last - keep.first + 1, line)
+    else if (line !== undefined) lines.push(line)
+    for (const entry of matches.toReversed()) lines.splice(entry.first, entry.last - entry.first + 1)
   }
 
   return lines.length === 0 ? '' : `${lines.join(eol)}${eol}`
