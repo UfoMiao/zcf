@@ -82,4 +82,18 @@ describe('parseZcfConfig', () => {
       issues: [{ path: '' }],
     })
   })
+
+  it('leaves the rejected value out of messages, since it may be a credential', () => {
+    const result = parseZcfConfig({
+      version: 1,
+      provider: { name: 'x', apiKey: 12345, anthropic: { baseUrl: 'sk-pasted-into-the-wrong-field' } },
+    })
+    expect(result).toEqual({
+      success: false,
+      issues: [
+        { path: 'provider.apiKey', message: 'Invalid type: Expected string' },
+        { path: 'provider.anthropic.baseUrl', message: 'Invalid URL' },
+      ],
+    })
+  })
 })
