@@ -118,14 +118,20 @@ describe('opencode.plan', () => {
     })
   })
 
-  it('uses the OpenAI-compatible endpoint when only it names a model, keeping the rest of the file', async () => {
+  it('uses the OpenAI-compatible endpoint when only it names a model, keeping the rest of the file and model settings', async () => {
     const before = [
       '// my settings',
       '{',
       '  "theme": "dark",',
       '  "model": "anthropic/claude-sonnet-5-5",',
       '  "small_model": "zcf/old",',
-      '  "provider": { "zcf": { "options": { "authToken": "old" } }, "other": {} },',
+      '  "provider": {',
+      '    "zcf": {',
+      '      "options": { "authToken": "old" },',
+      '      "models": { "gpt-6": { "limit": { "context": 400000, "output": 128000 } }, "gone": {} },',
+      '    },',
+      '    "other": {},',
+      '  },',
       '}',
       '',
     ].join('\n')
@@ -150,7 +156,7 @@ describe('opencode.plan', () => {
           npm: '@ai-sdk/openai-compatible',
           name: 'Router',
           options: { baseURL: 'https://router.example.com/v1', apiKey: 'sk-or' },
-          models: { 'gpt-6': {} },
+          models: { 'gpt-6': { limit: { context: 400000, output: 128000 } } },
         },
         other: {},
       },

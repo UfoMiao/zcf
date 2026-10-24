@@ -94,11 +94,23 @@ function providerEdits(provider: Provider, route: Route, existing: Record<string
     // Drop a pick of a model ZCF no longer offers.
     return ownedModel(existing?.[key]) ? [{ path: [key], value: undefined }] : []
   }
+  // Models stay key by key, so settings a user added to one (such as `limit`) survive; models ZCF no longer offers go.
+  const providers = existing?.provider
+  const ours = isTable(providers) ? providers[PROVIDER_ID] : undefined
+  const current = isTable(ours) && isTable(ours.models) ? ours.models : {}
+  const modelEdits: KeyEdit[] = [
+    ...Object.keys(current)
+      .filter(model => !route.models.includes(model))
+      .map(model => ({ path: [...base, 'models', model], value: undefined })),
+    ...route.models
+      .filter(model => !Object.hasOwn(current, model))
+      .map(model => ({ path: [...base, 'models', model], value: {} })),
+  ]
   return [
     { path: [...base, 'npm'], value: route.npm },
     { path: [...base, 'name'], value: provider.name },
     ...Object.entries(route.options).map(([key, value]) => ({ path: [...base, 'options', key], value })),
-    { path: [...base, 'models'], value: Object.fromEntries(route.models.map(model => [model, {}])) },
+    ...modelEdits,
     ...pick('model', route.model),
     ...pick('small_model', route.smallModel),
   ]
