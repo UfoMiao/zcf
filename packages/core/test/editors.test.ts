@@ -11,6 +11,12 @@ import {
 } from '../src/io/editors'
 
 describe('editJson', () => {
+  it('keeps a one-line file on one line', () => {
+    expect(
+      editJson('{"mcpServers":{"a":{"command":"x"}}}\n', [{ path: ['mcpServers', 'b'], value: { url: 'u' } }]),
+    ).toBe('{"mcpServers":{"a":{"command":"x"},"b": {"url":"u"}}}\n')
+  })
+
   it('keeps comments, order and untouched keys', () => {
     const before = '{\n  // keep me\n  "b": 1,\n  "env": { "A": "1" }\n}\n'
     const after = editJson(before, [
@@ -84,6 +90,20 @@ describe('editJson', () => {
 })
 
 describe('editToml', () => {
+  it('writes new nested tables as sections, keeping deeper tables inline', async () => {
+    const after = await editToml('model = "a"\n', [
+      { path: ['model_provider'], value: 'zcf' },
+      { path: ['model_providers', 'zcf'], value: { name: 'ZCF', base_url: 'u', http_headers: { X: '1' } } },
+    ])
+    expect(after).toBe(
+      'model = "a"\nmodel_provider = "zcf"\n\n[model_providers.zcf]\nname = "ZCF"\nbase_url = "u"\nhttp_headers = { X = "1" }\n',
+    )
+    // A header the user wrote stays, even when it has no keys of its own.
+    expect(await editToml('[model_providers]\n', [{ path: ['model_providers', 'zcf'], value: { name: 'ZCF' } }])).toBe(
+      '[model_providers]\n\n[model_providers.zcf]\nname = "ZCF"\n',
+    )
+  })
+
   it('sets values and keeps comments', async () => {
     const before = '# my settings\nmodel = "a"\n\n[profiles.work]\nmodel = "b" # inline\n'
     const after = await editToml(before, [
