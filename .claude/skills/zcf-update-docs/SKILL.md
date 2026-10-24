@@ -14,7 +14,7 @@ Usage: `/zcf-update-docs [--check-only]`. With `--check-only`, report what is ou
 ## Steps
 
 1. **Scope.** Last tag: `git describe --tags --abbrev=0`. List changed files with `git diff --name-only <tag>..HEAD` and read the diffs of the source files that the map below covers. Ignore test-only and internal refactor changes that do not alter behavior.
-2. **Map code to pages.** For each user-visible change, open the matching page in `docs/en/` and compare it with the code (commands, flags, menu entries, defaults, prompts from `src/i18n/locales/*/*.json`). Only pages touched by the changes need checking.
+2. **Map code to pages.** For each user-visible change, open the matching page in `docs/en/` and compare it with the code (commands, flags, menu entries, defaults, prompts from `src/i18n/locales/*/*.json`). For changed locale strings, find where each key is used (`rg "<namespace>:<key>" src`) and check the page for that command or feature. Only pages touched by the changes need checking.
 3. **Report or update.** With `--check-only`, list each mismatch as file, what the doc says, and what the code does, then stop. Otherwise fix `docs/en/` first, then make the same change in `docs/zh-CN/` and `docs/ja-JP/` so the three stay structurally parallel. Add new pages to each language's `SUMMARY.md` and the VitePress sidebar. Update `AGENTS.md` only if commands, layout or development rules changed.
 4. **Verify.** Run `pnpm docs:build`; it fails on dead links and broken markdown. Fix any errors.
 5. **Summarize** the pages changed and any mismatches you left alone and why.

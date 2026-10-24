@@ -2,7 +2,7 @@
 name: zcf-pr
 description: Create a pull request for the current branch with a description based on the project PR template
 disable-model-invocation: true
-allowed-tools: Read, Grep, Glob, Bash(git:*), Bash(gh:*), Bash(pnpm:*)
+allowed-tools: Read, Write, Grep, Glob, Bash(git:*), Bash(gh:*), Bash(pnpm:*), Bash(rm:*)
 ---
 
 # ZCF PR
@@ -15,7 +15,7 @@ Usage: `/zcf-pr [--base <branch>] [--draft] [--title <title>]` (base defaults to
 
 1. **Preconditions.** Stop with a one-line explanation if the current branch is the base branch, or if there are no commits ahead of the base. If there are uncommitted changes, list them and ask whether to commit them (stage by name, never `git add .`) or leave them out.
 2. **Understand the change.** Read `git log <base>..HEAD` and `git diff <base>...HEAD`. Classify it from the diff itself, not from keywords in commit messages.
-3. **Verify proportionally.** If the branch changes source files and nothing in this session has already run them, run `pnpm test:run` (about 50 s) per the verification tiers in `AGENTS.md`. Docs-only branches need no tests. Report failures to the user instead of opening the PR.
+3. **Verify proportionally.** Unless this session already ran them on the current HEAD, run the checks that `AGENTS.md` calls for on the changed paths: the "Check with" column of its trigger table, plus `pnpm typecheck` and `pnpm test:run` (about 60 s together) when source files changed. Docs-only branches need no tests. Report failures to the user instead of opening the PR.
 4. **Title.** Use `--title` if given; otherwise a Conventional Commits title (at most 100 characters) that summarizes the whole branch, not just its first commit.
 5. **Body.** Fill in `.github/PULL_REQUEST_TEMPLATE`:
    - Description: what changed and why, in a few sentences. Link related issues.

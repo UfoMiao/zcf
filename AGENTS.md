@@ -67,7 +67,7 @@ Match the check to the risk of the change:
 1. **Docs or comments only**: no tests.
 2. **A change inside one module**: `pnpm typecheck` plus that module's test files (and its `*.edge.test.ts`).
 3. **Shared code** (`src/utils/config*.ts`, `platform.ts`, `src/i18n/index.ts`, `src/constants.ts`, `src/code-tools/registry.ts`, CLI setup) **or changes across modules**: also run `pnpm test:run`.
-4. **Before pushing a branch with source changes**: run `pnpm test:run` once. CI then runs lint, typecheck, build and coverage on all three OSes, so you do not need to reproduce that locally.
+4. **Before pushing a branch with source changes**: run `pnpm test:run` once. CI then runs lint and typecheck on Ubuntu, and build plus the coverage suite on Ubuntu, Windows and macOS, so you do not need to reproduce that locally.
 
 Run `pnpm test:coverage` locally only when CI reports a coverage failure. Lint fixes run automatically on edit (Claude Code hook) and on commit (lint-staged), so a separate full lint is rarely needed.
 
