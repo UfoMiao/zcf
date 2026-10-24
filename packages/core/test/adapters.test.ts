@@ -13,6 +13,7 @@ const runner = fakeRunner({
 const ctx = createContext({
   home: '/home/me',
   platform: 'linux',
+  env: {},
   runner,
   readFile: async () => undefined,
 })

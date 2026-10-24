@@ -15,6 +15,7 @@ function context(overrides: Partial<AdapterContext> = {}, files: Record<string, 
   return {
     home: HOME,
     platform: 'linux',
+    env: {},
     runner: fakeRunner(),
     readFile: async path => files[path],
     ...overrides,
@@ -234,6 +235,26 @@ describe('claudeCode.plan', () => {
       context({}, { [join(HOME, '.claude.json')]: '{"mcpServers":{}}' }),
     )
     expect(plan.steps).toMatchObject([{ title: { key: 'step.mcpAdd' }, touches: [join(HOME, '.claude.json')] }])
+  })
+
+  it('follows CLAUDE_CONFIG_DIR for settings, state and skills', async () => {
+    const dir = '/data/claude'
+    const plan = await claudeCode.plan(
+      config({
+        provider: { name: 'p', apiKey: 'sk-test-123456', anthropic: { baseUrl: 'https://api.example.com' } },
+        mcpServers: { docs: { type: 'http' as const, url: 'https://a.example.com' } },
+        skills: [{ source: 'owner/repo', skills: ['one'] }],
+      }),
+      installed,
+      context(
+        { env: { CLAUDE_CONFIG_DIR: dir } },
+        {
+          [join(dir, '.claude.json')]: '{"mcpServers":{"docs":{"type":"http","url":"https://a.example.com"}}}',
+          [join(dir, 'skills', 'one', 'SKILL.md')]: '# one',
+        },
+      ),
+    )
+    expect(plan.steps).toMatchObject([{ kind: 'file', path: join(dir, 'settings.json') }])
   })
 
   it('uses the freshly installed binary for MCP steps', async () => {

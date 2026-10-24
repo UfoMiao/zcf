@@ -5,6 +5,8 @@ import type { ToolId, ZcfConfig } from '../schema/config'
 export interface AdapterContext {
   home: string
   platform: NodeJS.Platform
+  /** Environment variables tools read their locations from, such as `CLAUDE_CONFIG_DIR`. */
+  env: Record<string, string | undefined>
   runner: CommandRunner
   readFile: (path: string) => Promise<string | undefined>
 }

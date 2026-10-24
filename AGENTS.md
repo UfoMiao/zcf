@@ -41,7 +41,7 @@ Timings are from this repo on a warm machine.
 
 ## Rules for every change
 
-- Tests never touch the real home directory or run real installers. Pass `home`, `platform`, `runner` and `readFile` through `AdapterContext`, and use the fake runner and temp folders in `packages/core/test/helpers.ts`.
+- Tests never touch the real home directory or run real installers. Pass `home`, `platform`, `env`, `runner` and `readFile` through `AdapterContext`, and use the fake runner and temp folders in `packages/core/test/helpers.ts`.
 - User config is edited key by key, never rewritten: `editJson`/`editToml` keep comments and layout, writes are atomic, and files are backed up before their first change in a run.
 - Never print secrets. Anything shown to the user goes through `Renderer`, which masks the API key, MCP env/header values and credentials found in native files.
 - Every user-facing string has a key in both `en` and `zh-CN` (`packages/cli/src/i18n.ts`).

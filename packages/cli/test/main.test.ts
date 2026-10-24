@@ -40,7 +40,7 @@ async function run(...argv: string[]) {
     stderr: {
       write: text => void (stderr += text),
     },
-    context: { home, platform: 'linux', runner },
+    context: { home, platform: 'linux', env: {}, runner },
     now: () => new Date('2026-10-24T08:00:00.000Z'),
   })
   return {
