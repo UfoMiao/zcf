@@ -5,6 +5,7 @@ import { Box, Text, useApp, useInput } from 'ink'
 import { useEffect, useState } from 'react'
 
 import type { Translate } from '../i18n'
+import { errorText } from '../i18n'
 import { tildify } from '../render'
 import { ApplyPage } from './apply-page'
 import type { PageProps } from './pages'
@@ -52,7 +53,7 @@ export function App({ service, t, home }: AppProps) {
       if (await editor.save()) setStatus({ text: t('tui.saved'), tone: 'info' })
     } catch (error) {
       setStatus({
-        text: t('tui.saveFailed', { message: error instanceof Error ? error.message : String(error) }),
+        text: t('tui.saveFailed', { message: errorText(error, t) }),
         tone: 'error',
       })
     }

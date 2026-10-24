@@ -64,10 +64,14 @@ export function jsonEditsBetween(before: unknown, after: unknown, path: KeyPath 
 /**
  * Save an edited config. Only the keys that changed are rewritten, so comments and
  * layout elsewhere in the file survive. The caller validates the draft first.
+ *
+ * `base` is the draft as it was loaded. When given, only what the user changed since
+ * then is written, so changes made to the file in the meantime by hand are kept.
  */
-export async function saveConfigDraft(path: string, draft: ConfigDraft): Promise<void> {
+export async function saveConfigDraft(path: string, draft: ConfigDraft, base?: ConfigDraft): Promise<void> {
   const text = await readTextIfExists(path)
-  const before: unknown = text?.trim() ? parse(text, [], { allowTrailingComma: true }) : {}
-  const edits = jsonEditsBetween(isTable(before) ? before : {}, draft).filter(edit => edit.path.length > 0)
+  const current: unknown = text?.trim() ? parse(text, [], { allowTrailingComma: true }) : undefined
+  const before = isTable(current) ? (base ?? current) : {}
+  const edits = jsonEditsBetween(before, draft).filter(edit => edit.path.length > 0)
   await writeFileAtomic(path, editJson(text, edits))
 }

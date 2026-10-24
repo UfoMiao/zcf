@@ -35,6 +35,11 @@ export interface Field {
   required?: boolean
 }
 
+/** The value to store for text typed into a field: an empty optional field is removed instead. */
+export function fieldValue(field: Field, text: string): string | undefined {
+  return text === '' && !field.required ? undefined : text
+}
+
 export const TOOL_OPTIONS: readonly ToolId[] = TOOL_IDS
 
 export const PROVIDER_FIELDS: readonly Field[] = [

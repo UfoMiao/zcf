@@ -81,9 +81,25 @@ describe('terminal UI', () => {
     expect(app.frame()).not.toContain('old')
 
     // Emptying a required field shows its problem, and saving is refused.
-    await app.press(KEY.down, KEY.enter, '\u0015', KEY.enter, KEY.save)
-    expect(app.frame()).toContain('Fix 1 problem(s) before saving. provider.apiKey: is required')
+    // The key being edited is shown as stars.
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('*'.repeat('sk-very-secret'.length))
+    expect(app.frame()).not.toContain('sk-very-secret')
+    await app.press('\u0015', KEY.enter, KEY.save)
+    expect(app.frame()).toContain('Fix 1 problem(s) before saving. provider.apiKey: must not be empty')
     expect(app.frame()).toMatch(/Provider !/)
+    app.unmount()
+  })
+
+  it('opens a skill source with the cursor on its first field', async () => {
+    const skills = [{ source: 'a/a' }, { source: 'b/b' }, { source: 'c/c' }]
+    const { service, saved } = fakeService({ version: 1, tools: [], skills })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.enter, '\u0015', 'x/y', KEY.enter, KEY.save)
+    expect(saved).toEqual([
+      { version: 1, tools: [], skills: [{ source: 'a/a' }, { source: 'b/b' }, { source: 'x/y' }] },
+    ])
     app.unmount()
   })
 

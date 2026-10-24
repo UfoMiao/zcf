@@ -51,6 +51,8 @@ export interface MainOptions {
   stop?: Promise<unknown>
   /** Where the built web UI lives; found next to the CLI by default. */
   webRoot?: string
+  /** Starts the browser; by default a detached process, so it never keeps ZCF running. */
+  openUrl?: (command: string, args: string[]) => void
 }
 
 interface CommandFlags {
@@ -58,8 +60,24 @@ interface CommandFlags {
   tools?: string
   yes?: boolean
   mirror?: string
-  port?: number
+  port?: string | number
   open?: boolean
+}
+
+async function openDetached(command: string, args: string[]): Promise<void> {
+  const { spawn } = await import('node:child_process')
+  const child = spawn(command, args, { detached: true, stdio: 'ignore', windowsHide: true })
+  child.on('error', () => undefined)
+  child.unref()
+}
+
+function parsePort(value: string | number | undefined, t: Translate): number | undefined {
+  if (value === undefined) return undefined
+  const port = Number(value)
+  if (String(value).trim() === '' || !Number.isInteger(port) || port < 0 || port > 65_535) {
+    throw new CliError(t('cli.invalidPort', { port: String(value) }), EXIT_ERROR)
+  }
+  return port
 }
 
 /** The command that opens a URL in the default browser. */
@@ -280,6 +298,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     .option('--port <port>', t('cli.option.port'))
     .option('--open', t('cli.option.open'), { default: true })
     .action(async (flags: CommandFlags) => {
+      const port = parsePort(flags.port, t)
       const path = flags.file ? resolve(flags.file) : defaultConfigPath(ctx.home)
       const { fileAssets, startUiServer } = await import('./server')
       const here = fileURLToPath(new URL('.', import.meta.url))
@@ -293,12 +312,13 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         lang,
         home: ctx.home,
         asset,
-        port: flags.port,
+        port,
       })
       stdout.write(`${t('cli.uiListening', { url: server.url })}\n${t('cli.uiStop')}\n`)
       if (flags.open !== false) {
         const [command, args] = openCommand(ctx.platform, server.url)
-        void ctx.runner.run(command, args).catch(() => undefined)
+        if (options.openUrl) options.openUrl(command, args)
+        else void openDetached(command, args)
       }
       await (options.stop ?? new Promise(done => process.once('SIGINT', done)))
       await server.close()

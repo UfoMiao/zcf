@@ -1,5 +1,5 @@
 import type { ConfigEditor, DraftPath, Field } from '@zcf/ui-kit'
-import { formatArgs, getAt, isTable, issuesAt, parseArgs } from '@zcf/ui-kit'
+import { fieldValue, formatArgs, getAt, isTable, issuesAt, parseArgs } from '@zcf/ui-kit'
 import { useEffect, useState } from 'react'
 
 import type { Translate } from './api'
@@ -9,7 +9,7 @@ function issueText(editor: ConfigEditor, path: DraftPath, t: Translate): string 
   return issue && t(issue.message.key, issue.message.params)
 }
 
-/** A text box that edits a parsed value (such as an argument list) and commits on blur. */
+/** A text box that edits a parsed value, such as an argument list, keeping the text as typed. */
 function ParsedInput({
   value,
   format,
@@ -33,8 +33,11 @@ function ParsedInput({
     <input
       {...rest}
       value={text}
-      onChange={event => setText(event.target.value)}
-      onBlur={() => onChange(parse(text))}
+      onChange={event => {
+        // Commit on every change, so Ctrl+S right after typing saves what was typed.
+        setText(event.target.value)
+        onChange(parse(event.target.value))
+      }}
     />
   )
 }
@@ -114,7 +117,9 @@ export function FieldInput({
         <select
           id={id}
           value={text}
-          onChange={event => (onSelect ? onSelect(event.target.value) : editor.update(path, event.target.value))}
+          onChange={event =>
+            onSelect ? onSelect(event.target.value) : editor.update(path, fieldValue(field, event.target.value))
+          }
         >
           {!text && <option value="">{t('tui.default', { value: field.options?.[0] ?? '' })}</option>}
           {field.options?.map(option => (
@@ -158,7 +163,7 @@ export function FieldInput({
           autoComplete="off"
           spellCheck={false}
           value={text}
-          onChange={event => editor.update(path, event.target.value)}
+          onChange={event => editor.update(path, fieldValue(field, event.target.value))}
         />
       )
   }

@@ -1,9 +1,10 @@
-import type { AdapterContext, ZcfConfig } from '@zcf/core'
+import type { AdapterContext, ConfigDraft, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
   detectTools,
   loadConfigDraft,
   loadConfigFile,
+  MessageError,
   planTools,
   previewPlan,
   saveConfigDraft,
@@ -20,7 +21,9 @@ export function backupFolder(home: string, now: Date): string {
 /** The config at `path`, validated; throws when it is missing or invalid, which front ends prevent by saving first. */
 async function savedConfig(path: string): Promise<ZcfConfig> {
   const result = await loadConfigFile(path)
-  if (!result.success) throw new Error(`The ZCF config at ${path} is missing or not valid`)
+  if (!result.success) {
+    throw new MessageError({ key: 'service.configInvalid', params: { path } }, `The ZCF config at ${path} is not valid`)
+  }
   return result.config
 }
 
@@ -35,14 +38,20 @@ export async function planWithPreviews(config: ZcfConfig, ctx: AdapterContext): 
 
 /** The ZCF service backed by this machine: the config file at `path` and the real tools. */
 export function createLocalService(ctx: AdapterContext, path: string, now: () => Date = () => new Date()): ZcfService {
+  // The draft as last loaded or saved, so a save writes only the user's changes.
+  let base: ConfigDraft | undefined
   return {
     async load() {
       const loaded = await loadConfigDraft(path)
+      base = loaded.draft
       return loaded.draft
         ? { path, draft: loaded.draft, exists: loaded.exists, issues: [] }
         : { path, exists: true, issues: loaded.issues }
     },
-    save: draft => saveConfigDraft(path, draft),
+    async save(draft) {
+      await saveConfigDraft(path, draft, base)
+      base = draft
+    },
     detect: tools => detectTools(tools, ctx),
     plan: async () => planWithPreviews(await savedConfig(path), ctx),
     async apply(onStep) {

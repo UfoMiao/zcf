@@ -5,12 +5,12 @@ import { createServer } from 'node:http'
 
 import type { PlanStep, StepResult } from '@zcf/core'
 import { readTextIfExists } from '@zcf/core'
-import type { PlanView, ZcfService } from '@zcf/ui-kit'
+import type { ApplyOutcome, PlanView, ZcfService } from '@zcf/ui-kit'
 import { isTable, TOOL_OPTIONS } from '@zcf/ui-kit'
 import { extname, join, normalize } from 'pathe'
 
 import type { Lang } from './i18n'
-import { messagesFor } from './i18n'
+import { createTranslator, errorText, messagesFor } from './i18n'
 import { maskSecrets } from './render'
 
 export interface Asset {
@@ -118,6 +118,7 @@ function sameToken(given: string | undefined, token: string): boolean {
  */
 export async function startUiServer(options: UiServerOptions): Promise<UiServer> {
   const { service, lang } = options
+  const t = createTranslator(lang)
   const token = options.token ?? randomBytes(24).toString('base64url')
   let port = 0
   // The latest plan's secrets also mask apply output; a plan is always shown before apply.
@@ -149,9 +150,17 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
       response.writeHead(200, { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store' })
       const mask: Mask = text => maskSecrets(text, secrets)
       const write = (event: unknown) => response.write(`${JSON.stringify(event)}\n`)
-      const outcome = await service.apply(event =>
-        write({ type: 'step', ...event, result: maskResult(event.result, mask) }),
-      )
+      let outcome: ApplyOutcome
+      try {
+        outcome = await service.apply(event =>
+          write({ type: 'step', ...event, result: maskResult(event.result, mask) }),
+        )
+      } catch (error) {
+        // The response has started, so the failure travels as the last event instead of a status code.
+        write({ type: 'error', error: mask(errorText(error, t)) })
+        response.end()
+        return
+      }
       write({
         type: 'done',
         backupDir: outcome.backupDir,
@@ -182,7 +191,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
         })
     handle.catch((error: unknown) => {
       if (response.headersSent) response.end()
-      else send(response, 500, { error: error instanceof Error ? error.message : String(error) })
+      else send(response, 500, { error: errorText(error, t) })
     })
   })
 

@@ -2,6 +2,7 @@ import type { ToolId, ToolStatus } from '@zcf/core'
 import { TOOL_NAMES } from '@zcf/core'
 import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
 import {
+  fieldValue,
   formatArgs,
   freshName,
   getAt,
@@ -68,7 +69,7 @@ function parseText(field: Field, text: string): unknown {
       .map(item => item.trim())
       .filter(Boolean)
   }
-  return text.trim()
+  return fieldValue(field, text.trim())
 }
 
 /** Rows for plain fields under `root`. Record fields open `onOpenRecord`. */
@@ -111,6 +112,7 @@ function fieldRows(
       action: {
         type: 'text',
         initial: editText(field, value),
+        mask: field.kind === 'secret',
         commit: text => editor.update(path, parseText(field, text)),
       },
     }
@@ -170,7 +172,7 @@ function RecordEditor({
       label: key,
       value: MASK,
       remove: () => editor.update([...path, key], undefined),
-      action: { type: 'text', initial: String(value), commit: text => editor.update([...path, key], text) },
+      action: { type: 'text', initial: String(value), mask: true, commit: text => editor.update([...path, key], text) },
     })),
     {
       id: '+add',
@@ -328,7 +330,8 @@ export function SkillsPage(props: PageProps) {
     return (
       <Box flexDirection="column" gap={1}>
         <Text bold>{t('tui.skills.source')}</Text>
-        <RowList rows={rows} active={active} onBack={() => setOpen(undefined)} onEditing={onEditing} />
+        {/* A key of its own, so the cursor starts at the top instead of where it was in the list. */}
+        <RowList key="source" rows={rows} active={active} onBack={() => setOpen(undefined)} onEditing={onEditing} />
       </Box>
     )
   }
@@ -363,7 +366,7 @@ export function SkillsPage(props: PageProps) {
   return (
     <Box flexDirection="column" gap={1}>
       <Text dimColor>{t('tui.skills.intro')}</Text>
-      <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+      <RowList key="list" rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
     </Box>
   )
 }

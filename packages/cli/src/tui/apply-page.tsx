@@ -4,6 +4,7 @@ import { Box, Text, useInput, useStdout } from 'ink'
 import { useEffect, useRef, useState } from 'react'
 
 import type { Translate } from '../i18n'
+import { errorText } from '../i18n'
 import { hasWork, Renderer } from '../render'
 
 type Phase = 'waiting' | 'planning' | 'ready' | 'applying' | 'done'
@@ -61,7 +62,7 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
         setPhase('ready')
       },
       (error: unknown) => {
-        setLines([t('tui.apply.failed', { message: error instanceof Error ? error.message : String(error) })])
+        setLines([t('tui.apply.failed', { message: errorText(error, t) })])
         setPhase('done')
       },
     )
@@ -83,8 +84,7 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
       .apply(event => current.stepResult(event.tool, event.result))
       .then(
         outcome => current.summary(outcome.results, outcome.backupDir),
-        (error: unknown) =>
-          current.line(t('cli.unexpectedError', { message: error instanceof Error ? error.message : String(error) })),
+        (error: unknown) => current.line(t('cli.unexpectedError', { message: errorText(error, t) })),
       )
       .finally(() => setPhase('done'))
   }

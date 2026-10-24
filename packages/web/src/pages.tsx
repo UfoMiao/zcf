@@ -194,6 +194,7 @@ const STATUS_ICON = { done: '✓', unchanged: '·', skipped: '-', failed: '✗' 
 export function ApplyPage({ editor, t, service }: PageProps & { service: ZcfService }) {
   const [view, setView] = useState<PlanView>()
   const [error, setError] = useState<string>()
+  const [applyError, setApplyError] = useState<string>()
   const [events, setEvents] = useState<StepEvent[]>([])
   const [outcome, setOutcome] = useState<ApplyOutcome>()
   const [busy, setBusy] = useState(false)
@@ -203,6 +204,7 @@ export function ApplyPage({ editor, t, service }: PageProps & { service: ZcfServ
     setError(undefined)
     setEvents([])
     setOutcome(undefined)
+    setApplyError(undefined)
     service
       .plan()
       .then(setView, (reason: unknown) => setError(String(reason instanceof Error ? reason.message : reason)))
@@ -214,9 +216,10 @@ export function ApplyPage({ editor, t, service }: PageProps & { service: ZcfServ
   const apply = () => {
     setBusy(true)
     setEvents([])
+    setApplyError(undefined)
     service
       .apply(event => setEvents(current => [...current, event]))
-      .then(setOutcome, (reason: unknown) => setError(String(reason instanceof Error ? reason.message : reason)))
+      .then(setOutcome, (reason: unknown) => setApplyError(String(reason instanceof Error ? reason.message : reason)))
       .finally(() => setBusy(false))
   }
 
@@ -262,6 +265,7 @@ export function ApplyPage({ editor, t, service }: PageProps & { service: ZcfServ
           </ol>
         </div>
       ))}
+      {applyError && <p className="error">{t('cli.unexpectedError', { message: applyError })}</p>}
       {outcome && (
         <p className={outcome.results.every(result => result.ok) ? 'success' : 'error'}>
           {outcome.results.every(result => result.ok)
