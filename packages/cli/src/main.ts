@@ -150,14 +150,25 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   const cli = cac('zcf')
   cli.usage('<command> [options]')
   cli.option('--lang <lang>', t('cli.option.lang'))
+  // cac writes its help headings in English; translate them by their text.
+  const helpTitles: Record<string, string> = {
+    Usage: t('cli.help.usage'),
+    Commands: t('cli.help.commands'),
+    Options: t('cli.help.options'),
+    'For more info, run any command with the `--help` flag': t('cli.help.moreInfo'),
+  }
   cli.help(sections => [
     sections[0]!,
     {
       body: t('cli.description'),
     },
-    ...sections.slice(1),
+    ...sections.slice(1).map(({ title, body }) => ({ title: title && (helpTitles[title] ?? title), body })),
   ])
   cli.version(version)
+  for (const option of cli.globalCommand.options) {
+    if (option.name === 'help') option.description = t('cli.option.help')
+    if (option.name === 'version') option.description = t('cli.option.version')
+  }
 
   cli
     .command('plan', t('cli.command.plan'))
