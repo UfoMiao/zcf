@@ -4,10 +4,12 @@ import { describe, expect, it } from 'vitest'
 
 import { detectTools, planTools, planUpdates } from '../src/adapters'
 import { createContext } from '../src/context'
+import type { CommandRunner } from '../src/exec/runner'
 import { githubFileUrls } from '../src/mirror'
+import { applyPlan } from '../src/plan/apply'
 import type { Plan } from '../src/plan/types'
 import { parseZcfConfig } from '../src/schema/config'
-import { fakeRunner } from './helpers'
+import { fakeRunner, tempDir } from './helpers'
 
 const runner = fakeRunner({
   'claude --version': { stdout: '2.1.0' },
@@ -116,6 +118,37 @@ describe('mirrors', () => {
     const plan = await planUpdates(['claude-code'], createContext({ ...ctx, mirror: 'china' }))
     expect(plan.tools[0]!.steps).toEqual([
       expect.objectContaining({ command: 'claude', args: ['update'], env: registry }),
+    ])
+  })
+})
+
+describe('a China-mirror Claude Code install', () => {
+  it('installs, checks that claude runs, then configures it', async () => {
+    const calls: string[] = []
+    let installed = false
+    const installer: CommandRunner = {
+      async run(command, args) {
+        const call = [command, ...args].join(' ')
+        calls.push(call)
+        if (command === 'npm') installed = true
+        const ok = command === 'npm' || (installed && command === 'claude')
+        return { exitCode: ok ? 0 : undefined, stdout: '', stderr: '' }
+      },
+    }
+    const china = parseZcfConfig({
+      version: 1,
+      tools: ['claude-code'],
+      mirror: 'china',
+      mcpServers: { ctx: { type: 'http', url: 'https://mcp.example.com' } },
+    })
+    const mirrored = createContext({ ...ctx, runner: installer })
+    const plan = await planTools(china.success ? china.config : undefined!, mirrored)
+    const [result] = await applyPlan(plan, { runner: installer, backupDir: await tempDir() })
+    expect(result!.ok).toBe(true)
+    expect(calls.slice(2)).toEqual([
+      'npm install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code',
+      'claude --version',
+      expect.stringMatching(/^claude mcp add-json ctx /),
     ])
   })
 })
