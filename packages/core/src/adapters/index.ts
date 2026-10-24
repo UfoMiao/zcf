@@ -5,6 +5,7 @@ import { codex } from './codex'
 import { cursor } from './cursor'
 import { geminiCli } from './gemini-cli'
 import { opencode } from './opencode'
+import { pi } from './pi'
 import type { AdapterContext, ToolAdapter, ToolStatus } from './types'
 
 export const ADAPTERS: Partial<Record<ToolId, ToolAdapter>> = {
@@ -13,6 +14,7 @@ export const ADAPTERS: Partial<Record<ToolId, ToolAdapter>> = {
   'gemini-cli': geminiCli,
   opencode,
   cursor,
+  pi,
 }
 
 function unsupported(tool: ToolId): ToolPlan {
