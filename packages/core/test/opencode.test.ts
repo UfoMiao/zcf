@@ -54,6 +54,20 @@ describe('opencode.detect', () => {
     expect(await opencode.detect(context({ runner }))).toMatchObject({ command: '/home/me/.opencode/bin/opencode' })
     expect(await opencode.detect(context())).toEqual({ installed: false, command: 'opencode' })
   })
+
+  it('looks for opencode.exe on Windows and installs it with npm when missing', async () => {
+    const home = 'C:/Users/me'
+    const exe = 'C:/Users/me/.opencode/bin/opencode.exe'
+    const runner = fakeRunner({ [`${exe} --version`]: { stdout: '1.19.4' } })
+    const win = context({ home, platform: 'win32', runner })
+    expect(await opencode.detect(win)).toMatchObject({ installed: true, command: exe })
+
+    const plan = await opencode.plan(config({ tools: ['opencode'] }), { installed: false, command: 'opencode' }, win)
+    expect((plan.steps as CommandStep[]).map(step => [step.command, ...step.args])).toEqual([
+      ['npm', 'install', '-g', '--allow-scripts=opencode-ai', 'opencode-ai'],
+      ['opencode', '--version'],
+    ])
+  })
 })
 
 describe('opencode.plan', () => {
