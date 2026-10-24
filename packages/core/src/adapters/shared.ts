@@ -1,6 +1,6 @@
 import { join } from 'pathe'
 
-import { isTable } from '../io/editors'
+import { isTable, JsExpression } from '../io/editors'
 import type { CommandStep, Notice } from '../plan/types'
 import type { SkillSource, ToolId } from '../schema/config'
 import type { AdapterContext, ToolStatus } from './types'
@@ -63,9 +63,10 @@ export function notice(level: Notice['level'], key: string, params: Record<strin
   return { level, message: { key, params } }
 }
 
-/** Compare two JSON-like values, ignoring key order. */
+/** Compare two JSON-like values, ignoring key order. A `JsExpression` equals its source, as read back from a file. */
 export function sameJson(a: unknown, b: unknown): boolean {
   const sorted = (value: unknown): unknown => {
+    if (value instanceof JsExpression) return value.source
     if (Array.isArray(value)) return value.map(sorted)
     if (isTable(value))
       return Object.fromEntries(

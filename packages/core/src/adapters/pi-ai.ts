@@ -42,21 +42,26 @@ function route(provider: Provider, protocol: ProviderProtocol): PiAiRoute | unde
   return { api: 'google-generative-ai', baseUrl: geminiBaseUrl(provider.gemini.baseUrl), model, bearer: false }
 }
 
-const PROTOCOLS = ['anthropic', 'openai', 'gemini'] as const
+const PROTOCOLS: readonly ProviderProtocol[] = ['anthropic', 'openai', 'gemini']
 
 /**
- * pi-ai speaks every protocol a ZCF provider can have, so a tool built on it takes the
- * first one that names a model: Anthropic, then OpenAI, then Gemini.
+ * pi-ai speaks every protocol a ZCF provider can have, so a tool built on it takes the first
+ * one that names a model: Anthropic, then OpenAI, then Gemini. A tool that serves fewer of
+ * them passes its own `protocols`, in the same order.
  */
-export function piAiRoute(provider: Provider, tool: ToolId): { route: PiAiRoute } | { notice: Notice } {
-  for (const protocol of PROTOCOLS) {
+export function piAiRoute(
+  provider: Provider,
+  tool: ToolId,
+  protocols = PROTOCOLS,
+): { route: PiAiRoute } | { notice: Notice } {
+  for (const protocol of protocols) {
     const found = route(provider, protocol)
     if (found) return { route: found }
   }
   // Name a protocol that has its own `model` field when there is one; Anthropic only has `models.default`.
-  const protocol = (['openai', 'gemini', 'anthropic'] as const).find(name => provider[name])
+  const protocol = (['openai', 'gemini', 'anthropic'] as const).find(name => protocols.includes(name) && provider[name])
   if (protocol) return { notice: notice('warning', 'notice.modelMissing', { tool, protocol }) }
-  return { notice: notice('warning', 'notice.providerMissingProtocol', { tool, protocol: PROTOCOLS.join(' / ') }) }
+  return { notice: notice('warning', 'notice.providerMissingProtocol', { tool, protocol: protocols.join(' / ') }) }
 }
 
 /** pi and DeepSeek Harness expand a leading `~` in their home overrides, such as `PI_CODING_AGENT_DIR=~/pi`. */

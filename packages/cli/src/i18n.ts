@@ -75,6 +75,10 @@ const en = {
   'step.defaultModel': 'Use model "{model}" by default',
   'step.writeConfig': 'Update {file}',
   'notice.notInstalled': '{tool} is not installed.',
+  'notice.dshHomePatch':
+    '{tool} now takes the provider and default model from ZCF in {file}, which outranks its Models page. Change them through ZCF.',
+  'notice.fileNotList': '{file} is not a list of patches, so ZCF leaves it and its {tool} settings alone.',
+  'notice.mcpNameTooLong': '{tool} takes MCP server names of at most {max} characters, so "{name}" is skipped.',
   'notice.nativeUpdateNotMirrored':
     '{tool} installed with npm updates through the mirror; a native install still downloads from its official servers.',
   'notice.providerMissingProtocol': 'The provider has no "{protocol}" settings, so {tool} keeps its current provider.',
@@ -250,6 +254,10 @@ const zhCN: Record<MessageKey, string> = {
   'step.defaultModel': '默认使用模型「{model}」',
   'step.writeConfig': '更新 {file}',
   'notice.notInstalled': '{tool} 尚未安装。',
+  'notice.dshHomePatch':
+    '{tool} 现在从 {file} 读取 ZCF 设置的供应商和默认模型，其优先级高于它的模型页面，请通过 ZCF 修改。',
+  'notice.fileNotList': '{file} 不是补丁列表，ZCF 不会改动它和其中的 {tool} 设置。',
+  'notice.mcpNameTooLong': '{tool} 的 MCP 服务名最多 {max} 个字符，已跳过「{name}」。',
   'notice.nativeUpdateNotMirrored': '通过 npm 安装的 {tool} 会经镜像更新；原生安装版仍从官方服务器下载。',
   'notice.providerMissingProtocol': '供应商没有 "{protocol}" 配置，{tool} 将保留当前的供应商。',
   'notice.providerNotSupported': '{tool} 只使用自家模型，不会应用供应商配置。',
