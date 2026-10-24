@@ -112,6 +112,10 @@ describe('editToml', () => {
     expect(await editToml('[model_providers]\n', [{ path: ['model_providers', 'zcf'], value: { name: 'ZCF' } }])).toBe(
       '[model_providers]\n\n[model_providers.zcf]\nname = "ZCF"\n',
     )
+    // Windows line endings get the same layout.
+    expect(await editToml('model = "a"\r\n', [{ path: ['mcp_servers', 'foo'], value: { command: 'x' } }])).not.toMatch(
+      /^\[mcp_servers\]/m,
+    )
   })
 
   it('sets values and keeps comments', async () => {
