@@ -20,7 +20,7 @@ title: ZCF - Zero-Config Code Flow
   </h1>
 
  
-> 零配置,一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
+> 一份配置，管好你所有的 AI 编程工具。ZCF 安装你选择的工具，并写入每个工具自己的设置。
 
 </div>
 
@@ -84,32 +84,36 @@ PatewayAI 是一家面向重度 AI 开发者、专注官方直连的高品质模
 
 ## 项目概述
 
-ZCF（Zero-Config Code Flow）是一个面向专业开发者的 CLI 工具，目标是在几分钟内完成 Claude Code 与 Codex 的端到端环境初始化。通过 `npx zcf` 可以一站式完成配置目录创建、API/代理接入、MCP 服务接入、工作流导入、输出风格与记忆配置，以及常用工具安装。
+::: warning ZCF v5 尚未发布
+这些页面介绍的是 ZCF v5。正式发布前，`npx zcf` 安装的仍是 v3。见[从 v3 迁移](./guide/v3)。
+:::
+
+你只需维护一份 ZCF 配置：供应商、MCP 服务和技能。选好你使用的 AI 编程工具，ZCF 会安装缺少的工具，并用各工具自带的命令写入它们自己的设置。
+
+```bash
+npx zcf       # 在终端中编辑配置
+npx zcf ui    # 或在浏览器中编辑
+```
+
+| 工具 | 供应商 | MCP 服务 | 技能 |
+|------|:------:|:--------:|:----:|
+| Claude Code | ✓ | ✓ | ✓ |
+| Codex | ✓ | ✓ | ✓ |
+| Gemini CLI | ✓ | ✓ | ✓ |
+| OpenCode | ✓ | ✓ | ✓ |
+| Cursor CLI | | ✓ | ✓ |
+| Pi | ✓ | ✓ | ✓ |
+| DeepSeek Harness | ✓ | ✓ | ✓ |
 
 ### 为什么选择 ZCF
 
-- **零配置体验**：自动检测操作系统、语言偏好与安装状态，必要时触发增量配置，避免重复劳动。
-- **多工具统一**：同时支持 Claude Code 与 Codex，两套环境共享一套 CLI，随时切换目标平台。
-- **结构化工作流**：预置六阶段结构化工作流、Feat 规划流、BMad 敏捷流等，内置代理与 skills 模板。
-- **丰富的 MCP 集成**：默认提供 Context7、Open Web Search、Spec Workflow、DeepWiki、Playwright、Serena 等服务。
-- **可视化状态与运维**：包含 CCR（Claude Code Router）配置助手以及 CCometixLine 状态栏安装与升级能力。
-- **可扩展配置体系**：支持多 API 配置并行、输出风格切换、环境权限导入、模板与语言分离管理。
+- **先看再改**：`zcf plan` 以 diff 显示每条命令和每处文件修改，敏感信息已遮盖。应用之前不会有任何改动。
+- **你的文件仍然是你的**：ZCF 只修改它管理的键，保留你的注释和格式，并在第一次修改前备份每个文件。
+- **使用工具自带的命令**：`claude mcp add-json`、`codex mcp add`、`npx skills add`、`claude update` 等。ZCF 不是网关，也不是代理。
+- **快**：`zcf --version` 在 60 ms 内启动，各工具并行配置。
+- **供应商预设**无需发布新版本即可更新，网络慢时还有 [`china` 镜像](./guide/mirrors)。
 
-## 使用 ZCF 你将获得什么
-
-1. **安全的隐私与权限配置**：环境变量、权限模板与备份策略自动落地，确保极简但安全的运行环境。
-2. **API 与代理管理**：支持官方登录、API Key、CCR 代理三种模式，内置 302.AI、GLM、MiniMax、Kimi 等预设。
-3. **全局输出风格与语言体系**：命令行即可设置 AI 输出语言、项目级/全局输出风格与 Codex 记忆指令。
-4. **工作流与 skills 模板集**：自动导入 `/workflow`、`/feat`、`/git-commit` 等 skills 以及对应的代理配置。
-5. **MCP 服务基座**：一键启用主流 MCP Server，并根据是否需要 API Key 智能提示环境变量要求。
-6. **辅助工具链**：CCometixLine 状态栏自动安装、CCR 管理菜单、Codex CLI 安装/升级、使用数据统计。
-
-
-## 适用人群
-
-- 需要快速搭建 Claude Code/Codex 开发环境的个人或团队。
-- 希望在 IDE 中统一管理 MCP 服务、工作流与命令体系的资深工程师。
-- 维护多台设备或多套配置，希望通过备份、模板与多 API 配置减少重复操作的团队。
+从[快速开始](./guide/)入手。
 
 ## 相关链接
 

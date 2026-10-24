@@ -1,9 +1,7 @@
 name: Deploy Docs
 
+# Run by hand: the site keeps describing the published release until v5 ships.
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

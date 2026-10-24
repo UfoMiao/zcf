@@ -20,7 +20,7 @@ title: ZCF - Zero-Config Code Flow
   </h1>
 
  
-> Zero configuration, one-click setup for Claude Code & Codex environment - supports bilingual configuration (Chinese/English), intelligent proxy system, and personalized AI assistant
+> One config for all your AI coding tools. ZCF installs the tools you pick and writes each one's own settings.
 
 </div>
 
@@ -84,31 +84,36 @@ PatewayAI is a high-quality model API relay service provider focused on official
 
 ## Project Overview
 
-ZCF (Zero-Config Code Flow) is a CLI tool designed for professional developers, aiming to complete end-to-end environment initialization for Claude Code and Codex within minutes. Through `npx zcf`, you can complete configuration directory creation, API/proxy integration, MCP service integration, workflow import, output style and memory configuration, and common tool installation in one go.
+::: warning ZCF v5 is not released yet
+These pages describe ZCF v5. Until it is released, `npx zcf` still installs v3. See [Coming from v3](./guide/v3).
+:::
 
-### Why Choose ZCF
+You keep one ZCF config: your provider, your MCP servers and your skills. Pick the AI coding tools you use, and ZCF installs the ones that are missing and writes each tool's own settings with the tool's own commands.
 
-- **Zero-configuration experience**: Automatically detects operating system, language preferences, and installation status, triggers incremental configuration when necessary, avoiding duplicate work.
-- **Multi-tool unified**: Simultaneously supports Claude Code and Codex, with both environments sharing one CLI, allowing you to switch target platforms anytime.
-- **Structured workflows**: Pre-configured six-stage structured workflow, Feat planning flow, BMad agile flow, etc., with built-in agents and skill templates.
-- **Rich MCP integration**: Provides Context7, Open Web Search, Spec Workflow, DeepWiki, Playwright, Serena, and other services by default.
-- **Visual status and operations**: Includes CCR (Claude Code Router) configuration assistant and CCometixLine status bar installation and upgrade capabilities.
-- **Extensible configuration system**: Supports multiple API configurations in parallel, output style switching, environment permission import, template and language separation management.
+```bash
+npx zcf       # edit the config in the terminal
+npx zcf ui    # or in the browser
+```
 
-## What You Get with ZCF
+| Tool | Provider | MCP servers | Skills |
+|------|:--------:|:-----------:|:------:|
+| Claude Code | ✓ | ✓ | ✓ |
+| Codex | ✓ | ✓ | ✓ |
+| Gemini CLI | ✓ | ✓ | ✓ |
+| OpenCode | ✓ | ✓ | ✓ |
+| Cursor CLI | | ✓ | ✓ |
+| Pi | ✓ | ✓ | ✓ |
+| DeepSeek Harness | ✓ | ✓ | ✓ |
 
-1. **Secure privacy and permission configuration**: Environment variables, permission templates, and backup strategies are automatically implemented, ensuring a minimal yet secure runtime environment.
-2. **API and proxy management**: Supports official login, API Key, and CCR proxy three modes, with built-in presets for 302.AI, GLM, MiniMax, Kimi, etc.
-3. **Global output style and language system**: Set AI output language, project-level/global output styles, and Codex memory instructions from the command line.
-4. **Workflow and skill template collection**: Automatically imports `/workflow`, `/feat`, `/git-commit` skills and corresponding agent configurations.
-5. **MCP service foundation**: One-click enable mainstream MCP servers, and intelligently prompts environment variable requirements based on whether API Key is needed.
-6. **Auxiliary toolchain**: CCometixLine status bar automatic installation, CCR management menu, Codex CLI installation/upgrade, usage statistics.
+### Why ZCF
 
-## Target Audience
+- **See before you change**: `zcf plan` shows every command and every file change as a diff, with secrets masked. Nothing changes until you apply.
+- **Your files stay yours**: ZCF edits only the keys it manages, keeps your comments and formatting, and backs up each file before its first change.
+- **The tools' own commands**: `claude mcp add-json`, `codex mcp add`, `npx skills add`, `claude update` and so on. ZCF is not a gateway or a proxy.
+- **Fast**: `zcf --version` starts in under 60 ms, and tools are configured in parallel.
+- **Provider presets** that update without a ZCF release, and a [`china` mirror](./guide/mirrors) for slow networks.
 
-- Individuals or teams who need to quickly set up Claude Code/Codex development environments.
-- Senior engineers who want to manage MCP services, workflows, and command systems uniformly in the IDE.
-- Teams maintaining multiple devices or multiple configurations, hoping to reduce repetitive operations through backup, templates, and multiple API configurations.
+Start with [Getting started](./guide/).
 
 ## Related Links
 
