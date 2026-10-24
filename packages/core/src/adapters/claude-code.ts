@@ -109,8 +109,21 @@ function sameJson(a: unknown, b: unknown): boolean {
   return JSON.stringify(sorted(a)) === JSON.stringify(sorted(b))
 }
 
+/** Claude Code keeps its settings, skills and `.claude.json` under `CLAUDE_CONFIG_DIR` when it is set. */
+function configDir(ctx: AdapterContext): string | undefined {
+  return ctx.env.CLAUDE_CONFIG_DIR?.trim() || undefined
+}
+
+function settingsDir(ctx: AdapterContext): string {
+  return configDir(ctx) ?? join(ctx.home, '.claude')
+}
+
+function stateFile(ctx: AdapterContext): string {
+  return join(configDir(ctx) ?? ctx.home, '.claude.json')
+}
+
 async function existingMcpServers(ctx: AdapterContext): Promise<Record<string, unknown>> {
-  const text = await ctx.readFile(join(ctx.home, '.claude.json'))
+  const text = await ctx.readFile(stateFile(ctx))
   const data: unknown = text ? parse(text) : undefined
   return isTable(data) && isTable(data.mcpServers) ? data.mcpServers : {}
 }
@@ -120,8 +133,8 @@ async function mcpSteps(servers: Record<string, McpServer>, command: string, ctx
   if (names.length === 0) return []
 
   const existing = await existingMcpServers(ctx)
-  // `claude mcp` rewrites ~/.claude.json, which also holds Claude Code's own state.
-  const touches = [join(ctx.home, '.claude.json')]
+  // `claude mcp` rewrites .claude.json, which also holds Claude Code's own state.
+  const touches = [stateFile(ctx)]
   const steps: PlanStep[] = []
   for (const name of names) {
     const desired = claudeMcpServer(servers[name]!, ctx.platform)
@@ -171,7 +184,7 @@ export function skillsAddStep({ source, skills }: SkillSource, agent: string): C
  */
 async function skillSteps(sources: readonly SkillSource[], ctx: AdapterContext): Promise<CommandStep[]> {
   const isInstalled = async (name: string) =>
-    (await ctx.readFile(join(ctx.home, '.claude', 'skills', name, 'SKILL.md'))) !== undefined
+    (await ctx.readFile(join(settingsDir(ctx), 'skills', name, 'SKILL.md'))) !== undefined
   const needed = await Promise.all(
     sources.map(
       async source => source.skills.length === 0 || (await Promise.all(source.skills.map(isInstalled))).includes(false),
@@ -212,7 +225,7 @@ export const claudeCode: ToolAdapter = {
             key: 'step.provider',
             params: { tool: TOOL, provider: config.provider.name },
           },
-          path: join(ctx.home, '.claude', 'settings.json'),
+          path: join(settingsDir(ctx), 'settings.json'),
           format: 'json',
           edits,
         })

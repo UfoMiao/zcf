@@ -9,6 +9,7 @@ export function createContext(overrides: Partial<AdapterContext> = {}): AdapterC
   return {
     home: homedir(),
     platform: process.platform,
+    env: process.env,
     runner: processRunner,
     readFile: readTextIfExists,
     ...overrides,

@@ -35,7 +35,7 @@ Every action is planned before anything changes:
 
 File edits are format-preserving: jsonc-parser for JSON/JSONC and toml-patch for TOML. Writes go through a temporary file and a rename, and keep the file's mode. Comments, key order and unrelated keys stay as they are.
 
-Adapters are pure apart from what goes through `AdapterContext` (home, platform, command runner, file reader). Tests therefore never touch the real home directory or run real installers.
+Adapters are pure apart from what goes through `AdapterContext` (home, platform, environment, command runner, file reader). Tests therefore never touch the real home directory or run real installers.
 
 Core returns message keys and parameters, never display text. Each front end translates them (en and zh-CN).
 
@@ -53,6 +53,8 @@ The config is JSON with comments at `~/.ufomiao/zcf/zcf.json` (or `--file`), val
 | Provider | `env` keys in `~/.claude/settings.json`. ZCF owns the `ANTHROPIC_*` keys it writes and removes the ones the config leaves unset |
 | MCP | `claude mcp add-json --scope user`. Servers already in `~/.claude.json` with the same definition are skipped; changed ones are removed and added again. On Windows, `npx`-style commands are wrapped in `cmd /c` |
 | Skills | `npx skills add <source> -g -a claude-code`, skipped when every named skill is already installed |
+
+Paths follow `CLAUDE_CONFIG_DIR` when it is set, as Claude Code itself does: `settings.json`, `skills/` and `.claude.json` then live in that folder.
 
 Codex, Gemini CLI and OpenCode follow the same pattern in later phases.
 
