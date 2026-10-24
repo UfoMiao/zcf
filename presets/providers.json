@@ -203,7 +203,8 @@
         "model": "MiniMax-M3"
       },
       "models": {
-        "default": "MiniMax-M3"
+        "default": "MiniMax-M3",
+        "haiku": "MiniMax-M2.7"
       }
     },
     {
@@ -222,7 +223,8 @@
         "model": "MiniMax-M3"
       },
       "models": {
-        "default": "MiniMax-M3"
+        "default": "MiniMax-M3",
+        "haiku": "MiniMax-M2.7"
       }
     },
     {
@@ -249,7 +251,8 @@
         "authType": "auth_token"
       },
       "models": {
-        "default": "deepseek-v4-pro"
+        "default": "deepseek-v4-pro",
+        "haiku": "deepseek-v4-flash"
       }
     }
   ]
