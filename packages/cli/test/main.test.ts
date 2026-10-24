@@ -159,7 +159,21 @@ describe('zcf plan', () => {
     const invalid = await run('plan')
     expect(invalid.code).toBe(EXIT_INVALID_CONFIG)
     expect(invalid.stderr).toContain('is not valid:')
-    expect(invalid.stderr).toContain('  - tools.0: ')
+    expect(invalid.stderr).toContain('  - tools.0: must be "claude-code" | "codex" | "gemini-cli" | "opencode"')
+  })
+
+  it('explains config problems in the chosen language', async () => {
+    await writeConfig({ version: 1, provider: { name: 'x', apiKey: '', anthropic: { baseUrl: 'sk-misplaced' } } })
+    const invalid = await run('plan', '--lang', 'zh-CN')
+    expect(invalid.code).toBe(EXIT_INVALID_CONFIG)
+    expect(invalid.stderr).toContain('  - provider.apiKey: 不能为空')
+    expect(invalid.stderr).toContain('  - provider.anthropic.baseUrl: 必须是有效的 URL')
+    expect(invalid.stderr).not.toContain('sk-misplaced')
+
+    await writeFile(join(home, '.ufomiao', 'zcf', 'zcf.json'), '{\n  "version": ')
+    const broken = await run('plan', '--lang', 'zh-CN')
+    expect(broken.code).toBe(EXIT_INVALID_CONFIG)
+    expect(broken.stderr).toContain('  - JSON 语法错误：第 2 行，第 14 列')
   })
 
   it('exits 1 for unknown or missing tools', async () => {

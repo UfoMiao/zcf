@@ -95,7 +95,9 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     const result = await loadConfigFile(path)
     if (result.success) return result.config
     if ('missing' in result) throw new CliError(t('cli.configMissing', { path }), EXIT_INVALID_CONFIG)
-    const details = result.issues.map(issue => `  - ${issue.path ? `${issue.path}: ` : ''}${issue.message}`)
+    const details = result.issues.map(
+      ({ path: field, message }) => `  - ${field ? `${field}: ` : ''}${t(message.key, message.params)}`,
+    )
     throw new CliError([t('cli.configInvalid', { path }), ...details].join('\n'), EXIT_INVALID_CONFIG)
   }
 

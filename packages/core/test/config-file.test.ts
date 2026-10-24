@@ -36,7 +36,7 @@ describe('loadConfigFile', () => {
     await writeFile(join(dir, 'invalid.json'), '{ "version": 9 }')
     expect(await loadConfigFile(join(dir, 'broken.json'))).toEqual({
       success: false,
-      issues: [{ path: 'line 2, column 14', message: 'ValueExpected' }],
+      issues: [{ path: '', message: { key: 'configIssue.syntax', params: { line: 2, column: 14 } } }],
     })
     expect(await loadConfigFile(join(dir, 'invalid.json'))).toMatchObject({
       success: false,
