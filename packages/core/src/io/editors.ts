@@ -30,9 +30,11 @@ function lineAndColumn(text: string, offset: number): [line: number, column: num
   return [lines.length, lines.at(-1)!.length + 1]
 }
 
-function detectIndent(content: string): number {
-  const match = /^( +)\S/m.exec(content)
-  return match ? match[1]!.length : 2
+/** The file's own indentation: tabs, or the width of its first indented line (2 when nothing is indented). */
+function detectIndent(content: string): FormattingOptions {
+  const match = /^([ \t]+)\S/m.exec(content)
+  if (match?.[1]!.startsWith('\t')) return { insertSpaces: false, tabSize: 4, eol: '\n' }
+  return { insertSpaces: true, tabSize: match ? match[1]!.length : 2, eol: '\n' }
 }
 
 function withTrailingNewline(content: string): string {
@@ -54,11 +56,27 @@ function sameJson(a: unknown, b: unknown): boolean {
 /**
  * Apply one edit, formatting only the text it writes. jsonc-parser's own formatting widens to
  * whole lines, so adding a key after `"tools": ["a", "b"]` would also spread that array over lines.
+ * An object or array written on one line is expanded as a whole instead, so it is not left half
+ * on one line and half on the next.
  */
 function modifyJson(text: string, edit: KeyEdit, formattingOptions: FormattingOptions | undefined): string {
   const edits = modify(text, [...edit.path], edit.value, {})
   let next = applyEdits(text, edits)
   if (!formattingOptions) return next
+
+  const parentPath = edit.path.slice(0, -1)
+  const parent = findNodeAtLocation(parseTree(text)!, [...parentPath])
+  if (parent && !text.slice(parent.offset, parent.offset + parent.length).includes('\n')) {
+    const grown = findNodeAtLocation(parseTree(next)!, [...parentPath])
+    if (grown) {
+      const end = grown.offset + grown.length
+      const own = formatJson(next, { offset: grown.offset, length: grown.length }, formattingOptions).filter(
+        change => change.offset >= grown.offset && change.offset + change.length <= end,
+      )
+      return applyEdits(next, own)
+    }
+  }
+
   for (const { offset, content } of edits) {
     if (!content) continue
     // The written text plus the whitespace around it, which sets its line breaks and indentation.
@@ -87,7 +105,7 @@ export function editJson(content: string | undefined, edits: readonly KeyEdit[])
 
   // A file written on one line stays on one line; otherwise new parts follow the file's indentation.
   const compact = !text.trim().includes('\n') && text.trim() !== '{}'
-  const formattingOptions = compact ? undefined : { insertSpaces: true, tabSize: detectIndent(text), eol: '\n' }
+  const formattingOptions = compact ? undefined : detectIndent(text)
 
   for (const edit of edits) {
     const node = findNodeAtLocation(parseTree(text)!, [...edit.path])
