@@ -92,6 +92,10 @@ function RecordInput({ editor, path, t }: { editor: ConfigEditor; path: DraftPat
   )
 }
 
+function optionText(field: Field, option: string, t: Translate): string {
+  return field.optionLabel ? t(`${field.optionLabel}.${option}`) : option
+}
+
 export function FieldInput({
   editor,
   root,
@@ -122,10 +126,12 @@ export function FieldInput({
             onSelect ? onSelect(event.target.value) : editor.update(path, fieldValue(field, event.target.value))
           }
         >
-          {!text && <option value="">{t('tui.default', { value: field.options?.[0] ?? '' })}</option>}
+          {!text && (
+            <option value="">{t('tui.default', { value: optionText(field, field.options?.[0] ?? '', t) })}</option>
+          )}
           {field.options?.map(option => (
             <option key={option} value={option}>
-              {option}
+              {optionText(field, option, t)}
             </option>
           ))}
         </select>

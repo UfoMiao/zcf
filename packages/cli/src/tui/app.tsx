@@ -9,7 +9,7 @@ import { errorText } from '../i18n'
 import { tildify } from '../render'
 import { ApplyPage } from './apply-page'
 import type { PageProps } from './pages'
-import { McpPage, ProviderPage, SkillsPage, ToolsPage } from './pages'
+import { McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
 
 export interface AppProps {
   service: ZcfService
@@ -150,6 +150,7 @@ export function App({ service, t, lang, home }: AppProps) {
           {page === 'provider' && <ProviderPage {...props} lang={lang} loadPresets={loadPresets} />}
           {page === 'mcp' && <McpPage {...props} />}
           {page === 'skills' && <SkillsPage {...props} />}
+          {page === 'settings' && <SettingsPage {...props} />}
           {page === 'apply' && (
             <ApplyPage service={service} t={t} home={home} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
           )}

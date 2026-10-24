@@ -107,6 +107,22 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('switches the download mirror on the Settings page', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down)
+    expect(app.frame()).toContain('Settings')
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('Download mirror')
+    expect(app.frame()).toContain('official sources (default)')
+    // From the default, the next option is the China mirror.
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('China mirrors')
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], mirror: 'china' }])
+    app.unmount()
+  })
+
   it('opens a skill source with the cursor on its first field', async () => {
     const skills = [{ source: 'a/a' }, { source: 'b/b' }, { source: 'c/c' }]
     const { service, saved } = fakeService({ version: 1, tools: [], skills })
@@ -257,7 +273,7 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Install Claude Code')
     expect(app.frame()).toContain('$ npm i -g x')
 
@@ -271,7 +287,7 @@ describe('terminal UI', () => {
   it('asks to save before planning unsaved changes', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press(KEY.enter, ' ', KEY.escape, KEY.down, KEY.down, KEY.down, KEY.down)
+    await app.press(KEY.enter, ' ', KEY.escape, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
     expect(app.frame()).toContain('Save your changes with Ctrl+S to see the plan.')
     app.unmount()
   })
