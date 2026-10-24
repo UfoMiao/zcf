@@ -79,13 +79,24 @@ function unquote(inner: string): string {
   return inner.replace(/\\(.)/g, '$1')
 }
 
-/** Split command-line arguments typed on one line; double or single quotes keep spaces. */
+/**
+ * Split command-line arguments typed on one line, as a shell does: double or single
+ * quotes keep spaces, also in part of an argument such as `--header="A: b"`.
+ */
 export function parseArgs(text: string): string[] {
   const args: string[] = []
-  const pattern = /"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+)/g
-  for (const match of text.matchAll(pattern)) {
-    args.push(match[1] !== undefined ? unquote(match[1]) : (match[2] ?? match[3]!))
+  // An unquoted run, a double-quoted run with escapes, or a single-quoted run.
+  const pattern = /(\s+)|"((?:[^"\\]|\\.)*)"?|'([^']*)'?|([^\s"']+)/g
+  let current: string | undefined
+  for (const [, space, double, single, bare] of text.matchAll(pattern)) {
+    if (space !== undefined) {
+      if (current !== undefined) args.push(current)
+      current = undefined
+    } else {
+      current = (current ?? '') + (double !== undefined ? unquote(double) : (single ?? bare ?? ''))
+    }
   }
+  if (current !== undefined) args.push(current)
   return args
 }
 

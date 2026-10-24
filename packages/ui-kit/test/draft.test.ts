@@ -79,6 +79,11 @@ describe('args', () => {
     const args = ['-y', '@scope/pkg', 'a b', 'say "hi"', '', 'tab\there', 'two\nlines', 'back\\slash']
     expect(parseArgs(formatArgs(args))).toEqual(args)
     expect(parseArgs(`-y 'single quoted' x`)).toEqual(['-y', 'single quoted', 'x'])
+    expect(parseArgs('--header="Authorization: Bearer t" a\'b c\'d')).toEqual([
+      '--header=Authorization: Bearer t',
+      'ab cd',
+    ])
+    expect(parseArgs('  ')).toEqual([])
     expect(parseArgs(String.raw`"a\q"`)).toEqual(['aq'])
   })
 })

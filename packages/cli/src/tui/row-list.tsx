@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { TextInput } from './text-input'
 
 export type RowAction =
-  | { type: 'text'; initial: string; placeholder?: string; mask?: boolean; commit: (text: string) => void }
+  | { type: 'text'; initial: string; placeholder?: string; mask?: boolean | 'value'; commit: (text: string) => void }
   | { type: 'cycle'; next: () => void; previous?: () => void }
   | { type: 'run'; run: () => void }
 

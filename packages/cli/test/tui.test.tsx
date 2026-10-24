@@ -119,8 +119,29 @@ describe('terminal UI', () => {
       mcpServers: { server: { type: 'stdio', command: 'npx', args: ['-y', 'ctx 7'] } },
     })
 
+    // A new variable's value is masked while typed.
+    await app.press(KEY.down, KEY.enter, KEY.enter, 'TOKEN=sk-abc')
+    expect(app.frame()).toContain('TOKEN=******')
+    expect(app.frame()).not.toContain('sk-abc')
+    await app.press(KEY.enter, KEY.escape, KEY.save)
+    expect(saved.at(-1)).toMatchObject({ mcpServers: { server: { env: { TOKEN: 'sk-abc' } } } })
+
     await app.press(KEY.escape)
     expect(app.frame()).toContain('npx -y')
+    app.unmount()
+  })
+
+  it('removes the provider, so a config without one is valid again', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [], provider: { name: '', apiKey: '' } })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.enter)
+    for (let i = 0; i < 12; i++) {
+      // oxlint-disable-next-line no-await-in-loop
+      await app.press(KEY.down)
+    }
+    expect(app.frame()).toContain('› Remove the provider')
+    await app.press(KEY.enter, KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [] }])
     app.unmount()
   })
 
