@@ -38,17 +38,43 @@ export interface ApplyOptions {
 // oxlint-disable-next-line no-control-regex
 const NPM_NOTICE = /^(?:\u001B\[[\d;]*m)*npm notice/
 
+// The line Node prints above a stack trace, such as `Error: Cannot find module '…'`.
+const ERROR_LINE = /^\w*Error: /
+
 /** The end of a command's output, leaving out npm's notices; with `notices`, those too. */
 function lastLines(text: string, notices = false, count = 5): string {
-  const lines = text.trim().split(/\r?\n/)
-  return (notices ? lines : lines.filter(line => !NPM_NOTICE.test(line))).slice(-count).join('\n').trim()
+  const lines = notices
+    ? text.trim().split(/\r?\n/)
+    : text
+        .trim()
+        .split(/\r?\n/)
+        .filter(line => !NPM_NOTICE.test(line))
+  const tail = lines.slice(-count)
+  // A stack trace would push the error message itself out of the tail.
+  const error = lines.slice(0, -count).find(line => ERROR_LINE.test(line))
+  return (error ? [error, ...tail] : tail).join('\n').trim()
 }
 
-async function runStep(
-  step: PlanStep,
-  options: ApplyOptions,
-  snapshots: Map<string, Promise<string | undefined>>,
-): Promise<StepResult> {
+/** What one apply run shares across tools. */
+interface RunState {
+  /** Each file's backup, taken once per run before its first change. */
+  snapshots: Map<string, Promise<string | undefined>>
+  /** The last queued command for each `serial` key. */
+  queues: Map<string, Promise<unknown>>
+}
+
+/** Run `task` after every earlier task with the same key has finished. */
+function serialized<T>(queues: RunState['queues'], key: string, task: () => Promise<T>): Promise<T> {
+  const next = (queues.get(key) ?? Promise.resolve()).then(task)
+  queues.set(
+    key,
+    next.catch(() => undefined),
+  )
+  return next
+}
+
+async function runStep(step: PlanStep, options: ApplyOptions, state: RunState): Promise<StepResult> {
+  const { snapshots } = state
   // Back a file up once per run, before its first change.
   const snapshot = async (path: string) => {
     if (!snapshots.has(path)) snapshots.set(path, snapshotFile(path, options.backupDir, options.home))
@@ -59,7 +85,8 @@ async function runStep(
     if (step.kind === 'command') {
       const backups = await Promise.all((step.touches ?? []).map(snapshot))
       const backup = backups.find(path => path !== undefined)
-      const result = await options.runner.run(step.command, step.args, step.env ? { env: step.env } : undefined)
+      const run = () => options.runner.run(step.command, step.args, step.env ? { env: step.env } : undefined)
+      const result = await (step.serial ? serialized(state.queues, step.serial, run) : run())
       if (result.exitCode === 0) return { step, status: 'done', backup }
       const detail =
         lastLines(result.stderr) ||
@@ -85,11 +112,7 @@ async function runStep(
   }
 }
 
-async function applyToolPlan(
-  toolPlan: ToolPlan,
-  options: ApplyOptions,
-  snapshots: Map<string, Promise<string | undefined>>,
-): Promise<ToolResult> {
+async function applyToolPlan(toolPlan: ToolPlan, options: ApplyOptions, state: RunState): Promise<ToolResult> {
   const steps: StepResult[] = []
   let failed = false
 
@@ -114,7 +137,7 @@ async function applyToolPlan(
     })
     // Steps of one tool depend on each other, so they run one after another.
     // oxlint-disable-next-line no-await-in-loop
-    const result = await runStep(step, options, snapshots)
+    const result = await runStep(step, options, state)
     steps.push(result)
     options.onEvent?.({
       type: 'step-end',
@@ -134,6 +157,6 @@ async function applyToolPlan(
  * depend on earlier ones, such as configuring a tool that failed to install).
  */
 export async function applyPlan(plan: Plan, options: ApplyOptions): Promise<ToolResult[]> {
-  const snapshots = new Map<string, Promise<string | undefined>>()
-  return Promise.all(plan.tools.map(toolPlan => applyToolPlan(toolPlan, options, snapshots)))
+  const state: RunState = { snapshots: new Map(), queues: new Map() }
+  return Promise.all(plan.tools.map(toolPlan => applyToolPlan(toolPlan, options, state)))
 }

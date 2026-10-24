@@ -191,7 +191,7 @@ describe('geminiCli.plan', () => {
     ])
   })
 
-  it('installs skills for gemini-cli unless they are already in ~/.gemini/skills', async () => {
+  it('installs skills for gemini-cli unless they are already in ~/.agents/skills, where the skills CLI puts them', async () => {
     const plan = await geminiCli.plan(
       config({
         skills: [
@@ -202,7 +202,7 @@ describe('geminiCli.plan', () => {
       installed,
       context(
         { env: { GEMINI_CLI_HOME: '/elsewhere' } },
-        { [join(HOME, '.gemini', 'skills', 'present', 'SKILL.md')]: '#' },
+        { [join(HOME, '.agents', 'skills', 'present', 'SKILL.md')]: '#' },
       ),
     )
     expect(commandLines(plan.steps)).toEqual(['npx -y skills add owner/new -g -y -a gemini-cli -s absent'])

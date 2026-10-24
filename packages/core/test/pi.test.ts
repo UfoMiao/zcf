@@ -348,6 +348,7 @@ describe('pi.plan', () => {
         title: { key: 'step.skillsAdd', params: { source: 'owner/new' } },
         command: 'npx',
         args: ['-y', 'skills', 'add', 'owner/new', '-g', '-y', '-a', 'pi', '-s', 'new'],
+        serial: 'npx-skills',
       },
     ])
   })

@@ -1,5 +1,5 @@
 import { resolveMirror, withMirrorEnv } from '../mirror'
-import type { Plan } from '../plan/types'
+import type { Plan, ToolPlan } from '../plan/types'
 import type { ToolId, ZcfConfig } from '../schema/config'
 import { claudeCode } from './claude-code'
 import { codex } from './codex'
@@ -8,6 +8,7 @@ import { dsh } from './dsh'
 import { geminiCli } from './gemini-cli'
 import { opencode } from './opencode'
 import { pi } from './pi'
+import { notice, npmLatestPackage } from './shared'
 import type { AdapterContext, ToolAdapter, ToolStatus } from './types'
 
 export const ADAPTERS: Record<ToolId, ToolAdapter> = {
@@ -61,5 +62,22 @@ export async function planUpdates(tools: readonly ToolId[], ctx: AdapterContext)
       return plan
     }),
   )
-  return withMirrorEnv({ tools: plans }, mirror, ctx.env)
+  const plan = withMirrorEnv({ tools: plans }, mirror, ctx.env)
+  await Promise.all(plan.tools.map(toolPlan => skipCurrentNpmUpdate(toolPlan, ctx)))
+  return plan
+}
+
+/**
+ * Drop an `npm install -g <pkg>@latest` update when the installed version already is
+ * npm's latest. npm would reinstall the same version, which takes a while and proves nothing.
+ */
+async function skipCurrentNpmUpdate(toolPlan: ToolPlan, ctx: AdapterContext): Promise<void> {
+  const [step] = toolPlan.steps
+  const pkg = toolPlan.steps.length === 1 && step ? npmLatestPackage(step) : undefined
+  if (!pkg || !toolPlan.version || step?.kind !== 'command') return
+  // The same registry the update would use, so a mirror that lags behind is compared with itself.
+  const result = await ctx.runner.run('npm', ['view', pkg, 'version'], step.env ? { env: step.env } : undefined)
+  if (result.exitCode !== 0 || result.stdout.trim() !== toolPlan.version) return
+  toolPlan.steps = []
+  toolPlan.notices.push(notice('info', 'notice.upToDate', { tool: toolPlan.tool, version: toolPlan.version }))
 }

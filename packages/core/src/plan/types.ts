@@ -30,6 +30,8 @@ export interface CommandStep {
   env?: Record<string, string>
   /** Files the command changes; they are backed up before it runs. */
   touches?: string[]
+  /** Commands with the same key run one at a time, even across tools that apply in parallel. */
+  serial?: string
 }
 
 /** Change specific keys in a native config file, keeping the rest of the file as it is. */

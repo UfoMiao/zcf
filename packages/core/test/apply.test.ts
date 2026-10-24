@@ -11,6 +11,14 @@ import { fakeRunner, tempDir } from './helpers'
 
 const title = { key: 'test' }
 
+const npxStep = (name: string, serial?: string) => ({
+  kind: 'command' as const,
+  title,
+  command: 'npx',
+  args: [name],
+  serial,
+})
+
 describe('applyPlan', () => {
   it('runs commands, writes files and backs up what it changes', async () => {
     const home = await tempDir()
@@ -285,6 +293,83 @@ describe('applyPlan', () => {
       { runner, backupDir: await tempDir() },
     )
     expect(seen).toEqual([{ env: { npm_config_registry: 'https://registry.npmmirror.com' } }, undefined])
+  })
+
+  it('runs commands that share a serial key one at a time across tools', async () => {
+    const home = await tempDir()
+    let running = 0
+    let most = 0
+    const order: string[] = []
+    const runner: CommandRunner = {
+      async run(_command, args) {
+        running++
+        most = Math.max(most, running)
+        await new Promise(resolve => setTimeout(resolve, 5))
+        order.push(args[0]!)
+        running--
+        // The first serial command fails; the queue still moves on to the next one.
+        return { exitCode: args[0] === 'a' ? 1 : 0, stdout: '', stderr: '' }
+      },
+    }
+    const results = await applyPlan(
+      {
+        tools: [
+          { tool: 'claude-code', notices: [], steps: [npxStep('a', 'npx')] },
+          { tool: 'codex', notices: [], steps: [npxStep('b', 'npx')] },
+          { tool: 'pi', notices: [], steps: [npxStep('c', 'npx')] },
+        ],
+      },
+      { runner, backupDir: join(home, 'backups') },
+    )
+    expect(most).toBe(1)
+    expect(order).toEqual(['a', 'b', 'c'])
+    expect(results.map(result => result.ok)).toEqual([false, true, true])
+
+    // Without a key, the same commands run at once.
+    most = 0
+    await applyPlan(
+      {
+        tools: [
+          { tool: 'claude-code', notices: [], steps: [npxStep('d')] },
+          { tool: 'codex', notices: [], steps: [npxStep('e')] },
+        ],
+      },
+      { runner, backupDir: join(home, 'backups') },
+    )
+    expect(most).toBe(2)
+  })
+
+  it('keeps the error message above a stack trace in a failed step', async () => {
+    const home = await tempDir()
+    const stderr = [
+      'node:internal/modules/cjs/loader:1228',
+      '  throw err;',
+      "Error: Cannot find module '/npx/node_modules/skills/dist/cli.mjs'",
+      'Require stack:',
+      '    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)',
+      "  code: 'MODULE_NOT_FOUND',",
+      '  requireStack: []',
+      '}',
+      'Node.js v22.20.0',
+    ].join('\n')
+    const [result] = await applyPlan(
+      {
+        tools: [
+          { tool: 'claude-code', notices: [], steps: [{ kind: 'command', title, command: 'npx', args: ['skills'] }] },
+        ],
+      },
+      { runner: fakeRunner({ 'npx skills': { exitCode: 1, stderr } }), backupDir: join(home, 'backups') },
+    )
+    expect(result!.steps[0]!.detail).toBe(
+      [
+        "Error: Cannot find module '/npx/node_modules/skills/dist/cli.mjs'",
+        '    at Module._resolveFilename (node:internal/modules/cjs/loader:1225:15)',
+        "  code: 'MODULE_NOT_FOUND',",
+        '  requireStack: []',
+        '}',
+        'Node.js v22.20.0',
+      ].join('\n'),
+    )
   })
 
   it('turns a broken file into a failed step', async () => {

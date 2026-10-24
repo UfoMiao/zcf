@@ -436,6 +436,7 @@ describe('dsh.plan', () => {
         title: { key: 'step.skillsAdd', params: { source: 'owner/repo' } },
         command: 'npx',
         args: ['-y', 'skills', 'add', 'owner/repo', '-g', '-y', '-a', 'universal', '-s', 'one'],
+        serial: 'npx-skills',
       },
     ])
   })
