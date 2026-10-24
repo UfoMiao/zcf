@@ -41,11 +41,9 @@ export function editJson(content: string | undefined, edits: readonly KeyEdit[])
   parseTree(text, errors, { allowTrailingComma: true })
   if (errors.length > 0) throw new FileSyntaxError('json', ...lineAndColumn(text, errors[0]!.offset))
 
-  const formattingOptions = {
-    insertSpaces: true,
-    tabSize: detectIndent(text),
-    eol: '\n',
-  }
+  // A file written on one line stays on one line; otherwise new parts follow the file's indentation.
+  const compact = !text.trim().includes('\n') && text.trim() !== '{}'
+  const formattingOptions = compact ? undefined : { insertSpaces: true, tabSize: detectIndent(text), eol: '\n' }
 
   for (const edit of edits) {
     // jsonc-parser throws when removing a key whose parent is missing; there is nothing to remove.
@@ -110,7 +108,13 @@ export async function editToml(content: string | undefined, edits: readonly KeyE
 
   for (const edit of edits) setAtPath(data, edit.path, edit.value)
 
-  return withTrailingNewline(toml.patch(text, data))
+  // New tables become `[a.b]` sections, as tools document them; deeper ones stay inline.
+  const patched = toml.patch(text, data, { inlineTableStart: 2 })
+  // toml-patch also writes an empty `[a]` above a new `[a.b]`; drop it unless the user wrote it.
+  const tidy = patched.replaceAll(/^\[([^\]\n]+)\]\n\n(?=\[\1\.)/gm, (header: string, name: string) =>
+    text.includes(`[${name}]`) ? header : '',
+  )
+  return withTrailingNewline(tidy)
 }
 
 const ENV_LINE = /^(\s*(?:export\s+)?)([A-Za-z_][\w.-]*)(\s*=)(.*)$/
