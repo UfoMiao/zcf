@@ -15,7 +15,8 @@ Prefer each tool's own commands and mainstream CLIs over reimplementing them: `c
 | Path | What lives there |
 |------|------------------|
 | `packages/core` (`@zcf/core`, private) | Headless engine: `schema/` (valibot config schema), `adapters/` (one per tool), `plan/` (plan types, diff preview, apply), `io/` (format-preserving JSON/TOML edits, atomic writes, backups), `exec/` (command runner) |
-| `packages/cli` (`zcf`, private until v5 ships) | `cli.ts` (entry with the fast `--version` path), `main.ts` (cac commands), `render.ts` (terminal output, secret masking), `i18n.ts` (en and zh-CN strings) |
+| `packages/ui-kit` (`@zcf/ui-kit`, private) | Shared by the terminal and web UIs, no rendering: draft model and validation, page and field definitions, `useConfigEditor`, the `ZcfService` interface |
+| `packages/cli` (`zcf`, private until v5 ships) | `cli.ts` (entry with the fast `--version` path), `main.ts` (cac commands), `render.ts` (terminal output, secret masking), `i18n.ts` (en and zh-CN strings), `service.ts` (`ZcfService` backed by core), `tui/` (Ink app, loaded lazily) |
 | `packages/*/test` | Vitest suites for that package |
 | `scripts/bench-startup.mjs` | Startup benchmark that CI enforces |
 | `docs/` | VitePress site (still describes v3; rewritten in a later phase) |
@@ -57,6 +58,7 @@ Timings are from this repo on a warm machine.
 | An adapter, or a new tool | Use the tool's own commands where they exist. Cover a fresh install, an existing config and Windows paths with the fake runner | That adapter's tests, then `pnpm test:run` |
 | `packages/core/src/io` or `plan` | Cover files that already have content, comments or wrong syntax | `pnpm test:run` |
 | CLI output or i18n | Both locales, and secrets stay masked | `pnpm vitest run packages/cli/test` |
+| `packages/ui-kit` or `packages/cli/src/tui` | Test through `App` with `ink-testing-library` and a fake `ZcfService`; secrets stay masked | `pnpm vitest run packages/cli/test/tui.test.tsx packages/ui-kit` |
 | Dependencies, `tsdown.config.ts`, or `cli.ts` | Keep the published CLI dependency-free and fast | `pnpm build && pnpm bench` |
 | Docs, `AGENTS.md`, `CLAUDE.md`, `.claude/` only | Nothing else | `pnpm docs:build` only if `docs/` changed |
 

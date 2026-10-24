@@ -5,6 +5,7 @@ import type { CommandResult, CommandRunner } from '@zcf/core'
 import { join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
+import type { MainOptions } from '../src/main'
 import { EXIT_ERROR, EXIT_INVALID_CONFIG, EXIT_OK, main } from '../src/main'
 
 // Strip colors so assertions read plainly.
@@ -34,9 +35,14 @@ const runner: CommandRunner = {
 }
 
 async function run(...argv: string[]) {
+  return runWith({}, ...argv)
+}
+
+async function runWith(extra: MainOptions, ...argv: string[]) {
   let stdout = ''
   let stderr = ''
   const code = await main(argv, {
+    ...extra,
     stdout: {
       write: text => void (stdout += text),
     },
@@ -223,7 +229,7 @@ describe('zcf apply', () => {
     expect(first.code).toBe(EXIT_OK)
     expect(first.stdout).toContain('✓ Claude Code: Use provider "GLM"')
     expect(first.stdout).toContain('✓ Claude Code: Add MCP server "ctx"')
-    expect(first.stdout).toContain('Done. 2 steps applied, 0 already up to date.')
+    expect(first.stdout).toContain('Done: 2 applied, 0 already up to date.')
     expect(first.stdout).toContain('~/.ufomiao/zcf/backups/2026-10-24T08-00-00-000Z')
 
     const settings = JSON.parse(await readFile(join(home, '.claude', 'settings.json'), 'utf8'))
@@ -454,6 +460,36 @@ describe('help and unknown commands', () => {
       console.log = originalLog
     }
     expect(stdout).toContain('One config for all your AI coding tools')
+  })
+
+  it('only opens the interactive UI in a terminal', async () => {
+    expect(await run('tui')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('The interactive UI needs a terminal'),
+    })
+  })
+
+  it('serves the web UI on 127.0.0.1 until stopped, and opens the browser', async () => {
+    const webRoot = join(home, 'web')
+    await mkdir(webRoot, { recursive: true })
+    await writeFile(join(webRoot, 'index.html'), '<!doctype html>')
+    const result = await runWith({ webRoot, stop: Promise.resolve() }, 'ui')
+    expect(result).toMatchObject({
+      code: EXIT_OK,
+      stdout: expect.stringMatching(/ZCF is ready at http:\/\/127\.0\.0\.1:\d+\/#token=/),
+    })
+    expect(calls.at(-1)).toEqual(['xdg-open', [expect.stringContaining('http://127.0.0.1:')]].flat())
+
+    calls = []
+    expect((await runWith({ webRoot, stop: Promise.resolve() }, 'ui', '--no-open')).code).toBe(EXIT_OK)
+    expect(calls).toEqual([])
+  })
+
+  it('says so when the web UI files are missing', async () => {
+    expect(await runWith({ webRoot: join(home, 'nowhere') }, 'ui')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('The web UI files are missing'),
+    })
   })
 
   it('prints help in the chosen language', async () => {

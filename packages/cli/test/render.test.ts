@@ -53,6 +53,7 @@ describe('render helpers', () => {
       tools: [],
       mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'my$private$pass' } } },
       skills: [],
+      mirror: 'official',
     })
     expect(maskSecrets(quoteArg('PASSWORD=my$$private$$pass'), secrets)).not.toContain('private')
   })

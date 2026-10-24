@@ -23,7 +23,9 @@ A pnpm workspace:
 
 - `@zcf/core`: headless engine with no terminal or UI code.
 - `zcf`: the CLI, bundled by tsdown into a dependency-free package.
-- Later phases add a UI kit shared by an Ink TUI and a React web UI. Both are driven by the same valibot schema and core API.
+- `@zcf/ui-kit`: what the terminal UI and the web UI share, with no rendering code. It has the draft model (edit the config as plain data, validate it with the core schema), the page and field definitions, the `useConfigEditor` React hook, and the `ZcfService` interface (load, save, detect, plan, apply).
+- The terminal UI is an Ink app in `packages/cli/src/tui`, loaded with `import()` only by `zcf tui` (or a bare `zcf` in a terminal), so other commands never load Ink or React. It calls core through `createLocalService` in `packages/cli/src/service.ts`. The web UI will reach the same service over a local HTTP API.
+- The UI edits a draft. Ctrl+S saves it to the ZCF config key by key (`saveConfigDraft`), keeping comments. The Apply page plans and applies the saved config with the same output and secret masking as `zcf plan`.
 
 ### Plan, diff, apply
 

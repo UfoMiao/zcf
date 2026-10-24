@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
@@ -13,7 +13,8 @@
     "noUnusedParameters": true,
     "noEmit": true,
     "verbatimModuleSyntax": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "jsx": "react-jsx"
   },
   "include": ["packages/*/src/**/*", "packages/*/test/**/*", "scripts/**/*", "*.config.ts"],
   "exclude": ["node_modules", "**/dist"]

@@ -1,0 +1,23 @@
+{
+  "name": "@zcf/web",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The ZCF web UI served by `zcf ui`",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@zcf/core": "workspace:*",
+    "@zcf/ui-kit": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:ui",
+    "@types/react-dom": "catalog:web",
+    "@vitejs/plugin-react": "catalog:web",
+    "react": "catalog:ui",
+    "react-dom": "catalog:web",
+    "vite": "catalog:web"
+  }
+}

@@ -1,0 +1,89 @@
+import type { ConfigIssue } from '@zcf/core/schema'
+import { parseZcfConfig } from '@zcf/core/schema'
+
+/** The config as the user is editing it: plain JSON, possibly not valid yet. */
+export type Draft = Record<string, unknown>
+export type DraftPath = readonly (string | number)[]
+
+export function isTable(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+export function getAt(draft: unknown, path: DraftPath): unknown {
+  let value = draft
+  for (const key of path) {
+    if (Array.isArray(value) && typeof key === 'number') value = value[key]
+    else if (isTable(value)) value = value[key]
+    else return undefined
+  }
+  return value
+}
+
+function isEmpty(value: unknown): boolean {
+  return value === undefined || value === '' || (isTable(value) && Object.keys(value).length === 0)
+}
+
+function setIn(container: unknown, path: DraftPath, value: unknown): unknown {
+  const [key, ...rest] = path
+  if (key === undefined) return value
+  if (typeof key === 'number') {
+    const list = Array.isArray(container) ? [...container] : []
+    const next = setIn(list[key], rest, value)
+    if (isEmpty(next)) list.splice(key, 1)
+    else list[key] = next
+    return list
+  }
+  const table = isTable(container) ? { ...container } : {}
+  const next = setIn(table[key], rest, value)
+  if (isEmpty(next)) delete table[key]
+  else table[key] = next
+  return table
+}
+
+/**
+ * Set a value without changing `draft`. An empty string or an object left empty
+ * removes the key, so a cleared optional field never makes the config invalid.
+ */
+export function setAt(draft: Draft, path: DraftPath, value: unknown): Draft {
+  const next = setIn(draft, path, value)
+  return isTable(next) ? next : {}
+}
+
+/** Rename a key of the table at `path`, keeping its position. */
+export function renameKey(draft: Draft, path: DraftPath, from: string, to: string): Draft {
+  const table = getAt(draft, path)
+  if (!isTable(table) || from === to || !(from in table)) return draft
+  const renamed = Object.fromEntries(Object.entries(table).map(([key, value]) => [key === from ? to : key, value]))
+  return setAt(draft, path, renamed)
+}
+
+export interface Validation {
+  valid: boolean
+  /** Problems by dot path; the empty path is the whole config. */
+  issues: ConfigIssue[]
+}
+
+export function validateDraft(draft: Draft): Validation {
+  const result = parseZcfConfig(draft)
+  return result.success ? { valid: true, issues: [] } : { valid: false, issues: result.issues }
+}
+
+/** The issues for one field: those at its path or inside it. */
+export function issuesAt(issues: readonly ConfigIssue[], path: DraftPath): ConfigIssue[] {
+  const dot = path.join('.')
+  return issues.filter(issue => issue.path === dot || issue.path.startsWith(`${dot}.`))
+}
+
+/** Split command-line arguments typed on one line; double or single quotes keep spaces. */
+export function parseArgs(text: string): string[] {
+  const args: string[] = []
+  const pattern = /"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+)/g
+  for (const match of text.matchAll(pattern)) {
+    args.push(match[1] !== undefined ? match[1].replace(/\\(.)/g, '$1') : (match[2] ?? match[3]!))
+  }
+  return args
+}
+
+export function formatArgs(args: readonly string[]): string {
+  return args.map(arg => (arg === '' || /[\s"'\\]/.test(arg) ? JSON.stringify(arg) : arg)).join(' ')
+}

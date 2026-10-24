@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx packages/cli/src/cli.ts",
-    "build": "pnpm -F zcf build",
+    "build": "pnpm -F @zcf/web build && pnpm -F zcf build",
     "bench": "node scripts/bench-startup.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint && oxfmt --check",
