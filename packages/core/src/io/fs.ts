@@ -1,8 +1,8 @@
 import { randomUUID } from 'node:crypto'
-import { copyFile, mkdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
+import { copyFile, mkdir, readFile, readlink, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 
-import { dirname, join, normalize, relative } from 'pathe'
+import { dirname, join, normalize, relative, resolve } from 'pathe'
 
 export async function readTextIfExists(path: string): Promise<string | undefined> {
   try {
@@ -21,6 +21,17 @@ async function modeOf(path: string): Promise<number | undefined> {
   }
 }
 
+/** The file a write to `path` should replace: the end of its symlink chain, even when that file does not exist yet. */
+async function writeTarget(path: string): Promise<string> {
+  try {
+    return await realpath(path)
+  } catch {
+    // A dangling link: write where it points, so dotfile managers keep their link.
+    const link = await readlink(path).catch(() => undefined)
+    return link === undefined ? path : resolve(dirname(path), link)
+  }
+}
+
 /**
  * Write through a temporary file in the same directory and rename it into place,
  * so a crash never leaves a half-written config. A symlink is followed so the
@@ -28,7 +39,7 @@ async function modeOf(path: string): Promise<number | undefined> {
  * since native configs hold API keys.
  */
 export async function writeFileAtomic(path: string, content: string): Promise<void> {
-  const target = await realpath(path).catch(() => path)
+  const target = await writeTarget(path)
   await mkdir(dirname(target), { recursive: true })
   const mode = (await modeOf(target)) ?? 0o600
   const temp = `${target}.zcf-${process.pid}-${randomUUID()}.tmp`
