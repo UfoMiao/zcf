@@ -20,7 +20,7 @@ title: ツール
 | 検出 | `claude --version`、次に `~/.local/bin/claude` |
 | インストール | 公式のネイティブインストーラー（`install.sh`、Windows では `install.ps1`）。[`china` ミラー](./mirrors) では `npm install -g @anthropic-ai/claude-code` を使い、バイナリをリンクするパッケージのインストールスクリプトを許可します。その後 `claude --version` を実行して動作を確認します。 |
 | 更新 | `claude update` |
-| プロバイダー | `~/.claude/settings.json` の `env`: `ANTHROPIC_BASE_URL`、キーとして `ANTHROPIC_AUTH_TOKEN`（`authType: "api_key"` の場合は `ANTHROPIC_API_KEY`）、`models.default` からの `ANTHROPIC_MODEL`、そして `ANTHROPIC_DEFAULT_HAIKU_MODEL`、`_SONNET_MODEL`、`_OPUS_MODEL`。設定で未指定のキーは ZCF が削除します。 |
+| プロバイダー | `~/.claude/settings.json` の `env`: `ANTHROPIC_BASE_URL`、キーとして `ANTHROPIC_AUTH_TOKEN`（`authType: "api_key"` の場合は `ANTHROPIC_API_KEY`）、`models.default` からの `ANTHROPIC_MODEL`、そして `ANTHROPIC_DEFAULT_HAIKU_MODEL`、`_SONNET_MODEL`、`_OPUS_MODEL`。これらのキーのうち、設定で指定していないものは ZCF が削除します。 |
 | MCP | `claude mcp add-json --scope user`。変更されたサーバーは削除してから再追加します。Windows では `npx` などのコマンドを `cmd /c` で包みます。 |
 | スキル | `-a claude-code`、`~/.claude/skills` へ |
 

@@ -101,7 +101,7 @@ const enSidebar: DefaultTheme.SidebarItem[] = createSidebar([
 
 const jaSidebar: DefaultTheme.SidebarItem[] = createSidebar([
   {
-    text: 'はじめる',
+    text: '導入',
     items: [
       { text: 'プロジェクト紹介', link: 'index' },
       { text: 'はじめに', link: 'guide/' },

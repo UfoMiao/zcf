@@ -2,7 +2,7 @@
 
 * [プロジェクト紹介](index.md)
 
-## はじめる
+## 導入
 * [はじめに](guide/index.md)
 * [v3 からの移行](guide/v3.md)
 

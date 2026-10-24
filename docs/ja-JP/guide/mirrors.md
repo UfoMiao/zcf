@@ -18,7 +18,7 @@ npx zcf mirror official   # 元に戻す
 
 1. `zcf plan`、`zcf apply`、`zcf update` の `--mirror official|china`。その実行に限ります。
 2. 環境変数 `ZCF_MIRROR`（`cn` も `china` の意味）。
-3. [設定ファイル](./config) の `mirror`。`zcf mirror <name>` または [エディター](./ui) の設定ページで設定します。
+3. [設定ファイル](./config) の `mirror`。`zcf mirror <name>` または [エディター](./ui) の **Settings** ページで設定します。
 4. `official`。
 
 `china` ミラーを使っているとき、`zcf plan`、`zcf apply`、`zcf update` は冒頭でその旨と使用するレジストリを表示します。
@@ -27,7 +27,7 @@ npx zcf mirror official   # 元に戻す
 
 | ダウンロード | `china` の場合 |
 |--------------|----------------|
-| npm のインストール（`npm install -g`、`npx skills add`、npm でインストールしたツールの自前のアップデーター） | `https://registry.npmmirror.com` を使います。`npm_config_registry` で設定済みのレジストリはそのまま使います。 |
+| npm のインストール（`npm install -g`、`npx skills add`、npm でインストールしたツール自身のアップデーター） | `https://registry.npmmirror.com` を使います。`npm_config_registry` で設定済みのレジストリはそのまま使います。 |
 | Claude Code のインストール | Google Cloud Storage からダウンロードする公式スクリプトの代わりに、同じネイティブバイナリをインストールする `npm install -g @anthropic-ai/claude-code` を使います。 |
 | [プロバイダープリセット](./providers) など ZCF リポジトリのファイル | `fastly.jsdelivr.net` と `gcore.jsdelivr.net` にも問い合わせ、最初に応答したものを使います。 |
 
