@@ -56,6 +56,24 @@ The config is JSON with comments at `~/.ufomiao/zcf/zcf.json` (or `--file`), val
 
 Paths follow `CLAUDE_CONFIG_DIR` when it is set, as Claude Code itself does: `settings.json`, `skills/` and `.claude.json` then live in that folder.
 
+### Codex adapter
+
+| Item | How |
+|------|-----|
+| Detect, install, update | `codex --version`; `npm install -g @openai/codex`; `codex update` |
+| Provider | `config.toml` under `CODEX_HOME` (default `~/.codex`): `model_provider = "zcf"`, `model`, and a `[model_providers.zcf]` table ZCF owns with `base_url`, `wire_api = "responses"` and the key in `experimental_bearer_token`. `auth.json` and a ChatGPT login in it are left alone |
+| MCP | `codex mcp add`, which replaces a server of the same name; servers already in `config.toml` with the same definition are skipped. It has no header flag, so `http_headers` is a file edit after the command. Codex resolves `.cmd` shims on Windows itself, so commands are not wrapped |
+| Skills | `npx skills add -a codex`, which installs into `~/.agents/skills` |
+
+### Gemini CLI adapter
+
+| Item | How |
+|------|-----|
+| Detect, install, update | `gemini --version`; `npm install -g @google/gemini-cli`, also for updates since there is no update command |
+| Provider | `GEMINI_API_KEY` and `GOOGLE_GEMINI_BASE_URL` in `~/.gemini/.env` (settings.json has no key setting), `security.auth.selectedType = "gemini-api-key"` and `model.name` in `settings.json`. The interactive CLI rejects a `gateway` selection, and `gemini-api-key` honours the base URL. `GEMINI_CLI_HOME` replaces the home folder |
+| MCP | `gemini mcp add -s user`, with server arguments after `--` so options like `npx -y` reach the server. `-e` cuts values at a second `=`, so env and headers are a file edit after the command |
+| Skills | `npx skills add -a gemini-cli`, which installs into `~/.gemini/skills` under the real home folder |
+
 Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness follow the same pattern. Each adapter lives in its own file and reuses `adapters/shared.ts` for detection, npm installs and updates, skills and notices.
 
 The provider has one block per protocol (`anthropic`, `openai`, `gemini`). Each adapter uses the protocol its tool speaks, and reports a notice when the provider lacks it. A tool's model is the protocol block's `model`, or else `models.default`.

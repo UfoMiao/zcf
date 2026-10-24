@@ -1,10 +1,14 @@
 import type { Plan, ToolPlan } from '../plan/types'
 import type { ToolId, ZcfConfig } from '../schema/config'
 import { claudeCode } from './claude-code'
+import { codex } from './codex'
+import { geminiCli } from './gemini-cli'
 import type { AdapterContext, ToolAdapter, ToolStatus } from './types'
 
 export const ADAPTERS: Partial<Record<ToolId, ToolAdapter>> = {
   'claude-code': claudeCode,
+  codex,
+  'gemini-cli': geminiCli,
 }
 
 function unsupported(tool: ToolId): ToolPlan {
