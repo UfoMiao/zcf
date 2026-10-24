@@ -53,6 +53,16 @@ describe('writeFileAtomic on POSIX', () => {
     expect((await lstat(link)).isSymbolicLink()).toBe(true)
     expect(await readFile(target, 'utf8')).toBe('new')
   })
+
+  it.skipIf(process.platform === 'win32')('creates the missing target of a dangling symlink', async () => {
+    const dir = await tempDir()
+    const target = join(dir, 'dotfiles', 'settings.json')
+    const link = join(dir, 'settings.json')
+    await symlink('dotfiles/settings.json', link)
+    await writeFileAtomic(link, 'new')
+    expect((await lstat(link)).isSymbolicLink()).toBe(true)
+    expect(await readFile(target, 'utf8')).toBe('new')
+  })
 })
 
 describe('backupRelativePath', () => {
