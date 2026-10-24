@@ -5,7 +5,7 @@ import { isTable } from '../io/editors'
 import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, selfUpdateStep, skillSteps } from './shared'
+import { detectCommand, envPath, notice, sameJson, selfUpdateStep, skillSteps } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'cursor' as const
@@ -68,7 +68,10 @@ function mcpEdits(name: string, server: McpServer, existing: unknown): KeyEdit[]
   const current = isTable(servers) ? servers[name] : undefined
   const sameTransport = isTable(current) && 'command' in current === 'command' in desired
   if (!sameTransport) return [{ path: ['mcpServers', name], value: desired }]
-  return Object.entries(desired).map(([key, value]) => ({ path: ['mcpServers', name, key], value }))
+  // Equal fields are skipped: rewriting a list or record would reflow how the user laid it out.
+  return Object.entries(desired)
+    .filter(([key, value]) => !sameJson(current[key], value))
+    .map(([key, value]) => ({ path: ['mcpServers', name, key], value }))
 }
 
 /** The server definition in the shape Cursor stores in `mcp.json`. */

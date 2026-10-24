@@ -125,6 +125,17 @@ describe('cursor.plan', () => {
     })
   })
 
+  it('leaves a hand-formatted entry that already matches as it is', async () => {
+    const before =
+      '{\n\t"mcpServers": {\n\t\t"a": { "type": "stdio", "command": "npx", "args": ["-y", "pkg"], "env": { "K": "v" } }\n\t}\n}\n'
+    const plan = await cursor.plan(
+      config({ mcpServers: { a: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { K: 'v' } } } }),
+      installed,
+      context({}, { [MCP_FILE]: before }),
+    )
+    expect(editJson(before, (plan.steps[0] as FileStep).edits)).toBe(before)
+  })
+
   it('installs skills for cursor unless the named ones are present', async () => {
     const plan = await cursor.plan(
       config({ skills: [{ source: 'owner/a', skills: ['one'] }, { source: 'owner/b' }] }),

@@ -5,7 +5,7 @@ import { isTable } from '../io/editors'
 import type { FileStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, npmInstallStep, selfUpdateStep, skillSteps } from './shared'
+import { detectCommand, envPath, notice, sameJson, npmInstallStep, selfUpdateStep, skillSteps } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'opencode' as const
@@ -57,7 +57,8 @@ function anthropicRoute(provider: Provider): Route | undefined {
       apiKey: bearer ? undefined : provider.apiKey,
       authToken: bearer ? provider.apiKey : undefined,
     },
-    model: models.default,
+    // Claude Code configs often fill only the tier models, so the first of them stands in for the default.
+    model: models.default ?? models.sonnet ?? models.opus ?? models.haiku,
     models: [models.default, models.haiku, models.sonnet, models.opus].filter(model => model !== undefined),
     smallModel: models.haiku,
   }
@@ -129,7 +130,10 @@ function mcpEdits(name: string, server: McpServer, existing: Record<string, unkn
   const servers = existing?.mcp
   const current = isTable(servers) ? servers[name] : undefined
   if (!isTable(current) || current.type !== desired.type) return [{ path: ['mcp', name], value: desired }]
-  return Object.entries(desired).map(([key, value]) => ({ path: ['mcp', name, key], value }))
+  // Equal fields are skipped: rewriting a list or record would reflow how the user laid it out.
+  return Object.entries(desired)
+    .filter(([key, value]) => !sameJson(current[key], value))
+    .map(([key, value]) => ({ path: ['mcp', name, key], value }))
 }
 
 /** The server definition in the shape OpenCode stores under `mcp`. */
