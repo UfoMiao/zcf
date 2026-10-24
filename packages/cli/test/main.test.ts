@@ -109,10 +109,14 @@ describe('zcf plan', () => {
     expect(stdout).toContain(
       '$ claude mcp add-json ctx \'{"type":"http","url":"https://mcp.example.com","headers":{"Authorization":"Bea***en"}}\' --scope user',
     )
-    expect(stdout).toContain('! DeepSeek Harness is not supported yet.')
+    expect(stdout).toContain('1. Install DeepSeek Harness')
+    expect(stdout).toContain('~/.dsh/cordis.patch.yml')
     expect(stdout).not.toContain('sk-very-secret')
     expect(stdout).not.toContain('hidden-token')
-    expect(calls).toEqual([['claude', '--version']])
+    expect(calls).toEqual([
+      ['claude', '--version'],
+      ['dsh', '--version'],
+    ])
   })
 
   it('masks credentials already in the native config, not only the new ones', async () => {
@@ -214,7 +218,10 @@ describe('zcf apply', () => {
     const { code, stdout } = await run('apply')
     expect(code).toBe(EXIT_OK)
     expect(stdout).toContain('Nothing was changed. Run again with --yes to apply.')
-    expect(calls).toEqual([['claude', '--version']])
+    expect(calls).toEqual([
+      ['claude', '--version'],
+      ['dsh', '--version'],
+    ])
   })
 
   it('applies with --yes, backs up changed files, and is idempotent', async () => {
@@ -281,7 +288,7 @@ describe('zcf update', () => {
     responses['claude update'] = {}
     const { code, stdout } = await run('update', '--tools', 'claude-code,dsh')
     expect(code).toBe(EXIT_OK)
-    expect(stdout).toContain('! DeepSeek Harness is not supported yet.')
+    expect(stdout).toContain('DeepSeek Harness is not installed.')
     expect(stdout).toContain('✓ Claude Code: Update Claude Code')
     expect(calls).toContainEqual(['claude', 'update'])
   })
