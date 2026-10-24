@@ -191,9 +191,15 @@ describe('opencode.plan', () => {
     ])
   })
 
-  it('writes MCP servers into an existing opencode.jsonc under XDG_CONFIG_HOME', async () => {
+  it('writes MCP servers into an existing opencode.jsonc under XDG_CONFIG_HOME, keeping settings ZCF does not manage', async () => {
     const path = '/xdg/opencode/opencode.jsonc'
-    const before = '{\n  "mcp": { "keep": { "type": "remote", "url": "https://keep.example.com" } }\n}\n'
+    const before = JSON.stringify({
+      mcp: {
+        keep: { type: 'remote', url: 'https://keep.example.com' },
+        docs: { type: 'remote', url: 'https://old.example.com', oauth: { clientId: 'id' }, timeout: 5000 },
+        local: { type: 'remote', url: 'https://was-remote.example.com', oauth: { clientId: 'id' } },
+      },
+    })
     const plan = await opencode.plan(
       config({
         mcpServers: {
@@ -216,6 +222,8 @@ describe('opencode.plan', () => {
         docs: {
           type: 'remote',
           url: 'https://docs.example.com/mcp',
+          oauth: { clientId: 'id' },
+          timeout: 5000,
           headers: { Authorization: 'Bearer t' },
           enabled: true,
         },

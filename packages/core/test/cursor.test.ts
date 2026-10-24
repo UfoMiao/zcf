@@ -81,8 +81,15 @@ describe('cursor.plan', () => {
     ])
   })
 
-  it('writes MCP servers into ~/.cursor/mcp.json next to the ones already there', async () => {
-    const before = '{\n  "mcpServers": {\n    "keep": { "url": "https://keep.example.com" }\n  }\n}\n'
+  it('writes MCP servers into ~/.cursor/mcp.json, keeping other entries and fields ZCF does not manage', async () => {
+    const before = JSON.stringify({
+      mcpServers: {
+        keep: { url: 'https://keep.example.com' },
+        docs: { url: 'https://old.example.com', auth: { CLIENT_ID: 'id' } },
+        local: { command: 'node', args: ['old.js'], envFile: '.env' },
+        open: { command: 'was-stdio', envFile: '.env' },
+      },
+    })
     const plan = await cursor.plan(
       config({
         mcpServers: {
@@ -106,8 +113,12 @@ describe('cursor.plan', () => {
     expect(JSON.parse(text)).toEqual({
       mcpServers: {
         keep: { url: 'https://keep.example.com' },
-        docs: { url: 'https://docs.example.com/mcp', headers: { Authorization: 'Bearer t' } },
-        local: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { TOKEN: 't' } },
+        docs: {
+          url: 'https://docs.example.com/mcp',
+          auth: { CLIENT_ID: 'id' },
+          headers: { Authorization: 'Bearer t' },
+        },
+        local: { command: 'npx', args: ['-y', 'pkg'], envFile: '.env', type: 'stdio', env: { TOKEN: 't' } },
         bare: { type: 'stdio', command: 'server' },
         open: { url: 'https://open.example.com/mcp' },
       },
