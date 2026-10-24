@@ -396,7 +396,7 @@ describe('mirrors', () => {
     expect(stdout).toContain(`$ ${install.join(' ')}`)
     expect(calls).toContainEqual(install)
     expect(envs[calls.findIndex(call => call.join(' ') === install.join(' '))]).toEqual(registry)
-    // npm succeeded, but this claude does not run (as when npm skipped its postinstall): the check says so.
+    // npm succeeded but `claude` does not answer, as when npm skips its postinstall: the check step fails.
     expect(code).toBe(EXIT_ERROR)
     expect(stdout).toContain('✗ Claude Code: Check that Claude Code runs')
   })

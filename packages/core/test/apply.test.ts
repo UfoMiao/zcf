@@ -243,6 +243,24 @@ describe('applyPlan', () => {
       { runner, backupDir: await tempDir() },
     )
     expect(result!.steps[0]!.detail).toBe('Error: skill "x" not found')
+
+    // The error may be on stdout while npx writes only (colored) notices to stderr.
+    const quiet = fakeRunner({
+      'npx skills': { exitCode: 1, stdout: 'Error: no such repo', stderr: '\u001B[37mnpm notice\u001B[39m update' },
+    })
+    const [stdoutOnly] = await applyPlan(
+      { tools: [{ tool: 'codex', notices: [], steps: [step] }] },
+      { runner: quiet, backupDir: await tempDir() },
+    )
+    expect(stdoutOnly!.steps[0]!.detail).toBe('Error: no such repo')
+
+    // Notices alone are still better than nothing.
+    const only = fakeRunner({ 'npx skills': { exitCode: 1, stderr: 'npm notice update' } })
+    const [noticeOnly] = await applyPlan(
+      { tools: [{ tool: 'codex', notices: [], steps: [step] }] },
+      { runner: only, backupDir: await tempDir() },
+    )
+    expect(noticeOnly!.steps[0]!.detail).toBe('npm notice update')
   })
 
   it("passes a command step's environment to the runner", async () => {

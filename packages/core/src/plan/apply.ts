@@ -34,11 +34,14 @@ export interface ApplyOptions {
   onEvent?: (event: ApplyEvent) => void
 }
 
-/** The end of a command's output. npm's `npm notice` lines would otherwise hide the real error. */
-function lastLines(text: string, count = 5): string {
+// `npm notice` lines, possibly colored, which would otherwise hide the real error.
+// oxlint-disable-next-line no-control-regex
+const NPM_NOTICE = /^(?:\u001B\[[\d;]*m)*npm notice/
+
+/** The end of a command's output, leaving out npm's notices; with `notices`, those too. */
+function lastLines(text: string, notices = false, count = 5): string {
   const lines = text.trim().split(/\r?\n/)
-  const useful = lines.filter(line => !line.startsWith('npm notice'))
-  return (useful.length > 0 ? useful : lines).slice(-count).join('\n')
+  return (notices ? lines : lines.filter(line => !NPM_NOTICE.test(line))).slice(-count).join('\n').trim()
 }
 
 async function runStep(
@@ -58,7 +61,11 @@ async function runStep(
       const backup = backups.find(path => path !== undefined)
       const result = await options.runner.run(step.command, step.args, step.env ? { env: step.env } : undefined)
       if (result.exitCode === 0) return { step, status: 'done', backup }
-      const detail = lastLines(result.stderr) || lastLines(result.stdout) || `exit code ${result.exitCode ?? 'unknown'}`
+      const detail =
+        lastLines(result.stderr) ||
+        lastLines(result.stdout) ||
+        lastLines(result.stderr, true) ||
+        `exit code ${result.exitCode ?? 'unknown'}`
       return { step, status: 'failed', detail, backup }
     }
 
