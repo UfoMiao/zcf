@@ -1,0 +1,18 @@
+{
+  "name": "@zcf/core",
+  "type": "module",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Headless engine for ZCF: config schema, tool adapters, and the plan / diff / apply pipeline",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@decimalturn/toml-patch": "catalog:runtime",
+    "diff": "catalog:runtime",
+    "jsonc-parser": "catalog:runtime",
+    "pathe": "catalog:runtime",
+    "tinyexec": "catalog:runtime",
+    "valibot": "catalog:runtime"
+  }
+}

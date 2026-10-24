@@ -1,110 +1,81 @@
 # AGENTS.md
 
-Working guide for AI agents (and humans) changing this repository. Claude Code loads it through `CLAUDE.md`; Codex and other agents read it directly.
+Working guide for AI agents and people changing this repository. Claude Code loads it through `CLAUDE.md`; Codex and other agents read it directly. Read the sections your task needs, then use the trigger table to find what else applies.
 
-Read the sections your task needs. You do not have to read every doc in the repo before starting: look up the code you are about to change, and use the trigger table below to find what else applies.
+## What ZCF is
 
-## Project facts
+ZCF v5 is a ground-up rewrite (v3 is frozen at the `zcf@3.7.3` tag; there was no v4). The user keeps one ZCF config, picks AI coding tools, and ZCF installs the tools that are missing and writes each tool's own native config. It configures the tools; it is not a gateway or proxy.
 
-ZCF is a TypeScript ESM CLI (npm package `zcf`) that installs and configures Claude Code and Codex on the user's machine. Entry point `src/cli.ts`; `bin/zcf.mjs` loads the `dist/` bundle built by unbuild. The published package contains `bin/`, `dist/` and `templates/`. Never edit `dist/`.
+Priorities, in order: speed (startup and apply), development speed, and user experience. No backward compatibility with v3 config or commands.
+
+Prefer each tool's own commands and mainstream CLIs over reimplementing them: `claude update`, `claude mcp add-json`, `npx skills add`, and so on. Edit config files only for settings no command covers.
+
+## Layout
 
 | Path | What lives there |
 |------|------------------|
-| `src/commands/` | One file per CLI command (`init`, `menu`, `update`, `ccr`, `ccu`, `check-updates`, `config-switch`, `uninstall`) |
-| `src/code-tools/` | Code tool adapter registry (Claude Code, Codex): definitions, backup, multi-config, provider profiles, template installer |
-| `src/utils/` | Core logic: config read/write and merging, installer, platform, MCP, workflows/skills installer, uninstaller; `code-tools/` (Codex), `ccr/`, `cometix/`, `tools/` |
-| `src/config/` | Static data: `workflows.ts`, `mcp-services.ts`, `api-providers.ts` (provider presets) |
-| `src/i18n/locales/{en,zh-CN}/*.json` | i18next namespaces; use `i18n.t('namespace:key')` |
-| `templates/` | Files written to users' machines: `common/output-styles/`, `claude-code/`, `codex/`, `skills/{en,zh-CN}/` |
-| `tests/` | Vitest suites (`unit/`, `integration/`, `i18n/`, `templates/`, plus per-area folders). Find a module's tests with `rg -l "<module-name>" tests` |
-| `docs/` | VitePress site in `en`, `zh-CN`, `ja-JP` |
+| `packages/core` (`@zcf/core`, private) | Headless engine: `schema/` (valibot config schema), `adapters/` (one per tool), `plan/` (plan types, diff preview, apply), `io/` (format-preserving JSON/TOML edits, atomic writes, backups), `exec/` (command runner) |
+| `packages/cli` (`zcf`, private until v5 ships) | `cli.ts` (entry with the fast `--version` path), `main.ts` (cac commands), `render.ts` (terminal output, secret masking), `i18n.ts` (en and zh-CN strings) |
+| `packages/*/test` | Vitest suites for that package |
+| `scripts/bench-startup.mjs` | Startup benchmark that CI enforces |
+| `docs/` | VitePress site (still describes v3; rewritten in a later phase) |
+| `docs/adr/` | Architecture decisions; read `002-v5-architecture.md` before changing the engine |
+
+How it fits together: an adapter turns the config into a `ToolPlan` of steps. A step either runs a command or applies key edits to one native config file. `applyPlan` runs tools in parallel and each tool's steps in order, skipping the rest of a tool after a failure. Core returns message keys, never display text; front ends translate them.
 
 ## Commands
 
-Timings are from a clean checkout and help you pick the right check.
+Timings are from this repo on a warm machine.
 
 | Command | Purpose | Time |
 |---------|---------|------|
-| `pnpm install` | Install dependencies | ~10 s |
-| `pnpm vitest run <test files>` | Run specific test files | ~3 s |
-| `pnpm typecheck` | `tsc --noEmit` | ~10 s |
-| `pnpm lint` / `pnpm lint:fix` | ESLint (@antfu/eslint-config) over the repo | ~25 s |
-| `pnpm test:run` | Full Vitest suite (~2.5k tests) | ~50 s |
-| `pnpm test:coverage` | Full suite with the 80% coverage thresholds that CI enforces | ~60 s |
-| `pnpm build` | unbuild into `dist/` | |
-| `pnpm docs:build` | Build the docs site; fails on dead links | ~30 s |
-| `pnpm dev` | Run the CLI from source via tsx | |
-
-`pnpm vitest related <src files>` pulls in about 1,000 tests because most modules share imports, so prefer naming test files directly.
+| `pnpm install` | Install (pnpm 12, Node 22+) | <1 s warm |
+| `pnpm vitest run <files>` | Run specific test files | <1 s |
+| `pnpm test:run` | Full suite | ~1.5 s |
+| `pnpm test:coverage` | Full suite with the 80% thresholds CI enforces | ~2 s |
+| `pnpm typecheck` | TypeScript 7 native `tsc --noEmit` | ~0.7 s |
+| `pnpm lint` / `pnpm lint:fix` | oxlint (type-aware) and oxfmt | ~1 s |
+| `pnpm build` | tsdown bundle into `packages/cli/dist` | ~0.4 s |
+| `pnpm bench` | `zcf --version` startup, fails over 60 ms | ~3 s |
+| `pnpm dev <args>` | Run the CLI from source with tsx | |
 
 ## Rules for every change
 
-- Tests never touch the real home directory. `tests/setup.ts` points `HOME`, `CLAUDE_CONFIG_DIR`, `CODEX_HOME` and friends at a temp dir; keep it that way and derive paths from those, not from hard-coded locations.
-- Every user-facing string goes through i18n, with the key present in both `en` and `zh-CN`.
-- Use `pathe` for paths and `tinyexec` for spawning commands. Windows, macOS and Linux all run in CI, and Termux is supported.
-- Code that writes a user's config must keep the user's existing content and back it up first. Reuse the existing helpers (`src/utils/config*.ts`, `json-config.ts`, `toml-edit.ts`, `src/code-tools/backup.ts`) instead of rewriting whole files.
-- Code comments, commit messages and developer docs are in English. User docs and templates are localized (`zh-CN`, `ja-JP`).
+- Tests never touch the real home directory or run real installers. Pass `home`, `platform`, `runner` and `readFile` through `AdapterContext`, and use the fake runner and temp folders in `packages/core/test/helpers.ts`.
+- User config is edited key by key, never rewritten: `editJson`/`editToml` keep comments and layout, writes are atomic, and files are backed up before their first change in a run.
+- Never print secrets. Anything shown to the user goes through `Renderer`, which masks the API key, MCP env/header values and credentials found in native files.
+- Every user-facing string has a key in both `en` and `zh-CN` (`packages/cli/src/i18n.ts`).
+- Use `pathe` for paths and `tinyexec` (through `CommandRunner`) for processes. CI runs Windows, macOS and Linux; think through `.cmd` shims and quoting on Windows.
+- Keep startup fast: nothing heavy at module top level, and load rarely used code (such as the TOML parser) with `import()`.
+- Code comments, commit messages and developer docs are in English.
 
 ## Task-triggered rules
 
-Apply a row only when your change touches its area.
-
 | When the change touches… | Also do | Check with |
 |---|---|---|
-| `src/i18n/locales/**` | Add or change the key in both `en` and `zh-CN` | `pnpm vitest run tests/i18n` |
-| `templates/**` | Keep `en` and `zh-CN` in step. A new workflow skill also needs an entry in `src/config/workflows.ts` and names in `workflow.json` | `pnpm vitest run tests/templates tests/unit/config/workflows.test.ts` |
-| `src/config/api-providers.ts` | Keep provider ids unique and kebab-case | `pnpm vitest run tests/unit/config/api-providers.test.ts` |
-| Config writing or merging (`src/utils/config*.ts`, `claude-config.ts`, `json-config.ts`, `toml-edit.ts`, `src/utils/code-tools/codex*.ts`, `src/code-tools/`) | Cover the case where the user already has config, not only an empty home | Module tests, then `pnpm test:run` |
-| Command spawning or paths (`platform.ts`, installers, `src/commands/`) | Think through Windows (quoting, `.cmd` shims, backslashes). CI covers Windows; do not claim Windows was verified unless it was | Module tests, then `pnpm test:run` |
-| User-visible behavior (new or changed command, flag, menu entry, workflow, provider preset) | Update the matching pages in `docs/{en,zh-CN,ja-JP}` (the code→page map is in `.claude/skills/zcf-update-docs/SKILL.md`), and the READMEs if they list it | `pnpm docs:build` |
-| `package.json` dependencies, `build.config.ts`, or which files ship | Confirm the package still builds and runs | `pnpm build` and `pnpm vitest run tests/integration/npm-package.test.ts` |
-| Docs, READMEs, `AGENTS.md`, `CLAUDE.md`, `.claude/` only | Nothing else | `pnpm docs:build` only if `docs/` changed |
+| `packages/core/src/schema` | Keep `parseZcfConfig` errors pointing at the right path | `pnpm vitest run packages/core/test/schema.test.ts` |
+| An adapter, or a new tool | Use the tool's own commands where they exist. Cover a fresh install, an existing config and Windows paths with the fake runner | That adapter's tests, then `pnpm test:run` |
+| `packages/core/src/io` or `plan` | Cover files that already have content, comments or wrong syntax | `pnpm test:run` |
+| CLI output or i18n | Both locales, and secrets stay masked | `pnpm vitest run packages/cli/test` |
+| Dependencies, `tsdown.config.ts`, or `cli.ts` | Keep the published CLI dependency-free and fast | `pnpm build && pnpm bench` |
+| Docs, `AGENTS.md`, `CLAUDE.md`, `.claude/` only | Nothing else | `pnpm docs:build` only if `docs/` changed |
 
-## Tests and verification
+## Testing
 
-Match the check to the risk of the change:
+- Bug fix: write the failing test first. New behavior: tests in the same change. Refactor: stay green.
+- Test behavior through public functions (`planTools`, `applyPlan`, `main`), not internals. Extend an existing test file before creating a new one, and don't add tests only to raise coverage.
+- Before pushing, run `pnpm lint`, `pnpm typecheck` and `pnpm test:run` once. CI owns the OS matrix, coverage and the startup budget.
 
-1. **Docs or comments only**: no tests.
-2. **A change inside one module**: `pnpm typecheck` plus that module's test files (and its `*.edge.test.ts`).
-3. **Shared code** (`src/utils/config*.ts`, `platform.ts`, `src/i18n/index.ts`, `src/constants.ts`, `src/code-tools/registry.ts`, CLI setup) **or changes across modules**: also run `pnpm test:run`.
-4. **Before pushing a branch with source changes**: run `pnpm test:run` once. CI then runs lint and typecheck on Ubuntu, and build plus the coverage suite on Ubuntu, Windows and macOS, so you do not need to reproduce that locally.
+## Done and autonomy
 
-Run `pnpm test:coverage` locally only when CI reports a coverage failure. Lint fixes run automatically on edit (Claude Code hook) and on commit (lint-staged), so a separate full lint is rarely needed.
+A change is done when the checks above pass, the triggered rows are handled, and the user-visible behavior is described in the PR. Leave no stray files (scratch scripts, logs, notes) in the repo. Say which commands you ran and what you did not verify (for example Windows behavior or a real install). Mention unrelated problems you noticed once instead of fixing them, then stop.
 
-Writing tests:
-
-- **Bug fix**: start with a test that reproduces the bug and fails, then fix it.
-- **New behavior**: add tests in the same change, next to the module's existing tests. Extend an existing test file before creating a new one.
-- **Refactor**: existing tests stay green; new tests are optional.
-- **Templates and translations**: the integrity tests above cover them; no new tests needed.
-- Mock the file system, prompts (`inquirer`) and external commands the way neighboring tests do. Do not write tests whose only purpose is raising the coverage number.
-
-## When a task is done
-
-A task is done when all of these hold:
-
-- The requested change is made, and nothing outside it. Mention unrelated problems you noticed once in your summary instead of fixing them.
-- The checks for its tier pass, and the triggered rows above are handled.
-- No stray files remain: scratch scripts, logs and notes are deleted or kept outside the repo, and nothing new lands in the repo root unless the task needs it.
-- Your summary says which commands you ran and what you did not verify (for example Windows behavior, or a real install).
-
-Then stop. Do not keep polishing, and do not end with a list of optional extras to confirm.
-
-## When to ask first
-
-Go ahead without asking for anything local and reversible: reading, editing, running tests and builds, creating a branch, committing on a feature branch, and opening a PR when the task calls for one. When a request can be read more than one way, choose the most likely reading, say which one you chose, and continue.
-
-Ask first before:
-
-- pushing to `main`, merging, publishing to npm, or creating git tags (the release workflow creates tags);
-- an incompatible change to the CLI's flags or defaults, or to what zcf writes into users' config;
-- adding a runtime dependency;
-- deleting tracked files the task did not mention.
+Go ahead with local, reversible work. When a request can be read more than one way, choose the most likely reading, say which one you chose, and continue. Ask first before pushing to `main`, merging, publishing, tagging, removing `"private": true` from a package (the release workflow publishes every public package), breaking the config schema, adding a runtime dependency, or deleting tracked files the task did not mention.
 
 ## Commits and pull requests
 
-- Conventional Commits with a header of at most 100 characters (enforced by commitlint). Scopes are optional.
-- The pre-commit hook runs lint-staged (ESLint on staged files) and `pnpm typecheck`. Fix what it reports instead of bypassing it with `--no-verify`.
-- Stage files by name and review `git diff --cached` before committing; avoid `git add .` and `git add -A`. Agent runtimes can inject local-only blocks into `CLAUDE.md` or `AGENTS.md`, and the hook rejects the known Multica block.
+- Conventional Commits with a header of at most 100 characters (enforced by commitlint).
+- The pre-commit hook runs lint-staged and `pnpm typecheck`. Fix what it reports instead of bypassing it with `--no-verify`.
+- Stage files by name and review `git diff --cached` before committing. Agent runtimes can inject local-only blocks into `CLAUDE.md` or `AGENTS.md`; the hook rejects the known Multica block.
 - PR descriptions follow `.github/PULL_REQUEST_TEMPLATE`. Tick a box only for what actually happened.
 - Versions and the changelog go through changesets; see the `/zcf-release` skill.
