@@ -100,6 +100,23 @@ describe('opencode.plan', () => {
     })
   })
 
+  it('picks the first tier model when the provider has no default', async () => {
+    const plan = await opencode.plan(
+      config({
+        provider: {
+          name: 'GLM',
+          apiKey: 'k',
+          anthropic: { baseUrl: 'https://example.com/anthropic' },
+          models: { sonnet: 'glm-4.7', haiku: 'glm-4.5-air' },
+        },
+      }),
+      installed,
+      context(),
+    )
+    expect(plan.notices).toEqual([])
+    expect(written(plan.steps)).toMatchObject({ model: 'zcf/glm-4.7', small_model: 'zcf/glm-4.5-air' })
+  })
+
   it('sends api_key providers as an API key and keeps a version already in the URL', async () => {
     const plan = await opencode.plan(
       config({
@@ -231,6 +248,17 @@ describe('opencode.plan', () => {
         bare: { type: 'local', command: ['uvx', 'tool'], enabled: true },
       },
     })
+  })
+
+  it('leaves a hand-formatted entry that already matches as it is', async () => {
+    const before =
+      '{\n\t"mcp": {\n\t\t"a": { "type": "local", "command": ["npx", "-y", "pkg"], "environment": { "K": "v" }, "enabled": true, "timeout": 9 }\n\t}\n}\n'
+    const plan = await opencode.plan(
+      config({ mcpServers: { a: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { K: 'v' } } } }),
+      installed,
+      context({}, { [CONFIG]: before }),
+    )
+    expect(editJson(before, (plan.steps[0] as FileStep).edits)).toBe(before)
   })
 
   it('installs skills for opencode unless the named ones are present', async () => {
