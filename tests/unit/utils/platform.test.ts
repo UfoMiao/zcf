@@ -486,6 +486,12 @@ ID=ubuntu`)
   })
 
   describe('refreshWindowsPath', () => {
+    const originalPath = process.env.PATH
+
+    afterEach(() => {
+      process.env.PATH = originalPath
+    })
+
     it('merges persisted Windows PATH entries into the current process', async () => {
       vi.mocked(platform).mockReturnValue('win32')
       process.env.PATH = 'C:\\existing'
@@ -503,7 +509,31 @@ ID=ubuntu`)
         '-Command',
         '[Environment]::GetEnvironmentVariable(\'Path\', \'User\'); [Environment]::GetEnvironmentVariable(\'Path\', \'Machine\')',
       ])
-      expect(process.env.PATH).toBe('C:\\Users\\user\\.local\\bin;C:\\Windows\\System32;C:\\Machine\\bin;C:\\existing')
+      expect(process.env.PATH).toBe('C:\\existing;C:\\Users\\user\\.local\\bin;C:\\Windows\\System32;C:\\Machine\\bin')
+    })
+
+    it('keeps current PATH order and skips entries it already has, ignoring case', async () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      process.env.PATH = 'C:\\fnm\\session;C:\\Program Files\\nodejs'
+      vi.mocked(exec).mockResolvedValue({
+        exitCode: 0,
+        stdout: 'C:\\Users\\user\\.local\\bin\nc:\\program files\\NodeJS;C:\\Users\\user\\.local\\bin',
+        stderr: '',
+      } as any)
+
+      await refreshWindowsPath()
+
+      expect(process.env.PATH).toBe('C:\\fnm\\session;C:\\Program Files\\nodejs;C:\\Users\\user\\.local\\bin')
+    })
+
+    it('leaves PATH untouched when PowerShell fails', async () => {
+      vi.mocked(platform).mockReturnValue('win32')
+      process.env.PATH = 'C:\\existing'
+      vi.mocked(exec).mockRejectedValue(new Error('powershell not found'))
+
+      await refreshWindowsPath()
+
+      expect(process.env.PATH).toBe('C:\\existing')
     })
 
     it('does nothing outside Windows', async () => {
