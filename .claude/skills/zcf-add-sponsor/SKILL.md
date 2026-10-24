@@ -2,7 +2,7 @@
 name: zcf-add-sponsor
 description: Quickly add a new corporate sponsor to ZCF — sponsor list by default, with optional API preset and documentation ad placements
 disable-model-invocation: true
-allowed-tools: Read(**), Write(**), Edit(**), Exec(ls, cat, grep, rg, sed, awk, file, mv, pnpm, node, git)
+allowed-tools: Read, Write, Edit, Grep, Glob, Bash(ls:*), Bash(rg:*), Bash(pnpm:*), Bash(git:*)
 ---
 
 # ZCF Add Sponsor — Quick Sponsor Onboarding
@@ -164,14 +164,14 @@ Edit `src/config/api-providers.ts`. Append a new object to the `API_PROVIDER_PRE
   },
 ```
 
-Then run `pnpm typecheck` to confirm no type errors. If the project has corresponding tests for `getValidProviderIds()` or fixtures, surface them in the summary so the user can update tests if needed.
+Then run `pnpm typecheck` and `pnpm vitest run tests/unit/config/api-providers.test.ts`.
 
 ### 7. Validation
 
 ```text
 ✓ List bullets present in all 3 READMEs (or skipped due to existing entry)
 ✓ If --with-ad: card rows present in all 6 target files (or skipped)
-✓ If --with-api: new preset object syntactically valid; pnpm typecheck passes
+✓ If --with-api: pnpm typecheck and the api-providers test pass
 ✓ No duplicate ids in API_PROVIDER_PRESETS
 ✓ All URLs identical across files
 ✓ Logo file exists at src/assets/<filename> when --with-ad is used
@@ -212,7 +212,7 @@ Next steps:
 - **NEVER** reorder existing sponsors
 - **ALWAYS** keep the three locale READMEs in sync (same bullet count, same URL, semantically equivalent text)
 - **ALWAYS** verify logo file existence under `src/assets/` before writing ad cards
-- **ALWAYS** validate the API preset by running `pnpm typecheck` after editing
+- **ALWAYS** validate the API preset with `pnpm typecheck` and the api-providers test after editing
 - **DO NOT** create commits or push — leave that to the user / `/zcf-pr`
 - **DO NOT** invent new section headings; reuse the exact existing ones (`【Corporate Sponsors】` / `【企业赞助商】` / `【企業スポンサー】`)
 
