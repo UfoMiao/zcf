@@ -126,7 +126,7 @@ export async function editToml(content: string | undefined, edits: readonly KeyE
   // New tables become `[a.b]` sections, as tools document them; deeper ones stay inline.
   const patched = toml.patch(text, data, { inlineTableStart: 2 })
   // toml-patch also writes an empty `[a]` above a new `[a.b]`; drop it unless the user wrote it.
-  const tidy = patched.replaceAll(/^\[([^\]\n]+)\]\n\n(?=\[\1\.)/gm, (header: string, name: string) =>
+  const tidy = patched.replaceAll(/^\[([^\]\r\n]+)\]\r?\n\r?\n(?=\[\1\.)/gm, (header: string, name: string) =>
     text.includes(`[${name}]`) ? header : '',
   )
   return withTrailingNewline(tidy)
