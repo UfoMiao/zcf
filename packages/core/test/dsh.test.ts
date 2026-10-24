@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { dsh } from '../src/adapters/dsh'
 import type { AdapterContext } from '../src/adapters/types'
-import { editYaml } from '../src/io/editors'
+import { editYaml, JsExpression } from '../src/io/editors'
 import type { FileStep, PlanStep } from '../src/plan/types'
 import type { ZcfConfig, ZcfConfigInput } from '../src/schema/config'
 import { parseZcfConfig } from '../src/schema/config'
@@ -72,7 +72,10 @@ describe('dsh.plan', () => {
 
   it('keeps the key in .env and adds a route and the default model to a new home patch file', async () => {
     const plan = await dsh.plan(config({ provider: openaiProvider }), installed, context())
-    expect(plan.notices).toEqual([])
+    // The new home patch outranks dsh's Models page, which writes to the profile's patch.
+    expect(plan.notices).toEqual([
+      { level: 'info', message: { key: 'notice.dshHomePatch', params: { tool: 'dsh', file: 'cordis.patch.yml' } } },
+    ])
     expect(plan.steps).toEqual([
       {
         kind: 'file',
@@ -128,12 +131,53 @@ describe('dsh.plan', () => {
       '',
     ].join('\n')
     const ctx = context({}, { [PATCH]: before })
-    const step = patchStep((await dsh.plan(config({ provider: openaiProvider }), installed, ctx)).steps)
-    const after = await editYaml(before, step.edits)
+    const plan = await dsh.plan(config({ provider: openaiProvider }), installed, ctx)
+    expect(plan.notices).toEqual([])
+    const after = await editYaml(before, patchStep(plan.steps).edits)
     expect(after).toContain("# my overrides\n- id: hmr\n  disabled: !!js 'false'\n")
     expect(after).toContain('      mine:\n        apiKeyEnv: MINE_KEY\n      zcf:\n')
     expect(after).toContain('    provider: zcf\n    model: deepseek-chat\n    reasoningEffort: high\n')
     expect(after.match(/^- id: /gm)).toHaveLength(3)
+  })
+
+  it('edits the last of several patches for one entry, the one dsh applies', async () => {
+    const before = [
+      '- id: agent-default-model',
+      '  config: { provider: a, model: a }',
+      '- id: agent-default-model',
+      '  config: { provider: b, model: b }',
+      '',
+    ].join('\n')
+    const ctx = context({}, { [PATCH]: before })
+    const step = patchStep((await dsh.plan(config({ provider: openaiProvider }), installed, ctx)).steps)
+    expect(step.edits.slice(-2)).toEqual([
+      { path: [1, 'config', 'provider'], value: 'zcf' },
+      { path: [1, 'config', 'model'], value: 'deepseek-chat' },
+    ])
+  })
+
+  it('replaces an empty or !!js providers table with one that holds its route', async () => {
+    const files = ['', " !!js 'routes()'"].map(providers => `- id: llm-pi-ai\n  config:\n    providers:${providers}\n`)
+    const plans = await Promise.all(
+      files.map(before => dsh.plan(config({ provider: openaiProvider }), installed, context({}, { [PATCH]: before }))),
+    )
+    const edits = plans.map(plan => patchStep(plan.steps).edits)
+    for (const edit of edits)
+      expect(edit[0]).toMatchObject({ path: [0, 'config', 'providers'], value: { zcf: { api: 'openai-completions' } } })
+    const written = await Promise.all(files.map((before, index) => editYaml(before, edits[index]!)))
+    for (const text of written) expect(text).toContain('    providers:\n      zcf:\n')
+  })
+
+  it('leaves a patch file that is not a list alone', async () => {
+    const plan = await dsh.plan(
+      config({ provider: openaiProvider, mcpServers: { a: { type: 'stdio', command: 'a' } } }),
+      installed,
+      context({}, { [PATCH]: 'llm-pi-ai: {}\n' }),
+    )
+    expect(plan.steps).toEqual([])
+    expect(plan.notices).toEqual([
+      { level: 'warning', message: { key: 'notice.fileNotList', params: { tool: 'dsh', file: 'cordis.patch.yml' } } },
+    ])
   })
 
   it('replaces a config that is a !!js expression', async () => {
@@ -156,18 +200,43 @@ describe('dsh.plan', () => {
       installed,
       context(),
     )
-    expect(patchStep(plan.steps).edits[0]).toMatchObject({
+    const { edits } = patchStep(plan.steps)
+    expect(edits[0]).toMatchObject({
       value: {
         config: {
           providers: {
             zcf: {
               api: 'anthropic-messages',
               baseURL: 'https://relay.example.com',
-              headers: { Authorization: 'Bearer sk-relay' },
+              headers: { Authorization: new JsExpression('`Bearer ${process.env.ZCF_API_KEY}`') },
             },
           },
         },
       },
+    })
+    // The key stays in .env; the patch file only names the variable.
+    const written = await editYaml(undefined, edits)
+    expect(written).toContain('Authorization: !!js "`Bearer ${process.env.ZCF_API_KEY}`"')
+    expect(written).not.toContain('sk-relay')
+  })
+
+  it('takes the Anthropic or OpenAI protocol, since dsh does not serve Gemini', async () => {
+    const gemini = { name: 'G', apiKey: 'k', gemini: { model: 'gemini-3-pro' } }
+    const only = await dsh.plan(config({ provider: gemini }), installed, context())
+    expect(only.steps).toEqual([])
+    expect(only.notices).toEqual([
+      {
+        level: 'warning',
+        message: { key: 'notice.providerMissingProtocol', params: { tool: 'dsh', protocol: 'anthropic / openai' } },
+      },
+    ])
+    const both = await dsh.plan(
+      config({ provider: { ...openaiProvider, gemini: gemini.gemini } }),
+      installed,
+      context(),
+    )
+    expect(patchStep(both.steps).edits[0]).toMatchObject({
+      value: { config: { providers: { zcf: { api: 'openai-completions' } } } },
     })
   })
 
@@ -248,6 +317,66 @@ describe('dsh.plan', () => {
         ],
       },
     ])
+  })
+
+  it('reads ${NAME} references from the environment and skips names dsh cannot load', async () => {
+    const long = 'x'.repeat(33)
+    const plan = await dsh.plan(
+      config({
+        mcpServers: {
+          gh: { type: 'stdio', command: 'gh-mcp', env: { GITHUB_TOKEN: '${GITHUB_TOKEN}', PLAIN: 'a`b' } },
+          api: { type: 'http', url: 'https://a.example.com', headers: { Authorization: 'Bearer ${API_TOKEN}' } },
+          [long]: { type: 'stdio', command: 'x' },
+        },
+      }),
+      installed,
+      context(),
+    )
+    expect(plan.notices).toEqual([
+      { level: 'warning', message: { key: 'notice.mcpNameTooLong', params: { tool: 'dsh', name: long, max: 32 } } },
+    ])
+    const { edits } = patchStep(plan.steps)
+    expect(edits).toMatchObject([
+      {
+        value: {
+          insert: [
+            {
+              config: {
+                env: { GITHUB_TOKEN: new JsExpression("`${process.env.GITHUB_TOKEN ?? ''}`"), PLAIN: 'a`b' },
+              },
+            },
+            { config: { headers: { Authorization: new JsExpression("`Bearer ${process.env.API_TOKEN ?? ''}`") } } },
+          ],
+        },
+      },
+    ])
+
+    // Applied and planned again, nothing changes.
+    const written = await editYaml(undefined, edits)
+    const again = await dsh.plan(
+      config({
+        mcpServers: {
+          gh: { type: 'stdio', command: 'gh-mcp', env: { GITHUB_TOKEN: '${GITHUB_TOKEN}', PLAIN: 'a`b' } },
+          api: { type: 'http', url: 'https://a.example.com', headers: { Authorization: 'Bearer ${API_TOKEN}' } },
+        },
+      }),
+      installed,
+      context({}, { [PATCH]: written }),
+    )
+    expect(again.steps).toEqual([])
+  })
+
+  it('plans nothing for a file it wrote before', async () => {
+    const relay = {
+      name: 'Relay',
+      apiKey: 'sk-relay',
+      anthropic: { baseUrl: 'https://relay.example.com', authType: 'auth_token' as const },
+      models: { default: 'claude-sonnet-5' },
+    }
+    const first = await dsh.plan(config({ provider: relay }), installed, context())
+    const written = await editYaml(undefined, patchStep(first.steps).edits)
+    const again = await dsh.plan(config({ provider: relay }), installed, context({}, { [PATCH]: written }))
+    expect(again.steps.filter(step => step.kind === 'file' && step.format === 'yaml')).toEqual([])
   })
 
   it('leaves the file alone when nothing changes', async () => {

@@ -1,6 +1,6 @@
 import { join } from 'pathe'
 
-import { isTable, parseConfigText } from '../io/editors'
+import { isTable, JsExpression, parseConfigText } from '../io/editors'
 import type { CommandStep, KeyEdit, KeyPath, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
@@ -16,6 +16,9 @@ const ROUTE = 'zcf'
 const KEY_VARIABLE = 'ZCF_API_KEY'
 const MCP_PLUGIN = '@deepseek-ai/dsh-mcp-client'
 const MCP_ID_PREFIX = 'zcf-mcp-'
+/** `dsh-mcp-client` takes server names of 1 to 32 letters, digits, `_` and `-`. */
+const MCP_NAME_MAX = 32
+const PATCH_FILE = 'cordis.patch.yml'
 
 /**
  * Packages in dsh whose install scripts it needs, such as node-pty's prebuilt binary. npm 12
@@ -41,10 +44,34 @@ function dshHome(ctx: AdapterContext): string {
 
 type Entry = Record<string, unknown>
 
+/** `value` under `path`, as nested tables. */
+function nest(path: KeyPath, value: unknown): unknown {
+  return path.reduceRight<unknown>((inner, key) => ({ [key]: inner }), value)
+}
+
+function valueAt(config: Entry, path: KeyPath): unknown {
+  return path.reduce<unknown>((value, key) => (isTable(value) ? value[key] : undefined), config)
+}
+
 /**
- * The home patch layer, `$DSH_HOME/cordis.patch.yml`, applies to every profile. It is a list of
- * patches: `{ id, config }` replaces the config of the plugin entry with that id, and
- * `{ insert: [...] }` adds plugin entries. dsh has no command that edits it.
+ * The edit that sets `path` in `config` to `value`. A key on the way that holds no table, such
+ * as an empty `providers:` or a `!!js` expression, is replaced by one.
+ */
+function editWithin(config: Entry, path: KeyPath, value: unknown): { path: KeyPath; value: unknown } {
+  let table = config
+  for (const [depth, key] of path.slice(0, -1).entries()) {
+    const next = table[key]
+    if (!isTable(next)) return { path: path.slice(0, depth + 1), value: nest(path.slice(depth + 1), value) }
+    table = next
+  }
+  return { path, value }
+}
+
+/**
+ * The home patch layer, `$DSH_HOME/cordis.patch.yml`, applies to every profile, after the
+ * profile's own patch layer. It is a list of patches: `{ id, config }` replaces the whole config
+ * of the plugin entry with that id, and `{ insert: [...] }` adds plugin entries. dsh has no
+ * command that edits it.
  */
 class PatchList {
   readonly edits: KeyEdit[] = []
@@ -57,9 +84,9 @@ class PatchList {
     this.next = entries.length
   }
 
-  /** The index of the patch for plugin entry `id`. */
+  /** The index of the patch for plugin entry `id`; when there are several, dsh applies the last. */
   find(id: string): number {
-    return this.entries.findIndex(entry => entry.id === id && !('insert' in entry))
+    return this.entries.findLastIndex(entry => entry.id === id && !('insert' in entry))
   }
 
   /** An entry inserted by an earlier run, and the key path of its config. */
@@ -76,16 +103,25 @@ class PatchList {
   /**
    * Set `values` in the config of the patch for `id`, keeping its other keys. A missing patch, or
    * one whose config is a `!!js` expression, gets `whole` as its config instead.
+   * @returns Whether the patch is new.
    */
-  setConfig(id: string, values: [KeyPath, unknown][], whole: Entry): void {
+  setConfig(id: string, values: [KeyPath, unknown][], whole: Entry): boolean {
     const index = this.find(id)
-    if (index < 0) return this.append({ id, config: whole })
-    const { config } = this.entries[index]!
-    if (config !== undefined && !isTable(config)) {
-      this.edits.push({ path: [index, 'config'], value: whole })
-      return
+    if (index < 0) {
+      this.append({ id, config: whole })
+      return true
     }
-    for (const [path, value] of values) this.edits.push({ path: [index, 'config', ...path], value })
+    const { config } = this.entries[index]!
+    if (!isTable(config)) {
+      this.edits.push({ path: [index, 'config'], value: whole })
+      return false
+    }
+    for (const [path, value] of values) {
+      const edit = editWithin(config, path, value)
+      if (!sameJson(valueAt(config, edit.path), edit.value))
+        this.edits.push({ path: [index, 'config', ...edit.path], value: edit.value })
+    }
+    return false
   }
 
   append(entry: Entry): void {
@@ -94,7 +130,8 @@ class PatchList {
 }
 
 function dshRoute(provider: Provider): { route?: Entry; model?: string; notices: Notice[] } {
-  const found = piAiRoute(provider, TOOL)
+  // dsh-llm-pi-ai serves the OpenAI and Anthropic protocols, not pi-ai's Gemini one.
+  const found = piAiRoute(provider, TOOL, ['anthropic', 'openai'])
   if ('notice' in found) return { notices: [found.notice] }
 
   const { route } = found
@@ -104,13 +141,39 @@ function dshRoute(provider: Provider): { route?: Entry; model?: string; notices:
       apiKeyEnv: KEY_VARIABLE,
       api: route.api,
       baseURL: route.baseUrl,
-      // pi-ai's Anthropic client sends `x-api-key`; a gateway that wants a bearer token gets it as a header.
-      ...(route.bearer ? { headers: { Authorization: `Bearer ${provider.apiKey}` } } : {}),
+      // pi-ai's Anthropic client sends `x-api-key`; a gateway that wants a bearer token gets it as a
+      // header, read when dsh loads the file from the same variable dsh copies from its `.env`.
+      ...(route.bearer
+        ? { headers: { Authorization: new JsExpression(`\`Bearer \${process.env.${KEY_VARIABLE}}\``) } }
+        : {}),
       models: [{ id: route.model }],
     },
     model: route.model,
     notices: [],
   }
+}
+
+const REFERENCE = /\$\{([A-Za-z_]\w*)\}/
+
+/** `text` as part of a JavaScript template literal. */
+function templateText(text: string): string {
+  return text.replaceAll(/[\\`]|\$\{/g, match => `\\${match}`)
+}
+
+/**
+ * A value with `${NAME}` references, as Claude Code and `.mcp.json` files use them, reads those
+ * variables when dsh loads the file. dsh drops credential-like variables from the environment it
+ * passes to stdio servers, so this is how such a server gets its token.
+ */
+function dshValue(value: string): string | JsExpression {
+  if (!REFERENCE.test(value)) return value
+  const parts = value.split(REFERENCE)
+  const source = parts.map((part, index) => (index % 2 === 0 ? templateText(part) : `\${process.env.${part} ?? ''}`))
+  return new JsExpression(`\`${source.join('')}\``)
+}
+
+function dshValues(values: Record<string, string>): Record<string, string | JsExpression> {
+  return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, dshValue(value)]))
 }
 
 /** One `dsh-mcp-client` entry per server, in the shape dsh documents. */
@@ -120,7 +183,7 @@ function dshMcpConfig(name: string, server: McpServer): Entry {
       serverName: name,
       transport: 'streamable-http',
       url: server.url,
-      ...(Object.keys(server.headers).length > 0 ? { headers: server.headers } : {}),
+      ...(Object.keys(server.headers).length > 0 ? { headers: dshValues(server.headers) } : {}),
     }
   }
   // dsh spawns stdio servers through the MCP SDK's cross-spawn, so Windows `.cmd` shims need no `cmd /c`.
@@ -129,13 +192,17 @@ function dshMcpConfig(name: string, server: McpServer): Entry {
     transport: 'stdio',
     command: server.command,
     args: server.args,
-    ...(Object.keys(server.env).length > 0 ? { env: server.env } : {}),
+    ...(Object.keys(server.env).length > 0 ? { env: dshValues(server.env) } : {}),
   }
 }
 
-function addMcpServers(patches: PatchList, servers: Record<string, McpServer>): void {
+function addMcpServers(patches: PatchList, servers: Record<string, McpServer>, notices: Notice[]): void {
   const added: Entry[] = []
   for (const [name, server] of Object.entries(servers)) {
+    if (name.length > MCP_NAME_MAX) {
+      notices.push(notice('warning', 'notice.mcpNameTooLong', { tool: TOOL, name, max: MCP_NAME_MAX }))
+      continue
+    }
     const id = `${MCP_ID_PREFIX}${name}`
     const config = dshMcpConfig(name, server)
     const found = patches.findInserted(id)
@@ -158,14 +225,17 @@ export const dsh: ToolAdapter = {
     const steps: PlanStep[] = []
     const notices: Notice[] = []
     const home = dshHome(ctx)
-    const patchFile = join(home, 'cordis.patch.yml')
+    const patchFile = join(home, PATCH_FILE)
 
     if (!status.installed) steps.push(npmStep('step.install', PACKAGE))
 
     const data = await parseConfigText('yaml', await ctx.readFile(patchFile))
     const patches = new PatchList(Array.isArray(data) ? data : [])
+    // dsh refuses a patch file that is not a list; ZCF leaves it for the user to fix.
+    const usable = data === undefined || Array.isArray(data)
+    if (!usable) notices.push(notice('warning', 'notice.fileNotList', { tool: TOOL, file: PATCH_FILE }))
 
-    if (config.provider) {
+    if (config.provider && usable) {
       const { route, model, notices: routeNotices } = dshRoute(config.provider)
       notices.push(...routeNotices)
       if (route && model) {
@@ -176,26 +246,31 @@ export const dsh: ToolAdapter = {
           format: 'env',
           edits: [{ path: [KEY_VARIABLE], value: config.provider.apiKey }],
         })
-        // A patch replaces the plugin's whole config, so ZCF edits only its own route and keeps the others.
-        patches.setConfig('llm-pi-ai', [[['providers', ROUTE], route]], { providers: { [ROUTE]: route } })
-        patches.setConfig(
-          'agent-default-model',
-          [
-            [['provider'], ROUTE],
-            [['model'], model],
-          ],
-          { provider: ROUTE, model },
-        )
+        // A patch replaces the plugin's whole config, so in a patch already in this file ZCF edits
+        // only its own route and keeps the others.
+        const added = [
+          patches.setConfig('llm-pi-ai', [[['providers', ROUTE], route]], { providers: { [ROUTE]: route } }),
+          patches.setConfig(
+            'agent-default-model',
+            [
+              [['provider'], ROUTE],
+              [['model'], model],
+            ],
+            { provider: ROUTE, model },
+          ),
+        ]
+        // A new home patch hides what dsh's Models page saves in the profile's patch layer.
+        if (added.includes(true)) notices.push(notice('info', 'notice.dshHomePatch', { tool: TOOL, file: PATCH_FILE }))
       }
     }
 
-    addMcpServers(patches, config.mcpServers)
+    if (usable) addMcpServers(patches, config.mcpServers, notices)
 
     if (patches.edits.length > 0) {
       // One step for the whole file: the edits address patches by index, so they must apply together.
       steps.push({
         kind: 'file',
-        title: { key: 'step.writeConfig', params: { file: 'cordis.patch.yml' } },
+        title: { key: 'step.writeConfig', params: { file: PATCH_FILE } },
         path: patchFile,
         format: 'yaml',
         edits: patches.edits,

@@ -263,11 +263,27 @@ export function editDotenv(content: string | undefined, edits: readonly KeyEdit[
 type YamlModule = typeof import('yaml')
 let yamlModule: Promise<YamlModule> | undefined
 
+/**
+ * A `!!js` expression in a YAML file, which Cordis-based tools such as DeepSeek Harness evaluate
+ * when they load it. Read back from a file it is a plain string, its source; `toJSON` returns
+ * the same so a planned value compares equal to the one on disk.
+ */
+export class JsExpression {
+  constructor(readonly source: string) {}
+
+  toJSON(): string {
+    return this.source
+  }
+}
+
+const JS_TAG = 'tag:yaml.org,2002:js'
+const BOM = '\uFEFF'
+
 async function parseYaml(text: string) {
   // Only plans that touch YAML files pay for loading the YAML parser.
   yamlModule ??= import('yaml')
   const yaml = await yamlModule
-  const doc = yaml.parseDocument(text)
+  const doc = yaml.parseDocument(text.startsWith(BOM) ? text.slice(1) : text)
   const error = doc.errors[0]
   if (error) {
     const position = error.linePos?.[0]
@@ -276,28 +292,79 @@ async function parseYaml(text: string) {
   return { yaml, doc }
 }
 
+type YamlDocument = Awaited<ReturnType<typeof parseYaml>>['doc']
+
+function yamlNode(doc: YamlDocument, value: unknown): unknown {
+  if (value instanceof JsExpression) {
+    const node = doc.createNode(value.source)
+    node.tag = JS_TAG
+    return node
+  }
+  if (Array.isArray(value)) return doc.createNode(value.map(item => yamlNode(doc, item)))
+  if (isTable(value))
+    return doc.createNode(Object.fromEntries(Object.entries(value).map(([key, item]) => [key, yamlNode(doc, item)])))
+  return doc.createNode(value)
+}
+
 /**
- * Edit YAML key by key while keeping comments, layout and custom tags such as `!!js`.
- * A number in a key path indexes a sequence; the index one past the end appends.
+ * The block layout of a YAML file: how far a nested mapping is indented past its key, and whether
+ * a sequence under a key is indented past it (`key:\n  - item`) or not (`key:\n- item`).
+ */
+function detectYamlLayout(content: string): { indent: number; indentSeq: boolean } {
+  let indent: number | undefined
+  let indentSeq: boolean | undefined
+  const lines = content.split(/\r?\n/)
+  for (const [index, line] of lines.entries()) {
+    // A key that opens a block, counting any `- ` before it as indentation.
+    const key = /^((?: *- )* *)[^\s#-][^#]*:\s*$/.exec(line)
+    const next = key && /^( *)(- )?\S/.exec(lines[index + 1] ?? '')
+    if (!key || !next) continue
+    const step = next[1]!.length - key[1]!.length
+    if (next[2]) indentSeq ??= step > 0
+    else if (step > 0) indent ??= step
+    if (indent !== undefined && indentSeq !== undefined) break
+  }
+  return { indent: indent ?? 2, indentSeq: indentSeq ?? true }
+}
+
+/**
+ * Edit YAML key by key while keeping comments, custom tags such as `!!js`, the indentation, line
+ * endings and a byte order mark. Edits that change nothing are skipped, so a file that already
+ * has every value comes back byte for byte. A number in a key path indexes a sequence; the index
+ * one past the end appends.
  */
 export async function editYaml(content: string | undefined, edits: readonly KeyEdit[]): Promise<string> {
-  const { yaml, doc } = await parseYaml(content ?? '')
+  const original = content ?? ''
+  const { yaml, doc } = await parseYaml(original)
   // An empty flow collection (`[]` or `{}`) would otherwise keep every added entry on one line.
   if (yaml.isCollection(doc.contents) && doc.contents.items.length === 0) doc.contents.flow = false
 
+  let changed = false
   for (const edit of edits) {
     const unsafe = edit.path.find(key => UNSAFE_KEYS.has(String(key)))
     if (unsafe !== undefined) throw new Error(`Unsafe key in path: ${unsafe}`)
     if (edit.value === undefined) {
-      if (doc.hasIn(edit.path)) doc.deleteIn(edit.path)
+      if (!doc.hasIn(edit.path)) continue
+      doc.deleteIn(edit.path)
+      changed = true
       continue
     }
-    doc.setIn(edit.path, doc.createNode(edit.value))
+    const current = doc.getIn(edit.path, true)
+    const existing = yaml.isNode(current) ? current.toJS(doc) : current
+    if (current !== undefined && JSON.stringify(existing) === JSON.stringify(edit.value)) continue
+    changed = true
+    // Changing a plain scalar in place keeps the comment on its line.
+    const plain = edit.value === null || ['string', 'number', 'boolean'].includes(typeof edit.value)
+    if (yaml.isScalar(current) && plain && current.tag === undefined) current.value = edit.value
+    else doc.setIn(edit.path, yamlNode(doc, edit.value))
   }
 
   // A file with nothing but comments, and no edits that add content, stays as it was.
-  if (doc.contents === null) return content ?? ''
-  return withTrailingNewline(doc.toString())
+  if (!changed || doc.contents === null) return original
+  const text = doc.toString({ lineWidth: 0, ...detectYamlLayout(original) })
+  const eol = original.includes('\r\n') ? '\r\n' : '\n'
+  const output = withTrailingNewline(text).replaceAll('\n', eol)
+  return original.startsWith(BOM) ? `${BOM}${output}` : output
 }
 
 /** Parse a native config file; `undefined` when it is missing or not valid. */

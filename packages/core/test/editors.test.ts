@@ -7,6 +7,7 @@ import {
   editToml,
   editYaml,
   FileSyntaxError,
+  JsExpression,
   parseConfigText,
   parseDotenv,
   setAtPath,
@@ -337,6 +338,54 @@ describe('editYaml', () => {
         '',
       ].join('\n'),
     )
+  })
+
+  // Sequences flush with their key, CRLF, a byte order mark and a long line.
+  const handWritten = [
+    '\uFEFF# mine',
+    '- id: agent-default-model',
+    '  config:',
+    '    provider: mine # pinned by me',
+    '    model: m',
+    '- insert:',
+    '  - id: tools',
+    '    config:',
+    '      paths:',
+    '      - /a',
+    `      note: ${'x'.repeat(100)}`,
+    '',
+  ].join('\r\n')
+
+  it('returns a file that already has every value byte for byte', async () => {
+    const edits = [
+      { path: [0, 'config', 'provider'], value: 'mine' },
+      { path: [1, 'insert', 0, 'config', 'paths'], value: ['/a'] },
+      { path: [0, 'missing'], value: undefined },
+    ]
+    expect(await editYaml(handWritten, edits)).toBe(handWritten)
+  })
+
+  it('keeps the indentation, line endings, byte order mark, long lines and comments of a changed file', async () => {
+    const after = await editYaml(handWritten, [
+      { path: [0, 'config', 'provider'], value: 'zcf' },
+      { path: [1, 'insert', 0, 'config', 'paths', 1], value: '/b' },
+    ])
+    expect(after).toBe(
+      handWritten
+        .replace('provider: mine # pinned by me', 'provider: zcf # pinned by me')
+        .replace('- /a\r\n', '- /a\r\n      - /b\r\n'),
+    )
+    expect(await editYaml('a:\n    b: 1\n', [{ path: ['a', 'c'], value: [1] }])).toBe(
+      'a:\n    b: 1\n    c:\n        - 1\n',
+    )
+  })
+
+  it('writes a JsExpression as a !!js scalar that reads back as its source', async () => {
+    const value = new JsExpression('process.env.TOKEN')
+    const after = await editYaml('- id: a\n', [{ path: [0, 'env'], value: { TOKEN: value } }])
+    expect(after).toBe('- id: a\n  env:\n    TOKEN: !!js process.env.TOKEN\n')
+    expect(await parseConfigText('yaml', after)).toEqual([{ id: 'a', env: { TOKEN: 'process.env.TOKEN' } }])
+    expect(await editYaml(after, [{ path: [0, 'env', 'TOKEN'], value }])).toBe(after)
   })
 
   it('removes keys, ignoring ones that are not there', async () => {
