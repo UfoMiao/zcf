@@ -1,6 +1,8 @@
+import { parse } from 'jsonc-parser'
 import { join } from 'pathe'
 
-import type { CommandStep, Notice, PlanStep } from '../plan/types'
+import { isTable } from '../io/editors'
+import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import { detectCommand, envPath, notice, selfUpdateStep, skillSteps } from './shared'
@@ -55,6 +57,20 @@ function filled<T extends object>(value: T): T | undefined {
   return Object.keys(value).length > 0 ? value : undefined
 }
 
+/**
+ * Edits that bring `mcpServers.<name>` in line. An entry with the same transport (a command or a URL)
+ * is edited field by field, so settings ZCF does not manage (such as `envFile` or `auth`) stay; a new
+ * entry or a change of transport replaces it.
+ */
+function mcpEdits(name: string, server: McpServer, existing: unknown): KeyEdit[] {
+  const desired = cursorMcpServer(server)
+  const servers = isTable(existing) ? existing.mcpServers : undefined
+  const current = isTable(servers) ? servers[name] : undefined
+  const sameTransport = isTable(current) && 'command' in current === 'command' in desired
+  if (!sameTransport) return [{ path: ['mcpServers', name], value: desired }]
+  return Object.entries(desired).map(([key, value]) => ({ path: ['mcpServers', name, key], value }))
+}
+
 /** The server definition in the shape Cursor stores in `mcp.json`. */
 function cursorMcpServer(server: McpServer): Record<string, unknown> {
   if (server.type === 'http') return { url: server.url, headers: filled(server.headers) }
@@ -80,13 +96,17 @@ export const cursor: ToolAdapter = {
     if (config.provider) notices.push(notice('info', 'notice.providerNotSupported', { tool: TOOL }))
 
     // The CLI has no command that adds a server, so entries are written to mcp.json directly.
-    for (const [name, server] of Object.entries(config.mcpServers)) {
+    const mcpFile = join(cursorDir(ctx), 'mcp.json')
+    const servers = Object.entries(config.mcpServers)
+    const text = servers.length > 0 ? await ctx.readFile(mcpFile) : undefined
+    const existing: unknown = text ? parse(text, [], { allowTrailingComma: true }) : undefined
+    for (const [name, server] of servers) {
       steps.push({
         kind: 'file',
         title: { key: 'step.mcpAdd', params: { name } },
-        path: join(cursorDir(ctx), 'mcp.json'),
+        path: mcpFile,
         format: 'json',
-        edits: [{ path: ['mcpServers', name], value: cursorMcpServer(server) }],
+        edits: mcpEdits(name, server, existing),
       })
     }
 

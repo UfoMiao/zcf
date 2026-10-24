@@ -120,6 +120,18 @@ function filled(record: Record<string, string>): Record<string, string> | undefi
   return Object.keys(record).length > 0 ? record : undefined
 }
 
+/**
+ * Edits that bring `mcp.<name>` in line. An entry of the same type is edited field by field, so settings
+ * ZCF does not manage (such as `oauth` or `timeout`) stay; a new entry or a change of type replaces it.
+ */
+function mcpEdits(name: string, server: McpServer, existing: Record<string, unknown> | undefined): KeyEdit[] {
+  const desired = opencodeMcpServer(server)
+  const servers = existing?.mcp
+  const current = isTable(servers) ? servers[name] : undefined
+  if (!isTable(current) || current.type !== desired.type) return [{ path: ['mcp', name], value: desired }]
+  return Object.entries(desired).map(([key, value]) => ({ path: ['mcp', name, key], value }))
+}
+
 /** The server definition in the shape OpenCode stores under `mcp`. */
 function opencodeMcpServer(server: McpServer): Record<string, unknown> {
   if (server.type === 'http') return { type: 'remote', url: server.url, headers: filled(server.headers), enabled: true }
@@ -171,9 +183,7 @@ export const opencode: ToolAdapter = {
 
     // `opencode mcp add` only asks interactively, so each entry is written directly; an unchanged one is a no-op.
     for (const [name, server] of Object.entries(config.mcpServers)) {
-      fileSteps.push(
-        fileStep({ key: 'step.mcpAdd', params: { name } }, [{ path: ['mcp', name], value: opencodeMcpServer(server) }]),
-      )
+      fileSteps.push(fileStep({ key: 'step.mcpAdd', params: { name } }, mcpEdits(name, server, file.data)))
     }
 
     // A new file gets the schema link so editors can validate it.
