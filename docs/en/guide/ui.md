@@ -29,12 +29,12 @@ Secrets stay hidden. The API key and the values of MCP environment variables and
 | Keys | Action |
 |------|--------|
 | <kbd>↑</kbd> <kbd>↓</kbd> (or <kbd>k</kbd> <kbd>j</kbd>) | Move between rows or pages. |
-| <kbd>Enter</kbd> | Open a page, edit a field, or run an action. |
-| <kbd>←</kbd> <kbd>→</kbd> | Change a choice, such as an MCP server's type. |
+| <kbd>Enter</kbd> | Open a page, edit a field, confirm an edit, or run an action. |
+| <kbd>←</kbd> <kbd>→</kbd> or <kbd>Space</kbd> | Change a choice, such as an MCP server's type. |
 | <kbd>x</kbd> | Remove the selected item. |
-| <kbd>Esc</kbd> | Go back, or cancel an edit. |
-| <kbd>Ctrl</kbd>+<kbd>S</kbd> | Save. |
-| <kbd>q</kbd> | Quit. With unsaved changes, press it twice. |
+| <kbd>Esc</kbd> or <kbd>←</kbd> | Go back, or cancel an edit. |
+| <kbd>Ctrl</kbd>+<kbd>S</kbd> | Save. Confirm the field you are typing in with <kbd>Enter</kbd> first. |
+| <kbd>q</kbd> | Quit, from the page list. With unsaved changes, press it twice. |
 
 On the Apply page, <kbd>Enter</kbd> applies, <kbd>r</kbd> plans again, and the arrow keys scroll. The plan is made from the saved file, so the page asks you to save first if you have unsaved changes.
 
@@ -48,8 +48,8 @@ npx zcf ui --no-open    # only prints the address
 npx zcf ui --port 4567  # a fixed port
 ```
 
-The server listens on `127.0.0.1` only and answers only requests for its own address. The printed address ends with `#token=...`. The browser needs this token for every request, so a page from another site cannot use the server. Treat the address like a password while the server runs. Stop the server with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
+The server listens on `127.0.0.1` only and answers only requests for its own address. The printed address ends with `#token=...`. The page sends this token with every API request, so a page from another site cannot read or change your config through the server. Treat the address like a password while the server runs. Stop the server with <kbd>Ctrl</kbd>+<kbd>C</kbd>.
 
-The browser receives the config, because the page edits it. Plans and apply results come back masked: you see the diff of each file, with secrets replaced by `***`, and never the whole file.
+The browser receives the config, because the page edits it. Plans and apply results come back masked: you see the diff of each file ZCF edits, with secrets masked, and never the whole file. A long secret keeps its first 3 and last 2 characters, such as `sk-***Xy`, so you can tell which one it is.
 
 <kbd>Ctrl</kbd>+<kbd>S</kbd> (<kbd>⌘</kbd>+<kbd>S</kbd> on macOS) saves, the same as the Save button. With two tabs open on the same server, each tab saves only its own changes.

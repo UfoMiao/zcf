@@ -31,10 +31,12 @@ You keep one ZCF config: your provider, your MCP servers and your skills. ZCF in
 
 Supported tools: Claude Code, Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness.
 
+Once v5 is published:
+
 ```bash
 npx zcf            # edit the config in the terminal
 npx zcf ui         # or in the browser
-npx zcf plan       # see every command and a diff of every file it would change
+npx zcf plan       # see every command and a diff of each file ZCF would edit
 npx zcf apply -y   # install missing tools and write their settings
 npx zcf update     # update the tools with their own updaters
 ```

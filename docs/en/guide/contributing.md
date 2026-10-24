@@ -13,6 +13,8 @@ pnpm install
 pnpm dev plan --file ./my-zcf.json   # run the CLI from source
 ```
 
+`pnpm dev ui` serves the web UI from `packages/web/dist`, so run `pnpm build` once first.
+
 | Package | What it is |
 |---------|------------|
 | `packages/core` | The engine: the config schema, one adapter per tool, plan and apply, and the editors for JSON, TOML, YAML and `.env` files. It has no terminal or UI code. |
@@ -41,6 +43,6 @@ Tests never touch your real home folder or run real installers. Adapters receive
 
 ## Adding a tool
 
-A tool is one adapter in `packages/core/src/adapters`. It detects the tool, plans its install, provider, MCP servers and skills, and plans its update. Use the tool's own commands where they exist. Cover a fresh install, an existing config and Windows paths with the fake runner. No command or UI code needs to change unless the config schema grows.
+A tool is one adapter in `packages/core/src/adapters`. It detects the tool, plans its install, provider, MCP servers and skills, and plans its update. Add the tool's id and name in `packages/core/src/schema/config.ts` and register the adapter in `packages/core/src/adapters/index.ts`; the CLI and both UIs pick it up from there. Use the tool's own commands where they exist. Cover a fresh install, an existing config and Windows paths with the fake runner.
 
 Pull requests use Conventional Commits, and their description follows the repository's template.

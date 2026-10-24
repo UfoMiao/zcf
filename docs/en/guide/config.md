@@ -66,7 +66,9 @@ One provider shared by every tool. It is optional; without it, ZCF leaves each t
 | `models.default` | The main model. |
 | `models.haiku`, `models.sonnet`, `models.opus` | Models for Claude Code's three tiers. |
 
-Each protocol block is optional. A tool uses the protocol it speaks: Claude Code uses `anthropic`, Codex uses `openai`, and Gemini CLI uses `gemini`. OpenCode, Pi and DeepSeek Harness use whichever block is present. When a tool's protocol is missing, the plan shows a notice and that tool keeps its current provider. Cursor CLI only uses Cursor's own models. See [Tools](./tools) for details.
+`name` and `apiKey` are required, and so is `baseUrl` inside `anthropic` and `openai`.
+
+Each protocol block is optional. A tool uses the protocol it speaks: Claude Code uses `anthropic`, Codex uses `openai`, and Gemini CLI uses `gemini`. OpenCode uses `anthropic` or `openai`, Pi uses the first block that has a model, and DeepSeek Harness uses `anthropic`, then `openai`. When a tool's protocol is missing, the plan shows a notice and that tool keeps its current provider. Cursor CLI only uses Cursor's own models. See [Tools](./tools) for details.
 
 To fill these fields from a known provider, see [Provider presets](./providers).
 
@@ -102,7 +104,7 @@ Skill sources, each installed with [`npx skills add`](https://github.com/vercel-
 | `source` | Anything `npx skills add` accepts: `owner/repo`, a git URL, or a local path. |
 | `skills` | Only install these skills from the source. Leave it out or empty to install all of them. |
 
-A source whose skills are all installed already is skipped.
+A source that lists its skills is skipped once all of them are installed. A source without a list is installed again on every apply, because ZCF can't tell which skills it holds.
 
 ## `mirror`
 

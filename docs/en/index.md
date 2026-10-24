@@ -107,7 +107,7 @@ npx zcf ui    # or in the browser
 
 ### Why ZCF
 
-- **See before you change**: `zcf plan` shows every command and every file change as a diff, with secrets masked. Nothing changes until you apply.
+- **See before you change**: `zcf plan` shows every command ZCF would run and a diff of every file it would edit, with secrets masked. Nothing changes until you apply.
 - **Your files stay yours**: ZCF edits only the keys it manages, keeps your comments and formatting, and backs up each file before its first change.
 - **The tools' own commands**: `claude mcp add-json`, `codex mcp add`, `npx skills add`, `claude update` and so on. ZCF is not a gateway or a proxy.
 - **Fast**: `zcf --version` starts in under 60 ms, and tools are configured in parallel.
