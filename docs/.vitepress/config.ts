@@ -101,84 +101,29 @@ const enSidebar: DefaultTheme.SidebarItem[] = createSidebar([
 
 const jaSidebar: DefaultTheme.SidebarItem[] = createSidebar([
   {
-    text: 'プロジェクト紹介',
+    text: 'はじめる',
     items: [
       { text: 'プロジェクト紹介', link: 'index' },
+      { text: 'はじめに', link: 'guide/' },
+      { text: 'v3 からの移行', link: 'guide/v3' },
     ],
   },
   {
-    text: 'はじめに',
+    text: '使う',
     items: [
-      { text: 'クイックスタート', link: 'getting-started/' },
-      { text: '使用ガイド', link: 'getting-started/installation' },
+      { text: '設定ファイル', link: 'guide/config' },
+      { text: 'コマンド', link: 'guide/commands' },
+      { text: 'ターミナル UI と Web UI', link: 'guide/ui' },
+      { text: 'プロバイダープリセット', link: 'guide/providers' },
+      { text: 'ミラー', link: 'guide/mirrors' },
     ],
   },
   {
-    text: '機能特性',
+    text: 'リファレンス',
     items: [
-      { text: '機能概要', link: 'features/' },
-      { text: 'Claude Code 設定機能', link: 'features/claude-code' },
-      { text: 'Codex サポート', link: 'features/codex' },
-      { text: 'ワークフローシステム', link: 'features/workflows' },
-      { text: 'MCP サービス統合', link: 'features/mcp' },
-      { text: 'Claude Code Router', link: 'features/ccr' },
-      { text: 'ccusage 使用分析', link: 'features/ccusage' },
-      { text: 'CCometixLine ステータスバー', link: 'features/cometix' },
-      { text: 'マルチ設定とバックアップ', link: 'features/multi-config' },
-    ],
-  },
-  {
-    text: '上級ガイド',
-    items: [
-      { text: '上級ガイド', link: 'advanced/' },
-      { text: '設定管理', link: 'advanced/configuration' },
-      { text: 'API プロバイダープリセット', link: 'advanced/api-providers' },
-      { text: 'テンプレートと出力スタイル', link: 'advanced/templates' },
-      { text: '国際化と言語', link: 'advanced/i18n' },
-      { text: 'トラブルシューティング', link: 'advanced/troubleshooting' },
-    ],
-  },
-  {
-    text: 'CLI コマンド',
-    items: [
-      { text: 'コマンド概要', link: 'cli/' },
-      { text: 'zcf init', link: 'cli/init' },
-      { text: 'zcf update', link: 'cli/update' },
-      { text: 'メインメニュー', link: 'cli/menu' },
-      { text: 'CCR プロキシ管理', link: 'cli/ccr' },
-      { text: '使用分析 ccu', link: 'cli/ccu' },
-      { text: 'アンインストールとクリーンアップ', link: 'cli/uninstall' },
-      { text: '設定切り替え', link: 'cli/config-switch' },
-      { text: 'バージョンチェック', link: 'cli/check-updates' },
-    ],
-  },
-  {
-    text: 'ワークフロー詳細',
-    items: [
-      { text: 'ワークフロー概要', link: 'workflows/' },
-      { text: 'ZCF 6段階ワークフロー', link: 'workflows/zcf-workflow' },
-      { text: '機能開発ワークフロー', link: 'workflows/feat' },
-      { text: 'BMad アジャイルプロセス', link: 'workflows/bmad' },
-      { text: 'Spec ワークフロー統合', link: 'workflows/spec' },
-      { text: 'Git スマートコマンド', link: 'workflows/git-commands' },
-    ],
-  },
-  {
-    text: 'ベストプラクティス',
-    items: [
-      { text: 'ベストプラクティス', link: 'best-practices/' },
-      { text: '使用のヒント', link: 'best-practices/tips' },
-      { text: 'Worktree 並列開発', link: 'best-practices/worktree' },
-      { text: '出力スタイル戦略', link: 'best-practices/output-styles' },
-    ],
-  },
-  {
-    text: '開発ドキュメント',
-    items: [
-      { text: '貢献者向け', link: 'development/' },
-      { text: '貢献ガイド', link: 'development/contributing' },
-      { text: 'アーキテクチャドキュメント', link: 'development/architecture' },
-      { text: 'テストガイド', link: 'development/testing' },
+      { text: 'ツール', link: 'guide/tools' },
+      { text: 'バックアップとトラブルシューティング', link: 'guide/troubleshooting' },
+      { text: '貢献ガイド', link: 'guide/contributing' },
     ],
   },
 ], '/ja-JP')
@@ -268,11 +213,10 @@ export default defineConfig({
         },
         nav: [
           { text: 'ホーム', link: '/ja-JP/' },
-          { text: 'はじめに', link: '/ja-JP/getting-started/' },
-          { text: '機能特性', link: '/ja-JP/features/' },
-          { text: 'CLI', link: '/ja-JP/cli/' },
-          { text: 'ワークフロー', link: '/ja-JP/workflows/' },
-          { text: 'ベストプラクティス', link: '/ja-JP/best-practices/' },
+          { text: 'はじめに', link: '/ja-JP/guide/' },
+          { text: '設定', link: '/ja-JP/guide/config' },
+          { text: 'コマンド', link: '/ja-JP/guide/commands' },
+          { text: 'ツール', link: '/ja-JP/guide/tools' },
         ],
         sidebar: {
           '/ja-JP/': jaSidebar,

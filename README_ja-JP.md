@@ -18,35 +18,35 @@
 
 **✨ 完全ドキュメント**: [ドキュメント入口](https://zcf.ufomiao.com/ja-JP/)
 
-> ゼロ設定、ワンクリックで Claude Code & Codex 環境セットアップ - 多言語設定、インテリジェントプロキシシステム、パーソナライズされたAIアシスタント対応
+> すべての AI コーディングツールの設定を 1 つに。ZCF は選んだツールをインストールし、各ツール固有の設定を書き込みます。
   </p>
 </div>
 
 > [!IMPORTANT]
-> `main` ブランチは **ZCF v5** として作り直し中です。1 つの設定を Claude Code、Codex、Gemini CLI、OpenCode それぞれのネイティブ設定として書き込みます。v5 は未公開のため、`npx zcf` で入るのは引き続き v3 です（ソースは [`zcf@3.7.3`](https://github.com/UfoMiao/zcf/tree/zcf@3.7.3) タグ）。設計は [ADR 002](docs/adr/002-v5-architecture.md) を参照してください。
+> これは未公開の書き直し版 **ZCF v5** です。公開されるまで、`npx zcf` で入るのは引き続き v3 です（ソースは [`zcf@3.7.3`](https://github.com/UfoMiao/zcf/tree/zcf@3.7.3) タグ）。[zcf.ufomiao.com](https://zcf.ufomiao.com/ja-JP/) も v3 の内容です。ソースから v5 を試すには [貢献ガイド](docs/ja-JP/guide/contributing.md) を参照してください。
 
 ## 🚀 クイックスタート
 
-- 推奨：`npx zcf` でインタラクティブメニューを開き、必要な操作を選択。
-- よく使うコマンド：
+ZCF の設定は 1 つだけです。プロバイダー、MCP サーバー、スキルをそこにまとめます。ZCF は選んだツールをインストールし、`claude mcp add-json` や `npx skills add` などツール自身のコマンドで各ツールの設定を書き込みます。
+
+対応ツール: Claude Code、Codex、Gemini CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness。
+
+v5 の公開後:
 
 ```bash
-npx zcf i        # フル初期化：インストール + ワークフロー + API/CCR + MCP
-npx zcf u        # ワークフローのみ更新
-npx zcf --lang ja  # インターフェース言語を切り替え（例）
+npx zcf            # ターミナルで設定を編集する
+npx zcf ui         # またはブラウザーで編集する
+npx zcf plan       # ZCF が実行するすべてのコマンドと、編集する各ファイルの diff を確認する
+npx zcf apply -y   # 足りないツールをインストールし、設定を書き込む
+npx zcf update     # 各ツール自身のアップデーターでツールを更新する
 ```
 
-- 非対話例（プロバイダープリセット）：
-
-```bash
-npx zcf i -s -p 302ai -k "sk-xxx"
-```
-
-より詳しい使い方・オプション・ワークフローはドキュメントを参照してください。
+適用するまで何も変わりません。ZCF は自分が管理するキーだけを編集し、コメントや書式を残し、変更前に各ファイルをバックアップし、キーを出力することはありません。v3 から移行する場合は [v3 からの移行](docs/ja-JP/guide/v3.md) を参照してください。
 
 ## 📖 完全ドキュメント
 
-- https://zcf.ufomiao.com/ja-JP/
+- [はじめに](docs/ja-JP/guide/index.md)、[設定ファイル](docs/ja-JP/guide/config.md)、[コマンド](docs/ja-JP/guide/commands.md)、[ツール](docs/ja-JP/guide/tools.md)
+- アーキテクチャ: [ADR 002](docs/adr/002-v5-architecture.md)
 
 ## ♥️ スポンサー
 
