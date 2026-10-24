@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { maskSecrets, quoteArg, secretVariants, tildify } from '../src/render'
+import { collectSecrets, maskSecrets, quoteArg, secretVariants, tildify } from '../src/render'
 
 describe('render helpers', () => {
   it('quotes only arguments that need it', () => {
@@ -32,5 +32,17 @@ describe('render helpers', () => {
     expect(maskSecrets(json, secrets)).not.toContain('ss')
     expect(maskSecrets(quoteArg(json), secrets)).not.toContain('wo')
     expect(maskSecrets(quoteArg(secret), secrets)).not.toContain('wo')
+  })
+
+  it('masks short credentials where they appear as a whole quoted value', () => {
+    const secrets = collectSecrets({
+      version: 1,
+      tools: [],
+      mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'abc' } } },
+      skills: [],
+    })
+    const json = JSON.stringify({ env: { PASSWORD: 'abc' } })
+    expect(maskSecrets(quoteArg(json), secrets)).toBe(`'{"env":{"PASSWORD":"***"}}'`)
+    expect(maskSecrets('/tmp/abcdef', secrets)).toBe('/tmp/abcdef')
   })
 })

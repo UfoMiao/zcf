@@ -28,7 +28,12 @@ export function collectSecrets(config: ZcfConfig, extra: readonly string[] = [])
       if (part.length >= 8) secrets.add(part)
     }
   }
-  return secretVariants([...secrets].filter(secret => secret.length >= 4))
+  const long = [...secrets].filter(secret => secret.length >= 4)
+  // A short value would match all over the output, so it is only masked as a whole JSON string.
+  const short = [...secrets]
+    .filter(secret => secret.length > 0 && secret.length < 4)
+    .map(secret => JSON.stringify(secret))
+  return [...secretVariants(long), ...short].toSorted((a, b) => b.length - a.length)
 }
 
 /**
@@ -52,7 +57,8 @@ export function maskSecrets(text: string, secrets: readonly string[]): string {
   let masked = text
   // Long secrets keep a few characters so people can tell which one it is; short ones are hidden whole.
   for (const secret of secrets) {
-    const hint = secret.length >= 12 ? `${secret.slice(0, 3)}***${secret.slice(-2)}` : '***'
+    const quoted = secret.length > 1 && secret.startsWith('"') && secret.endsWith('"')
+    const hint = secret.length >= 12 ? `${secret.slice(0, 3)}***${secret.slice(-2)}` : quoted ? '"***"' : '***'
     // A callback, so `$&` and similar in the secret are inserted literally, not as replacement patterns.
     masked = masked.replaceAll(secret, () => hint)
   }
