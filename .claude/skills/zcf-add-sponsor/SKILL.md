@@ -30,7 +30,7 @@ Quickly onboard a new **corporate sponsor** across the ZCF project: README spons
 - `--name <name>` — Display name (e.g. `FooAI`)
 - `--url <url>` — Affiliate/registration URL (used in every link)
 - `--id <provider-id>` — API provider id, kebab-case (only required with `--with-api`, e.g. `fooai`)
-- `--logo <path>` — Local logo path under `src/assets/` (only required with `--with-ad`, e.g. `./assets/fooai.png`)
+- `--logo <path>` — Local logo path under `assets/` (only required with `--with-ad`, e.g. `./assets/fooai.png`)
 - `--badge <emoji>` — Trailing emoji badge for the list bullet (default: `🎁`)
 
 ## Context
@@ -69,7 +69,7 @@ Validation:
     Provider id MUST be kebab-case, lowercase, unique across existing ids in src/config/api-providers.ts
   - If WITH_AD: LOGO_PATH required → if missing, prompt user.
     Verify the logo file exists at the given path (relative to repo root).
-    If not, instruct the user to place the logo under src/assets/ first and abort.
+    If not, instruct the user to place the logo under assets/ first and abort.
 ```
 
 ### 2. Collect missing sponsor information (interactive)
@@ -174,7 +174,7 @@ Then run `pnpm typecheck` and `pnpm vitest run tests/unit/config/api-providers.t
 ✓ If --with-api: pnpm typecheck and the api-providers test pass
 ✓ No duplicate ids in API_PROVIDER_PRESETS
 ✓ All URLs identical across files
-✓ Logo file exists at src/assets/<filename> when --with-ad is used
+✓ Logo file exists at assets/<filename> when --with-ad is used
 ```
 
 ### 8. Summary report
@@ -211,7 +211,7 @@ Next steps:
 - **NEVER** modify any sponsor entries other than the ones being added
 - **NEVER** reorder existing sponsors
 - **ALWAYS** keep the three locale READMEs in sync (same bullet count, same URL, semantically equivalent text)
-- **ALWAYS** verify logo file existence under `src/assets/` before writing ad cards
+- **ALWAYS** verify logo file existence under `assets/` before writing ad cards
 - **ALWAYS** validate the API preset with `pnpm typecheck` and the api-providers test after editing
 - **DO NOT** create commits or push — leave that to the user / `/zcf-pr`
 - **DO NOT** invent new section headings; reuse the exact existing ones (`【Corporate Sponsors】` / `【企业赞助商】` / `【企業スポンサー】`)
