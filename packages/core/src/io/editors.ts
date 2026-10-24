@@ -1,5 +1,5 @@
 import type { ParseError } from 'jsonc-parser'
-import { applyEdits, findNodeAtLocation, modify, parse, parseTree } from 'jsonc-parser'
+import { applyEdits, findNodeAtLocation, getNodeValue, modify, parse, parseTree } from 'jsonc-parser'
 
 import type { FileFormat, KeyEdit } from '../plan/types'
 
@@ -31,6 +31,18 @@ function withTrailingNewline(content: string): string {
   return content.endsWith('\n') ? content : `${content}\n`
 }
 
+/** Whether two JSON values are equal, whatever the order of their keys. */
+function sameJson(a: unknown, b: unknown): boolean {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return Array.isArray(a) && Array.isArray(b) && a.length === b.length && a.every((item, i) => sameJson(item, b[i]))
+  }
+  if (isTable(a) && isTable(b)) {
+    const keys = Object.keys(a)
+    return keys.length === Object.keys(b).length && keys.every(key => key in b && sameJson(a[key], b[key]))
+  }
+  return a === b
+}
+
 /**
  * Edit JSON (or JSONC) key by key. Comments, key order and indentation of the
  * untouched parts stay exactly as they were.
@@ -46,8 +58,11 @@ export function editJson(content: string | undefined, edits: readonly KeyEdit[])
   const formattingOptions = compact ? undefined : { insertSpaces: true, tabSize: detectIndent(text), eol: '\n' }
 
   for (const edit of edits) {
+    const node = findNodeAtLocation(parseTree(text)!, [...edit.path])
     // jsonc-parser throws when removing a key whose parent is missing; there is nothing to remove.
-    if (edit.value === undefined && !findNodeAtLocation(parseTree(text)!, [...edit.path])) continue
+    if (edit.value === undefined && !node) continue
+    // Setting a value it already has would still reformat it, so a second apply would change the file again.
+    if (node && edit.value !== undefined && sameJson(getNodeValue(node), edit.value)) continue
     text = applyEdits(text, modify(text, [...edit.path], edit.value, { formattingOptions }))
   }
 
