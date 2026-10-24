@@ -43,7 +43,8 @@ Both editors work on the same file, `~/.ufomiao/zcf/zcf.json`, and have the same
 2. **Provider**: start from a [preset](./providers) or fill in the endpoint and API key yourself.
 3. **MCP servers**: add `stdio` servers (a command) or `http` servers (a URL).
 4. **Skills**: add skill sources that `npx skills add` accepts.
-5. **Apply**: see what will change, then apply it.
+5. **Settings**: settings for ZCF itself; today, the download mirror.
+6. **Apply**: see what will change, then apply it.
 
 Press <kbd>Ctrl</kbd>+<kbd>S</kbd> to save. See [Terminal and web UI](./ui) for all the keys.
 
