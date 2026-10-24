@@ -1,7 +1,10 @@
+import { join } from 'pathe'
+
 import type { Notice } from '../plan/types'
 import type { Provider, ProviderProtocol, ToolId } from '../schema/config'
 import { protocolModel } from '../schema/config'
 import { notice } from './shared'
+import type { AdapterContext } from './types'
 
 /** The wire protocols of pi-ai, the model layer behind pi and DeepSeek Harness. */
 export type PiAiApi = 'anthropic-messages' | 'openai-completions' | 'google-generative-ai'
@@ -54,4 +57,12 @@ export function piAiRoute(provider: Provider, tool: ToolId): { route: PiAiRoute 
   const protocol = (['openai', 'gemini', 'anthropic'] as const).find(name => provider[name])
   if (protocol) return { notice: notice('warning', 'notice.modelMissing', { tool, protocol }) }
   return { notice: notice('warning', 'notice.providerMissingProtocol', { tool, protocol: PROTOCOLS.join(' / ') }) }
+}
+
+/** pi and DeepSeek Harness expand a leading `~` in their home overrides, such as `PI_CODING_AGENT_DIR=~/pi`. */
+export function expandHome(ctx: AdapterContext, path: string): string {
+  if (path === '~') return ctx.home
+  if (path.startsWith('~/') || (ctx.platform === 'win32' && path.startsWith('~\\')))
+    return join(ctx.home, path.slice(2))
+  return path
 }

@@ -204,6 +204,18 @@ describe('pi.plan', () => {
     expect(after).toContain('"zcf"')
   })
 
+  it('expands a leading ~ in PI_CODING_AGENT_DIR, as pi does', async () => {
+    const provider = { name: 'P', apiKey: 'k', openai: { baseUrl: 'https://o.example.com/v1', model: 'm' } }
+    const paths = async (env: Record<string, string>, platform: NodeJS.Platform = 'linux') => {
+      const plan = await pi.plan(config({ provider }), installed, context({ env, platform }))
+      return plan.steps[0]!.kind === 'file' ? plan.steps[0]!.path : ''
+    }
+    expect(await paths({ PI_CODING_AGENT_DIR: '~/custom-pi' })).toBe('/home/me/custom-pi/models.json')
+    expect(await paths({ PI_CODING_AGENT_DIR: '~' })).toBe('/home/me/models.json')
+    expect(await paths({ PI_CODING_AGENT_DIR: '~\\pi' }, 'win32')).toBe('/home/me/pi/models.json')
+    expect(await paths({ PI_CODING_AGENT_DIR: '~other/pi' })).toBe('~other/pi/models.json')
+  })
+
   it('adds MCP servers with pi mcp add and skips the ones already in mcp.json', async () => {
     const files = {
       [`${AGENT}/mcp.json`]: JSON.stringify({
