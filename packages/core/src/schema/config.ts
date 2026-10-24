@@ -96,6 +96,12 @@ export interface ConfigIssue {
 
 export type ParseConfigResult = { success: true; config: ZcfConfig } | { success: false; issues: ConfigIssue[] }
 
+/** Drop valibot's "received <value>" clause: the value may be a credential pasted into the wrong field. */
+function withoutReceived(message: string, received: string): string {
+  const at = message.lastIndexOf(received)
+  return at > 0 ? message.slice(0, at).replace(/:?\s*(?:but\s+)?received\s*$/i, '') : message
+}
+
 export function parseZcfConfig(input: unknown): ParseConfigResult {
   const result = v.safeParse(ZcfConfigSchema, input)
   if (result.success) return { success: true, config: result.output }
@@ -104,7 +110,7 @@ export function parseZcfConfig(input: unknown): ParseConfigResult {
     success: false,
     issues: result.issues.map(issue => ({
       path: v.getDotPath(issue) ?? '',
-      message: issue.message,
+      message: withoutReceived(issue.message, issue.received),
     })),
   }
 }
