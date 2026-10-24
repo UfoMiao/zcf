@@ -63,7 +63,19 @@ export async function refreshWindowsPath(): Promise<void> {
       .map(value => value.trim())
       .filter(Boolean)
     const currentEntries = (process.env.PATH || '').split(';').map(value => value.trim()).filter(Boolean)
-    process.env.PATH = [...new Set([...persistedEntries, ...currentEntries])].join(';')
+    // Keep the current order so session-specific entries (version managers, shims)
+    // still win, and only append persisted entries the process does not know yet.
+    // Windows paths are case-insensitive, so compare them that way.
+    const seen = new Set(currentEntries.map(entry => entry.toLowerCase()))
+    const newEntries = persistedEntries.filter((entry) => {
+      const key = entry.toLowerCase()
+      if (seen.has(key))
+        return false
+      seen.add(key)
+      return true
+    })
+    if (newEntries.length > 0)
+      process.env.PATH = [...currentEntries, ...newEntries].join(';')
   }
   catch {
     // PATH refresh is best-effort; installation verification still runs.
