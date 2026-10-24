@@ -1,7 +1,26 @@
 import type { ParseError } from 'jsonc-parser'
-import { applyEdits, findNodeAtLocation, modify, parse, parseTree, printParseErrorCode } from 'jsonc-parser'
+import { applyEdits, findNodeAtLocation, modify, parse, parseTree } from 'jsonc-parser'
 
 import type { FileFormat, KeyEdit } from '../plan/types'
+
+/** A native config file ZCF cannot parse. Front ends translate it from `format`, `line` and `column`. */
+export class FileSyntaxError extends Error {
+  override name = 'FileSyntaxError'
+
+  constructor(
+    readonly format: FileFormat,
+    readonly line: number,
+    readonly column: number,
+    readonly path?: string,
+  ) {
+    super(`${path ?? 'The file'} is not valid ${format.toUpperCase()} (line ${line}, column ${column})`)
+  }
+}
+
+function lineAndColumn(text: string, offset: number): [line: number, column: number] {
+  const lines = text.slice(0, offset).split('\n')
+  return [lines.length, lines.at(-1)!.length + 1]
+}
 
 function detectIndent(content: string): number {
   const match = /^( +)\S/m.exec(content)
@@ -20,8 +39,7 @@ export function editJson(content: string | undefined, edits: readonly KeyEdit[])
   let text = content?.trim() ? content : '{}\n'
   const errors: ParseError[] = []
   parseTree(text, errors, { allowTrailingComma: true })
-  if (errors.length > 0)
-    throw new Error(`Not valid JSON: ${printParseErrorCode(errors[0]!.error)} at offset ${errors[0]!.offset}`)
+  if (errors.length > 0) throw new FileSyntaxError('json', ...lineAndColumn(text, errors[0]!.offset))
 
   const formattingOptions = {
     insertSpaces: true,
@@ -79,7 +97,15 @@ export async function editToml(content: string | undefined, edits: readonly KeyE
   tomlModule ??= import('@decimalturn/toml-patch')
   const toml = await tomlModule
   const text = content ?? ''
-  const data: unknown = toml.parse(text)
+  let data: unknown
+  try {
+    data = toml.parse(text)
+  } catch (error) {
+    // toml-patch reports a 1-based line and a 0-based column.
+    const { line, column } = (error ?? {}) as { line?: unknown; column?: unknown }
+    if (typeof line === 'number' && typeof column === 'number') throw new FileSyntaxError('toml', line, column + 1)
+    throw error
+  }
   if (!isTable(data)) throw new Error('Not a TOML table')
 
   for (const edit of edits) setAtPath(data, edit.path, edit.value)

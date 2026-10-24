@@ -117,6 +117,15 @@ describe('zcf plan', () => {
     expect(stdout).not.toContain('kept-token-value')
   })
 
+  it('names a broken native config file in the chosen language', async () => {
+    await writeConfig(fullConfig)
+    await mkdir(join(home, '.claude'))
+    await writeFile(join(home, '.claude', 'settings.json'), '{\n  "env": ')
+    const { code, stderr } = await run('plan', '--lang', 'zh-CN', '--tools', 'claude-code')
+    expect(code).toBe(EXIT_ERROR)
+    expect(stderr).toContain(`${join(home, '.claude', 'settings.json')} 不是有效的 JSON（第 2 行，第 10 列）`)
+  })
+
   it('speaks Chinese with --lang zh-CN', async () => {
     await writeConfig(fullConfig)
     const { stdout } = await run('plan', '--lang', 'zh-CN', '--tools', 'claude-code')

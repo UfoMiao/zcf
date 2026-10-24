@@ -60,4 +60,12 @@ describe('previewFileStep', () => {
     expect(await parseConfigText('toml', '[oops\n')).toBeUndefined()
     expect(await parseConfigText('json', '  ')).toBeUndefined()
   })
+
+  it('names the file when the original cannot be parsed', async () => {
+    await expect(previewFileStep(step, async () => '{ "env": ')).rejects.toMatchObject({
+      name: 'FileSyntaxError',
+      path: step.path,
+      line: 1,
+    })
+  })
 })
