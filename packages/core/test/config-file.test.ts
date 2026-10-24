@@ -1,9 +1,15 @@
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 
 import { join } from 'pathe'
 import { describe, expect, it } from 'vitest'
 
-import { defaultConfigPath, loadConfigFile } from '../src/config-file'
+import {
+  defaultConfigPath,
+  jsonEditsBetween,
+  loadConfigDraft,
+  loadConfigFile,
+  saveConfigDraft,
+} from '../src/config-file'
 import { tempDir } from './helpers'
 
 describe('loadConfigFile', () => {
@@ -42,5 +48,51 @@ describe('loadConfigFile', () => {
       success: false,
       issues: [{ path: 'version' }],
     })
+  })
+})
+
+describe('config drafts', () => {
+  it('reads a missing file as an empty version 1 config, and reports broken JSON', async () => {
+    const dir = await tempDir()
+    expect(await loadConfigDraft(join(dir, 'zcf.json'))).toEqual({ draft: { version: 1 }, exists: false })
+    await writeFile(join(dir, 'broken.json'), '{\n  "tools": [')
+    expect(await loadConfigDraft(join(dir, 'broken.json'))).toEqual({
+      issues: [{ path: '', message: { key: 'configIssue.syntax', params: { line: 2, column: 13 } } }],
+    })
+  })
+
+  it('reads an invalid config as written, for editing', async () => {
+    const path = join(await tempDir(), 'zcf.json')
+    await writeFile(path, '{ "version": 1, "tools": ["vscode"] }')
+    expect(await loadConfigDraft(path)).toEqual({ draft: { version: 1, tools: ['vscode'] }, exists: true })
+  })
+
+  it('saves only what changed and keeps comments elsewhere', async () => {
+    const path = join(await tempDir(), 'nested', 'zcf.json')
+    await saveConfigDraft(path, { version: 1, tools: ['claude-code'] })
+    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({ version: 1, tools: ['claude-code'] })
+
+    await writeFile(
+      path,
+      '{\n  // my tools\n  "version": 1,\n  "tools": ["claude-code"],\n  "provider": {\n    // the key\n    "name": "a",\n    "apiKey": "old"\n  }\n}\n',
+    )
+    await saveConfigDraft(path, {
+      version: 1,
+      tools: ['claude-code', 'codex'],
+      provider: { name: 'a', apiKey: 'new' },
+    })
+    const text = await readFile(path, 'utf8')
+    expect(text).toContain('// my tools')
+    expect(text).toContain('// the key')
+    expect(text).toContain('"apiKey": "new"')
+    expect(text).toContain('"tools": [\n    "claude-code",\n    "codex"\n  ]')
+  })
+
+  it('computes the smallest edits', () => {
+    expect(jsonEditsBetween({ a: { b: 1, c: 2 }, d: [1] }, { a: { b: 1 }, d: [1, 2], e: true })).toEqual([
+      { path: ['a', 'c'], value: undefined },
+      { path: ['d'], value: [1, 2] },
+      { path: ['e'], value: true },
+    ])
   })
 })

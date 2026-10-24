@@ -2,12 +2,22 @@ import type { ParseError } from 'jsonc-parser'
 import { parse } from 'jsonc-parser'
 import { join } from 'pathe'
 
-import { readTextIfExists } from './io/fs'
-import type { ParseConfigResult } from './schema/config'
+import { editJson, isTable } from './io/editors'
+import { readTextIfExists, writeFileAtomic } from './io/fs'
+import type { KeyEdit, KeyPath } from './plan/types'
+import type { ConfigIssue, ParseConfigResult } from './schema/config'
 import { parseZcfConfig } from './schema/config'
 
 export function defaultConfigPath(home: string): string {
   return join(home, '.ufomiao', 'zcf', 'zcf.json')
+}
+
+function syntaxIssue(text: string, offset: number): ConfigIssue {
+  const lines = text.slice(0, offset).split('\n')
+  return {
+    path: '',
+    message: { key: 'configIssue.syntax', params: { line: lines.length, column: lines.at(-1)!.length + 1 } },
+  }
 }
 
 export type LoadConfigResult = ParseConfigResult | { success: false; missing: true; issues: [] }
@@ -21,20 +31,43 @@ export async function loadConfigFile(path: string): Promise<LoadConfigResult> {
   const data = parse(text, errors, { allowTrailingComma: true })
   // Later syntax errors are usually knock-on effects of the first one.
   const [first] = errors
-  if (first) {
-    const lines = text.slice(0, first.offset).split('\n')
-    return {
-      success: false,
-      issues: [
-        {
-          path: '',
-          message: {
-            key: 'configIssue.syntax',
-            params: { line: lines.length, column: lines.at(-1)!.length + 1 },
-          },
-        },
-      ],
-    }
-  }
+  if (first) return { success: false, issues: [syntaxIssue(text, first.offset)] }
   return parseZcfConfig(data)
+}
+
+/** What a front end edits: the config as written, before validation and defaults. */
+export type ConfigDraft = Record<string, unknown>
+
+export type LoadDraftResult = { draft: ConfigDraft; exists: boolean } | { draft?: undefined; issues: ConfigIssue[] }
+
+/** Read a config for editing. A missing file gives an empty version 1 config; a broken one gives its syntax error. */
+export async function loadConfigDraft(path: string): Promise<LoadDraftResult> {
+  const text = await readTextIfExists(path)
+  if (text === undefined || !text.trim()) return { draft: { version: 1 }, exists: text !== undefined }
+  const errors: ParseError[] = []
+  const data: unknown = parse(text, errors, { allowTrailingComma: true })
+  const [first] = errors
+  if (first) return { issues: [syntaxIssue(text, first.offset)] }
+  return { draft: isTable(data) ? data : { version: 1 }, exists: true }
+}
+
+/** The smallest set of key edits that turns `before` into `after`. Arrays are replaced as a whole. */
+export function jsonEditsBetween(before: unknown, after: unknown, path: KeyPath = []): KeyEdit[] {
+  if (isTable(before) && isTable(after)) {
+    const keys = new Set([...Object.keys(before), ...Object.keys(after)])
+    return [...keys].flatMap(key => jsonEditsBetween(before[key], after[key], [...path, key]))
+  }
+  if (JSON.stringify(before) === JSON.stringify(after)) return []
+  return [{ path, value: after }]
+}
+
+/**
+ * Save an edited config. Only the keys that changed are rewritten, so comments and
+ * layout elsewhere in the file survive. The caller validates the draft first.
+ */
+export async function saveConfigDraft(path: string, draft: ConfigDraft): Promise<void> {
+  const text = await readTextIfExists(path)
+  const before: unknown = text?.trim() ? parse(text, [], { allowTrailingComma: true }) : {}
+  const edits = jsonEditsBetween(isTable(before) ? before : {}, draft).filter(edit => edit.path.length > 0)
+  await writeFileAtomic(path, editJson(text, edits))
 }
