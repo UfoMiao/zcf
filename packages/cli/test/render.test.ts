@@ -15,6 +15,11 @@ describe('render helpers', () => {
     expect(maskSecrets('k=a-long-secret-value', ['a-long-secret-value'])).toBe('k=a-l***ue')
   })
 
+  it('treats replacement patterns in a secret as literal text', () => {
+    expect(maskSecrets('k=password-secret-$&', ['password-secret-$&'])).toBe('k=pas***$&')
+    expect(maskSecrets("k=$'secret-password", ["$'secret-password"])).toBe("k=$'s***rd")
+  })
+
   it('shortens paths under home', () => {
     expect(tildify('/home/me/.claude', '/home/me')).toBe('~/.claude')
     expect(tildify('/etc/x', '/home/me')).toBe('/etc/x')
