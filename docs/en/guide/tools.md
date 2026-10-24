@@ -18,7 +18,7 @@ Across all tools:
 | | |
 |---|---|
 | Detect | `claude --version`, then `~/.local/bin/claude` |
-| Install | The official native installer (`install.sh`, or `install.ps1` on Windows). With the [`china` mirror](./mirrors), `npm install -g @anthropic-ai/claude-code`. |
+| Install | The official native installer (`install.sh`, or `install.ps1` on Windows). With the [`china` mirror](./mirrors), `npm install -g @anthropic-ai/claude-code`, allowing the package's install script, which links the binary. ZCF then runs `claude --version` to check it worked. |
 | Update | `claude update` |
 | Provider | `env` in `~/.claude/settings.json`: `ANTHROPIC_BASE_URL`, the key as `ANTHROPIC_AUTH_TOKEN` (or `ANTHROPIC_API_KEY` with `authType: "api_key"`), `ANTHROPIC_MODEL` from `models.default`, and `ANTHROPIC_DEFAULT_HAIKU_MODEL`, `_SONNET_MODEL` and `_OPUS_MODEL`. ZCF removes those keys when the config leaves them unset. |
 | MCP | `claude mcp add-json --scope user`. A server that changed is removed and added again. On Windows, commands such as `npx` are wrapped in `cmd /c`. |
