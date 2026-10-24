@@ -7,7 +7,7 @@ import type { Translate } from './api'
 import { httpService, tildify } from './api'
 import { ApplyPage, McpPage, ProviderPage, SkillsPage, ToolsPage } from './pages'
 
-export function App({ t }: { t: Translate }) {
+export function App({ t, lang }: { t: Translate; lang: string }) {
   const editor = useConfigEditor(httpService)
   const [page, setPage] = useState<PageId>('tools')
   const [status, setStatus] = useState<{ text: string; tone: 'info' | 'warning' | 'error' }>()
@@ -97,7 +97,7 @@ export function App({ t }: { t: Translate }) {
       <main>
         <h2>{t(`tui.page.${page}`)}</h2>
         {page === 'tools' && <ToolsPage editor={editor} t={t} detected={detected} />}
-        {page === 'provider' && <ProviderPage editor={editor} t={t} />}
+        {page === 'provider' && <ProviderPage editor={editor} t={t} lang={lang} />}
         {page === 'mcp' && <McpPage editor={editor} t={t} />}
         {page === 'skills' && <SkillsPage editor={editor} t={t} />}
         {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} />}

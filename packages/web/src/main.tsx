@@ -10,7 +10,7 @@ const root = createRoot(document.querySelector('#root')!)
 loadTranslator().then(
   ({ lang, t }) => {
     document.documentElement.lang = lang
-    root.render(<App t={t} />)
+    root.render(<App t={t} lang={lang} />)
   },
   (error: unknown) => {
     // Without the session token (a bookmarked or copied URL), the API refuses every call.

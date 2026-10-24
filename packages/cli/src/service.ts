@@ -2,11 +2,14 @@ import type { AdapterContext, ConfigDraft, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
   detectTools,
+  isMirror,
   loadConfigDraft,
+  loadPresets,
   loadConfigFile,
   MessageError,
   planTools,
   previewPlan,
+  resolveMirror,
   saveConfigDraft,
   snapshotFile,
 } from '@zcf/core'
@@ -60,6 +63,18 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
       base = draft
     },
     detect: tools => detectTools(tools, ctx),
+    presets: refresh =>
+      loadPresets({
+        // Presets come from GitHub, so they follow the mirror like other downloads.
+        mirror: resolveMirror({
+          override: ctx.mirror,
+          env: ctx.env,
+          config: { mirror: isMirror(base?.mirror) ? base.mirror : undefined },
+        }),
+        cacheDir: join(ctx.home, '.ufomiao', 'zcf', 'cache'),
+        env: ctx.env,
+        refresh,
+      }),
     plan: async () => planWithPreviews(await savedConfig(path), ctx),
     async apply(onStep) {
       const config = await savedConfig(path)

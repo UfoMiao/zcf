@@ -1,4 +1,4 @@
-import type { ConfigIssue, FilePreview, Plan, StepResult, ToolId, ToolResult, ToolStatus } from '@zcf/core'
+import type { ConfigIssue, FilePreview, Plan, PresetList, StepResult, ToolId, ToolResult, ToolStatus } from '@zcf/core'
 
 import type { Draft } from './draft'
 
@@ -39,6 +39,8 @@ export interface ZcfService {
   detect: (tools: readonly ToolId[]) => Promise<Partial<Record<ToolId, ToolStatus>>>
   /** Plan the saved config. */
   plan: () => Promise<PlanView>
+  /** Provider presets, fetched from the ZCF repository and cached; `refresh` skips a fresh copy. */
+  presets: (refresh?: boolean) => Promise<PresetList>
   /** Apply the saved config, reporting each finished step. */
   apply: (onStep?: (event: StepEvent) => void) => Promise<ApplyOutcome>
 }
