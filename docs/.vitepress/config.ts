@@ -4,7 +4,7 @@ import { defineConfig } from 'vitepress'
 
 const githubRepo = 'UfoMiao/zcf'
 const siteTitle = 'ZCF'
-const siteDescription = 'Zero-Config Code Flow Documentation'
+const siteDescription = 'One config for all your AI coding tools'
 
 interface SidebarDefinitionItem {
   text: string
@@ -43,168 +43,58 @@ function createSidebar(definition: SidebarDefinitionSection[], base: string): De
 
 const zhSidebar: DefaultTheme.SidebarItem[] = createSidebar([
   {
-    text: '项目介绍',
+    text: '开始',
     items: [
       { text: '项目介绍', link: 'index' },
+      { text: '快速开始', link: 'guide/' },
+      { text: '从 v3 迁移', link: 'guide/v3' },
     ],
   },
   {
-    text: '开始使用',
+    text: '使用',
     items: [
-      { text: '快速开始', link: 'getting-started/' },
-      { text: '使用指南', link: 'getting-started/installation' },
+      { text: '配置文件', link: 'guide/config' },
+      { text: '命令', link: 'guide/commands' },
+      { text: '终端与网页界面', link: 'guide/ui' },
+      { text: '供应商预设', link: 'guide/providers' },
+      { text: '镜像', link: 'guide/mirrors' },
     ],
   },
   {
-    text: '功能特性',
+    text: '参考',
     items: [
-      { text: '功能总览', link: 'features/' },
-      { text: 'Claude Code 配置能力', link: 'features/claude-code' },
-      { text: 'Codex 支持', link: 'features/codex' },
-      { text: '工作流系统', link: 'features/workflows' },
-      { text: 'MCP 服务集成', link: 'features/mcp' },
-      { text: 'Claude Code Router', link: 'features/ccr' },
-      { text: 'ccusage 使用分析', link: 'features/ccusage' },
-      { text: 'CCometixLine 状态栏', link: 'features/cometix' },
-      { text: '多配置与备份', link: 'features/multi-config' },
-    ],
-  },
-  {
-    text: '进阶指南',
-    items: [
-      { text: '进阶指南', link: 'advanced/' },
-      { text: '配置管理', link: 'advanced/configuration' },
-      { text: 'API 提供商预设', link: 'advanced/api-providers' },
-      { text: '模板与输出风格', link: 'advanced/templates' },
-      { text: '国际化与语言', link: 'advanced/i18n' },
-      { text: '故障排除', link: 'advanced/troubleshooting' },
-    ],
-  },
-  {
-    text: 'CLI 命令',
-    items: [
-      { text: '命令概览', link: 'cli/' },
-      { text: 'zcf init', link: 'cli/init' },
-      { text: 'zcf update', link: 'cli/update' },
-      { text: '主菜单', link: 'cli/menu' },
-      { text: 'CCR 代理管理', link: 'cli/ccr' },
-      { text: '使用分析 ccu', link: 'cli/ccu' },
-      { text: '卸载与清理', link: 'cli/uninstall' },
-      { text: '配置切换', link: 'cli/config-switch' },
-      { text: '版本检查', link: 'cli/check-updates' },
-    ],
-  },
-  {
-    text: '工作流详解',
-    items: [
-      { text: '工作流概览', link: 'workflows/' },
-      { text: 'ZCF 六阶段工作流', link: 'workflows/zcf-workflow' },
-      { text: '功能开发工作流', link: 'workflows/feat' },
-      { text: 'BMad 敏捷流程', link: 'workflows/bmad' },
-      { text: 'Spec 工作流集成', link: 'workflows/spec' },
-      { text: 'Git 智能命令', link: 'workflows/git-commands' },
-    ],
-  },
-  {
-    text: '最佳实践',
-    items: [
-      { text: '最佳实践', link: 'best-practices/' },
-      { text: '使用技巧', link: 'best-practices/tips' },
-      { text: 'Worktree 并行开发', link: 'best-practices/worktree' },
-      { text: '输出风格策略', link: 'best-practices/output-styles' },
-    ],
-  },
-  {
-    text: '开发文档',
-    items: [
-      { text: '面向贡献者', link: 'development/' },
-      { text: '贡献指南', link: 'development/contributing' },
-      { text: '架构说明', link: 'development/architecture' },
-      { text: '测试指南', link: 'development/testing' },
+      { text: '工具', link: 'guide/tools' },
+      { text: '备份与故障排除', link: 'guide/troubleshooting' },
+      { text: '参与贡献', link: 'guide/contributing' },
     ],
   },
 ], '/zh-CN')
 
 const enSidebar: DefaultTheme.SidebarItem[] = createSidebar([
   {
-    text: 'Project Introduction',
+    text: 'Start',
     items: [
-      { text: 'Project Introduction', link: 'index' },
+      { text: 'Introduction', link: 'index' },
+      { text: 'Getting started', link: 'guide/' },
+      { text: 'Coming from v3', link: 'guide/v3' },
     ],
   },
   {
-    text: 'Getting Started',
+    text: 'Use',
     items: [
-      { text: 'Quick Start', link: 'getting-started/' },
-      { text: 'Installation Guide', link: 'getting-started/installation' },
+      { text: 'Config file', link: 'guide/config' },
+      { text: 'Commands', link: 'guide/commands' },
+      { text: 'Terminal and web UI', link: 'guide/ui' },
+      { text: 'Provider presets', link: 'guide/providers' },
+      { text: 'Mirrors', link: 'guide/mirrors' },
     ],
   },
   {
-    text: 'Features',
+    text: 'Reference',
     items: [
-      { text: 'Features Overview', link: 'features/' },
-      { text: 'Claude Code Configuration', link: 'features/claude-code' },
-      { text: 'Codex Support', link: 'features/codex' },
-      { text: 'Workflow System', link: 'features/workflows' },
-      { text: 'MCP Service Integration', link: 'features/mcp' },
-      { text: 'Claude Code Router', link: 'features/ccr' },
-      { text: 'ccusage Usage Analysis', link: 'features/ccusage' },
-      { text: 'CCometixLine Status Bar', link: 'features/cometix' },
-      { text: 'Multi-Config and Backup', link: 'features/multi-config' },
-    ],
-  },
-  {
-    text: 'Advanced Guides',
-    items: [
-      { text: 'Advanced Guides', link: 'advanced/' },
-      { text: 'Configuration Management', link: 'advanced/configuration' },
-      { text: 'API Provider Presets', link: 'advanced/api-providers' },
-      { text: 'Templates and Output Styles', link: 'advanced/templates' },
-      { text: 'Internationalization and Language', link: 'advanced/i18n' },
-      { text: 'Troubleshooting', link: 'advanced/troubleshooting' },
-    ],
-  },
-  {
-    text: 'CLI Commands',
-    items: [
-      { text: 'Commands Overview', link: 'cli/' },
-      { text: 'zcf init', link: 'cli/init' },
-      { text: 'zcf update', link: 'cli/update' },
-      { text: 'Main Menu', link: 'cli/menu' },
-      { text: 'CCR Proxy Management', link: 'cli/ccr' },
-      { text: 'Usage Analysis ccu', link: 'cli/ccu' },
-      { text: 'Uninstall and Cleanup', link: 'cli/uninstall' },
-      { text: 'Config Switch', link: 'cli/config-switch' },
-      { text: 'Version Check', link: 'cli/check-updates' },
-    ],
-  },
-  {
-    text: 'Workflow Details',
-    items: [
-      { text: 'Workflow Overview', link: 'workflows/' },
-      { text: 'ZCF Six-Stage Workflow', link: 'workflows/zcf-workflow' },
-      { text: 'Feature Development Workflow', link: 'workflows/feat' },
-      { text: 'BMad Agile Process', link: 'workflows/bmad' },
-      { text: 'Spec Workflow Integration', link: 'workflows/spec' },
-      { text: 'Git Smart Commands', link: 'workflows/git-commands' },
-    ],
-  },
-  {
-    text: 'Best Practices',
-    items: [
-      { text: 'Best Practices', link: 'best-practices/' },
-      { text: 'Usage Tips', link: 'best-practices/tips' },
-      { text: 'Worktree Parallel Development', link: 'best-practices/worktree' },
-      { text: 'Output Style Strategy', link: 'best-practices/output-styles' },
-    ],
-  },
-  {
-    text: 'Development Documentation',
-    items: [
-      { text: 'For Contributors', link: 'development/' },
-      { text: 'Contributing Guide', link: 'development/contributing' },
-      { text: 'Architecture Documentation', link: 'development/architecture' },
-      { text: 'Testing Guide', link: 'development/testing' },
+      { text: 'Tools', link: 'guide/tools' },
+      { text: 'Backups and troubleshooting', link: 'guide/troubleshooting' },
+      { text: 'Contributing', link: 'guide/contributing' },
     ],
   },
 ], '/en')
@@ -323,11 +213,10 @@ export default defineConfig({
     },
     nav: [
       { text: 'Home', link: '/en/' },
-      { text: 'Getting Started', link: '/en/getting-started/' },
-      { text: 'Features', link: '/en/features/' },
-      { text: 'CLI', link: '/en/cli/' },
-      { text: 'Workflows', link: '/en/workflows/' },
-      { text: 'Best Practices', link: '/en/best-practices/' },
+      { text: 'Getting started', link: '/en/guide/' },
+      { text: 'Config', link: '/en/guide/config' },
+      { text: 'Commands', link: '/en/guide/commands' },
+      { text: 'Tools', link: '/en/guide/tools' },
     ],
     sidebar: {
       '/en/': enSidebar,
@@ -354,11 +243,10 @@ export default defineConfig({
         },
         nav: [
           { text: '首页', link: '/zh-CN/' },
-          { text: '快速开始', link: '/zh-CN/getting-started/' },
-          { text: '功能特性', link: '/zh-CN/features/' },
-          { text: 'CLI 命令', link: '/zh-CN/cli/' },
-          { text: '工作流', link: '/zh-CN/workflows/' },
-          { text: '最佳实践', link: '/zh-CN/best-practices/' },
+          { text: '快速开始', link: '/zh-CN/guide/' },
+          { text: '配置', link: '/zh-CN/guide/config' },
+          { text: '命令', link: '/zh-CN/guide/commands' },
+          { text: '工具', link: '/zh-CN/guide/tools' },
         ],
         sidebar: {
           '/zh-CN/': zhSidebar,

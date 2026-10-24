@@ -18,35 +18,33 @@
 
 **✨ 完整文档**: [文档入口](https://zcf.ufomiao.com/zh-CN/)
 
-> 零配置,一键搞定 Claude Code & Codex 环境设置 - 支持中英文双语配置、智能代理系统和个性化 AI 助手
+> 一份配置，管好你所有的 AI 编程工具。ZCF 安装你选择的工具，并写入每个工具自己的设置。
   </p>
 </div>
 
 > [!IMPORTANT]
-> `main` 分支正在重写为 **ZCF v5**：一份配置同时写入 Claude Code、Codex、Gemini CLI 和 OpenCode 各自的原生设置。v5 尚未发布，`npx zcf` 安装的仍是 v3（源码见 [`zcf@3.7.3`](https://github.com/UfoMiao/zcf/tree/zcf@3.7.3) 标签）。设计说明见 [ADR 002](docs/adr/002-v5-architecture.md)。
+> 这是尚未发布的重写版本 **ZCF v5**。正式发布前，`npx zcf` 安装的仍是 v3（源码见 [`zcf@3.7.3`](https://github.com/UfoMiao/zcf/tree/zcf@3.7.3) 标签），[zcf.ufomiao.com](https://zcf.ufomiao.com/zh-CN/) 介绍的也是 v3。想从源码试用 v5，见[参与贡献](docs/zh-CN/guide/contributing.md)。
 
 ## 🚀 快速开始
 
-- 推荐：`npx zcf` 打开交互式菜单，按需选择。
-- 常用命令：
+你只需维护一份 ZCF 配置：供应商、MCP 服务和技能。ZCF 会安装你选择的工具，并用各工具自带的命令（例如 `claude mcp add-json` 和 `npx skills add`）写入它们自己的设置。
+
+支持的工具：Claude Code、Codex、Gemini CLI、OpenCode、Cursor CLI、Pi 和 DeepSeek Harness。
 
 ```bash
-npx zcf i        # 完整初始化：安装 + 工作流 + API/CCR + MCP
-npx zcf u        # 仅更新工作流
-npx zcf --lang zh-CN  # 切换界面语言示例
+npx zcf            # 在终端中编辑配置
+npx zcf ui         # 或在浏览器中编辑
+npx zcf plan       # 查看每条命令，以及每个将被修改的文件的 diff
+npx zcf apply -y   # 安装缺少的工具并写入设置
+npx zcf update     # 用各工具自带的更新命令更新
 ```
 
-- 无交互示例（预设提供商）：
-
-```bash
-npx zcf i -s -p 302ai -k "sk-xxx"
-```
-
-更多用法、参数与工作流说明请查看文档。
+应用之前不会有任何改动。ZCF 只修改它管理的键，保留你的注释和格式，修改前备份每个文件，并且从不显示你的密钥。从 v3 升级？见[从 v3 迁移](docs/zh-CN/guide/v3.md)。
 
 ## 📖 完整文档
 
-- https://zcf.ufomiao.com/zh-CN/
+- [快速开始](docs/zh-CN/guide/index.md)、[配置文件](docs/zh-CN/guide/config.md)、[命令](docs/zh-CN/guide/commands.md)和[工具](docs/zh-CN/guide/tools.md)
+- 架构说明：[ADR 002](docs/adr/002-v5-architecture.md)
 
 ## ♥️ 赞助商
 

@@ -18,35 +18,33 @@
 
 **✨ Full Documentation**: [ZCF Docs](https://zcf.ufomiao.com/)
 
-> Zero-config, one-click setup for Claude Code & Codex with bilingual support, intelligent agent system and personalized AI assistant
+> One config for all your AI coding tools. ZCF installs the tools you pick and writes each one's own settings.
 </p>
 </div>
 
 > [!IMPORTANT]
-> `main` is being rebuilt as **ZCF v5**: one config for Claude Code, Codex, Gemini CLI and OpenCode, written as each tool's own native settings. It is not published yet, so `npx zcf` still installs v3 (source at the [`zcf@3.7.3`](https://github.com/UfoMiao/zcf/tree/zcf@3.7.3) tag). See [ADR 002](docs/adr/002-v5-architecture.md) for the design.
+> This is **ZCF v5**, a rewrite that is not published yet. Until it is, `npx zcf` still installs v3 (source at the [`zcf@3.7.3`](https://github.com/UfoMiao/zcf/tree/zcf@3.7.3) tag), and [zcf.ufomiao.com](https://zcf.ufomiao.com/) describes v3. To try v5 from source, see [Contributing](docs/en/guide/contributing.md).
 
 ## 🚀 Quick Start
 
-- Recommended: `npx zcf` opens the interactive menu — pick what you need.
-- Common commands:
+You keep one ZCF config: your provider, your MCP servers and your skills. ZCF installs the tools you pick and writes each tool's own settings with the tool's own commands, such as `claude mcp add-json` and `npx skills add`.
+
+Supported tools: Claude Code, Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness.
 
 ```bash
-npx zcf i        # Full initialization: install + workflows + API/CCR + MCP
-npx zcf u        # Update workflows only
-npx zcf --lang zh-CN  # Switch interface language (example)
+npx zcf            # edit the config in the terminal
+npx zcf ui         # or in the browser
+npx zcf plan       # see every command and a diff of every file it would change
+npx zcf apply -y   # install missing tools and write their settings
+npx zcf update     # update the tools with their own updaters
 ```
 
-- Non-interactive example (provider preset):
-
-```bash
-npx zcf i -s -p 302ai -k "sk-xxx"
-```
-
-More usage, options, and workflows: see documentation.
+Nothing changes before you apply. ZCF edits only the keys it manages, keeps your comments and formatting, backs up each file before changing it, and never prints your keys. Coming from v3? See [Coming from v3](docs/en/guide/v3.md).
 
 ## 📖 Full Documentation
 
-- https://zcf.ufomiao.com/
+- [Getting started](docs/en/guide/index.md), [Config file](docs/en/guide/config.md), [Commands](docs/en/guide/commands.md) and [Tools](docs/en/guide/tools.md)
+- Architecture: [ADR 002](docs/adr/002-v5-architecture.md)
 
 ## ♥️ Sponsors
 
