@@ -53,7 +53,7 @@ function anthropicRoute(provider: Provider): Route | undefined {
     npm: '@ai-sdk/anthropic',
     options: {
       // Claude-style base URLs leave out the version that the AI SDK expects to be part of it.
-      baseURL: `${anthropic.baseUrl.replace(/\/+$/, '')}/v1`,
+      baseURL: `${anthropic.baseUrl.replace(/\/+$/, '').replace(/\/v1$/, '')}/v1`,
       apiKey: bearer ? undefined : provider.apiKey,
       authToken: bearer ? provider.apiKey : undefined,
     },
@@ -109,7 +109,7 @@ function filled(record: Record<string, string>): Record<string, string> | undefi
 }
 
 /** The server definition in the shape OpenCode stores under `mcp`. */
-export function opencodeMcpServer(server: McpServer): Record<string, unknown> {
+function opencodeMcpServer(server: McpServer): Record<string, unknown> {
   if (server.type === 'http') return { type: 'remote', url: server.url, headers: filled(server.headers), enabled: true }
   return { type: 'local', command: [server.command, ...server.args], environment: filled(server.env), enabled: true }
 }
@@ -153,7 +153,7 @@ export const opencode: ToolAdapter = {
         if (!route.model)
           notices.push(notice('warning', 'notice.modelMissing', { tool: TOOL, protocol: route.protocol }))
       } else {
-        notices.push(notice('warning', 'notice.providerMissingProtocol', { tool: TOOL, protocol: 'openai' }))
+        notices.push(notice('warning', 'notice.providerMissingProtocol', { tool: TOOL, protocol: 'anthropic/openai' }))
       }
     }
 
