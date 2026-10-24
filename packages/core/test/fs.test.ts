@@ -1,4 +1,4 @@
-import { chmod, readdir, readFile, stat, writeFile } from 'node:fs/promises'
+import { chmod, lstat, readdir, readFile, stat, symlink, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 
 import { join } from 'pathe'
@@ -33,6 +33,25 @@ describe('writeFileAtomic', () => {
     await writeFileAtomic(path, 'new')
     expect((await stat(path)).mode & 0o777).toBe(0o600)
     expect(await readFile(path, 'utf8')).toBe('new')
+  })
+})
+
+describe('writeFileAtomic on POSIX', () => {
+  it.skipIf(process.platform === 'win32')('creates new files readable only by the owner', async () => {
+    const path = join(await tempDir(), 'new.json')
+    await writeFileAtomic(path, '{}')
+    expect((await stat(path)).mode & 0o777).toBe(0o600)
+  })
+
+  it.skipIf(process.platform === 'win32')('writes through a symlink and keeps the link', async () => {
+    const dir = await tempDir()
+    const target = join(dir, 'dotfiles', 'settings.json')
+    const link = join(dir, 'settings.json')
+    await writeFileAtomic(target, 'old')
+    await symlink(target, link)
+    await writeFileAtomic(link, 'new')
+    expect((await lstat(link)).isSymbolicLink()).toBe(true)
+    expect(await readFile(target, 'utf8')).toBe('new')
   })
 })
 

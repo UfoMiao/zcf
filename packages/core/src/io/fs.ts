@@ -1,4 +1,5 @@
-import { copyFile, mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises'
+import { randomUUID } from 'node:crypto'
+import { copyFile, mkdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 
 import { dirname, join, normalize, relative } from 'pathe'
@@ -22,14 +23,22 @@ async function modeOf(path: string): Promise<number | undefined> {
 
 /**
  * Write through a temporary file in the same directory and rename it into place,
- * so a crash never leaves a half-written config. An existing file keeps its mode.
+ * so a crash never leaves a half-written config. A symlink is followed so the
+ * link itself survives. An existing file keeps its mode; a new one is private,
+ * since native configs hold API keys.
  */
 export async function writeFileAtomic(path: string, content: string): Promise<void> {
-  await mkdir(dirname(path), { recursive: true })
-  const mode = await modeOf(path)
-  const temp = `${path}.zcf-${process.pid}-${Date.now()}.tmp`
-  await writeFile(temp, content, mode === undefined ? undefined : { mode })
-  await rename(temp, path)
+  const target = await realpath(path).catch(() => path)
+  await mkdir(dirname(target), { recursive: true })
+  const mode = (await modeOf(target)) ?? 0o600
+  const temp = `${target}.zcf-${process.pid}-${randomUUID()}.tmp`
+  try {
+    await writeFile(temp, content, { mode })
+    await rename(temp, target)
+  } catch (error) {
+    await rm(temp, { force: true })
+    throw error
+  }
 }
 
 /**

@@ -11,7 +11,8 @@ describe('render helpers', () => {
   })
 
   it('masks every occurrence of each secret', () => {
-    expect(maskSecrets('a=secret-1 b=secret-1', ['secret-1'])).toBe('a=sec***-1 b=sec***-1')
+    expect(maskSecrets('a=secret-1 b=secret-1', ['secret-1'])).toBe('a=*** b=***')
+    expect(maskSecrets('k=a-long-secret-value', ['a-long-secret-value'])).toBe('k=a-l***ue')
   })
 
   it('shortens paths under home', () => {

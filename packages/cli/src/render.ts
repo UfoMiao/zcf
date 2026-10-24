@@ -50,7 +50,9 @@ export function secretVariants(secrets: readonly string[]): string[] {
 
 export function maskSecrets(text: string, secrets: readonly string[]): string {
   let masked = text
-  for (const secret of secrets) masked = masked.replaceAll(secret, `${secret.slice(0, 3)}***${secret.slice(-2)}`)
+  // Long secrets keep a few characters so people can tell which one it is; short ones are hidden whole.
+  for (const secret of secrets)
+    masked = masked.replaceAll(secret, secret.length >= 12 ? `${secret.slice(0, 3)}***${secret.slice(-2)}` : '***')
   return masked
 }
 
