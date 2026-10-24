@@ -1,4 +1,4 @@
-import type { ConfigIssue } from '@zcf/core/schema'
+import type { ConfigIssue, Mirror } from '@zcf/core/schema'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Draft, DraftPath, Validation } from './draft'
@@ -14,6 +14,8 @@ export interface ConfigEditor {
   validation: Validation
   /** Why the file could not be read, when `status` is `broken`. */
   loadIssues: ConfigIssue[]
+  /** The mirror `ZCF_MIRROR` picks, which outranks the draft's `mirror` while ZCF runs. */
+  envMirror?: Mirror
   dirty: boolean
   saving: boolean
   update: (path: DraftPath, value: unknown) => void
@@ -32,6 +34,7 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
   const [saved, setSaved] = useState<Draft | undefined>(EMPTY)
   const [loadIssues, setLoadIssues] = useState<ConfigIssue[]>([])
   const [saving, setSaving] = useState(false)
+  const [envMirror, setEnvMirror] = useState<Mirror>()
 
   useEffect(() => {
     let active = true
@@ -39,6 +42,7 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
       loaded => {
         if (!active) return
         setPath(loaded.path)
+        setEnvMirror(loaded.envMirror)
         if (loaded.draft) {
           setDraft(loaded.draft)
           // A config that does not exist yet counts as unsaved, so the first save writes it.
@@ -89,6 +93,7 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
     draft,
     validation,
     loadIssues,
+    envMirror,
     dirty: JSON.stringify(draft) !== savedText,
     saving,
     update,

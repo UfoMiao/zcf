@@ -2,6 +2,7 @@ import type { AdapterContext, ConfigDraft, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
   detectTools,
+  envMirror,
   isMirror,
   loadConfigDraft,
   loadPresets,
@@ -50,9 +51,11 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
     async load() {
       const loaded = await loadConfigDraft(path)
       current = loaded.draft
-      return loaded.draft
+      const env = envMirror(ctx.env)
+      const result = loaded.draft
         ? { path, draft: loaded.draft, exists: loaded.exists, issues: [] }
         : { path, exists: true, issues: loaded.issues }
+      return env ? { ...result, envMirror: env } : result
     },
     async save(draft, base) {
       if (!backedUp) {

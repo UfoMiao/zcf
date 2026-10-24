@@ -1,4 +1,14 @@
-import type { ConfigIssue, FilePreview, Plan, PresetList, StepResult, ToolId, ToolResult, ToolStatus } from '@zcf/core'
+import type {
+  ConfigIssue,
+  FilePreview,
+  Mirror,
+  Plan,
+  PresetList,
+  StepResult,
+  ToolId,
+  ToolResult,
+  ToolStatus,
+} from '@zcf/core'
 
 import type { Draft } from './draft'
 
@@ -8,6 +18,8 @@ export interface LoadedConfig {
   draft?: Draft
   exists: boolean
   issues: ConfigIssue[]
+  /** The mirror `ZCF_MIRROR` picks for this process, which outranks the config's `mirror`. */
+  envMirror?: Mirror
 }
 
 export interface PlanView {

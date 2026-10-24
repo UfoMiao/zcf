@@ -126,6 +126,8 @@ const en = {
   'tui.page.skills': 'Skills',
   'tui.page.settings': 'Settings',
   'tui.settings.intro': "Settings for ZCF itself. They are not written into any tool's config.",
+  'tui.settings.envMirror':
+    'ZCF_MIRROR is set, so ZCF uses {mirror} while it runs in this shell. What you save here applies once it is unset.',
   'field.mirror': 'Download mirror',
   'hint.mirror':
     'China mirrors: npm packages from registry.npmmirror.com, provider presets from jsDelivr hosts reachable in mainland China',
@@ -298,6 +300,7 @@ const zhCN: Record<MessageKey, string> = {
   'tui.page.skills': '技能',
   'tui.page.settings': '设置',
   'tui.settings.intro': 'ZCF 自身的设置，不会写入任何工具的配置。',
+  'tui.settings.envMirror': '当前设置了 ZCF_MIRROR，在这个终端里运行时使用{mirror}。这里保存的选择在去掉该变量后生效。',
   'field.mirror': '下载源',
   'hint.mirror': '国内镜像：npm 包从 registry.npmmirror.com 下载，供应商预设走国内可访问的 jsDelivr 节点',
   'tui.page.apply': '应用',
