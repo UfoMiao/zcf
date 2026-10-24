@@ -68,6 +68,45 @@ describe('planUpdates', () => {
   })
 })
 
+/** Gemini CLI 0.65.0 installed, with `latest` as npm's newest version. */
+function gemini(latest: string) {
+  return createContext({
+    ...ctx,
+    runner: fakeRunner({
+      'gemini --version': { stdout: '0.65.0' },
+      'npm view @google/gemini-cli version': { stdout: `${latest}\n` },
+    }),
+  })
+}
+
+describe('planUpdates for tools updated with npm', () => {
+  it('skips the reinstall when npm has nothing newer', async () => {
+    const [plan] = (await planUpdates(['gemini-cli'], gemini('0.65.0'))).tools
+    expect(plan!.steps).toEqual([])
+    expect(plan!.notices).toEqual([
+      { level: 'info', message: { key: 'notice.upToDate', params: { tool: 'gemini-cli', version: '0.65.0' } } },
+    ])
+  })
+
+  it('updates when npm has a newer version, or when it cannot tell', async () => {
+    expect((await planUpdates(['gemini-cli'], gemini('0.66.0'))).tools[0]!.steps).toHaveLength(1)
+    const offline = createContext({ ...ctx, runner: fakeRunner({ 'gemini --version': { stdout: '0.65.0' } }) })
+    expect((await planUpdates(['gemini-cli'], offline)).tools[0]!.steps).toHaveLength(1)
+  })
+
+  it('asks the registry the update would use', async () => {
+    const calls: Array<Record<string, string> | undefined> = []
+    const recorder: CommandRunner = {
+      async run(command, _args, options) {
+        if (command === 'npm') calls.push(options?.env)
+        return { exitCode: 0, stdout: '0.65.0', stderr: '' }
+      },
+    }
+    await planUpdates(['gemini-cli'], createContext({ ...ctx, runner: recorder, mirror: 'china' }))
+    expect(calls).toEqual([{ npm_config_registry: 'https://registry.npmmirror.com' }])
+  })
+})
+
 function commandEnvs(plan: Plan) {
   return plan.tools.flatMap(tool => tool.steps.map(step => step.kind === 'command' && step.env))
 }

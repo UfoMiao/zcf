@@ -47,20 +47,20 @@ Claude Code と同じく `CLAUDE_CONFIG_DIR` に従います。
 | インストールと更新 | `npm install -g @google/gemini-cli` |
 | プロバイダー | `~/.gemini/.env` の `GEMINI_API_KEY` と `GOOGLE_GEMINI_BASE_URL`、および `~/.gemini/settings.json` の `security.auth.selectedType = "gemini-api-key"` と `model.name`。プロバイダーの `gemini` ブロックを使います。 |
 | MCP | `gemini mcp add -s user`。コマンドの `-e` オプションは値を 2 つ目の `=` で切ってしまうため、環境変数とヘッダーは後から `settings.json` に書き込みます。 |
-| スキル | `-a gemini-cli`、`~/.gemini/skills` へ |
+| スキル | `-a gemini-cli`、`~/.agents/skills` へ |
 
-`settings.json` と `.env` については `GEMINI_CLI_HOME` に従います。スキルは skills CLI がインストールする `~/.gemini/skills` のままです。
+`settings.json` と `.env` については `GEMINI_CLI_HOME` に従います。スキルは skills CLI がインストールする `~/.agents/skills` のままです。
 
 ## OpenCode
 
 | | |
 |---|---|
 | 検出 | `opencode --version`、次に `~/.opencode/bin/opencode` |
-| インストール | `npm install -g opencode-ai` |
+| インストール | `npm install -g opencode-ai`。バイナリを配置するインストールスクリプトを許可します。その後 `opencode --version` を実行して動作を確認します。 |
 | 更新 | `opencode upgrade`。OpenCode をインストールした方法で更新します。 |
 | プロバイダー | `~/.config/opencode/opencode.json`（既存のファイルが `opencode.jsonc` ならそちら）の `zcf` プロバイダー。`model` は `zcf/<model>` に設定し、`anthropic` ブロックを使う場合は `small_model` を `models.haiku` から設定します。`anthropic` ブロックは `@ai-sdk/anthropic` 経由、`openai` ブロックは `@ai-sdk/openai-compatible` 経由で使い、モデルを指定している方を優先します。`limit` などモデルに追加した設定は残ります。 |
 | MCP | 同じファイルの `mcp` に `local` または `remote` サーバーとして書き込みます。OpenCode 自身のコマンドは対話形式でしか尋ねないためです。`oauth` や `timeout` など ZCF が管理しない設定は残ります。 |
-| スキル | `-a opencode`、`~/.config/opencode/skills` へ |
+| スキル | `-a opencode`、`~/.agents/skills` へ |
 
 `XDG_CONFIG_HOME` に従います。
 
@@ -73,7 +73,7 @@ Claude Code と同じく `CLAUDE_CONFIG_DIR` に従います。
 | 更新 | `cursor-agent update` |
 | プロバイダー | 適用しません。Cursor は自社のモデルしか提供しないため、プランに通知が表示されます。 |
 | MCP | CLI と Cursor エディターが共有する `~/.cursor/mcp.json` に書き込みます。`envFile` など ZCF が管理しない設定は残ります。 |
-| スキル | `-a cursor`、`~/.cursor/skills` へ |
+| スキル | `-a cursor`、`~/.agents/skills` へ |
 
 ## Pi
 

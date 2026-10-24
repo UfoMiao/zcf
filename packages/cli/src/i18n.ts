@@ -79,6 +79,7 @@ const en = {
   'step.defaultModel': 'Use model "{model}" by default',
   'step.writeConfig': 'Update {file}',
   'notice.notInstalled': '{tool} is not installed.',
+  'notice.upToDate': '{tool} is already up to date ({version}).',
   'notice.dshHomePatch':
     '{tool} now takes the provider and default model from ZCF in {file}, which outranks its Models page. Change them through ZCF.',
   'notice.fileNotList': '{file} is not a list of patches, so ZCF leaves it and its {tool} settings alone.',
@@ -262,6 +263,7 @@ const zhCN: Record<MessageKey, string> = {
   'step.defaultModel': '默认使用模型「{model}」',
   'step.writeConfig': '更新 {file}',
   'notice.notInstalled': '{tool} 尚未安装。',
+  'notice.upToDate': '{tool} 已是最新版本（{version}）。',
   'notice.dshHomePatch':
     '{tool} 现在从 {file} 读取 ZCF 设置的供应商和默认模型，其优先级高于它的模型页面，请通过 ZCF 修改。',
   'notice.fileNotList': '{file} 不是补丁列表，ZCF 不会改动它和其中的 {tool} 设置。',

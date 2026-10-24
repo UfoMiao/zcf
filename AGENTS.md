@@ -20,7 +20,7 @@ Prefer each tool's own commands and mainstream CLIs over reimplementing them: `c
 | `packages/*/test` | Vitest suites for that package |
 | `presets/providers.json` | Provider presets, fetched at runtime so they change without a release; validated by `packages/core/test/presets.test.ts` |
 | `scripts/bench-startup.mjs` | Startup benchmark that CI enforces |
-| `docs/` | VitePress site. v5 pages are `docs/{en,zh-CN,ja-JP}/guide/`; the other `en` and `zh-CN` pages still describe v3 until the v5 release. Deployed by hand (`docs-deploy.yml`) |
+| `docs/` | VitePress site. Pages are `docs/{en,zh-CN,ja-JP}/` (home page and `guide/`); v3's docs live at the `zcf@3.7.3` tag. Deployed by hand (`docs-deploy.yml`) |
 | `docs/adr/` | Architecture decisions; read `002-v5-architecture.md` before changing the engine |
 
 How it fits together: an adapter turns the config into a `ToolPlan` of steps. A step either runs a command or applies key edits to one native config file. `applyPlan` runs tools in parallel and each tool's steps in order, skipping the rest of a tool after a failure. Core returns message keys, never display text; front ends translate them.

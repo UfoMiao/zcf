@@ -140,7 +140,8 @@ describe('cursor.plan', () => {
     const plan = await cursor.plan(
       config({ skills: [{ source: 'owner/a', skills: ['one'] }, { source: 'owner/b' }] }),
       installed,
-      context({}, { [join(HOME, '.cursor', 'skills', 'one', 'SKILL.md')]: '# one' }),
+      // The skills CLI installs Cursor's global skills into the shared ~/.agents/skills.
+      context({}, { [join(HOME, '.agents', 'skills', 'one', 'SKILL.md')]: '# one' }),
     )
     expect((plan.steps as CommandStep[]).map(step => [step.command, ...step.args].join(' '))).toEqual([
       'npx -y skills add owner/b -g -y -a cursor',

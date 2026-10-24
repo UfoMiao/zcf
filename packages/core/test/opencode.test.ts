@@ -64,7 +64,14 @@ describe('opencode.plan', () => {
         kind: 'command',
         title: { key: 'step.install', params: { tool: 'opencode' } },
         command: 'npm',
-        args: ['install', '-g', 'opencode-ai'],
+        // npm 12 skips the postinstall that puts the binary in place unless it is allowed.
+        args: ['install', '-g', '--allow-scripts=opencode-ai', 'opencode-ai'],
+      },
+      {
+        kind: 'command',
+        title: { key: 'step.verify', params: { tool: 'opencode' } },
+        command: 'opencode',
+        args: ['--version'],
       },
     ])
     expect(await opencode.plan(config({}), installed, context())).toEqual({ tool: 'opencode', steps: [], notices: [] })
@@ -270,7 +277,8 @@ describe('opencode.plan', () => {
         ],
       }),
       installed,
-      context({}, { [join(HOME, '.config', 'opencode', 'skills', 'one', 'SKILL.md')]: '# one' }),
+      // The skills CLI installs OpenCode's global skills into the shared ~/.agents/skills.
+      context({}, { [join(HOME, '.agents', 'skills', 'one', 'SKILL.md')]: '# one' }),
     )
     expect((plan.steps as CommandStep[]).map(step => [step.command, ...step.args].join(' '))).toEqual([
       'npx -y skills add owner/b -g -y -a opencode -s two',

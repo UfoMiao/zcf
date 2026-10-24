@@ -47,20 +47,20 @@ title: 工具
 | 安装与更新 | `npm install -g @google/gemini-cli` |
 | 供应商 | `~/.gemini/.env` 中的 `GEMINI_API_KEY` 和 `GOOGLE_GEMINI_BASE_URL`，以及 `~/.gemini/settings.json` 中的 `security.auth.selectedType = "gemini-api-key"` 和 `model.name`。使用供应商的 `gemini` 块。 |
 | MCP | `gemini mcp add -s user`。环境变量和请求头随后写入 `settings.json`，因为该命令的 `-e` 选项会在值的第二个 `=` 处截断。 |
-| 技能 | `-a gemini-cli`，安装到 `~/.gemini/skills` |
+| 技能 | `-a gemini-cli`，安装到 `~/.agents/skills` |
 
-`settings.json` 和 `.env` 遵循 `GEMINI_CLI_HOME`。技能仍在 `~/.gemini/skills`，因为 skills CLI 安装到那里。
+`settings.json` 和 `.env` 遵循 `GEMINI_CLI_HOME`。技能仍在 `~/.agents/skills`，因为 skills CLI 安装到那里。
 
 ## OpenCode
 
 | | |
 |---|---|
 | 检测 | `opencode --version`，其次 `~/.opencode/bin/opencode` |
-| 安装 | `npm install -g opencode-ai` |
+| 安装 | `npm install -g opencode-ai`，并允许它的安装脚本运行，由该脚本放置二进制文件。之后 ZCF 会运行 `opencode --version` 确认安装成功。 |
 | 更新 | `opencode upgrade`，按 OpenCode 的安装方式更新 |
 | 供应商 | `~/.config/opencode/opencode.json`（如果你用的是 `opencode.jsonc` 则写入它）中的 `zcf` 供应商，并把 `model` 设为 `zcf/<模型>`；使用 `anthropic` 块时，`small_model` 取自 `models.haiku`。通过 `@ai-sdk/anthropic` 使用 `anthropic` 块，或通过 `@ai-sdk/openai-compatible` 使用 `openai` 块，优先选择写明了模型的那个。你给模型加的设置（例如 `limit`）会保留。 |
 | MCP | 以 `local` 或 `remote` 服务写入同一文件的 `mcp`。OpenCode 自带的命令只能交互式提问。ZCF 不管理的设置（例如 `oauth` 或 `timeout`）会保留。 |
-| 技能 | `-a opencode`，安装到 `~/.config/opencode/skills` |
+| 技能 | `-a opencode`，安装到 `~/.agents/skills` |
 
 遵循 `XDG_CONFIG_HOME`。
 
@@ -73,7 +73,7 @@ title: 工具
 | 更新 | `cursor-agent update` |
 | 供应商 | 不应用。Cursor 只提供自家模型，计划中会给出提示。 |
 | MCP | 写入 `~/.cursor/mcp.json`，该文件由 CLI 和 Cursor 编辑器共用。ZCF 不管理的设置（例如 `envFile`）会保留。 |
-| 技能 | `-a cursor`，安装到 `~/.cursor/skills` |
+| 技能 | `-a cursor`，安装到 `~/.agents/skills` |
 
 ## Pi
 

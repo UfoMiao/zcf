@@ -1,7 +1,7 @@
 import { join } from 'pathe'
 
 import { isTable, JsExpression, QuotedString } from '../io/editors'
-import type { CommandStep, Notice } from '../plan/types'
+import type { CommandStep, Notice, PlanStep } from '../plan/types'
 import type { SkillSource, ToolId } from '../schema/config'
 import type { AdapterContext, ToolStatus } from './types'
 
@@ -29,14 +29,35 @@ export async function detectCommand(
   return { installed: false, command: fallback }
 }
 
-/** Install a tool that is published on npm, for tools whose official install is `npm install -g`. */
-export function npmInstallStep(tool: ToolId, pkg: string): CommandStep {
+/**
+ * Install a tool that is published on npm, for tools whose official install is `npm install -g`.
+ * npm 12 skips install scripts unless they are allowed by name, so a package whose postinstall
+ * fetches or links its binary passes `allowScripts`; older npm ignores the option.
+ */
+export function npmInstallStep(tool: ToolId, pkg: string, allowScripts: readonly string[] = []): CommandStep {
   return {
     kind: 'command',
     title: { key: 'step.install', params: { tool } },
     command: 'npm',
-    args: ['install', '-g', pkg],
+    args: ['install', '-g', ...(allowScripts.length > 0 ? [`--allow-scripts=${allowScripts.join(',')}`] : []), pkg],
   }
+}
+
+/** Run the freshly installed tool, since npm reports success even when the binary it needs is missing. */
+export function verifyStep(tool: ToolId, command: string): CommandStep {
+  return {
+    kind: 'command',
+    title: { key: 'step.verify', params: { tool } },
+    command,
+    args: ['--version'],
+  }
+}
+
+/** The package an `npm install -g <pkg>@latest` step updates, or `undefined` for any other step. */
+export function npmLatestPackage(step: PlanStep): string | undefined {
+  if (step.kind !== 'command' || step.command !== 'npm' || step.args[0] !== 'install') return undefined
+  const spec = step.args.at(-1)
+  return spec?.endsWith('@latest') ? spec.slice(0, -'@latest'.length) : undefined
 }
 
 /** Update a tool with npm, for tools that have no updater of their own. */
@@ -88,6 +109,8 @@ export function skillsAddStep({ source, skills }: SkillSource, agent: string): C
     },
     command: 'npx',
     args: ['-y', 'skills', 'add', source, '-g', '-y', '-a', agent, ...skills.flatMap(name => ['-s', name])],
+    // Tools apply in parallel, and concurrent `npx` runs of one package can break npx's shared cache.
+    serial: 'npx-skills',
   }
 }
 

@@ -5,7 +5,16 @@ import { isTable } from '../io/editors'
 import type { FileStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, sameJson, npmInstallStep, selfUpdateStep, skillSteps } from './shared'
+import {
+  detectCommand,
+  envPath,
+  notice,
+  sameJson,
+  npmInstallStep,
+  selfUpdateStep,
+  skillSteps,
+  verifyStep,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'opencode' as const
@@ -156,8 +165,10 @@ export const opencode: ToolAdapter = {
     const steps: PlanStep[] = []
     const notices: Notice[] = []
 
-    // npm is the install that works the same on every platform, Windows included.
-    if (!status.installed) steps.push(npmInstallStep(TOOL, 'opencode-ai'))
+    // npm is the install that works the same on every platform, Windows included. The package's
+    // postinstall puts the platform binary in place, and npm 12 only runs it when allowed.
+    if (!status.installed)
+      steps.push(npmInstallStep(TOOL, 'opencode-ai', ['opencode-ai']), verifyStep(TOOL, 'opencode'))
 
     const file = await configFile(ctx)
     const fileStep = (title: FileStep['title'], edits: KeyEdit[]): FileStep => ({
@@ -194,7 +205,8 @@ export const opencode: ToolAdapter = {
     if (!file.data) fileSteps[0]?.edits.unshift({ path: ['$schema'], value: 'https://opencode.ai/config.json' })
     steps.push(...fileSteps)
 
-    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(configDir(ctx), 'skills') })))
+    // The skills CLI installs OpenCode's global skills into the shared ~/.agents/skills.
+    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(ctx.home, '.agents', 'skills') })))
 
     return { tool: TOOL, steps, notices }
   },

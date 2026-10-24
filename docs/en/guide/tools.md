@@ -47,20 +47,20 @@ Across all tools:
 | Install and update | `npm install -g @google/gemini-cli` |
 | Provider | `GEMINI_API_KEY` and `GOOGLE_GEMINI_BASE_URL` in `~/.gemini/.env`, plus `security.auth.selectedType = "gemini-api-key"` and `model.name` in `~/.gemini/settings.json`. Uses the provider's `gemini` block. |
 | MCP | `gemini mcp add -s user`. Environment variables and headers are written to `settings.json` afterwards, because the command's `-e` option cuts a value at its second `=`. |
-| Skills | `-a gemini-cli`, into `~/.gemini/skills` |
+| Skills | `-a gemini-cli`, into `~/.agents/skills` |
 
-`GEMINI_CLI_HOME` is followed for `settings.json` and `.env`. Skills stay in `~/.gemini/skills`, where the skills CLI installs them.
+`GEMINI_CLI_HOME` is followed for `settings.json` and `.env`. Skills stay in `~/.agents/skills`, where the skills CLI installs them.
 
 ## OpenCode
 
 | | |
 |---|---|
 | Detect | `opencode --version`, then `~/.opencode/bin/opencode` |
-| Install | `npm install -g opencode-ai` |
+| Install | `npm install -g opencode-ai`, allowing its install script, which puts the binary in place. ZCF then runs `opencode --version` to check it worked. |
 | Update | `opencode upgrade`, which updates the way OpenCode was installed |
 | Provider | A `zcf` provider in `~/.config/opencode/opencode.json` (or `opencode.jsonc` if that is the file you have), with `model` set to `zcf/<model>`, and `small_model` set from `models.haiku` when the `anthropic` block is used. Uses the `anthropic` block through `@ai-sdk/anthropic`, or the `openai` block through `@ai-sdk/openai-compatible`, preferring the one that names a model. Settings you added to a model, such as `limit`, stay. |
 | MCP | Written to `mcp` in the same file, as `local` or `remote` servers. OpenCode's own command only asks interactively. Settings ZCF does not manage, such as `oauth` or `timeout`, stay. |
-| Skills | `-a opencode`, into `~/.config/opencode/skills` |
+| Skills | `-a opencode`, into `~/.agents/skills` |
 
 `XDG_CONFIG_HOME` is followed.
 
@@ -73,7 +73,7 @@ Across all tools:
 | Update | `cursor-agent update` |
 | Provider | Not applied. Cursor only serves its own models, so the plan shows a notice. |
 | MCP | Written to `~/.cursor/mcp.json`, which the CLI shares with the Cursor editor. Settings ZCF does not manage, such as `envFile`, stay. |
-| Skills | `-a cursor`, into `~/.cursor/skills` |
+| Skills | `-a cursor`, into `~/.agents/skills` |
 
 ## Pi
 

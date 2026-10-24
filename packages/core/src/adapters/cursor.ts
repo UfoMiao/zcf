@@ -113,7 +113,8 @@ export const cursor: ToolAdapter = {
       })
     }
 
-    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(cursorDir(ctx), 'skills') })))
+    // The skills CLI installs Cursor's global skills into the shared ~/.agents/skills.
+    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(ctx.home, '.agents', 'skills') })))
 
     return { tool: TOOL, steps, notices }
   },
