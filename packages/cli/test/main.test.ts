@@ -16,13 +16,15 @@ let home: string
 let calls: string[][]
 let envs: (Record<string, string> | undefined)[]
 let env: Record<string, string>
-let responses: Record<string, Partial<CommandResult>>
+/** Canned results by command line; a function answers each call afresh, for output that changes. */
+let responses: Record<string, Partial<CommandResult> | (() => Partial<CommandResult>)>
 
 const runner: CommandRunner = {
   async run(command, args, options) {
     calls.push([command, ...args])
     envs.push(options?.env)
-    const response = responses[[command, ...args].join(' ')]
+    const canned = responses[[command, ...args].join(' ')]
+    const response = typeof canned === 'function' ? canned() : canned
     return response
       ? {
           exitCode: 0,
@@ -304,6 +306,28 @@ describe('zcf update', () => {
     expect(calls).toContainEqual(['claude', 'update'])
   })
 
+  it('says when the updater found nothing newer', async () => {
+    responses['claude --version'] = { stdout: '2.1.0 (Claude Code)' }
+    responses['claude update'] = {}
+    const { code, stdout } = await run('update', '--tools', 'claude-code')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Claude Code is already up to date (2.1.0).')
+    expect(stdout).toContain('Done: 0 applied, 1 already up to date.')
+  })
+
+  it('shows the version a tool was updated to', async () => {
+    let installed = '2.1.0'
+    responses['claude --version'] = () => ({ stdout: `${installed} (Claude Code)` })
+    responses['claude update'] = () => {
+      installed = '2.1.3'
+      return {}
+    }
+    const { code, stdout } = await run('update', '--tools', 'claude-code')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Claude Code updated from 2.1.0 to 2.1.3.')
+    expect(stdout).toContain('Done: 1 applied, 0 already up to date.')
+  })
+
   it('takes tools from the config and needs at least one', async () => {
     await writeConfig({ version: 1 })
     expect(await run('update')).toMatchObject({
@@ -312,6 +336,11 @@ describe('zcf update', () => {
     })
   })
 })
+
+/** The environment the last `claude update` ran with; a version check follows it, so it is not the last call. */
+function updateEnv() {
+  return envs[calls.findLastIndex(call => call.join(' ') === 'claude update')]
+}
 
 function configFile() {
   return join(home, '.ufomiao', 'zcf', 'zcf.json')
@@ -438,15 +467,15 @@ describe('mirrors', () => {
     const china = await run('update', '--tools', 'claude-code')
     expect(china.code).toBe(EXIT_OK)
     expect(china.stdout).toContain('a native install still downloads from its official servers')
-    expect(envs.at(-1)).toEqual(registry)
+    expect(updateEnv()).toEqual(registry)
     expect((await run('update', '--tools', 'claude-code', '--mirror', 'official')).code).toBe(EXIT_OK)
-    expect(envs.at(-1)).toBeUndefined()
+    expect(updateEnv()).toBeUndefined()
 
     // With --tools a broken config does not stop the update, but its mirror is not used.
     await writeConfig({ version: 1, mirror: 'china', tools: ['nope'] })
     const broken = await run('update', '--tools', 'claude-code')
     expect(broken.stdout).toContain('could not be read, so its mirror setting is not used')
-    expect(envs.at(-1)).toBeUndefined()
+    expect(updateEnv()).toBeUndefined()
   })
 })
 

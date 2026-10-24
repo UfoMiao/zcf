@@ -64,7 +64,7 @@ Tools are applied in parallel. If a step fails, the rest of that tool's steps ar
 
 ## `zcf update`
 
-Update the selected tools with their own updaters, such as `claude update`, `codex update`, `opencode upgrade` or `pi update --self`. A tool without its own updater is updated with `npm install -g`. A tool that is not installed is skipped with a notice.
+Update the selected tools with their own updaters, such as `claude update`, `codex update`, `opencode upgrade` or `pi update --self`. A tool without its own updater is updated with `npm install -g`. A tool that is not installed is skipped with a notice. Afterwards ZCF checks each updated tool's version and says whether it moved to a newer one or was already up to date.
 
 | Option | Meaning |
 |--------|---------|

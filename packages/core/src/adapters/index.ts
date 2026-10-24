@@ -55,7 +55,10 @@ export async function planUpdates(tools: readonly ToolId[], ctx: AdapterContext)
   const plans = await Promise.all(
     [...new Set(tools)].map(async tool => {
       const adapter = ADAPTERS[tool]
-      return adapter.planUpdate(await adapter.detect(mirrored), mirrored)
+      const status = await adapter.detect(mirrored)
+      const plan = adapter.planUpdate(status, mirrored)
+      if (status.version) plan.version = status.version
+      return plan
     }),
   )
   return withMirrorEnv({ tools: plans }, mirror, ctx.env)

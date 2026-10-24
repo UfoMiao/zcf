@@ -63,6 +63,8 @@ describe('planUpdates', () => {
     expect(
       plan.tools.map(tool => tool.steps.map(step => step.kind === 'command' && [step.command, ...step.args])),
     ).toEqual([[['codex', 'update']], [['npm', 'install', '-g', '@google/gemini-cli@latest']]])
+    // The installed version, so the caller can tell whether an update found anything newer.
+    expect(plan.tools.map(tool => tool.version)).toEqual(['0.164.0', '0.65.0'])
   })
 })
 
