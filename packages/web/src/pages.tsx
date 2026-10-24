@@ -1,5 +1,5 @@
 import type { PresetList, ToolId, ToolStatus } from '@zcf/core'
-import { applyPreset, TOOL_NAMES } from '@zcf/core/schema'
+import { applyPreset, presetSummary, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, McpType, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import {
   freshName,
@@ -75,10 +75,7 @@ function PresetSelect({ editor, t, lang }: PageProps & { lang: string }) {
         <option value="">{list ? t('tui.provider.presetTitle') : t('tui.provider.presetsLoading')}</option>
         {list?.presets.map(preset => (
           <option key={preset.id} value={preset.id}>
-            {preset.name}
-            {(preset.description[lang] ?? preset.description.en)
-              ? ` — ${preset.description[lang] ?? preset.description.en}`
-              : ''}
+            {preset.name} — {presetSummary(preset, lang)}
           </option>
         ))}
       </select>

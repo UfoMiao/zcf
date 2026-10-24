@@ -7,7 +7,7 @@ import { githubFileUrls } from '../src/mirror'
 import { loadPresets, PRESET_FILE } from '../src/presets'
 
 const PRESET_URLS = githubFileUrls(PRESET_FILE, 'official')
-import { applyPreset, parsePresets } from '../src/schema/presets'
+import { applyPreset, parsePresets, presetSummary } from '../src/schema/presets'
 import { tempDir } from './helpers'
 
 const file = {
@@ -64,7 +64,7 @@ describe('loadPresets', () => {
 
     // A fresh copy is used without fetching; an old one is refreshed, and kept when offline.
     const again = fakeFetch({})
-    expect(await loadPresets({ cacheDir, fetch: again.fetcher, now: () => 2000 })).toMatchObject({ source: 'cache' })
+    expect(await loadPresets({ cacheDir, fetch: again.fetcher, now: () => 2000 })).toMatchObject({ source: 'remote' })
     expect(again.calls).toEqual([])
     const offline = await loadPresets({ cacheDir, fetch: again.fetcher, now: () => 1000 + 25 * 3600 * 1000 })
     expect(offline.source).toBe('cache')
@@ -124,5 +124,26 @@ describe('applyPreset', () => {
       name: 'Relay',
       anthropic: { baseUrl: 'https://relay.example.com', authType: 'api_key' },
     })
+  })
+})
+
+describe('presetSummary', () => {
+  it('lists the hosts a preset sends requests to, then its description', () => {
+    const preset = parsePresets({
+      version: 1,
+      providers: [
+        {
+          id: 'multi',
+          name: 'Multi',
+          description: { en: 'Two protocols', 'zh-CN': '两种协议' },
+          anthropic: { baseUrl: 'https://api.example.com/anthropic' },
+          openai: { baseUrl: 'https://api.example.com/v1' },
+          gemini: { baseUrl: 'https://g.example.com' },
+        },
+      ],
+    })![0]!
+    expect(presetSummary(preset, 'zh-CN')).toBe('api.example.com, g.example.com · 两种协议')
+    expect(presetSummary(preset, 'fr')).toBe('api.example.com, g.example.com · Two protocols')
+    expect(presetSummary({ ...preset, description: {} }, 'en')).toBe('api.example.com, g.example.com')
   })
 })

@@ -139,7 +139,8 @@ describe('terminal UI', () => {
     )
     const app = await start(service)
     await app.press(KEY.down, KEY.enter, KEY.enter)
-    expect(await app.until('Relay')).toContain('A relay')
+    // The host comes first, so the user sees where the key would go before picking.
+    expect(await app.until('Relay')).toContain('relay.example.com · A relay')
     expect(app.frame()).toContain('saved copy')
 
     await app.press(KEY.enter)
@@ -158,6 +159,16 @@ describe('terminal UI', () => {
       },
     ])
     expect(app.frame()).not.toContain('sk-very-secret')
+    app.unmount()
+  })
+
+  it('goes back from the preset list while it is still loading', async () => {
+    const { service } = fakeService({ version: 1, tools: [] }, { presets: () => new Promise(() => {}) })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.enter, KEY.enter)
+    expect(await app.until('Loading the preset list')).toContain('Choose a provider preset')
+    await app.press(KEY.escape)
+    expect(await app.until('Start from a preset')).not.toContain('Loading the preset list')
     app.unmount()
   })
 
