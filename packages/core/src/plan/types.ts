@@ -23,6 +23,8 @@ export interface CommandStep {
   title: Message
   command: string
   args: string[]
+  /** Extra environment variables for the command, such as the mirror's npm registry. Never shown to people. */
+  env?: Record<string, string>
   /** Files the command changes; they are backed up before it runs. */
   touches?: string[]
 }

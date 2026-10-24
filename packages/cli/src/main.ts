@@ -1,18 +1,27 @@
 import process from 'node:process'
 
-import type { AdapterContext, FilePreview, Plan, PlanStep, ToolId, ZcfConfig } from '@zcf/core'
+import type { AdapterContext, FilePreview, Mirror, Plan, PlanStep, ToolId, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
   createContext,
   defaultConfigPath,
+  editJson,
+  envMirror,
   FileSyntaxError,
+  isMirror,
   loadConfigFile,
+  MIRRORS,
+  mirrorEnv,
   planTools,
   planUpdates,
   previewPlan,
   isToolId,
+  readTextIfExists,
+  resolveMirror,
   TOOL_IDS,
+  writeFileAtomic,
 } from '@zcf/core'
+import { dim, yellow } from 'ansis'
 import { cac } from 'cac'
 import { join, resolve } from 'pathe'
 
@@ -20,7 +29,7 @@ import { version } from '../package.json'
 import type { Translate } from './i18n'
 import { createTranslator, detectLang } from './i18n'
 import type { Output } from './render'
-import { collectSecrets, Renderer } from './render'
+import { collectSecrets, Renderer, tildify } from './render'
 
 export const EXIT_OK = 0
 export const EXIT_ERROR = 1
@@ -37,6 +46,7 @@ interface CommandFlags {
   file?: string
   tools?: string
   yes?: boolean
+  mirror?: string
 }
 
 class CliError extends Error {
@@ -72,6 +82,13 @@ function parseTools(value: unknown, t: ReturnType<typeof createTranslator>): Too
   return tools
 }
 
+function parseMirror(value: unknown, t: Translate): Mirror | undefined {
+  if (value === undefined) return undefined
+  if (isMirror(value)) return value
+  const mirror = typeof value === 'string' ? value : ''
+  throw new CliError(t('cli.unknownMirror', { mirror, known: MIRRORS.join(', ') }), EXIT_ERROR)
+}
+
 function hasWork(plan: Plan, previews: Map<PlanStep, FilePreview>): boolean {
   return plan.tools.some(toolPlan => toolPlan.steps.some(step => previews.get(step)?.changed ?? true))
 }
@@ -103,8 +120,10 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   const ctx = createContext(options.context)
   const now = options.now ?? (() => new Date())
 
+  const configPath = (file: string | undefined) => (file ? resolve(file) : defaultConfigPath(ctx.home))
+
   async function loadConfig(file: string | undefined): Promise<ZcfConfig> {
-    const path = file ? resolve(file) : defaultConfigPath(ctx.home)
+    const path = configPath(file)
     const result = await loadConfigFile(path)
     if (result.success) return result.config
     if ('missing' in result) throw new CliError(t('cli.configMissing', { path }), EXIT_INVALID_CONFIG)
@@ -121,11 +140,23 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     const tools = parseTools(flags.tools, t) ?? config.tools
     if (tools.length === 0) throw new CliError(t('cli.noTools'), EXIT_ERROR)
 
-    const plan = await planTools(config, ctx, tools)
+    const override = parseMirror(flags.mirror, t)
+    const plan = await planTools(config, { ...ctx, mirror: override }, tools)
     const previews = await previewPlan(plan, ctx.readFile)
     const fileSecrets = [...previews.values()].flatMap(preview => preview.secrets)
     const renderer = new Renderer(stdout, t, collectSecrets(config, fileSecrets), ctx.home)
+    showMirror(renderer, resolveMirror({ override, env: ctx.env, config }))
     return { config, plan, previews, renderer }
+  }
+
+  /** Say so when downloads go through a mirror. The registry npm will use is the user's own when they set one. */
+  function showMirror(renderer: Renderer, mirror: Mirror): void {
+    if (mirror === 'official') return
+    const registry =
+      mirrorEnv(mirror, ctx.env).npm_config_registry ??
+      Object.entries(ctx.env).find(([key]) => key.toLowerCase() === 'npm_config_registry')?.[1]
+    renderer.line(dim(t('cli.mirrorInUse', { registry: registry ?? '' })))
+    renderer.line()
   }
 
   async function runPlan(plan: Plan, renderer: Renderer): Promise<number> {
@@ -167,6 +198,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     .command('plan', t('cli.command.plan'))
     .option('--file <path>', t('cli.option.file'))
     .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
+    .option('--mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
     .action(async (flags: CommandFlags) => {
       const { plan, previews, renderer } = await preparePlan(flags)
       renderer.plan(plan, previews)
@@ -177,6 +209,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     .command('apply', t('cli.command.apply'))
     .option('--file <path>', t('cli.option.file'))
     .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
+    .option('--mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
     .option('-y, --yes', t('cli.option.yes'))
     .action(async (flags: CommandFlags) => {
       const { plan, previews, renderer } = await preparePlan(flags)
@@ -196,15 +229,56 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     .command('update', t('cli.command.update'))
     .option('--file <path>', t('cli.option.file'))
     .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
+    .option('--mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
     .action(async (flags: CommandFlags) => {
-      const tools = parseTools(flags.tools, t) ?? (await loadConfig(flags.file)).tools
+      const override = parseMirror(flags.mirror, t)
+      const listed = parseTools(flags.tools, t)
+      // The config is required for its tools; with --tools, a missing or broken one only means no mirror setting.
+      const loaded = listed ? await loadConfigFile(configPath(flags.file)) : undefined
+      const config = listed ? (loaded?.success ? loaded.config : undefined) : await loadConfig(flags.file)
+      const tools = listed ?? config?.tools ?? []
       if (tools.length === 0) throw new CliError(t('cli.noTools'), EXIT_ERROR)
       const renderer = new Renderer(stdout, t, [], ctx.home)
-      const plan = await planUpdates(tools, ctx)
+      const mirror = resolveMirror({ override, env: ctx.env, config })
+      showMirror(renderer, mirror)
+      const plan = await planUpdates(tools, { ...ctx, mirror })
       for (const toolPlan of plan.tools) {
         for (const notice of toolPlan.notices) renderer.notice(notice)
       }
       return runPlan(plan, renderer)
+    })
+
+  cli
+    .command('mirror [mirror]', t('cli.command.mirror'))
+    .option('--file <path>', t('cli.option.file'))
+    .action(async (value: string | undefined, flags: CommandFlags) => {
+      const path = configPath(flags.file)
+      const renderer = new Renderer(stdout, t, [], ctx.home)
+      const fromEnv = envMirror(ctx.env)
+      if (value === undefined) {
+        const result = await loadConfigFile(path)
+        if (!result.success && !('missing' in result)) await loadConfig(flags.file)
+        const configured = result.success ? result.config.mirror : undefined
+        const mirror = fromEnv ?? configured ?? 'official'
+        const source = fromEnv
+          ? t('cli.mirrorSource.env')
+          : result.success
+            ? t('cli.mirrorSource.config', { path: tildify(path, ctx.home) })
+            : t('cli.mirrorSource.default')
+        renderer.line(t('cli.mirrorCurrent', { mirror: `${mirror} - ${t(`mirror.${mirror}`)}`, source }))
+        renderer.line(dim(t('cli.mirrorHint')))
+        return EXIT_OK
+      }
+
+      const mirror = parseMirror(value, t)!
+      const text = await readTextIfExists(path)
+      // A missing config starts as the smallest valid one; an existing one keeps everything but this key.
+      const next = editJson(text ?? '{\n  "version": 1\n}\n', [{ path: ['mirror'], value: mirror }])
+      await writeFileAtomic(path, next)
+      renderer.line(t('cli.mirrorSet', { mirror: t(`mirror.${mirror}`), path: tildify(path, ctx.home) }))
+      if (fromEnv && fromEnv !== mirror)
+        renderer.line(yellow(t('cli.mirrorEnvOverrides', { value: ctx.env.ZCF_MIRROR ?? '' })))
+      return EXIT_OK
     })
 
   try {

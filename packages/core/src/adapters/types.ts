@@ -1,4 +1,5 @@
 import type { CommandRunner } from '../exec/runner'
+import type { Mirror } from '../mirror'
 import type { ToolPlan } from '../plan/types'
 import type { ToolId, ZcfConfig } from '../schema/config'
 
@@ -9,6 +10,11 @@ export interface AdapterContext {
   env: Record<string, string | undefined>
   runner: CommandRunner
   readFile: (path: string) => Promise<string | undefined>
+  /**
+   * The mirror chosen for this run, such as from a `--mirror` flag. When unset, `ZCF_MIRROR`
+   * and then the config's `mirror` decide; adapters read the result through `planTools`.
+   */
+  mirror?: Mirror
 }
 
 export interface ToolStatus {

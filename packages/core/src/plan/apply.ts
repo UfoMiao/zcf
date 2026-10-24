@@ -53,7 +53,7 @@ async function runStep(
     if (step.kind === 'command') {
       const backups = await Promise.all((step.touches ?? []).map(snapshot))
       const backup = backups.find(path => path !== undefined)
-      const result = await options.runner.run(step.command, step.args)
+      const result = await options.runner.run(step.command, step.args, step.env ? { env: step.env } : undefined)
       if (result.exitCode === 0) return { step, status: 'done', backup }
       const detail = lastLines(result.stderr) || lastLines(result.stdout) || `exit code ${result.exitCode ?? 'unknown'}`
       return { step, status: 'failed', detail, backup }

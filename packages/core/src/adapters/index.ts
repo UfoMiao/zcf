@@ -1,3 +1,4 @@
+import { resolveMirror, withMirrorEnv } from '../mirror'
 import type { Plan, ToolPlan } from '../plan/types'
 import type { ToolId, ZcfConfig } from '../schema/config'
 import { claudeCode } from './claude-code'
@@ -46,29 +47,37 @@ export async function detectTools(
   return Object.fromEntries(entries.filter(([, status]) => status))
 }
 
-/** Plan every selected tool in parallel. `tools` overrides the tools listed in the config. */
+/**
+ * Plan every selected tool in parallel. `tools` overrides the tools listed in the config.
+ * When a mirror is in use, every command step gets its npm registry.
+ */
 export async function planTools(
   config: ZcfConfig,
   ctx: AdapterContext,
   tools: readonly ToolId[] = config.tools,
 ): Promise<Plan> {
+  const mirror = resolveMirror({ override: ctx.mirror, env: ctx.env, config })
+  const mirrored = { ...ctx, mirror }
   const plans = await Promise.all(
     [...new Set(tools)].map(async tool => {
       const adapter = ADAPTERS[tool]
       if (!adapter) return unsupported(tool)
-      return adapter.plan(config, await adapter.detect(ctx), ctx)
+      return adapter.plan(config, await adapter.detect(mirrored), mirrored)
     }),
   )
-  return { tools: plans }
+  return withMirrorEnv({ tools: plans }, mirror, ctx.env)
 }
 
+/** Plan each tool's own update. The mirror is `ctx.mirror`, else `ZCF_MIRROR`. */
 export async function planUpdates(tools: readonly ToolId[], ctx: AdapterContext): Promise<Plan> {
+  const mirror = resolveMirror({ override: ctx.mirror, env: ctx.env })
+  const mirrored = { ...ctx, mirror }
   const plans = await Promise.all(
     [...new Set(tools)].map(async tool => {
       const adapter = ADAPTERS[tool]
       if (!adapter) return unsupported(tool)
-      return adapter.planUpdate(await adapter.detect(ctx), ctx)
+      return adapter.planUpdate(await adapter.detect(mirrored), mirrored)
     }),
   )
-  return { tools: plans }
+  return withMirrorEnv({ tools: plans }, mirror, ctx.env)
 }

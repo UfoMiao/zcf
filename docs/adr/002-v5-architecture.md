@@ -78,6 +78,18 @@ Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness follow the same
 
 The provider has one block per protocol (`anthropic`, `openai`, `gemini`). Each adapter uses the protocol its tool speaks, and reports a notice when the provider lacks it. A tool's model is the protocol block's `model`, or else `models.default`.
 
+### Mirrors
+
+`mirror` in the config (`official` or `china`, overridden by `ZCF_MIRROR` and by `--mirror` for one run, and set with `zcf mirror`) decides where downloads come from, after magpie's 「国内镜像」 switch. Only mirrors that serve the very same files are used, never a proxy such as gh-proxy that could hand back anything.
+
+| Download | `china` |
+|----------|---------|
+| npm (`npm install -g`, `npx skills`, a tool's own updater on an npm install) | `planTools` and `planUpdates` give every command step `npm_config_registry=https://registry.npmmirror.com`, unless the user already set `npm_config_registry`. The value is never printed |
+| Claude Code install | `npm install -g @anthropic-ai/claude-code` (the same native binary) instead of `install.sh`, which downloads from Google Cloud Storage |
+| Files in a GitHub repository, such as provider presets | `githubFileUrls` lists `fastly.jsdelivr.net` and `gcore.jsdelivr.net` before `cdn.jsdelivr.net` and `raw.githubusercontent.com` |
+
+Not covered: git clones that `npx skills add owner/repo` makes, native self-updates such as `claude update` on an `install.sh` install, and the `npx` an MCP server runs inside a tool.
+
 ### Tooling
 
 - TypeScript 7 (native `tsc`) for type checking.

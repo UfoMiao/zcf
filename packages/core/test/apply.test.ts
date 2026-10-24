@@ -230,6 +230,30 @@ describe('applyPlan', () => {
     expect(await readFile(join(backupDir, '.claude.json'), 'utf8')).toBe('{"mcpServers":{"a":{}}}')
   })
 
+  it("passes a command step's environment to the runner", async () => {
+    const seen: unknown[] = []
+    const runner: CommandRunner = {
+      async run(_command, _args, options) {
+        seen.push(options)
+        return { exitCode: 0, stdout: '', stderr: '' }
+      },
+    }
+    const step = { kind: 'command' as const, title, command: 'npm', args: ['install'] }
+    await applyPlan(
+      {
+        tools: [
+          {
+            tool: 'codex',
+            notices: [],
+            steps: [{ ...step, env: { npm_config_registry: 'https://registry.npmmirror.com' } }, step],
+          },
+        ],
+      },
+      { runner, backupDir: await tempDir() },
+    )
+    expect(seen).toEqual([{ env: { npm_config_registry: 'https://registry.npmmirror.com' } }, undefined])
+  })
+
   it('turns a broken file into a failed step', async () => {
     const home = await tempDir()
     const path = join(home, 'broken.json')
