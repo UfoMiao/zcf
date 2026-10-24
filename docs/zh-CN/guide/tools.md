@@ -18,7 +18,7 @@ title: 工具
 | | |
 |---|---|
 | 检测 | `claude --version`，其次 `~/.local/bin/claude` |
-| 安装 | 官方原生安装器（`install.sh`，Windows 上为 `install.ps1`）。使用 [`china` 镜像](./mirrors)时为 `npm install -g @anthropic-ai/claude-code`。 |
+| 安装 | 官方原生安装器（`install.sh`，Windows 上为 `install.ps1`）。使用 [`china` 镜像](./mirrors)时为 `npm install -g @anthropic-ai/claude-code`，并允许该包用于链接程序的安装脚本，之后运行 `claude --version` 确认安装成功。 |
 | 更新 | `claude update` |
 | 供应商 | `~/.claude/settings.json` 中的 `env`：`ANTHROPIC_BASE_URL`，密钥写为 `ANTHROPIC_AUTH_TOKEN`（`authType: "api_key"` 时为 `ANTHROPIC_API_KEY`），`ANTHROPIC_MODEL` 来自 `models.default`，以及 `ANTHROPIC_DEFAULT_HAIKU_MODEL`、`_SONNET_MODEL` 和 `_OPUS_MODEL`。配置中未设置的这些键会被 ZCF 删除。 |
 | MCP | `claude mcp add-json --scope user`。有变化的服务会先删除再重新添加。Windows 上，`npx` 等命令会包装成 `cmd /c`。 |
