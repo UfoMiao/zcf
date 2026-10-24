@@ -3,6 +3,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'pathe'
 import { describe, expect, it } from 'vitest'
 
+import type { CommandRunner } from '../src/exec/runner'
 import type { ApplyEvent } from '../src/plan/apply'
 import { applyPlan } from '../src/plan/apply'
 import type { Plan } from '../src/plan/types'
@@ -192,6 +193,41 @@ describe('applyPlan', () => {
     expect(results[2]!.steps[0]!.detail).toBe('exit code 2')
     expect(results[3]!.steps[0]!.detail).toBe('missing: not found')
     expect(runner.calls.filter(call => call[0] === 'ok')).toHaveLength(1)
+  })
+
+  it('backs up files a command touches before running it', async () => {
+    const home = await tempDir()
+    const backupDir = join(home, 'backups')
+    const touched = join(home, '.claude.json')
+    await writeFile(touched, '{"mcpServers":{"a":{}}}')
+    const runner: CommandRunner = {
+      async run() {
+        await writeFile(touched, '{}')
+        return { exitCode: 1, stdout: '', stderr: 'add failed' }
+      },
+    }
+    const [result] = await applyPlan(
+      {
+        tools: [
+          {
+            tool: 'claude-code',
+            notices: [],
+            steps: [
+              {
+                kind: 'command',
+                title,
+                command: 'claude',
+                args: ['mcp'],
+                touches: [touched, join(home, 'missing.json')],
+              },
+            ],
+          },
+        ],
+      },
+      { runner, backupDir, home },
+    )
+    expect(result!.steps[0]).toMatchObject({ status: 'failed', backup: join(backupDir, '.claude.json') })
+    expect(await readFile(join(backupDir, '.claude.json'), 'utf8')).toBe('{"mcpServers":{"a":{}}}')
   })
 
   it('turns a broken file into a failed step', async () => {

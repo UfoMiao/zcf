@@ -72,7 +72,7 @@ describe('claudeCode.plan', () => {
           params: { tool: 'claude-code' },
         },
         command: 'bash',
-        args: ['-c', 'curl -fsSL https://claude.ai/install.sh | bash'],
+        args: ['-c', 'set -o pipefail; curl -fsSL https://claude.ai/install.sh | bash'],
       },
     ])
 
@@ -225,6 +225,15 @@ describe('claudeCode.plan', () => {
       ],
     ])
     expect((plan.steps as CommandStep[]).every(step => step.command === 'claude')).toBe(true)
+  })
+
+  it('treats only real entries of ~/.claude.json as existing servers, and backs that file up first', async () => {
+    const plan = await claudeCode.plan(
+      config({ mcpServers: { toString: { type: 'http' as const, url: 'https://a.example.com' } } }),
+      installed,
+      context({}, { [join(HOME, '.claude.json')]: '{"mcpServers":{}}' }),
+    )
+    expect(plan.steps).toMatchObject([{ title: { key: 'step.mcpAdd' }, touches: [join(HOME, '.claude.json')] }])
   })
 
   it('uses the freshly installed binary for MCP steps', async () => {

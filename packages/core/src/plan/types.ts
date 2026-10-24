@@ -22,6 +22,8 @@ export interface CommandStep {
   title: Message
   command: string
   args: string[]
+  /** Files the command changes; they are backed up before it runs. */
+  touches?: string[]
 }
 
 /** Change specific keys in a native config file, keeping the rest of the file as it is. */

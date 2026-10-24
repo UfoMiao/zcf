@@ -48,7 +48,11 @@ export function isTable(value: unknown): value is Table {
 }
 
 /** Set or remove (`value: undefined`) a key in a plain object tree, creating tables on the way. */
+const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
 export function setAtPath(root: Table, path: KeyEdit['path'], value: unknown): void {
+  const unsafe = path.find(key => UNSAFE_KEYS.has(String(key)))
+  if (unsafe !== undefined) throw new Error(`Unsafe key in path: ${unsafe}`)
   let table = root
   for (const key of path.slice(0, -1)) {
     const existing = table[key]

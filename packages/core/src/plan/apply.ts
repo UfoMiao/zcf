@@ -11,7 +11,7 @@ export interface StepResult {
   status: StepStatus
   /** Error text for a failed step. */
   detail?: string
-  /** Where the previous version of the file was copied, for a file step that changed an existing file. */
+  /** Where the previous version of a changed file was copied, when one existed. */
   backup?: string
 }
 
@@ -43,20 +43,26 @@ async function runStep(
   options: ApplyOptions,
   snapshots: Map<string, Promise<string | undefined>>,
 ): Promise<StepResult> {
+  // Back a file up once per run, before its first change.
+  const snapshot = async (path: string) => {
+    if (!snapshots.has(path)) snapshots.set(path, snapshotFile(path, options.backupDir, options.home))
+    return snapshots.get(path)
+  }
+
   try {
     if (step.kind === 'command') {
+      const backups = await Promise.all((step.touches ?? []).map(snapshot))
+      const backup = backups.find(path => path !== undefined)
       const result = await options.runner.run(step.command, step.args)
-      if (result.exitCode === 0) return { step, status: 'done' }
+      if (result.exitCode === 0) return { step, status: 'done', backup }
       const detail = lastLines(result.stderr) || lastLines(result.stdout) || `exit code ${result.exitCode ?? 'unknown'}`
-      return { step, status: 'failed', detail }
+      return { step, status: 'failed', detail, backup }
     }
 
     const preview = await previewFileStep(step)
     if (!preview.changed) return { step, status: 'unchanged' }
 
-    // Back a file up once per run, before its first change.
-    if (!snapshots.has(step.path)) snapshots.set(step.path, snapshotFile(step.path, options.backupDir, options.home))
-    const backup = await snapshots.get(step.path)
+    const backup = await snapshot(step.path)
 
     await writeFileAtomic(step.path, preview.after)
     return { step, status: 'done', backup }

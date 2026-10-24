@@ -143,6 +143,12 @@ describe('setAtPath', () => {
     })
   })
 
+  it('refuses keys that would reach the object prototype', () => {
+    expect(() => setAtPath({}, ['__proto__', 'polluted'], true)).toThrow('Unsafe key in path: __proto__')
+    expect(() => setAtPath({}, ['a', 'constructor'], true)).toThrow('Unsafe key in path: constructor')
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+  })
+
   it('does not create tables just to remove a key', () => {
     const root: Record<string, unknown> = {}
     setAtPath(root, ['a', 'b'], undefined)

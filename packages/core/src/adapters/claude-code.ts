@@ -52,7 +52,8 @@ function installStep(ctx: AdapterContext): CommandStep {
     kind: 'command',
     title,
     command: 'bash',
-    args: ['-c', 'curl -fsSL https://claude.ai/install.sh | bash'],
+    // pipefail: a failed download must fail the step, not run an empty script.
+    args: ['-c', 'set -o pipefail; curl -fsSL https://claude.ai/install.sh | bash'],
   }
 }
 
@@ -119,10 +120,12 @@ async function mcpSteps(servers: Record<string, McpServer>, command: string, ctx
   if (names.length === 0) return []
 
   const existing = await existingMcpServers(ctx)
+  // `claude mcp` rewrites ~/.claude.json, which also holds Claude Code's own state.
+  const touches = [join(ctx.home, '.claude.json')]
   const steps: PlanStep[] = []
   for (const name of names) {
     const desired = claudeMcpServer(servers[name]!, ctx.platform)
-    if (name in existing) {
+    if (Object.hasOwn(existing, name)) {
       if (sameJson(normalizeExisting(existing[name]), desired)) continue
       steps.push({
         kind: 'command',
@@ -132,6 +135,7 @@ async function mcpSteps(servers: Record<string, McpServer>, command: string, ctx
         },
         command,
         args: ['mcp', 'remove', name, '--scope', 'user'],
+        touches,
       })
     }
     steps.push({
@@ -142,6 +146,7 @@ async function mcpSteps(servers: Record<string, McpServer>, command: string, ctx
       },
       command,
       args: ['mcp', 'add-json', name, JSON.stringify(desired), '--scope', 'user'],
+      touches,
     })
   }
   return steps
