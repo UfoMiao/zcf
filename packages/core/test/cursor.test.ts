@@ -1,0 +1,141 @@
+import { join } from 'pathe'
+import { describe, expect, it } from 'vitest'
+
+import { cursor, cursorMcpServer } from '../src/adapters/cursor'
+import type { AdapterContext } from '../src/adapters/types'
+import { editJson } from '../src/io/editors'
+import type { CommandStep, FileStep } from '../src/plan/types'
+import type { ZcfConfig, ZcfConfigInput } from '../src/schema/config'
+import { parseZcfConfig } from '../src/schema/config'
+import { fakeRunner } from './helpers'
+
+const HOME = '/home/me'
+const MCP_FILE = join(HOME, '.cursor', 'mcp.json')
+
+function context(overrides: Partial<AdapterContext> = {}, files: Record<string, string> = {}): AdapterContext {
+  return {
+    home: HOME,
+    platform: 'linux',
+    env: {},
+    runner: fakeRunner(),
+    readFile: async path => files[path],
+    ...overrides,
+  }
+}
+
+function config(input: Omit<ZcfConfigInput, 'version'>): ZcfConfig {
+  const result = parseZcfConfig({ version: 1, ...input })
+  if (!result.success) throw new Error(JSON.stringify(result.issues))
+  return result.config
+}
+
+const installed = { installed: true, command: 'cursor-agent', version: '2026.10.22-27dcf5f' }
+
+describe('cursor.detect', () => {
+  it('finds cursor-agent on PATH', async () => {
+    const runner = fakeRunner({ 'cursor-agent --version': { stdout: '2026.10.22-27dcf5f\n' } })
+    expect(await cursor.detect(context({ runner }))).toEqual(installed)
+  })
+
+  it("falls back to the installer's launcher on each platform", async () => {
+    const runner = fakeRunner({ '/home/me/.local/bin/cursor-agent --version': { stdout: '2026.10.22-27dcf5f' } })
+    expect(await cursor.detect(context({ runner }))).toMatchObject({ command: '/home/me/.local/bin/cursor-agent' })
+    expect(await cursor.detect(context())).toEqual({ installed: false, command: '/home/me/.local/bin/cursor-agent' })
+    expect(
+      await cursor.detect(context({ platform: 'win32', env: { LOCALAPPDATA: 'C:/Users/me/AppData/Local' } })),
+    ).toEqual({ installed: false, command: 'C:/Users/me/AppData/Local/cursor-agent/cursor-agent.cmd' })
+  })
+})
+
+describe('cursor.plan', () => {
+  it('installs with the official installer when missing', async () => {
+    const linux = await cursor.plan(config({}), { installed: false, command: 'x' }, context())
+    expect(linux.steps).toEqual([
+      {
+        kind: 'command',
+        title: { key: 'step.install', params: { tool: 'cursor' } },
+        command: 'bash',
+        args: ['-c', 'set -o pipefail; curl -fsS https://cursor.com/install | bash'],
+      },
+    ])
+    const windows = await cursor.plan(config({}), { installed: false, command: 'x' }, context({ platform: 'win32' }))
+    expect(windows.steps[0]).toMatchObject({
+      command: 'powershell',
+      args: expect.arrayContaining(["irm 'https://cursor.com/install?win32=true' | iex"]),
+    })
+  })
+
+  it('does nothing for an empty config on an installed tool', async () => {
+    expect(await cursor.plan(config({}), installed, context())).toEqual({ tool: 'cursor', steps: [], notices: [] })
+  })
+
+  it('explains that the provider does not apply', async () => {
+    const plan = await cursor.plan(
+      config({ provider: { name: 'p', apiKey: 'k', openai: { baseUrl: 'https://api.example.com/v1' } } }),
+      installed,
+      context(),
+    )
+    expect(plan.steps).toEqual([])
+    expect(plan.notices).toEqual([
+      { level: 'info', message: { key: 'notice.providerNotSupported', params: { tool: 'cursor' } } },
+    ])
+  })
+
+  it('writes MCP servers into ~/.cursor/mcp.json next to the ones already there', async () => {
+    const before = '{\n  "mcpServers": {\n    "keep": { "url": "https://keep.example.com" }\n  }\n}\n'
+    const plan = await cursor.plan(
+      config({
+        mcpServers: {
+          docs: { type: 'http', url: 'https://docs.example.com/mcp', headers: { Authorization: 'Bearer t' } },
+          local: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { TOKEN: 't' } },
+        },
+      }),
+      installed,
+      context({}, { [MCP_FILE]: before }),
+    )
+    expect(plan.steps).toMatchObject([
+      { kind: 'file', path: MCP_FILE, title: { key: 'step.mcpAdd', params: { name: 'docs' } } },
+      { kind: 'file', path: MCP_FILE, title: { key: 'step.mcpAdd', params: { name: 'local' } } },
+    ])
+    let text = before
+    for (const step of plan.steps as FileStep[]) text = editJson(text, step.edits)
+    expect(JSON.parse(text)).toEqual({
+      mcpServers: {
+        keep: { url: 'https://keep.example.com' },
+        docs: { url: 'https://docs.example.com/mcp', headers: { Authorization: 'Bearer t' } },
+        local: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { TOKEN: 't' } },
+      },
+    })
+  })
+
+  it('installs skills for cursor unless the named ones are present', async () => {
+    const plan = await cursor.plan(
+      config({ skills: [{ source: 'owner/a', skills: ['one'] }, { source: 'owner/b' }] }),
+      installed,
+      context({}, { [join(HOME, '.cursor', 'skills', 'one', 'SKILL.md')]: '# one' }),
+    )
+    expect((plan.steps as CommandStep[]).map(step => [step.command, ...step.args].join(' '))).toEqual([
+      'npx -y skills add owner/b -g -y -a cursor',
+    ])
+  })
+})
+
+describe('cursorMcpServer', () => {
+  it('keeps empty records so a rewrite of an existing entry stays stable', () => {
+    expect(cursorMcpServer({ type: 'stdio', command: 'uvx', args: [], env: {} })).toEqual({
+      type: 'stdio',
+      command: 'uvx',
+      args: [],
+      env: {},
+    })
+  })
+})
+
+describe('cursor.planUpdate', () => {
+  it('runs cursor-agent update, or notes a missing install', () => {
+    expect(cursor.planUpdate(installed, context()).steps).toMatchObject([{ command: 'cursor-agent', args: ['update'] }])
+    expect(cursor.planUpdate({ installed: false, command: 'cursor-agent' }, context()).notices).toMatchObject([
+      { message: { key: 'notice.notInstalled' } },
+    ])
+  })
+})
