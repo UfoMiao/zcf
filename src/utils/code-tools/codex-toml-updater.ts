@@ -203,9 +203,7 @@ export function upsertCodexMcpService(serviceId: string, service: CodexMcpServic
 
   if (existingService?.url && !existingService?.command) {
     // This is an SSE-type service, only update non-conflicting fields
-    if (service.env && Object.keys(service.env).length > 0) {
-      content = editToml(content, `${basePath}.env`, service.env)
-    }
+    content = upsertMcpServiceEnv(content, serviceId, service.env)
     if (service.startup_timeout_sec) {
       content = editToml(content, `${basePath}.startup_timeout_sec`, service.startup_timeout_sec)
     }
@@ -215,10 +213,7 @@ export function upsertCodexMcpService(serviceId: string, service: CodexMcpServic
     const normalizedCommand = normalizeTomlPath(service.command)
     content = editToml(content, `${basePath}.command`, normalizedCommand)
     content = editToml(content, `${basePath}.args`, service.args || [])
-
-    if (service.env && Object.keys(service.env).length > 0) {
-      content = editToml(content, `${basePath}.env`, service.env)
-    }
+    content = upsertMcpServiceEnv(content, serviceId, service.env)
     if (service.startup_timeout_sec) {
       content = editToml(content, `${basePath}.startup_timeout_sec`, service.startup_timeout_sec)
     }
@@ -241,9 +236,9 @@ export function deleteCodexMcpService(serviceId: string): void {
 
   const content = readFile(CODEX_CONFIG_FILE) || ''
 
-  // Use regex to remove the entire section
+  // Use regex to remove the service section and its child tables such as [mcp_servers.{id}.env]
   const sectionRegex = new RegExp(
-    `\\n?\\[mcp_servers\\.${escapeRegex(serviceId)}\\][\\s\\S]*?(?=\\n\\[|$)`,
+    `\\n?\\[mcp_servers\\.${escapeRegex(serviceId)}(?:\\.[^\\]\\n]+)?\\][\\s\\S]*?(?=\\n\\[|$)`,
     'g',
   )
 
@@ -287,6 +282,26 @@ export function batchUpdateCodexMcpServices(
 /**
  * Helper function to escape special regex characters
  */
+/**
+ * Write an MCP service's env without breaking an existing [mcp_servers.{id}.env] table.
+ * Replacing that table with an object makes toml-edit emit invalid TOML, so when it
+ * exists each key is set inside it instead, keeping the user's other keys and comments.
+ */
+function upsertMcpServiceEnv(content: string, serviceId: string, env: Record<string, string> | undefined): string {
+  if (!env || Object.keys(env).length === 0)
+    return content
+
+  const basePath = `mcp_servers.${serviceId}.env`
+  const envTableRegex = new RegExp(`^[ \\t]*\\[mcp_servers\\.${escapeRegex(serviceId)}\\.env\\][ \\t]*(?:#.*)?$`, 'm')
+  if (!envTableRegex.test(content))
+    return editToml(content, basePath, env)
+
+  let updated = content
+  for (const [key, value] of Object.entries(env))
+    updated = editToml(updated, `${basePath}.${key}`, value)
+  return updated
+}
+
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
