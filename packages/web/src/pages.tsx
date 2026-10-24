@@ -1,5 +1,5 @@
-import type { ToolId, ToolStatus } from '@zcf/core'
-import { TOOL_NAMES } from '@zcf/core/schema'
+import type { PresetList, ToolId, ToolStatus } from '@zcf/core'
+import { applyPreset, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, McpType, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import {
   freshName,
@@ -17,7 +17,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 
 import type { Translate } from './api'
-import { messageText, tildify } from './api'
+import { httpService, messageText, tildify } from './api'
 import { FieldInput } from './fields'
 
 interface PageProps {
@@ -59,10 +59,45 @@ export function ToolsPage({ editor, t, detected }: PageProps & { detected?: Part
   )
 }
 
-export function ProviderPage({ editor, t }: PageProps) {
+function PresetSelect({ editor, t, lang }: PageProps & { lang: string }) {
+  const [list, setList] = useState<PresetList>()
+  useEffect(() => {
+    httpService.presets().then(setList, () => setList({ presets: [], source: 'none' }))
+  }, [])
+  const pick = (id: string) => {
+    const preset = list?.presets.find(item => item.id === id)
+    if (preset) editor.update(['provider'], applyPreset(preset, editor.draft.provider))
+  }
+  return (
+    <div className="field preset">
+      <label htmlFor="preset">{t('tui.provider.preset')}</label>
+      <select id="preset" value="" disabled={!list?.presets.length} onChange={event => pick(event.target.value)}>
+        <option value="">{list ? t('tui.provider.presetTitle') : t('tui.provider.presetsLoading')}</option>
+        {list?.presets.map(preset => (
+          <option key={preset.id} value={preset.id}>
+            {preset.name}
+            {(preset.description[lang] ?? preset.description.en)
+              ? ` — ${preset.description[lang] ?? preset.description.en}`
+              : ''}
+          </option>
+        ))}
+      </select>
+      <small className={list?.source === 'none' ? 'error' : undefined}>
+        {list?.source === 'none'
+          ? t('tui.provider.presetsUnavailable')
+          : list?.source === 'cache'
+            ? t('tui.provider.presetsCached')
+            : t('tui.provider.presetHint')}
+      </small>
+    </div>
+  )
+}
+
+export function ProviderPage({ editor, t, lang }: PageProps & { lang: string }) {
   return (
     <section>
       <p className="intro">{t('tui.provider.intro')}</p>
+      <PresetSelect editor={editor} t={t} lang={lang} />
       <div className="form">
         {PROVIDER_FIELDS.map(field => (
           <FieldInput key={field.label} editor={editor} root={[]} field={field} t={t} />

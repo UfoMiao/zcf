@@ -2,7 +2,7 @@ import type { ToolId, ToolStatus } from '@zcf/core'
 import type { PageId, ZcfService } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import { Box, Text, useApp, useInput } from 'ink'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
@@ -14,6 +14,8 @@ import { McpPage, ProviderPage, SkillsPage, ToolsPage } from './pages'
 export interface AppProps {
   service: ZcfService
   t: Translate
+  /** For texts that come with their own translations, such as preset descriptions. */
+  lang: string
   home: string
 }
 
@@ -28,7 +30,7 @@ const TONE_COLOR = { info: 'green', warning: 'yellow', error: 'red' } as const
  * The terminal UI: pages on the left, the open page on the right. Edits stay in a
  * draft until Ctrl+S writes them to the config file, key by key.
  */
-export function App({ service, t, home }: AppProps) {
+export function App({ service, t, lang, home }: AppProps) {
   const editor = useConfigEditor(service)
   const { exit } = useApp()
   const [page, setPage] = useState<PageId>('tools')
@@ -37,6 +39,8 @@ export function App({ service, t, home }: AppProps) {
   const [status, setStatus] = useState<Status>()
   const [quitArmed, setQuitArmed] = useState(false)
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
+
+  const loadPresets = useCallback(() => service.presets(), [service])
 
   useEffect(() => {
     service.detect(TOOL_OPTIONS).then(setDetected, () => setDetected({}))
@@ -143,7 +147,7 @@ export function App({ service, t, home }: AppProps) {
         </Box>
         <Box flexDirection="column" flexGrow={1}>
           {page === 'tools' && <ToolsPage {...props} detected={detected} />}
-          {page === 'provider' && <ProviderPage {...props} />}
+          {page === 'provider' && <ProviderPage {...props} lang={lang} loadPresets={loadPresets} />}
           {page === 'mcp' && <McpPage {...props} />}
           {page === 'skills' && <SkillsPage {...props} />}
           {page === 'apply' && (

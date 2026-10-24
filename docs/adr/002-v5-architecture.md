@@ -81,6 +81,8 @@ Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness follow the same
 
 The provider has one block per protocol (`anthropic`, `openai`, `gemini`). Each adapter uses the protocol its tool speaks, and reports a notice when the provider lacks it. A tool's model is the protocol block's `model`, or else `models.default`.
 
+Provider presets are data, not code. They live in `presets/providers.json` on `main` and are checked by `PresetSchema` (https URLs only, no API key). ZCF fetches the file from the URLs `githubFileUrls` gives for the mirror (jsDelivr, then raw GitHub), and keeps a copy in `~/.ufomiao/zcf/cache` for 24 hours and for offline use. `ZCF_PRESETS_URL` points it at another file. A provider can be added or fixed by a pull request to that file, with no release; jsDelivr can take up to about 12 hours to serve the new version. Picking a preset fills the provider's protocol blocks and models and keeps the API key.
+
 ### Mirrors
 
 `mirror` in the config (`official` or `china`, overridden by `ZCF_MIRROR` (`cn` also means `china`) and by `--mirror` for one run, and set with `zcf mirror`) decides where downloads come from, after magpie's China mirror switch (「国内镜像」). Only mirrors that serve the very same files are used, never a proxy such as gh-proxy that could hand back anything.

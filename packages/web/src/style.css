@@ -222,6 +222,11 @@ main h2 {
   color: var(--muted);
 }
 
+.preset {
+  max-width: 560px;
+  margin-bottom: 20px;
+}
+
 .tools {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

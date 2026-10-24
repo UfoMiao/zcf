@@ -30,13 +30,14 @@ function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = 
       throw new Error('not planned')
     },
     apply: async () => ({ results: [], backupDir: '/home/me/backups' }),
+    presets: async () => ({ presets: [], source: 'none' }),
     ...overrides,
   }
   return { service, saved }
 }
 
 async function start(service: ZcfService) {
-  const app = render(<App service={service} t={t} home="/home/me" />)
+  const app = render(<App service={service} t={t} lang="en" home="/home/me" />)
   await tick()
   const press = async (...keys: string[]) => {
     for (const key of keys) {
@@ -46,7 +47,18 @@ async function start(service: ZcfService) {
       await tick()
     }
   }
-  return { ...app, press, frame: () => app.lastFrame() ?? '' }
+  const frame = () => app.lastFrame() ?? ''
+  // Waits for something that loads in the background, which can take longer than one tick on a busy machine.
+  const until = async (text: string) => {
+    for (let waited = 0; !frame().includes(text) && waited < 2000; waited += 30) {
+      // oxlint-disable-next-line no-await-in-loop
+      await tick()
+    }
+    // One more tick so input handlers of what just appeared are attached.
+    await tick()
+    return frame()
+  }
+  return { ...app, press, frame, until }
 }
 
 describe('terminal UI', () => {
@@ -76,7 +88,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Name')
     expect(app.frame()).not.toContain('sk-very-secret')
 
-    await app.press(KEY.enter, '\u007F\u007F\u007F', 'relay', KEY.enter)
+    await app.press(KEY.down, KEY.enter, '\u007F\u007F\u007F', 'relay', KEY.enter)
     expect(app.frame()).toContain('relay')
     expect(app.frame()).not.toContain('old')
 
@@ -100,6 +112,48 @@ describe('terminal UI', () => {
     expect(saved).toEqual([
       { version: 1, tools: [], skills: [{ source: 'a/a' }, { source: 'b/b' }, { source: 'x/y' }] },
     ])
+    app.unmount()
+  })
+
+  it('fills the provider from a preset and keeps the API key', async () => {
+    const { service, saved } = fakeService(
+      { version: 1, tools: [], provider: { name: 'old', apiKey: 'sk-very-secret', models: { opus: 'x' } } },
+      {
+        presets: async () => ({
+          source: 'cache',
+          presets: [
+            {
+              id: 'relay',
+              name: 'Relay',
+              description: { en: 'A relay', 'zh-CN': '中转' },
+              anthropic: { baseUrl: 'https://relay.example.com', authType: 'api_key' },
+              models: { default: 'relay-1' },
+            },
+          ],
+        }),
+      },
+    )
+    const app = await start(service)
+    await app.press(KEY.down, KEY.enter, KEY.enter)
+    expect(await app.until('Relay')).toContain('A relay')
+    expect(app.frame()).toContain('saved copy')
+
+    await app.press(KEY.enter)
+    expect(await app.until('relay.example.com')).toContain('Relay')
+    await app.press(KEY.save)
+    expect(saved).toEqual([
+      {
+        version: 1,
+        tools: [],
+        provider: {
+          name: 'Relay',
+          apiKey: 'sk-very-secret',
+          anthropic: { baseUrl: 'https://relay.example.com', authType: 'api_key' },
+          models: { default: 'relay-1' },
+        },
+      },
+    ])
+    expect(app.frame()).not.toContain('sk-very-secret')
     app.unmount()
   })
 
@@ -135,7 +189,7 @@ describe('terminal UI', () => {
     const { service, saved } = fakeService({ version: 1, tools: [], provider: { name: '', apiKey: '' } })
     const app = await start(service)
     await app.press(KEY.down, KEY.enter)
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 13; i++) {
       // oxlint-disable-next-line no-await-in-loop
       await app.press(KEY.down)
     }

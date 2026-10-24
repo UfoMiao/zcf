@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "providers": [
+    {
+      "id": "packycode",
+      "name": "PackyCode",
+      "description": {
+        "en": "PackyCode API Service",
+        "zh-CN": "PackyCode API 服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://www.packyapi.com",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://www.packyapi.com/v1"
+      }
+    },
+    {
+      "id": "code0",
+      "name": "code0",
+      "description": {
+        "en": "code0 AI coding workspace API aggregation platform",
+        "zh-CN": "code0 AI 编程工作台 API 聚合平台"
+      },
+      "anthropic": {
+        "baseUrl": "https://code0.ai/v1/anthropic",
+        "authType": "api_key"
+      },
+      "openai": {
+        "baseUrl": "https://code0.ai/v1/openai"
+      }
+    },
+    {
+      "id": "claude-api",
+      "name": "Claude API",
+      "description": {
+        "en": "Claude API official-channel Claude model provider",
+        "zh-CN": "Claude API 官方渠道 Claude 模型服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://gw.claudeapi.com",
+        "authType": "api_key"
+      }
+    },
+    {
+      "id": "pateway",
+      "name": "PatewayAI",
+      "description": {
+        "en": "PatewayAI official direct-connect relay service",
+        "zh-CN": "PatewayAI 官方直连中转服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.pateway.ai",
+        "authType": "api_key"
+      },
+      "openai": {
+        "baseUrl": "https://api.pateway.ai/v1"
+      }
+    },
+    {
+      "id": "apikey-fun",
+      "name": "APIKEY.FUN",
+      "description": {
+        "en": "APIKEY.FUN enterprise AI relay service",
+        "zh-CN": "APIKEY.FUN 企业级 AI 中转服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.apikey.fun",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://api.apikey.fun/v1"
+      }
+    },
+    {
+      "id": "302ai",
+      "name": "302.AI",
+      "description": {
+        "en": "302.AI API Service",
+        "zh-CN": "302.AI API 服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.302.ai/cc",
+        "authType": "api_key"
+      },
+      "openai": {
+        "baseUrl": "https://api.302.ai/v1"
+      }
+    },
+    {
+      "id": "aicodemirror",
+      "name": "AICodeMirror",
+      "description": {
+        "en": "AICodeMirror Global High-Quality Line",
+        "zh-CN": "AICodeMirror 全球优质线路"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.aicodemirror.com/api/claudecode",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://api.aicodemirror.com/api/codex/backend-api/codex"
+      }
+    },
+    {
+      "id": "aicodemirror-cn",
+      "name": "AICodeMirror CN",
+      "description": {
+        "en": "AICodeMirror China Optimized Line",
+        "zh-CN": "AICodeMirror 国内优化线路"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.claudecode.net.cn/api/claudecode",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://api.claudecode.net.cn/api/codex/backend-api/codex"
+      }
+    },
+    {
+      "id": "crazyrouter",
+      "name": "Crazyrouter",
+      "description": {
+        "en": "Crazyrouter AI API aggregation gateway",
+        "zh-CN": "Crazyrouter AI API 聚合网关"
+      },
+      "anthropic": {
+        "baseUrl": "https://crazyrouter.com",
+        "authType": "api_key"
+      },
+      "openai": {
+        "baseUrl": "https://crazyrouter.com/v1"
+      }
+    },
+    {
+      "id": "aihub",
+      "name": "AIHub",
+      "description": {
+        "en": "AIHub high-availability AI model API relay platform",
+        "zh-CN": "AIHub 高可用 AI 模型 API 中转平台"
+      },
+      "anthropic": {
+        "baseUrl": "https://aihub.top",
+        "authType": "api_key"
+      },
+      "openai": {
+        "baseUrl": "https://aihub.top/v1"
+      }
+    },
+    {
+      "id": "glm-cn",
+      "name": "GLM CN",
+      "description": {
+        "en": "GLM (Zhipu AI)",
+        "zh-CN": "GLM（智谱 AI）"
+      },
+      "anthropic": {
+        "baseUrl": "https://open.bigmodel.cn/api/anthropic",
+        "authType": "auth_token"
+      }
+    },
+    {
+      "id": "z-ai",
+      "name": "Z.ai",
+      "description": {
+        "en": "Z.ai API Service",
+        "zh-CN": "Z.ai API 服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.z.ai/api/anthropic",
+        "authType": "auth_token"
+      }
+    },
+    {
+      "id": "bailian-coding",
+      "name": "Bailian Coding",
+      "description": {
+        "en": "Bailian Coding API Service",
+        "zh-CN": "百炼 Coding API 服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://coding.dashscope.aliyuncs.com/apps/anthropic",
+        "authType": "auth_token"
+      },
+      "models": {
+        "default": "glm-5"
+      }
+    },
+    {
+      "id": "minimax",
+      "name": "MiniMax",
+      "description": {
+        "en": "MiniMax API Service",
+        "zh-CN": "MiniMax API 服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.minimax.io/anthropic",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://api.minimax.io/v1",
+        "model": "MiniMax-M3"
+      },
+      "models": {
+        "default": "MiniMax-M3"
+      }
+    },
+    {
+      "id": "minimax-cn",
+      "name": "MiniMax CN",
+      "description": {
+        "en": "MiniMax China API Service",
+        "zh-CN": "MiniMax 国内 API 服务"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.minimaxi.com/anthropic",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://api.minimaxi.com/v1",
+        "model": "MiniMax-M3"
+      },
+      "models": {
+        "default": "MiniMax-M3"
+      }
+    },
+    {
+      "id": "kimi-coding",
+      "name": "Kimi Coding",
+      "description": {
+        "en": "Kimi (Moonshot AI)",
+        "zh-CN": "Kimi（月之暗面）"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.kimi.com/coding/",
+        "authType": "auth_token"
+      }
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "description": {
+        "en": "DeepSeek official API (Anthropic-compatible endpoint)",
+        "zh-CN": "DeepSeek 官方 API（Anthropic 兼容接口）"
+      },
+      "anthropic": {
+        "baseUrl": "https://api.deepseek.com/anthropic",
+        "authType": "auth_token"
+      },
+      "models": {
+        "default": "deepseek-v4-pro"
+      }
+    }
+  ]
+}

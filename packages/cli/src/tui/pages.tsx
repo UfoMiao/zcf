@@ -1,5 +1,5 @@
-import type { ToolId, ToolStatus } from '@zcf/core'
-import { TOOL_NAMES } from '@zcf/core'
+import type { PresetList, ProviderPreset, ToolId, ToolStatus } from '@zcf/core'
+import { applyPreset, TOOL_NAMES } from '@zcf/core'
 import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
 import {
   fieldValue,
@@ -18,7 +18,7 @@ import {
   withMcpType,
 } from '@zcf/ui-kit'
 import { Box, Text } from 'ink'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import type { Row } from './row-list'
@@ -199,11 +199,75 @@ function RecordEditor({
   )
 }
 
-export function ProviderPage(props: PageProps) {
-  const { editor, t, active, onBack, onEditing } = props
+/** The description of a preset in the user's language, else in English. */
+export function presetDescription(preset: ProviderPreset, lang: string): string {
+  return preset.description[lang] ?? preset.description.en ?? ''
+}
+
+function PresetPicker({
+  t,
+  active,
+  onBack,
+  onEditing,
+  lang,
+  loadPresets,
+  onPick,
+}: Omit<PageProps, 'editor'> & {
+  lang: string
+  loadPresets: () => Promise<PresetList>
+  onPick: (preset: ProviderPreset) => void
+}) {
+  const [list, setList] = useState<PresetList>()
+  useEffect(() => {
+    loadPresets().then(setList, () => setList({ presets: [], source: 'none' }))
+  }, [loadPresets])
+  if (!list) return <Text dimColor>{t('tui.provider.presetsLoading')}</Text>
+  const rows: Row[] = list.presets.map(preset => ({
+    id: preset.id,
+    label: preset.name,
+    value: presetDescription(preset, lang),
+    action: { type: 'run', run: () => onPick(preset) },
+  }))
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text bold>{t('tui.provider.presetTitle')}</Text>
+      {list.source === 'none' && <Text color="yellow">{t('tui.provider.presetsUnavailable')}</Text>}
+      {list.source === 'cache' && <Text dimColor>{t('tui.provider.presetsCached')}</Text>}
+      <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+    </Box>
+  )
+}
+
+export function ProviderPage(props: PageProps & { lang: string; loadPresets: () => Promise<PresetList> }) {
+  const { editor, t, active, onBack, onEditing, lang, loadPresets } = props
   const [record, setRecord] = useState<{ path: DraftPath; title: string }>()
+  const [picking, setPicking] = useState(false)
   if (record) return <RecordEditor {...props} {...record} onBack={() => setRecord(undefined)} />
-  const rows = fieldRows(editor, t, [], PROVIDER_FIELDS, (path, title) => setRecord({ path, title }))
+  if (picking) {
+    return (
+      <PresetPicker
+        t={t}
+        active={active}
+        onEditing={onEditing}
+        lang={lang}
+        loadPresets={loadPresets}
+        onBack={() => setPicking(false)}
+        onPick={preset => {
+          editor.update(['provider'], applyPreset(preset, editor.draft.provider))
+          setPicking(false)
+        }}
+      />
+    )
+  }
+  const rows: Row[] = [
+    {
+      id: 'preset',
+      label: t('tui.provider.preset'),
+      value: t('tui.provider.presetHint'),
+      action: { type: 'run', run: () => setPicking(true) },
+    },
+    ...fieldRows(editor, t, [], PROVIDER_FIELDS, (path, title) => setRecord({ path, title })),
+  ]
   // The provider is optional; removing it is the way back to a config without one.
   if (editor.draft.provider !== undefined) {
     rows.push({

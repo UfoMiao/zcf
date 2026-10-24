@@ -1,4 +1,4 @@
-import type { Message, ToolStatus } from '@zcf/core'
+import type { Message, PresetList, ToolStatus } from '@zcf/core'
 import { isToolId, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, Draft, LoadedConfig, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 
@@ -59,6 +59,7 @@ export const httpService: ZcfService = {
   },
   detect: () => json<Partial<Record<string, ToolStatus>>>('detect', { method: 'POST' }),
   plan: () => json<PlanView>('plan', { method: 'POST' }),
+  presets: refresh => json<PresetList>(refresh ? 'presets?refresh' : 'presets'),
   async apply(onStep) {
     const response = await call('apply', { method: 'POST' })
     const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader()

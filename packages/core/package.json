@@ -6,7 +6,7 @@
   "description": "Headless engine for ZCF: config schema, tool adapters, and the plan / diff / apply pipeline",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/config.ts"
+    "./schema": "./src/schema/index.ts"
   },
   "dependencies": {
     "@decimalturn/toml-patch": "catalog:runtime",

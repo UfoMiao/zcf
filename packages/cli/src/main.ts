@@ -167,7 +167,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     if (!interactive) throw new CliError(t('cli.tuiNeedsTerminal'), EXIT_ERROR)
     const path = file ? resolve(file) : defaultConfigPath(ctx.home)
     const { runTui } = await import('./tui/run')
-    await runTui(createLocalService(ctx, path, now), t, ctx.home)
+    await runTui(createLocalService(ctx, path, now), t, lang, ctx.home)
     return EXIT_OK
   }
 

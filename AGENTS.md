@@ -18,6 +18,7 @@ Prefer each tool's own commands and mainstream CLIs over reimplementing them: `c
 | `packages/ui-kit` (`@zcf/ui-kit`, private) | Shared by the terminal and web UIs, no rendering: draft model and validation, page and field definitions, `useConfigEditor`, the `ZcfService` interface |
 | `packages/cli` (`zcf`, private until v5 ships) | `cli.ts` (entry with the fast `--version` path), `main.ts` (cac commands), `render.ts` (terminal output, secret masking), `i18n.ts` (en and zh-CN strings), `service.ts` (`ZcfService` backed by core), `tui/` (Ink app, loaded lazily) |
 | `packages/*/test` | Vitest suites for that package |
+| `presets/providers.json` | Provider presets, fetched at runtime so they change without a release; validated by `packages/core/test/presets.test.ts` |
 | `scripts/bench-startup.mjs` | Startup benchmark that CI enforces |
 | `docs/` | VitePress site (still describes v3; rewritten in a later phase) |
 | `docs/adr/` | Architecture decisions; read `002-v5-architecture.md` before changing the engine |

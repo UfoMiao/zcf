@@ -122,7 +122,8 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
   const token = options.token ?? randomBytes(24).toString('base64url')
   let port = 0
 
-  async function api(request: IncomingMessage, response: ServerResponse, route: string): Promise<void> {
+  async function api(request: IncomingMessage, response: ServerResponse, url: URL): Promise<void> {
+    const route = url.pathname.slice('/api/'.length)
     const header = request.headers['x-zcf-token']
     if (!sameToken(typeof header === 'string' ? header : undefined, token)) return send(response, 401)
     const method = request.method ?? 'GET'
@@ -136,6 +137,8 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
       await service.save(draft)
       return send(response, 204)
     }
+    if (route === 'presets' && method === 'GET')
+      return send(response, 200, await service.presets(url.searchParams.has('refresh')))
     if (route === 'detect' && method === 'POST') return send(response, 200, await service.detect(TOOL_OPTIONS))
     if (route === 'plan' && method === 'POST') {
       return send(response, 200, browserPlan(await service.plan()))
@@ -177,10 +180,11 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
     // A page on another site could point a host name at 127.0.0.1 (DNS rebinding); only our own host is served.
     const host = request.headers.host ?? ''
     if (host !== `127.0.0.1:${port}` && host !== `localhost:${port}`) return send(response, 403)
-    const { pathname } = new URL(request.url ?? '/', `http://${host}`)
+    const url = new URL(request.url ?? '/', `http://${host}`)
+    const { pathname } = url
 
     const handle = pathname.startsWith('/api/')
-      ? api(request, response, pathname.slice('/api/'.length))
+      ? api(request, response, url)
       : options.asset(pathname === '/' ? '/index.html' : pathname).then(asset => {
           if (!asset) return send(response, 404)
           response.writeHead(200, { 'content-type': asset.type })

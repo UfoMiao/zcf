@@ -74,6 +74,10 @@ const service: ZcfService = {
     })
     return { results: [{ tool: 'claude-code', ok: false, steps: [{ step, status: 'failed' }] }], backupDir: '/b' }
   },
+  presets: async refresh => ({
+    presets: [{ id: 'relay', name: 'Relay', description: { en: 'A relay' }, models: {} }],
+    source: refresh ? 'remote' : 'cache',
+  }),
 }
 
 const assets = {
@@ -139,6 +143,8 @@ describe('startUiServer', () => {
     expect(JSON.parse((await call('/api/detect', { method: 'POST' })).text)).toMatchObject({
       'claude-code': { installed: true },
     })
+    expect(JSON.parse((await call('/api/presets')).text)).toMatchObject({ source: 'cache', presets: [{ id: 'relay' }] })
+    expect(JSON.parse((await call('/api/presets?refresh=1')).text)).toMatchObject({ source: 'remote' })
   })
 
   it('never sends secrets, file contents or edit values to the browser', async () => {
