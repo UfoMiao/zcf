@@ -121,8 +121,6 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
   const t = createTranslator(lang)
   const token = options.token ?? randomBytes(24).toString('base64url')
   let port = 0
-  // The latest plan's secrets also mask apply output; a plan is always shown before apply.
-  let secrets: string[] = []
 
   async function api(request: IncomingMessage, response: ServerResponse, route: string): Promise<void> {
     const header = request.headers['x-zcf-token']
@@ -140,12 +138,11 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
     }
     if (route === 'detect' && method === 'POST') return send(response, 200, await service.detect(TOOL_OPTIONS))
     if (route === 'plan' && method === 'POST') {
-      const view = await service.plan()
-      secrets = view.secrets
-      return send(response, 200, browserPlan(view))
+      return send(response, 200, browserPlan(await service.plan()))
     }
     if (route === 'apply' && method === 'POST') {
-      secrets = (await service.plan()).secrets
+      // Mask with the secrets of the config this request applies, not whatever another request planned.
+      const { secrets } = await service.plan()
       // One JSON object per line: each finished step, then the outcome.
       response.writeHead(200, { 'content-type': 'application/x-ndjson', 'cache-control': 'no-store' })
       const mask: Mask = text => maskSecrets(text, secrets)

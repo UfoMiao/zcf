@@ -45,6 +45,17 @@ describe('createLocalService', () => {
     expect(await local.load()).toMatchObject({ exists: true, draft: { tools: ['claude-code'] } })
   })
 
+  it('backs up the config before the first save of a session', async () => {
+    await mkdir(join(path, '..'), { recursive: true })
+    await writeFile(path, '{ "version": 1, "tools": [] }\n')
+    const local = service()
+    await local.load()
+    await local.save({ version: 1, tools: ['codex'] })
+    await local.save({ version: 1, tools: ['claude-code'] })
+    const backup = join(home, '.ufomiao', 'zcf', 'backups', '2026-10-24T08-00-00-000Z', '.ufomiao', 'zcf', 'zcf.json')
+    expect(await readFile(backup, 'utf8')).toBe('{ "version": 1, "tools": [] }\n')
+  })
+
   it('reports why a broken config cannot be loaded', async () => {
     await mkdir(join(path, '..'), { recursive: true })
     await writeFile(path, '{ "version": ')

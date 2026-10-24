@@ -48,7 +48,9 @@ export async function loadConfigDraft(path: string): Promise<LoadDraftResult> {
   const data: unknown = parse(text, errors, { allowTrailingComma: true })
   const [first] = errors
   if (first) return { issues: [syntaxIssue(text, first.offset)] }
-  return { draft: isTable(data) ? data : { version: 1 }, exists: true }
+  if (!isTable(data))
+    return { issues: [{ path: '', message: { key: 'configIssue.expected', params: { expected: 'object' } } }] }
+  return { draft: data, exists: true }
 }
 
 /** The smallest set of key edits that turns `before` into `after`. Arrays are replaced as a whole. */

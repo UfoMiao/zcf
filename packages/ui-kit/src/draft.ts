@@ -68,12 +68,23 @@ export function issuesAt(issues: readonly ConfigIssue[], path: DraftPath): Confi
   return issues.filter(issue => issue.path === dot || issue.path.startsWith(`${dot}.`))
 }
 
+/** The text inside double quotes: JSON escapes as `formatArgs` writes them, else `\x` for `x`. */
+function unquote(inner: string): string {
+  try {
+    const value: unknown = JSON.parse(`"${inner}"`)
+    if (typeof value === 'string') return value
+  } catch {
+    // Not a JSON string, such as `\q` typed by hand.
+  }
+  return inner.replace(/\\(.)/g, '$1')
+}
+
 /** Split command-line arguments typed on one line; double or single quotes keep spaces. */
 export function parseArgs(text: string): string[] {
   const args: string[] = []
   const pattern = /"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+)/g
   for (const match of text.matchAll(pattern)) {
-    args.push(match[1] !== undefined ? match[1].replace(/\\(.)/g, '$1') : (match[2] ?? match[3]!))
+    args.push(match[1] !== undefined ? unquote(match[1]) : (match[2] ?? match[3]!))
   }
   return args
 }

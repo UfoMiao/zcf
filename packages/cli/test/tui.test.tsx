@@ -185,6 +185,13 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('shows why the config could not be read instead of loading forever', async () => {
+    const { service } = fakeService(undefined, { load: () => Promise.reject(new Error('EACCES: permission denied')) })
+    const app = await start(service)
+    expect(app.frame()).toContain('The config could not be read: EACCES: permission denied')
+    app.unmount()
+  })
+
   it('explains why a broken config cannot be edited', async () => {
     const { service } = fakeService(undefined)
     const app = await start(service)
