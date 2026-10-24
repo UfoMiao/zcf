@@ -123,6 +123,20 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('says when ZCF_MIRROR outranks the saved mirror, and fixes a mirror that is not an option', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [], mirror: 'cn' })
+    const loaded = await service.load()
+    service.load = async () => ({ ...loaded, envMirror: 'official' })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('ZCF_MIRROR is set, so ZCF uses official sources')
+    expect(app.frame()).toMatch(/Download mirror\s+cn/)
+    // The first press offers the first option rather than skipping it.
+    await app.press(KEY.right, KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], mirror: 'official' }])
+    app.unmount()
+  })
+
   it('opens a skill source with the cursor on its first field', async () => {
     const skills = [{ source: 'a/a' }, { source: 'b/b' }, { source: 'c/c' }]
     const { service, saved } = fakeService({ version: 1, tools: [], skills })

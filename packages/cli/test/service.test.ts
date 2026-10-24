@@ -45,6 +45,12 @@ describe('createLocalService', () => {
     expect(await local.load()).toMatchObject({ exists: true, draft: { tools: ['claude-code'] } })
   })
 
+  it('reports the mirror ZCF_MIRROR picks, which outranks the config', async () => {
+    const ctx = createContext({ home, platform: 'linux', env: { ZCF_MIRROR: 'cn' } })
+    expect(await createLocalService(ctx, path).load()).toMatchObject({ envMirror: 'china' })
+    expect(await service().load()).not.toHaveProperty('envMirror')
+  })
+
   it('backs up the config before the first save of a session', async () => {
     await mkdir(join(path, '..'), { recursive: true })
     await writeFile(path, '{ "version": 1, "tools": [] }\n')

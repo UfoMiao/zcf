@@ -30,6 +30,9 @@ export function SettingsPage({ editor, t }: PageProps) {
   return (
     <section>
       <p className="intro">{t('tui.settings.intro')}</p>
+      {editor.envMirror && (
+        <p className="notice">{t('tui.settings.envMirror', { mirror: t(`mirror.${editor.envMirror}`) })}</p>
+      )}
       <div className="form">
         {SETTINGS_FIELDS.map(field => (
           <FieldInput key={field.label} editor={editor} root={[]} field={field} t={t} />
