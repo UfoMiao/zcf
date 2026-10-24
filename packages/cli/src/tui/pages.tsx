@@ -182,6 +182,7 @@ function RecordEditor({
         type: 'text',
         initial: '',
         placeholder: 'KEY=value',
+        mask: 'value',
         commit: text => {
           const at = text.indexOf('=')
           const key = (at > 0 ? text.slice(0, at) : text).trim()
@@ -203,6 +204,14 @@ export function ProviderPage(props: PageProps) {
   const [record, setRecord] = useState<{ path: DraftPath; title: string }>()
   if (record) return <RecordEditor {...props} {...record} onBack={() => setRecord(undefined)} />
   const rows = fieldRows(editor, t, [], PROVIDER_FIELDS, (path, title) => setRecord({ path, title }))
+  // The provider is optional; removing it is the way back to a config without one.
+  if (editor.draft.provider !== undefined) {
+    rows.push({
+      id: 'remove',
+      label: t('tui.provider.remove'),
+      action: { type: 'run', run: () => editor.update(['provider'], undefined) },
+    })
+  }
   return (
     <Box flexDirection="column" gap={1}>
       <Text dimColor>{t('tui.provider.intro')}</Text>

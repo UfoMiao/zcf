@@ -6,8 +6,8 @@ export interface TextInputProps {
   onSubmit: (value: string) => void
   onCancel: () => void
   placeholder?: string
-  /** Show each character as `*`, for API keys and other secrets. */
-  mask?: boolean
+  /** Show each character as `*`, for API keys and other secrets; `value` masks only what follows the first `=`. */
+  mask?: boolean | 'value'
 }
 
 interface Editing {
@@ -53,7 +53,11 @@ export function TextInput({ initial, onSubmit, onCancel, placeholder = '', mask 
   })
 
   const { cursor } = state
-  const value = mask ? '*'.repeat(state.value.length) : state.value
+  const shown = mask === 'value' ? state.value.indexOf('=') + 1 : 0
+  const value =
+    mask === true || (mask === 'value' && shown > 0)
+      ? state.value.slice(0, shown) + '*'.repeat(state.value.length - shown)
+      : state.value
   if (value === '') {
     return (
       <Text>

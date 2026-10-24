@@ -68,6 +68,13 @@ export function ProviderPage({ editor, t }: PageProps) {
           <FieldInput key={field.label} editor={editor} root={[]} field={field} t={t} />
         ))}
       </div>
+      {editor.draft.provider !== undefined && (
+        <div className="actions">
+          <button type="button" className="ghost danger" onClick={() => editor.update(['provider'], undefined)}>
+            {t('tui.provider.remove')}
+          </button>
+        </div>
+      )}
     </section>
   )
 }
