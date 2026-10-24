@@ -5,7 +5,7 @@ import { isTable } from '../io/editors'
 import type { CommandStep, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
-import { piAiRoute } from './pi-ai'
+import { expandHome, piAiRoute } from './pi-ai'
 import { detectCommand, envPath, notice, sameJson, selfUpdateStep, skillSteps } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
@@ -16,7 +16,8 @@ const PROVIDER_ID = 'zcf'
 
 /** pi keeps its user-level files in `PI_CODING_AGENT_DIR`, by default `~/.pi/agent`. */
 function agentDir(ctx: AdapterContext): string {
-  return envPath(ctx, 'PI_CODING_AGENT_DIR') ?? join(ctx.home, '.pi', 'agent')
+  const dir = envPath(ctx, 'PI_CODING_AGENT_DIR')
+  return dir ? expandHome(ctx, dir) : join(ctx.home, '.pi', 'agent')
 }
 
 function installStep(): CommandStep {
