@@ -23,6 +23,8 @@ export const processRunner: CommandRunner = {
       // tinyexec merges `env` over the current environment.
       const { exitCode, stdout, stderr } = await x(command, args, {
         throwOnError: false,
+        // tinyexec would put the running Node's bin folder first on PATH; tools must be found on the user's own PATH.
+        nodePath: false,
         nodeOptions: options.env ? { env: options.env } : undefined,
       })
       return { exitCode, stdout, stderr }
