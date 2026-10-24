@@ -165,6 +165,9 @@ export class Renderer {
 
   summary(results: readonly ToolResult[], backupDir: string): void {
     const steps = results.flatMap(result => result.steps)
+    // A tool the plan talked out of any step, such as an updater that found nothing to do,
+    // is as up to date as an unchanged step.
+    const quiet = results.filter(result => result.ok && result.steps.length === 0).length
     const failedTools = results.filter(result => !result.ok).length
     this.line()
     if (failedTools > 0) this.line(red(this.t('cli.applyFailed', { count: failedTools })))
@@ -173,7 +176,7 @@ export class Renderer {
         green(
           this.t('cli.applyDone', {
             done: steps.filter(step => step.status === 'done').length,
-            unchanged: steps.filter(step => step.status === 'unchanged').length,
+            unchanged: steps.filter(step => step.status === 'unchanged').length + quiet,
           }),
         ),
       )

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import { createTranslator } from '../src/i18n'
 import { collectSecrets, maskSecrets, quoteArg, secretVariants, tildify } from '../src/render'
+import { Renderer } from '../src/render'
 
 describe('render helpers', () => {
   it('quotes only arguments that need it', () => {
@@ -58,5 +60,37 @@ describe('render helpers', () => {
       language: 'auto',
     })
     expect(maskSecrets(quoteArg('PASSWORD=my$$private$$pass'), secrets)).not.toContain('private')
+  })
+})
+
+describe('summary', () => {
+  const text: string[] = []
+  const out = { write: (line: string) => void text.push(line) }
+
+  it('counts a tool the plan skipped over as already up to date', () => {
+    const renderer = new Renderer(out, createTranslator('en'), [], '/home/me')
+    renderer.summary(
+      [
+        {
+          tool: 'claude-code',
+          ok: true,
+          steps: [
+            {
+              step: {
+                kind: 'command',
+                title: { key: 'step.update', params: {} },
+                command: 'claude',
+                args: ['update'],
+              },
+              status: 'done',
+            },
+          ],
+        },
+        // Planned away with a notice, such as an updater that found nothing to do.
+        { tool: 'dsh', ok: true, steps: [] },
+      ],
+      '/home/me/backups',
+    )
+    expect(text.join('')).toContain('Done: 1 applied, 1 already up to date.')
   })
 })
