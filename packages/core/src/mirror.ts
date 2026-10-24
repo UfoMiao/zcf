@@ -2,7 +2,7 @@ import type { Plan } from './plan/types'
 
 /**
  * Where ZCF downloads from. `china` asks mirrors in mainland China first, as magpie's
- * 「国内镜像」 switch does. Only mirrors that serve the very same files are used
+ * China mirror switch (「国内镜像」) does. Only mirrors that serve the very same files are used
  * (npmmirror for npm, jsDelivr for GitHub files), never a proxy that could hand back
  * anything it liked.
  */
@@ -21,11 +21,16 @@ export function npmRegistry(mirror: Mirror): string {
   return mirror === 'china' ? CHINA_NPM_REGISTRY : OFFICIAL_NPM_REGISTRY
 }
 
+/** A mirror name as people type it: any case, and `cn` for `china`. `undefined` when it names no mirror. */
+export function parseMirrorName(value: string | undefined): Mirror | undefined {
+  const name = value?.trim().toLowerCase()
+  if (name === 'cn') return 'china'
+  return isMirror(name) ? name : undefined
+}
+
 /** `ZCF_MIRROR` as a mirror; `undefined` when it is unset or not a mirror name. */
 export function envMirror(env: Record<string, string | undefined>): Mirror | undefined {
-  const value = env.ZCF_MIRROR?.trim().toLowerCase()
-  if (value === 'cn') return 'china'
-  return isMirror(value) ? value : undefined
+  return parseMirrorName(env.ZCF_MIRROR)
 }
 
 /**

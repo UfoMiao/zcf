@@ -200,9 +200,12 @@ export const claudeCode: ToolAdapter = {
     return { tool: TOOL, steps, notices }
   },
 
-  planUpdate(status) {
+  planUpdate(status, ctx) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
-    return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update'])], notices: [] }
+    // `claude update` runs npm on an npm install, which takes the mirror's registry; a native
+    // install downloads from Anthropic, and ZCF cannot tell the two apart from `claude --version`.
+    const notices = ctx.mirror === 'china' ? [notice('info', 'notice.nativeUpdateNotMirrored', { tool: TOOL })] : []
+    return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update'])], notices }
   },
 }
