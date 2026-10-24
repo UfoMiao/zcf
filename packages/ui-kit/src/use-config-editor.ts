@@ -28,7 +28,8 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
   const [status, setStatus] = useState<EditorStatus>('loading')
   const [path, setPath] = useState('')
   const [draft, setDraft] = useState<Draft>(EMPTY)
-  const [saved, setSaved] = useState(JSON.stringify(EMPTY))
+  // The draft as last loaded or saved by this editor, so a save writes only this editor's changes.
+  const [saved, setSaved] = useState<Draft | undefined>(EMPTY)
   const [loadIssues, setLoadIssues] = useState<ConfigIssue[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -41,7 +42,7 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
         if (loaded.draft) {
           setDraft(loaded.draft)
           // A config that does not exist yet counts as unsaved, so the first save writes it.
-          setSaved(loaded.exists ? JSON.stringify(loaded.draft) : '')
+          setSaved(loaded.exists ? loaded.draft : undefined)
           setStatus('ready')
         } else {
           setLoadIssues(loaded.issues)
@@ -72,14 +73,15 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
     busy.current = true
     setSaving(true)
     try {
-      await service.save(draft)
-      setSaved(JSON.stringify(draft))
+      await service.save(draft, saved)
+      setSaved(draft)
       return true
     } finally {
       busy.current = false
       setSaving(false)
     }
-  }, [draft, service, validation.valid])
+  }, [draft, saved, service, validation.valid])
+  const savedText = useMemo(() => saved && JSON.stringify(saved), [saved])
 
   return {
     status,
@@ -87,7 +89,7 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
     draft,
     validation,
     loadIssues,
-    dirty: JSON.stringify(draft) !== saved,
+    dirty: JSON.stringify(draft) !== savedText,
     saving,
     update,
     replace: setDraft,

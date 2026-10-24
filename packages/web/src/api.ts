@@ -54,8 +54,8 @@ export function messageText(t: Translate, message: Message): string {
 /** The ZCF service over the local HTTP API of `zcf ui`. */
 export const httpService: ZcfService = {
   load: () => json<LoadedConfig>('config'),
-  save: async (draft: Draft) => {
-    await call('config', { method: 'PUT', body: JSON.stringify(draft) })
+  save: async (draft: Draft, base?: Draft) => {
+    await call('config', { method: 'PUT', body: JSON.stringify({ draft, base }) })
   },
   detect: () => json<Partial<Record<string, ToolStatus>>>('detect', { method: 'POST' }),
   plan: () => json<PlanView>('plan', { method: 'POST' }),

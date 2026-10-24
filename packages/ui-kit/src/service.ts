@@ -35,7 +35,11 @@ export interface ApplyOutcome {
  */
 export interface ZcfService {
   load: () => Promise<LoadedConfig>
-  save: (draft: Draft) => Promise<void>
+  /**
+   * Save `draft`, writing only what changed since `base`, the draft this editor last loaded or
+   * saved. Without it, the file is compared as it is now.
+   */
+  save: (draft: Draft, base?: Draft) => Promise<void>
   detect: (tools: readonly ToolId[]) => Promise<Partial<Record<ToolId, ToolStatus>>>
   /** Plan the saved config. */
   plan: () => Promise<PlanView>

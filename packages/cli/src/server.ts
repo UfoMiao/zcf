@@ -132,9 +132,10 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
       return send(response, 200, { lang, home: options.home, messages: messagesFor(lang) })
     if (route === 'config' && method === 'GET') return send(response, 200, await service.load())
     if (route === 'config' && method === 'PUT') {
-      const draft = await readJson(request)
-      if (!isTable(draft)) return send(response, 400)
-      await service.save(draft)
+      const body = await readJson(request)
+      if (!isTable(body) || !isTable(body.draft) || (body.base !== undefined && !isTable(body.base)))
+        return send(response, 400)
+      await service.save(body.draft, body.base)
       return send(response, 204)
     }
     if (route === 'presets' && method === 'GET')
