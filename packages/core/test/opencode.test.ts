@@ -2,7 +2,7 @@ import { parse } from 'jsonc-parser'
 import { join } from 'pathe'
 import { describe, expect, it } from 'vitest'
 
-import { opencode, opencodeMcpServer } from '../src/adapters/opencode'
+import { opencode } from '../src/adapters/opencode'
 import type { AdapterContext } from '../src/adapters/types'
 import { editJson } from '../src/io/editors'
 import type { CommandStep, FileStep } from '../src/plan/types'
@@ -100,13 +100,13 @@ describe('opencode.plan', () => {
     })
   })
 
-  it('sends api_key providers as an API key', async () => {
+  it('sends api_key providers as an API key and keeps a version already in the URL', async () => {
     const plan = await opencode.plan(
       config({
         provider: {
           name: 'Anthropic',
           apiKey: 'sk-ant',
-          anthropic: { baseUrl: 'https://api.anthropic.com', authType: 'api_key' },
+          anthropic: { baseUrl: 'https://api.anthropic.com/v1/', authType: 'api_key' },
           models: { default: 'claude-sonnet-5-5' },
         },
       }),
@@ -180,7 +180,7 @@ describe('opencode.plan', () => {
     expect(plan.notices).toEqual([
       {
         level: 'warning',
-        message: { key: 'notice.providerMissingProtocol', params: { tool: 'opencode', protocol: 'openai' } },
+        message: { key: 'notice.providerMissingProtocol', params: { tool: 'opencode', protocol: 'anthropic/openai' } },
       },
     ])
   })
@@ -192,7 +192,8 @@ describe('opencode.plan', () => {
       config({
         mcpServers: {
           docs: { type: 'http', url: 'https://docs.example.com/mcp', headers: { Authorization: 'Bearer t' } },
-          local: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'] },
+          local: { type: 'stdio', command: 'npx', args: ['-y', 'pkg'], env: { TOKEN: 't' } },
+          bare: { type: 'stdio', command: 'uvx', args: ['tool'] },
         },
       }),
       installed,
@@ -201,6 +202,7 @@ describe('opencode.plan', () => {
     expect(plan.steps).toMatchObject([
       { kind: 'file', path, title: { key: 'step.mcpAdd', params: { name: 'docs' } } },
       { kind: 'file', path, title: { key: 'step.mcpAdd', params: { name: 'local' } } },
+      { kind: 'file', path, title: { key: 'step.mcpAdd', params: { name: 'bare' } } },
     ])
     expect(written(plan.steps, before)).toEqual({
       mcp: {
@@ -211,7 +213,8 @@ describe('opencode.plan', () => {
           headers: { Authorization: 'Bearer t' },
           enabled: true,
         },
-        local: { type: 'local', command: ['npx', '-y', 'pkg'], enabled: true },
+        local: { type: 'local', command: ['npx', '-y', 'pkg'], environment: { TOKEN: 't' }, enabled: true },
+        bare: { type: 'local', command: ['uvx', 'tool'], enabled: true },
       },
     })
   })
@@ -230,17 +233,6 @@ describe('opencode.plan', () => {
     expect((plan.steps as CommandStep[]).map(step => [step.command, ...step.args].join(' '))).toEqual([
       'npx -y skills add owner/b -g -y -a opencode -s two',
     ])
-  })
-})
-
-describe('opencodeMcpServer', () => {
-  it('passes env as environment and leaves empty records out', () => {
-    expect(opencodeMcpServer({ type: 'stdio', command: 'uvx', args: [], env: { TOKEN: 't' } })).toEqual({
-      type: 'local',
-      command: ['uvx'],
-      environment: { TOKEN: 't' },
-      enabled: true,
-    })
   })
 })
 

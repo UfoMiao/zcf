@@ -51,7 +51,7 @@ function cursorDir(ctx: AdapterContext): string {
 }
 
 /** The server definition in the shape Cursor stores in `mcp.json`. */
-export function cursorMcpServer(server: McpServer): Record<string, unknown> {
+function cursorMcpServer(server: McpServer): Record<string, unknown> {
   if (server.type === 'http') return { url: server.url, headers: server.headers }
   return { type: 'stdio', command: server.command, args: server.args, env: server.env }
 }

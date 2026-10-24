@@ -1,7 +1,7 @@
 import { join } from 'pathe'
 import { describe, expect, it } from 'vitest'
 
-import { cursor, cursorMcpServer } from '../src/adapters/cursor'
+import { cursor } from '../src/adapters/cursor'
 import type { AdapterContext } from '../src/adapters/types'
 import { editJson } from '../src/io/editors'
 import type { CommandStep, FileStep } from '../src/plan/types'
@@ -117,17 +117,6 @@ describe('cursor.plan', () => {
     expect((plan.steps as CommandStep[]).map(step => [step.command, ...step.args].join(' '))).toEqual([
       'npx -y skills add owner/b -g -y -a cursor',
     ])
-  })
-})
-
-describe('cursorMcpServer', () => {
-  it('keeps empty records so a rewrite of an existing entry stays stable', () => {
-    expect(cursorMcpServer({ type: 'stdio', command: 'uvx', args: [], env: {} })).toEqual({
-      type: 'stdio',
-      command: 'uvx',
-      args: [],
-      env: {},
-    })
   })
 })
 
