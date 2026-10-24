@@ -55,6 +55,26 @@ describe('codex MCP updates with nested env tables', () => {
     expect(storage.content).not.toMatch(/^env\s*=/m)
   })
 
+  it('keeps env names that are not bare TOML keys as a single key', () => {
+    storage.content = `[mcp_servers.node_repl]
+command = "node"
+args = []
+
+[mcp_servers.node_repl.env]
+"FOO.BAR" = "old"
+`
+
+    upsertCodexMcpService('node_repl', {
+      id: 'node_repl',
+      command: 'node',
+      args: [],
+      env: { 'FOO.BAR': 'new' },
+    })
+
+    const parsed = parseToml(storage.content) as any
+    expect(parsed.mcp_servers.node_repl.env).toEqual({ 'FOO.BAR': 'new' })
+  })
+
   it('updates env of an SSE service that uses a nested env table', () => {
     storage.content = `[mcp_servers.remote]
 url = "https://mcp.example.test/sse"
@@ -94,6 +114,8 @@ TOKEN = "old"
   })
 
   it('removes the nested env table together with its service', () => {
+    storage.content = NESTED_ENV_CONFIG.replace('[mcp_servers.other]', '[mcp_servers.node_repl.tools.run]\nenabled = true\n\n[mcp_servers.other]')
+
     deleteCodexMcpService('node_repl')
 
     const parsed = parseToml(storage.content) as any
