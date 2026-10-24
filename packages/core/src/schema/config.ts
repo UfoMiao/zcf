@@ -2,7 +2,7 @@ import * as v from 'valibot'
 
 import type { Message } from '../plan/types'
 
-export const TOOL_IDS = ['claude-code', 'codex', 'gemini-cli', 'opencode'] as const
+export const TOOL_IDS = ['claude-code', 'codex', 'gemini-cli', 'opencode', 'cursor', 'pi', 'dsh'] as const
 
 export const ToolIdSchema = v.picklist(TOOL_IDS)
 export type ToolId = v.InferOutput<typeof ToolIdSchema>
@@ -16,6 +16,9 @@ export const TOOL_NAMES: Record<ToolId, string> = {
   codex: 'Codex',
   'gemini-cli': 'Gemini CLI',
   opencode: 'OpenCode',
+  cursor: 'Cursor CLI',
+  pi: 'Pi',
+  dsh: 'DeepSeek Harness',
 }
 
 const NonEmptyString = v.pipe(v.string(), v.trim(), v.minLength(1))
@@ -34,9 +37,19 @@ export const ProviderSchema = v.object({
       authType: v.optional(v.picklist(['auth_token', 'api_key']), 'auth_token'),
     }),
   ),
+  /** An OpenAI-compatible endpoint, such as `https://api.example.com/v1`. */
   openai: v.optional(
     v.object({
       baseUrl: UrlString,
+      /** The model on this endpoint; falls back to `models.default`. */
+      model: v.optional(NonEmptyString),
+    }),
+  ),
+  /** The Gemini API, or a gateway that speaks it. Without `baseUrl` the official endpoint is used. */
+  gemini: v.optional(
+    v.object({
+      baseUrl: v.optional(UrlString),
+      model: v.optional(NonEmptyString),
     }),
   ),
   models: v.optional(
@@ -50,6 +63,12 @@ export const ProviderSchema = v.object({
   ),
 })
 export type Provider = v.InferOutput<typeof ProviderSchema>
+export type ProviderProtocol = 'anthropic' | 'openai' | 'gemini'
+
+/** The model a tool should use on one of the provider's protocols. */
+export function protocolModel(provider: Provider, protocol: 'openai' | 'gemini'): string | undefined {
+  return provider[protocol]?.model ?? provider.models.default
+}
 
 const McpStdioSchema = v.object({
   type: v.literal('stdio'),

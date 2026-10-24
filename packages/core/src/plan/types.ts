@@ -14,7 +14,8 @@ export interface KeyEdit {
   value: unknown
 }
 
-export type FileFormat = 'json' | 'toml'
+/** `env` is a dotenv file of `KEY=value` lines; its key paths have one element, the variable name. */
+export type FileFormat = 'json' | 'toml' | 'env'
 
 /** Run one of the tool's own commands (or another mainstream CLI such as `npx skills`). */
 export interface CommandStep {

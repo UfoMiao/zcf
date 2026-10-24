@@ -33,7 +33,7 @@ Every action is planned before anything changes:
 2. Front ends show the plan, with a unified diff for each file step, using `previewFileStep`.
 3. `applyPlan` runs tools in parallel and each tool's steps in order. A failed step skips the rest of that tool, because later steps depend on earlier ones. Each file is backed up once per run, before its first change.
 
-File edits are format-preserving: jsonc-parser for JSON/JSONC and toml-patch for TOML. Writes go through a temporary file and a rename, and keep the file's mode. Comments, key order and unrelated keys stay as they are.
+File edits are format-preserving: jsonc-parser for JSON/JSONC, toml-patch for TOML, and a small line editor for dotenv files (such as Gemini CLI's `~/.gemini/.env`). Writes go through a temporary file and a rename, and keep the file's mode. Comments, key order and unrelated keys stay as they are.
 
 Adapters are pure apart from what goes through `AdapterContext` (home, platform, environment, command runner, file reader). Tests therefore never touch the real home directory or run real installers.
 
@@ -56,7 +56,9 @@ The config is JSON with comments at `~/.ufomiao/zcf/zcf.json` (or `--file`), val
 
 Paths follow `CLAUDE_CONFIG_DIR` when it is set, as Claude Code itself does: `settings.json`, `skills/` and `.claude.json` then live in that folder.
 
-Codex, Gemini CLI and OpenCode follow the same pattern in later phases.
+Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness follow the same pattern. Each adapter lives in its own file and reuses `adapters/shared.ts` for detection, npm installs and updates, skills and notices.
+
+The provider has one block per protocol (`anthropic`, `openai`, `gemini`). Each adapter uses the protocol its tool speaks, and reports a notice when the provider lacks it. A tool's model is the protocol block's `model`, or else `models.default`.
 
 ### Tooling
 

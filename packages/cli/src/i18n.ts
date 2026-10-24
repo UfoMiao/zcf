@@ -6,8 +6,7 @@ export type Lang = (typeof LANGS)[number]
 const en = {
   'cli.description': "One config for all your AI coding tools, written as each tool's own settings",
   'cli.option.file': 'Path to the ZCF config file',
-  'cli.option.tools':
-    'Comma-separated tools to work on, overriding the config (claude-code, codex, gemini-cli, opencode)',
+  'cli.option.tools': 'Comma-separated tools to work on, overriding the config ({tools})',
   'cli.option.lang': 'Display language (en, zh-CN)',
   'cli.option.yes': 'Apply without asking',
   'cli.option.help': 'Display this message',
@@ -53,6 +52,10 @@ const en = {
   'notice.toolNotSupported': '{tool} is not supported yet.',
   'notice.notInstalled': '{tool} is not installed.',
   'notice.providerMissingProtocol': 'The provider has no "{protocol}" settings, so {tool} keeps its current provider.',
+  'notice.providerNotSupported': '{tool} only uses its own models, so the provider is not applied to it.',
+  'notice.mcpNotSupported': '{tool} has no built-in MCP support, so the MCP servers are not applied to it.',
+  'notice.modelMissing':
+    'No model is set for {tool}. Add "model" to the provider\'s "{protocol}" settings or set "models.default".',
 } as const
 
 export type MessageKey = keyof typeof en
@@ -60,7 +63,7 @@ export type MessageKey = keyof typeof en
 const zhCN: Record<MessageKey, string> = {
   'cli.description': '一份配置，写入所有 AI 编程工具各自的原生设置',
   'cli.option.file': 'ZCF 配置文件路径',
-  'cli.option.tools': '要处理的工具，用逗号分隔，会覆盖配置里的选择（claude-code, codex, gemini-cli, opencode）',
+  'cli.option.tools': '要处理的工具，用逗号分隔，会覆盖配置里的选择（{tools}）',
   'cli.option.lang': '显示语言（en, zh-CN）',
   'cli.option.yes': '不再确认，直接应用',
   'cli.option.help': '显示帮助信息',
@@ -106,6 +109,10 @@ const zhCN: Record<MessageKey, string> = {
   'notice.toolNotSupported': '暂不支持 {tool}。',
   'notice.notInstalled': '{tool} 尚未安装。',
   'notice.providerMissingProtocol': '供应商没有 "{protocol}" 配置，{tool} 将保留当前的供应商。',
+  'notice.providerNotSupported': '{tool} 只使用自家模型，不会应用供应商配置。',
+  'notice.mcpNotSupported': '{tool} 不内置 MCP 支持，不会应用 MCP 服务配置。',
+  'notice.modelMissing':
+    '没有为 {tool} 设置模型。请在供应商的 "{protocol}" 配置里加上 "model"，或设置 "models.default"。',
 }
 
 const english: Record<string, string> = en
