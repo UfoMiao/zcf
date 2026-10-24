@@ -60,6 +60,8 @@ const en = {
   'cli.applyDone': 'Done: {done} applied, {unchanged} already up to date.',
   'cli.updated': '{tool} updated from {from} to {to}.',
   'cli.upToDate': '{tool} is already up to date ({version}).',
+  'cli.updateSameVersion':
+    '{tool} still reports {version} after the npm install. If you expected a newer version, another copy may come first on your PATH.',
   'cli.applyFailed': 'Not every tool finished ({count} failed). See the errors above.',
   'cli.backups': 'Previous versions of changed files are in {path}',
   'cli.unchanged': 'already up to date',
@@ -241,6 +243,8 @@ const zhCN: Record<MessageKey, string> = {
   'cli.applyDone': '完成。已应用 {done} 步，{unchanged} 步本来就是最新。',
   'cli.updated': '{tool} 已从 {from} 更新到 {to}。',
   'cli.upToDate': '{tool} 已是最新版本（{version}）。',
+  'cli.updateSameVersion':
+    '用 npm 安装后，{tool} 仍显示 {version}。如果你预期会有新版本，可能是 PATH 中排在前面的另一个副本。',
   'cli.applyFailed': '有 {count} 个工具没有完成，请查看上方的错误。',
   'cli.backups': '改动前的文件已备份到 {path}',
   'cli.unchanged': '已是最新',
