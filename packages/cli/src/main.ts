@@ -223,59 +223,76 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     renderer.line()
   }
 
-  /** `settle` may restate results before the summary, as `zcf update` does for tools that had nothing newer. */
+  /**
+   * Apply a plan, showing each step as it ends. With `settle`, which may restate results and add
+   * notes (as `zcf update` does for tools that had nothing newer), steps are shown once settled.
+   */
   async function runPlan(
     plan: Plan,
     renderer: Renderer,
-    settle?: (results: ToolResult[]) => Promise<ToolResult[]>,
+    settle?: (results: ToolResult[]) => Promise<{ results: ToolResult[]; notes: string[] }>,
   ): Promise<number> {
     const backupDir = backupFolder(ctx.home, now())
     const applied = await applyPlan(plan, {
       runner: ctx.runner,
       backupDir,
       home: ctx.home,
-      onEvent: event => event.type === 'step-end' && renderer.stepResult(event.tool, event.result),
+      onEvent: event => !settle && event.type === 'step-end' && renderer.stepResult(event.tool, event.result),
     })
-    const results = settle ? await settle(applied) : applied
+    const { results, notes } = settle ? await settle(applied) : { results: applied, notes: [] }
+    if (settle) {
+      for (const result of results) {
+        for (const step of result.steps) renderer.stepResult(result.tool, step)
+      }
+    }
+    if (notes.length > 0) renderer.line()
+    for (const note of notes) renderer.line(note)
     renderer.summary(results, backupDir)
     return results.every(result => result.ok) ? EXIT_OK : EXIT_ERROR
   }
 
   /**
    * An updater exits 0 whether or not it found a newer version, so compare versions after updating.
-   * A tool still on the same version counts as already up to date.
+   * A tool still on the same version after its own updater ran counts as already up to date. After
+   * an npm install it may instead be another copy earlier on PATH, so that case is only reported.
    */
   async function compareVersions(
     plan: Plan,
     results: ToolResult[],
-    renderer: Renderer,
     detectCtx: AdapterContext,
-  ): Promise<ToolResult[]> {
-    const before = new Map(plan.tools.map(toolPlan => [toolPlan.tool, toolPlan.version]))
+  ): Promise<{ results: ToolResult[]; notes: string[] }> {
+    const notes: string[] = []
+    const planned = new Map(plan.tools.map(toolPlan => [toolPlan.tool, toolPlan]))
     const updated = results.filter(
-      result => result.ok && before.get(result.tool) && result.steps.some(step => step.status === 'done'),
+      result => result.ok && planned.get(result.tool)?.version && result.steps.some(step => step.status === 'done'),
     )
-    if (updated.length === 0) return results
+    if (updated.length === 0) return { results, notes }
     const after = await detectTools(
       updated.map(result => result.tool),
       detectCtx,
     )
-    renderer.line()
-    return results.map(result => {
-      const from = before.get(result.tool)
+    const settled = results.map(result => {
+      const toolPlan = planned.get(result.tool)
+      const from = toolPlan?.version
       const to = after[result.tool]?.version
       if (!updated.includes(result) || !from || !to) return result
       const tool = TOOL_NAMES[result.tool]
       if (to !== from) {
-        renderer.line(green(t('cli.updated', { tool, from, to })))
+        notes.push(green(t('cli.updated', { tool, from, to })))
         return result
       }
-      renderer.line(dim(t('cli.upToDate', { tool, version: to })))
+      const viaNpm = toolPlan.steps.some(step => step.kind === 'command' && step.command === 'npm')
+      if (viaNpm) {
+        notes.push(yellow(t('cli.updateSameVersion', { tool, version: to })))
+        return result
+      }
+      notes.push(dim(t('cli.upToDate', { tool, version: to })))
       return {
         ...result,
         steps: result.steps.map(step => (step.status === 'done' ? { ...step, status: 'unchanged' as const } : step)),
       }
     })
+    return { results: settled, notes }
   }
 
   const cli = cac('zcf')
@@ -392,7 +409,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       for (const toolPlan of plan.tools) {
         for (const notice of toolPlan.notices) renderer.notice(notice)
       }
-      return runPlan(plan, renderer, results => compareVersions(plan, results, renderer, { ...ctx, mirror }))
+      return runPlan(plan, renderer, results => compareVersions(plan, results, { ...ctx, mirror }))
     })
 
   cli

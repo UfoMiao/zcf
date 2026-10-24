@@ -302,7 +302,7 @@ describe('zcf update', () => {
     const { code, stdout } = await run('update', '--tools', 'claude-code,dsh')
     expect(code).toBe(EXIT_OK)
     expect(stdout).toContain('DeepSeek Harness is not installed.')
-    expect(stdout).toContain('✓ Claude Code: Update Claude Code')
+    expect(stdout).toContain('Claude Code: Update Claude Code')
     expect(calls).toContainEqual(['claude', 'update'])
   })
 
@@ -312,7 +312,18 @@ describe('zcf update', () => {
     const { code, stdout } = await run('update', '--tools', 'claude-code')
     expect(code).toBe(EXIT_OK)
     expect(stdout).toContain('Claude Code is already up to date (2.1.0).')
+    expect(stdout).not.toContain('✓ Claude Code: Update Claude Code')
+    expect(stdout).toContain('· Claude Code: Update Claude Code')
     expect(stdout).toContain('Done: 0 applied, 1 already up to date.')
+  })
+
+  it('only reports an unchanged version after an npm install', async () => {
+    responses['gemini --version'] = { stdout: '0.65.0' }
+    responses['npm install -g @google/gemini-cli@latest'] = {}
+    const { code, stdout } = await run('update', '--tools', 'gemini-cli')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Gemini CLI still reports 0.65.0 after the npm install.')
+    expect(stdout).toContain('Done: 1 applied, 0 already up to date.')
   })
 
   it('shows the version a tool was updated to', async () => {
