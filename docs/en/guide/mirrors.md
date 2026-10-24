@@ -18,7 +18,7 @@ From highest to lowest priority:
 
 1. `--mirror official|china` on `zcf plan`, `zcf apply` or `zcf update`, for that run only.
 2. The `ZCF_MIRROR` environment variable (`cn` also means `china`).
-3. `mirror` in the [config file](./config), which `zcf mirror <name>` sets.
+3. `mirror` in the [config file](./config), which `zcf mirror <name>` and the Settings page of the [editors](./ui) set.
 4. `official`.
 
 When the `china` mirror is in use, `zcf plan`, `zcf apply` and `zcf update` say so at the top, with the registry they use.

@@ -18,7 +18,7 @@ npx zcf mirror official   # 切换回官方源
 
 1. `zcf plan`、`zcf apply` 或 `zcf update` 上的 `--mirror official|china`，只对本次运行生效。
 2. 环境变量 `ZCF_MIRROR`（`cn` 也表示 `china`）。
-3. [配置文件](./config)中的 `mirror`，由 `zcf mirror <name>` 设置。
+3. [配置文件](./config)中的 `mirror`，由 `zcf mirror <name>` 或[编辑器](./ui)的设置页设置。
 4. `official`。
 
 使用 `china` 镜像时，`zcf plan`、`zcf apply` 和 `zcf update` 会在开头说明，并显示所用的仓库地址。
