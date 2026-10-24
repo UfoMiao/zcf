@@ -17,6 +17,7 @@ import { cac } from 'cac'
 import { join, resolve } from 'pathe'
 
 import { version } from '../package.json'
+import type { Translate } from './i18n'
 import { createTranslator, detectLang } from './i18n'
 import type { Output } from './render'
 import { collectSecrets, Renderer } from './render'
@@ -77,6 +78,18 @@ function hasWork(plan: Plan, previews: Map<PlanStep, FilePreview>): boolean {
 
 function backupFolder(home: string, now: Date): string {
   return join(home, '.ufomiao', 'zcf', 'backups', now.toISOString().replace(/[:.]/g, '-'))
+}
+
+/** cac only reports argument mistakes as English text, so match its messages and translate them. */
+function argumentError(error: unknown, t: Translate): string | undefined {
+  if (!(error instanceof Error) || error.name !== 'CACError') return undefined
+  const unknown = /^Unknown option `(.+)`$/.exec(error.message)
+  if (unknown) return t('cli.unknownOption', { option: unknown[1]! })
+  const missing = /^option `(.+)` value is missing$/.exec(error.message)
+  if (missing) return t('cli.optionValueMissing', { option: missing[1]! })
+  const unused = /^Unused args: (.+)$/.exec(error.message)
+  if (unused) return t('cli.unusedArgs', { args: unused[1]!.replaceAll('`', '') })
+  return t('cli.badArguments', { message: error.message })
 }
 
 export async function main(argv: readonly string[], options: MainOptions = {}): Promise<number> {
@@ -202,6 +215,11 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     if (error instanceof FileSyntaxError) {
       const { path = '', format, line, column } = error
       stderr.write(`${t('cli.fileInvalid', { path, format: format.toUpperCase(), line, column })}\n`)
+      return EXIT_ERROR
+    }
+    const argumentMessage = argumentError(error, t)
+    if (argumentMessage) {
+      stderr.write(`${argumentMessage}\n`)
       return EXIT_ERROR
     }
     stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)

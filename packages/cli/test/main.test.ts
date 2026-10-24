@@ -277,6 +277,22 @@ describe('zcf update', () => {
 })
 
 describe('help and unknown commands', () => {
+  it('explains argument mistakes in the chosen language', async () => {
+    await writeConfig(fullConfig)
+    expect(await run('plan', '--lang', 'zh-CN', '--unknown')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('未知选项 --unknown'),
+    })
+    expect(await run('plan', '--lang', 'zh-CN', '--file')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('选项 --file <path> 缺少值'),
+    })
+    expect(await run('plan', 'extra')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('Unexpected arguments: extra. Run zcf --help'),
+    })
+  })
+
   it('prints help', async () => {
     let stdout = ''
     const original = console.info
