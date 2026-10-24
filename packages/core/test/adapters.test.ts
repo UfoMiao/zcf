@@ -88,6 +88,19 @@ describe('planUpdates for tools updated with npm', () => {
     ])
   })
 
+  it('reads the scoped package after the allowed scripts in a dsh update', async () => {
+    const dsh = createContext({
+      ...ctx,
+      runner: fakeRunner({
+        'dsh --version': { stdout: '0.2.1\n' },
+        'npm view @deepseek-ai/dsh version': { stdout: '0.2.1\n' },
+      }),
+    })
+    const [plan] = (await planUpdates(['dsh'], dsh)).tools
+    expect(plan!.steps).toEqual([])
+    expect(plan!.notices[0]!.message.key).toBe('notice.upToDate')
+  })
+
   it('updates when npm has a newer version, or when it cannot tell', async () => {
     expect((await planUpdates(['gemini-cli'], gemini('0.66.0'))).tools[0]!.steps).toHaveLength(1)
     const offline = createContext({ ...ctx, runner: fakeRunner({ 'gemini --version': { stdout: '0.65.0' } }) })
