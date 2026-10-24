@@ -308,4 +308,20 @@ describe('help and unknown commands', () => {
     }
     expect(stdout).toContain('One config for all your AI coding tools')
   })
+
+  it('prints help in the chosen language', async () => {
+    let stdout = ''
+    const original = console.info
+    console.info = (text: string) => void (stdout += text)
+    try {
+      expect((await run('--help', '--lang', 'zh-CN')).code).toBe(EXIT_OK)
+      expect((await run('plan', '--help', '--lang', 'zh-CN')).code).toBe(EXIT_OK)
+    } finally {
+      console.info = original
+    }
+    for (const text of ['用法', '命令', '选项', '显示帮助信息', '显示版本号', '在任一命令后加上 `--help` 查看详情']) {
+      expect(stdout).toContain(text)
+    }
+    expect(stdout).not.toMatch(/Usage|Options|Display this message|Display version number/)
+  })
 })
