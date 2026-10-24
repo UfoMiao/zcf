@@ -10,7 +10,7 @@ on:
       - main
 
 jobs:
-  lint:
+  check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,21 +19,26 @@ jobs:
           run_install: false
       - uses: actions/setup-node@v4
         with:
-          node-version: lts/*
+          node-version: 22
           cache: pnpm
 
-      - run: pnpm i -g @antfu/ni
-      - run: nci
-      - run: nr lint
-      - run: nr typecheck
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm build
+      # `zcf --version` must stay under 60 ms (median of 15 runs).
+      - run: pnpm bench
 
   test:
     runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
-        node: [lts/*]
+        node: [22]
         os: [ubuntu-latest, windows-latest, macos-latest]
+        include:
+          - node: lts/*
+            os: ubuntu-latest
       fail-fast: false
 
     steps:
@@ -47,13 +52,11 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: pnpm
 
-      - run: pnpm i -g @antfu/ni
-      - run: nci
-      - run: nr build
-      - run: nr test:coverage
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
 
       - name: Upload coverage reports
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.node == 22
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

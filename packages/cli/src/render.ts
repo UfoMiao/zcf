@@ -1,0 +1,156 @@
+import type { FilePreview, Message, Notice, Plan, PlanStep, StepResult, ToolId, ToolResult, ZcfConfig } from '@zcf/core'
+import { isToolId, TOOL_NAMES } from '@zcf/core'
+import { bold, cyan, dim, green, red, yellow } from 'ansis'
+
+import type { Translate } from './i18n'
+
+export interface Output {
+  write: (text: string) => void
+}
+
+const SAFE_ARG = /^[\w@%+=:,./-]+$/
+
+export function quoteArg(arg: string): string {
+  return SAFE_ARG.test(arg) ? arg : `'${arg.replaceAll("'", `'\\''`)}'`
+}
+
+/** Every value in the config that must never be printed. */
+export function collectSecrets(config: ZcfConfig): string[] {
+  const values = config.provider ? [config.provider.apiKey] : []
+  for (const server of Object.values(config.mcpServers)) {
+    values.push(...Object.values(server.type === 'stdio' ? server.env : server.headers))
+  }
+  // A value like "Bearer <token>" may show up in error output as the bare token.
+  const secrets = new Set<string>()
+  for (const value of values) {
+    secrets.add(value)
+    for (const part of value.split(/\s+/)) {
+      if (part.length >= 8) secrets.add(part)
+    }
+  }
+  // Mask longer values first so a secret that contains another is hidden whole.
+  return [...secrets].filter(secret => secret.length >= 4).toSorted((a, b) => b.length - a.length)
+}
+
+export function maskSecrets(text: string, secrets: readonly string[]): string {
+  let masked = text
+  for (const secret of secrets) masked = masked.replaceAll(secret, `${secret.slice(0, 3)}***${secret.slice(-2)}`)
+  return masked
+}
+
+export function tildify(path: string, home: string): string {
+  return path.startsWith(home) ? `~${path.slice(home.length)}` : path
+}
+
+export class Renderer {
+  constructor(
+    private readonly out: Output,
+    private readonly t: Translate,
+    private readonly secrets: readonly string[],
+    private readonly home: string,
+  ) {}
+
+  line(text = ''): void {
+    this.out.write(`${maskSecrets(text, this.secrets)}\n`)
+  }
+
+  message(message: Message): string {
+    const params = { ...message.params }
+    if (isToolId(params.tool)) params.tool = TOOL_NAMES[params.tool]
+    return this.t(message.key, params)
+  }
+
+  stepTarget(step: PlanStep): string {
+    return step.kind === 'command'
+      ? `$ ${[step.command, ...step.args].map(quoteArg).join(' ')}`
+      : tildify(step.path, this.home)
+  }
+
+  notice(notice: Notice): void {
+    const text = this.message(notice.message)
+    this.line(notice.level === 'warning' ? yellow(`  ! ${text}`) : dim(`  i ${text}`))
+  }
+
+  patch(preview: FilePreview): void {
+    // Drop the "Index:" and "===" header lines; the path is already shown above.
+    const lines = preview.patch
+      .split('\n')
+      .filter(line => line && !line.startsWith('Index:') && !line.startsWith('===='))
+    for (const line of lines) {
+      if (line.startsWith('+++') || line.startsWith('---')) continue
+      const colored = line.startsWith('+')
+        ? green(line)
+        : line.startsWith('-')
+          ? red(line)
+          : line.startsWith('@@')
+            ? cyan(line)
+            : dim(line)
+      this.line(`       ${colored}`)
+    }
+  }
+
+  plan(plan: Plan, previews: Map<PlanStep, FilePreview>): void {
+    for (const toolPlan of plan.tools) {
+      this.line(bold(TOOL_NAMES[toolPlan.tool]))
+      for (const notice of toolPlan.notices) this.notice(notice)
+      if (toolPlan.steps.length === 0 && toolPlan.notices.length === 0) this.line(dim(`  ${this.t('cli.nothingToDo')}`))
+
+      for (const [index, step] of toolPlan.steps.entries()) {
+        const preview = previews.get(step)
+        const suffix =
+          preview && !preview.changed
+            ? dim(` (${this.t('cli.unchanged')})`)
+            : preview?.before === undefined && preview
+              ? dim(` (${this.t('cli.newFile')})`)
+              : ''
+        this.line(`  ${index + 1}. ${this.message(step.title)}${suffix}`)
+        this.line(dim(`     ${this.stepTarget(step)}`))
+        if (preview?.changed) this.patch(preview)
+      }
+      this.line()
+    }
+  }
+
+  stepResult(tool: ToolId, result: StepResult): void {
+    const title = `${TOOL_NAMES[tool]}: ${this.message(result.step.title)}`
+    switch (result.status) {
+      case 'done':
+        this.line(`${green('✓')} ${title}`)
+        break
+      case 'unchanged':
+        this.line(`${dim('·')} ${title} ${dim(`(${this.t('cli.unchanged')})`)}`)
+        break
+      case 'skipped':
+        this.line(`${dim('-')} ${title} ${dim(`(${this.t('cli.skipped')})`)}`)
+        break
+      case 'failed':
+        this.line(`${red('✗')} ${title}`)
+        for (const detail of (result.detail ?? '').split('\n')) this.line(red(`    ${detail}`))
+    }
+  }
+
+  summary(results: readonly ToolResult[], backupDir: string): void {
+    const steps = results.flatMap(result => result.steps)
+    const failedTools = results.filter(result => !result.ok).length
+    this.line()
+    if (failedTools > 0) this.line(red(this.t('cli.applyFailed', { count: failedTools })))
+    else
+      this.line(
+        green(
+          this.t('cli.applyDone', {
+            done: steps.filter(step => step.status === 'done').length,
+            unchanged: steps.filter(step => step.status === 'unchanged').length,
+          }),
+        ),
+      )
+    if (steps.some(step => step.backup)) {
+      this.line(
+        dim(
+          this.t('cli.backups', {
+            path: tildify(backupDir, this.home),
+          }),
+        ),
+      )
+    }
+  }
+}

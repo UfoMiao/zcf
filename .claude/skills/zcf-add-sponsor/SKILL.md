@@ -30,7 +30,7 @@ Quickly onboard a new **corporate sponsor** across the ZCF project: README spons
 - `--name <name>` — Display name (e.g. `FooAI`)
 - `--url <url>` — Affiliate/registration URL (used in every link)
 - `--id <provider-id>` — API provider id, kebab-case (only required with `--with-api`, e.g. `fooai`)
-- `--logo <path>` — Local logo path under `src/assets/` (only required with `--with-ad`, e.g. `./src/assets/fooai.png`)
+- `--logo <path>` — Local logo path under `src/assets/` (only required with `--with-ad`, e.g. `./assets/fooai.png`)
 - `--badge <emoji>` — Trailing emoji badge for the list bullet (default: `🎁`)
 
 ## Context
@@ -39,8 +39,8 @@ Quickly onboard a new **corporate sponsor** across the ZCF project: README spons
 - **API preset format**: Match the existing `ApiProviderPreset` interface in `src/config/api-providers.ts`. Ask the user about `baseUrl`, `authType`, `wireApi`, `defaultModels`, and which code tools are supported (`claude-code`, `codex`, or both).
 - **Ad cards**: Mirror the existing AICodeMirror / Crazyrouter card layout exactly — `<table><tr><td width="180"><a><img></a></td><td>...description...</td></tr></table>`, appended **after** the last existing sponsor card and **before** the next `##` heading.
 - **Image paths**:
-  - In `README*.md` use relative path `./src/assets/<file>`
-  - In `docs/*/index.md` use absolute GitHub raw URL `https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/<file>`
+  - In `README*.md` use relative path `./assets/<file>`
+  - In `docs/*/index.md` use absolute GitHub raw URL `https://raw.githubusercontent.com/UfoMiao/zcf/main/assets/<file>`
 - **Trilingual descriptions**: Always generate three localized descriptions (zh-CN / en / ja-JP). Translate from the user-provided source description while preserving brand names, URLs, and discount numbers verbatim.
 
 ## Your Role
@@ -121,12 +121,12 @@ For each of the six files below, locate the existing sponsor card table and **ap
 
 | File | Image path prefix |
 |------|-------------------|
-| `README.md` | `./src/assets/` |
-| `README_zh-CN.md` | `./src/assets/` |
-| `README_ja-JP.md` | `./src/assets/` |
-| `docs/en/index.md` | `https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/` |
-| `docs/zh-CN/index.md` | `https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/` |
-| `docs/ja-JP/index.md` | `https://raw.githubusercontent.com/UfoMiao/zcf/main/src/assets/` |
+| `README.md` | `./assets/` |
+| `README_zh-CN.md` | `./assets/` |
+| `README_ja-JP.md` | `./assets/` |
+| `docs/en/index.md` | `https://raw.githubusercontent.com/UfoMiao/zcf/main/assets/` |
+| `docs/zh-CN/index.md` | `https://raw.githubusercontent.com/UfoMiao/zcf/main/assets/` |
+| `docs/ja-JP/index.md` | `https://raw.githubusercontent.com/UfoMiao/zcf/main/assets/` |
 
 **Card template (reference, fill brackets per locale):**
 

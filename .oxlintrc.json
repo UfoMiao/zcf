@@ -1,0 +1,28 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript", "unicorn", "oxc", "import", "node", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error"
+  },
+  "options": {
+    "typeAware": true,
+    "denyWarnings": true,
+    "reportUnusedDisableDirectives": "error"
+  },
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "ignorePatterns": ["**/dist/**", "coverage/**", "docs/**", ".claude/**"],
+  "overrides": [
+    {
+      "files": ["**/test/**"],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "off",
+        "oxc/no-map-spread": "off"
+      }
+    }
+  ]
+}

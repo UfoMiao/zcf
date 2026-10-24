@@ -14,7 +14,6 @@
   "files.eol": "\n",
   "files.simpleDialog.enable": true,
   "files.exclude": {
-    "**/.eslintcache": true,
     "**/bower_components": true,
     "**/.turbo": true,
     "**/.idea": true,
@@ -74,73 +73,15 @@
     "README.md": "README*,CHANGELOG*,LICENSE,CNAME",
     "package.json": "pnpm-lock.yaml,pnpm-workspace.yaml,.gitattributes,.gitignore,.gitpod.yml,.npmrc,.browserslistrc,.node-version,.git*,.tazerc.json",
     "Dockerfile": "Dockerfile,.docker*,docker-entrypoint.sh,build-local-docker*,nginx.conf",
-    "eslint.config.*": "cspell.json,commitlint.config.*,lint-staged.config.*",
+    ".oxlintrc.json": ".oxfmtrc.json,cspell.json,commitlint.config.*,tsconfig.json,vitest.config.*",
     "uno.config.*": "postcss.config.*"
   },
-  // Enable the ESlint flat config support
-  "eslint.useFlatConfig": true,
-
-  // Disable the default formatter
-  "prettier.enable": false,
-  "editor.formatOnSave": false,
-  "editor.formatOnPaste": false,
-
-  // Auto fix
+  // oxlint and oxfmt through the oxc extension (oxc.oxc-vscode)
+  "editor.defaultFormatter": "oxc.oxc-vscode",
+  "editor.formatOnSave": true,
+  "oxc.typeAware": true,
   "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit",
+    "source.fixAll.oxc": "explicit",
     "source.organizeImports": "never"
-  },
-
-  // Silent the stylistic rules in you IDE, but still auto fix them
-  "eslint.rules.customizations": [
-    { "rule": "style/*", "severity": "off" },
-    { "rule": "format/*", "severity": "off" },
-    { "rule": "*-indent", "severity": "off" },
-    { "rule": "*-spacing", "severity": "off" },
-    { "rule": "*-spaces", "severity": "off" },
-    { "rule": "*-order", "severity": "off" },
-    { "rule": "*-dangle", "severity": "off" },
-    { "rule": "*-newline", "severity": "off" },
-    { "rule": "*quotes", "severity": "off" },
-    { "rule": "*semi", "severity": "off" }
-  ],
-
-  /*
-   * The following is optional.
-   * It's better to put under project setting `.vscode/settings.json`
-   * to avoid conflicts with working with different eslint configs
-   * that does not support all formats.
-   */
-  "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact",
-    "vue",
-    "html",
-    "markdown",
-    "json",
-    "jsonc",
-    "yaml",
-    "toml",
-    "xml",
-    "gql",
-    "graphql",
-    "astro",
-    "css",
-    "less",
-    "scss",
-    "pcss",
-    "postcss"
-  ],
-  "i18n-ally.localesPaths": [
-    "src/i18n/locales"
-  ],
-  "i18n-ally.sourceLanguage": "en",
-  "i18n-ally.keystyle": "flat",
-  "i18n-ally.displayLanguage": "zh-CN",
-  "i18n-ally.namespace": true,
-  "i18n-ally.sortKeys": true,
-  "i18n-ally.keepFulfilled": true,
-  "i18n-ally.includeSubfolders": true
+  }
 }

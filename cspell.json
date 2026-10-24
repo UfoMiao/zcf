@@ -47,12 +47,5 @@
     "zcf",
     "Zhipu"
   ],
-  "ignorePaths": [
-    "**/node_modules/**",
-    "**/dist/**",
-    "**/*-dist/**",
-    "**/icons/**",
-    "pnpm-lock.yaml",
-    "**/*.log"
-  ]
+  "ignorePaths": ["**/node_modules/**", "**/dist/**", "**/*-dist/**", "**/icons/**", "pnpm-lock.yaml", "**/*.log"]
 }

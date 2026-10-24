@@ -1,0 +1,51 @@
+{
+  "name": "zcf",
+  "type": "module",
+  "version": "5.0.0-alpha.0",
+  "private": true,
+  "description": "Zero-Config Code Flow: one config for Claude Code, Codex, Gemini CLI and OpenCode, written as each tool's own native settings",
+  "author": {
+    "name": "Miao Da",
+    "email": "ufo025174@gmail.com",
+    "url": "https://github.com/UfoMiao"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/UfoMiao/zcf",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UfoMiao/zcf.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/UfoMiao/zcf/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "codex",
+    "gemini-cli",
+    "opencode",
+    "ai",
+    "cli",
+    "config"
+  ],
+  "bin": {
+    "zcf": "bin/zcf.mjs"
+  },
+  "files": [
+    "bin",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
+    "@zcf/core": "workspace:*",
+    "ansis": "catalog:cli",
+    "cac": "catalog:cli",
+    "pathe": "catalog:runtime",
+    "tsdown": "catalog:build"
+  }
+}

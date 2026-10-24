@@ -1,114 +1,54 @@
 {
-  "name": "zcf",
+  "name": "zcf-monorepo",
   "type": "module",
-  "version": "3.7.3",
-  "packageManager": "pnpm@10.17.1",
-  "description": "Zero-Config Code Flow - One-click configuration tool for Code Cli",
-  "author": {
-    "name": "Miao Da",
-    "email": "ufo025174@gmail.com",
-    "url": "https://github.com/WitMiao"
+  "private": true,
+  "packageManager": "pnpm@12.15.0",
+  "engines": {
+    "node": ">=22"
   },
-  "license": "MIT",
-  "homepage": "https://github.com/UfoMiao/zcf",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/UfoMiao/zcf.git"
-  },
-  "bugs": "https://github.com/UfoMiao/zcf/issues",
-  "keywords": [
-    "claude",
-    "claude-code",
-    "codex",
-    "config",
-    "cli",
-    "setup",
-    "zero-config",
-    "zcf",
-    "anthropic",
-    "openai",
-    "ChatGPT",
-    "ai",
-    "automation",
-    "mcp"
-  ],
-  "main": "dist/index.mjs",
-  "module": "dist/index.mjs",
-  "types": "dist/index.d.mts",
-  "bin": {
-    "zcf": "bin/zcf.mjs"
-  },
-  "files": [
-    "bin",
-    "dist",
-    "templates"
-  ],
   "scripts": {
-    "dev": "tsx ./src/cli.ts",
-    "build": "unbuild",
-    "start": "node bin/zcf.mjs",
+    "dev": "tsx packages/cli/src/cli.ts",
+    "build": "pnpm -F zcf build",
+    "bench": "node scripts/bench-startup.mjs",
     "typecheck": "tsc --noEmit",
-    "prepublishOnly": "pnpm build",
-    "lint": "eslint",
-    "lint:fix": "eslint --fix",
+    "lint": "oxlint && oxfmt --check",
+    "lint:fix": "oxlint --fix && oxfmt",
     "test": "vitest",
-    "test:ui": "vitest --ui",
-    "test:coverage": "vitest run --coverage",
     "test:run": "vitest run",
-    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
     "changeset": "changeset",
     "version": "changeset version",
-    "update:deps": "pnpx taze major -r -w",
     "release": "pnpm build && changeset publish",
     "prepare": "husky",
     "commitlint": "commitlint",
-    "commitlint:check": "commitlint --from HEAD~1 --to HEAD --verbose",
     "docs:dev": "pnpm -F @zcf/docs dev",
     "docs:build": "pnpm -F @zcf/docs build",
-    "docs:preview": "pnpm -F @zcf/docs preview"
-  },
-  "dependencies": {
-    "@rainbowatcher/toml-edit-js": "catalog:runtime",
-    "@types/semver": "catalog:types",
-    "ansis": "catalog:cli",
-    "cac": "catalog:cli",
-    "dayjs": "catalog:runtime",
-    "find-up-simple": "catalog:runtime",
-    "fs-extra": "catalog:runtime",
-    "i18next": "catalog:runtime",
-    "i18next-fs-backend": "catalog:runtime",
-    "inquirer": "catalog:cli",
-    "inquirer-toggle": "catalog:cli",
-    "ora": "catalog:cli",
-    "pathe": "catalog:runtime",
-    "semver": "catalog:runtime",
-    "tinyexec": "catalog:runtime",
-    "trash": "catalog:runtime"
+    "docs:preview": "pnpm -F @zcf/docs preview",
+    "format": "oxfmt"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "catalog:build",
     "@changesets/cli": "catalog:tooling",
     "@commitlint/cli": "catalog:tooling",
     "@commitlint/config-conventional": "catalog:tooling",
     "@commitlint/types": "catalog:tooling",
-    "@types/fs-extra": "catalog:types",
-    "@types/inquirer": "catalog:types",
     "@types/node": "catalog:types",
     "@vitest/coverage-v8": "catalog:testing",
-    "@vitest/ui": "catalog:testing",
-    "eslint": "catalog:build",
-    "eslint-plugin-format": "catalog:build",
-    "glob": "catalog:testing",
     "husky": "catalog:tooling",
     "lint-staged": "catalog:tooling",
+    "oxfmt": "catalog:build",
+    "oxlint": "catalog:build",
+    "oxlint-tsgolint": "catalog:build",
     "tsx": "catalog:build",
     "typescript": "catalog:build",
-    "unbuild": "catalog:build",
     "vitest": "catalog:testing"
   },
   "lint-staged": {
-    "*": [
-      "pnpm lint"
+    "*.{ts,mts,mjs,js}": [
+      "oxlint --fix",
+      "oxfmt"
+    ],
+    "*.{json,jsonc,yaml,yml}": [
+      "oxfmt"
     ]
   }
 }
