@@ -1,7 +1,8 @@
 import { createTwoFilesPatch } from 'diff'
 
-import { applyKeyEdits } from '../io/editors'
+import { applyKeyEdits, parseConfigText } from '../io/editors'
 import { readTextIfExists } from '../io/fs'
+import { sensitiveValues } from '../io/secrets'
 import type { FileStep } from './types'
 
 export interface FilePreview {
@@ -11,6 +12,8 @@ export interface FilePreview {
   changed: boolean
   /** Unified diff, empty when nothing changes. */
   patch: string
+  /** Credential values found in either version of the file; front ends must mask them. */
+  secrets: string[]
 }
 
 /** Work out what a file step would write, without touching the disk. */
@@ -38,5 +41,11 @@ export async function previewFileStep(
     after,
     changed,
     patch,
+    secrets: [
+      ...new Set([
+        ...sensitiveValues(await parseConfigText(step.format, before)),
+        ...sensitiveValues(await parseConfigText(step.format, after)),
+      ]),
+    ],
   }
 }

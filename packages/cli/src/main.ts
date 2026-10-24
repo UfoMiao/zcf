@@ -114,7 +114,8 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
           if (step.kind === 'file') previews.set(step, await previewFileStep(step, ctx.readFile))
         }),
     )
-    const renderer = new Renderer(stdout, t, collectSecrets(config), ctx.home)
+    const fileSecrets = [...previews.values()].flatMap(preview => preview.secrets)
+    const renderer = new Renderer(stdout, t, collectSecrets(config, fileSecrets), ctx.home)
     return { config, plan, previews, renderer }
   }
 

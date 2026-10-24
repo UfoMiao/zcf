@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { maskSecrets, quoteArg, tildify } from '../src/render'
+import { maskSecrets, quoteArg, secretVariants, tildify } from '../src/render'
 
 describe('render helpers', () => {
   it('quotes only arguments that need it', () => {
@@ -17,5 +17,14 @@ describe('render helpers', () => {
   it('shortens paths under home', () => {
     expect(tildify('/home/me/.claude', '/home/me')).toBe('~/.claude')
     expect(tildify('/etc/x', '/home/me')).toBe('/etc/x')
+  })
+
+  it('masks secrets after JSON escaping and shell quoting', () => {
+    const secret = `pa"ss'wo\\rd`
+    const secrets = secretVariants([secret])
+    const json = JSON.stringify({ PASSWORD: secret })
+    expect(maskSecrets(json, secrets)).not.toContain('ss')
+    expect(maskSecrets(quoteArg(json), secrets)).not.toContain('wo')
+    expect(maskSecrets(quoteArg(secret), secrets)).not.toContain('wo')
   })
 })

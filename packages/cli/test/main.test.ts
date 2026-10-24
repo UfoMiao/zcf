@@ -104,6 +104,19 @@ describe('zcf plan', () => {
     expect(calls).toEqual([['claude', '--version']])
   })
 
+  it('masks credentials already in the native config, not only the new ones', async () => {
+    await writeConfig(fullConfig)
+    await mkdir(join(home, '.claude'))
+    await writeFile(
+      join(home, '.claude', 'settings.json'),
+      '{\n  "env": {\n    "ANTHROPIC_API_KEY": "sk-old-credential",\n    "OTHER_TOKEN": "kept-token-value"\n  }\n}\n',
+    )
+    const { stdout } = await run('plan', '--tools', 'claude-code')
+    expect(stdout).toContain('-    "ANTHROPIC_API_KEY": "sk-***al"')
+    expect(stdout).not.toContain('sk-old-credential')
+    expect(stdout).not.toContain('kept-token-value')
+  })
+
   it('speaks Chinese with --lang zh-CN', async () => {
     await writeConfig(fullConfig)
     const { stdout } = await run('plan', '--lang', 'zh-CN', '--tools', 'claude-code')

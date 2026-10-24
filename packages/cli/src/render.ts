@@ -14,9 +14,9 @@ export function quoteArg(arg: string): string {
   return SAFE_ARG.test(arg) ? arg : `'${arg.replaceAll("'", `'\\''`)}'`
 }
 
-/** Every value in the config that must never be printed. */
-export function collectSecrets(config: ZcfConfig): string[] {
-  const values = config.provider ? [config.provider.apiKey] : []
+/** Every value in the config, plus any `extra` ones found elsewhere, that must never be printed. */
+export function collectSecrets(config: ZcfConfig, extra: readonly string[] = []): string[] {
+  const values = config.provider ? [config.provider.apiKey, ...extra] : [...extra]
   for (const server of Object.values(config.mcpServers)) {
     values.push(...Object.values(server.type === 'stdio' ? server.env : server.headers))
   }
@@ -28,8 +28,24 @@ export function collectSecrets(config: ZcfConfig): string[] {
       if (part.length >= 8) secrets.add(part)
     }
   }
-  // Mask longer values first so a secret that contains another is hidden whole.
-  return [...secrets].filter(secret => secret.length >= 4).toSorted((a, b) => b.length - a.length)
+  return secretVariants([...secrets].filter(secret => secret.length >= 4))
+}
+
+/**
+ * Each secret as it may appear in output: raw, escaped inside JSON, and either of
+ * those inside a single-quoted shell argument. Longest first, so a secret that
+ * contains another is masked whole.
+ */
+export function secretVariants(secrets: readonly string[]): string[] {
+  const variants = new Set<string>()
+  for (const secret of secrets) {
+    const json = JSON.stringify(secret).slice(1, -1)
+    for (const form of [secret, json]) {
+      variants.add(form)
+      variants.add(form.replaceAll("'", `'\\''`))
+    }
+  }
+  return [...variants].toSorted((a, b) => b.length - a.length)
 }
 
 export function maskSecrets(text: string, secrets: readonly string[]): string {

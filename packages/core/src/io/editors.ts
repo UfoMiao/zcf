@@ -1,5 +1,5 @@
 import type { ParseError } from 'jsonc-parser'
-import { applyEdits, findNodeAtLocation, modify, parseTree, printParseErrorCode } from 'jsonc-parser'
+import { applyEdits, findNodeAtLocation, modify, parse, parseTree, printParseErrorCode } from 'jsonc-parser'
 
 import type { FileFormat, KeyEdit } from '../plan/types'
 
@@ -81,6 +81,18 @@ export async function editToml(content: string | undefined, edits: readonly KeyE
   for (const edit of edits) setAtPath(data, edit.path, edit.value)
 
   return withTrailingNewline(toml.patch(text, data))
+}
+
+/** Parse a native config file; `undefined` when it is missing or not valid. */
+export async function parseConfigText(format: FileFormat, text: string | undefined): Promise<unknown> {
+  if (!text?.trim()) return undefined
+  try {
+    if (format === 'json') return parse(text, [], { allowTrailingComma: true })
+    tomlModule ??= import('@decimalturn/toml-patch')
+    return (await tomlModule).parse(text)
+  } catch {
+    return undefined
+  }
 }
 
 export async function applyKeyEdits(
