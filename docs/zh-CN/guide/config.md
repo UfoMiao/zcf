@@ -66,7 +66,9 @@ ZCF 只读取一个文件：`~/.ufomiao/zcf/zcf.json`。每个命令都可以用
 | `models.default` | 主模型。 |
 | `models.haiku`、`models.sonnet`、`models.opus` | Claude Code 三个档位使用的模型。 |
 
-每个协议块都是可选的。工具使用自己支持的协议：Claude Code 用 `anthropic`，Codex 用 `openai`，Gemini CLI 用 `gemini`。OpenCode、Pi 和 DeepSeek Harness 使用已填写的协议块。工具所需的协议缺失时，计划中会给出提示，该工具保留当前的供应商。Cursor CLI 只使用 Cursor 自家的模型。详见[工具](./tools)。
+`name` 和 `apiKey` 必填，`anthropic` 和 `openai` 块中的 `baseUrl` 也必填。
+
+每个协议块都是可选的。工具使用自己支持的协议：Claude Code 用 `anthropic`，Codex 用 `openai`，Gemini CLI 用 `gemini`。OpenCode 使用 `anthropic` 或 `openai`，Pi 使用第一个带有模型的块，DeepSeek Harness 依次使用 `anthropic`、`openai`。工具所需的协议缺失时，计划中会给出提示，该工具保留当前的供应商。Cursor CLI 只使用 Cursor 自家的模型。详见[工具](./tools)。
 
 想从已知供应商填入这些字段，见[供应商预设](./providers)。
 
@@ -102,7 +104,7 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 | `source` | `npx skills add` 能识别的任何来源：`owner/repo`、git URL 或本地路径。 |
 | `skills` | 只安装该来源中的这些技能。不填或留空则全部安装。 |
 
-来源中的技能已经全部安装时，该来源会被跳过。
+列出了技能的来源，在这些技能全部安装后会被跳过。没有列出技能的来源每次应用都会重新安装，因为 ZCF 无法得知它包含哪些技能。
 
 ## `mirror`
 

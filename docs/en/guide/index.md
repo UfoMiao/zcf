@@ -71,7 +71,7 @@ The editors are optional. The same result from a file:
 Then preview and apply it:
 
 ```bash
-npx zcf plan          # show what would change, with a diff of every file
+npx zcf plan          # show the commands it would run and a diff of each file it would edit
 npx zcf apply --yes   # install missing tools and write their settings
 ```
 
@@ -83,7 +83,7 @@ npx zcf apply --yes   # install missing tools and write their settings
 - ZCF uses the tools' own commands where they exist, such as `claude mcp add-json`, `codex mcp add` and `npx skills add`. It only edits a file directly for settings that no command covers.
 - Files are edited key by key. Your comments, key order and other settings stay as they are.
 - Each file is copied to `~/.ufomiao/zcf/backups/<time>/` before its first change. See [Backups and troubleshooting](./troubleshooting).
-- API keys and other secrets are masked in everything ZCF prints.
+- The API key, MCP environment and header values, and credentials found in tools' files are masked in everything ZCF prints. Keep secrets out of MCP server arguments; use `env` or `headers` instead.
 
 ## Keep tools up to date
 

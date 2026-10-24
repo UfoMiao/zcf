@@ -13,6 +13,8 @@ pnpm install
 pnpm dev plan --file ./my-zcf.json   # 从源码运行 CLI
 ```
 
+`pnpm dev ui` 使用 `packages/web/dist` 中的网页界面，因此请先运行一次 `pnpm build`。
+
 | 包 | 内容 |
 |----|------|
 | `packages/core` | 引擎：配置 schema、每个工具一个适配器、计划与应用，以及 JSON、TOML、YAML 和 `.env` 文件的编辑器。不含终端或界面代码。 |
@@ -41,6 +43,6 @@ pnpm dev plan --file ./my-zcf.json   # 从源码运行 CLI
 
 ## 添加工具
 
-一个工具就是 `packages/core/src/adapters` 中的一个适配器。它负责检测工具，规划安装、供应商、MCP 服务和技能，并规划更新。工具有自带命令时就用命令。用模拟执行器覆盖全新安装、已有配置和 Windows 路径三种情况。除非配置 schema 需要扩展，否则不必修改命令或界面代码。
+一个工具就是 `packages/core/src/adapters` 中的一个适配器。它负责检测工具，规划安装、供应商、MCP 服务和技能，并规划更新。在 `packages/core/src/schema/config.ts` 中加入工具的 ID 和名称，并在 `packages/core/src/adapters/index.ts` 中注册适配器；CLI 和两个界面会自动识别。工具有自带命令时就用命令。用模拟执行器覆盖全新安装、已有配置和 Windows 路径三种情况。
 
 Pull request 使用 Conventional Commits，描述遵循仓库的模板。

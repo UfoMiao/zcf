@@ -41,7 +41,7 @@ ZCF never deletes backups. Remove old folders yourself when you no longer need t
 
 **"The ZCF config at … is not valid"**: the message lists each field that is wrong. The editors show the same errors next to the fields. A file that isn't valid JSON opens as broken in the editors; fix it in a text editor, then reload.
 
-**A step failed**: the rest of that tool's steps are skipped, and the other tools carry on. The summary shows the failed command and its output, with secrets masked. Fix the cause and run `zcf apply` again. Steps that already succeeded have nothing left to do the second time.
+**A step failed**: the rest of that tool's steps are skipped, and the other tools carry on. The summary shows the failed command and its output, with secrets masked. Fix the cause and run `zcf apply` again. Settings and MCP servers that were already applied are skipped the second time.
 
 **A tool was installed but is "not found" afterwards**: some installers add their folder to `PATH` only for new shells. Open a new terminal. ZCF looks tools up on your own `PATH`, plus the folder the official installer uses.
 
@@ -51,4 +51,4 @@ ZCF never deletes backups. Remove old folders yourself when you no longer need t
 
 ## Reporting a bug
 
-Open an issue at [github.com/UfoMiao/zcf/issues](https://github.com/UfoMiao/zcf/issues) with the output of `npx zcf plan`. Secrets are masked in it, but check before you paste.
+Open an issue at [github.com/UfoMiao/zcf/issues](https://github.com/UfoMiao/zcf/issues) with the output of `npx zcf plan`. The API key and MCP environment and header values are masked in it, but a secret you put in an MCP server's arguments is not. Check before you paste.

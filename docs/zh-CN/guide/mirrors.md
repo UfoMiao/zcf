@@ -29,7 +29,7 @@ npx zcf mirror official   # 切换回官方源
 |----------|-----------------|
 | npm 安装（`npm install -g`、`npx skills add`，以及用 npm 安装的工具自带的更新命令） | 使用 `https://registry.npmmirror.com`。你已在 `npm_config_registry` 中设置的仓库会保留。 |
 | 安装 Claude Code | 使用 `npm install -g @anthropic-ai/claude-code`（安装的是同一个原生程序），而不是从 Google Cloud Storage 下载的官方脚本。 |
-| 来自 ZCF 仓库的文件，例如[供应商预设](./providers) | 优先使用 `fastly.jsdelivr.net` 和 `gcore.jsdelivr.net`。 |
+| 来自 ZCF 仓库的文件，例如[供应商预设](./providers) | 同时请求 `fastly.jsdelivr.net` 和 `gcore.jsdelivr.net`，采用最先返回的结果。 |
 
 ZCF 只使用提供完全相同文件的镜像，从不使用可能返回其他内容的代理。
 

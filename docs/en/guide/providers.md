@@ -13,7 +13,7 @@ In either editor, open **Provider** and choose **Start from a preset**. Each pre
 Picking a preset:
 
 - replaces the provider's name, endpoints and models with the preset's;
-- keeps your API key only when the preset uses the same hosts as your current provider. On a different host the key is cleared, and you enter the key for the new service. A key is never sent to a service it was not issued for;
+- keeps your API key only when the preset uses the same hosts as your current provider. On a different host the key is cleared, and you enter the key for the new service. Hosts are compared, not paths, so check the endpoints when two services share a host;
 - changes only the draft. Check the fields, then save.
 
 The [Apply page](./ui) and `zcf plan` show exactly what each tool will get before anything is written.

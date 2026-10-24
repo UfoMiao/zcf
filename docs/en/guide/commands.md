@@ -38,17 +38,19 @@ Edit the config in your browser. ZCF starts a small server on `127.0.0.1`, opens
 | `--port <port>` | The port to listen on. Default: any free port. |
 | `--no-open` | Only print the address; don't open a browser. |
 
-The server can only be reached from this machine. The printed address carries a one-time token, and requests without it are refused. See [Terminal and web UI](./ui#web-ui).
+The server can only be reached from this machine. The printed address carries a random token for this run of the server, and API requests without it are refused. See [Terminal and web UI](./ui#web-ui).
 
 ## `zcf plan`
 
-Show what `zcf apply` would do, without changing anything: the steps for each tool, a diff of every file it would edit, and notices such as a provider protocol that a tool cannot use.
+Show what `zcf apply` would do, without changing anything: the steps for each tool, a diff of every file ZCF edits itself, and notices such as a provider protocol that a tool cannot use.
 
 | Option | Meaning |
 |--------|---------|
 | `--file <path>` | The config file. |
 | `--tools <tools>` | Comma-separated tool ids to work on instead of `tools` in the config, such as `--tools claude-code,codex`. |
 | `--mirror <mirror>` | `official` or `china` for this run. See [Mirrors](./mirrors). |
+
+A step that runs a tool's own command, such as `claude mcp add-json`, is shown as the command; the tool decides what it writes.
 
 ## `zcf apply`
 
@@ -83,5 +85,7 @@ With no argument, show the mirror in use and where the setting comes from: `ZCF_
 | Code | Meaning |
 |------|---------|
 | `0` | Done, or nothing to do. |
-| `1` | A step failed, or the command line was wrong, such as an unknown tool id. |
+| `1` | A step failed, no tools were selected, or the command line was wrong, such as an unknown tool id. |
 | `2` | The config file is missing or invalid. |
+
+`zcf update --tools` runs without a config file, and `zcf mirror <mirror>` creates one when it is missing.

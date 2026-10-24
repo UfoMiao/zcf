@@ -71,7 +71,7 @@ npx zcf ui
 然后预览并应用：
 
 ```bash
-npx zcf plan          # 显示将要发生的修改，包括每个文件的 diff
+npx zcf plan          # 显示将要运行的命令，以及将被修改的每个文件的 diff
 npx zcf apply --yes   # 安装缺少的工具并写入配置
 ```
 
@@ -83,7 +83,7 @@ npx zcf apply --yes   # 安装缺少的工具并写入配置
 - 能用工具自带命令的地方就用命令，例如 `claude mcp add-json`、`codex mcp add` 和 `npx skills add`。只有没有命令可用的设置才直接修改文件。
 - 文件按键修改。你的注释、键的顺序和其他设置都保持原样。
 - 每个文件在第一次修改前会复制到 `~/.ufomiao/zcf/backups/<时间>/`。见[备份与故障排除](./troubleshooting)。
-- API 密钥等敏感信息在 ZCF 的所有输出中都会被遮盖。
+- API 密钥、MCP 环境变量和请求头的值，以及在工具文件中找到的凭据，在 ZCF 的所有输出中都会被遮盖。不要把密钥写在 MCP 服务参数里，请改用 `env` 或 `headers`。
 
 ## 保持工具最新
 

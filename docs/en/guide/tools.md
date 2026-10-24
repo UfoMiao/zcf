@@ -10,7 +10,7 @@ Across all tools:
 
 - ZCF uses the tool's own command when one exists, and edits a file only for settings no command covers.
 - A file edit changes only the keys ZCF manages. Your comments, formatting and other settings stay.
-- An MCP server or skill that is already set up the same way is skipped, so applying twice changes nothing the second time.
+- An MCP server that is already set up the same way is skipped. A skill source that lists its skills is skipped once all of them are installed; a source without a list runs `npx skills add` again on every apply.
 - Skills are installed with `npx skills add <source> -g -a <agent>`.
 
 ## Claude Code
@@ -49,7 +49,7 @@ Across all tools:
 | MCP | `gemini mcp add -s user`. Environment variables and headers are written to `settings.json` afterwards, because the command's `-e` option cuts a value at its second `=`. |
 | Skills | `-a gemini-cli`, into `~/.gemini/skills` |
 
-`GEMINI_CLI_HOME` is followed.
+`GEMINI_CLI_HOME` is followed for `settings.json` and `.env`. Skills stay in `~/.gemini/skills`, where the skills CLI installs them.
 
 ## OpenCode
 
@@ -58,7 +58,7 @@ Across all tools:
 | Detect | `opencode --version`, then `~/.opencode/bin/opencode` |
 | Install | `npm install -g opencode-ai` |
 | Update | `opencode upgrade`, which updates the way OpenCode was installed |
-| Provider | A `zcf` provider in `~/.config/opencode/opencode.json` (or `opencode.jsonc` if that is the file you have), with `model` and `small_model` set to `zcf/<model>`. Uses the `anthropic` block through `@ai-sdk/anthropic`, or the `openai` block through `@ai-sdk/openai-compatible`, preferring the one that names a model. Settings you added to a model, such as `limit`, stay. |
+| Provider | A `zcf` provider in `~/.config/opencode/opencode.json` (or `opencode.jsonc` if that is the file you have), with `model` set to `zcf/<model>`, and `small_model` set from `models.haiku` when the `anthropic` block is used. Uses the `anthropic` block through `@ai-sdk/anthropic`, or the `openai` block through `@ai-sdk/openai-compatible`, preferring the one that names a model. Settings you added to a model, such as `limit`, stay. |
 | MCP | Written to `mcp` in the same file, as `local` or `remote` servers. OpenCode's own command only asks interactively. Settings ZCF does not manage, such as `oauth` or `timeout`, stay. |
 | Skills | `-a opencode`, into `~/.config/opencode/skills` |
 

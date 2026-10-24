@@ -31,10 +31,12 @@
 
 支持的工具：Claude Code、Codex、Gemini CLI、OpenCode、Cursor CLI、Pi 和 DeepSeek Harness。
 
+v5 发布后：
+
 ```bash
 npx zcf            # 在终端中编辑配置
 npx zcf ui         # 或在浏览器中编辑
-npx zcf plan       # 查看每条命令，以及每个将被修改的文件的 diff
+npx zcf plan       # 查看每条命令，以及 ZCF 将修改的每个文件的 diff
 npx zcf apply -y   # 安装缺少的工具并写入设置
 npx zcf update     # 用各工具自带的更新命令更新
 ```

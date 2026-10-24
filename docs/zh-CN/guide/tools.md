@@ -10,7 +10,7 @@ title: 工具
 
 - 工具有自带命令时，ZCF 使用该命令；只有没有命令可用的设置才直接修改文件。
 - 修改文件时只改 ZCF 管理的键。你的注释、格式和其他设置都会保留。
-- 已经以相同方式配置好的 MCP 服务或技能会被跳过，因此连续应用两次，第二次不会有任何修改。
+- 已经以相同方式配置好的 MCP 服务会被跳过。列出了技能的来源在这些技能全部安装后会被跳过；没有列出技能的来源每次应用都会重新运行 `npx skills add`。
 - 技能通过 `npx skills add <source> -g -a <agent>` 安装。
 
 ## Claude Code
@@ -49,7 +49,7 @@ title: 工具
 | MCP | `gemini mcp add -s user`。环境变量和请求头随后写入 `settings.json`，因为该命令的 `-e` 选项会在值的第二个 `=` 处截断。 |
 | 技能 | `-a gemini-cli`，安装到 `~/.gemini/skills` |
 
-遵循 `GEMINI_CLI_HOME`。
+`settings.json` 和 `.env` 遵循 `GEMINI_CLI_HOME`。技能仍在 `~/.gemini/skills`，因为 skills CLI 安装到那里。
 
 ## OpenCode
 
@@ -58,7 +58,7 @@ title: 工具
 | 检测 | `opencode --version`，其次 `~/.opencode/bin/opencode` |
 | 安装 | `npm install -g opencode-ai` |
 | 更新 | `opencode upgrade`，按 OpenCode 的安装方式更新 |
-| 供应商 | `~/.config/opencode/opencode.json`（如果你用的是 `opencode.jsonc` 则写入它）中的 `zcf` 供应商，并把 `model` 和 `small_model` 设为 `zcf/<模型>`。通过 `@ai-sdk/anthropic` 使用 `anthropic` 块，或通过 `@ai-sdk/openai-compatible` 使用 `openai` 块，优先选择写明了模型的那个。你给模型加的设置（例如 `limit`）会保留。 |
+| 供应商 | `~/.config/opencode/opencode.json`（如果你用的是 `opencode.jsonc` 则写入它）中的 `zcf` 供应商，并把 `model` 设为 `zcf/<模型>`；使用 `anthropic` 块时，`small_model` 取自 `models.haiku`。通过 `@ai-sdk/anthropic` 使用 `anthropic` 块，或通过 `@ai-sdk/openai-compatible` 使用 `openai` 块，优先选择写明了模型的那个。你给模型加的设置（例如 `limit`）会保留。 |
 | MCP | 以 `local` 或 `remote` 服务写入同一文件的 `mcp`。OpenCode 自带的命令只能交互式提问。ZCF 不管理的设置（例如 `oauth` 或 `timeout`）会保留。 |
 | 技能 | `-a opencode`，安装到 `~/.config/opencode/skills` |
 

@@ -29,7 +29,7 @@ When the `china` mirror is in use, `zcf plan`, `zcf apply` and `zcf update` say 
 |----------|--------------|
 | npm installs (`npm install -g`, `npx skills add`, and a tool's own updater when the tool was installed with npm) | Use `https://registry.npmmirror.com`. A registry you already set in `npm_config_registry` is kept. |
 | Installing Claude Code | `npm install -g @anthropic-ai/claude-code`, which installs the same native binary, instead of the official script that downloads from Google Cloud Storage. |
-| Files from the ZCF repository, such as [provider presets](./providers) | `fastly.jsdelivr.net` and `gcore.jsdelivr.net` first. |
+| Files from the ZCF repository, such as [provider presets](./providers) | Also asks `fastly.jsdelivr.net` and `gcore.jsdelivr.net`, and uses whichever answers first. |
 
 ZCF only uses mirrors that serve the very same files. It never uses a proxy that could return something else.
 
