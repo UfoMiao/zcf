@@ -173,7 +173,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   cli
     .command('plan', t('cli.command.plan'))
     .option('--file <path>', t('cli.option.file'))
-    .option('--tools <tools>', t('cli.option.tools'))
+    .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
     .action(async (flags: CommandFlags) => {
       const { plan, previews, renderer } = await preparePlan(flags)
       renderer.plan(plan, previews)
@@ -183,7 +183,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   cli
     .command('apply', t('cli.command.apply'))
     .option('--file <path>', t('cli.option.file'))
-    .option('--tools <tools>', t('cli.option.tools'))
+    .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
     .option('-y, --yes', t('cli.option.yes'))
     .action(async (flags: CommandFlags) => {
       const { plan, previews, renderer } = await preparePlan(flags)
@@ -202,7 +202,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   cli
     .command('update', t('cli.command.update'))
     .option('--file <path>', t('cli.option.file'))
-    .option('--tools <tools>', t('cli.option.tools'))
+    .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
     .action(async (flags: CommandFlags) => {
       const tools = parseTools(flags.tools, t) ?? (await loadConfig(flags.file)).tools
       if (tools.length === 0) throw new CliError(t('cli.noTools'), EXIT_ERROR)

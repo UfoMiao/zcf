@@ -57,7 +57,7 @@ async function writeConfig(config: unknown, path = join(home, '.ufomiao', 'zcf',
 
 const fullConfig = {
   version: 1,
-  tools: ['claude-code', 'codex'],
+  tools: ['claude-code', 'dsh'],
   provider: {
     name: 'GLM',
     apiKey: 'sk-very-secret',
@@ -98,7 +98,7 @@ describe('zcf plan', () => {
     expect(stdout).toContain(
       '$ claude mcp add-json ctx \'{"type":"http","url":"https://mcp.example.com","headers":{"Authorization":"Bea***en"}}\' --scope user',
     )
-    expect(stdout).toContain('! Codex is not supported yet.')
+    expect(stdout).toContain('! DeepSeek Harness is not supported yet.')
     expect(stdout).not.toContain('sk-very-secret')
     expect(stdout).not.toContain('hidden-token')
     expect(calls).toEqual([['claude', '--version']])
@@ -130,7 +130,7 @@ describe('zcf plan', () => {
     await writeConfig(fullConfig)
     const { stdout } = await run('plan', '--lang', 'zh-CN', '--tools', 'claude-code')
     expect(stdout).toContain('使用供应商「GLM」')
-    expect(stdout).not.toContain('Codex')
+    expect(stdout).not.toContain('DeepSeek Harness')
   })
 
   it('reads the config from --file', async () => {
@@ -154,12 +154,14 @@ describe('zcf plan', () => {
 
     await writeConfig({
       version: 1,
-      tools: ['cursor'],
+      tools: ['vscode'],
     })
     const invalid = await run('plan')
     expect(invalid.code).toBe(EXIT_INVALID_CONFIG)
     expect(invalid.stderr).toContain('is not valid:')
-    expect(invalid.stderr).toContain('  - tools.0: must be "claude-code" | "codex" | "gemini-cli" | "opencode"')
+    expect(invalid.stderr).toContain(
+      '  - tools.0: must be "claude-code" | "codex" | "gemini-cli" | "opencode" | "cursor" | "pi" | "dsh"',
+    )
   })
 
   it('explains config problems in the chosen language', async () => {
@@ -184,9 +186,9 @@ describe('zcf plan', () => {
 
   it('exits 1 for unknown or missing tools', async () => {
     await writeConfig({ version: 1 })
-    expect(await run('plan', '--tools', 'claude-code,cursor')).toMatchObject({
+    expect(await run('plan', '--tools', 'claude-code,vscode')).toMatchObject({
       code: EXIT_ERROR,
-      stderr: expect.stringContaining('Unknown tools: cursor'),
+      stderr: expect.stringContaining('Unknown tools: vscode'),
     })
     expect(await run('plan')).toMatchObject({
       code: EXIT_ERROR,
@@ -266,9 +268,9 @@ describe('zcf apply', () => {
 describe('zcf update', () => {
   it("runs each tool's updater", async () => {
     responses['claude update'] = {}
-    const { code, stdout } = await run('update', '--tools', 'claude-code,opencode')
+    const { code, stdout } = await run('update', '--tools', 'claude-code,dsh')
     expect(code).toBe(EXIT_OK)
-    expect(stdout).toContain('! OpenCode is not supported yet.')
+    expect(stdout).toContain('! DeepSeek Harness is not supported yet.')
     expect(stdout).toContain('✓ Claude Code: Update Claude Code')
     expect(calls).toContainEqual(['claude', 'update'])
   })

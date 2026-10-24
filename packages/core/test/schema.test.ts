@@ -56,7 +56,7 @@ describe('parseZcfConfig', () => {
   it('reports each problem with its path', () => {
     const result = parseZcfConfig({
       version: 2,
-      tools: ['cursor'],
+      tools: ['vscode'],
       provider: {
         name: 'x',
         apiKey: '',
@@ -86,7 +86,7 @@ describe('parseZcfConfig', () => {
   it('returns message keys without the rejected value, which may be a credential', () => {
     const result = parseZcfConfig({
       version: 2,
-      tools: ['cursor'],
+      tools: ['vscode'],
       provider: { name: ' ', apiKey: 12345, anthropic: { baseUrl: 'sk-pasted-into-the-wrong-field' } },
       mcpServers: { ok: { type: 'stdio' } },
       skills: 'x',
@@ -99,7 +99,7 @@ describe('parseZcfConfig', () => {
           path: 'tools.0',
           message: {
             key: 'configIssue.expected',
-            params: { expected: '"claude-code" | "codex" | "gemini-cli" | "opencode"' },
+            params: { expected: '"claude-code" | "codex" | "gemini-cli" | "opencode" | "cursor" | "pi" | "dsh"' },
           },
         },
         { path: 'provider.name', message: { key: 'configIssue.empty' } },

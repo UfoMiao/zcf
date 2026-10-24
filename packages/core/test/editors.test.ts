@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest'
 
-import { applyKeyEdits, editJson, editToml, FileSyntaxError, setAtPath } from '../src/io/editors'
+import {
+  applyKeyEdits,
+  editDotenv,
+  editJson,
+  editToml,
+  FileSyntaxError,
+  parseDotenv,
+  setAtPath,
+} from '../src/io/editors'
 
 describe('editJson', () => {
   it('keeps comments, order and untouched keys', () => {
@@ -181,5 +189,46 @@ describe('editToml on a broken file', () => {
       line: 2,
       column: 5,
     })
+  })
+})
+
+describe('editDotenv', () => {
+  it('changes variables in place and keeps comments, blank lines and the rest', () => {
+    const before = '# keys\nexport GEMINI_API_KEY=old\n\nOTHER="kept value" # note\nGEMINI_MODEL=a\n'
+    const after = editDotenv(before, [
+      { path: ['GEMINI_API_KEY'], value: 'new-key' },
+      { path: ['GEMINI_MODEL'], value: undefined },
+      { path: ['GOOGLE_GEMINI_BASE_URL'], value: 'https://example.com/gemini' },
+    ])
+    expect(after).toBe(
+      '# keys\nexport GEMINI_API_KEY=new-key\n\nOTHER="kept value" # note\nGOOGLE_GEMINI_BASE_URL=https://example.com/gemini\n',
+    )
+    expect(parseDotenv(after)).toEqual({
+      GEMINI_API_KEY: 'new-key',
+      OTHER: 'kept value',
+      GOOGLE_GEMINI_BASE_URL: 'https://example.com/gemini',
+    })
+  })
+
+  it('quotes values that need it and reads them back unchanged', () => {
+    const values = { SPACES: 'a b', HASH: 'x #y', SINGLE: "it's", LINES: 'one\ntwo' }
+    const after = editDotenv(
+      undefined,
+      Object.entries(values).map(([key, value]) => ({ path: [key], value })),
+    )
+    expect(after).toBe(`SPACES='a b'\nHASH='x #y'\nSINGLE="it's"\nLINES="one\\ntwo"\n`)
+    expect(parseDotenv(after)).toEqual(values)
+  })
+
+  it('updates the last of duplicate lines, removes all of them, and keeps CRLF', () => {
+    expect(editDotenv('A=1\r\nA=2\r\n', [{ path: ['A'], value: '3' }])).toBe('A=1\r\nA=3\r\n')
+    expect(editDotenv('A=1\nB=2\nA=3\n', [{ path: ['A'], value: undefined }])).toBe('B=2\n')
+    expect(editDotenv('A=1\n', [{ path: ['A'], value: undefined }])).toBe('')
+    expect(() => editDotenv('', [{ path: ['A', 'B'], value: '1' }])).toThrow('one element')
+    expect(() => editDotenv('', [{ path: ['A'], value: { b: 1 } }])).toThrow('must be a string')
+  })
+
+  it('is picked by applyKeyEdits', async () => {
+    expect(await applyKeyEdits('env', 'X=1\n', [{ path: ['Y'], value: 2 }])).toBe('X=1\nY=2\n')
   })
 })

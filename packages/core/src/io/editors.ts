@@ -113,11 +113,72 @@ export async function editToml(content: string | undefined, edits: readonly KeyE
   return withTrailingNewline(toml.patch(text, data))
 }
 
+const ENV_LINE = /^(\s*(?:export\s+)?)([A-Za-z_][\w.-]*)\s*=\s*(.*)$/
+
+function unquoteEnv(raw: string): string {
+  const value = raw.trim()
+  const quote = value[0]
+  const end = quote === '"' || quote === "'" ? value.indexOf(quote, 1) : -1
+  if (end > 0) {
+    const inner = value.slice(1, end)
+    return quote === '"' ? inner.replaceAll('\\n', '\n') : inner
+  }
+  // An unquoted value ends at an inline comment.
+  return value.replace(/\s+#.*$/, '')
+}
+
+function quoteEnv(value: string): string {
+  if (/^[\w@%+=:,./-]*$/.test(value)) return value
+  if (!value.includes("'") && !value.includes('\n')) return `'${value}'`
+  return `"${value.replaceAll('\n', '\\n')}"`
+}
+
+/** Read a dotenv file into variables; a later line wins, as in dotenv. */
+export function parseDotenv(content: string): Record<string, string> {
+  const result: Record<string, string> = {}
+  for (const line of content.split(/\r?\n/)) {
+    const match = ENV_LINE.exec(line)
+    if (match) result[match[2]!] = unquoteEnv(match[3]!)
+  }
+  return result
+}
+
+/**
+ * Edit a dotenv file variable by variable. Comments, blank lines and other
+ * variables stay as they are; new variables are added at the end.
+ */
+export function editDotenv(content: string | undefined, edits: readonly KeyEdit[]): string {
+  const eol = content?.includes('\r\n') ? '\r\n' : '\n'
+  const lines = content ? content.split(/\r?\n/) : []
+  if (lines.at(-1) === '') lines.pop()
+
+  for (const edit of edits) {
+    if (edit.path.length !== 1) throw new Error(`A dotenv key path has one element: ${edit.path.join('.')}`)
+    const key = String(edit.path[0])
+    const matches = lines.flatMap((line, index) => (ENV_LINE.exec(line)?.[2] === key ? [index] : []))
+    if (edit.value === undefined) {
+      for (const index of matches.toReversed()) lines.splice(index, 1)
+      continue
+    }
+    const raw = edit.value
+    if (typeof raw !== 'string' && typeof raw !== 'number' && typeof raw !== 'boolean') {
+      throw new Error(`A dotenv value must be a string, number or boolean: ${key}`)
+    }
+    const value = quoteEnv(String(raw))
+    const last = matches.at(-1)
+    if (last === undefined) lines.push(`${key}=${value}`)
+    else lines[last] = `${ENV_LINE.exec(lines[last]!)![1]}${key}=${value}`
+  }
+
+  return lines.length === 0 ? '' : `${lines.join(eol)}${eol}`
+}
+
 /** Parse a native config file; `undefined` when it is missing or not valid. */
 export async function parseConfigText(format: FileFormat, text: string | undefined): Promise<unknown> {
   if (!text?.trim()) return undefined
   try {
     if (format === 'json') return parse(text, [], { allowTrailingComma: true })
+    if (format === 'env') return parseDotenv(text)
     tomlModule ??= import('@decimalturn/toml-patch')
     return (await tomlModule).parse(text)
   } catch {
@@ -130,5 +191,7 @@ export async function applyKeyEdits(
   content: string | undefined,
   edits: readonly KeyEdit[],
 ): Promise<string> {
-  return format === 'json' ? editJson(content, edits) : editToml(content, edits)
+  if (format === 'json') return editJson(content, edits)
+  if (format === 'env') return editDotenv(content, edits)
+  return editToml(content, edits)
 }

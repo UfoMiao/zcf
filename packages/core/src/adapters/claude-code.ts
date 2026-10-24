@@ -3,12 +3,12 @@ import { join } from 'pathe'
 
 import { isTable } from '../io/editors'
 import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
-import type { McpServer, Provider, SkillSource } from '../schema/config'
+import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
-import type { AdapterContext, ToolAdapter, ToolStatus } from './types'
+import { envPath, notice, probe, sameJson, selfUpdateStep, skillSteps } from './shared'
+import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'claude-code' as const
-const VERSION_PATTERN = /\d+\.\d+\.\d+/
 
 /** Env keys in settings.json that ZCF owns. Keys the config leaves unset are removed. */
 const PROVIDER_ENV_KEYS = [
@@ -26,12 +26,6 @@ const WINDOWS_SHIMS = new Set(['npx', 'npm', 'pnpm', 'pnpx', 'yarn', 'bunx'])
 
 function nativeBinary(ctx: AdapterContext): string {
   return join(ctx.home, '.local', 'bin', ctx.platform === 'win32' ? 'claude.exe' : 'claude')
-}
-
-async function probe(ctx: AdapterContext, command: string): Promise<ToolStatus | undefined> {
-  const result = await ctx.runner.run(command, ['--version'])
-  if (result.exitCode !== 0) return undefined
-  return { installed: true, command, version: VERSION_PATTERN.exec(result.stdout)?.[0] }
 }
 
 function installStep(ctx: AdapterContext): CommandStep {
@@ -95,23 +89,9 @@ function normalizeExisting(value: unknown): unknown {
   return server
 }
 
-function sameJson(a: unknown, b: unknown): boolean {
-  const sorted = (value: unknown): unknown => {
-    if (Array.isArray(value)) return value.map(sorted)
-    if (isTable(value))
-      return Object.fromEntries(
-        Object.keys(value)
-          .toSorted()
-          .map(key => [key, sorted(value[key])]),
-      )
-    return value
-  }
-  return JSON.stringify(sorted(a)) === JSON.stringify(sorted(b))
-}
-
 /** Claude Code keeps its settings, skills and `.claude.json` under `CLAUDE_CONFIG_DIR` when it is set. */
 function configDir(ctx: AdapterContext): string | undefined {
-  return ctx.env.CLAUDE_CONFIG_DIR?.trim() || undefined
+  return envPath(ctx, 'CLAUDE_CONFIG_DIR')
 }
 
 function settingsDir(ctx: AdapterContext): string {
@@ -165,34 +145,6 @@ async function mcpSteps(servers: Record<string, McpServer>, command: string, ctx
   return steps
 }
 
-export function skillsAddStep({ source, skills }: SkillSource, agent: string): CommandStep {
-  return {
-    kind: 'command',
-    title: {
-      key: 'step.skillsAdd',
-      params: { source },
-    },
-    command: 'npx',
-    args: ['-y', 'skills', 'add', source, '-g', '-y', '-a', agent, ...skills.flatMap(name => ['-s', name])],
-  }
-}
-
-/**
- * Install skills with the `skills` CLI. A source that names its skills is skipped
- * once all of them are installed; one that installs everything always runs, since
- * the skills it holds are only known after fetching it.
- */
-async function skillSteps(sources: readonly SkillSource[], ctx: AdapterContext): Promise<CommandStep[]> {
-  const isInstalled = async (name: string) =>
-    (await ctx.readFile(join(settingsDir(ctx), 'skills', name, 'SKILL.md'))) !== undefined
-  const needed = await Promise.all(
-    sources.map(
-      async source => source.skills.length === 0 || (await Promise.all(source.skills.map(isInstalled))).includes(false),
-    ),
-  )
-  return sources.filter((_, index) => needed[index]).map(source => skillsAddStep(source, TOOL))
-}
-
 export const claudeCode: ToolAdapter = {
   id: TOOL,
   displayName: TOOL_NAMES[TOOL],
@@ -230,52 +182,19 @@ export const claudeCode: ToolAdapter = {
           edits,
         })
       } else {
-        notices.push({
-          level: 'warning',
-          message: {
-            key: 'notice.providerMissingProtocol',
-            params: { tool: TOOL, protocol: 'anthropic' },
-          },
-        })
+        notices.push(notice('warning', 'notice.providerMissingProtocol', { tool: TOOL, protocol: 'anthropic' }))
       }
     }
 
     steps.push(...(await mcpSteps(config.mcpServers, status.command, ctx)))
-    steps.push(...(await skillSteps(config.skills, ctx)))
+    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(settingsDir(ctx), 'skills') })))
 
     return { tool: TOOL, steps, notices }
   },
 
   planUpdate(status) {
-    if (!status.installed) {
-      return {
-        tool: TOOL,
-        steps: [],
-        notices: [
-          {
-            level: 'info',
-            message: {
-              key: 'notice.notInstalled',
-              params: { tool: TOOL },
-            },
-          },
-        ],
-      }
-    }
-    return {
-      tool: TOOL,
-      steps: [
-        {
-          kind: 'command',
-          title: {
-            key: 'step.update',
-            params: { tool: TOOL },
-          },
-          command: status.command,
-          args: ['update'],
-        },
-      ],
-      notices: [],
-    }
+    if (!status.installed)
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update'])], notices: [] }
   },
 }
