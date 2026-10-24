@@ -8,6 +8,7 @@ import {
   planTools,
   previewPlan,
   saveConfigDraft,
+  snapshotFile,
 } from '@zcf/core'
 import type { PlanView, ZcfService } from '@zcf/ui-kit'
 import { join } from 'pathe'
@@ -40,6 +41,8 @@ export async function planWithPreviews(config: ZcfConfig, ctx: AdapterContext): 
 export function createLocalService(ctx: AdapterContext, path: string, now: () => Date = () => new Date()): ZcfService {
   // The draft as last loaded or saved, so a save writes only the user's changes.
   let base: ConfigDraft | undefined
+  // The file as it was before the first save of this session, for when a save goes wrong.
+  let backedUp = false
   return {
     async load() {
       const loaded = await loadConfigDraft(path)
@@ -49,6 +52,10 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
         : { path, exists: true, issues: loaded.issues }
     },
     async save(draft) {
+      if (!backedUp) {
+        await snapshotFile(path, backupFolder(ctx.home, now()), ctx.home)
+        backedUp = true
+      }
       await saveConfigDraft(path, draft, base)
       base = draft
     },

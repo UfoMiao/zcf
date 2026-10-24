@@ -1,5 +1,5 @@
 import type { ConfigIssue } from '@zcf/core/schema'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import type { Draft, DraftPath, Validation } from './draft'
 import { setAt, validateDraft } from './draft'
@@ -34,19 +34,28 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
 
   useEffect(() => {
     let active = true
-    void service.load().then(loaded => {
-      if (!active) return
-      setPath(loaded.path)
-      if (loaded.draft) {
-        setDraft(loaded.draft)
-        // A config that does not exist yet counts as unsaved, so the first save writes it.
-        setSaved(loaded.exists ? JSON.stringify(loaded.draft) : '')
-        setStatus('ready')
-      } else {
-        setLoadIssues(loaded.issues)
+    void service.load().then(
+      loaded => {
+        if (!active) return
+        setPath(loaded.path)
+        if (loaded.draft) {
+          setDraft(loaded.draft)
+          // A config that does not exist yet counts as unsaved, so the first save writes it.
+          setSaved(loaded.exists ? JSON.stringify(loaded.draft) : '')
+          setStatus('ready')
+        } else {
+          setLoadIssues(loaded.issues)
+          setStatus('broken')
+        }
+      },
+      (error: unknown) => {
+        if (!active) return
+        // Such as a config the user may not read; shown like a broken file.
+        const message = error instanceof Error ? error.message : String(error)
+        setLoadIssues([{ path: '', message: { key: 'configIssue.unreadable', params: { message } } }])
         setStatus('broken')
-      }
-    })
+      },
+    )
     return () => {
       active = false
     }
@@ -55,14 +64,19 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
   const validation = useMemo(() => validateDraft(draft), [draft])
   const update = useCallback((at: DraftPath, value: unknown) => setDraft(current => setAt(current, at, value)), [])
 
+  // A ref, not state: a second Ctrl+S can arrive before React re-renders.
+  const busy = useRef(false)
   const save = useCallback(async () => {
-    if (!validation.valid) return false
+    // One save at a time, so an older draft never lands on disk after a newer one.
+    if (!validation.valid || busy.current) return false
+    busy.current = true
     setSaving(true)
     try {
       await service.save(draft)
       setSaved(JSON.stringify(draft))
       return true
     } finally {
+      busy.current = false
       setSaving(false)
     }
   }, [draft, service, validation.valid])

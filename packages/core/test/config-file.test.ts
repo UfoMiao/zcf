@@ -59,6 +59,9 @@ describe('config drafts', () => {
     expect(await loadConfigDraft(join(dir, 'broken.json'))).toEqual({
       issues: [{ path: '', message: { key: 'configIssue.syntax', params: { line: 2, column: 13 } } }],
     })
+    // A file that is valid JSON but not an object is not replaced by an empty draft.
+    await writeFile(join(dir, 'list.json'), '[1]\n')
+    expect(await loadConfigDraft(join(dir, 'list.json'))).toMatchObject({ issues: [{ path: '' }] })
   })
 
   it('reads an invalid config as written, for editing', async () => {

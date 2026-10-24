@@ -14,7 +14,7 @@ import {
   TOOL_OPTIONS,
   withMcpType,
 } from '@zcf/ui-kit'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { Translate } from './api'
 import { messageText, tildify } from './api'
@@ -198,16 +198,21 @@ export function ApplyPage({ editor, t, service }: PageProps & { service: ZcfServ
   const [events, setEvents] = useState<StepEvent[]>([])
   const [outcome, setOutcome] = useState<ApplyOutcome>()
   const [busy, setBusy] = useState(false)
+  // Only the latest plan request may fill the page; an older one can finish later.
+  const latest = useRef(0)
 
   const plan = () => {
+    const request = ++latest.current
     setView(undefined)
     setError(undefined)
     setEvents([])
     setOutcome(undefined)
     setApplyError(undefined)
-    service
-      .plan()
-      .then(setView, (reason: unknown) => setError(String(reason instanceof Error ? reason.message : reason)))
+    service.plan().then(
+      next => request === latest.current && setView(next),
+      (reason: unknown) =>
+        request === latest.current && setError(String(reason instanceof Error ? reason.message : reason)),
+    )
   }
   useEffect(() => {
     if (!editor.dirty) plan()
