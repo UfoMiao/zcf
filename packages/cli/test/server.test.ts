@@ -13,9 +13,10 @@ import type { UiServer } from '../src/server'
 import { browserPlan, contentType, fileAssets, startUiServer } from '../src/server'
 
 const TOKEN = 'test-token-1234567890'
-const secrets = collectSecrets({ version: 1, tools: [], mcpServers: {}, skills: [], mirror: 'official' }, [
-  'sk-very-secret-key',
-])
+const secrets = collectSecrets(
+  { version: 1, tools: [], mcpServers: {}, skills: [], mirror: 'official', language: 'auto' },
+  ['sk-very-secret-key'],
+)
 
 const plan: Plan = {
   tools: [

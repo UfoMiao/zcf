@@ -41,6 +41,7 @@ describe('render helpers', () => {
       mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'abc' } } },
       skills: [],
       mirror: 'official',
+      language: 'auto',
     })
     const json = JSON.stringify({ env: { PASSWORD: 'abc' } })
     expect(maskSecrets(quoteArg(json), secrets)).toBe(`'{"env":{"PASSWORD":"***"}}'`)
@@ -54,6 +55,7 @@ describe('render helpers', () => {
       mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'my$private$pass' } } },
       skills: [],
       mirror: 'official',
+      language: 'auto',
     })
     expect(maskSecrets(quoteArg('PASSWORD=my$$private$$pass'), secrets)).not.toContain('private')
   })

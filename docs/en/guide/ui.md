@@ -18,12 +18,16 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
 | Skills | Add skill sources and, for each, the skills to install. |
-| Settings | Settings for ZCF itself, which no tool's config receives. Today this is the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
+| Settings | Settings for ZCF itself, which no tool's config receives: the interface language and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
 | Apply | See the plan for the saved config, with a diff of each file, then apply it. |
 
 Fields are checked as you type. A config with errors cannot be saved, and the page shows what is wrong next to the field.
 
 Secrets stay hidden. The API key and the values of MCP environment variables and headers show as `*` while you edit them, in both editors.
+
+## Language
+
+The UI's language is the config's `language`, picked on the Settings page; `auto` follows the system locale. The terminal UI switches the moment you change the field, and the web UI picks it up when it next starts. `--lang` or `ZCF_LANG` overrides it for a single run.
 
 ## Terminal UI
 

@@ -43,7 +43,7 @@ npx zcf ui
 2. **Provider**（プロバイダー）: [プリセット](./providers) から始めるか、エンドポイントと API キーを自分で入力します。
 3. **MCP servers**（MCP サーバー）: `stdio` サーバー（コマンド）または `http` サーバー（URL）を追加します。
 4. **Skills**（スキル）: `npx skills add` が受け付けるスキルのソースを追加します。
-5. **Settings**（設定）: ZCF 自身の設定です。現在はダウンロードミラーのみです。
+5. **Settings**（設定）: ZCF 自身の設定です。UI の言語とダウンロードミラー。
 6. **Apply**（適用）: 変更内容を確認してから適用します。
 
 <kbd>Ctrl</kbd>+<kbd>S</kbd> で保存します。すべてのキー操作は [ターミナル UI と Web UI](./ui) を参照してください。

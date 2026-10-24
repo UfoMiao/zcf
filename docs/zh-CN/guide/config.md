@@ -25,7 +25,8 @@ ZCF 只读取一个文件：`~/.ufomiao/zcf/zcf.json`。每个命令都可以用
     "docs": { "type": "http", "url": "https://mcp.example.com/mcp", "headers": { "Authorization": "Bearer ..." } }
   },
   "skills": [{ "source": "anthropics/skills", "skills": ["pdf"] }],
-  "mirror": "official"
+  "mirror": "official",
+  "language": "auto"
 }
 ```
 
@@ -110,11 +111,15 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 
 `official`（默认）或 `china`，决定 ZCF 从哪里下载工具和软件包。见[镜像](./mirrors)。
 
+## `language`
+
+`auto`（默认）、`en` 或 `zh-CN`，ZCF 界面的显示语言。两个编辑器都会跟随它——终端界面在「设置」页改动后立即切换；`--lang` 或 `ZCF_LANG` 在单次运行中优先。
+
 ## 环境变量
 
 | 变量 | 作用 |
 |------|------|
-| `ZCF_LANG` | 显示语言，`en` 或 `zh-CN`。`--lang` 优先于它。两者都没有时跟随系统语言。 |
+| `ZCF_LANG` | 显示语言，`en` 或 `zh-CN`。`--lang` 优先于它，两者又都优先于配置文件里的 `language`。三者都没有时跟随系统语言。 |
 | `ZCF_MIRROR` | `official` 或 `china`（也可写 `cn`）。优先于文件中的 `mirror`。 |
 | `ZCF_PRESETS_URL` | 改从这个 URL 加载[供应商预设](./providers)。 |
 

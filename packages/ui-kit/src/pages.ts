@@ -1,5 +1,5 @@
 import type { ToolId } from '@zcf/core/schema'
-import { MIRRORS, TOOL_IDS } from '@zcf/core/schema'
+import { LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
 import { isTable } from './draft'
@@ -8,13 +8,13 @@ export type PageId = 'tools' | 'provider' | 'mcp' | 'skills' | 'settings' | 'app
 
 export const PAGES: readonly PageId[] = ['tools', 'provider', 'mcp', 'skills', 'settings', 'apply']
 
-/** The config key each editing page works on, so a page can be flagged when it has problems. */
-export const PAGE_ROOTS: Readonly<Record<PageId, string | undefined>> = {
-  tools: 'tools',
-  provider: 'provider',
-  mcp: 'mcpServers',
-  skills: 'skills',
-  settings: 'mirror',
+/** The config keys each editing page works on, so a page can be flagged when it has problems. */
+export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>> = {
+  tools: ['tools'],
+  provider: ['provider'],
+  mcp: ['mcpServers'],
+  skills: ['skills'],
+  settings: ['mirror', 'language'],
   apply: undefined,
 }
 
@@ -109,6 +109,14 @@ export const SETTINGS_FIELDS: readonly Field[] = [
     options: MIRRORS,
     optionLabel: 'mirror',
     hint: 'hint.mirror',
+  },
+  {
+    label: 'field.language',
+    path: ['language'],
+    kind: 'select',
+    options: LANGUAGES,
+    optionLabel: 'language',
+    hint: 'hint.language',
   },
 ]
 

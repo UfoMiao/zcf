@@ -2,20 +2,23 @@ import type { ToolId, ToolStatus } from '@zcf/core'
 import type { PageId, ZcfService } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import { Box, Text, useApp, useInput } from 'ink'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
-import type { Translate } from '../i18n'
-import { errorText } from '../i18n'
+import { version } from '../../package.json'
+import type { Lang } from '../i18n'
+import { createTranslator, errorText, isLang } from '../i18n'
 import { tildify } from '../render'
 import { ApplyPage } from './apply-page'
+import { Banner } from './banner'
 import type { PageProps } from './pages'
 import { McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
 
 export interface AppProps {
   service: ZcfService
-  t: Translate
-  /** For texts that come with their own translations, such as preset descriptions. */
-  lang: string
+  /** Language resolved at startup; the config's `language` takes over unless it was pinned. */
+  lang: Lang
+  /** Whether `--lang` or `ZCF_LANG` set the language, so the config cannot override it. */
+  langPinned?: boolean
   home: string
 }
 
@@ -30,9 +33,11 @@ const TONE_COLOR = { info: 'green', warning: 'yellow', error: 'red' } as const
  * The terminal UI: pages on the left, the open page on the right. Edits stay in a
  * draft until Ctrl+S writes them to the config file, key by key.
  */
-export function App({ service, t, lang, home }: AppProps) {
+export function App({ service, lang, langPinned = false, home }: AppProps) {
   const editor = useConfigEditor(service)
   const { exit } = useApp()
+  const [uiLang, setUiLang] = useState<Lang>(lang)
+  const t = useMemo(() => createTranslator(uiLang), [uiLang])
   const [page, setPage] = useState<PageId>('tools')
   const [focus, setFocus] = useState<'nav' | 'page'>('nav')
   const [editing, setEditing] = useState(false)
@@ -41,6 +46,13 @@ export function App({ service, t, lang, home }: AppProps) {
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
 
   const loadPresets = useCallback(() => service.presets(), [service])
+
+  // The config's `language` wins over the detected locale, unless --lang or ZCF_LANG pinned it.
+  // Editing the field on the Settings page switches the UI before it is even saved.
+  const draftLanguage = editor.status === 'ready' ? editor.draft.language : undefined
+  useEffect(() => {
+    if (!langPinned && isLang(draftLanguage) && draftLanguage !== uiLang) setUiLang(draftLanguage)
+  }, [draftLanguage, langPinned, uiLang])
 
   useEffect(() => {
     service.detect(TOOL_OPTIONS).then(setDetected, () => setDetected({}))
@@ -118,10 +130,9 @@ export function App({ service, t, lang, home }: AppProps) {
 
   return (
     <Box flexDirection="column">
+      <Banner t={t} />
       <Box gap={2}>
-        <Text bold color="cyan">
-          ZCF
-        </Text>
+        <Text dimColor>v{version}</Text>
         <Text dimColor>{tildify(editor.path, home)}</Text>
         {editor.dirty && <Text color="yellow">● {t('tui.unsaved')}</Text>}
       </Box>
@@ -129,8 +140,8 @@ export function App({ service, t, lang, home }: AppProps) {
         <Box flexDirection="column" width={18} paddingRight={1}>
           {PAGES.map(id => {
             const current = id === page
-            const root = PAGE_ROOTS[id]
-            const broken = root !== undefined && issuesAt(editor.validation.issues, [root]).length > 0
+            const roots = PAGE_ROOTS[id]
+            const broken = roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
             return (
               <Text
                 key={id}
@@ -147,7 +158,7 @@ export function App({ service, t, lang, home }: AppProps) {
         </Box>
         <Box flexDirection="column" flexGrow={1}>
           {page === 'tools' && <ToolsPage {...props} detected={detected} />}
-          {page === 'provider' && <ProviderPage {...props} lang={lang} loadPresets={loadPresets} />}
+          {page === 'provider' && <ProviderPage {...props} lang={uiLang} loadPresets={loadPresets} />}
           {page === 'mcp' && <McpPage {...props} />}
           {page === 'skills' && <SkillsPage {...props} />}
           {page === 'settings' && <SettingsPage {...props} />}

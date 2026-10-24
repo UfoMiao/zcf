@@ -84,8 +84,8 @@ export function App({ t, lang }: { t: Translate; lang: string }) {
       </header>
       <nav>
         {PAGES.map(id => {
-          const root = PAGE_ROOTS[id]
-          const broken = root !== undefined && issuesAt(editor.validation.issues, [root]).length > 0
+          const roots = PAGE_ROOTS[id]
+          const broken = roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
           return (
             <button key={id} type="button" className={id === page ? 'active' : undefined} onClick={() => setPage(id)}>
               {t(`tui.page.${id}`)}

@@ -25,7 +25,8 @@ ZCF が読むのは 1 つのファイル `~/.ufomiao/zcf/zcf.json` だけです�
     "docs": { "type": "http", "url": "https://mcp.example.com/mcp", "headers": { "Authorization": "Bearer ..." } }
   },
   "skills": [{ "source": "anthropics/skills", "skills": ["pdf"] }],
-  "mirror": "official"
+  "mirror": "official",
+  "language": "auto"
 }
 ```
 
@@ -110,11 +111,15 @@ ZCF は、ツール自身のコマンドがあればそれで各サーバーを�
 
 `official`（デフォルト）または `china`。ZCF がツールやパッケージをどこからダウンロードするかを決めます。[ミラー](./mirrors) を参照してください。
 
+## `language`
+
+`auto`（デフォルト）、`en` または `zh-CN`。ZCF の UI 言語です。どちらのエディターもこれに従い、ターミナル UI は設定ページで変更するとすぐに切り替わります。`--lang` と `ZCF_LANG` は 1 回の実行で優先されます。
+
 ## 環境変数
 
 | 変数 | 効果 |
 |------|------|
-| `ZCF_LANG` | 表示言語。`en` または `zh-CN`。`--lang` が優先されます。どちらも無い場合はシステムのロケールに従います。 |
+| `ZCF_LANG` | 表示言語。`en` または `zh-CN`。`--lang` が優先され、両方とも設定ファイルの `language` より優先されます。いずれも無い場合は `language` に従い、`auto` ならシステムのロケールに従います。 |
 | `ZCF_MIRROR` | `official` または `china`（`cn` も可）。ファイルの `mirror` より優先されます。 |
 | `ZCF_PRESETS_URL` | [プロバイダープリセット](./providers) をこの URL から読み込みます。 |
 

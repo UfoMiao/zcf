@@ -25,7 +25,8 @@ When you save from the editors, only the keys you changed are written, so your c
     "docs": { "type": "http", "url": "https://mcp.example.com/mcp", "headers": { "Authorization": "Bearer ..." } }
   },
   "skills": [{ "source": "anthropics/skills", "skills": ["pdf"] }],
-  "mirror": "official"
+  "mirror": "official",
+  "language": "auto"
 }
 ```
 
@@ -110,11 +111,15 @@ A source that lists its skills is skipped once all of them are installed. A sour
 
 `official` (the default) or `china`. It decides where ZCF downloads tools and packages from. See [Mirrors](./mirrors).
 
+## `language`
+
+`auto` (the default), `en` or `zh-CN`. The language ZCF shows its interface in. The editors follow it — the terminal UI switches as soon as the Settings page changes it — and `--lang` or `ZCF_LANG` outranks it for a run.
+
 ## Environment variables
 
 | Variable | Effect |
 |----------|--------|
-| `ZCF_LANG` | Display language, `en` or `zh-CN`. `--lang` wins over it. Without either, ZCF follows the system locale. |
+| `ZCF_LANG` | Display language, `en` or `zh-CN`. `--lang` wins over it, and both outrank `language` in the config file. Without any of them, ZCF follows the system locale. |
 | `ZCF_MIRROR` | `official` or `china` (`cn` works too). Overrides `mirror` in the file. |
 | `ZCF_PRESETS_URL` | Load [provider presets](./providers) from this URL instead. |
 

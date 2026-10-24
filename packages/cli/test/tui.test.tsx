@@ -3,10 +3,10 @@ import type { Draft, PlanView, ZcfService } from '@zcf/ui-kit'
 import { render } from 'ink-testing-library'
 import { describe, expect, it } from 'vitest'
 
+import type { Lang } from '../src/i18n'
 import { createTranslator } from '../src/i18n'
 import { App } from '../src/tui/app'
 
-const t = createTranslator('en')
 const KEY = { enter: '\r', up: '\u001B[A', down: '\u001B[B', right: '\u001B[C', escape: '\u001B', save: '\u0013' }
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 30))
@@ -38,8 +38,10 @@ function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = 
   return { service, saved, bases }
 }
 
-async function start(service: ZcfService) {
-  const app = render(<App service={service} t={t} lang="en" home="/home/me" />)
+async function start(service: ZcfService, options: { lang?: Lang; langPinned?: boolean } = {}) {
+  const app = render(
+    <App service={service} lang={options.lang ?? 'en'} langPinned={options.langPinned ?? false} home="/home/me" />,
+  )
   await tick()
   const press = async (...keys: string[]) => {
     for (const key of keys) {
@@ -135,6 +137,48 @@ describe('terminal UI', () => {
     await app.press(KEY.right, KEY.save)
     expect(saved).toEqual([{ version: 1, tools: [], mirror: 'official' }])
     app.unmount()
+  })
+
+  it('shows the v3 banner with the tagline and version at the top', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    expect(app.frame()).toContain('Zero-Config Code Flow')
+    expect(app.frame()).toContain('One config for your AI tools')
+    app.unmount()
+  })
+
+  it('switches the language on the Settings page, and the UI follows before saving', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Language')
+    expect(app.frame()).toContain('Auto (system locale)')
+    // Language sits under the mirror: auto → en → zh-CN.
+    await app.press(KEY.down, KEY.right)
+    expect(app.frame()).toContain('English')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('简体中文')
+    // The whole UI switched, not just the field.
+    const zh = createTranslator('zh-CN')
+    expect(app.frame()).toContain(zh('tui.page.tools'))
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], language: 'zh-CN' }])
+    app.unmount()
+  })
+
+  it('starts in the config language, unless --lang or ZCF_LANG pinned it', async () => {
+    const zh = createTranslator('zh-CN')
+    const follows = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service)
+    expect(await follows.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
+    follows.unmount()
+
+    const pinned = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service, {
+      lang: 'en',
+      langPinned: true,
+    })
+    expect(pinned.frame()).toContain('Settings')
+    expect(pinned.frame()).not.toContain(zh('tui.page.tools'))
+    pinned.unmount()
   })
 
   it('opens a skill source with the cursor on its first field', async () => {
