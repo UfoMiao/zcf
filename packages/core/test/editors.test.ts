@@ -8,6 +8,7 @@ import {
   editYaml,
   FileSyntaxError,
   JsExpression,
+  QuotedString,
   parseConfigText,
   parseDotenv,
   setAtPath,
@@ -378,6 +379,24 @@ describe('editYaml', () => {
     expect(await editYaml('a:\n    b: 1\n', [{ path: ['a', 'c'], value: [1] }])).toBe(
       'a:\n    b: 1\n    c:\n        - 1\n',
     )
+  })
+
+  it('reads the sequence style from a key with nested items, not from the next entry', async () => {
+    const file = '- id: a\n  config:\n    providers:\n- id: b\n  config:\n    args:\n      - x\n'
+    const after = await editYaml(file, [{ path: [0, 'config', 'providers'], value: { r: { models: ['m'] } } }])
+    expect(after).toBe(
+      '- id: a\n  config:\n    providers:\n      r:\n        models:\n          - m\n- id: b\n  config:\n    args:\n      - x\n',
+    )
+  })
+
+  it('quotes strings that YAML 1.1 readers would take for binary numbers', async () => {
+    expect(await editYaml(undefined, [{ path: ['bin'], value: '0b11' }])).toBe('bin: "0b11"\n')
+  })
+
+  it('writes a QuotedString double-quoted', async () => {
+    const after = await editYaml('a: 1\n', [{ path: ['pw'], value: new QuotedString('ab') }])
+    expect(after).toBe('a: 1\npw: "ab"\n')
+    expect(await editYaml(after, [{ path: ['pw'], value: new QuotedString('ab') }])).toBe(after)
   })
 
   it('writes a JsExpression as a !!js scalar that reads back as its source', async () => {

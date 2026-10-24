@@ -119,6 +119,17 @@ describe('zcf plan', () => {
     ])
   })
 
+  it('masks short MCP credentials in a YAML file', async () => {
+    await writeConfig({
+      version: 1,
+      tools: ['dsh'],
+      mcpServers: { db: { type: 'stdio', command: 'db-mcp', env: { PW: 'abc' } } },
+    })
+    const { stdout } = await run('plan')
+    expect(stdout).toContain('PW: "***"')
+    expect(stdout).not.toContain('abc')
+  })
+
   it('masks credentials already in the native config, not only the new ones', async () => {
     await writeConfig(fullConfig)
     await mkdir(join(home, '.claude'))

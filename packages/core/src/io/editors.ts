@@ -276,6 +276,18 @@ export class JsExpression {
   }
 }
 
+/**
+ * A string written double-quoted in YAML. Front ends mask a credential shorter than four
+ * characters only as a whole quoted string, as JSON writes it, so such values use this.
+ */
+export class QuotedString {
+  constructor(readonly value: string) {}
+
+  toJSON(): string {
+    return this.value
+  }
+}
+
 const JS_TAG = 'tag:yaml.org,2002:js'
 const BOM = '\uFEFF'
 
@@ -300,10 +312,23 @@ function yamlNode(doc: YamlDocument, value: unknown): unknown {
     node.tag = JS_TAG
     return node
   }
+  if (value instanceof QuotedString) {
+    const node = doc.createNode(value.value)
+    node.type = 'QUOTE_DOUBLE'
+    return node
+  }
   if (Array.isArray(value)) return doc.createNode(value.map(item => yamlNode(doc, item)))
   if (isTable(value))
     return doc.createNode(Object.fromEntries(Object.entries(value).map(([key, item]) => [key, yamlNode(doc, item)])))
-  return doc.createNode(value)
+  if (!looksBinary(value)) return doc.createNode(value)
+  const node = doc.createNode(value)
+  node.type = 'QUOTE_DOUBLE'
+  return node
+}
+
+/** YAML 1.1 readers such as js-yaml, which dsh uses, read a plain `0b11` as a number. */
+function looksBinary(value: unknown): value is string {
+  return typeof value === 'string' && /^[-+]?0b[01_]+$/.test(value)
 }
 
 /**
@@ -320,8 +345,10 @@ function detectYamlLayout(content: string): { indent: number; indentSeq: boolean
     const next = key && /^( *)(- )?\S/.exec(lines[index + 1] ?? '')
     if (!key || !next) continue
     const step = next[1]!.length - key[1]!.length
-    if (next[2]) indentSeq ??= step > 0
-    else if (step > 0) indent ??= step
+    // A sequence item less indented than the key starts the next entry; it says nothing.
+    if (next[2]) {
+      if (step >= 0) indentSeq ??= step > 0
+    } else if (step > 0) indent ??= step
     if (indent !== undefined && indentSeq !== undefined) break
   }
   return { indent: indent ?? 2, indentSeq: indentSeq ?? true }
@@ -355,7 +382,8 @@ export async function editYaml(content: string | undefined, edits: readonly KeyE
     changed = true
     // Changing a plain scalar in place keeps the comment on its line.
     const plain = edit.value === null || ['string', 'number', 'boolean'].includes(typeof edit.value)
-    if (yaml.isScalar(current) && plain && current.tag === undefined) current.value = edit.value
+    if (yaml.isScalar(current) && plain && current.tag === undefined && !looksBinary(edit.value))
+      current.value = edit.value
     else doc.setIn(edit.path, yamlNode(doc, edit.value))
   }
 
