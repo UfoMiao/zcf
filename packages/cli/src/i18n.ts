@@ -80,7 +80,7 @@ const en = {
   'notice.providerNotSupported': '{tool} only uses its own models, so the provider is not applied to it.',
   'notice.mcpNotSupported': '{tool} has no built-in MCP support, so the MCP servers are not applied to it.',
   'notice.modelMissing':
-    'No model is set for {tool}. Add "model" to the provider\'s "{protocol}" settings or set "models.default".',
+    'No model is set for {tool}. Set "models.default" in the provider, or "model" in its "{protocol}" block (OpenAI and Gemini only).',
   'cli.command.tui': 'Edit the config in an interactive terminal UI (the default in a terminal)',
   'cli.tuiNeedsTerminal': 'The interactive UI needs a terminal. Use zcf plan or zcf apply instead.',
   'cli.command.ui': 'Edit the config in your browser, served from this machine only',
@@ -246,7 +246,7 @@ const zhCN: Record<MessageKey, string> = {
   'notice.providerNotSupported': '{tool} 只使用自家模型，不会应用供应商配置。',
   'notice.mcpNotSupported': '{tool} 不内置 MCP 支持，不会应用 MCP 服务配置。',
   'notice.modelMissing':
-    '没有为 {tool} 设置模型。请在供应商的 "{protocol}" 配置里加上 "model"，或设置 "models.default"。',
+    '没有为 {tool} 设置模型。请在供应商里设置 "models.default"，或在 "{protocol}" 配置里设置 "model"（仅 OpenAI 和 Gemini 协议）。',
   'cli.command.tui': '在交互式终端界面中编辑配置（在终端中直接运行 zcf 时的默认行为）',
   'cli.tuiNeedsTerminal': '交互式界面需要在终端中运行。请改用 zcf plan 或 zcf apply。',
   'cli.command.ui': '在浏览器中编辑配置，服务只在本机可访问',

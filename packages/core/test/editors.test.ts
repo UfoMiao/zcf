@@ -78,6 +78,16 @@ describe('editJson', () => {
     expect(() => editJson('{ "a": ', [])).toThrow(FileSyntaxError)
   })
 
+  it('leaves values that are already set as they are written', () => {
+    const before = '{\n\t"args": ["-y",   "pkg"],\n\t"env": {"B": "2", "A": "1"}\n}\n'
+    expect(
+      editJson(before, [
+        { path: ['args'], value: ['-y', 'pkg'] },
+        { path: ['env'], value: { A: '1', B: '2' } },
+      ]),
+    ).toBe(before)
+  })
+
   it('follows the indentation the file already uses', () => {
     const after = editJson('{\n    "a": 1\n}\n', [
       {
