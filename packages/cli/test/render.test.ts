@@ -45,4 +45,14 @@ describe('render helpers', () => {
     expect(maskSecrets(quoteArg(json), secrets)).toBe(`'{"env":{"PASSWORD":"***"}}'`)
     expect(maskSecrets('/tmp/abcdef', secrets)).toBe('/tmp/abcdef')
   })
+
+  it('masks MCP values written with `$` escaped as `$$`, as pi takes them', () => {
+    const secrets = collectSecrets({
+      version: 1,
+      tools: [],
+      mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'my$private$pass' } } },
+      skills: [],
+    })
+    expect(maskSecrets(quoteArg('PASSWORD=my$$private$$pass'), secrets)).not.toContain('private')
+  })
 })

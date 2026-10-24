@@ -24,6 +24,8 @@ export function collectSecrets(config: ZcfConfig, extra: readonly string[] = [])
   const secrets = new Set<string>()
   for (const value of values) {
     secrets.add(value)
+    // pi takes MCP values with every `$` that does not start `${NAME}` written as `$$`.
+    if (value.includes('$')) secrets.add(value.replaceAll(/\$(?!\{)/g, () => '$$'))
     for (const part of value.split(/\s+/)) {
       if (part.length >= 8) secrets.add(part)
     }
