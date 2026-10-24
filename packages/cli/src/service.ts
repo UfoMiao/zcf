@@ -42,25 +42,27 @@ export async function planWithPreviews(config: ZcfConfig, ctx: AdapterContext): 
 
 /** The ZCF service backed by this machine: the config file at `path` and the real tools. */
 export function createLocalService(ctx: AdapterContext, path: string, now: () => Date = () => new Date()): ZcfService {
-  // The draft as last loaded or saved, so a save writes only the user's changes.
-  let base: ConfigDraft | undefined
+  // The draft as last loaded or saved, for the mirror and for a save that does not pass its own base.
+  let current: ConfigDraft | undefined
   // The file as it was before the first save of this session, for when a save goes wrong.
   let backedUp = false
   return {
     async load() {
       const loaded = await loadConfigDraft(path)
-      base = loaded.draft
+      current = loaded.draft
       return loaded.draft
         ? { path, draft: loaded.draft, exists: loaded.exists, issues: [] }
         : { path, exists: true, issues: loaded.issues }
     },
-    async save(draft) {
+    async save(draft, base) {
       if (!backedUp) {
         await snapshotFile(path, backupFolder(ctx.home, now()), ctx.home)
         backedUp = true
       }
-      await saveConfigDraft(path, draft, base)
-      base = draft
+      // Each editor passes its own base: with two browser tabs open, one tab's save must not
+      // undo what the other saved.
+      await saveConfigDraft(path, draft, base ?? current)
+      current = draft
     },
     detect: tools => detectTools(tools, ctx),
     presets: refresh =>
@@ -69,7 +71,7 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
         mirror: resolveMirror({
           override: ctx.mirror,
           env: ctx.env,
-          config: { mirror: isMirror(base?.mirror) ? base.mirror : undefined },
+          config: { mirror: isMirror(current?.mirror) ? current.mirror : undefined },
         }),
         cacheDir: join(ctx.home, '.ufomiao', 'zcf', 'cache'),
         env: ctx.env,

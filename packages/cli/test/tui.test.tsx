@@ -13,6 +13,7 @@ const tick = () => new Promise(resolve => setTimeout(resolve, 30))
 
 function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = {}) {
   const saved: Draft[] = []
+  const bases: (Draft | undefined)[] = []
   const service: ZcfService = {
     load: async () =>
       draft
@@ -22,8 +23,9 @@ function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = 
             exists: true,
             issues: [{ path: 'tools', message: { key: 'configIssue.missing' } }],
           },
-    save: async next => {
+    save: async (next, base) => {
       saved.push(next)
+      bases.push(base)
     },
     detect: async () => ({ 'claude-code': { installed: true, command: 'claude', version: '2.1.0' } }),
     plan: async () => {
@@ -33,7 +35,7 @@ function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = 
     presets: async () => ({ presets: [], source: 'none' }),
     ...overrides,
   }
-  return { service, saved }
+  return { service, saved, bases }
 }
 
 async function start(service: ZcfService) {
@@ -63,7 +65,7 @@ async function start(service: ZcfService) {
 
 describe('terminal UI', () => {
   it('lists the tools with their install state and saves a toggled tool with Ctrl+S', async () => {
-    const { service, saved } = fakeService({ version: 1, tools: ['claude-code'] })
+    const { service, saved, bases } = fakeService({ version: 1, tools: ['claude-code'] })
     const app = await start(service)
     expect(app.frame()).toContain('~/.ufomiao/zcf/config.json')
     expect(app.frame()).toContain('[x] Claude Code')
@@ -76,6 +78,8 @@ describe('terminal UI', () => {
 
     await app.press(KEY.save)
     expect(saved).toEqual([{ version: 1, tools: ['claude-code', 'codex'] }])
+    // The save is compared with what this editor loaded.
+    expect(bases).toEqual([{ version: 1, tools: ['claude-code'] }])
     expect(app.frame()).toContain('Saved.')
     expect(app.frame()).not.toContain('unsaved')
     app.unmount()

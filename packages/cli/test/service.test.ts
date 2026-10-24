@@ -56,6 +56,17 @@ describe('createLocalService', () => {
     expect(await readFile(backup, 'utf8')).toBe('{ "version": 1, "tools": [] }\n')
   })
 
+  it("keeps one editor's save when another editor saves from the same starting point", async () => {
+    await mkdir(join(path, '..'), { recursive: true })
+    await writeFile(path, '{ "version": 1, "tools": [] }\n')
+    const local = service()
+    const { draft: start } = await local.load()
+    // Two browser tabs loaded the same config; each saves a different change.
+    await local.save({ ...start!, tools: ['codex'] }, start)
+    await local.save({ ...start!, mirror: 'china' }, start)
+    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({ version: 1, tools: ['codex'], mirror: 'china' })
+  })
+
   it('reports why a broken config cannot be loaded', async () => {
     await mkdir(join(path, '..'), { recursive: true })
     await writeFile(path, '{ "version": ')

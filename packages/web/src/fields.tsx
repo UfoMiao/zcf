@@ -50,13 +50,15 @@ const listParse = (text: string) =>
     .filter(Boolean)
 const argsFormat = (value: unknown) => (Array.isArray(value) ? formatArgs(value.map(String)) : '')
 
-/** Edit a string map such as environment variables or headers. Values are hidden until focused. */
+/** Edit a string map such as environment variables or headers. Values stay hidden, even while edited. */
 function RecordInput({ editor, path, t }: { editor: ConfigEditor; path: DraftPath; t: Translate }) {
   const record = getAt(editor.draft, path)
   const entries = isTable(record) ? Object.entries(record) : []
   const [key, setKey] = useState('')
   const add = () => {
-    if (key.trim()) editor.update([...path, key.trim()], '')
+    const name = key.trim()
+    // Adding a name that already exists keeps its value.
+    if (name && !entries.some(([existing]) => existing === name)) editor.update([...path, name], '')
     setKey('')
   }
   return (
@@ -67,8 +69,7 @@ function RecordInput({ editor, path, t }: { editor: ConfigEditor; path: DraftPat
           <input
             type="password"
             value={typeof value === 'string' ? value : ''}
-            onFocus={event => (event.target.type = 'text')}
-            onBlur={event => (event.target.type = 'password')}
+            aria-label={name}
             onChange={event => editor.update([...path, name], event.target.value)}
           />
           <button type="button" className="ghost" onClick={() => editor.update([...path, name], undefined)}>

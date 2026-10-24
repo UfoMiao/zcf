@@ -41,11 +41,11 @@ const plan: Plan = {
   ],
 }
 
-let saved: Draft[] = []
+let saved: [Draft, Draft | undefined][] = []
 const service: ZcfService = {
   load: async () => ({ path: '/home/me/.ufomiao/zcf/zcf.json', draft: { version: 1 }, exists: true, issues: [] }),
-  save: async draft => {
-    saved.push(draft)
+  save: async (draft, base) => {
+    saved.push([draft, base])
   },
   detect: async () => ({ 'claude-code': { installed: true, command: 'claude', version: '2.1.0' } }),
   plan: async () => ({
@@ -137,9 +137,15 @@ describe('startUiServer', () => {
     expect(session.messages['tui.page.tools']).toBe('工具')
 
     expect(JSON.parse((await call('/api/config')).text)).toMatchObject({ draft: { version: 1 }, exists: true })
-    expect((await call('/api/config', { method: 'PUT', body: { version: 1, tools: ['codex'] } })).status).toBe(204)
-    expect(saved).toEqual([{ version: 1, tools: ['codex'] }])
+    const draft = { version: 1, tools: ['codex'] }
+    expect((await call('/api/config', { method: 'PUT', body: { draft, base: { version: 1 } } })).status).toBe(204)
+    expect((await call('/api/config', { method: 'PUT', body: { draft } })).status).toBe(204)
+    expect(saved).toEqual([
+      [draft, { version: 1 }],
+      [draft, undefined],
+    ])
     expect((await call('/api/config', { method: 'PUT', body: [1] })).status).toBe(400)
+    expect((await call('/api/config', { method: 'PUT', body: { draft, base: 'x' } })).status).toBe(400)
     expect(JSON.parse((await call('/api/detect', { method: 'POST' })).text)).toMatchObject({
       'claude-code': { installed: true },
     })
