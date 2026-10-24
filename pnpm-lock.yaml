@@ -224,6 +224,9 @@ catalogs:
     valibot:
       specifier: ^1.5.0
       version: 1.5.0
+    yaml:
+      specifier: ^2.9.1
+      version: 2.9.1
   testing:
     '@vitest/coverage-v8':
       specifier: ^5.0.5
@@ -399,6 +402,9 @@ importers:
       valibot:
         specifier: catalog:runtime
         version: 1.5.0(typescript@7.0.2)
+      yaml:
+        specifier: catalog:runtime
+        version: 2.9.1
 
   packages/ui-kit:
     dependencies:

@@ -14,8 +14,11 @@ export interface KeyEdit {
   value: unknown
 }
 
-/** `env` is a dotenv file of `KEY=value` lines; its key paths have one element, the variable name. */
-export type FileFormat = 'json' | 'toml' | 'env'
+/**
+ * `env` is a dotenv file of `KEY=value` lines; its key paths have one element, the variable name.
+ * In `yaml` key paths, numbers index sequences, so an edit can target an entry of a top-level list.
+ */
+export type FileFormat = 'json' | 'toml' | 'env' | 'yaml'
 
 /** Run one of the tool's own commands (or another mainstream CLI such as `npx skills`). */
 export interface CommandStep {
