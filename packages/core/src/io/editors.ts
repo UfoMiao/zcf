@@ -153,7 +153,7 @@ function quotedValue(
   rest: string,
 ): { value: string; raw: string; last: number; suffix: string } | undefined {
   const quote = rest[0]
-  if (quote !== '"' && quote !== "'") return undefined
+  if (quote !== '"' && quote !== "'" && quote !== '`') return undefined
   let text = rest
   for (let last = first; last < lines.length; last++) {
     if (last > first) text += `\n${lines[last]}`
@@ -185,8 +185,8 @@ export function dotenvEntries(content: string): DotenvEntry[] {
       first = quoted.last
       continue
     }
-    // An unquoted value ends at an inline comment; a comment right after `=` means an empty value.
-    const [, value = '', suffix = ''] = /^(.*?)(\s+#.*|^#.*|\s*)$/.exec(rest)!
+    // An unquoted value ends at the first `#`, as in dotenv; a comment right after `=` means an empty value.
+    const [, value = '', suffix = ''] = /^(.*?)(\s*#.*|\s*)$/.exec(rest)!
     entries.push({ key, value, raw: value, first, last: first, prefix, separator, suffix })
   }
   return entries
