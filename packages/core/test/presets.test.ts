@@ -84,6 +84,23 @@ describe('loadPresets', () => {
     expect((await loadPresets({ cacheDir, fetch: failing.fetcher, refresh: true })).source).toBe('none')
   })
 
+  it('never serves a copy saved from another source', async () => {
+    const cacheDir = await tempDir()
+    const gist = 'https://gist.example.com/p.json'
+    await loadPresets({ cacheDir, fetch: fakeFetch({ [PRESET_URLS[0]!]: file }).fetcher, now: () => 1000 })
+
+    // A fresh copy of the default list is ignored once ZCF_PRESETS_URL is set, even offline.
+    const custom = fakeFetch({ [gist]: { version: 1, providers: [{ id: 'mine', name: 'Mine' }] } })
+    const list = await loadPresets({ cacheDir, fetch: custom.fetcher, now: () => 2000, env: { ZCF_PRESETS_URL: gist } })
+    expect(list).toMatchObject({ source: 'remote', presets: [{ id: 'mine' }] })
+    const offline = fakeFetch({})
+    expect(await loadPresets({ cacheDir, fetch: offline.fetcher, now: () => 3000 })).toEqual({
+      presets: [],
+      source: 'none',
+    })
+    expect(offline.calls).toEqual(PRESET_URLS)
+  })
+
   it('tries the China jsDelivr hosts first with the china mirror', async () => {
     const { fetcher, calls } = fakeFetch({})
     await loadPresets({ cacheDir: await tempDir(), fetch: fetcher, mirror: 'china' })
