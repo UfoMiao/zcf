@@ -1,9 +1,9 @@
 import { createTwoFilesPatch } from 'diff'
 
-import { applyKeyEdits, FileSyntaxError, parseConfigText } from '../io/editors'
+import { applyKeyEdits, dotenvEntries, FileSyntaxError, parseConfigText } from '../io/editors'
 import { readTextIfExists } from '../io/fs'
 import { sensitiveValues } from '../io/secrets'
-import type { FileStep } from './types'
+import type { FileFormat, FileStep, Plan, PlanStep } from './types'
 
 export interface FilePreview {
   path: string
@@ -14,6 +14,14 @@ export interface FilePreview {
   patch: string
   /** Credential values found in either version of the file; front ends must mask them. */
   secrets: string[]
+}
+
+/** Credential values in a native file. A dotenv file counts every line, duplicates included, as written and as read. */
+async function fileSecrets(format: FileFormat, text: string | undefined): Promise<string[]> {
+  if (format === 'env') {
+    return sensitiveValues(dotenvEntries(text ?? '').map(entry => ({ [entry.key]: [entry.value, entry.raw] })))
+  }
+  return sensitiveValues(await parseConfigText(format, text))
 }
 
 /** Work out what a file step would write, without touching the disk. */
@@ -45,11 +53,33 @@ export async function previewFileStep(
     after,
     changed,
     patch,
-    secrets: [
-      ...new Set([
-        ...sensitiveValues(await parseConfigText(step.format, before)),
-        ...sensitiveValues(await parseConfigText(step.format, after)),
-      ]),
-    ],
+    secrets: [...new Set([...(await fileSecrets(step.format, before)), ...(await fileSecrets(step.format, after))])],
   }
+}
+
+/**
+ * Preview every file step of a plan. A tool's steps are previewed in order, and a
+ * step on a file an earlier step already changed starts from that change, as apply does.
+ */
+export async function previewPlan(
+  plan: Plan,
+  read: (path: string) => Promise<string | undefined> = readTextIfExists,
+): Promise<Map<PlanStep, FilePreview>> {
+  const previews = new Map<PlanStep, FilePreview>()
+  await Promise.all(
+    plan.tools.map(async toolPlan => {
+      const written = new Map<string, string>()
+      for (const step of toolPlan.steps) {
+        if (step.kind !== 'file') continue
+        // Each step starts from the one before it.
+        // oxlint-disable-next-line no-await-in-loop
+        const preview = await previewFileStep(step, path =>
+          written.has(path) ? Promise.resolve(written.get(path)) : read(path),
+        )
+        written.set(step.path, preview.after)
+        previews.set(step, preview)
+      }
+    }),
+  )
+  return previews
 }

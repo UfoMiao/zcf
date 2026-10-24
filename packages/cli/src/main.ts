@@ -9,7 +9,7 @@ import {
   loadConfigFile,
   planTools,
   planUpdates,
-  previewFileStep,
+  previewPlan,
   isToolId,
   TOOL_IDS,
 } from '@zcf/core'
@@ -122,14 +122,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     if (tools.length === 0) throw new CliError(t('cli.noTools'), EXIT_ERROR)
 
     const plan = await planTools(config, ctx, tools)
-    const previews = new Map<PlanStep, FilePreview>()
-    await Promise.all(
-      plan.tools
-        .flatMap(toolPlan => toolPlan.steps)
-        .map(async step => {
-          if (step.kind === 'file') previews.set(step, await previewFileStep(step, ctx.readFile))
-        }),
-    )
+    const previews = await previewPlan(plan, ctx.readFile)
     const fileSecrets = [...previews.values()].flatMap(preview => preview.secrets)
     const renderer = new Renderer(stdout, t, collectSecrets(config, fileSecrets), ctx.home)
     return { config, plan, previews, renderer }

@@ -220,12 +220,38 @@ describe('editDotenv', () => {
     expect(parseDotenv(after)).toEqual(values)
   })
 
-  it('updates the last of duplicate lines, removes all of them, and keeps CRLF', () => {
-    expect(editDotenv('A=1\r\nA=2\r\n', [{ path: ['A'], value: '3' }])).toBe('A=1\r\nA=3\r\n')
+  it('updates the last of duplicate lines, drops the earlier ones, removes all of them, and keeps CRLF', () => {
+    expect(editDotenv('A=1\r\nB=2\r\nA=3\r\n', [{ path: ['A'], value: '4' }])).toBe('B=2\r\nA=4\r\n')
     expect(editDotenv('A=1\nB=2\nA=3\n', [{ path: ['A'], value: undefined }])).toBe('B=2\n')
     expect(editDotenv('A=1\n', [{ path: ['A'], value: undefined }])).toBe('')
     expect(() => editDotenv('', [{ path: ['A', 'B'], value: '1' }])).toThrow('one element')
     expect(() => editDotenv('', [{ path: ['A'], value: { b: 1 } }])).toThrow('must be a string')
+  })
+
+  it('keeps an inline comment and the spacing around it', () => {
+    expect(editDotenv('KEY = old   # managed by team\n', [{ path: ['KEY'], value: 'new' }])).toBe(
+      'KEY = new   # managed by team\n',
+    )
+    expect(editDotenv("KEY='old' # note\n", [{ path: ['KEY'], value: 'a b' }])).toBe("KEY='a b' # note\n")
+  })
+
+  it('rejects names that are not variable names', () => {
+    expect(() => editDotenv('', [{ path: ['A\nINJECTED'], value: '1' }])).toThrow('variable name')
+    expect(() => editDotenv('', [{ path: ['A=B'], value: '1' }])).toThrow('variable name')
+    expect(() => editDotenv('', [{ path: [0], value: '1' }])).toThrow('variable name')
+  })
+
+  it('refuses values that no quoting reads back unchanged', () => {
+    // Plain dotenv readers do not unescape \" or \\ inside double quotes.
+    expect(() => editDotenv('', [{ path: ['A'], value: `it's "x"` }])).toThrow('cannot be written')
+    expect(() => editDotenv('', [{ path: ['A'], value: "it's a\\nb" }])).toThrow('cannot be written')
+    expect(editDotenv('', [{ path: ['A'], value: 'a\\nb "c"' }])).toBe(`A='a\\nb "c"'\n`)
+  })
+
+  it('reads quoted values across lines and past escaped quotes', () => {
+    const content = 'A="first\nsecond" # note\nB="x\\"y"\nC=\'it\'s\nD=after\n'
+    expect(parseDotenv(content)).toEqual({ A: 'first\nsecond', B: 'x"y', C: "'it's", D: 'after' })
+    expect(editDotenv(content, [{ path: ['A'], value: 'one' }])).toBe('A=one # note\nB="x\\"y"\nC=\'it\'s\nD=after\n')
   })
 
   it('is picked by applyKeyEdits', async () => {
