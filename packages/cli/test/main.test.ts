@@ -387,15 +387,18 @@ describe('mirrors', () => {
 
   it('installs through the mirror set in the config', async () => {
     await writeConfig({ version: 1, tools: ['claude-code'], mirror: 'china' })
-    responses = { 'npm install -g @anthropic-ai/claude-code': {} }
+    const install = ['npm', 'install', '-g', '--allow-scripts=@anthropic-ai/claude-code', '@anthropic-ai/claude-code']
+    responses = { [install.join(' ')]: {} }
     const { code, stdout } = await run('apply', '--yes')
-    expect(code).toBe(EXIT_OK)
     expect(stdout).toContain(
       'Downloading through China mirrors: npm packages come from https://registry.npmmirror.com.',
     )
-    expect(stdout).toContain('$ npm install -g @anthropic-ai/claude-code')
-    expect(calls.at(-1)).toEqual(['npm', 'install', '-g', '@anthropic-ai/claude-code'])
-    expect(envs.at(-1)).toEqual(registry)
+    expect(stdout).toContain(`$ ${install.join(' ')}`)
+    expect(calls).toContainEqual(install)
+    expect(envs[calls.findIndex(call => call.join(' ') === install.join(' '))]).toEqual(registry)
+    // npm succeeded, but this claude does not run (as when npm skipped its postinstall): the check says so.
+    expect(code).toBe(EXIT_ERROR)
+    expect(stdout).toContain('✗ Claude Code: Check that Claude Code runs')
   })
 
   it('uses --mirror for one run, and the npm registry the user set', async () => {

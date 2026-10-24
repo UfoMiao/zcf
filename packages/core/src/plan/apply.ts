@@ -34,8 +34,11 @@ export interface ApplyOptions {
   onEvent?: (event: ApplyEvent) => void
 }
 
+/** The end of a command's output. npm's `npm notice` lines would otherwise hide the real error. */
 function lastLines(text: string, count = 5): string {
-  return text.trim().split(/\r?\n/).slice(-count).join('\n')
+  const lines = text.trim().split(/\r?\n/)
+  const useful = lines.filter(line => !line.startsWith('npm notice'))
+  return (useful.length > 0 ? useful : lines).slice(-count).join('\n')
 }
 
 async function runStep(

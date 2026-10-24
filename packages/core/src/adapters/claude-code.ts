@@ -38,7 +38,14 @@ function installStep(ctx: AdapterContext): CommandStep {
   }
   // The native installer downloads from Google Cloud Storage, which mainland China cannot
   // reach; npm through the mirror's registry installs the same binary.
-  if (ctx.mirror === 'china') return { kind: 'command', title, command: 'npm', args: ['install', '-g', NPM_PACKAGE] }
+  // npm 12 skips install scripts unless allowed, and the package's postinstall links the binary.
+  if (ctx.mirror === 'china')
+    return {
+      kind: 'command',
+      title,
+      command: 'npm',
+      args: ['install', '-g', `--allow-scripts=${NPM_PACKAGE}`, NPM_PACKAGE],
+    }
   // The official native installer; it also keeps Claude Code updated in the background.
   if (ctx.platform === 'win32') {
     return {
@@ -172,6 +179,14 @@ export const claudeCode: ToolAdapter = {
     if (!status.installed) steps.push(installStep(ctx))
     // npm puts `claude` on PATH, unlike the native installer.
     const command = !status.installed && ctx.mirror === 'china' ? 'claude' : status.command
+    // npm reports success even when the postinstall that links the binary did not run.
+    if (!status.installed && ctx.mirror === 'china')
+      steps.push({
+        kind: 'command',
+        title: { key: 'step.verify', params: { tool: TOOL } },
+        command,
+        args: ['--version'],
+      })
 
     if (config.provider) {
       if (config.provider.anthropic) {

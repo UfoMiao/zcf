@@ -230,6 +230,21 @@ describe('applyPlan', () => {
     expect(await readFile(join(backupDir, '.claude.json'), 'utf8')).toBe('{"mcpServers":{"a":{}}}')
   })
 
+  it("shows a failed command's error, not npm's notices", async () => {
+    const runner = fakeRunner({
+      'npx skills': {
+        exitCode: 1,
+        stderr: 'Error: skill "x" not found\nnpm notice\nnpm notice New version of npm available',
+      },
+    })
+    const step = { kind: 'command' as const, title, command: 'npx', args: ['skills'] }
+    const [result] = await applyPlan(
+      { tools: [{ tool: 'codex', notices: [], steps: [step] }] },
+      { runner, backupDir: await tempDir() },
+    )
+    expect(result!.steps[0]!.detail).toBe('Error: skill "x" not found')
+  })
+
   it("passes a command step's environment to the runner", async () => {
     const seen: unknown[] = []
     const runner: CommandRunner = {

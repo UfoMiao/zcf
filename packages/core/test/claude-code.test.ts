@@ -88,7 +88,7 @@ describe('claudeCode.plan', () => {
     })
   })
 
-  it('installs from npm with the China mirror, on every platform, and then calls claude from PATH', async () => {
+  it('installs from npm with the China mirror, checks the binary, and then calls claude from PATH', async () => {
     const mcp = config({ mcpServers: { ctx: { type: 'http', url: 'https://mcp.example.com' } } })
     for (const platform of ['linux', 'win32'] as const) {
       // oxlint-disable-next-line no-await-in-loop
@@ -99,9 +99,17 @@ describe('claudeCode.plan', () => {
       )
       expect(plan.steps.map(step => step.kind === 'command' && [step.command, ...step.args.slice(0, 2)])).toEqual([
         ['npm', 'install', '-g'],
+        ['claude', '--version'],
         ['claude', 'mcp', 'add-json'],
       ])
-      expect((plan.steps[0] as CommandStep).args).toEqual(['install', '-g', '@anthropic-ai/claude-code'])
+      // npm 12 skips the postinstall that links the native binary unless it is allowed.
+      expect((plan.steps[0] as CommandStep).args).toEqual([
+        'install',
+        '-g',
+        '--allow-scripts=@anthropic-ai/claude-code',
+        '@anthropic-ai/claude-code',
+      ])
+      expect(plan.steps[1]!.title).toEqual({ key: 'step.verify', params: { tool: 'claude-code' } })
     }
   })
 
