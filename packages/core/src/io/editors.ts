@@ -1,5 +1,13 @@
-import type { ParseError } from 'jsonc-parser'
-import { applyEdits, findNodeAtLocation, getNodeValue, modify, parse, parseTree } from 'jsonc-parser'
+import type { FormattingOptions, ParseError } from 'jsonc-parser'
+import {
+  applyEdits,
+  findNodeAtLocation,
+  format as formatJson,
+  getNodeValue,
+  modify,
+  parse,
+  parseTree,
+} from 'jsonc-parser'
 
 import type { FileFormat, KeyEdit } from '../plan/types'
 
@@ -44,6 +52,30 @@ function sameJson(a: unknown, b: unknown): boolean {
 }
 
 /**
+ * Apply one edit, formatting only the text it writes. jsonc-parser's own formatting widens to
+ * whole lines, so adding a key after `"tools": ["a", "b"]` would also spread that array over lines.
+ */
+function modifyJson(text: string, edit: KeyEdit, formattingOptions: FormattingOptions | undefined): string {
+  const edits = modify(text, [...edit.path], edit.value, {})
+  let next = applyEdits(text, edits)
+  if (!formattingOptions) return next
+  for (const { offset, content } of edits) {
+    if (!content) continue
+    // The written text plus the whitespace around it, which sets its line breaks and indentation.
+    let start = offset
+    while (start > 0 && /\s/.test(next[start - 1]!)) start--
+    let end = offset + content.length
+    while (end < next.length && /\s/.test(next[end]!)) end++
+    const range = { offset: Math.max(0, start - 1), length: Math.min(next.length, end + 1) - Math.max(0, start - 1) }
+    const own = formatJson(next, range, formattingOptions).filter(
+      change => change.offset >= start && change.offset + change.length <= end,
+    )
+    next = applyEdits(next, own)
+  }
+  return next
+}
+
+/**
  * Edit JSON (or JSONC) key by key. Comments, key order and indentation of the
  * untouched parts stay exactly as they were.
  */
@@ -63,7 +95,7 @@ export function editJson(content: string | undefined, edits: readonly KeyEdit[])
     if (edit.value === undefined && !node) continue
     // Setting a value it already has would still reformat it, so a second apply would change the file again.
     if (node && edit.value !== undefined && sameJson(getNodeValue(node), edit.value)) continue
-    text = applyEdits(text, modify(text, [...edit.path], edit.value, { formattingOptions }))
+    text = modifyJson(text, edit, formattingOptions)
   }
 
   return withTrailingNewline(text)

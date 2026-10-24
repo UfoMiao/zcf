@@ -21,6 +21,16 @@ describe('editJson', () => {
     ).toBe('{"mcpServers":{"a":{"command":"x"},"b": {"url":"u"}}}\n')
   })
 
+  it('leaves the layout of untouched neighbours alone when adding a key', () => {
+    const before = '{\n  "version": 1,\n  "tools": ["claude-code", "codex"],\n  "env": { "A": "1" }\n}\n'
+    expect(editJson(before, [{ path: ['mirror'], value: 'china' }])).toBe(
+      '{\n  "version": 1,\n  "tools": ["claude-code", "codex"],\n  "env": { "A": "1" },\n  "mirror": "china"\n}\n',
+    )
+    expect(editJson(before, [{ path: ['env', 'B'], value: { x: [1, 2] } }])).toBe(
+      '{\n  "version": 1,\n  "tools": ["claude-code", "codex"],\n  "env": { "A": "1",\n    "B": {\n      "x": [\n        1,\n        2\n      ]\n    }\n  }\n}\n',
+    )
+  })
+
   it('keeps comments, order and untouched keys', () => {
     const before = '{\n  // keep me\n  "b": 1,\n  "env": { "A": "1" }\n}\n'
     const after = editJson(before, [
