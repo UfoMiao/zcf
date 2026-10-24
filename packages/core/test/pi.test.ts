@@ -216,6 +216,73 @@ describe('pi.plan', () => {
     expect(await paths({ PI_CODING_AGENT_DIR: '~other/pi' })).toBe('~other/pi/models.json')
   })
 
+  it('edits an existing zcf provider key by key, keeping model settings made in pi', async () => {
+    const existing = JSON.stringify({
+      providers: {
+        zcf: {
+          name: 'Old',
+          baseUrl: 'https://old.example.com',
+          api: 'anthropic-messages',
+          apiKey: 'old',
+          authHeader: true,
+          compat: { thinkingFormat: 'deepseek' },
+          models: [{ id: 'old-model', reasoning: true }],
+        },
+      },
+    })
+    const provider = { name: 'New', apiKey: 'k', openai: { baseUrl: 'https://o.example.com/v1', model: 'm' } }
+    const plan = await pi.plan(config({ provider }), installed, context({}, { [`${AGENT}/models.json`]: existing }))
+    const step = plan.steps[0]!
+    const after = JSON.parse(step.kind === 'file' ? editJson(existing, step.edits) : '{}') as unknown
+    expect(after).toEqual({
+      providers: {
+        zcf: {
+          name: 'New',
+          baseUrl: 'https://o.example.com/v1',
+          api: 'openai-completions',
+          apiKey: 'k',
+          compat: { thinkingFormat: 'deepseek' },
+          models: [{ id: 'old-model', reasoning: true }, { id: 'm' }],
+        },
+      },
+    })
+
+    const again = await pi.plan(
+      config({ provider }),
+      installed,
+      context({}, { [`${AGENT}/models.json`]: JSON.stringify(after) }),
+    )
+    const settled = again.steps[0]!
+    expect(settled.kind === 'file' ? editJson(JSON.stringify(after, null, 2), settled.edits) : '').toBe(
+      `${JSON.stringify(after, null, 2)}\n`,
+    )
+  })
+
+  it('keeps ${NAME} references in MCP values and every other $ or leading ! literal', async () => {
+    const plan = await pi.plan(
+      config({
+        mcpServers: {
+          s: { type: 'stdio', command: 'x', env: { A: '${TOKEN}', B: 'pa$$w', C: '!secret' } },
+          h: { type: 'http', url: 'https://h.example.com/mcp', headers: { Authorization: 'Bearer ${TOKEN}' } },
+        },
+      }),
+      installed,
+      context(),
+    )
+    expect(plan.steps.map(step => (step.kind === 'command' ? step.args : []))).toEqual([
+      ['mcp', 'add', 's', '--env', 'A=${TOKEN}', '--env', 'B=pa$$$$w', '--env', 'C=$!secret', '--', 'x'],
+      ['mcp', 'add', 'h', '--url', 'https://h.example.com/mcp', '--header', 'Authorization=Bearer ${TOKEN}'],
+    ])
+
+    const stored = { mcpServers: { s: { command: 'x', env: { A: '${TOKEN}', B: 'pa$$$$w', C: '$!secret' } } } }
+    const again = await pi.plan(
+      config({ mcpServers: { s: { type: 'stdio', command: 'x', env: { A: '${TOKEN}', B: 'pa$$w', C: '!secret' } } } }),
+      installed,
+      context({}, { [`${AGENT}/mcp.json`]: JSON.stringify(stored) }),
+    )
+    expect(again.steps).toEqual([])
+  })
+
   it('adds MCP servers with pi mcp add and skips the ones already in mcp.json', async () => {
     const files = {
       [`${AGENT}/mcp.json`]: JSON.stringify({
