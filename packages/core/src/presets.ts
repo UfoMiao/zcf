@@ -60,8 +60,8 @@ async function readCache(path: string, url: string | undefined): Promise<CacheFi
   }
 }
 
-async function download(url: string, fetcher: typeof globalThis.fetch): Promise<unknown> {
-  const response = await fetcher(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+async function download(url: string, fetcher: typeof globalThis.fetch, signal: AbortSignal): Promise<unknown> {
+  const response = await fetcher(url, { signal: AbortSignal.any([signal, AbortSignal.timeout(FETCH_TIMEOUT_MS)]) })
   if (!response.ok) throw new Error(`${response.status} from ${url}`)
   return response.json()
 }
@@ -75,25 +75,31 @@ export async function loadPresets(options: LoadPresetsOptions): Promise<PresetLi
   const cache = await readCache(cachePath, override)
   const cached = cache && parsePresets(cache.data)
 
-  if (cached && !options.refresh && now() - cache.fetchedAt < PRESET_MAX_AGE_MS)
-    return { presets: cached, source: 'remote' }
+  // A copy from the future means the clock was wrong when it was saved, so it counts as old.
+  const age = cache ? now() - cache.fetchedAt : -1
+  if (cached && !options.refresh && age >= 0 && age < PRESET_MAX_AGE_MS) return { presets: cached, source: 'remote' }
 
-  for (const url of override ? [override] : githubFileUrls(PRESET_FILE, options.mirror ?? 'official')) {
-    try {
-      // Try the sources one after another; the first is usually the fastest.
-      // oxlint-disable-next-line no-await-in-loop
-      const data = await download(url, fetcher)
-      const presets = parsePresets(data)
-      if (!presets) continue
-      // oxlint-disable-next-line no-await-in-loop
-      await writeFileAtomic(
-        cachePath,
-        `${JSON.stringify({ fetchedAt: now(), url: override, data } satisfies CacheFile)}\n`,
-      ).catch(() => undefined)
-      return { presets, source: 'remote' }
-    } catch {
-      // Unreachable or broken; try the next source.
-    }
+  // Ask every source at once and take the first valid answer, so a blocked host costs no extra wait.
+  const urls = override ? [override] : githubFileUrls(PRESET_FILE, options.mirror ?? 'official')
+  const done = new AbortController()
+  try {
+    const { presets, data } = await Promise.any(
+      urls.map(async url => {
+        const answer = await download(url, fetcher, done.signal)
+        const list = parsePresets(answer)
+        if (!list) throw new Error(`Not a preset file: ${url}`)
+        return { presets: list, data: answer }
+      }),
+    )
+    await writeFileAtomic(
+      cachePath,
+      `${JSON.stringify({ fetchedAt: now(), url: override, data } satisfies CacheFile)}\n`,
+    ).catch(() => undefined)
+    return { presets, source: 'remote' }
+  } catch {
+    // No source answered with a valid list.
+    return cached ? { presets: cached, source: 'cache' } : { presets: [], source: 'none' }
+  } finally {
+    done.abort()
   }
-  return cached ? { presets: cached, source: 'cache' } : { presets: [], source: 'none' }
 }

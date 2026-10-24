@@ -144,7 +144,7 @@ const en = {
   'tui.tools.missing': 'not installed; apply installs it',
   'tui.provider.intro': 'One API provider for every tool. Fill in the protocols your provider offers.',
   'tui.provider.preset': 'Start from a preset',
-  'tui.provider.presetHint': 'fill in a known provider; your API key stays',
+  'tui.provider.presetHint': 'fill in a known provider; your API key stays if the host is the same',
   'tui.provider.presetTitle': 'Choose a provider preset',
   'tui.provider.presetsLoading': 'Loading the preset list…',
   'tui.provider.presetsUnavailable':
@@ -310,7 +310,7 @@ const zhCN: Record<MessageKey, string> = {
   'tui.tools.missing': '未安装；应用时会自动安装',
   'tui.provider.intro': '所有工具共用一个 API 供应商。填写供应商支持的协议即可。',
   'tui.provider.preset': '从预设开始',
-  'tui.provider.presetHint': '填入已知供应商的配置；API 密钥保持不变',
+  'tui.provider.presetHint': '填入已知供应商的配置；主机相同时保留 API 密钥',
   'tui.provider.presetTitle': '选择供应商预设',
   'tui.provider.presetsLoading': '正在加载预设列表…',
   'tui.provider.presetsUnavailable': '无法加载预设列表。请检查网络，或手动填写各项。',
