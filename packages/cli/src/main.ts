@@ -5,6 +5,7 @@ import {
   applyPlan,
   createContext,
   defaultConfigPath,
+  FileSyntaxError,
   loadConfigFile,
   planTools,
   planUpdates,
@@ -196,6 +197,11 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     const code: unknown = await cli.runMatchedCommand()
     return typeof code === 'number' ? code : EXIT_OK
   } catch (error) {
+    if (error instanceof FileSyntaxError) {
+      const { path = '', format, line, column } = error
+      stderr.write(`${t('cli.fileInvalid', { path, format: format.toUpperCase(), line, column })}\n`)
+      return EXIT_ERROR
+    }
     stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)
     return error instanceof CliError ? error.exitCode : EXIT_ERROR
   }

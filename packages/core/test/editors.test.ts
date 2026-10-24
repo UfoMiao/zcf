@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { applyKeyEdits, editJson, editToml, setAtPath } from '../src/io/editors'
+import { applyKeyEdits, editJson, editToml, FileSyntaxError, setAtPath } from '../src/io/editors'
 
 describe('editJson', () => {
   it('keeps comments, order and untouched keys', () => {
@@ -57,15 +57,11 @@ describe('editJson', () => {
     expect(editJson('{}', [])).toBe('{}\n')
   })
 
-  it('refuses to edit a broken file', () => {
-    expect(() =>
-      editJson('{ "a": ', [
-        {
-          path: ['a'],
-          value: 1,
-        },
-      ]),
-    ).toThrow(/^Not valid JSON: \w+ at offset \d+$/)
+  it('refuses to edit a broken file and says where it breaks', () => {
+    expect(() => editJson('{\n  "a": ', [{ path: ['a'], value: 1 }])).toThrow(
+      expect.objectContaining({ name: 'FileSyntaxError', format: 'json', line: 2, column: 8 }),
+    )
+    expect(() => editJson('{ "a": ', [])).toThrow(FileSyntaxError)
   })
 
   it('follows the indentation the file already uses', () => {
@@ -174,5 +170,16 @@ describe('applyKeyEdits', () => {
         },
       ]),
     ).toBe('a = 1\n')
+  })
+})
+
+describe('editToml on a broken file', () => {
+  it('reports the position of the syntax error', async () => {
+    await expect(editToml('a = 1\nb = = 2\n', [])).rejects.toMatchObject({
+      name: 'FileSyntaxError',
+      format: 'toml',
+      line: 2,
+      column: 5,
+    })
   })
 })

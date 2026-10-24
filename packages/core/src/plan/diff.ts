@@ -1,6 +1,6 @@
 import { createTwoFilesPatch } from 'diff'
 
-import { applyKeyEdits, parseConfigText } from '../io/editors'
+import { applyKeyEdits, FileSyntaxError, parseConfigText } from '../io/editors'
 import { readTextIfExists } from '../io/fs'
 import { sensitiveValues } from '../io/secrets'
 import type { FileStep } from './types'
@@ -22,7 +22,11 @@ export async function previewFileStep(
   read: (path: string) => Promise<string | undefined> = readTextIfExists,
 ): Promise<FilePreview> {
   const before = await read(step.path)
-  const after = await applyKeyEdits(step.format, before, step.edits)
+  const after = await applyKeyEdits(step.format, before, step.edits).catch((error: unknown) => {
+    throw error instanceof FileSyntaxError
+      ? new FileSyntaxError(error.format, error.line, error.column, step.path)
+      : error
+  })
   const changed = before !== after
   const patch = changed
     ? createTwoFilesPatch(

@@ -264,7 +264,7 @@ describe('applyPlan', () => {
     )
     expect(result!.steps[0]).toMatchObject({
       status: 'failed',
-      detail: expect.stringContaining('Not valid JSON'),
+      detail: expect.stringContaining('not valid JSON'),
     })
     expect(await readFile(path, 'utf8')).toBe('{ "a": ')
   })
