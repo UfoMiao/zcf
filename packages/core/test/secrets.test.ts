@@ -14,6 +14,11 @@ describe('sensitiveValues', () => {
     expect(sensitiveValues(data).toSorted()).toEqual(['Bearer abc', 'key-1', 'pk', 'pw', 's', 'tok-1'])
   })
 
+  it('skips keys that name the variable a credential is read from', () => {
+    const data = { providers: { zcf: { apiKeyEnv: 'ZCF_API_KEY', token_env: 'GH_TOKEN', apiKey: 'sk-1' } } }
+    expect(sensitiveValues(data)).toEqual(['sk-1'])
+  })
+
   it('ignores non-objects', () => {
     expect(sensitiveValues(undefined)).toEqual([])
     expect(sensitiveValues('token')).toEqual([])

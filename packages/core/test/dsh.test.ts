@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { dsh } from '../src/adapters/dsh'
 import type { AdapterContext } from '../src/adapters/types'
-import { editYaml, JsExpression } from '../src/io/editors'
+import { editYaml, JsExpression, QuotedString } from '../src/io/editors'
 import type { FileStep, PlanStep } from '../src/plan/types'
 import type { ZcfConfig, ZcfConfigInput } from '../src/schema/config'
 import { parseZcfConfig } from '../src/schema/config'
@@ -303,7 +303,8 @@ describe('dsh.plan', () => {
                     transport: 'stdio',
                     command: 'uvx',
                     args: ['x-mcp'],
-                    env: { TOKEN: 't' },
+                    // Quoted, so a preview can mask it.
+                    env: { TOKEN: new QuotedString('t') },
                   },
                 },
                 {
@@ -342,7 +343,10 @@ describe('dsh.plan', () => {
           insert: [
             {
               config: {
-                env: { GITHUB_TOKEN: new JsExpression("`${process.env.GITHUB_TOKEN ?? ''}`"), PLAIN: 'a`b' },
+                env: {
+                  GITHUB_TOKEN: new JsExpression("`${process.env.GITHUB_TOKEN ?? ''}`"),
+                  PLAIN: new QuotedString('a`b'),
+                },
               },
             },
             { config: { headers: { Authorization: new JsExpression("`Bearer ${process.env.API_TOKEN ?? ''}`") } } },
@@ -377,6 +381,17 @@ describe('dsh.plan', () => {
     const written = await editYaml(undefined, patchStep(first.steps).edits)
     const again = await dsh.plan(config({ provider: relay }), installed, context({}, { [PATCH]: written }))
     expect(again.steps.filter(step => step.kind === 'file' && step.format === 'yaml')).toEqual([])
+  })
+
+  it('updates the last of several inserted entries for one server', async () => {
+    const entry = '    - id: zcf-mcp-a\n      config: { serverName: a, transport: stdio, command: old, args: [] }\n'
+    const before = `- insert:\n${entry}- insert:\n${entry}${entry}`
+    const plan = await dsh.plan(
+      config({ mcpServers: { a: { type: 'stdio', command: 'new' } } }),
+      installed,
+      context({}, { [PATCH]: before }),
+    )
+    expect(patchStep(plan.steps).edits.map(edit => edit.path)).toEqual([[1, 'insert', 1, 'config']])
   })
 
   it('leaves the file alone when nothing changes', async () => {

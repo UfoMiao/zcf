@@ -1,6 +1,6 @@
 import { join } from 'pathe'
 
-import { isTable, JsExpression, parseConfigText } from '../io/editors'
+import { isTable, JsExpression, parseConfigText, QuotedString } from '../io/editors'
 import type { CommandStep, KeyEdit, KeyPath, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
@@ -91,9 +91,10 @@ class PatchList {
 
   /** An entry inserted by an earlier run, and the key path of its config. */
   findInserted(id: string): { entry: Entry; configPath: KeyPath } | undefined {
-    for (const [index, patch] of this.entries.entries()) {
+    // The last one, as for patches.
+    for (const [index, patch] of [...this.entries.entries()].toReversed()) {
       const items: unknown[] = Array.isArray(patch.insert) ? patch.insert : []
-      const position = items.findIndex(item => isTable(item) && item.id === id)
+      const position = items.findLastIndex(item => isTable(item) && item.id === id)
       const entry = items[position]
       if (isTable(entry)) return { entry, configPath: [index, 'insert', position, 'config'] }
     }
@@ -165,14 +166,15 @@ function templateText(text: string): string {
  * variables when dsh loads the file. dsh drops credential-like variables from the environment it
  * passes to stdio servers, so this is how such a server gets its token.
  */
-function dshValue(value: string): string | JsExpression {
-  if (!REFERENCE.test(value)) return value
+function dshValue(value: string): string | JsExpression | QuotedString {
+  // A short credential is masked in previews only when it is quoted.
+  if (!REFERENCE.test(value)) return value.length < 4 ? new QuotedString(value) : value
   const parts = value.split(REFERENCE)
   const source = parts.map((part, index) => (index % 2 === 0 ? templateText(part) : `\${process.env.${part} ?? ''}`))
   return new JsExpression(`\`${source.join('')}\``)
 }
 
-function dshValues(values: Record<string, string>): Record<string, string | JsExpression> {
+function dshValues(values: Record<string, string>): Record<string, ReturnType<typeof dshValue>> {
   return Object.fromEntries(Object.entries(values).map(([key, value]) => [key, dshValue(value)]))
 }
 
