@@ -51,8 +51,11 @@ export function secretVariants(secrets: readonly string[]): string[] {
 export function maskSecrets(text: string, secrets: readonly string[]): string {
   let masked = text
   // Long secrets keep a few characters so people can tell which one it is; short ones are hidden whole.
-  for (const secret of secrets)
-    masked = masked.replaceAll(secret, secret.length >= 12 ? `${secret.slice(0, 3)}***${secret.slice(-2)}` : '***')
+  for (const secret of secrets) {
+    const hint = secret.length >= 12 ? `${secret.slice(0, 3)}***${secret.slice(-2)}` : '***'
+    // A callback, so `$&` and similar in the secret are inserted literally, not as replacement patterns.
+    masked = masked.replaceAll(secret, () => hint)
+  }
   return masked
 }
 
