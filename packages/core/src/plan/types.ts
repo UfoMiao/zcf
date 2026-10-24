@@ -52,6 +52,8 @@ export interface ToolPlan {
   tool: ToolId
   steps: PlanStep[]
   notices: Notice[]
+  /** The version installed when the plan was made, where known; update plans set it. */
+  version?: string
 }
 
 export interface Plan {

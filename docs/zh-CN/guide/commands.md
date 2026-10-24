@@ -64,7 +64,7 @@ npx zcf [command] [options]
 
 ## `zcf update`
 
-用各工具自带的更新命令更新已选工具，例如 `claude update`、`codex update`、`opencode upgrade` 或 `pi update --self`。没有自带更新命令的工具用 `npm install -g` 更新。未安装的工具会被跳过并给出提示。
+用各工具自带的更新命令更新已选工具，例如 `claude update`、`codex update`、`opencode upgrade` 或 `pi update --self`。没有自带更新命令的工具用 `npm install -g` 更新。未安装的工具会被跳过并给出提示。更新后 ZCF 会检查每个工具的版本，说明它是更新到了新版本，还是本来就是最新。
 
 | 选项 | 含义 |
 |------|------|

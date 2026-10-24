@@ -1,11 +1,12 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import type { AdapterContext, FilePreview, Mirror, Plan, PlanStep, ToolId, ZcfConfig } from '@zcf/core'
+import type { AdapterContext, FilePreview, Mirror, Plan, PlanStep, ToolId, ToolResult, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
   createContext,
   defaultConfigPath,
+  detectTools,
   editJson,
   envMirror,
   FileSyntaxError,
@@ -23,9 +24,10 @@ import {
   resolveMirror,
   snapshotFile,
   TOOL_IDS,
+  TOOL_NAMES,
   writeFileAtomic,
 } from '@zcf/core'
-import { dim, yellow } from 'ansis'
+import { dim, green, yellow } from 'ansis'
 import { cac } from 'cac'
 import { join, resolve } from 'pathe'
 
@@ -221,16 +223,59 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     renderer.line()
   }
 
-  async function runPlan(plan: Plan, renderer: Renderer): Promise<number> {
+  /** `settle` may restate results before the summary, as `zcf update` does for tools that had nothing newer. */
+  async function runPlan(
+    plan: Plan,
+    renderer: Renderer,
+    settle?: (results: ToolResult[]) => Promise<ToolResult[]>,
+  ): Promise<number> {
     const backupDir = backupFolder(ctx.home, now())
-    const results = await applyPlan(plan, {
+    const applied = await applyPlan(plan, {
       runner: ctx.runner,
       backupDir,
       home: ctx.home,
       onEvent: event => event.type === 'step-end' && renderer.stepResult(event.tool, event.result),
     })
+    const results = settle ? await settle(applied) : applied
     renderer.summary(results, backupDir)
     return results.every(result => result.ok) ? EXIT_OK : EXIT_ERROR
+  }
+
+  /**
+   * An updater exits 0 whether or not it found a newer version, so compare versions after updating.
+   * A tool still on the same version counts as already up to date.
+   */
+  async function compareVersions(
+    plan: Plan,
+    results: ToolResult[],
+    renderer: Renderer,
+    detectCtx: AdapterContext,
+  ): Promise<ToolResult[]> {
+    const before = new Map(plan.tools.map(toolPlan => [toolPlan.tool, toolPlan.version]))
+    const updated = results.filter(
+      result => result.ok && before.get(result.tool) && result.steps.some(step => step.status === 'done'),
+    )
+    if (updated.length === 0) return results
+    const after = await detectTools(
+      updated.map(result => result.tool),
+      detectCtx,
+    )
+    renderer.line()
+    return results.map(result => {
+      const from = before.get(result.tool)
+      const to = after[result.tool]?.version
+      if (!updated.includes(result) || !from || !to) return result
+      const tool = TOOL_NAMES[result.tool]
+      if (to !== from) {
+        renderer.line(green(t('cli.updated', { tool, from, to })))
+        return result
+      }
+      renderer.line(dim(t('cli.upToDate', { tool, version: to })))
+      return {
+        ...result,
+        steps: result.steps.map(step => (step.status === 'done' ? { ...step, status: 'unchanged' as const } : step)),
+      }
+    })
   }
 
   const cli = cac('zcf')
@@ -347,7 +392,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       for (const toolPlan of plan.tools) {
         for (const notice of toolPlan.notices) renderer.notice(notice)
       }
-      return runPlan(plan, renderer)
+      return runPlan(plan, renderer, results => compareVersions(plan, results, renderer, { ...ctx, mirror }))
     })
 
   cli
