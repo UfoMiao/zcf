@@ -1,0 +1,201 @@
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { request } from 'node:http'
+import { tmpdir } from 'node:os'
+
+import type { Plan } from '@zcf/core'
+import type { Draft, ZcfService } from '@zcf/ui-kit'
+import { join } from 'pathe'
+import { afterEach, describe, expect, it } from 'vitest'
+
+import { collectSecrets } from '../src/render'
+import type { UiServer } from '../src/server'
+import { browserPlan, contentType, fileAssets, startUiServer } from '../src/server'
+
+const TOKEN = 'test-token-1234567890'
+const secrets = collectSecrets({ version: 1, tools: [], mcpServers: {}, skills: [], mirror: 'official' }, [
+  'sk-very-secret-key',
+])
+
+const plan: Plan = {
+  tools: [
+    {
+      tool: 'claude-code',
+      notices: [],
+      steps: [
+        {
+          kind: 'file',
+          title: { key: 'step.provider', params: { provider: 'relay' } },
+          path: '/home/me/.claude/settings.json',
+          format: 'json',
+          edits: [{ path: ['env', 'ANTHROPIC_AUTH_TOKEN'], value: 'sk-very-secret-key' }],
+        },
+        {
+          kind: 'command',
+          title: { key: 'x' },
+          command: 'claude',
+          args: ['mcp', 'add-json', 'x', '{"env":{"K":"sk-very-secret-key"}}'],
+        },
+      ],
+    },
+  ],
+}
+
+let saved: Draft[] = []
+const service: ZcfService = {
+  load: async () => ({ path: '/home/me/.ufomiao/zcf/zcf.json', draft: { version: 1 }, exists: true, issues: [] }),
+  save: async draft => {
+    saved.push(draft)
+  },
+  detect: async () => ({ 'claude-code': { installed: true, command: 'claude', version: '2.1.0' } }),
+  plan: async () => ({
+    plan,
+    previews: [
+      [
+        {
+          path: '/home/me/.claude/settings.json',
+          before: '{}\n',
+          after: '{"env":{"ANTHROPIC_AUTH_TOKEN":"sk-very-secret-key"}}\n',
+          changed: true,
+          patch: '+    "ANTHROPIC_AUTH_TOKEN": "sk-very-secret-key"',
+          secrets: ['sk-very-secret-key'],
+        },
+        null,
+      ],
+    ],
+    secrets,
+  }),
+  apply: async onStep => {
+    const step = plan.tools[0]!.steps[1]!
+    onStep?.({
+      tool: 'claude-code',
+      index: 1,
+      result: { step, status: 'failed', detail: 'bad key sk-very-secret-key' },
+    })
+    return { results: [{ tool: 'claude-code', ok: false, steps: [{ step, status: 'failed' }] }], backupDir: '/b' }
+  },
+}
+
+const assets = {
+  '/index.html': { body: '<!doctype html><title>ZCF</title>', type: 'text/html; charset=utf-8' },
+}
+
+let server: UiServer
+afterEach(async () => {
+  saved = []
+  await server.close()
+})
+
+function call(path: string, init: { method?: string; body?: unknown; token?: string | null; host?: string } = {}) {
+  return new Promise<{ status: number; type: string; text: string }>((resolve, reject) => {
+    const headers: Record<string, string> = { host: init.host ?? `127.0.0.1:${server.port}` }
+    if (init.token !== null) headers['x-zcf-token'] = init.token ?? TOKEN
+    const req = request({ host: '127.0.0.1', port: server.port, path, method: init.method ?? 'GET', headers }, res => {
+      let text = ''
+      res.on('data', chunk => (text += String(chunk)))
+      res.on('end', () => resolve({ status: res.statusCode ?? 0, type: String(res.headers['content-type']), text }))
+    })
+    req.on('error', reject)
+    req.end(init.body === undefined ? undefined : JSON.stringify(init.body))
+  })
+}
+
+async function start() {
+  server = await startUiServer({
+    service,
+    lang: 'zh-CN',
+    home: '/home/me',
+    token: TOKEN,
+    asset: async path => assets[path as keyof typeof assets],
+  })
+}
+
+describe('startUiServer', () => {
+  it('listens on 127.0.0.1 and puts the token in the URL fragment', async () => {
+    await start()
+    expect(server.url).toBe(`http://127.0.0.1:${server.port}/#token=${TOKEN}`)
+    expect(await call('/', { token: null })).toMatchObject({ status: 200, text: '<!doctype html><title>ZCF</title>' })
+    expect((await call('/missing.js', { token: null })).status).toBe(404)
+  })
+
+  it('refuses API calls without the token and requests for other host names', async () => {
+    await start()
+    expect((await call('/api/config', { token: null })).status).toBe(401)
+    expect((await call('/api/config', { token: 'wrong-token-123456789' })).status).toBe(401)
+    expect((await call('/api/config', { host: 'evil.example.com' })).status).toBe(403)
+    expect((await call('/api/nope')).status).toBe(404)
+  })
+
+  it('serves translations, loads and saves the config, and detects tools', async () => {
+    await start()
+    const session = JSON.parse((await call('/api/session')).text) as { lang: string; messages: Record<string, string> }
+    expect(session).toMatchObject({ lang: 'zh-CN', home: '/home/me' })
+    expect(session.messages['tui.page.tools']).toBe('工具')
+
+    expect(JSON.parse((await call('/api/config')).text)).toMatchObject({ draft: { version: 1 }, exists: true })
+    expect((await call('/api/config', { method: 'PUT', body: { version: 1, tools: ['codex'] } })).status).toBe(204)
+    expect(saved).toEqual([{ version: 1, tools: ['codex'] }])
+    expect((await call('/api/config', { method: 'PUT', body: [1] })).status).toBe(400)
+    expect(JSON.parse((await call('/api/detect', { method: 'POST' })).text)).toMatchObject({
+      'claude-code': { installed: true },
+    })
+  })
+
+  it('never sends secrets, file contents or edit values to the browser', async () => {
+    await start()
+    const { text } = await call('/api/plan', { method: 'POST' })
+    expect(text).not.toContain('sk-very-secret-key')
+    expect(text).toContain('sk-***ey')
+    const view = JSON.parse(text) as ReturnType<typeof browserPlan>
+    expect(view.previews[0]![0]).toMatchObject({ before: '', after: '', secrets: [] })
+    expect(view.plan.tools[0]!.steps[0]).toMatchObject({ kind: 'file', edits: [] })
+
+    const applied = await call('/api/apply', { method: 'POST' })
+    expect(applied.type).toBe('application/x-ndjson')
+    expect(applied.text).not.toContain('sk-very-secret-key')
+    const events = applied.text
+      .trim()
+      .split('\n')
+      .map(line => JSON.parse(line) as { type: string })
+    expect(events.map(event => event.type)).toEqual(['step', 'done'])
+  })
+
+  it('reports a failing call as a 500 with the message', async () => {
+    server = await startUiServer({
+      service: { ...service, load: () => Promise.reject(new Error('disk on fire')) },
+      lang: 'en',
+      home: '/home/me',
+      token: TOKEN,
+      asset: async () => undefined,
+    })
+    expect(await call('/api/config')).toMatchObject({ status: 500, text: '{"error":"disk on fire"}' })
+  })
+})
+
+describe('contentType', () => {
+  it('knows the web app file types', () => {
+    expect(contentType('/assets/index-abc.js')).toBe('text/javascript; charset=utf-8')
+    expect(contentType('/x.unknown')).toBe('application/octet-stream')
+  })
+})
+
+describe('fileAssets', () => {
+  it('serves files from the first folder with an index.html, and nothing outside it', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'zcf-web-'))
+    try {
+      await mkdir(join(dir, 'web', 'assets'), { recursive: true })
+      await writeFile(join(dir, 'web', 'index.html'), '<!doctype html>')
+      await writeFile(join(dir, 'web', 'assets', 'app.js'), 'export {}')
+      await writeFile(join(dir, 'secret.txt'), 'no')
+      const asset = (await fileAssets([join(dir, 'missing'), join(dir, 'web')]))!
+      expect(await asset('/assets/app.js')).toEqual({
+        body: Buffer.from('export {}'),
+        type: 'text/javascript; charset=utf-8',
+      })
+      expect(await asset('/../secret.txt')).toBeUndefined()
+      expect(await asset('/nope.css')).toBeUndefined()
+      expect(await fileAssets([join(dir, 'missing')])).toBeUndefined()
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
+  })
+})

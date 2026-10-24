@@ -67,6 +67,11 @@ export function maskSecrets(text: string, secrets: readonly string[]): string {
   return masked
 }
 
+/** Whether applying would change anything: a file step with changes, or any command step. */
+export function hasWork(plan: Plan, previews: ReadonlyMap<PlanStep, FilePreview>): boolean {
+  return plan.tools.some(toolPlan => toolPlan.steps.some(step => previews.get(step)?.changed ?? true))
+}
+
 export function tildify(path: string, home: string): string {
   return path.startsWith(home) ? `~${path.slice(home.length)}` : path
 }

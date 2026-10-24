@@ -42,10 +42,15 @@
     "build": "tsdown"
   },
   "devDependencies": {
+    "@types/react": "catalog:ui",
     "@zcf/core": "workspace:*",
+    "@zcf/ui-kit": "workspace:*",
     "ansis": "catalog:cli",
     "cac": "catalog:cli",
+    "ink": "catalog:ui",
+    "ink-testing-library": "catalog:ui",
     "pathe": "catalog:runtime",
+    "react": "catalog:ui",
     "tsdown": "catalog:build"
   }
 }

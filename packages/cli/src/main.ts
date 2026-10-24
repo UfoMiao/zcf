@@ -1,4 +1,5 @@
 import process from 'node:process'
+import { fileURLToPath } from 'node:url'
 
 import type { AdapterContext, FilePreview, Mirror, Plan, PlanStep, ToolId, ZcfConfig } from '@zcf/core'
 import {
@@ -32,7 +33,8 @@ import { version } from '../package.json'
 import type { Translate } from './i18n'
 import { createTranslator, detectLang } from './i18n'
 import type { Output } from './render'
-import { collectSecrets, Renderer, tildify } from './render'
+import { collectSecrets, hasWork, Renderer, tildify } from './render'
+import { backupFolder, createLocalService } from './service'
 
 export const EXIT_OK = 0
 export const EXIT_ERROR = 1
@@ -43,6 +45,12 @@ export interface MainOptions {
   stderr?: Output
   context?: Partial<AdapterContext>
   now?: () => Date
+  /** Whether stdin and stdout are a terminal, so the interactive UI can run. */
+  interactive?: boolean
+  /** Resolves to stop a long-running command such as `zcf ui`; Ctrl+C by default. */
+  stop?: Promise<unknown>
+  /** Where the built web UI lives; found next to the CLI by default. */
+  webRoot?: string
 }
 
 interface CommandFlags {
@@ -50,6 +58,16 @@ interface CommandFlags {
   tools?: string
   yes?: boolean
   mirror?: string
+  port?: number
+  open?: boolean
+}
+
+/** The command that opens a URL in the default browser. */
+function openCommand(platform: NodeJS.Platform, url: string): [string, string[]] {
+  if (platform === 'darwin') return ['open', [url]]
+  // `start` would need cmd.exe quoting; the URL handler takes the URL as one argument.
+  if (platform === 'win32') return ['rundll32', ['url.dll,FileProtocolHandler', url]]
+  return ['xdg-open', [url]]
 }
 
 class CliError extends Error {
@@ -102,14 +120,6 @@ function registryOrigin(registry: string): string {
   }
 }
 
-function hasWork(plan: Plan, previews: Map<PlanStep, FilePreview>): boolean {
-  return plan.tools.some(toolPlan => toolPlan.steps.some(step => previews.get(step)?.changed ?? true))
-}
-
-function backupFolder(home: string, now: Date): string {
-  return join(home, '.ufomiao', 'zcf', 'backups', now.toISOString().replace(/[:.]/g, '-'))
-}
-
 /** cac only reports argument mistakes as English text, so match its messages and translate them. */
 function argumentError(error: unknown, t: Translate): string | undefined {
   if (!(error instanceof Error) || error.name !== 'CACError') return undefined
@@ -129,9 +139,19 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   const stderr = options.stderr ?? {
     write: text => process.stderr.write(text),
   }
-  const t = createTranslator(detectLang(argv))
+  const lang = detectLang(argv)
+  const t = createTranslator(lang)
   const ctx = createContext(options.context)
   const now = options.now ?? (() => new Date())
+  const interactive = options.interactive ?? (process.stdin.isTTY && process.stdout.isTTY)
+
+  async function runTuiCommand(file: string | undefined): Promise<number> {
+    if (!interactive) throw new CliError(t('cli.tuiNeedsTerminal'), EXIT_ERROR)
+    const path = file ? resolve(file) : defaultConfigPath(ctx.home)
+    const { runTui } = await import('./tui/run')
+    await runTui(createLocalService(ctx, path, now), t, ctx.home)
+    return EXIT_OK
+  }
 
   const configPath = (file: string | undefined) => (file ? resolve(file) : defaultConfigPath(ctx.home))
 
@@ -250,6 +270,42 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     })
 
   cli
+    .command('tui', t('cli.command.tui'))
+    .option('--file <path>', t('cli.option.file'))
+    .action(async (flags: CommandFlags) => runTuiCommand(flags.file))
+
+  cli
+    .command('ui', t('cli.command.ui'))
+    .option('--file <path>', t('cli.option.file'))
+    .option('--port <port>', t('cli.option.port'))
+    .option('--open', t('cli.option.open'), { default: true })
+    .action(async (flags: CommandFlags) => {
+      const path = flags.file ? resolve(flags.file) : defaultConfigPath(ctx.home)
+      const { fileAssets, startUiServer } = await import('./server')
+      const here = fileURLToPath(new URL('.', import.meta.url))
+      // Bundled, the web app sits in dist/web next to this code; from source, in packages/web/dist.
+      const asset = await fileAssets(
+        options.webRoot ? [options.webRoot] : [join(here, 'web'), join(here, '../../web/dist')],
+      )
+      if (!asset) throw new CliError(t('cli.uiMissingAssets'), EXIT_ERROR)
+      const server = await startUiServer({
+        service: createLocalService(ctx, path, now),
+        lang,
+        home: ctx.home,
+        asset,
+        port: flags.port,
+      })
+      stdout.write(`${t('cli.uiListening', { url: server.url })}\n${t('cli.uiStop')}\n`)
+      if (flags.open !== false) {
+        const [command, args] = openCommand(ctx.platform, server.url)
+        void ctx.runner.run(command, args).catch(() => undefined)
+      }
+      await (options.stop ?? new Promise(done => process.once('SIGINT', done)))
+      await server.close()
+      return EXIT_OK
+    })
+
+  cli
     .command('update', t('cli.command.update'))
     .option('--file <path>', t('cli.option.file'))
     .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
@@ -325,6 +381,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   try {
     cli.parse(['node', 'zcf', ...argv], { run: false })
     if (!cli.matchedCommand) {
+      if (argv.length === 0 && interactive) return await runTuiCommand(undefined)
       if (!cli.options.help && !cli.options.version) cli.outputHelp()
       return argv.length === 0 || cli.options.help || cli.options.version ? EXIT_OK : EXIT_ERROR
     }

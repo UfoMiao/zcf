@@ -23,6 +23,20 @@
         "typescript/no-unsafe-type-assertion": "off",
         "oxc/no-map-spread": "off"
       }
+    },
+    {
+      "files": ["packages/web/**"],
+      "env": {
+        "browser": true
+      },
+      "rules": {
+        "import/no-unassigned-import": [
+          "error",
+          {
+            "allow": ["**/*.css"]
+          }
+        ]
+      }
     }
   ]
 }
