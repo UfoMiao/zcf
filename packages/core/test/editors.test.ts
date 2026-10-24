@@ -26,8 +26,20 @@ describe('editJson', () => {
     expect(editJson(before, [{ path: ['mirror'], value: 'china' }])).toBe(
       '{\n  "version": 1,\n  "tools": ["claude-code", "codex"],\n  "env": { "A": "1" },\n  "mirror": "china"\n}\n',
     )
-    expect(editJson(before, [{ path: ['env', 'B'], value: { x: [1, 2] } }])).toBe(
-      '{\n  "version": 1,\n  "tools": ["claude-code", "codex"],\n  "env": { "A": "1",\n    "B": {\n      "x": [\n        1,\n        2\n      ]\n    }\n  }\n}\n',
+  })
+
+  it('expands an object written on one line as a whole when a key is added to it', () => {
+    const before = '{\n  "env": {"ANTHROPIC_BASE_URL": "x"},\n  "model": "opus"\n}\n'
+    const after = editJson(before, [{ path: ['env', 'ANTHROPIC_AUTH_TOKEN'], value: 't' }])
+    expect(after).toBe(
+      '{\n  "env": {\n    "ANTHROPIC_BASE_URL": "x",\n    "ANTHROPIC_AUTH_TOKEN": "t"\n  },\n  "model": "opus"\n}\n',
+    )
+    expect(editJson(after, [{ path: ['env', 'ANTHROPIC_AUTH_TOKEN'], value: 't' }])).toBe(after)
+  })
+
+  it('indents with tabs in a file that uses tabs', () => {
+    expect(editJson('{\n\t"e": {\n\t\t"a": 1\n\t}\n}\n', [{ path: ['e', 'b'], value: 2 }])).toBe(
+      '{\n\t"e": {\n\t\t"a": 1,\n\t\t"b": 2\n\t}\n}\n',
     )
   })
 
