@@ -20,7 +20,10 @@ const FETCH_TIMEOUT_MS = 4000
 
 export interface PresetList {
   presets: ProviderPreset[]
-  /** Where the list came from: just fetched, a saved copy, or nothing at all. */
+  /**
+   * `remote`: up to date, fetched now or within the last day. `cache`: an older saved copy,
+   * because no source answered. `none`: nothing to show.
+   */
   source: 'remote' | 'cache' | 'none'
 }
 
@@ -73,7 +76,7 @@ export async function loadPresets(options: LoadPresetsOptions): Promise<PresetLi
   const cached = cache && parsePresets(cache.data)
 
   if (cached && !options.refresh && now() - cache.fetchedAt < PRESET_MAX_AGE_MS)
-    return { presets: cached, source: 'cache' }
+    return { presets: cached, source: 'remote' }
 
   for (const url of override ? [override] : githubFileUrls(PRESET_FILE, options.mirror ?? 'official')) {
     try {

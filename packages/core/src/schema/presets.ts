@@ -43,3 +43,14 @@ export function applyPreset(preset: ProviderPreset, current: unknown): Record<st
   if (Object.keys(preset.models).length > 0) provider.models = { ...preset.models }
   return provider
 }
+
+/**
+ * How a preset is listed: the hosts it sends requests to, then its description in `lang`.
+ * The hosts come first so a user sees where their API key would go before picking it.
+ */
+export function presetSummary(preset: ProviderPreset, lang: string): string {
+  const urls = [preset.anthropic?.baseUrl, preset.openai?.baseUrl, preset.gemini?.baseUrl]
+  const hosts = [...new Set(urls.filter(url => url !== undefined).map(url => new URL(url).host))]
+  const description = preset.description[lang] ?? preset.description.en
+  return [hosts.join(', '), description].filter(Boolean).join(' · ')
+}

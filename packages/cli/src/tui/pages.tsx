@@ -1,5 +1,5 @@
 import type { PresetList, ProviderPreset, ToolId, ToolStatus } from '@zcf/core'
-import { applyPreset, TOOL_NAMES } from '@zcf/core'
+import { applyPreset, presetSummary, TOOL_NAMES } from '@zcf/core'
 import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
 import {
   fieldValue,
@@ -200,10 +200,6 @@ function RecordEditor({
 }
 
 /** The description of a preset in the user's language, else in English. */
-export function presetDescription(preset: ProviderPreset, lang: string): string {
-  return preset.description[lang] ?? preset.description.en ?? ''
-}
-
 function PresetPicker({
   t,
   active,
@@ -221,18 +217,19 @@ function PresetPicker({
   useEffect(() => {
     loadPresets().then(setList, () => setList({ presets: [], source: 'none' }))
   }, [loadPresets])
-  if (!list) return <Text dimColor>{t('tui.provider.presetsLoading')}</Text>
-  const rows: Row[] = list.presets.map(preset => ({
+  const rows: Row[] = (list?.presets ?? []).map(preset => ({
     id: preset.id,
     label: preset.name,
-    value: presetDescription(preset, lang),
+    value: presetSummary(preset, lang),
     action: { type: 'run', run: () => onPick(preset) },
   }))
   return (
     <Box flexDirection="column" gap={1}>
       <Text bold>{t('tui.provider.presetTitle')}</Text>
-      {list.source === 'none' && <Text color="yellow">{t('tui.provider.presetsUnavailable')}</Text>}
-      {list.source === 'cache' && <Text dimColor>{t('tui.provider.presetsCached')}</Text>}
+      {!list && <Text dimColor>{t('tui.provider.presetsLoading')}</Text>}
+      {list?.source === 'none' && <Text color="yellow">{t('tui.provider.presetsUnavailable')}</Text>}
+      {list?.source === 'cache' && <Text dimColor>{t('tui.provider.presetsCached')}</Text>}
+      {/* Mounted while loading too, so Esc goes back without waiting for the network. */}
       <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
     </Box>
   )
