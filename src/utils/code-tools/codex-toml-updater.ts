@@ -297,8 +297,11 @@ function upsertMcpServiceEnv(content: string, serviceId: string, env: Record<str
     return editToml(content, basePath, env)
 
   let updated = content
-  for (const [key, value] of Object.entries(env))
-    updated = editToml(updated, `${basePath}.${key}`, value)
+  for (const [key, value] of Object.entries(env)) {
+    // Quote keys that are not bare TOML keys so a name like FOO.BAR stays one key
+    const keyPath = /^[\w-]+$/.test(key) ? key : JSON.stringify(key)
+    updated = editToml(updated, `${basePath}.${keyPath}`, value)
+  }
   return updated
 }
 
