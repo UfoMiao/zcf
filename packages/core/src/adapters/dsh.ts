@@ -293,7 +293,12 @@ export const dsh: ToolAdapter = {
 
     // dsh reads `~/.agents/skills`, where the `skills` CLI installs for its `universal` agent.
     steps.push(
-      ...(await skillSteps(config.skills, ctx, { agent: 'universal', dir: join(ctx.home, '.agents', 'skills') })),
+      ...(await skillSteps(
+        config.skills,
+        ctx,
+        { agent: 'universal', dir: join(ctx.home, '.agents', 'skills') },
+        config.configLanguage,
+      )),
     )
 
     return { tool: TOOL, steps, notices }

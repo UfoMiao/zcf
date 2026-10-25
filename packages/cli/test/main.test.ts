@@ -179,6 +179,19 @@ describe('zcf plan', () => {
     expect(stdout).not.toContain('DeepSeek Harness')
   })
 
+  it('installs the built-in skills in the config language, whatever --lang says', async () => {
+    await writeConfig({
+      version: 1,
+      tools: ['claude-code'],
+      configLanguage: 'zh-CN',
+      skills: [{ source: 'zcf', skills: ['git-commit'] }],
+    })
+    // The interface language is English; the templates follow the config language.
+    const { stdout } = await run('plan', '--tools', 'claude-code')
+    expect(stdout).toContain('Install skills from zcf')
+    expect(stdout).toMatch(/templates[\\/]skills[\\/]zh-CN/)
+  })
+
   it('reads the config from --file', async () => {
     const path = join(home, 'custom.json')
     await writeConfig(

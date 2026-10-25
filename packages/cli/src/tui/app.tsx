@@ -184,7 +184,7 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
           {page === 'tools' && <ToolsPage {...props} detected={detected} />}
           {page === 'provider' && <ProviderPage {...props} lang={uiLang} loadPresets={loadPresets} />}
           {page === 'mcp' && <McpPage {...props} />}
-          {page === 'skills' && <SkillsPage {...props} />}
+          {page === 'skills' && <SkillsPage {...props} lang={uiLang} />}
           {page === 'settings' && <SettingsPage {...props} />}
           {page === 'apply' && (
             <ApplyPage service={service} t={t} home={home} active={onPage} dirty={editor.dirty} onBack={props.onBack} />

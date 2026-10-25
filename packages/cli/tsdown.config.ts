@@ -70,8 +70,12 @@ export default defineConfig({
       mainFields: ['module', 'main'],
     },
   },
-  // The web UI, built first by `pnpm build`, ships as static files that `zcf ui` serves.
-  copy: [{ from: '../web/dist/*', to: 'dist/web' }],
+  // The web UI, built first by `pnpm build`, ships as static files that `zcf ui` serves;
+  // so do the built-in skill templates the `zcf` skills source installs from.
+  copy: [
+    { from: '../web/dist/*', to: 'dist/web' },
+    { from: '../core/templates', to: 'dist' },
+  ],
   minify: true,
   dts: false,
   clean: true,

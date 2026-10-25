@@ -141,7 +141,14 @@ export const geminiCli: ToolAdapter = {
 
     steps.push(...(await mcpSteps(config.mcpServers, status.command, ctx, settingsFile)))
     // The skills CLI installs Gemini CLI's global skills into the shared ~/.agents/skills.
-    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(ctx.home, '.agents', 'skills') })))
+    steps.push(
+      ...(await skillSteps(
+        config.skills,
+        ctx,
+        { agent: TOOL, dir: join(ctx.home, '.agents', 'skills') },
+        config.configLanguage,
+      )),
+    )
 
     return { tool: TOOL, steps, notices }
   },

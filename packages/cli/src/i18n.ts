@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import { MessageError } from '@zcf/core'
+import { detectSpokenLang, MessageError } from '@zcf/core'
 import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
 
 export { LANGS, isLang } from '@zcf/ui-kit'
@@ -151,7 +151,7 @@ const en = {
   'hint.provider.anthropicBaseUrl': 'For Claude Code and other tools that speak the Anthropic API',
   'hint.provider.openaiBaseUrl': 'For Codex, OpenCode and other tools that speak the OpenAI API',
   'hint.provider.geminiBaseUrl': 'For Gemini CLI; leave empty to use Google directly',
-  'hint.skill.source': 'A GitHub owner/repo, a git URL or a local path',
+  'hint.skill.source': "`zcf` picks ZCF's own skills; anything else is a GitHub owner/repo, a git URL or a local path",
   'hint.skill.skills': 'Comma-separated skill names; leave empty to install all of them',
   'tui.page.tools': 'Tools',
   'tui.page.provider': 'Provider',
@@ -220,6 +220,10 @@ const en = {
   'tui.skills.all': 'all skills',
   'tui.skills.source': 'Skill source',
   'tui.skills.delete': 'Delete this source',
+  'tui.skills.builtin': 'ZCF built-in skills',
+  'tui.skills.catalog': 'Built-in skills',
+  'tui.skills.catalogTitle': 'Pick the built-in skills to install',
+  'tui.skills.catalogHint': 'Enter toggles a skill; the picked ones install in the config language',
   'tui.provider.remove': 'Remove the provider',
   'tui.apply.saveFirst': 'Save your changes with Ctrl+S to see the plan.',
   'tui.apply.planning': 'Working out the changes…',
@@ -371,7 +375,7 @@ const zhCN: Record<MessageKey, string> = {
   'hint.provider.anthropicBaseUrl': '供 Claude Code 等使用 Anthropic 接口的工具',
   'hint.provider.openaiBaseUrl': '供 Codex、OpenCode 等使用 OpenAI 接口的工具',
   'hint.provider.geminiBaseUrl': '供 Gemini CLI 使用；留空则直接使用 Google',
-  'hint.skill.source': 'GitHub 的 owner/repo、git 地址或本地路径',
+  'hint.skill.source': '`zcf` 表示 ZCF 自带技能；其他为 GitHub 的 owner/repo、git 地址或本地路径',
   'hint.skill.skills': '用逗号分隔的技能名；留空则全部安装',
   'tui.page.tools': '工具',
   'tui.page.provider': '供应商',
@@ -437,6 +441,10 @@ const zhCN: Record<MessageKey, string> = {
   'tui.skills.all': '全部技能',
   'tui.skills.source': '技能来源',
   'tui.skills.delete': '删除此来源',
+  'tui.skills.builtin': 'ZCF 内置技能',
+  'tui.skills.catalog': '内置技能',
+  'tui.skills.catalogTitle': '选择要安装的内置技能',
+  'tui.skills.catalogHint': '回车切换勾选；勾选的技能按配置语言安装',
   'tui.provider.remove': '移除供应商',
   'tui.apply.saveFirst': '请先按 Ctrl+S 保存修改，再查看计划。',
   'tui.apply.planning': '正在计算要做的修改…',
@@ -448,14 +456,12 @@ const zhCN: Record<MessageKey, string> = {
 const english: Record<string, string> = en
 const dictionaries: Record<Lang, Record<string, string>> = { en: english, 'zh-CN': zhCN }
 
-/** `--lang` wins, then ZCF_LANG, then the system locale. */
+/** `--lang` wins; everything else — `ZCF_LANG`, the locale — follows the one rule in core. */
 export function detectLang(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): Lang {
   const index = argv.findIndex(arg => arg === '--lang' || arg.startsWith('--lang='))
   const flag = index === -1 ? undefined : argv[index]!.includes('=') ? argv[index]!.split('=')[1] : argv[index + 1]
   if (isLang(flag)) return flag
-  if (isLang(env.ZCF_LANG)) return env.ZCF_LANG
-  const locale = env.LC_ALL || env.LC_MESSAGES || env.LANG || new Intl.DateTimeFormat().resolvedOptions().locale
-  return locale.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
+  return detectSpokenLang(env)
 }
 
 /** Whether `--lang` or `ZCF_LANG` set the language, so the config's `language` cannot override it. */
