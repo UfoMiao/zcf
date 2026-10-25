@@ -12,6 +12,7 @@ import {
   npmInstallStep,
   npmUninstallSteps,
   npmUpdateStep,
+  ownedSettingKeys,
   sameJson,
   skillSteps,
 } from './shared'
@@ -148,24 +149,39 @@ export const geminiCli: ToolAdapter = {
     return { tool: TOOL, steps: [npmUpdateStep(TOOL, PACKAGE)], notices: [] }
   },
 
-  async planUninstall(status, ctx) {
+  async planUninstall(status, ctx, provider) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     // The uninstall guide uninstalls the package (npm here, brew and MacPorts elsewhere);
     // there is no native install whose files ZCF could delete.
     const { steps, notices } = await npmUninstallSteps(TOOL, PACKAGE, ctx)
-    // The provider route ZCF wrote lives in .env. The auth selection and model in
-    // settings.json are keys the CLI itself writes too, so ZCF cannot tell its own from
-    // the user's and leaves them.
+    // The provider route ZCF wrote lives in .env: the keys that still hold the values the
+    // config writes. GEMINI_MODEL never does (the model goes to settings.json, so ZCF removes
+    // the .env copy rather than writing it), and settings.json itself is left alone: its auth
+    // selection and model are keys the CLI writes too, so ZCF cannot tell its own from the user's.
     const envFile = join(geminiDir(ctx), '.env')
-    if ((await ctx.readFile(envFile)) !== undefined) {
-      steps.push(
-        cleanConfigStep(TOOL, envFile, 'env', [
-          { path: ['GEMINI_API_KEY'], value: undefined },
-          { path: ['GOOGLE_GEMINI_BASE_URL'], value: undefined },
-          { path: ['GEMINI_MODEL'], value: undefined },
-        ]),
+    const text = await ctx.readFile(envFile)
+    if (text !== undefined) {
+      const data = await parseConfigText('env', text)
+      const written = provider?.gemini
+        ? { GEMINI_API_KEY: provider.apiKey, GOOGLE_GEMINI_BASE_URL: provider.gemini.baseUrl }
+        : undefined
+      const { keys, foreign } = ownedSettingKeys(
+        ['GEMINI_API_KEY', 'GOOGLE_GEMINI_BASE_URL', 'GEMINI_MODEL'],
+        written,
+        isTable(data) ? data : {},
       )
+      if (foreign) notices.push(notice('info', 'notice.foreignSettings', { tool: TOOL }))
+      if (keys.length > 0) {
+        steps.push(
+          cleanConfigStep(
+            TOOL,
+            envFile,
+            'env',
+            keys.map(key => ({ path: [key], value: undefined })),
+          ),
+        )
+      }
     }
     return { tool: TOOL, steps, notices }
   },

@@ -293,7 +293,7 @@ export const dsh: ToolAdapter = {
     return { tool: TOOL, steps: [npmStep('step.update', `${PACKAGE}@latest`)], notices: [] }
   },
 
-  async planUninstall(status, ctx) {
+  async planUninstall(status, ctx, _provider) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     // dsh documents no uninstall; npm is the only channel it ships on.

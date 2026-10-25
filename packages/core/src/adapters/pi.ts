@@ -11,10 +11,9 @@ import {
   detectCommand,
   envPath,
   notice,
-  npmFallbackUpdateStep,
   npmUninstallSteps,
   sameJson,
-  selfUpdateStep,
+  selfUpdateSteps,
   skillSteps,
 } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
@@ -209,17 +208,14 @@ export const pi: ToolAdapter = {
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     // `pi update --self` updates pi however it was installed, without touching pi packages.
     // The npm fallback matches the install ZCF itself performs, scripts and all.
-    const fallback = await npmFallbackUpdateStep(TOOL, PACKAGE, ctx, [], true)
     return {
       tool: TOOL,
-      steps: fallback
-        ? [selfUpdateStep(TOOL, status, ['update', '--self']), fallback]
-        : [selfUpdateStep(TOOL, status, ['update', '--self'])],
+      steps: await selfUpdateSteps(TOOL, status, ['update', '--self'], PACKAGE, ctx, [], true),
       notices: [],
     }
   },
 
-  async planUninstall(status, ctx) {
+  async planUninstall(status, ctx, _provider) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     // pi documents no uninstall; a global npm install is what ZCF and the docs set up, and

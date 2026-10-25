@@ -80,9 +80,9 @@ npx zcf [command] [options]
 zcf uninstall claude-code codex --yes
 ```
 
-每个工具走它自己的卸载通道：npm 安装的用 `npm uninstall -g`；OpenCode 在非 npm 安装时用它自带的 `opencode uninstall --keep-config --keep-data`；没有 npm 包的安装（Claude Code 与 Codex 的原生安装、Cursor CLI）则删除安装器落盘的文件，删除前先复制到备份目录。无法判断安装来源的工具会被跳过并提示：请用当初安装它的方式卸载。
+每个工具走它自己的卸载通道：npm 安装的用 `npm uninstall -g`；OpenCode 在非 npm 安装时用它自带的 `opencode uninstall --keep-config --keep-data`；没有 npm 包的安装（Claude Code 与 Codex 的原生安装、Cursor CLI）则删除安装器落盘的文件，删除前先复制到备份目录——Windows 下这些文件是 `claude.exe` 和 `codex.exe`，Cursor CLI 则删除整个 `%LOCALAPPDATA%\cursor-agent` 目录。无法判断安装来源的工具会被跳过并提示：请用当初安装它的方式卸载。
 
-ZCF 只移除自己写入的设置——供应商路由，例如 `zcf` 条目、指向它的模型选择、Claude Code 的 `ANTHROPIC_*` 环境变量、Gemini CLI 的 `.env` 键和 dsh 的路由补丁。MCP 服务、技能，以及无法与工具自身设置区分开的内容都保持原样，也不会整文件删除。卸载后，这些工具会从配置文件的 `tools` 中移除，之后的 `zcf apply` 不会再安装它们；ZCF 还会确认工具的命令确实不再响应。
+ZCF 只移除自己写入的设置——供应商路由，例如 `zcf` 条目、指向它的模型选择和 dsh 的路由补丁。Claude Code 的 `ANTHROPIC_*` 环境变量和 Gemini CLI 的 `.env` 键只在仍与配置所写值一致时才移除；同名但值不同的设置可能是用户自己写的，会保留并给出提示。MCP 服务、技能，以及无法与工具自身设置区分开的内容都保持原样，也不会整文件删除。卸载后，这些工具会从配置文件的 `tools` 中移除，之后的 `zcf apply` 不会再安装它们；ZCF 还会确认工具的命令确实不再响应。
 
 | 选项 | 含义 |
 |------|------|

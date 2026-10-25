@@ -9,11 +9,10 @@ import {
   detectCommand,
   envPath,
   notice,
-  npmFallbackUpdateStep,
   npmInstallStep,
   npmUninstallSteps,
   sameJson,
-  selfUpdateStep,
+  selfUpdateSteps,
   skillSteps,
 } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
@@ -149,17 +148,14 @@ export const codex: ToolAdapter = {
   async planUpdate(status, ctx) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
-    const fallback = await npmFallbackUpdateStep(TOOL, PACKAGE, ctx)
     return {
       tool: TOOL,
-      steps: fallback
-        ? [selfUpdateStep(TOOL, status, ['update']), fallback]
-        : [selfUpdateStep(TOOL, status, ['update'])],
+      steps: await selfUpdateSteps(TOOL, status, ['update'], PACKAGE, ctx),
       notices: [],
     }
   },
 
-  async planUninstall(status, ctx) {
+  async planUninstall(status, ctx, _provider) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     // The standalone install has no uninstaller of its own; its launcher and the packages

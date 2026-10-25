@@ -1,6 +1,6 @@
 import { resolveMirror, withMirrorEnv } from '../mirror'
 import type { Plan, ToolPlan } from '../plan/types'
-import type { ToolId, ZcfConfig } from '../schema/config'
+import type { Provider, ToolId, ZcfConfig } from '../schema/config'
 import { claudeCode } from './claude-code'
 import { codex } from './codex'
 import { cursor } from './cursor'
@@ -71,11 +71,15 @@ export async function planUpdates(tools: readonly ToolId[], ctx: AdapterContext)
  * Plan each tool's uninstall: its own uninstall channel (npm, the official uninstaller, or
  * the native files) and the settings ZCF wrote for it. No mirror applies; nothing downloads.
  */
-export async function planUninstalls(tools: readonly ToolId[], ctx: AdapterContext): Promise<Plan> {
+export async function planUninstalls(
+  tools: readonly ToolId[],
+  ctx: AdapterContext,
+  provider?: Provider,
+): Promise<Plan> {
   const plans = await Promise.all(
     [...new Set(tools)].map(async tool => {
       const adapter = ADAPTERS[tool]
-      return adapter.planUninstall(await adapter.detect(ctx), ctx)
+      return adapter.planUninstall(await adapter.detect(ctx), ctx, provider)
     }),
   )
   return { tools: plans }

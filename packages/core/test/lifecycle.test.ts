@@ -9,9 +9,18 @@ import { createContext } from '../src/context'
 import type { CommandResult, CommandRunner } from '../src/exec/runner'
 import { applyPlan } from '../src/plan/apply'
 import type { Plan } from '../src/plan/types'
+import type { Provider, ZcfConfigInput } from '../src/schema/config'
+import { parseZcfConfig } from '../src/schema/config'
 import { fakeRunner, tempDir } from './helpers'
 
 const HOME = '/home/me'
+
+/** A provider parsed the way the real config is, so defaults such as `authType` are filled. */
+function providerOf(input: NonNullable<ZcfConfigInput['provider']>): Provider {
+  const result = parseZcfConfig({ version: 1, provider: input })
+  if (!result.success) throw new Error(JSON.stringify(result.issues))
+  return result.config.provider!
+}
 
 /** A context whose commands answer from `responses` and whose files come from `files`. */
 function context(overrides: Partial<AdapterContext> = {}, files: Record<string, string> = {}): AdapterContext {
@@ -172,19 +181,21 @@ describe('planUninstalls', () => {
   it('uninstalls an npm install with npm, then takes its provider route out of settings.json', async () => {
     const files = {
       [`${HOME}/.claude/settings.json`]:
-        '{\n  "env": { "ANTHROPIC_BASE_URL": "https://gw" },\n  "model": "sonnet"\n}\n',
+        '{\n  "env": { "ANTHROPIC_BASE_URL": "https://gw", "ANTHROPIC_MODEL": "glm-4.7" },\n  "model": "sonnet"\n}\n',
     }
-    const plan = await planUninstalls(['claude-code'], context({ runner: npmOwnedClaude() }, files))
+    const provider = providerOf({
+      name: 'GLM',
+      apiKey: 'sk-1',
+      anthropic: { baseUrl: 'https://gw' },
+      models: { default: 'glm-4.7' },
+    })
+    const plan = await planUninstalls(['claude-code'], context({ runner: npmOwnedClaude() }, files), provider)
     expect(lines(plan)).toEqual(['npm uninstall -g @anthropic-ai/claude-code', `${HOME}/.claude/settings.json`])
     const settings = plan.tools[0]!.steps[1]!
+    // Every key that holds a value the config writes goes; the absent ones need no edit.
     expect(settings.kind === 'file' && settings.edits).toEqual([
       { path: ['env', 'ANTHROPIC_BASE_URL'], value: undefined },
-      { path: ['env', 'ANTHROPIC_AUTH_TOKEN'], value: undefined },
-      { path: ['env', 'ANTHROPIC_API_KEY'], value: undefined },
       { path: ['env', 'ANTHROPIC_MODEL'], value: undefined },
-      { path: ['env', 'ANTHROPIC_DEFAULT_HAIKU_MODEL'], value: undefined },
-      { path: ['env', 'ANTHROPIC_DEFAULT_SONNET_MODEL'], value: undefined },
-      { path: ['env', 'ANTHROPIC_DEFAULT_OPUS_MODEL'], value: undefined },
     ])
   })
 
@@ -242,13 +253,51 @@ describe('planUninstalls', () => {
       'gemini --version': { stdout: '0.65.0' },
       'npm ls -g @google/gemini-cli --depth=0': {},
     })
-    const plan = await planUninstalls(['gemini-cli'], context({ runner }, files))
+    const provider = providerOf({ name: 'GLM', apiKey: 'k', gemini: { baseUrl: 'https://gw' } })
+    const plan = await planUninstalls(['gemini-cli'], context({ runner }, files), provider)
     expect(lines(plan)).toEqual(['npm uninstall -g @google/gemini-cli', `${HOME}/.gemini/.env`])
     const edits = plan.tools[0]!.steps[1]!
     expect(edits.kind === 'file' && edits.edits).toEqual([
       { path: ['GEMINI_API_KEY'], value: undefined },
       { path: ['GOOGLE_GEMINI_BASE_URL'], value: undefined },
-      { path: ['GEMINI_MODEL'], value: undefined },
+    ])
+  })
+
+  it('keeps provider settings whose values are not the ones ZCF wrote', async () => {
+    const files = {
+      [`${HOME}/.claude/settings.json`]:
+        '{ "env": { "ANTHROPIC_BASE_URL": "https://own.example", "ANTHROPIC_AUTH_TOKEN": "sk-own" } }',
+    }
+    const runner = npmOwnedClaude()
+    const provider = providerOf({ name: 'GLM', apiKey: 'sk-1', anthropic: { baseUrl: 'https://gw' } })
+    const plan = await planUninstalls(['claude-code'], context({ runner }, files), provider)
+    expect(lines(plan)).toEqual(['npm uninstall -g @anthropic-ai/claude-code'])
+    expect(plan.tools[0]!.notices).toEqual([
+      { level: 'info', message: { key: 'notice.foreignSettings', params: { tool: 'claude-code' } } },
+    ])
+
+    // Without a config ZCF cannot attribute anything either, so the same settings stay.
+    const bare = await planUninstalls(['claude-code'], context({ runner }, files))
+    expect(lines(bare)).toEqual(['npm uninstall -g @anthropic-ai/claude-code'])
+    expect(bare.tools[0]!.notices.map(item => item.message.key)).toContain('notice.foreignSettings')
+  })
+
+  it('takes only the Gemini .env keys whose values ZCF wrote', async () => {
+    const files = {
+      [`${HOME}/.gemini/.env`]: 'GEMINI_API_KEY=sk-own\nGOOGLE_GEMINI_BASE_URL=https://gw\nGEMINI_MODEL=glm-4.7\n',
+    }
+    const runner = fakeRunner({
+      'gemini --version': { stdout: '0.65.0' },
+      'npm ls -g @google/gemini-cli --depth=0': {},
+    })
+    const provider = providerOf({ name: 'GLM', apiKey: 'sk-1', gemini: { baseUrl: 'https://gw' } })
+    const plan = await planUninstalls(['gemini-cli'], context({ runner }, files), provider)
+    expect(lines(plan)).toEqual(['npm uninstall -g @google/gemini-cli', `${HOME}/.gemini/.env`])
+    const edits = plan.tools[0]!.steps[1]!
+    // The base URL is ZCF's; the user's key stays, and GEMINI_MODEL is never ZCF's writing.
+    expect(edits.kind === 'file' && edits.edits).toEqual([{ path: ['GOOGLE_GEMINI_BASE_URL'], value: undefined }])
+    expect(plan.tools[0]!.notices).toEqual([
+      { level: 'info', message: { key: 'notice.foreignSettings', params: { tool: 'gemini-cli' } } },
     ])
   })
 
@@ -390,7 +439,7 @@ describe('planUninstalls', () => {
   })
 
   it('only notes tools that are not installed', async () => {
-    const plan = await planUninstalls(['claude-code', 'codex', 'opencode', 'cursor'], context())
+    const plan = await planUninstalls(['claude-code', 'codex', 'gemini-cli', 'opencode', 'cursor'], context())
     for (const tool of plan.tools) {
       expect(tool).toMatchObject({ steps: [], notices: [{ message: { key: 'notice.notInstalled' } }] })
     }
@@ -415,13 +464,14 @@ describe('uninstalling on the real filesystem', () => {
 
   it('applies the config cleanup after the uninstall, and skips it when the uninstall fails', async () => {
     const files = { [`${HOME}/.claude/settings.json`]: '{ "env": { "ANTHROPIC_BASE_URL": "https://gw" } }' }
+    const provider = providerOf({ name: 'GLM', apiKey: 'sk-1', anthropic: { baseUrl: 'https://gw' } })
     const failing = fakeRunner({
       'claude --version': { stdout: '2.1.0' },
       'npm ls -g @anthropic-ai/claude-code --depth=0': {},
       'npm uninstall -g @anthropic-ai/claude-code': { exitCode: 1, stderr: 'nope' },
     })
     const { home, ctx } = await realContext(failing, files)
-    const plan = await planUninstalls(['claude-code'], ctx)
+    const plan = await planUninstalls(['claude-code'], ctx, provider)
     const [result] = await applyPlan(plan, { runner: failing, backupDir: await tempDir(), home })
     expect(result!.ok).toBe(false)
     expect(result!.steps.map(step => step.status)).toEqual(['failed', 'skipped'])
@@ -433,7 +483,7 @@ describe('uninstalling on the real filesystem', () => {
       'npm uninstall -g @anthropic-ai/claude-code': {},
     })
     const again = await realContext(working, files)
-    const replan = await planUninstalls(['claude-code'], again.ctx)
+    const replan = await planUninstalls(['claude-code'], again.ctx, provider)
     const [ok] = await applyPlan(replan, { runner: working, backupDir: await tempDir(), home: again.home })
     expect(ok!.ok).toBe(true)
     expect(await readFile(`${again.home}/.claude/settings.json`, 'utf8')).not.toContain('ANTHROPIC')

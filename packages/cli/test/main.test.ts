@@ -457,6 +457,23 @@ describe('zcf uninstall', () => {
     expect(await readFile(configFile(), 'utf8')).toBe(broken)
   })
 
+  it('masks the secrets the uninstall preview shows', async () => {
+    responses['gemini --version'] = { stdout: '0.65.0' }
+    responses['npm ls -g @google/gemini-cli --depth=0'] = {}
+    await mkdir(join(home, '.gemini'), { recursive: true })
+    await writeFile(
+      join(home, '.gemini', '.env'),
+      'GEMINI_API_KEY=sk-gemini-secret-1\nGOOGLE_GEMINI_BASE_URL=https://gw\n',
+    )
+    await writeConfig({
+      version: 1,
+      provider: { name: 'GLM', apiKey: 'sk-gemini-secret-1', gemini: { baseUrl: 'https://gw' } },
+    })
+    const { stdout } = await run('uninstall', 'gemini-cli')
+    expect(stdout).not.toContain('sk-gemini-secret-1')
+    expect(stdout).toContain('sk-***-1')
+  })
+
   it('rejects unknown tools and an empty list', async () => {
     expect(await run('uninstall', 'nope')).toMatchObject({
       code: EXIT_ERROR,

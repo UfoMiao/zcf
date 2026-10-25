@@ -127,7 +127,7 @@ export const cursor: ToolAdapter = {
     return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update'])], notices: [] }
   },
 
-  async planUninstall(status, ctx) {
+  async planUninstall(status, ctx, _provider) {
     if (!status.installed) {
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     }

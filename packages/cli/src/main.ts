@@ -429,9 +429,15 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       // A variadic argument list goes through the same parser as --tools.
       const tools = parseTools(names.join(','), t) ?? []
       if (tools.length === 0) throw new CliError(t('cli.noTools'), EXIT_ERROR)
-      const renderer = new Renderer(stdout, t, [], ctx.home)
-      const plan = await planUninstalls(tools, ctx)
+      // The uninstall works without a config; it only narrows what the cleanup may touch,
+      // and `removeFromConfig` is the one that names a broken file.
+      const loaded = await loadConfigFile(configPath(flags.file))
+      const config = loaded.success ? loaded.config : undefined
+      const plan = await planUninstalls(tools, ctx, config?.provider)
       const previews = await previewPlan(plan, ctx.readFile)
+      // The cleanup steps print the values they take out, so they go out masked.
+      const fileSecrets = [...previews.values()].flatMap(preview => preview.secrets)
+      const renderer = new Renderer(stdout, t, config ? collectSecrets(config, fileSecrets) : fileSecrets, ctx.home)
       renderer.plan(plan, previews)
       if (!hasWork(plan, previews)) {
         renderer.line(t('cli.nothingToUninstall'))

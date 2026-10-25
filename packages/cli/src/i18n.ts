@@ -91,6 +91,7 @@ const en = {
   'notice.notInstalled': '{tool} is not installed.',
   'notice.foreignInstall':
     '{tool} was not installed through npm or its official installer, so ZCF leaves it. Uninstall it the way you installed it.',
+  'notice.foreignSettings': '{tool} keeps settings whose values ZCF did not write, so they stay.',
   'notice.upToDate': '{tool} is already up to date ({version}).',
   'notice.dshHomePatch':
     '{tool} now takes the provider and default model from ZCF in {file}, which outranks its Models page. Change them through ZCF.',
@@ -291,6 +292,7 @@ const zhCN: Record<MessageKey, string> = {
   'step.writeConfig': '更新 {file}',
   'notice.notInstalled': '{tool} 尚未安装。',
   'notice.foreignInstall': '{tool} 不是通过 npm 或官方安装器安装的，ZCF 不会动它。请用当初安装它的方式卸载。',
+  'notice.foreignSettings': '{tool} 存在并非 ZCF 写入的设置，已保留。',
   'notice.upToDate': '{tool} 已是最新版本（{version}）。',
   'notice.dshHomePatch':
     '{tool} 现在从 {file} 读取 ZCF 设置的供应商和默认模型，其优先级高于它的模型页面，请通过 ZCF 修改。',

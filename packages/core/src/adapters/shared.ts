@@ -35,12 +35,23 @@ export async function detectCommand(
  * npm 12 skips install scripts unless they are allowed by name, so a package whose postinstall
  * fetches or links its binary passes `allowScripts`; older npm ignores the option.
  */
+/** The `npm install -g` arguments the install and its fallback update share, so the flags stay in sync. */
+function npmInstallArgs(pkg: string, allowScripts: readonly string[], ignoreScripts: boolean): string[] {
+  return [
+    'install',
+    '-g',
+    ...(allowScripts.length > 0 ? [`--allow-scripts=${allowScripts.join(',')}`] : []),
+    ...(ignoreScripts ? ['--ignore-scripts'] : []),
+    pkg,
+  ]
+}
+
 export function npmInstallStep(tool: ToolId, pkg: string, allowScripts: readonly string[] = []): CommandStep {
   return {
     kind: 'command',
     title: { key: 'step.install', params: { tool } },
     command: 'npm',
-    args: ['install', '-g', ...(allowScripts.length > 0 ? [`--allow-scripts=${allowScripts.join(',')}`] : []), pkg],
+    args: npmInstallArgs(pkg, allowScripts, false),
   }
 }
 
@@ -98,17 +109,26 @@ export function npmFallbackUpdateStep(
           kind: 'command',
           title: { key: 'step.updateNpm', params: { tool } },
           command: 'npm',
-          args: [
-            'install',
-            '-g',
-            ...(allowScripts.length > 0 ? [`--allow-scripts=${allowScripts.join(',')}`] : []),
-            ...(ignoreScripts ? ['--ignore-scripts'] : []),
-            `${pkg}@latest`,
-          ],
+          args: npmInstallArgs(`${pkg}@latest`, allowScripts, ignoreScripts),
           fallback: true,
         }
       : undefined,
   )
+}
+
+/** A tool's own updater, with the npm fallback behind it when npm owns the package. */
+export async function selfUpdateSteps(
+  tool: ToolId,
+  status: ToolStatus,
+  args: string[],
+  pkg: string,
+  ctx: AdapterContext,
+  allowScripts: readonly string[] = [],
+  ignoreScripts = false,
+): Promise<CommandStep[]> {
+  const update = selfUpdateStep(tool, status, args)
+  const fallback = await npmFallbackUpdateStep(tool, pkg, ctx, allowScripts, ignoreScripts)
+  return fallback ? [update, fallback] : [update]
 }
 
 /** Whether the global npm prefix holds `pkg`, so `npm uninstall -g` is the uninstall for it. */
@@ -157,6 +177,26 @@ export async function npmUninstallSteps(
 }
 
 /** The file step that takes ZCF's own keys out of a native config file. */
+/**
+ * The provider settings ZCF may take out on uninstall: a key goes only when the file still
+ * holds exactly the value the config writes for it. Without a provider, or when a value
+ * differs, the writing may be the user's own and stays, reported as `foreign`.
+ */
+export function ownedSettingKeys(
+  keys: readonly string[],
+  desired: Record<string, string | undefined> | undefined,
+  current: Record<string, unknown>,
+): { keys: string[]; foreign: boolean } {
+  const owned: string[] = []
+  let foreign = false
+  for (const key of keys) {
+    if (!(key in current)) continue
+    if (desired?.[key] !== undefined && current[key] === desired[key]) owned.push(key)
+    else foreign = true
+  }
+  return { keys: owned, foreign }
+}
+
 export function cleanConfigStep(tool: ToolId, path: string, format: FileFormat, edits: KeyEdit[]): FileStep {
   return {
     kind: 'file',

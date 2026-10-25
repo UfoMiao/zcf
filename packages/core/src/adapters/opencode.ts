@@ -10,12 +10,11 @@ import {
   detectCommand,
   envPath,
   notice,
-  npmFallbackUpdateStep,
   npmInstallStep,
   npmOwned,
   npmUninstallStep,
   sameJson,
-  selfUpdateStep,
+  selfUpdateSteps,
   skillSteps,
   verifyStep,
 } from './shared'
@@ -221,17 +220,14 @@ export const opencode: ToolAdapter = {
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     }
     // `opencode upgrade` detects how it was installed (npm, script, brew, ...) and updates the same way.
-    const fallback = await npmFallbackUpdateStep(TOOL, NPM_PACKAGE, ctx, [NPM_PACKAGE])
     return {
       tool: TOOL,
-      steps: fallback
-        ? [selfUpdateStep(TOOL, status, ['upgrade']), fallback]
-        : [selfUpdateStep(TOOL, status, ['upgrade'])],
+      steps: await selfUpdateSteps(TOOL, status, ['upgrade'], NPM_PACKAGE, ctx, [NPM_PACKAGE]),
       notices: [],
     }
   },
 
-  async planUninstall(status, ctx) {
+  async planUninstall(status, ctx, _provider) {
     if (!status.installed) {
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     }
