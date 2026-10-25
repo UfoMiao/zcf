@@ -1,6 +1,7 @@
 import { join } from 'pathe'
 
 import { isTable, JsExpression, QuotedString } from '../io/editors'
+import { githubMirrorEnv } from '../mirror'
 import type { CommandStep, Notice, PlanStep } from '../plan/types'
 import type { SkillSource, ToolId } from '../schema/config'
 import type { AdapterContext, ToolStatus } from './types'
@@ -100,7 +101,16 @@ export function sameJson(a: unknown, b: unknown): boolean {
   return JSON.stringify(sorted(a)) === JSON.stringify(sorted(b))
 }
 
-export function skillsAddStep({ source, skills }: SkillSource, agent: string): CommandStep {
+/**
+ * Environment variables that come with every `npx skills add`: on the China mirror, the
+ * git configuration that clones from github.com through the mirror prefix. The skills CLI
+ * and everything else the command does stay exactly as they are.
+ */
+export function skillsAddStep(
+  { source, skills }: SkillSource,
+  agent: string,
+  gitMirrorEnv: Record<string, string> = {},
+): CommandStep {
   return {
     kind: 'command',
     title: {
@@ -109,6 +119,7 @@ export function skillsAddStep({ source, skills }: SkillSource, agent: string): C
     },
     command: 'npx',
     args: ['-y', 'skills', 'add', source, '-g', '-y', '-a', agent, ...skills.flatMap(name => ['-s', name])],
+    env: Object.keys(gitMirrorEnv).length > 0 ? gitMirrorEnv : undefined,
     // Tools apply in parallel, and concurrent `npx` runs of one package can break npx's shared cache.
     serial: 'npx-skills',
   }
@@ -137,7 +148,8 @@ export async function skillSteps(
       async source => source.skills.length === 0 || (await Promise.all(source.skills.map(isInstalled))).includes(false),
     ),
   )
-  return sources.filter((_, index) => needed[index]).map(source => skillsAddStep(source, target.agent))
+  const gitMirrorEnv = githubMirrorEnv(ctx.mirror ?? 'official', ctx.env)
+  return sources.filter((_, index) => needed[index]).map(source => skillsAddStep(source, target.agent, gitMirrorEnv))
 }
 
 /** An environment variable as a path, or `undefined` when it is unset or blank. */

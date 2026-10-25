@@ -470,7 +470,7 @@ describe('mirrors', () => {
     responses = { [install.join(' ')]: {} }
     const { code, stdout } = await run('apply', '--yes')
     expect(stdout).toContain(
-      'Downloading through China mirrors: npm packages come from https://registry.npmmirror.com.',
+      'Downloading through China mirrors: npm packages from https://registry.npmmirror.com, GitHub clones from gh-proxy.com.',
     )
     expect(stdout).toContain(`$ ${install.join(' ')}`)
     expect(calls).toContainEqual(install)
@@ -484,11 +484,11 @@ describe('mirrors', () => {
     await writeConfig({ version: 1, tools: ['claude-code'] })
     expect((await run('plan')).stdout).not.toContain('China mirrors')
     expect((await run('plan', '--mirror', 'china')).stdout).toContain(
-      'npm packages come from https://registry.npmmirror.com',
+      'npm packages from https://registry.npmmirror.com',
     )
     env = { npm_config_registry: 'https://me:s3cret@npm.example.com/path/?token=abc' }
     const own = await run('plan', '--mirror', 'china')
-    expect(own.stdout).toContain('npm packages come from https://npm.example.com.')
+    expect(own.stdout).toContain('npm packages from https://npm.example.com, GitHub clones from gh-proxy.com')
     expect(own.stdout).not.toContain('s3cret')
     expect(own.stdout).not.toContain('abc')
   })

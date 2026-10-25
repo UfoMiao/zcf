@@ -25,7 +25,8 @@ const en = {
   'cli.unknownMirror': 'Unknown mirror: {mirror}. Choose from {known}.',
   'cli.unknownEnvMirror': 'ZCF_MIRROR={value} is not a mirror ({known}), so it is ignored.',
   'cli.configMirrorIgnored': 'The ZCF config at {path} could not be read, so its mirror setting is not used.',
-  'cli.mirrorInUse': 'Downloading through China mirrors: npm packages come from {registry}.',
+  'cli.mirrorInUse':
+    'Downloading through China mirrors: npm packages from {registry}, GitHub clones from gh-proxy.com.',
   'cli.mirrorCurrent': 'Download mirror: {mirror} ({source})',
   'cli.mirrorSource.env': 'from ZCF_MIRROR',
   'cli.mirrorSource.config': 'from {path}',
@@ -139,7 +140,7 @@ const en = {
     'ZCF_MIRROR is set, so ZCF uses {mirror} while it runs in this shell. What you save here applies once it is unset.',
   'field.mirror': 'Download mirror',
   'hint.mirror':
-    'China mirrors: npm packages from registry.npmmirror.com, provider presets from jsDelivr hosts reachable in mainland China',
+    'China mirrors: npm packages from registry.npmmirror.com, GitHub clones through gh-proxy.com, provider presets from jsDelivr hosts reachable in mainland China',
   'field.language': 'Language',
   'hint.language':
     'What ZCF shows its interface in. Auto follows the system locale; --lang or ZCF_LANG overrides it for a run.',
@@ -216,7 +217,7 @@ const zhCN: Record<MessageKey, string> = {
   'cli.unknownMirror': '无法识别的镜像：{mirror}。可选：{known}。',
   'cli.unknownEnvMirror': 'ZCF_MIRROR={value} 不是可用的镜像（{known}），已忽略。',
   'cli.configMirrorIgnored': '无法读取 {path} 的 ZCF 配置，本次不使用其中的镜像设置。',
-  'cli.mirrorInUse': '正在使用国内镜像：npm 包从 {registry} 下载。',
+  'cli.mirrorInUse': '正在使用国内镜像：npm 包从 {registry} 下载，GitHub 克隆经 gh-proxy.com。',
   'cli.mirrorCurrent': '下载源：{mirror}（{source}）',
   'cli.mirrorSource.env': '来自 ZCF_MIRROR',
   'cli.mirrorSource.config': '来自 {path}',
@@ -327,7 +328,8 @@ const zhCN: Record<MessageKey, string> = {
   'tui.settings.intro': 'ZCF 自身的设置，不会写入任何工具的配置。',
   'tui.settings.envMirror': '当前设置了 ZCF_MIRROR，在这个终端里运行时使用{mirror}。这里保存的选择在去掉该变量后生效。',
   'field.mirror': '下载源',
-  'hint.mirror': '国内镜像：npm 包从 registry.npmmirror.com 下载，供应商预设走国内可访问的 jsDelivr 节点',
+  'hint.mirror':
+    '国内镜像：npm 包从 registry.npmmirror.com 下载，GitHub 克隆经 gh-proxy.com，供应商预设走国内可访问的 jsDelivr 节点',
   'field.language': '界面语言',
   'hint.language': 'ZCF 界面显示的语言。“跟随系统”按系统语言显示；--lang 或 ZCF_LANG 可临时覆盖。',
   'language.auto': '跟随系统',

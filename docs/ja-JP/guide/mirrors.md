@@ -28,14 +28,14 @@ npx zcf mirror official   # 元に戻す
 | ダウンロード | `china` の場合 |
 |--------------|----------------|
 | npm のインストール（`npm install -g`、`npx skills add`、npm でインストールしたツール自身のアップデーター） | `https://registry.npmmirror.com` を使います。`npm_config_registry` で設定済みのレジストリはそのまま使います。 |
+| `npx skills add owner/repo` 内部の git clone | [magpie](https://github.com/yetone/magpie) の `--mirror` と同じく、`https://gh-proxy.com/https://github.com/...` 経由にします。書き換わるのはダウンロード先だけです。git は `github.com` のリポジトリが名付けたオブジェクトハッシュで受け取ったすべてを検証するため、別の内容を返すミラーでは clone が失敗します。設定済みの `GIT_CONFIG_COUNT` はそのまま使います。 |
 | Claude Code のインストール | Google Cloud Storage からダウンロードする公式スクリプトの代わりに、同じネイティブバイナリをインストールする `npm install -g @anthropic-ai/claude-code` を使います。 |
 | [プロバイダープリセット](./providers) など ZCF リポジトリのファイル | `fastly.jsdelivr.net` と `gcore.jsdelivr.net` にも問い合わせ、最初に応答したものを使います。 |
 
-ZCF が使うのは、まったく同じファイルを配信するミラーだけです。異なる内容を返す可能性のあるプロキシは使いません。
+ZCF が使うのは、まったく同じファイルを配信するミラーだけです。唯一の例外は上の git clone で、そこでは git 自身のオブジェクトハッシュ検証が、リポジトリ自身のバイト以外を返すミラーを検出します。
 
 ## 対象外
 
-- `npx skills add owner/repo` が行う git clone。
 - 公式スクリプトでインストールした Claude Code の `claude update` のような、ネイティブの自己更新。該当する場合は `zcf update` がその旨を表示します。
 - ツール内で MCP サーバーが実行する `npx`。
 - プロバイダー自身のエンドポイント。

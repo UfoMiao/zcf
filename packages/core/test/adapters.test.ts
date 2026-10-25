@@ -129,13 +129,20 @@ function mirrorConfig(mirror: 'official' | 'china') {
   return result.success ? result.config : undefined!
 }
 
+/** The git environment that sends an `npx skills add` clone through the mirror. */
+const gitEnv = {
+  GIT_CONFIG_COUNT: '1',
+  GIT_CONFIG_KEY_0: 'url.https://gh-proxy.com/https://github.com.insteadOf',
+  GIT_CONFIG_VALUE_0: 'https://github.com',
+}
+
 describe('mirrors', () => {
   const registry = { npm_config_registry: 'https://registry.npmmirror.com' }
 
-  it("points every command at the China mirror's npm registry", async () => {
+  it("points every command at the China mirror's npm registry, and every skills clone at its GitHub mirror", async () => {
     const plan = await planTools(mirrorConfig('china'), ctx)
-    // Codex is missing here: npm install, then npx skills, for both tools.
-    expect(commandEnvs(plan)).toEqual([registry, registry, registry])
+    // Codex is missing here: npm install, then npx skills; Claude Code only runs npx skills.
+    expect(commandEnvs(plan)).toEqual([{ ...registry, ...gitEnv }, registry, { ...registry, ...gitEnv }])
     expect(plan.tools[0]!.steps[0]).toMatchObject({ command: 'npx', args: expect.arrayContaining(['skills']) })
   })
 
@@ -145,14 +152,18 @@ describe('mirrors', () => {
 
   it('lets ZCF_MIRROR, then the caller, override the config', async () => {
     const envCtx = createContext({ ...ctx, env: { ZCF_MIRROR: 'cn' } })
-    expect(commandEnvs(await planTools(mirrorConfig('official'), envCtx))).toEqual([registry, registry, registry])
+    expect(commandEnvs(await planTools(mirrorConfig('official'), envCtx))).toEqual([
+      { ...registry, ...gitEnv },
+      registry,
+      { ...registry, ...gitEnv },
+    ])
     const callerCtx = createContext({ ...envCtx, mirror: 'official' })
     expect(commandEnvs(await planTools(mirrorConfig('china'), callerCtx))).toEqual([undefined, undefined, undefined])
   })
 
-  it('keeps an npm registry the user already chose', async () => {
+  it('keeps an npm registry the user already chose; the git mirror is a separate choice', async () => {
     const own = createContext({ ...ctx, env: { NPM_CONFIG_REGISTRY: 'https://npm.example.com' } })
-    expect(commandEnvs(await planTools(mirrorConfig('china'), own))).toEqual([undefined, undefined, undefined])
+    expect(commandEnvs(await planTools(mirrorConfig('china'), own))).toEqual([gitEnv, undefined, gitEnv])
   })
 
   it("sends tools' own updaters through the mirror, which they use on npm installs", async () => {
@@ -160,6 +171,23 @@ describe('mirrors', () => {
     expect(plan.tools[0]!.steps).toEqual([
       expect.objectContaining({ command: 'claude', args: ['update'], env: registry }),
     ])
+  })
+
+  it('rewrites only the download address: a clone is still resolved against official github.com', async () => {
+    const plan = await planTools(mirrorConfig('china'), ctx)
+    const skillsStep = plan.tools[0]!.steps[0]
+    // The mirror prefix appears only in the URL git rewrites the download to; the URL it
+    // rewrites from, the one that names the repository and its object hashes, stays
+    // github.com itself. Nothing in the environment touches how git verifies the objects.
+    expect(skillsStep?.kind === 'command' && skillsStep.env).toEqual({ ...registry, ...gitEnv })
+    expect(gitEnv.GIT_CONFIG_VALUE_0).toBe('https://github.com')
+    expect(gitEnv.GIT_CONFIG_KEY_0).toContain('https://gh-proxy.com/https://github.com')
+  })
+
+  it('keeps the git configuration the user already passes a child process', async () => {
+    const own = createContext({ ...ctx, env: { GIT_CONFIG_COUNT: '2' } })
+    const plan = await planTools(mirrorConfig('china'), own)
+    expect(commandEnvs(plan)).toEqual([registry, registry, registry])
   })
 })
 
