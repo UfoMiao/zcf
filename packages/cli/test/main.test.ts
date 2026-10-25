@@ -437,6 +437,26 @@ describe('zcf uninstall', () => {
     expect(stdout).toContain('Claude Code still runs after uninstalling')
   })
 
+  it('says there is nothing to uninstall for a tool that is not installed', async () => {
+    responses['claude --version'] = { exitCode: 1, stderr: 'gone' }
+    const { code, stdout } = await run('uninstall', 'claude-code', '--yes')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Nothing to uninstall.')
+  })
+
+  it('names a broken config instead of guessing the tools list', async () => {
+    responses['claude --version'] = { stdout: '2.1.0' }
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    responses['npm uninstall -g @anthropic-ai/claude-code'] = {}
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    const broken = '{ "version": 1, "tools": ["claude-code"],, }'
+    await writeFile(configFile(), broken)
+    const { code, stderr } = await run('uninstall', 'claude-code', '--yes')
+    expect(code).toBe(EXIT_ERROR)
+    expect(stderr).toContain('~/.ufomiao/zcf/zcf.json is not valid JSON')
+    expect(await readFile(configFile(), 'utf8')).toBe(broken)
+  })
+
   it('rejects unknown tools and an empty list', async () => {
     expect(await run('uninstall', 'nope')).toMatchObject({
       code: EXIT_ERROR,

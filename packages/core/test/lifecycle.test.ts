@@ -90,6 +90,36 @@ describe('the npm fallback behind a tool updater', () => {
     })
   })
 
+  it('plans the npm fallback behind codex update, with no install flags of its own', async () => {
+    const runner = fakeRunner({
+      'codex --version': { stdout: 'codex-cli 0.164.0' },
+      'npm ls -g @openai/codex --depth=0': {},
+    })
+    const plan = await planUpdates(['codex'], context({ runner }))
+    expect(plan.tools[0]!.steps[1]).toEqual({
+      kind: 'command',
+      title: { key: 'step.updateNpm', params: { tool: 'codex' } },
+      command: 'npm',
+      args: ['install', '-g', '@openai/codex@latest'],
+      fallback: true,
+    })
+  })
+
+  it('plans the npm fallback behind opencode upgrade with its allow-scripts flag', async () => {
+    const runner = fakeRunner({
+      'opencode --version': { stdout: '2.4.5' },
+      'npm ls -g opencode-ai --depth=0': {},
+    })
+    const plan = await planUpdates(['opencode'], context({ runner }))
+    expect(plan.tools[0]!.steps[1]).toEqual({
+      kind: 'command',
+      title: { key: 'step.updateNpm', params: { tool: 'opencode' } },
+      command: 'npm',
+      args: ['install', '-g', '--allow-scripts=opencode-ai', 'opencode-ai@latest'],
+      fallback: true,
+    })
+  })
+
   it('runs the fallback when the updater fails, and not when it works', async () => {
     const failing = npmOwnedClaude({ 'claude update': { exitCode: 1, stderr: 'updater broke' } })
     const plan = await planUpdates(['claude-code'], context({ runner: failing }))
@@ -193,6 +223,19 @@ describe('planUninstalls', () => {
     ])
   })
 
+  it('deletes the standalone Codex files with the Windows name, and leaves a config naming another provider', async () => {
+    const runner = fakeRunner({ 'codex --version': { stdout: 'codex-cli 0.164.0' } })
+    const windows = await planUninstalls(['codex'], context({ platform: 'win32', runner }))
+    expect(lines(windows)).toEqual([`${HOME}/.local/bin/codex.exe`, `${HOME}/.codex/packages/standalone`])
+
+    // A config.toml that names another provider has nothing of ZCF's to take out.
+    const files = {
+      [`${HOME}/.codex/config.toml`]: 'model_provider = "own"\n\n[model_providers.own]\nname = "mine"\n',
+    }
+    const own = await planUninstalls(['codex'], context({ runner }, files))
+    expect(lines(own)).toEqual([`${HOME}/.local/bin/codex`, `${HOME}/.codex/packages/standalone`])
+  })
+
   it('uninstalls Gemini CLI through npm and takes its keys out of .env', async () => {
     const files = { [`${HOME}/.gemini/.env`]: 'GEMINI_API_KEY=k\nGOOGLE_GEMINI_BASE_URL=https://gw\n' }
     const runner = fakeRunner({
@@ -244,6 +287,12 @@ describe('planUninstalls', () => {
     ])
   })
 
+  it('runs the OpenCode uninstaller alone when it left no config behind', async () => {
+    const script = fakeRunner({ 'opencode --version': { stdout: '2.4.5' } })
+    const plan = await planUninstalls(['opencode'], context({ runner: script }))
+    expect(lines(plan)).toEqual(['opencode uninstall --keep-config --keep-data'])
+  })
+
   it('deletes the Cursor CLI files, from LOCALAPPDATA on Windows', async () => {
     const runner = fakeRunner({ 'cursor-agent --version': { stdout: '1.2.0' } })
     const linux = await planUninstalls(['cursor'], context({ runner }))
@@ -254,6 +303,10 @@ describe('planUninstalls', () => {
       context({ platform: 'win32', env: { LOCALAPPDATA: 'C:/Users/me/AppData/Local' }, runner }),
     )
     expect(lines(windows)).toEqual(['C:/Users/me/AppData/Local/cursor-agent'])
+
+    // Without LOCALAPPDATA the default location under the home folder answers instead.
+    const bare = await planUninstalls(['cursor'], context({ platform: 'win32', runner }))
+    expect(lines(bare)).toEqual([`${HOME}/AppData/Local/cursor-agent`])
   })
 
   it("takes pi's provider entry and the picks that point at it", async () => {
@@ -336,9 +389,11 @@ describe('planUninstalls', () => {
     ])
   })
 
-  it('only notes a tool that is not installed', async () => {
-    const plan = await planUninstalls(['codex'], context())
-    expect(plan.tools[0]).toMatchObject({ steps: [], notices: [{ message: { key: 'notice.notInstalled' } }] })
+  it('only notes tools that are not installed', async () => {
+    const plan = await planUninstalls(['claude-code', 'codex', 'opencode', 'cursor'], context())
+    for (const tool of plan.tools) {
+      expect(tool).toMatchObject({ steps: [], notices: [{ message: { key: 'notice.notInstalled' } }] })
+    }
   })
 })
 
