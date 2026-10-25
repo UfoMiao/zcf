@@ -1,0 +1,140 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/*
+ * ZCF web UI tokens. Cool neutral surfaces, the ZCF teal as the only accent, and
+ * system fonts: sans for the interface, mono as the identity carrier (paths,
+ * commands, server names, diffs). Dark mode follows the system, as before.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-diff-add-bg: var(--diff-add-bg);
+  --color-diff-add-fg: var(--diff-add-fg);
+  --color-diff-del-bg: var(--diff-del-bg);
+  --color-diff-del-fg: var(--diff-del-fg);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 2px);
+}
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: #f5f6f7;
+  --foreground: #1a1d21;
+  --card: #ffffff;
+  --card-foreground: #1a1d21;
+  --popover: #ffffff;
+  --popover-foreground: #1a1d21;
+  --primary: #0e7c86;
+  --primary-foreground: #ffffff;
+  --secondary: #eef0f2;
+  --secondary-foreground: #1a1d21;
+  --muted: #eef0f2;
+  --muted-foreground: #5f6470;
+  --accent: #e9f1f2;
+  --accent-foreground: #123b40;
+  --destructive: #c4314b;
+  --destructive-foreground: #ffffff;
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --border: #e2e5e9;
+  --input: #d3d8de;
+  --ring: #0e7c86;
+  --diff-add-bg: #e6f4ea;
+  --diff-add-fg: #116329;
+  --diff-del-bg: #fdebe9;
+  --diff-del-fg: #82071e;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0f1013;
+    --foreground: #e8eaee;
+    --card: #16171b;
+    --card-foreground: #e8eaee;
+    --popover: #16171b;
+    --popover-foreground: #e8eaee;
+    --primary: #3bb8c1;
+    --primary-foreground: #052a2d;
+    --secondary: #1d1f24;
+    --secondary-foreground: #e8eaee;
+    --muted: #1d1f24;
+    --muted-foreground: #9aa0ac;
+    --accent: #1f2628;
+    --accent-foreground: #d7f0f2;
+    --destructive: #e5534b;
+    --destructive-foreground: #ffffff;
+    --success: #4ac26b;
+    --warning: #d29a3a;
+    --border: #262930;
+    --input: #33373f;
+    --ring: #3bb8c1;
+    --diff-add-bg: #123622;
+    --diff-add-fg: #57cd75;
+    --diff-del-bg: #3d151c;
+    --diff-del-fg: #ff9d9d;
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans text-sm antialiased;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 25%, transparent);
+  }
+
+  /* The brand cursor's single blink on load; skipped entirely for reduced motion. */
+  @keyframes cursor {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
