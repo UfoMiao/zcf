@@ -63,7 +63,7 @@ const zhSidebar: DefaultTheme.SidebarItem[] = createSidebar([
   {
     text: '参考',
     items: [
-      { text: '工具', link: 'guide/tools' },
+      { text: 'Agent 工具', link: 'guide/tools' },
       { text: '备份与故障排除', link: 'guide/troubleshooting' },
       { text: '参与贡献', link: 'guide/contributing' },
     ],
@@ -191,7 +191,7 @@ export default defineConfig({
           { text: '快速开始', link: '/zh-CN/guide/' },
           { text: '配置', link: '/zh-CN/guide/config' },
           { text: '命令', link: '/zh-CN/guide/commands' },
-          { text: '工具', link: '/zh-CN/guide/tools' },
+          { text: 'Agent 工具', link: '/zh-CN/guide/tools' },
         ],
         sidebar: {
           '/zh-CN/': zhSidebar,

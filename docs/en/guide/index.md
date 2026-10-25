@@ -39,7 +39,7 @@ npx zcf ui
 
 Both editors work on the same file, `~/.ufomiao/zcf/zcf.json`, and have the same pages:
 
-1. **Tools**: tick the tools you use. Each one shows whether it is installed and its version.
+1. **Agent tools**: tick the agent tools you use. Each one shows whether it is installed and its version.
 2. **Provider**: start from a [preset](./providers) or fill in the endpoint and API key yourself.
 3. **MCP servers**: add `stdio` servers (a command) or `http` servers (a URL).
 4. **Skills**: add skill sources that `npx skills add` accepts.
