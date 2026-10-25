@@ -334,12 +334,19 @@ describe('terminal UI', () => {
 
   it('keeps a single built-in row for a zcf source that names no skills', async () => {
     // `{ source: 'zcf' }` with no list means every built-in skill; it already has a row.
-    const { service } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf' }] })
+    const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf' }] })
     const app = await start(service)
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('ZCF built-in skills')
     expect(app.frame()).toContain('all skills')
     expect(app.frame().match(/ZCF built-in skills/g)).toHaveLength(1)
+    // Removing it leaves the stand-in row, which a plain source takes over again.
+    await app.press('x')
+    expect(app.frame()).toContain('+ ZCF built-in skills')
+    await app.press(KEY.down, KEY.down, KEY.enter, 'a', '/', 'b', KEY.enter)
+    expect(app.frame()).toContain('a/b')
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], skills: [{ source: 'a/b' }] }])
     app.unmount()
   })
 
@@ -378,6 +385,29 @@ describe('terminal UI', () => {
       },
     ])
     app.unmount()
+  })
+
+  it('says when a search matches nothing, and when the index cannot answer', async () => {
+    // With no sources yet, the list is the catalog stand-in, search and add: one down reaches search.
+    const empty = fakeService({ version: 1, tools: [] }, {
+      searchSkills: async () => ({ skills: [], source: 'remote' as const }),
+    })
+    const app = await start(empty.service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    expect(await app.until('No skills found')).toContain('No skills found')
+    app.unmount()
+
+    const offline = fakeService({ version: 1, tools: [] }, {
+      searchSkills: async () => {
+        throw new Error('offline')
+      },
+    })
+    const retry = await start(offline.service)
+    await retry.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await retry.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    expect(await retry.until('Search failed')).toContain('Search failed')
+    retry.unmount()
   })
 
   it('fills the provider from a preset and keeps the API key', async () => {
