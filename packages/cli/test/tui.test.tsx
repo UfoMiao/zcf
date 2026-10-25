@@ -117,7 +117,9 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Settings')
     await app.press(KEY.enter)
     expect(app.frame()).toContain('Download mirror')
-    expect(app.frame()).toContain('official sources (default)')
+    // An unset select shows its first option, the schema default, with no extra placeholder.
+    expect(app.frame()).toContain('official sources')
+    expect(app.frame()).not.toContain('(default)')
     // From the default, the next option is the China mirror.
     await app.press(KEY.right)
     expect(app.frame()).toContain('China mirrors')

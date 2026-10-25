@@ -8,6 +8,7 @@ import {
   mcpFields,
   parseArgs,
   renameKey,
+  selectValue,
   setAt,
   fieldValue,
   validateDraft,
@@ -40,6 +41,21 @@ describe('setAt', () => {
     expect(fieldValue({ label: 'a', path: ['a'], kind: 'text' }, '')).toBeUndefined()
     expect(fieldValue({ label: 'a', path: ['a'], kind: 'text', required: true }, '')).toBe('')
     expect(fieldValue({ label: 'a', path: ['a'], kind: 'text' }, 'x')).toBe('x')
+  })
+
+  it('maps an unset select to its first option, the schema default', () => {
+    expect(selectValue({ label: 'a', path: ['a'], kind: 'select', options: ['official', 'china'] }, undefined)).toBe(
+      'official',
+    )
+    expect(selectValue({ label: 'a', path: ['a'], kind: 'select', options: ['official', 'china'] }, '')).toBe(
+      'official',
+    )
+    expect(selectValue({ label: 'a', path: ['a'], kind: 'select', options: ['official', 'china'] }, 'china')).toBe(
+      'china',
+    )
+    // A value that is not an option shows as it is, so choosing any option changes it.
+    expect(selectValue({ label: 'a', path: ['a'], kind: 'select', options: ['official', 'china'] }, 'cn')).toBe('cn')
+    expect(selectValue({ label: 'a', path: ['a'], kind: 'select' }, undefined)).toBe('')
   })
 
   it('edits and removes list items', () => {
