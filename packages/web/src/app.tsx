@@ -1,17 +1,47 @@
 import type { ToolId, ToolStatus } from '@zcf/core'
 import type { PageId } from '@zcf/ui-kit'
+import { isLang } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import { useEffect, useState } from 'react'
 
-import type { Translate } from './api'
-import { httpService, tildify } from './api'
+import type { Lang, Translate } from './api'
+import { browserLang, httpService, setRequestLang, tildify } from './api'
 import { ApplyPage, McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
 
-export function App({ t, lang }: { t: Translate; lang: string }) {
+export function App({
+  startupLang,
+  langPinned,
+  translators,
+}: {
+  startupLang: Lang
+  langPinned: boolean
+  translators: Record<Lang, Translate>
+}) {
   const editor = useConfigEditor(httpService)
   const [page, setPage] = useState<PageId>('tools')
   const [status, setStatus] = useState<{ text: string; tone: 'info' | 'warning' | 'error' }>()
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
+  // Set before the first render ends, so even the config's own first request names the right language.
+  const [uiLang, setUiLang] = useState<Lang>(() => {
+    const initial = langPinned ? startupLang : browserLang()
+    setRequestLang(initial)
+    return initial
+  })
+  const t = translators[uiLang]
+
+  // The Settings page's language choice moves the UI itself, before it is even saved;
+  // `auto` follows the browser, while a pinned flag keeps what the server started with.
+  const draftLanguage = editor.status === 'ready' ? editor.draft.language : undefined
+  useEffect(() => {
+    if (langPinned) return
+    const next = isLang(draftLanguage) ? draftLanguage : browserLang()
+    if (next !== uiLang) setUiLang(next)
+  }, [draftLanguage, langPinned, uiLang])
+
+  useEffect(() => {
+    document.documentElement.lang = uiLang
+    setRequestLang(uiLang)
+  }, [uiLang])
 
   useEffect(() => {
     httpService.detect(TOOL_OPTIONS).then(setDetected, () => setDetected({}))
@@ -97,7 +127,7 @@ export function App({ t, lang }: { t: Translate; lang: string }) {
       <main>
         <h2>{t(`tui.page.${page}`)}</h2>
         {page === 'tools' && <ToolsPage editor={editor} t={t} detected={detected} />}
-        {page === 'provider' && <ProviderPage editor={editor} t={t} lang={lang} />}
+        {page === 'provider' && <ProviderPage editor={editor} t={t} lang={uiLang} />}
         {page === 'mcp' && <McpPage editor={editor} t={t} />}
         {page === 'skills' && <SkillsPage editor={editor} t={t} />}
         {page === 'settings' && <SettingsPage editor={editor} t={t} />}

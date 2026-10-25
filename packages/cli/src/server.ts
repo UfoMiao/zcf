@@ -10,7 +10,7 @@ import { isTable, TOOL_OPTIONS } from '@zcf/ui-kit'
 import { extname, join, normalize } from 'pathe'
 
 import type { Lang } from './i18n'
-import { createTranslator, errorText, messagesFor } from './i18n'
+import { createTranslator, errorText, isLang, messagesFor } from './i18n'
 import { maskSecrets } from './render'
 
 export interface Asset {
@@ -20,7 +20,10 @@ export interface Asset {
 
 export interface UiServerOptions {
   service: ZcfService
+  /** The language the server's own strings start from; each request can override it. */
   lang: Lang
+  /** `--lang` or `ZCF_LANG` fixed the language, so the web UI stops following the config. */
+  langPinned?: boolean
   /** Shown as `~` in paths. */
   home: string
   /** Serves the built web app; `path` is like `/assets/index.js`. */
@@ -118,9 +121,15 @@ function sameToken(given: string | undefined, token: string): boolean {
  */
 export async function startUiServer(options: UiServerOptions): Promise<UiServer> {
   const { service, lang } = options
-  const t = createTranslator(lang)
   const token = options.token ?? randomBytes(24).toString('base64url')
   let port = 0
+
+  // Errors speak the language the browser is showing, when it names a valid one.
+  const t = (request: IncomingMessage) => {
+    const raw = request.headers['x-zcf-lang']
+    const asked = typeof raw === 'string' ? raw : undefined
+    return createTranslator(isLang(asked) ? asked : lang)
+  }
 
   async function api(request: IncomingMessage, response: ServerResponse, url: URL): Promise<void> {
     const route = url.pathname.slice('/api/'.length)
@@ -129,7 +138,13 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
     const method = request.method ?? 'GET'
 
     if (route === 'session' && method === 'GET')
-      return send(response, 200, { lang, home: options.home, messages: messagesFor(lang) })
+      // Both dictionaries go out, so the browser can switch languages without asking again.
+      return send(response, 200, {
+        lang,
+        langPinned: options.langPinned ?? false,
+        home: options.home,
+        messages: { en: messagesFor('en'), 'zh-CN': messagesFor('zh-CN') },
+      })
     if (route === 'config' && method === 'GET') return send(response, 200, await service.load())
     if (route === 'config' && method === 'PUT') {
       const body = await readJson(request)
@@ -158,7 +173,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
         )
       } catch (error) {
         // The response has started, so the failure travels as the last event instead of a status code.
-        write({ type: 'error', error: mask(errorText(error, t)) })
+        write({ type: 'error', error: mask(errorText(error, t(request))) })
         response.end()
         return
       }
@@ -193,7 +208,7 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
         })
     handle.catch((error: unknown) => {
       if (response.headersSent) response.end()
-      else send(response, 500, { error: errorText(error, t) })
+      else send(response, 500, { error: errorText(error, t(request)) })
     })
   })
 

@@ -161,7 +161,7 @@ describe('terminal UI', () => {
     const app = await start(service)
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Language')
-    expect(app.frame()).toContain('Auto (system locale)')
+    expect(app.frame()).toContain('Auto')
     // Language sits under the mirror: auto → en → zh-CN.
     await app.press(KEY.down, KEY.right)
     expect(app.frame()).toContain('English')
@@ -200,7 +200,7 @@ describe('terminal UI', () => {
     // goes back to the startup locale with it.
     await app.press(KEY.down, KEY.right)
     expect(app.frame()).toContain('Tools')
-    expect(app.frame()).toContain('Auto (system locale)')
+    expect(app.frame()).toContain('Auto')
     await app.press(KEY.right)
     expect(app.frame()).toContain('English')
     await app.press(KEY.save)

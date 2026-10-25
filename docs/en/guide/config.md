@@ -113,7 +113,7 @@ A source that lists its skills is skipped once all of them are installed. A sour
 
 ## `language`
 
-`auto` (the default), `en` or `zh-CN`. The language ZCF's editors show their interface in. Both editors follow it — the terminal UI switches as soon as the Settings page changes it — and `--lang` or `ZCF_LANG` outranks it for a run. Command output (`zcf plan`, `apply`, `update`) does not read this setting: it follows `--lang` or `ZCF_LANG`, then the system locale.
+`auto` (the default), `en` or `zh-CN`. The language ZCF's editors show their interface in. Both editors follow it and switch as soon as the Settings page changes it, before the change is saved; with `auto`, the web UI follows the browser's language and the terminal UI the system locale. `--lang` or `ZCF_LANG` outranks it for a run, and the editors then stop following the setting. Command output (`zcf plan`, `apply`, `update`) does not read this setting: it follows `--lang` or `ZCF_LANG`, then the system locale.
 
 ## Environment variables
 

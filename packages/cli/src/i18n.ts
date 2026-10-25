@@ -1,9 +1,10 @@
 import process from 'node:process'
 
 import { MessageError } from '@zcf/core'
+import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
 
-export const LANGS = ['en', 'zh-CN'] as const
-export type Lang = (typeof LANGS)[number]
+export { LANGS, isLang } from '@zcf/ui-kit'
+export type { Lang } from '@zcf/ui-kit'
 
 const en = {
   'cli.description': "One config for all your AI coding tools, written as each tool's own settings",
@@ -143,8 +144,8 @@ const en = {
     'China mirrors: npm packages from registry.npmmirror.com, GitHub clones through gh-proxy.com, provider presets from jsDelivr hosts reachable in mainland China',
   'field.language': 'Language',
   'hint.language':
-    'What ZCF shows its interface in. Auto follows the system locale; --lang or ZCF_LANG overrides it for a run.',
-  'language.auto': 'Auto (system locale)',
+    "What ZCF shows its interface in. Auto follows the browser's language in the web UI and the system locale in the terminal; --lang or ZCF_LANG pins it for a run.",
+  'language.auto': 'Auto',
   'language.en': 'English',
   'language.zh-CN': '简体中文',
   'tui.bannerSubtitle': 'One config for your AI tools',
@@ -331,7 +332,8 @@ const zhCN: Record<MessageKey, string> = {
   'hint.mirror':
     '国内镜像：npm 包从 registry.npmmirror.com 下载，GitHub 克隆经 gh-proxy.com，供应商预设走国内可访问的 jsDelivr 节点',
   'field.language': '界面语言',
-  'hint.language': 'ZCF 界面显示的语言。“跟随系统”按系统语言显示；--lang 或 ZCF_LANG 可临时覆盖。',
+  'hint.language':
+    'ZCF 界面显示的语言。“跟随系统”在网页端按浏览器语言、在终端按系统语言显示；--lang 或 ZCF_LANG 可临时固定。',
   'language.auto': '跟随系统',
   'language.en': 'English',
   'language.zh-CN': '简体中文',
@@ -385,10 +387,6 @@ const zhCN: Record<MessageKey, string> = {
 const english: Record<string, string> = en
 const dictionaries: Record<Lang, Record<string, string>> = { en: english, 'zh-CN': zhCN }
 
-export function isLang(value: unknown): value is Lang {
-  return LANGS.some(lang => lang === value)
-}
-
 /** `--lang` wins, then ZCF_LANG, then the system locale. */
 export function detectLang(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): Lang {
   const index = argv.findIndex(arg => arg === '--lang' || arg.startsWith('--lang='))
@@ -409,10 +407,7 @@ export type Translate = (key: string, params?: Record<string, string | number>) 
 
 export function createTranslator(lang: Lang): Translate {
   const dictionary = dictionaries[lang]
-  return (key, params = {}) => {
-    const template = dictionary[key] ?? english[key] ?? key
-    return template.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match))
-  }
+  return (key, params = {}) => interpolate(dictionary[key] ?? english[key] ?? key, params)
 }
 
 /** The text of an error, translated when it carries a message key. */

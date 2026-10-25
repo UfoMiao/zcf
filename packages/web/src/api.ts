@@ -1,16 +1,25 @@
 import type { Message, PresetList, ToolStatus } from '@zcf/core'
 import { isToolId, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, Draft, LoadedConfig, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
+import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
+
+export type { Lang } from '@zcf/ui-kit'
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string
 
 // `zcf ui` puts the session token in the URL fragment, which browsers never send to servers.
 const token = new URLSearchParams(location.hash.slice(1)).get('token') ?? ''
 
+// Sent with every call, so the server's own errors speak the language the page is showing.
+let requestLang: Lang = 'en'
+export function setRequestLang(lang: Lang): void {
+  requestLang = lang
+}
+
 async function call(path: string, init: Omit<RequestInit, 'headers'> = {}): Promise<Response> {
   const response = await fetch(`/api/${path}`, {
     ...init,
-    headers: { 'content-type': 'application/json', 'x-zcf-token': token },
+    headers: { 'content-type': 'application/json', 'x-zcf-token': token, 'x-zcf-lang': requestLang },
   })
   if (!response.ok) {
     const body: unknown = await response.json().catch(() => undefined)
@@ -33,15 +42,36 @@ export function tildify(path: string): string {
   return home && path.startsWith(home) ? `~${path.slice(home.length)}` : path
 }
 
-export async function loadTranslator(): Promise<{ lang: string; t: Translate }> {
-  const session = await json<{ lang: string; home: string; messages: Record<string, string> }>('session')
-  const { lang, messages } = session
+/** The language the browser itself asks for: any Chinese locale becomes `zh-CN`. */
+export function browserLang(): Lang {
+  return navigator.languages.some(code => code.toLowerCase().startsWith('zh')) ? 'zh-CN' : 'en'
+}
+
+export interface Session {
+  /** The language the server resolved at startup, shown while the language is pinned. */
+  startupLang: Lang
+  /** `--lang` or `ZCF_LANG` fixed the language, so the UI stops following the config. */
+  langPinned: boolean
+  translators: Record<Lang, Translate>
+}
+
+export async function loadSession(): Promise<Session> {
+  const session = await json<{
+    lang: string
+    langPinned: boolean
+    home: string
+    messages: Record<string, Record<string, string>>
+  }>('session')
   home = session.home
-  const t: Translate = (key, params = {}) =>
-    (messages[key] ?? key).replace(/\{(\w+)\}/g, (match, name: string) =>
-      name in params ? String(params[name]) : match,
-    )
-  return { lang, t }
+  const of = (lang: Lang): Translate => {
+    const messages = session.messages[lang] ?? {}
+    return (key, params = {}) => interpolate(messages[key] ?? key, params)
+  }
+  return {
+    startupLang: isLang(session.lang) ? session.lang : 'en',
+    langPinned: session.langPinned,
+    translators: { en: of('en'), 'zh-CN': of('zh-CN') },
+  }
 }
 
 /** A core message in the user's language, with tool ids shown by name. */

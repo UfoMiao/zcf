@@ -91,9 +91,13 @@ afterEach(async () => {
   await server.close()
 })
 
-function call(path: string, init: { method?: string; body?: unknown; token?: string | null; host?: string } = {}) {
+function call(
+  path: string,
+  init: { method?: string; body?: unknown; token?: string | null; host?: string; lang?: string } = {},
+) {
   return new Promise<{ status: number; type: string; text: string }>((resolve, reject) => {
     const headers: Record<string, string> = { host: init.host ?? `127.0.0.1:${server.port}` }
+    if (init.lang) headers['x-zcf-lang'] = init.lang
     if (init.token !== null) headers['x-zcf-token'] = init.token ?? TOKEN
     const req = request({ host: '127.0.0.1', port: server.port, path, method: init.method ?? 'GET', headers }, res => {
       let text = ''
@@ -105,13 +109,14 @@ function call(path: string, init: { method?: string; body?: unknown; token?: str
   })
 }
 
-async function start() {
+async function start(overrides: { langPinned?: boolean } = {}) {
   server = await startUiServer({
     service,
     lang: 'zh-CN',
     home: '/home/me',
     token: TOKEN,
     asset: async path => assets[path as keyof typeof assets],
+    ...overrides,
   })
 }
 
@@ -131,11 +136,16 @@ describe('startUiServer', () => {
     expect((await call('/api/nope')).status).toBe(404)
   })
 
-  it('serves translations, loads and saves the config, and detects tools', async () => {
+  it('serves both dictionaries so the browser can switch languages, loads and saves the config, and detects tools', async () => {
     await start()
-    const session = JSON.parse((await call('/api/session')).text) as { lang: string; messages: Record<string, string> }
-    expect(session).toMatchObject({ lang: 'zh-CN', home: '/home/me' })
-    expect(session.messages['tui.page.tools']).toBe('工具')
+    const session = JSON.parse((await call('/api/session')).text) as {
+      lang: string
+      langPinned: boolean
+      messages: Record<string, Record<string, string>>
+    }
+    expect(session).toMatchObject({ lang: 'zh-CN', home: '/home/me', langPinned: false })
+    expect(session.messages['zh-CN']!['tui.page.tools']).toBe('工具')
+    expect(session.messages['en']!['tui.page.tools']).toBe('Tools')
 
     expect(JSON.parse((await call('/api/config')).text)).toMatchObject({ draft: { version: 1 }, exists: true })
     const draft = { version: 1, tools: ['codex'] }
@@ -182,6 +192,30 @@ describe('startUiServer', () => {
       asset: async () => undefined,
     })
     expect(await call('/api/config')).toMatchObject({ status: 500, text: '{"error":"disk on fire"}' })
+  })
+
+  it('tells the browser when the language is pinned, and errors speak the language it asks for', async () => {
+    await start({ langPinned: true })
+    const session = JSON.parse((await call('/api/session')).text) as { langPinned: boolean }
+    expect(session.langPinned).toBe(true)
+    await server.close()
+
+    server = await startUiServer({
+      service: {
+        ...service,
+        load: () => Promise.reject(new MessageError({ key: 'service.configInvalid', params: { path: '/z.json' } })),
+      },
+      lang: 'en',
+      home: '/home/me',
+      token: TOKEN,
+      asset: async () => undefined,
+    })
+    const zh = await call('/api/config', { lang: 'zh-CN' })
+    expect(zh).toMatchObject({ status: 500, text: expect.stringContaining('/z.json 中的配置有问题') })
+    expect(await call('/api/config')).toMatchObject({
+      status: 500,
+      text: '{"error":"The config at /z.json has problems. Fix them and save before planning."}',
+    })
   })
 
   it('translates a failing apply and sends it as the last event', async () => {
