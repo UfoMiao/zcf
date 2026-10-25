@@ -197,6 +197,21 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('shows the error in the status line when a language switch cannot save', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        save: async () => {
+          throw new Error('disk full')
+        },
+      },
+    )
+    const app = await start(service)
+    await app.press('l')
+    expect(await app.until('Could not save: disk full')).toContain('Could not save: disk full')
+    app.unmount()
+  })
+
   it('picks the config language on the Settings page; the interface language is not a field there', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
