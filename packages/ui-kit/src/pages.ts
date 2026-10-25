@@ -165,6 +165,27 @@ export function toggleCatalogSkill(sources: unknown, id: string): unknown[] | un
   return list
 }
 
+/** Whether the draft's `skills` list already installs `name` from `source`. */
+export function hasSourcedSkill(sources: unknown, source: string, name: string): boolean {
+  const entry = (Array.isArray(sources) ? sources : []).find(
+    (item): item is Record<string, unknown> => isTable(item) && item.source === source,
+  )
+  return !!entry && Array.isArray(entry.skills) && entry.skills.map(String).includes(name)
+}
+
+/**
+ * Add one skill found by search: it joins that source's `skills` entry when there is one,
+ * so a repository the user already draws from stays a single entry.
+ */
+export function addSourcedSkill(sources: unknown, source: string, name: string): unknown[] {
+  const list: unknown[] = Array.isArray(sources) ? [...sources] : []
+  const entry = list.find((item): item is Record<string, unknown> => isTable(item) && item.source === source)
+  if (!entry) return [...list, { source, skills: [name] }]
+  const picked: string[] = Array.isArray(entry.skills) ? entry.skills.map(String) : []
+  if (!picked.includes(name)) list[list.indexOf(entry)] = { ...entry, skills: [...picked, name] }
+  return list
+}
+
 /** A fresh MCP server of the given type, so the form has something to fill in. */
 export function newMcpServer(type: McpType): Record<string, unknown> {
   return type === 'http' ? { type, url: '' } : { type, command: '' }

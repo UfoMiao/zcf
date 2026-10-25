@@ -79,6 +79,10 @@ const service: ZcfService = {
     presets: [{ id: 'relay', name: 'Relay', description: { en: 'A relay' }, models: {} }],
     source: refresh ? 'remote' : 'cache',
   }),
+  searchSkills: async () => ({
+    skills: [{ name: 'using-git-worktrees', source: 'obra/superpowers', description: 'Worktrees.', installs: 541 }],
+    source: 'remote',
+  }),
 }
 
 const assets = {
@@ -162,6 +166,10 @@ describe('startUiServer', () => {
     })
     expect(JSON.parse((await call('/api/presets')).text)).toMatchObject({ source: 'cache', presets: [{ id: 'relay' }] })
     expect(JSON.parse((await call('/api/presets?refresh=1')).text)).toMatchObject({ source: 'remote' })
+    expect(JSON.parse((await call('/api/skills/search?q=git')).text)).toMatchObject({
+      source: 'remote',
+      skills: [{ name: 'using-git-worktrees', source: 'obra/superpowers' }],
+    })
   })
 
   it('never sends secrets, file contents or edit values to the browser', async () => {

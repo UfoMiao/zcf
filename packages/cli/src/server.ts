@@ -157,6 +157,8 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
     }
     if (route === 'presets' && method === 'GET')
       return send(response, 200, await service.presets(url.searchParams.has('refresh')))
+    if (route === 'skills/search' && method === 'GET')
+      return send(response, 200, await service.searchSkills(url.searchParams.get('q') ?? ''))
     if (route === 'detect' && method === 'POST') return send(response, 200, await service.detect(TOOL_OPTIONS))
     if (route === 'plan' && method === 'POST') {
       return send(response, 200, browserPlan(await service.plan()))

@@ -17,7 +17,7 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Agent tools | Tick the agent tools to configure. Each row shows whether the tool is installed and which version. |
 | Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
-| Skills | Pick from the skills ZCF ships, and add your own sources with, for each, the skills to install. |
+| Skills | Pick from the ZCF built-in skills, search the community index for more, and add your own sources with, for each, the skills to install. |
 | Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
 | Apply | See the plan for the saved config, with a diff of each file, then apply it. |
 

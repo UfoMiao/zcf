@@ -1,4 +1,4 @@
-import type { Message, PresetList, ToolStatus } from '@zcf/core'
+import type { Message, PresetList, SkillSearchList, ToolStatus } from '@zcf/core'
 import { isConfigLanguage, isToolId, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, Draft, LoadedConfig, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
@@ -91,6 +91,7 @@ export const httpService: ZcfService = {
   detect: () => json<Partial<Record<string, ToolStatus>>>('detect', { method: 'POST' }),
   plan: () => json<PlanView>('plan', { method: 'POST' }),
   presets: refresh => json<PresetList>(refresh ? 'presets?refresh' : 'presets'),
+  searchSkills: query => json<SkillSearchList>(`skills/search?q=${encodeURIComponent(query)}`),
   async apply(onStep) {
     const response = await call('apply', { method: 'POST' })
     const reader = response.body!.pipeThrough(new TextDecoderStream()).getReader()
