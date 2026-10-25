@@ -1,7 +1,7 @@
 import { BUILTIN_SKILLS_SOURCE } from '@zcf/core/schema'
 import { describe, expect, it } from 'vitest'
 
-import { addSourcedSkill, hasSourcedSkill, toggleCatalogSkill } from '../src/pages'
+import { addSourcedSkill, hasSourcedSkill, skillSourceIndex, toggleCatalogSkill } from '../src/pages'
 
 describe('toggleCatalogSkill', () => {
   it('adds the built-in source with the skill when nothing is picked yet', () => {
@@ -79,5 +79,14 @@ describe('addSourcedSkill', () => {
 
   it('treats a list that is not the draft shape as empty', () => {
     expect(addSourcedSkill('nope', 'owner/repo', 'one')).toEqual([{ source: 'owner/repo', skills: ['one'] }])
+  })
+})
+
+describe('skillSourceIndex', () => {
+  it('points at the entry, wherever it sits, or says there is none', () => {
+    const sources = [{ source: 'a/a' }, { source: 'zcf', skills: ['feat'] }]
+    expect(skillSourceIndex(sources, 'zcf')).toBe(1)
+    expect(skillSourceIndex(sources, 'nope/nope')).toBe(-1)
+    expect(skillSourceIndex(undefined, 'zcf')).toBe(-1)
   })
 })

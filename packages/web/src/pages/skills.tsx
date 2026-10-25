@@ -1,11 +1,12 @@
 import type { SkillSearchList } from '@zcf/core'
-import { BUILTIN_SKILLS_SOURCE, SKILLS_CATALOG, skillDescription } from '@zcf/core/schema'
+import { BUILTIN_SKILLS_SOURCE, SKILLS_CATALOG, SKILLS_SEARCH_MIN_QUERY, skillDescription } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
 import {
   addSourcedSkill,
   hasSourcedSkill,
   isTable,
   pickedCatalogSkills,
+  skillSourceIndex,
   SKILL_FIELDS,
   toggleCatalogSkill,
 } from '@zcf/ui-kit'
@@ -25,13 +26,32 @@ import { cn } from '../lib/utils'
 /** The built-in skills ZCF ships, as toggle cards that share one `zcf` source in the draft. */
 function CatalogCard({ editor, t, lang }: { editor: ConfigEditor; t: Translate; lang: string }) {
   const picked = pickedCatalogSkills(editor.draft.skills)
+  // A `zcf` source that names no skills installs every built-in one; the checkboxes cannot
+  // show that, so the card says so and offers the way out.
+  const installAll = skillSourceIndex(editor.draft.skills, BUILTIN_SKILLS_SOURCE) !== -1 && picked.length === 0
   return (
     <Card>
       <CardHeader>
         <CardTitle>{t('tui.skills.builtin')}</CardTitle>
         <CardDescription>{t('tui.skills.catalogTitle')}</CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-3">
+        {installAll && (
+          <div className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/[0.04] px-3 py-2">
+            <p className="text-muted-foreground text-xs leading-relaxed">{t('tui.skills.builtinAll')}</p>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground hover:text-destructive shrink-0"
+              onClick={() =>
+                editor.update(['skills', skillSourceIndex(editor.draft.skills, BUILTIN_SKILLS_SOURCE)], undefined)
+              }
+            >
+              <Trash2Icon />
+              {t('tui.skills.delete')}
+            </Button>
+          </div>
+        )}
         <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
           {SKILLS_CATALOG.map(skill => {
             const on = picked.includes(skill.id)
@@ -68,7 +88,7 @@ function SearchCard({ editor, t }: { editor: ConfigEditor; t: Translate }) {
   const [busy, setBusy] = useState(false)
   const search = () => {
     const text = query.trim()
-    if (text.length < 2) return
+    if (text.length < SKILLS_SEARCH_MIN_QUERY) return
     setBusy(true)
     httpService
       .searchSkills(text)
@@ -90,7 +110,7 @@ function SearchCard({ editor, t }: { editor: ConfigEditor; t: Translate }) {
             placeholder={t('tui.skills.searchQuery')}
             className="max-w-xs"
           />
-          <Button variant="outline" disabled={busy || query.trim().length < 2} onClick={search}>
+          <Button variant="outline" disabled={busy || query.trim().length < SKILLS_SEARCH_MIN_QUERY} onClick={search}>
             <SearchIcon />
             {t('web.skills.search')}
           </Button>

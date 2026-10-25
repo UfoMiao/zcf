@@ -332,6 +332,17 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('keeps a single built-in row for a zcf source that names no skills', async () => {
+    // `{ source: 'zcf' }` with no list means every built-in skill; it already has a row.
+    const { service } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf' }] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('ZCF built-in skills')
+    expect(app.frame()).toContain('all skills')
+    expect(app.frame().match(/ZCF built-in skills/g)).toHaveLength(1)
+    app.unmount()
+  })
+
   it('searches community skills and adds a hit to the source it belongs to', async () => {
     const { service, saved } = fakeService(
       { version: 1, tools: [], skills: [{ source: 'obra/superpowers', skills: ['existing-one'] }] },

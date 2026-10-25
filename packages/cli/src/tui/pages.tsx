@@ -5,6 +5,7 @@ import {
   presetSummary,
   SKILLS_CATALOG,
   skillDescription,
+  SKILLS_SEARCH_MIN_QUERY,
   TOOL_NAMES,
 } from '@zcf/core'
 import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
@@ -448,15 +449,16 @@ function SkillSearchPicker({
   onAdd: (hit: SkillHit) => void
 }) {
   const [answer, setAnswer] = useState<'idle' | 'loading' | SkillSearchList>('idle')
+  // Status rows carry no action: they are notes, and Enter on them does nothing.
   const results: Row[] =
     answer === 'idle'
       ? []
       : answer === 'loading'
-        ? [{ id: 'loading', label: t('tui.skills.searching'), action: { type: 'run', run: () => {} } }]
+        ? [{ id: 'loading', label: t('tui.skills.searching') }]
         : answer.source === 'none'
-          ? [{ id: 'failed', label: t('tui.skills.searchFailed'), action: { type: 'run', run: () => {} } }]
+          ? [{ id: 'failed', label: t('tui.skills.searchFailed') }]
           : answer.skills.length === 0
-            ? [{ id: 'empty', label: t('tui.skills.searchNone'), action: { type: 'run', run: () => {} } }]
+            ? [{ id: 'empty', label: t('tui.skills.searchNone') }]
             : answer.skills.map((hit): Row => {
                 const added = hasSourcedSkill(sources, hit.source, hit.name)
                 return {
@@ -479,7 +481,7 @@ function SkillSearchPicker({
         // The index answers nothing for a single character, so it is not asked.
         commit: text => {
           const query = text.trim()
-          if (query.length < 2) return
+          if (query.length < SKILLS_SEARCH_MIN_QUERY) return
           setAnswer('loading')
           searchSkills(query).then(setAnswer, () => setAnswer({ skills: [], source: 'none' }))
         },
@@ -504,6 +506,9 @@ export function SkillsPage(
   const [searching, setSearching] = useState(false)
   const sources = Array.isArray(editor.draft.skills) ? editor.draft.skills : []
   const picked = pickedCatalogSkills(sources)
+  // A `zcf` source row stands for the catalog whatever its list says, even when it names no
+  // skills and so installs every built-in one.
+  const hasBuiltinSource = sources.some(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
 
   if (searching) {
     return (
@@ -574,17 +579,17 @@ export function SkillsPage(
         action: { type: 'run', run: () => (builtin ? setPicking(true) : setOpen(index)) },
       }
     }),
-    // With nothing picked the catalog has no row of its own yet, so this one stands in for it.
-    ...(picked.length === 0
-      ? [
+    // With no `zcf` source of its own yet, this row stands in for the catalog.
+    ...(hasBuiltinSource
+      ? []
+      : [
           {
             id: '+catalog',
-            label: t('tui.skills.builtin'),
+            label: `+ ${t('tui.skills.builtin')}`,
             hint: t('tui.skills.catalogHint'),
             action: { type: 'run' as const, run: () => setPicking(true) },
           },
-        ]
-      : []),
+        ]),
     {
       id: '+search',
       label: t('tui.skills.search'),

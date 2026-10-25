@@ -224,6 +224,8 @@ const en = {
   'tui.skills.source': 'Skill source',
   'tui.skills.delete': 'Delete this source',
   'tui.skills.builtin': 'ZCF built-in skills',
+  'tui.skills.builtinAll':
+    'This zcf source names no skills, so every built-in one installs; check a box to switch to a picked list.',
   'tui.skills.catalogTitle': 'Pick the ZCF built-in skills to install',
   'tui.skills.catalogHint': 'Enter toggles a skill; the picked ones install in the config language',
   'tui.skills.search': '+ Search skills',
@@ -457,6 +459,7 @@ const zhCN: Record<MessageKey, string> = {
   'tui.skills.source': '技能来源',
   'tui.skills.delete': '删除此来源',
   'tui.skills.builtin': 'ZCF 内置技能',
+  'tui.skills.builtinAll': '该 zcf 来源未指定技能，将安装全部内置技能；勾选任意一项即可改为按清单安装。',
   'tui.skills.catalogTitle': '选择要安装的 ZCF 内置技能',
   'tui.skills.catalogHint': '回车切换勾选；勾选的技能按配置语言安装',
   'tui.skills.search': '+ 搜索技能',
