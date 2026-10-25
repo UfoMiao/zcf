@@ -56,6 +56,18 @@ describe('pi.plan', () => {
     }
   })
 
+  it('says pi has no setting of its own when the config language is Chinese', async () => {
+    const plan = await pi.plan(config({ configLanguage: 'zh-CN' }), installed, context())
+    expect(plan.notices).toEqual([
+      {
+        level: 'warning',
+        message: { key: 'notice.languageNotSupported', params: { tool: 'pi', language: 'zh-CN' } },
+      },
+    ])
+    // English is what every tool does on its own, so nothing is said or written.
+    expect((await pi.plan(config({ configLanguage: 'en' }), installed, context())).notices).toEqual([])
+  })
+
   it('adds an Anthropic provider to models.json and makes it the default', async () => {
     const plan = await pi.plan(
       config({

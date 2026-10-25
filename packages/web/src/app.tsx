@@ -1,4 +1,7 @@
 import type { ToolId, ToolStatus } from '@zcf/core'
+// The schema subpath only, never the root: the root pulls the adapters and their Node-only
+// runtime into the browser bundle.
+import { isLanguageSetting, LANGUAGES } from '@zcf/core/schema'
 import type { PageId } from '@zcf/ui-kit'
 import { isLang } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
@@ -32,11 +35,22 @@ export function App({
   // The Settings page's language choice moves the UI itself, before it is even saved;
   // `auto` follows the browser, while a pinned flag keeps what the server started with.
   const draftLanguage = editor.status === 'ready' ? editor.draft.language : undefined
+  const languageSetting = isLanguageSetting(draftLanguage) ? draftLanguage : 'auto'
   useEffect(() => {
     if (langPinned) return
     const next = isLang(draftLanguage) ? draftLanguage : browserLang()
     if (next !== uiLang) setUiLang(next)
   }, [draftLanguage, langPinned, uiLang])
+
+  // The header's switch saves the field at once, without the rest of the unsaved draft.
+  const switchLanguage = (value: string) => {
+    editor.saveField(['language'], value).catch((error: unknown) =>
+      setStatus({
+        text: t('tui.saveFailed', { message: error instanceof Error ? error.message : String(error) }),
+        tone: 'error',
+      }),
+    )
+  }
 
   useEffect(() => {
     document.documentElement.lang = uiLang
@@ -107,6 +121,20 @@ export function App({
         <strong className="brand">ZCF</strong>
         <code className="path">{tildify(editor.path)}</code>
         {editor.dirty && <span className="badge">{t('tui.unsaved')}</span>}
+        <select
+          className="lang"
+          aria-label={t('field.language')}
+          title={t('hint.languageHeader')}
+          value={langPinned ? uiLang : languageSetting}
+          disabled={langPinned}
+          onChange={event => switchLanguage(event.target.value)}
+        >
+          {LANGUAGES.map(lang => (
+            <option key={lang} value={lang}>
+              {t(`language.${lang}`)}
+            </option>
+          ))}
+        </select>
         <span className={`status ${status?.tone ?? ''}`}>{status?.text}</span>
         <button type="button" className="primary" onClick={() => void save()} disabled={!editor.dirty || editor.saving}>
           {t('web.save')}

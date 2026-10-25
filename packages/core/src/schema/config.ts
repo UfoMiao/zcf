@@ -105,6 +105,24 @@ export type SkillSource = v.InferOutput<typeof SkillSourceSchema>
 export const LANGUAGES = ['auto', 'en', 'zh-CN'] as const
 export type LanguageSetting = (typeof LANGUAGES)[number]
 
+/** Whether a draft value is a `language` the config accepts, for the editors' language switch. */
+export function isLanguageSetting(value: unknown): value is LanguageSetting {
+  return LANGUAGES.some(lang => lang === value)
+}
+
+/**
+ * The languages the config accepts for `configLanguage`: the language the tools themselves
+ * work in once ZCF applies. No `auto`: no tool has one, and Claude Code passes the value it
+ * finds verbatim to the model, so an unresolved `auto` would end up in its settings.
+ */
+export const CONFIG_LANGUAGES = ['en', 'zh-CN'] as const
+export type ConfigLanguage = (typeof CONFIG_LANGUAGES)[number]
+
+/** Whether a value is a `configLanguage`, so step titles can show it by name. */
+export function isConfigLanguage(value: unknown): value is ConfigLanguage {
+  return CONFIG_LANGUAGES.some(lang => lang === value)
+}
+
 export const ZcfConfigSchema = v.object({
   $schema: v.optional(v.string()),
   version: v.literal(1),
@@ -116,6 +134,8 @@ export const ZcfConfigSchema = v.object({
   mirror: v.optional(v.picklist(MIRRORS), 'official'),
   /** The language ZCF talks to the user in; `auto` follows the system locale. */
   language: v.optional(v.picklist(LANGUAGES), 'auto'),
+  /** The language the configured tools respond in; only tools with a setting of their own receive it. */
+  configLanguage: v.optional(v.picklist(CONFIG_LANGUAGES), 'en'),
 })
 export type ZcfConfig = v.InferOutput<typeof ZcfConfigSchema>
 export type ZcfConfigInput = v.InferInput<typeof ZcfConfigSchema>
