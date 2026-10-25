@@ -14,9 +14,13 @@ import { cn } from '../lib/utils'
 function McpServerCard({ editor, t, name }: { editor: ConfigEditor; t: Translate; name: string }) {
   const root = ['mcpServers', name] as const
   const server = getAt(editor.draft, root)
-  const type: McpType = isTable(server) && server.type === 'http' ? 'http' : 'stdio'
+  const rawType = isTable(server) ? server.type : undefined
+  const type: McpType = rawType === 'http' ? 'http' : 'stdio'
+  // A hand-written type the switch cannot show stays visible next to it, error and all.
+  const badType = rawType !== 'stdio' && rawType !== 'http'
   const [draftName, setDraftName] = useState(name)
   const issue = issuesAt(editor.validation.issues, root).find(item => item.path === root.join('.'))
+  const typeIssue = issuesAt(editor.validation.issues, [...root, 'type'])[0]
   const rename = () => {
     const next = draftName.trim()
     const taken = Object.keys(isTable(editor.draft.mcpServers) ? editor.draft.mcpServers : {})
@@ -38,15 +42,23 @@ function McpServerCard({ editor, t, name }: { editor: ConfigEditor; t: Translate
           onBlur={rename}
           onKeyDown={event => event.key === 'Enter' && rename()}
         />
-        <Segmented
-          aria-label={t('field.mcp.type')}
-          options={[
-            { value: 'stdio', label: 'stdio' },
-            { value: 'http', label: 'http' },
-          ]}
-          value={type}
-          onChange={value => editor.update(root, withMcpType(server, value === 'http' ? 'http' : 'stdio'))}
-        />
+        <div className="flex min-w-0 items-center gap-1.5">
+          <Segmented
+            aria-label={t('field.mcp.type')}
+            options={[
+              { value: 'stdio', label: 'stdio' },
+              { value: 'http', label: 'http' },
+            ]}
+            value={type}
+            className={typeIssue && 'ring-1 ring-destructive/70'}
+            onChange={value => editor.update(root, withMcpType(server, value === 'http' ? 'http' : 'stdio'))}
+          />
+          {badType && rawType !== undefined && (
+            <code className="text-destructive truncate font-mono text-xs" title={JSON.stringify(rawType) ?? ''}>
+              {JSON.stringify(rawType)}
+            </code>
+          )}
+        </div>
         <Button
           variant="ghost"
           size="icon"
@@ -57,7 +69,16 @@ function McpServerCard({ editor, t, name }: { editor: ConfigEditor; t: Translate
           <Trash2Icon />
         </Button>
       </CardHeader>
-      {issue && <p className="text-destructive px-4 pb-2 text-xs">{t(issue.message.key, issue.message.params)}</p>}
+      {(() => {
+        const shown = typeIssue ?? issue
+        return (
+          shown && (
+            <p className="text-destructive px-4 pb-2 text-xs leading-relaxed">
+              {t(shown.message.key, shown.message.params)}
+            </p>
+          )
+        )
+      })()}
       <CardContent className="grid gap-4 pt-1 pb-4 sm:grid-cols-2">
         {mcpFields(type)
           .filter(field => field.path[0] !== 'type')

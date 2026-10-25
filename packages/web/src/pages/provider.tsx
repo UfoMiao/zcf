@@ -85,8 +85,35 @@ function FieldSection({
   )
 }
 
-/** The fields of one provider block, such as everything under `provider.anthropic`. */
-const groupFields = (key: string) => PROVIDER_FIELDS.filter(field => field.path[1] === key)
+/** The known sub-blocks of `provider`, with their titles; a block ui-kit adds later still
+ * renders after these, under its raw key. */
+const GROUP_TITLES: Record<string, string> = {
+  anthropic: 'web.provider.anthropic',
+  openai: 'web.provider.openai',
+  gemini: 'web.provider.gemini',
+  models: 'web.provider.models',
+}
+
+/** Where a sub-block sorts: known blocks in their fixed order, unknown ones after them. */
+const groupRank = (key: string) => {
+  const known = Object.keys(GROUP_TITLES)
+  const index = known.indexOf(key)
+  return index === -1 ? known.length : index
+}
+
+/** One group per sub-block the fields actually use, known ones first. */
+const providerGroups = () => {
+  const keys = [
+    ...new Set(
+      PROVIDER_FIELDS.flatMap(field =>
+        field.path.length > 2 && typeof field.path[1] === 'string' ? [field.path[1]] : [],
+      ),
+    ),
+  ]
+  return keys
+    .toSorted((a, b) => groupRank(a) - groupRank(b))
+    .map(key => ({ key, title: GROUP_TITLES[key], fields: PROVIDER_FIELDS.filter(field => field.path[1] === key) }))
+}
 
 export function ProviderPage({ editor, t, lang }: PageProps & { lang: string }) {
   const provider = editor.draft.provider
@@ -98,34 +125,16 @@ export function ProviderPage({ editor, t, lang }: PageProps & { lang: string }) 
       <PresetSelect editor={editor} t={t} lang={lang} />
       <div className="flex flex-col gap-3">
         <FieldSection title={t('web.provider.credentials')} present fields={credentials} editor={editor} t={t} />
-        <FieldSection
-          title={t('web.provider.anthropic')}
-          present={hasBlock('anthropic')}
-          fields={groupFields('anthropic')}
-          editor={editor}
-          t={t}
-        />
-        <FieldSection
-          title={t('web.provider.openai')}
-          present={hasBlock('openai')}
-          fields={groupFields('openai')}
-          editor={editor}
-          t={t}
-        />
-        <FieldSection
-          title={t('web.provider.gemini')}
-          present={hasBlock('gemini')}
-          fields={groupFields('gemini')}
-          editor={editor}
-          t={t}
-        />
-        <FieldSection
-          title={t('web.provider.models')}
-          present={hasBlock('models')}
-          fields={groupFields('models')}
-          editor={editor}
-          t={t}
-        />
+        {providerGroups().map(group => (
+          <FieldSection
+            key={group.key}
+            title={group.title ? t(group.title) : group.key}
+            present={hasBlock(group.key)}
+            fields={group.fields}
+            editor={editor}
+            t={t}
+          />
+        ))}
       </div>
       {provider !== undefined && (
         <div className="mt-4 flex justify-end border-t pt-4">

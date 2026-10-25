@@ -61,7 +61,14 @@ function StatusMessage({ status, t }: { status: { text: string; tone: StatusTone
     <span
       role="status"
       aria-live="polite"
-      className={`hidden min-w-0 items-center gap-1.5 text-xs sm:flex ${status.tone === 'error' ? 'text-destructive' : status.tone === 'warning' ? 'text-warning' : 'text-muted-foreground'}`}
+      // Visible at every width: a failed save must not hide behind a breakpoint.
+      className={`flex min-w-0 max-w-48 items-center gap-1.5 text-xs sm:max-w-none ${
+        status.tone === 'error'
+          ? 'text-destructive'
+          : status.tone === 'warning'
+            ? 'text-warning'
+            : 'text-muted-foreground'
+      }`}
     >
       {icon}
       <span className="truncate">{status.text}</span>
