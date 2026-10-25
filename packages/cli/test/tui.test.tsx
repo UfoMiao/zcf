@@ -389,20 +389,26 @@ describe('terminal UI', () => {
 
   it('says when a search matches nothing, and when the index cannot answer', async () => {
     // With no sources yet, the list is the catalog stand-in, search and add: one down reaches search.
-    const empty = fakeService({ version: 1, tools: [] }, {
-      searchSkills: async () => ({ skills: [], source: 'remote' as const }),
-    })
+    const empty = fakeService(
+      { version: 1, tools: [] },
+      {
+        searchSkills: async () => ({ skills: [], source: 'remote' as const }),
+      },
+    )
     const app = await start(empty.service)
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     expect(await app.until('No skills found')).toContain('No skills found')
     app.unmount()
 
-    const offline = fakeService({ version: 1, tools: [] }, {
-      searchSkills: async () => {
-        throw new Error('offline')
+    const offline = fakeService(
+      { version: 1, tools: [] },
+      {
+        searchSkills: async () => {
+          throw new Error('offline')
+        },
       },
-    })
+    )
     const retry = await start(offline.service)
     await retry.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await retry.press(KEY.enter, 'g', 'i', 't', KEY.enter)
