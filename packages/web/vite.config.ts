@@ -1,9 +1,13 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
 // Built into static files that `zcf ui` serves from the CLI package.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: { '@': '/src' },
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

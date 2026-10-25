@@ -14,7 +14,10 @@
     "noEmit": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": ["./packages/web/src/*"]
+    }
   },
   "include": ["packages/*/src/**/*", "packages/*/test/**/*", "scripts/**/*", "*.config.ts"],
   "exclude": ["node_modules", "**/dist"]
