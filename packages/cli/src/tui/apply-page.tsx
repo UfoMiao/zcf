@@ -1,11 +1,12 @@
 import type { FilePreview, Plan, PlanStep } from '@zcf/core'
 import type { PlanView, ZcfService } from '@zcf/ui-kit'
-import { Box, Text, useInput, useStdout } from 'ink'
+import { Box, Text, useInput } from 'ink'
 import { useEffect, useRef, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
 import { hasWork, Renderer } from '../render'
+import { useTerminalRows } from './use-terminal-rows'
 
 type Phase = 'waiting' | 'planning' | 'ready' | 'applying' | 'done'
 
@@ -42,9 +43,7 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
   const renderer = useRef<Renderer>(undefined)
   // The plan the renderer last showed, so the apply summary can tell skipped tools apart.
   const shownPlan = useRef<Plan>({ tools: [] })
-  const { stdout } = useStdout()
-  const rows = 'rows' in stdout && typeof stdout.rows === 'number' ? stdout.rows : 24
-  const height = Math.max(5, rows - 9)
+  const height = Math.max(5, useTerminalRows() - 9)
 
   const output = { write: (text: string) => setLines(current => [...current, ...text.replace(/\n$/, '').split('\n')]) }
 

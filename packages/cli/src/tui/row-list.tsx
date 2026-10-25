@@ -2,6 +2,7 @@ import { Box, Text, useInput } from 'ink'
 import { useState } from 'react'
 
 import { TextInput } from './text-input'
+import { useTerminalRows } from './use-terminal-rows'
 
 export type RowAction =
   | { type: 'text'; initial: string; placeholder?: string; mask?: boolean | 'value'; commit: (text: string) => void }
@@ -41,17 +42,30 @@ export interface RowListProps {
   onEditing?: (editing: boolean) => void
 }
 
+/** Lines the list may not claim: banner, status rows, panel borders, key bar, page titles and hints. */
+const LIST_CHROME = 18
+
 /**
  * A vertical list of labelled rows. ↑/↓ move, Enter edits a text row, runs an action
  * or cycles a choice (←/→ cycle too), x removes an item, and Esc goes back.
+ * A list taller than the terminal shows a window around the cursor, with arrows at the cut ends.
  */
 export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   const [selected, setSelected] = useState(0)
   const [editing, setEditing] = useState(false)
   const index = Math.min(selected, Math.max(0, rows.length - 1))
   const row = rows[index]
-  // Values line up in one column after the longest label.
-  const labelWidth = Math.max(0, ...rows.filter(item => item.value !== undefined).map(item => columns(item.label))) + 4
+  // Values line up in one column after the longest label. Rows without a value count too:
+  // an edited row renders in this box, and its label must never wrap inside a narrower one.
+  const labelWidth = Math.max(0, ...rows.map(item => columns(item.label))) + 4
+
+  // The terminal height caps the list; the window follows the cursor.
+  const visible = Math.max(3, useTerminalRows() - LIST_CHROME)
+  const capped = rows.length > visible
+  // Both arrow lines are reserved whenever the list is capped, shown or not.
+  const size = capped ? visible - 2 : rows.length
+  const start = capped ? Math.max(0, Math.min(index - (size >> 1), rows.length - size)) : 0
+  const shown = rows.slice(start, start + size)
 
   const setEdit = (value: boolean) => {
     setEditing(value)
@@ -76,7 +90,9 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
 
   return (
     <Box flexDirection="column">
-      {rows.map((item, position) => {
+      {capped && start > 0 && <Text dimColor>{'  ↑'}</Text>}
+      {shown.map((item, offset) => {
+        const position = start + offset
         const current = position === index
         const pointer = current && active ? '›' : ' '
         const editor =
@@ -107,6 +123,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
           </Box>
         )
       })}
+      {capped && start + size < rows.length && <Text dimColor>{'  ↓'}</Text>}
     </Box>
   )
 }

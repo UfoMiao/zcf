@@ -387,6 +387,50 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('keeps the search query label on one line when its editor opens', async () => {
+    // Before any results, the query row is the only row; its label must not be squeezed
+    // into the value column width of rows that do not exist.
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('› keyword')
+    app.unmount()
+  })
+
+  it('windows a list taller than the terminal and marks the hidden ends', async () => {
+    const hits = Array.from({ length: 15 }, (_, i) => ({
+      name: `skill-${String(i).padStart(2, '0')}`,
+      source: `owner/repo-${i}`,
+      description: 'Community skill.',
+    }))
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      { searchSkills: async () => ({ skills: hits, source: 'remote' as const }) },
+    )
+    const app = await start(service)
+    // The mock stream reports no rows on its own; speak for a 24-line terminal so the
+    // list reads the height the way a real one does.
+    Object.defineProperty(app.stdout, 'rows', { get: () => 24 })
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    await app.until('skill-00')
+    // A 24-line terminal cannot hold 16 rows; the list shows a window with arrows.
+    const head = app.frame()
+    expect(head).toContain('skill-00')
+    expect(head).not.toContain('skill-14')
+    expect(head).toContain('  ↓')
+    for (let i = 0; i < 15; i++) {
+      // oxlint-disable-next-line no-await-in-loop
+      await app.press(KEY.down)
+    }
+    const tail = app.frame()
+    expect(tail).toContain('skill-14')
+    expect(tail).not.toContain('skill-00')
+    expect(tail).toContain('  ↑')
+    app.unmount()
+  })
+
   it('says when a search matches nothing, and when the index cannot answer', async () => {
     // With no sources yet, the list is the catalog stand-in, search and add: one down reaches search.
     const empty = fakeService(
