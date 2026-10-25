@@ -25,9 +25,8 @@ jobs:
           node-version: lts/*
           registry-url: https://registry.npmjs.org/
 
-      - run: pnpm i -g @antfu/ni
-      - run: nci
-      - run: nr test:coverage
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:coverage
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
