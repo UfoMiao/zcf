@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { loadSession } from './api'
 import { App } from './app'
 
-import './style.css'
+import './index.css'
 
 const root = createRoot(document.querySelector('#root')!)
 

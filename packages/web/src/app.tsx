@@ -2,11 +2,115 @@ import type { ToolId, ToolStatus } from '@zcf/core'
 import type { PageId } from '@zcf/ui-kit'
 import { isLang } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
-import { useEffect, useState } from 'react'
+import {
+  CircleAlertIcon,
+  CircleCheckIcon,
+  InfoIcon,
+  LoaderCircleIcon,
+  MenuIcon,
+  NetworkIcon,
+  PlayIcon,
+  PlugIcon,
+  SettingsIcon,
+  SparklesIcon,
+  WrenchIcon,
+} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { Lang, Translate } from './api'
 import { browserLang, httpService, setRequestLang, tildify } from './api'
-import { ApplyPage, McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
+import { BrandMark } from './components/brand'
+import { Segmented } from './components/segmented'
+import { Alert, AlertDescription, AlertTitle } from './components/ui/alert'
+import { Badge } from './components/ui/badge'
+import { Button } from './components/ui/button'
+import { Sheet, SheetContent, SheetTitle } from './components/ui/sheet'
+import { Skeleton } from './components/ui/skeleton'
+import { ApplyPage } from './pages/apply'
+import { McpPage } from './pages/mcp'
+import { ProviderPage } from './pages/provider'
+import { SettingsPage } from './pages/settings'
+import { SkillsPage } from './pages/skills'
+import { ToolsPage } from './pages/tools'
+
+type StatusTone = 'info' | 'warning' | 'error'
+
+const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
+  tools: WrenchIcon,
+  provider: PlugIcon,
+  mcp: NetworkIcon,
+  skills: SparklesIcon,
+  settings: SettingsIcon,
+  apply: PlayIcon,
+}
+
+function StatusMessage({ status, t }: { status: { text: string; tone: StatusTone } | undefined; t: Translate }) {
+  if (!status) return null
+  const icon =
+    status.tone === 'info' ? (
+      <CircleCheckIcon className="size-3.5 text-success" />
+    ) : status.tone === 'warning' ? (
+      <InfoIcon className="size-3.5 text-warning" />
+    ) : (
+      <CircleAlertIcon className="size-3.5 text-destructive" />
+    )
+  return (
+    <span
+      role="status"
+      aria-live="polite"
+      className={`hidden min-w-0 items-center gap-1.5 text-xs sm:flex ${status.tone === 'error' ? 'text-destructive' : status.tone === 'warning' ? 'text-warning' : 'text-muted-foreground'}`}
+    >
+      {icon}
+      <span className="truncate">{status.text}</span>
+      <span className="sr-only">{t('web.save')}</span>
+    </span>
+  )
+}
+
+function NavList({
+  page,
+  setPage,
+  editor,
+  t,
+  onNavigate,
+}: {
+  page: PageId
+  setPage: (page: PageId) => void
+  editor: ReturnType<typeof useConfigEditor>
+  t: Translate
+  onNavigate?: () => void
+}) {
+  return (
+    <ul className="flex flex-col gap-0.5">
+      {PAGES.map(id => {
+        const roots = PAGE_ROOTS[id]
+        const broken = roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
+        const Icon = PAGE_ICONS[id]
+        return (
+          <li key={id}>
+            <button
+              type="button"
+              aria-current={id === page ? 'page' : undefined}
+              onClick={() => {
+                setPage(id)
+                onNavigate?.()
+              }}
+              className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40 ${
+                id === page
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+              }`}
+            >
+              <Icon className="size-4 shrink-0" />
+              <span className="flex-1 text-left">{t(`tui.page.${id}`)}</span>
+              {broken && <span className="bg-destructive size-1.5 shrink-0 rounded-full" aria-label="!" />}
+            </button>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}
 
 export function App({
   startupLang,
@@ -19,24 +123,35 @@ export function App({
 }) {
   const editor = useConfigEditor(httpService)
   const [page, setPage] = useState<PageId>('tools')
-  const [status, setStatus] = useState<{ text: string; tone: 'info' | 'warning' | 'error' }>()
+  const [status, setStatus] = useState<{ text: string; tone: StatusTone }>()
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
+  const [navOpen, setNavOpen] = useState(false)
   // Set before the first render ends, so even the config's own first request names the right language.
   const [uiLang, setUiLang] = useState<Lang>(() => {
     const initial = langPinned ? startupLang : browserLang()
     setRequestLang(initial)
     return initial
   })
+  // The header switcher's choice wins until the Settings page changes the config's language.
+  const [langOverride, setLangOverride] = useState<Lang>()
   const t = translators[uiLang]
 
-  // The Settings page's language choice moves the UI itself, before it is even saved;
-  // `auto` follows the browser, while a pinned flag keeps what the server started with.
   const draftLanguage = editor.status === 'ready' ? editor.draft.language : undefined
+  const draftLanguageRef = useRef(draftLanguage)
   useEffect(() => {
-    if (langPinned) return
-    const next = isLang(draftLanguage) ? draftLanguage : browserLang()
+    if (draftLanguage === draftLanguageRef.current) return
+    draftLanguageRef.current = draftLanguage
+    setLangOverride(undefined)
+  }, [draftLanguage])
+
+  useEffect(() => {
+    if (langPinned) {
+      if (langOverride && langOverride !== uiLang) setUiLang(langOverride)
+      return
+    }
+    const next = langOverride ?? (isLang(draftLanguage) ? draftLanguage : browserLang())
     if (next !== uiLang) setUiLang(next)
-  }, [draftLanguage, langPinned, uiLang])
+  }, [draftLanguage, langOverride, langPinned, uiLang])
 
   useEffect(() => {
     document.documentElement.lang = uiLang
@@ -46,6 +161,17 @@ export function App({
   useEffect(() => {
     httpService.detect(TOOL_OPTIONS).then(setDetected, () => setDetected({}))
   }, [])
+
+  // A saved notice fades out; problems stay until the next action replaces them.
+  useEffect(() => {
+    if (status?.tone !== 'info') return undefined
+    const timer = setTimeout(() => setStatus(undefined), 4000)
+    return () => clearTimeout(timer)
+  }, [status])
+
+  useEffect(() => {
+    document.title = editor.dirty ? '• ZCF' : 'ZCF'
+  }, [editor.dirty])
 
   const save = async () => {
     if (!editor.validation.valid) {
@@ -84,55 +210,143 @@ export function App({
     return () => removeEventListener('beforeunload', onLeave)
   }, [editor.dirty])
 
-  if (editor.status === 'loading') return <p className="loading">{t('tui.loading')}</p>
-  if (editor.status === 'broken') {
+  const firstBrokenPage = (): PageId | undefined =>
+    PAGES.find(id => {
+      const roots = PAGE_ROOTS[id]
+      return roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
+    })
+
+  if (editor.status === 'loading') {
     return (
-      <main className="broken">
-        <h2>{t('tui.broken', { path: tildify(editor.path) })}</h2>
-        <ul>
-          {editor.loadIssues.map(issue => (
-            <li key={`${issue.path}:${issue.message.key}`}>
-              {issue.path && <code>{issue.path}</code>} {t(issue.message.key, issue.message.params)}
-            </li>
-          ))}
-        </ul>
-        <p>{t('web.brokenHint')}</p>
+      <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-8">
+        <Skeleton className="mb-2 h-6 w-40" />
+        <Skeleton className="mb-8 h-4 w-72" />
+        <div className="flex flex-col gap-3">
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+          <Skeleton className="h-20 w-full rounded-xl" />
+        </div>
       </main>
     )
   }
 
-  return (
-    <div className="layout">
-      <header>
-        <strong className="brand">ZCF</strong>
-        <code className="path">{tildify(editor.path)}</code>
-        {editor.dirty && <span className="badge">{t('tui.unsaved')}</span>}
-        <span className={`status ${status?.tone ?? ''}`}>{status?.text}</span>
-        <button type="button" className="primary" onClick={() => void save()} disabled={!editor.dirty || editor.saving}>
-          {t('web.save')}
-        </button>
-      </header>
-      <nav>
-        {PAGES.map(id => {
-          const roots = PAGE_ROOTS[id]
-          const broken = roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
-          return (
-            <button key={id} type="button" className={id === page ? 'active' : undefined} onClick={() => setPage(id)}>
-              {t(`tui.page.${id}`)}
-              {broken && <span className="dot" aria-label="!" />}
-            </button>
-          )
-        })}
-      </nav>
-      <main>
-        <h2>{t(`tui.page.${page}`)}</h2>
-        {page === 'tools' && <ToolsPage editor={editor} t={t} detected={detected} />}
-        {page === 'provider' && <ProviderPage editor={editor} t={t} lang={uiLang} />}
-        {page === 'mcp' && <McpPage editor={editor} t={t} />}
-        {page === 'skills' && <SkillsPage editor={editor} t={t} />}
-        {page === 'settings' && <SettingsPage editor={editor} t={t} />}
-        {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} />}
+  if (editor.status === 'broken') {
+    return (
+      <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-8">
+        <Alert variant="destructive">
+          <CircleAlertIcon />
+          <AlertTitle>{t('tui.broken', { path: tildify(editor.path) })}</AlertTitle>
+          <AlertDescription>
+            <ul className="mt-1 list-disc pl-4">
+              {editor.loadIssues.map(issue => (
+                <li key={`${issue.path}:${issue.message.key}`} className="font-mono text-xs">
+                  {issue.path && <code className="mr-1">{issue.path}</code>}
+                  {t(issue.message.key, issue.message.params)}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2">{t('web.brokenHint')}</p>
+          </AlertDescription>
+        </Alert>
       </main>
+    )
+  }
+
+  const issueCount = editor.validation.issues.length
+  const brokenPage = firstBrokenPage()
+
+  return (
+    <div className="bg-background min-h-svh">
+      <header className="bg-card/90 sticky top-0 z-40 border-b backdrop-blur">
+        <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="lg:hidden"
+            onClick={() => setNavOpen(true)}
+            aria-label={t('web.menu')}
+          >
+            <MenuIcon />
+          </Button>
+          <BrandMark />
+          <code className="text-muted-foreground hidden max-w-64 truncate rounded bg-muted px-1.5 py-0.5 font-mono text-xs md:block">
+            {tildify(editor.path)}
+          </code>
+          {editor.dirty && (
+            <Badge variant="warning" className="hidden md:inline-flex">
+              {t('tui.unsaved')}
+            </Badge>
+          )}
+          <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+            <StatusMessage status={status} t={t} />
+            {issueCount > 0 && brokenPage && (
+              <button
+                type="button"
+                onClick={() => setPage(brokenPage)}
+                className="text-destructive hover:bg-destructive/10 rounded-full border border-destructive/40 px-2 py-0.5 text-xs font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+              >
+                {t('web.problems', { count: issueCount })}
+              </button>
+            )}
+            <Segmented
+              aria-label={t('web.interfaceLanguage')}
+              options={[
+                { value: 'en', label: 'EN' },
+                { value: 'zh-CN', label: '中文' },
+              ]}
+              value={uiLang}
+              onChange={value => {
+                if (isLang(value)) setLangOverride(value)
+              }}
+            />
+            <Button onClick={() => void save()} disabled={!editor.dirty || editor.saving} className="gap-1.5">
+              {editor.saving && <LoaderCircleIcon className="animate-spin" />}
+              {t('web.save')}
+              <kbd className="text-muted-foreground hidden rounded border bg-muted px-1 font-mono text-[10px] font-normal sm:inline-block">
+                {/Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘S' : 'Ctrl S'}
+              </kbd>
+            </Button>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto flex w-full max-w-6xl">
+        <aside className="sticky top-14 hidden h-[calc(100svh-3.5rem)] w-56 shrink-0 flex-col gap-4 overflow-y-auto border-r p-3 lg:flex">
+          <NavList page={page} setPage={setPage} editor={editor} t={t} />
+          <div className="mt-auto px-2.5 pb-2">
+            <code className="text-muted-foreground block truncate font-mono text-[11px]" title={editor.path}>
+              {tildify(editor.path)}
+            </code>
+          </div>
+        </aside>
+
+        <main className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:px-10">
+          <div className="mx-auto w-full max-w-3xl pb-16">
+            {page === 'tools' && <ToolsPage editor={editor} t={t} detected={detected} />}
+            {page === 'provider' && <ProviderPage editor={editor} t={t} lang={uiLang} />}
+            {page === 'mcp' && <McpPage editor={editor} t={t} />}
+            {page === 'skills' && <SkillsPage editor={editor} t={t} />}
+            {page === 'settings' && <SettingsPage editor={editor} t={t} />}
+            {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} onSave={() => void save()} />}
+          </div>
+        </main>
+      </div>
+
+      <Sheet open={navOpen} onOpenChange={setNavOpen}>
+        <SheetContent>
+          <SheetTitle className="sr-only">{t('web.menu')}</SheetTitle>
+          <div className="flex h-14 items-center gap-3 border-b px-4">
+            <BrandMark />
+            {editor.dirty && <Badge variant="warning">{t('tui.unsaved')}</Badge>}
+          </div>
+          <div className="flex-1 overflow-y-auto p-3">
+            <NavList page={page} setPage={setPage} editor={editor} t={t} onNavigate={() => setNavOpen(false)} />
+          </div>
+          <div className="border-t p-4 pb-6">
+            <code className="text-muted-foreground block truncate font-mono text-[11px]">{tildify(editor.path)}</code>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }
