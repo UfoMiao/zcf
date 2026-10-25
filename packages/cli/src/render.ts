@@ -1,5 +1,5 @@
 import type { FilePreview, Message, Notice, Plan, PlanStep, StepResult, ToolId, ToolResult, ZcfConfig } from '@zcf/core'
-import { isToolId, TOOL_NAMES } from '@zcf/core'
+import { isConfigLanguage, isToolId, TOOL_NAMES } from '@zcf/core'
 import { bold, cyan, dim, green, red, yellow } from 'ansis'
 
 import type { Translate } from './i18n'
@@ -91,6 +91,7 @@ export class Renderer {
   message(message: Message): string {
     const params = { ...message.params }
     if (isToolId(params.tool)) params.tool = TOOL_NAMES[params.tool]
+    if (isConfigLanguage(params.language)) params.language = this.t(`language.${params.language}`)
     return this.t(message.key, params)
   }
 

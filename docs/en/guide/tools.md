@@ -23,6 +23,7 @@ Across all tools:
 | Provider | `env` in `~/.claude/settings.json`: `ANTHROPIC_BASE_URL`, the key as `ANTHROPIC_AUTH_TOKEN` (or `ANTHROPIC_API_KEY` with `authType: "api_key"`), `ANTHROPIC_MODEL` from `models.default`, and `ANTHROPIC_DEFAULT_HAIKU_MODEL`, `_SONNET_MODEL` and `_OPUS_MODEL`. ZCF removes those keys when the config leaves them unset. |
 | MCP | `claude mcp add-json --scope user`. A server that changed is removed and added again. On Windows, commands such as `npx` are wrapped in `cmd /c`. |
 | Skills | `-a claude-code`, into `~/.claude/skills` |
+| Language | Claude Code's own `language` key in `~/.claude/settings.json`, for [`configLanguage`](./config#configlanguage). The only tool with a setting of its own; a value you set in Claude Code yourself is left alone. |
 
 `CLAUDE_CONFIG_DIR` is followed, as Claude Code does.
 

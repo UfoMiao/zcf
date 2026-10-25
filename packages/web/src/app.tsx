@@ -1,4 +1,7 @@
 import type { ToolId, ToolStatus } from '@zcf/core'
+// The schema subpath only, never the root: the root pulls the adapters and their Node-only
+// runtime into the browser bundle.
+import { isLanguageSetting, LANGUAGES } from '@zcf/core/schema'
 import type { PageId } from '@zcf/ui-kit'
 import { isLang } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
@@ -15,15 +18,15 @@ import {
   SparklesIcon,
   WrenchIcon,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import type { Lang, Translate } from './api'
 import { browserLang, httpService, setRequestLang, tildify } from './api'
 import { BrandMark } from './components/brand'
-import { Segmented } from './components/segmented'
 import { Alert, AlertDescription, AlertTitle } from './components/ui/alert'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select'
 import { Sheet, SheetContent, SheetTitle } from './components/ui/sheet'
 import { Skeleton } from './components/ui/skeleton'
 import { ApplyPage } from './pages/apply'
@@ -132,26 +135,29 @@ export function App({
     setRequestLang(initial)
     return initial
   })
-  // The header switcher's choice wins until the Settings page changes the config's language.
-  const [langOverride, setLangOverride] = useState<Lang>()
   const t = translators[uiLang]
 
   const draftLanguage = editor.status === 'ready' ? editor.draft.language : undefined
-  const draftLanguageRef = useRef(draftLanguage)
-  useEffect(() => {
-    if (draftLanguage === draftLanguageRef.current) return
-    draftLanguageRef.current = draftLanguage
-    setLangOverride(undefined)
-  }, [draftLanguage])
+  // An invalid value in the file falls back to `auto`, as the schema does.
+  const languageSetting = isLanguageSetting(draftLanguage) ? draftLanguage : 'auto'
 
+  // The language field saves at once from the header, so the draft's value drives the UI;
+  // `auto` follows the browser, while a pinned flag keeps what the server started with.
   useEffect(() => {
-    if (langPinned) {
-      if (langOverride && langOverride !== uiLang) setUiLang(langOverride)
-      return
-    }
-    const next = langOverride ?? (isLang(draftLanguage) ? draftLanguage : browserLang())
+    if (langPinned) return
+    const next = isLang(draftLanguage) ? draftLanguage : browserLang()
     if (next !== uiLang) setUiLang(next)
-  }, [draftLanguage, langOverride, langPinned, uiLang])
+  }, [draftLanguage, langPinned, uiLang])
+
+  // The header's switch saves the field at once, without the rest of the unsaved draft.
+  const switchLanguage = (value: string) => {
+    editor.saveField(['language'], value).catch((error: unknown) =>
+      setStatus({
+        text: t('tui.saveFailed', { message: error instanceof Error ? error.message : String(error) }),
+        tone: 'error',
+      }),
+    )
+  }
 
   useEffect(() => {
     document.documentElement.lang = uiLang
@@ -272,6 +278,23 @@ export function App({
           <code className="text-muted-foreground hidden max-w-64 truncate rounded bg-muted px-1.5 py-0.5 font-mono text-xs md:block">
             {tildify(editor.path)}
           </code>
+          {/* The interface-language switch; it saves at once, so it sits by the path, not the form. */}
+          <Select value={langPinned ? uiLang : languageSetting} onValueChange={switchLanguage} disabled={langPinned}>
+            <SelectTrigger
+              className="text-muted-foreground h-7 w-auto px-2 text-xs"
+              aria-label={t('field.language')}
+              title={t('hint.languageHeader')}
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map(lang => (
+                <SelectItem key={lang} value={lang}>
+                  {t(`language.${lang}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {editor.dirty && (
             <Badge variant="warning" className="hidden md:inline-flex">
               {t('tui.unsaved')}
@@ -288,17 +311,6 @@ export function App({
                 {t('web.problems', { count: issueCount })}
               </button>
             )}
-            <Segmented
-              aria-label={t('web.interfaceLanguage')}
-              options={[
-                { value: 'en', label: 'EN' },
-                { value: 'zh-CN', label: '中文' },
-              ]}
-              value={uiLang}
-              onChange={value => {
-                if (isLang(value)) setLangOverride(value)
-              }}
-            />
             <Button onClick={() => void save()} disabled={!editor.dirty || editor.saving} className="gap-1.5">
               {editor.saving && <LoaderCircleIcon className="animate-spin" />}
               {t('web.save')}

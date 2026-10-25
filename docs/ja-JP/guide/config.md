@@ -26,7 +26,8 @@ ZCF が読むのは 1 つのファイル `~/.ufomiao/zcf/zcf.json` だけです�
   },
   "skills": [{ "source": "anthropics/skills", "skills": ["pdf"] }],
   "mirror": "official",
-  "language": "auto"
+  "language": "auto",
+  "configLanguage": "en"
 }
 ```
 
@@ -113,7 +114,18 @@ ZCF は、ツール自身のコマンドがあればそれで各サーバーを�
 
 ## `language`
 
-`auto`（デフォルト）、`en` または `zh-CN`。両エディターの UI 言語です。どちらも設定ページで変更すると保存前からすぐに切り替わり、`auto` の場合 Web UI はブラウザーの言語に、ターミナル UI はシステムのロケールに従います。`--lang` と `ZCF_LANG` が 1 回の実行で優先されると、エディターはこの設定に従わなくなります。コマンド出力（`zcf plan`、`apply`、`update`）はこの設定を読みません。`--lang` か `ZCF_LANG`、次にシステムのロケールに従います。
+`auto`（デフォルト）、`en` または `zh-CN`。両エディターの **UI** 言語です。設定ページにはありません。どちらもヘッダーから切り替えます。ターミナル UI は <kbd>L</kbd>、Web UI はパスの横のセレクターで、即座に単独で保存されます。`auto` の場合 Web UI はブラウザーの言語に、ターミナル UI はシステムのロケールに従います。`--lang` と `ZCF_LANG` が 1 回の実行で優先されているときは切り替えできません。コマンド出力（`zcf plan`、`apply`、`update`）はこの設定を読みません。`--lang` か `ZCF_LANG`、次にシステムのロケールに従います。
+
+## `configLanguage`
+
+`en`（デフォルト）または `zh-CN`。適用後にツール自身が使う言語で、各ツールが持つ設定に書き込まれます。`language` とは別物です。UI を英語で使いながらツールには中国語で応答させる（その逆も）ことができます。
+
+`auto` はありません。対応するツールが一つもなく、Claude Code のようなツールは読み込んだ値をそのままモデルへ渡すため、解決できない語がそのまま設定に入ってしまいます。
+
+| ツール | 適用時に書き込むもの |
+|---------|----------------------|
+| Claude Code | `~/.claude/settings.json` の独自 `language` キー。`zh-CN` では `Simplified Chinese`。`en` は ZCF が以前書き込んだ値だけを削除し、ユーザーが Claude Code 側で設定した言語（`japanese` など）はそのまま残します。 |
+| Codex、Gemini CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness | 独自の言語設定がありません。`zh-CN` のときは計画にその旨が表示され、設定は変更されません。 |
 
 ## 環境変数
 

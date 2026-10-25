@@ -22,6 +22,13 @@ export interface ConfigEditor {
   replace: (draft: Draft) => void
   /** Save when the draft is valid; resolves to whether it was saved. */
   save: () => Promise<boolean>
+  /**
+   * Update one field and persist just it now. Nothing else the draft holds reaches the
+   * disk: the write is the diff from the draft as it stands, so fields still being
+   * edited stay unsaved. A draft that is not valid only moves in memory, since writing
+   * a config that does not exist yet would put its problems on disk.
+   */
+  saveField: (path: DraftPath, value: unknown) => Promise<void>
 }
 
 const EMPTY: Draft = { version: 1 }
@@ -87,6 +94,20 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
   }, [draft, saved, service, validation.valid])
   const savedText = useMemo(() => saved && JSON.stringify(saved), [saved])
 
+  // The base is the draft itself, so the write carries this one field and nothing else pending.
+  const saveField = useCallback(
+    async (at: DraftPath, value: unknown) => {
+      const next = setAt(draft, at, value)
+      setDraft(next)
+      if (!validation.valid) return
+      await service.save(next, draft)
+      // The field is on disk now. A config that did not exist yet was written whole, since
+      // a missing file has no keys to diff against, so the draft counts as saved.
+      setSaved(current => (current ? setAt(current, at, value) : next))
+    },
+    [draft, service, validation.valid],
+  )
+
   return {
     status,
     path,
@@ -99,5 +120,6 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
     update,
     replace: setDraft,
     save,
+    saveField,
   }
 }

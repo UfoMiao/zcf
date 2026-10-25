@@ -79,6 +79,7 @@ const en = {
   'step.mcpEnv': 'Set the environment variables of MCP server "{name}"',
   'step.mcpHeaders': 'Set the HTTP headers of MCP server "{name}"',
   'step.defaultModel': 'Use model "{model}" by default',
+  'step.language': 'Set the language {tool} responds in to {language}',
   'step.writeConfig': 'Update {file}',
   'notice.notInstalled': '{tool} is not installed.',
   'notice.upToDate': '{tool} is already up to date ({version}).',
@@ -93,6 +94,8 @@ const en = {
   'notice.mcpNotSupported': '{tool} has no built-in MCP support, so the MCP servers are not applied to it.',
   'notice.modelMissing':
     'No model is set for {tool}. Set "models.default" in the provider, or "model" in its "{protocol}" block (OpenAI and Gemini only).',
+  'notice.languageNotSupported':
+    '{tool} has no setting of its own for the language of its responses, so ZCF cannot set it to {language}.',
   'cli.command.tui': 'Edit the config in an interactive terminal UI (the default in a terminal)',
   'cli.tuiNeedsTerminal': 'The interactive UI needs a terminal. Use zcf plan or zcf apply instead.',
   'cli.command.ui': 'Edit the config in your browser, served from this machine only',
@@ -106,7 +109,6 @@ const en = {
   'web.apply': 'Apply',
   'web.brokenHint': 'Fix the file, then reload this page.',
   'web.menu': 'Menu',
-  'web.interfaceLanguage': 'Interface language',
   'web.problems': '{count} problem(s)',
   'web.apply.pending': '{count} step(s) will run',
   'web.tools.intro': 'Pick the tools ZCF configures. Missing ones are installed when you apply.',
@@ -151,9 +153,12 @@ const en = {
   'field.mirror': 'Download mirror',
   'hint.mirror':
     'China mirrors: npm packages from registry.npmmirror.com, GitHub clones through gh-proxy.com, provider presets from jsDelivr hosts reachable in mainland China',
-  'field.language': 'Language',
-  'hint.language':
-    "What ZCF shows its interface in. Auto follows the browser's language in the web UI and the system locale in the terminal; --lang or ZCF_LANG pins it for a run.",
+  'field.language': 'Interface language',
+  'hint.languageHeader':
+    'Switches what ZCF itself shows and saves it at once. Auto follows the browser in the web UI and the system locale in the terminal; --lang or ZCF_LANG pins it for a run.',
+  'field.configLanguage': 'Config language',
+  'hint.configLanguage':
+    'The language the configured tools respond in, written into their own settings. Claude Code has a setting for it; the plan lists the tools that do not.',
   'language.auto': 'Auto',
   'language.en': 'English',
   'language.zh-CN': '简体中文',
@@ -286,6 +291,7 @@ const zhCN: Record<MessageKey, string> = {
   'step.mcpEnv': '设置 MCP 服务「{name}」的环境变量',
   'step.mcpHeaders': '设置 MCP 服务「{name}」的 HTTP 请求头',
   'step.defaultModel': '默认使用模型「{model}」',
+  'step.language': '把 {tool} 的回复语言设为{language}',
   'step.writeConfig': '更新 {file}',
   'notice.notInstalled': '{tool} 尚未安装。',
   'notice.upToDate': '{tool} 已是最新版本（{version}）。',
@@ -299,6 +305,7 @@ const zhCN: Record<MessageKey, string> = {
   'notice.mcpNotSupported': '{tool} 不内置 MCP 支持，不会应用 MCP 服务配置。',
   'notice.modelMissing':
     '没有为 {tool} 设置模型。请在供应商里设置 "models.default"，或在 "{protocol}" 配置里设置 "model"（仅 OpenAI 和 Gemini 协议）。',
+  'notice.languageNotSupported': '{tool} 没有自己的回复语言设置，无法把它的回复设为{language}。',
   'cli.command.tui': '在交互式终端界面中编辑配置（在终端中直接运行 zcf 时的默认行为）',
   'cli.tuiNeedsTerminal': '交互式界面需要在终端中运行。请改用 zcf plan 或 zcf apply。',
   'cli.command.ui': '在浏览器中编辑配置，服务只在本机可访问',
@@ -312,7 +319,6 @@ const zhCN: Record<MessageKey, string> = {
   'web.apply': '应用',
   'web.brokenHint': '修正该文件后刷新此页面。',
   'web.menu': '菜单',
-  'web.interfaceLanguage': '界面语言',
   'web.problems': '{count} 处问题',
   'web.apply.pending': '将执行 {count} 个步骤',
   'web.tools.intro': '选择要由 ZCF 配置的工具；未安装的会在应用时安装。',
@@ -357,8 +363,10 @@ const zhCN: Record<MessageKey, string> = {
   'hint.mirror':
     '国内镜像：npm 包从 registry.npmmirror.com 下载，GitHub 克隆经 gh-proxy.com，供应商预设走国内可访问的 jsDelivr 节点',
   'field.language': '界面语言',
-  'hint.language':
-    'ZCF 界面显示的语言。“跟随系统”在网页端按浏览器语言、在终端按系统语言显示；--lang 或 ZCF_LANG 可临时固定。',
+  'hint.languageHeader':
+    '切换 ZCF 界面显示的语言并立即保存。“跟随系统”在网页端按浏览器语言、在终端按系统语言显示；--lang 或 ZCF_LANG 可临时固定。',
+  'field.configLanguage': '配置语言',
+  'hint.configLanguage': '写入各工具自身设置、让它们用哪种语言回复。Claude Code 有该设置；不支持的会在计划中列出。',
   'language.auto': '跟随系统',
   'language.en': 'English',
   'language.zh-CN': '简体中文',
