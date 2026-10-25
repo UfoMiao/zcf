@@ -43,6 +43,15 @@ export function fieldValue(field: Field, text: string): string | undefined {
   return text === '' && !field.required ? undefined : text
 }
 
+/**
+ * The option a select shows: the stored value, or the first option when the field is unset —
+ * which every select's schema treats as its default, so no placeholder is needed beside it.
+ * A value that is not an option stays as it is, so choosing any option changes it.
+ */
+export function selectValue(field: Field, value: unknown): string {
+  return typeof value === 'string' && value !== '' ? value : (field.options?.[0] ?? '')
+}
+
 export const TOOL_OPTIONS: readonly ToolId[] = TOOL_IDS
 
 export const PROVIDER_FIELDS: readonly Field[] = [

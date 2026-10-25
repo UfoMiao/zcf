@@ -13,6 +13,7 @@ import {
   parseArgs,
   PROVIDER_FIELDS,
   renameKey,
+  selectValue,
   SETTINGS_FIELDS,
   SKILL_FIELDS,
   TOOL_OPTIONS,
@@ -97,22 +98,17 @@ function fieldRows(
     if (field.kind === 'select') {
       const options = field.options ?? []
       const label = (option: string) => (field.optionLabel ? t(`${field.optionLabel}.${option}`) : option)
+      const current = selectValue(field, value)
       const step = (delta: number) => {
-        // An unset field shows the first option as its default, so cycling starts from there; a
-        // value that is not an option starts before the first one, so the first press offers it.
-        const position = value === undefined ? 0 : typeof value === 'string' ? options.indexOf(value) : -1
-        const next = options[(position + delta + options.length) % options.length]!
+        // An unset field shows the first option, so cycling starts from there; a value that is
+        // not an option starts before the first one, so the first press offers it.
+        const next = options[(options.indexOf(current) + delta + options.length) % options.length]!
         if (onSelect) onSelect(field, next)
         else editor.update(path, next)
       }
       return {
         ...base,
-        value:
-          typeof value !== 'string'
-            ? t('tui.default', { value: label(options[0] ?? '') })
-            : options.includes(value)
-              ? label(value)
-              : value,
+        value: options.includes(current) ? label(current) : current,
         action: { type: 'cycle', next: () => step(1), previous: () => step(-1) },
       }
     }

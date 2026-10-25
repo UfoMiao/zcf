@@ -1,5 +1,5 @@
 import type { ConfigEditor, DraftPath, Field } from '@zcf/ui-kit'
-import { fieldValue, formatArgs, getAt, isTable, issuesAt, parseArgs } from '@zcf/ui-kit'
+import { fieldValue, formatArgs, getAt, isTable, issuesAt, parseArgs, selectValue } from '@zcf/ui-kit'
 import { useEffect, useState } from 'react'
 
 import type { Translate } from './api'
@@ -121,14 +121,11 @@ export function FieldInput({
       input = (
         <select
           id={id}
-          value={text}
+          value={selectValue(field, value)}
           onChange={event =>
             onSelect ? onSelect(event.target.value) : editor.update(path, fieldValue(field, event.target.value))
           }
         >
-          {!text && (
-            <option value="">{t('tui.default', { value: optionText(field, field.options?.[0] ?? '', t) })}</option>
-          )}
           {/* A value that is not an option, such as one written by hand, shows as it is, so choosing any option changes it. */}
           {text && !field.options?.includes(text) && <option value={text}>{text}</option>}
           {field.options?.map(option => (
