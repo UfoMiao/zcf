@@ -28,14 +28,14 @@ When the `china` mirror is in use, `zcf plan`, `zcf apply` and `zcf update` say 
 | Download | With `china` |
 |----------|--------------|
 | npm installs (`npm install -g`, `npx skills add`, and a tool's own updater when the tool was installed with npm) | Use `https://registry.npmmirror.com`. A registry you already set in `npm_config_registry` is kept. |
+| The git clone inside `npx skills add owner/repo` | Through `https://gh-proxy.com/https://github.com/...`, as [magpie](https://github.com/yetone/magpie)'s `--mirror` does. The mirror is still the one that decides which commits are fetched (the refs come from it), but a change inside the bytes it hands back breaks git's object-hash chain and fails the clone — the same guarantee magpie gives. Your own `url.<base>.insteadOf` rules and a `GIT_CONFIG_COUNT` you already set are kept. |
 | Installing Claude Code | `npm install -g @anthropic-ai/claude-code`, which installs the same native binary, instead of the official script that downloads from Google Cloud Storage. |
 | Files from the ZCF repository, such as [provider presets](./providers) | Also asks `fastly.jsdelivr.net` and `gcore.jsdelivr.net`, and uses whichever answers first. |
 
-ZCF only uses mirrors that serve the very same files. It never uses a proxy that could return something else.
+ZCF only uses mirrors that serve the very same files. The one exception is the git clone above: no such mirror can serve a git clone, and there git's object-hash chain catches a mirror that changes the bytes in transit — though not one that serves a different, self-consistent history; the refs themselves still come from the mirror, as with magpie.
 
 ## Not covered
 
-- Git clones that `npx skills add owner/repo` makes.
 - Native self-updates, such as `claude update` on a Claude Code installed with the official script. `zcf update` says so when this applies.
 - An `npx` that an MCP server runs inside a tool.
 - Your provider's own endpoint.

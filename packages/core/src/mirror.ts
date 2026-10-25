@@ -4,7 +4,9 @@ import type { Plan } from './plan/types'
  * Where ZCF downloads from. `china` asks mirrors in mainland China first, as magpie's
  * China mirror switch (「国内镜像」) does. Only mirrors that serve the very same files are used
  * (npmmirror for npm, jsDelivr for GitHub files), never a proxy that could hand back
- * anything it liked.
+ * anything it liked. Git clones are the one exception: a prefix mirror in magpie's
+ * `--mirror` style, where git's object-hash chain still fails a clone whose bytes were
+ * changed in transit, though the refs themselves come from the mirror, as with magpie.
  */
 export const MIRRORS = ['official', 'china'] as const
 export type Mirror = (typeof MIRRORS)[number]
@@ -20,6 +22,16 @@ export const CHINA_NPM_REGISTRY = 'https://registry.npmmirror.com'
 export function npmRegistry(mirror: Mirror): string {
   return mirror === 'china' ? CHINA_NPM_REGISTRY : OFFICIAL_NPM_REGISTRY
 }
+
+/**
+ * The prefix a GitHub URL is downloaded through on the China mirror, as magpie's
+ * `--mirror` does: the mirror's address first, then the whole official URL, so only
+ * the download address changes. The guarantee is magpie's too: the refs still come
+ * from the mirror, so it decides which history is fetched, while a change inside the
+ * bytes it hands back breaks git's object-hash chain and fails the clone.
+ */
+export const OFFICIAL_GITHUB = 'https://github.com'
+export const CHINA_GITHUB_PREFIX = 'https://gh-proxy.com/https://github.com'
 
 /** A mirror name as people type it: any case, and `cn` for `china`. `undefined` when it names no mirror. */
 export function parseMirrorName(value: string | undefined): Mirror | undefined {
@@ -58,6 +70,34 @@ function hasRegistryEnv(env: Record<string, string | undefined>): boolean {
 export function mirrorEnv(mirror: Mirror, env: Record<string, string | undefined>): Record<string, string> {
   if (mirror === 'official' || hasRegistryEnv(env)) return {}
   return { npm_config_registry: npmRegistry(mirror) }
+}
+
+/** Whether the user already passes git configuration to child processes through `GIT_CONFIG_COUNT`. */
+function hasGitConfigEnv(env: Record<string, string | undefined>): boolean {
+  return Object.keys(env).some(key => key.toUpperCase() === 'GIT_CONFIG_COUNT' && env[key]?.trim())
+}
+
+/**
+ * Environment variables that point the `git clone` inside `npx skills add` at the mirror,
+ * in git's own `GIT_CONFIG_COUNT` form: a `url.<prefix>.insteadOf` rule that rewrites
+ * `https://github.com` to the mirror prefix, for this one process only; the user's global
+ * git configuration is never touched. Empty for the official mirror, and when the user
+ * already owns URL rewriting: through `GIT_CONFIG_COUNT`, which cannot be merged with, or
+ * through `url.<base>.insteadOf` rules of their own (`userUrlRewrites`) — git prefers an
+ * env-injected rule over a file rule of the same match length, so the mirror's rewrite
+ * must not shadow theirs.
+ */
+export function githubMirrorEnv(
+  mirror: Mirror,
+  env: Record<string, string | undefined>,
+  userUrlRewrites: boolean,
+): Record<string, string> {
+  if (mirror === 'official' || hasGitConfigEnv(env) || userUrlRewrites) return {}
+  return {
+    GIT_CONFIG_COUNT: '1',
+    GIT_CONFIG_KEY_0: `url.${CHINA_GITHUB_PREFIX}.insteadOf`,
+    GIT_CONFIG_VALUE_0: OFFICIAL_GITHUB,
+  }
 }
 
 /** Add the mirror's environment to every command step of a plan. */

@@ -85,15 +85,16 @@ Provider presets are data, not code. They live in `presets/providers.json` on `m
 
 ### Mirrors
 
-`mirror` in the config (`official` or `china`, overridden by `ZCF_MIRROR` (`cn` also means `china`) and by `--mirror` for one run, and set with `zcf mirror`) decides where downloads come from, after magpie's China mirror switch (「国内镜像」). Only mirrors that serve the very same files are used, never a proxy such as gh-proxy that could hand back anything.
+`mirror` in the config (`official` or `china`, overridden by `ZCF_MIRROR` (`cn` also means `china`) and by `--mirror` for one run, and set with `zcf mirror`) decides where downloads come from, after magpie's China mirror switch (「国内镜像」). Only mirrors that serve the very same files are used, never a proxy that could hand back anything. The one exception is the git clone inside `npx skills add`, which no same-files mirror can serve: there a prefix mirror in magpie's `--mirror` style is used. The guarantee is magpie's: the refs still come from the mirror, so it decides which history is fetched, while a change inside the bytes it hands back breaks git's object-hash chain and fails the clone.
 
 | Download | `china` |
 |----------|---------|
 | npm (`npm install -g`, `npx skills`, a tool's own updater on an npm install) | `planTools` and `planUpdates` give every command step `npm_config_registry=https://registry.npmmirror.com`, unless the user already set `npm_config_registry`; it outranks a registry in `.npmrc`. The value is never printed |
+| The git clone inside `npx skills add owner/repo` | `githubMirrorEnv` gives the step `GIT_CONFIG_COUNT` variables with a `url.https://gh-proxy.com/https://github.com.insteadOf=https://github.com` rule, for that one process only (no global git config). Unset when the user already passes `GIT_CONFIG_COUNT`, or has `url.<base>.insteadOf` rules of their own — found with a `git config --get-regexp '^url\.'` probe, because git prefers an env-injected rule over a file rule of the same match length and theirs must win |
 | Claude Code install | `npm install -g @anthropic-ai/claude-code` (the same native binary) instead of `install.sh`, which downloads from Google Cloud Storage |
 | Files in a GitHub repository, such as provider presets | `githubFileUrls` lists `fastly.jsdelivr.net` and `gcore.jsdelivr.net` before `cdn.jsdelivr.net` and `raw.githubusercontent.com` |
 
-Not covered: git clones that `npx skills add owner/repo` makes, native self-updates such as `claude update` on an `install.sh` install (`zcf update` says so), and the `npx` an MCP server runs inside a tool.
+Not covered: native self-updates such as `claude update` on an `install.sh` install (`zcf update` says so), and the `npx` an MCP server runs inside a tool.
 
 ### Tooling
 

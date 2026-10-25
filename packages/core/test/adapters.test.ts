@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { detectTools, planTools, planUpdates } from '../src/adapters'
 import { createContext } from '../src/context'
 import type { CommandRunner } from '../src/exec/runner'
-import { githubFileUrls } from '../src/mirror'
+import { CHINA_GITHUB_PREFIX, githubFileUrls, OFFICIAL_GITHUB } from '../src/mirror'
 import { applyPlan } from '../src/plan/apply'
 import type { Plan } from '../src/plan/types'
 import { parseZcfConfig } from '../src/schema/config'
@@ -129,13 +129,20 @@ function mirrorConfig(mirror: 'official' | 'china') {
   return result.success ? result.config : undefined!
 }
 
+/** The git environment that sends an `npx skills add` clone through the mirror. */
+const gitEnv = {
+  GIT_CONFIG_COUNT: '1',
+  GIT_CONFIG_KEY_0: `url.${CHINA_GITHUB_PREFIX}.insteadOf`,
+  GIT_CONFIG_VALUE_0: OFFICIAL_GITHUB,
+}
+
 describe('mirrors', () => {
   const registry = { npm_config_registry: 'https://registry.npmmirror.com' }
 
-  it("points every command at the China mirror's npm registry", async () => {
+  it("points every command at the China mirror's npm registry, and every skills clone at its GitHub mirror", async () => {
     const plan = await planTools(mirrorConfig('china'), ctx)
-    // Codex is missing here: npm install, then npx skills, for both tools.
-    expect(commandEnvs(plan)).toEqual([registry, registry, registry])
+    // Codex is missing here: npm install, then npx skills; Claude Code only runs npx skills.
+    expect(commandEnvs(plan)).toEqual([{ ...registry, ...gitEnv }, registry, { ...registry, ...gitEnv }])
     expect(plan.tools[0]!.steps[0]).toMatchObject({ command: 'npx', args: expect.arrayContaining(['skills']) })
   })
 
@@ -145,14 +152,18 @@ describe('mirrors', () => {
 
   it('lets ZCF_MIRROR, then the caller, override the config', async () => {
     const envCtx = createContext({ ...ctx, env: { ZCF_MIRROR: 'cn' } })
-    expect(commandEnvs(await planTools(mirrorConfig('official'), envCtx))).toEqual([registry, registry, registry])
+    expect(commandEnvs(await planTools(mirrorConfig('official'), envCtx))).toEqual([
+      { ...registry, ...gitEnv },
+      registry,
+      { ...registry, ...gitEnv },
+    ])
     const callerCtx = createContext({ ...envCtx, mirror: 'official' })
     expect(commandEnvs(await planTools(mirrorConfig('china'), callerCtx))).toEqual([undefined, undefined, undefined])
   })
 
-  it('keeps an npm registry the user already chose', async () => {
+  it('keeps an npm registry the user already chose; the git mirror is a separate choice', async () => {
     const own = createContext({ ...ctx, env: { NPM_CONFIG_REGISTRY: 'https://npm.example.com' } })
-    expect(commandEnvs(await planTools(mirrorConfig('china'), own))).toEqual([undefined, undefined, undefined])
+    expect(commandEnvs(await planTools(mirrorConfig('china'), own))).toEqual([gitEnv, undefined, gitEnv])
   })
 
   it("sends tools' own updaters through the mirror, which they use on npm installs", async () => {
@@ -160,6 +171,21 @@ describe('mirrors', () => {
     expect(plan.tools[0]!.steps).toEqual([
       expect.objectContaining({ command: 'claude', args: ['update'], env: registry }),
     ])
+  })
+
+  it('adds the git rewrite to a skills step without touching the command itself', async () => {
+    const plan = await planTools(mirrorConfig('china'), ctx)
+    const skillsStep = plan.tools[0]!.steps[0]
+    // The skills CLI runs exactly as on the official mirror: the `source` the user wrote is
+    // passed through untouched, and only the step's environment gains the mirror's rewrite.
+    expect(skillsStep).toMatchObject({ command: 'npx', args: expect.arrayContaining(['skills', 'add', 'a/b']) })
+    expect(skillsStep?.kind === 'command' && skillsStep.env).toEqual({ ...registry, ...gitEnv })
+  })
+
+  it('keeps the git configuration the user already passes a child process', async () => {
+    const own = createContext({ ...ctx, env: { GIT_CONFIG_COUNT: '2' } })
+    const plan = await planTools(mirrorConfig('china'), own)
+    expect(commandEnvs(plan)).toEqual([registry, registry, registry])
   })
 })
 
