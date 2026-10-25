@@ -369,13 +369,15 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         options.webRoot ? [options.webRoot] : [join(here, 'web'), join(here, '../../web/dist')],
       )
       if (!asset) throw new CliError(t('cli.uiMissingAssets'), EXIT_ERROR)
-      // The web UI translates once, as it starts, so the config's language is read here.
+      // The browser picks its own language from the config; this one covers the strings the
+      // server itself sends, so it follows the config too unless a flag pinned it.
       const loaded = await loadConfigFile(path)
       const configLang = loaded.success ? loaded.config.language : undefined
       const uiLang = !isLangPinned(argv) && isLang(configLang) ? configLang : lang
       const server = await startUiServer({
         service: createLocalService(ctx, path, now),
         lang: uiLang,
+        langPinned: isLangPinned(argv),
         home: ctx.home,
         asset,
         port,
