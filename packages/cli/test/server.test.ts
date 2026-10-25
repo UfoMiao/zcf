@@ -198,6 +198,7 @@ describe('startUiServer', () => {
     await start({ langPinned: true })
     const session = JSON.parse((await call('/api/session')).text) as { langPinned: boolean }
     expect(session.langPinned).toBe(true)
+    await server.close()
 
     server = await startUiServer({
       service: {

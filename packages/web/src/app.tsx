@@ -1,10 +1,11 @@
 import type { ToolId, ToolStatus } from '@zcf/core'
 import type { PageId } from '@zcf/ui-kit'
+import { isLang } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import { useEffect, useState } from 'react'
 
 import type { Lang, Translate } from './api'
-import { browserLang, httpService, isLang, setRequestLang, tildify } from './api'
+import { browserLang, httpService, setRequestLang, tildify } from './api'
 import { ApplyPage, McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
 
 export function App({

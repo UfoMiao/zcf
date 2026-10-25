@@ -1,6 +1,9 @@
 import type { Message, PresetList, ToolStatus } from '@zcf/core'
 import { isToolId, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, Draft, LoadedConfig, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
+import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
+
+export type { Lang } from '@zcf/ui-kit'
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string
 
@@ -39,13 +42,6 @@ export function tildify(path: string): string {
   return home && path.startsWith(home) ? `~${path.slice(home.length)}` : path
 }
 
-/** The languages the UI ships; the server sends a dictionary for each. */
-export type Lang = 'en' | 'zh-CN'
-
-export function isLang(value: unknown): value is Lang {
-  return value === 'en' || value === 'zh-CN'
-}
-
 /** The language the browser itself asks for: any Chinese locale becomes `zh-CN`. */
 export function browserLang(): Lang {
   return navigator.languages.some(code => code.toLowerCase().startsWith('zh')) ? 'zh-CN' : 'en'
@@ -69,10 +65,7 @@ export async function loadSession(): Promise<Session> {
   home = session.home
   const of = (lang: Lang): Translate => {
     const messages = session.messages[lang] ?? {}
-    return (key, params = {}) =>
-      (messages[key] ?? key).replace(/\{(\w+)\}/g, (match, name: string) =>
-        name in params ? String(params[name]) : match,
-      )
+    return (key, params = {}) => interpolate(messages[key] ?? key, params)
   }
   return {
     startupLang: isLang(session.lang) ? session.lang : 'en',
