@@ -144,7 +144,14 @@ export const codex: ToolAdapter = {
 
     steps.push(...(await mcpSteps(config.mcpServers, status.command, ctx, file)))
     // The skills CLI installs Codex skills into the shared ~/.agents/skills folder, which Codex reads.
-    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(ctx.home, '.agents', 'skills') })))
+    steps.push(
+      ...(await skillSteps(
+        config.skills,
+        ctx,
+        { agent: TOOL, dir: join(ctx.home, '.agents', 'skills') },
+        config.configLanguage,
+      )),
+    )
 
     return { tool: TOOL, steps, notices }
   },

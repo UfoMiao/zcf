@@ -1,5 +1,5 @@
 import type { PresetList, ToolId, ToolStatus } from '@zcf/core'
-import { applyPreset, presetSummary, TOOL_NAMES } from '@zcf/core/schema'
+import { applyPreset, presetSummary, SKILLS_CATALOG, skillDescription, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, McpType, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import {
   freshName,
@@ -8,11 +8,13 @@ import {
   issuesAt,
   mcpFields,
   newMcpServer,
+  pickedCatalogSkills,
   PROVIDER_FIELDS,
   renameKey,
   SETTINGS_FIELDS,
   SKILL_FIELDS,
   TOOL_OPTIONS,
+  toggleCatalogSkill,
   withMcpType,
 } from '@zcf/ui-kit'
 import { useEffect, useRef, useState } from 'react'
@@ -198,11 +200,28 @@ export function McpPage({ editor, t }: PageProps) {
   )
 }
 
-export function SkillsPage({ editor, t }: PageProps) {
+export function SkillsPage({ editor, t, lang }: PageProps & { lang: string }) {
   const sources = Array.isArray(editor.draft.skills) ? editor.draft.skills : []
+  const picked = pickedCatalogSkills(editor.draft.skills)
   return (
     <section>
       <p className="intro">{t('tui.skills.intro')}</p>
+      <div className="tools">
+        {SKILLS_CATALOG.map(skill => {
+          const on = picked.includes(skill.id)
+          return (
+            <label key={skill.id} className={`tool${on ? ' on' : ''}`}>
+              <input
+                type="checkbox"
+                checked={on}
+                onChange={() => editor.update(['skills'], toggleCatalogSkill(editor.draft.skills, skill.id))}
+              />
+              <span className="tool-name">{skill.id}</span>
+              <small>{skillDescription(skill, lang)}</small>
+            </label>
+          )
+        })}
+      </div>
       {sources.map((_, index) => (
         // Sources have no ids; the index is their identity, as in the config.
         <div className="card" key={index}>

@@ -103,10 +103,23 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 
 | 字段 | 含义 |
 |------|------|
-| `source` | `npx skills add` 能识别的任何来源：`owner/repo`、git URL 或本地路径。 |
+| `source` | `npx skills add` 能识别的任何来源：`owner/repo`、git URL、本地路径，或表示 ZCF 自带技能的 `zcf`。 |
 | `skills` | 只安装该来源中的这些技能。不填或留空则全部安装。 |
 
 列出了技能的来源，在这些技能全部安装后会被跳过。没有列出技能的来源每次应用都会重新安装，因为 ZCF 无法得知它包含哪些技能。
+
+保留来源 `zcf` 表示 ZCF 自带的技能，安装 [`configLanguage`](#configlanguage)（工具工作语言）对应文件夹下的版本。它们是 ZCF v3 会安装的工作流技能，在技能页面以勾选清单提供：
+
+| 技能 | 作用 |
+|------|------|
+| `init-project` | 生成项目级 CLAUDE.md 上下文索引。 |
+| `workflow` | 运行带质量关卡的六阶段开发工作流。 |
+| `feat` | 以结构化流程规划并实现新功能。 |
+| `git-commit` | 分析改动并生成规范提交信息。 |
+| `git-rollback` | 交互式回滚分支到历史版本。 |
+| `git-clean-branches` | 预览并清理已合并或过期的分支。 |
+| `git-worktree` | 在项目旁目录中管理 git worktree。 |
+| `bmad-init` | 在项目中初始化或更新 BMad-Method V6。 |
 
 ## `mirror`
 
