@@ -21,7 +21,12 @@ export function App({
   const [page, setPage] = useState<PageId>('tools')
   const [status, setStatus] = useState<{ text: string; tone: 'info' | 'warning' | 'error' }>()
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
-  const [uiLang, setUiLang] = useState<Lang>(langPinned ? startupLang : browserLang())
+  // Set before the first render ends, so even the config's own first request names the right language.
+  const [uiLang, setUiLang] = useState<Lang>(() => {
+    const initial = langPinned ? startupLang : browserLang()
+    setRequestLang(initial)
+    return initial
+  })
   const t = translators[uiLang]
 
   // The Settings page's language choice moves the UI itself, before it is even saved;
