@@ -8,6 +8,7 @@ import { dirname, join } from 'pathe'
 import type { AdapterContext } from './adapters/types'
 import { processRunner } from './exec/runner'
 import { readTextIfExists } from './io/fs'
+import { detectSpokenLang } from './lang'
 
 /**
  * The built-in skill templates as an absolute folder: next to the running code when bundled
@@ -19,16 +20,6 @@ export function builtinSkillsDir(from: string = dirname(fileURLToPath(import.met
   return undefined
 }
 
-/**
- * The locale of the environment, by the same rule the CLI's interface follows: the first of
- * `LC_ALL`, `LC_MESSAGES` and `LANG` that is set, else the system locale, mapping Chinese to
- * `zh-CN` and everything else to `en`.
- */
-function detectLocale(env: Record<string, string | undefined>): string {
-  const locale = env.LC_ALL || env.LC_MESSAGES || env.LANG || new Intl.DateTimeFormat().resolvedOptions().locale
-  return locale.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
-}
-
 export function createContext(overrides: Partial<AdapterContext> = {}): AdapterContext {
   const env = overrides.env ?? process.env
   return {
@@ -38,7 +29,7 @@ export function createContext(overrides: Partial<AdapterContext> = {}): AdapterC
     runner: processRunner,
     readFile: readTextIfExists,
     builtinSkillsDir: builtinSkillsDir(),
-    locale: detectLocale(env),
+    locale: detectSpokenLang(env),
     ...overrides,
   }
 }

@@ -1,12 +1,5 @@
 import type { PresetList, ToolId, ToolStatus } from '@zcf/core'
-import {
-  applyPreset,
-  BUILTIN_SKILLS_SOURCE,
-  presetSummary,
-  SKILLS_CATALOG,
-  skillDescription,
-  TOOL_NAMES,
-} from '@zcf/core/schema'
+import { applyPreset, presetSummary, SKILLS_CATALOG, skillDescription, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, McpType, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import {
   freshName,
@@ -15,6 +8,7 @@ import {
   issuesAt,
   mcpFields,
   newMcpServer,
+  pickedCatalogSkills,
   PROVIDER_FIELDS,
   renameKey,
   SETTINGS_FIELDS,
@@ -206,15 +200,9 @@ export function McpPage({ editor, t }: PageProps) {
   )
 }
 
-/** The ids of the built-in skills the draft already picks, from its `zcf` source. */
-function pickedCatalogSkills(sources: readonly unknown[]): string[] {
-  const builtin = sources.find(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
-  return isTable(builtin) && Array.isArray(builtin.skills) ? builtin.skills.map(String) : []
-}
-
 export function SkillsPage({ editor, t, lang }: PageProps & { lang: string }) {
   const sources = Array.isArray(editor.draft.skills) ? editor.draft.skills : []
-  const picked = pickedCatalogSkills(sources)
+  const picked = pickedCatalogSkills(editor.draft.skills)
   return (
     <section>
       <p className="intro">{t('tui.skills.intro')}</p>

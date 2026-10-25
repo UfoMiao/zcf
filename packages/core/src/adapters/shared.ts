@@ -110,9 +110,9 @@ export function sameJson(a: unknown, b: unknown): boolean {
 export function skillsAddStep(
   { source, skills }: SkillSource,
   agent: string,
-  gitMirrorEnv: Record<string, string> = {},
+  gitMirrorEnv: Record<string, string>,
   /** The source as the user wrote it, shown in the title when the installed path differs, such as `zcf`. */
-  display: string = source,
+  display: string,
 ): CommandStep {
   return {
     kind: 'command',
@@ -158,7 +158,8 @@ export async function skillSteps(
   sources: readonly SkillSource[],
   ctx: AdapterContext,
   target: SkillsTarget,
-  language: LanguageSetting = 'auto',
+  /** The config's `language`, which picks the built-in templates' folder when it is `auto`. */
+  language: LanguageSetting,
 ): Promise<CommandStep[]> {
   // The built-in `zcf` source installs from the language folder of the shipped templates;
   // every other source is passed to the skills CLI exactly as the user wrote it.

@@ -18,6 +18,7 @@ import {
   mcpFields,
   newMcpServer,
   parseArgs,
+  pickedCatalogSkills,
   PROVIDER_FIELDS,
   renameKey,
   SETTINGS_FIELDS,
@@ -405,12 +406,6 @@ export function McpPage(props: PageProps) {
       <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
     </Box>
   )
-}
-
-/** The ids of the built-in skills the draft already picks, from its `zcf` source. */
-function pickedCatalogSkills(sources: readonly unknown[]): string[] {
-  const builtin = sources.find(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
-  return isTable(builtin) && Array.isArray(builtin.skills) ? builtin.skills.map(String) : []
 }
 
 /** The built-in skills v3 shipped, one row each: Enter toggles, Esc goes back. */

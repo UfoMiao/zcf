@@ -50,6 +50,12 @@ describe('createContext', () => {
     expect(createContext({ env: { LC_ALL: 'zh_CN.UTF-8' } }).locale).toBe('zh-CN')
     expect(createContext({ env: { LANG: 'en_US.UTF-8' } }).locale).toBe('en')
   })
+
+  it('lets ZCF_LANG pin the language over the locale', () => {
+    expect(createContext({ env: { ZCF_LANG: 'zh-CN', LC_ALL: 'en_US.UTF-8' } }).locale).toBe('zh-CN')
+    // A value ZCF does not speak is not a language at all: the locale decides again.
+    expect(createContext({ env: { ZCF_LANG: 'fr', LANG: 'zh_CN.UTF-8' } }).locale).toBe('zh-CN')
+  })
 })
 
 describe('SKILLS_CATALOG', () => {
@@ -133,6 +139,24 @@ describe('built-in skills in a plan', () => {
       context({ builtinSkillsDir: TEMPLATES, locale: 'zh-CN' }),
     )
     expect((plan.steps as CommandStep[]).map(step => step.args[3])).toEqual([join(TEMPLATES, 'en')])
+  })
+
+  it('installs a Windows templates folder with forward slashes on win32', async () => {
+    const dir = 'C:/Program Files/zcf/templates/skills'
+    const plan = await claudeCode.plan(
+      config({ skills: [{ source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] }] }),
+      installed,
+      context({
+        platform: 'win32',
+        home: 'C:/Users/me',
+        builtinSkillsDir: dir,
+        locale: 'zh-CN',
+      }),
+    )
+    const steps = plan.steps as CommandStep[]
+    expect(steps.map(step => [step.command, ...step.args].join(' '))).toEqual([
+      'npx -y skills add C:/Program Files/zcf/templates/skills/zh-CN -g -y -a claude-code -s git-commit',
+    ])
   })
 
   it('skips a built-in skill that is already installed', async () => {

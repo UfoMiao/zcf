@@ -1,5 +1,6 @@
 import { join } from 'pathe'
 
+import { localeToLang } from '../lang'
 import type { LanguageSetting } from './config'
 
 /**
@@ -93,6 +94,5 @@ export function skillDescription(skill: CatalogSkill, lang: string): string {
  * config's `language` picks, with `auto` following `locale` the way the interface does.
  */
 export function builtinSkillsPath(dir: string, language: LanguageSetting, locale: string | undefined): string {
-  const lang = language === 'auto' ? (locale?.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en') : language
-  return join(dir, lang)
+  return join(dir, language === 'auto' ? localeToLang(locale) : language)
 }

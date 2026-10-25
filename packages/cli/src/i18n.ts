@@ -1,6 +1,6 @@
 import process from 'node:process'
 
-import { MessageError } from '@zcf/core'
+import { detectSpokenLang, MessageError } from '@zcf/core'
 import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
 
 export { LANGS, isLang } from '@zcf/ui-kit'
@@ -395,14 +395,12 @@ const zhCN: Record<MessageKey, string> = {
 const english: Record<string, string> = en
 const dictionaries: Record<Lang, Record<string, string>> = { en: english, 'zh-CN': zhCN }
 
-/** `--lang` wins, then ZCF_LANG, then the system locale. */
+/** `--lang` wins; everything else — `ZCF_LANG`, the locale — follows the one rule in core, shared with the built-in content. */
 export function detectLang(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): Lang {
   const index = argv.findIndex(arg => arg === '--lang' || arg.startsWith('--lang='))
   const flag = index === -1 ? undefined : argv[index]!.includes('=') ? argv[index]!.split('=')[1] : argv[index + 1]
   if (isLang(flag)) return flag
-  if (isLang(env.ZCF_LANG)) return env.ZCF_LANG
-  const locale = env.LC_ALL || env.LC_MESSAGES || env.LANG || new Intl.DateTimeFormat().resolvedOptions().locale
-  return locale.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
+  return detectSpokenLang(env)
 }
 
 /** Whether `--lang` or `ZCF_LANG` set the language, so the config's `language` cannot override it. */
