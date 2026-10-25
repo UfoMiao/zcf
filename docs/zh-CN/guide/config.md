@@ -113,13 +113,13 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 
 ## `language`
 
-`auto`（默认）、`en` 或 `zh-CN`，ZCF 界面的显示语言。两个编辑器都会跟随它——终端界面在「设置」页改动后立即切换；`--lang` 或 `ZCF_LANG` 在单次运行中优先。
+`auto`（默认）、`en` 或 `zh-CN`，两个编辑器界面的显示语言。终端界面在「设置」页改动后立即切换；`--lang` 或 `ZCF_LANG` 在单次运行中优先。命令输出（`zcf plan`、`apply`、`update`）不读取此设置：它跟随 `--lang` 或 `ZCF_LANG`，其次系统语言。
 
 ## 环境变量
 
 | 变量 | 作用 |
 |------|------|
-| `ZCF_LANG` | 显示语言，`en` 或 `zh-CN`。`--lang` 优先于它，两者又都优先于配置文件里的 `language`。三者都没有时跟随系统语言。 |
+| `ZCF_LANG` | 命令输出的显示语言，`en` 或 `zh-CN`。`--lang` 优先于它；两者都没有时跟随系统语言。编辑器界面则跟随配置文件里的 `language`。 |
 | `ZCF_MIRROR` | `official` 或 `china`（也可写 `cn`）。优先于文件中的 `mirror`。 |
 | `ZCF_PRESETS_URL` | 改从这个 URL 加载[供应商预设](./providers)。 |
 

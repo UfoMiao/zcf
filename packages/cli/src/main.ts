@@ -247,7 +247,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     }
     if (notes.length > 0) renderer.line()
     for (const note of notes) renderer.line(note)
-    renderer.summary(results, backupDir)
+    renderer.summary(plan, results, backupDir)
     return results.every(result => result.ok) ? EXIT_OK : EXIT_ERROR
   }
 

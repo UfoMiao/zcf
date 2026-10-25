@@ -181,6 +181,24 @@ describe('terminal UI', () => {
     pinned.unmount()
   })
 
+  it('goes back to the startup language when the field is set back to Auto', async () => {
+    const zh = createTranslator('zh-CN')
+    const { service, saved } = fakeService({ version: 1, tools: [], language: 'zh-CN' })
+    const app = await start(service)
+    expect(await app.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    // Language sits under the mirror; from zh-CN the next option is Auto, and the UI
+    // goes back to the startup locale with it.
+    await app.press(KEY.down, KEY.right)
+    expect(app.frame()).toContain('Tools')
+    expect(app.frame()).toContain('Auto (system locale)')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('English')
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], language: 'en' }])
+    app.unmount()
+  })
+
   it('opens a skill source with the cursor on its first field', async () => {
     const skills = [{ source: 'a/a' }, { source: 'b/b' }, { source: 'c/c' }]
     const { service, saved } = fakeService({ version: 1, tools: [], skills })

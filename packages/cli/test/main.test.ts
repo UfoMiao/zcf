@@ -303,6 +303,9 @@ describe('zcf update', () => {
     expect(code).toBe(EXIT_OK)
     expect(stdout).toContain('DeepSeek Harness is not installed.')
     expect(stdout).toContain('Claude Code: Update Claude Code')
+    // The tool that was not installed is reported, but not counted as up to date;
+    // Claude Code's unchanged updater is the one up-to-date entry.
+    expect(stdout).toContain('Done: 0 applied, 1 already up to date.')
     expect(calls).toContainEqual(['claude', 'update'])
   })
 

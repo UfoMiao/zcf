@@ -1,3 +1,4 @@
+import type { StepResult } from '@zcf/core'
 import { describe, expect, it } from 'vitest'
 
 import { createTranslator } from '../src/i18n'
@@ -63,30 +64,35 @@ describe('render helpers', () => {
   })
 })
 
+const updateStep = (tool: 'claude-code' | 'codex'): StepResult => ({
+  step: {
+    kind: 'command',
+    title: { key: 'step.update', params: {} },
+    command: 'npm',
+    args: ['install', '-g', `${tool}@latest`],
+  },
+  status: 'done',
+})
+
 describe('summary', () => {
   const text: string[] = []
   const out = { write: (line: string) => void text.push(line) }
 
-  it('counts a tool the plan skipped over as already up to date', () => {
+  it('counts a stepless tool as up to date, but not one that was not installed', () => {
     const renderer = new Renderer(out, createTranslator('en'), [], '/home/me')
     renderer.summary(
+      {
+        tools: [
+          { tool: 'claude-code', steps: [updateStep('claude-code').step], notices: [] },
+          // Planned away with a notice, such as an updater that found nothing to do.
+          { tool: 'codex', steps: [], notices: [] },
+          // Not installed: reported at the top, but it is not "already up to date".
+          { tool: 'dsh', steps: [], notices: [{ level: 'info', message: { key: 'notice.notInstalled', params: {} } }] },
+        ],
+      },
       [
-        {
-          tool: 'claude-code',
-          ok: true,
-          steps: [
-            {
-              step: {
-                kind: 'command',
-                title: { key: 'step.update', params: {} },
-                command: 'claude',
-                args: ['update'],
-              },
-              status: 'done',
-            },
-          ],
-        },
-        // Planned away with a notice, such as an updater that found nothing to do.
+        { tool: 'claude-code', ok: true, steps: [updateStep('claude-code')] },
+        { tool: 'codex', ok: true, steps: [] },
         { tool: 'dsh', ok: true, steps: [] },
       ],
       '/home/me/backups',

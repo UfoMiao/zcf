@@ -113,13 +113,13 @@ A source that lists its skills is skipped once all of them are installed. A sour
 
 ## `language`
 
-`auto` (the default), `en` or `zh-CN`. The language ZCF shows its interface in. The editors follow it — the terminal UI switches as soon as the Settings page changes it — and `--lang` or `ZCF_LANG` outranks it for a run.
+`auto` (the default), `en` or `zh-CN`. The language ZCF's editors show their interface in. Both editors follow it — the terminal UI switches as soon as the Settings page changes it — and `--lang` or `ZCF_LANG` outranks it for a run. Command output (`zcf plan`, `apply`, `update`) does not read this setting: it follows `--lang` or `ZCF_LANG`, then the system locale.
 
 ## Environment variables
 
 | Variable | Effect |
 |----------|--------|
-| `ZCF_LANG` | Display language, `en` or `zh-CN`. `--lang` wins over it, and both outrank `language` in the config file. Without any of them, ZCF follows the system locale. |
+| `ZCF_LANG` | Command-output language, `en` or `zh-CN`. `--lang` wins over it; without either, commands follow the system locale. The editors follow `language` in the config file instead. |
 | `ZCF_MIRROR` | `official` or `china` (`cn` works too). Overrides `mirror` in the file. |
 | `ZCF_PRESETS_URL` | Load [provider presets](./providers) from this URL instead. |
 

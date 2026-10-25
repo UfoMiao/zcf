@@ -48,11 +48,14 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const loadPresets = useCallback(() => service.presets(), [service])
 
   // The config's `language` wins over the detected locale, unless --lang or ZCF_LANG pinned it.
-  // Editing the field on the Settings page switches the UI before it is even saved.
+  // Editing the field on the Settings page switches the UI before it is even saved; picking
+  // `auto` goes back to the locale detected at startup.
   const draftLanguage = editor.status === 'ready' ? editor.draft.language : undefined
   useEffect(() => {
-    if (!langPinned && isLang(draftLanguage) && draftLanguage !== uiLang) setUiLang(draftLanguage)
-  }, [draftLanguage, langPinned, uiLang])
+    if (langPinned) return
+    const next = isLang(draftLanguage) ? draftLanguage : lang
+    if (next !== uiLang) setUiLang(next)
+  }, [draftLanguage, lang, langPinned, uiLang])
 
   useEffect(() => {
     service.detect(TOOL_OPTIONS).then(setDetected, () => setDetected({}))
