@@ -108,6 +108,10 @@ export const geminiCli: ToolAdapter = {
     const notices: Notice[] = []
     const settingsFile = join(geminiDir(ctx), 'settings.json')
 
+    // Gemini CLI has no language setting of its own; the docs point at GEMINI.md instructions instead.
+    if (config.configLanguage === 'zh-CN')
+      notices.push(notice('warning', 'notice.languageNotSupported', { tool: TOOL, language: config.configLanguage }))
+
     if (!status.installed) steps.push(npmInstallStep(TOOL, PACKAGE))
 
     const { provider } = config

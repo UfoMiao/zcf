@@ -1,4 +1,5 @@
 import type { ToolId, ToolStatus } from '@zcf/core'
+import { isLanguageSetting, LANGUAGES } from '@zcf/core'
 import type { PageId, ZcfService } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import { Box, Text, useApp, useInput } from 'ink'
@@ -48,9 +49,9 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const loadPresets = useCallback(() => service.presets(), [service])
 
   // The config's `language` wins over the detected locale, unless --lang or ZCF_LANG pinned it.
-  // Editing the field on the Settings page switches the UI before it is even saved; picking
-  // `auto` goes back to the locale detected at startup.
+  // The header's switch writes the field at once, so the effect below follows what it saved.
   const draftLanguage = editor.status === 'ready' ? editor.draft.language : undefined
+  const languageSetting = isLanguageSetting(draftLanguage) ? draftLanguage : 'auto'
   useEffect(() => {
     if (langPinned) return
     const next = isLang(draftLanguage) ? draftLanguage : lang
@@ -60,6 +61,16 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   useEffect(() => {
     service.detect(TOOL_OPTIONS).then(setDetected, () => setDetected({}))
   }, [service])
+
+  const switchLanguage = () => {
+    const position = LANGUAGES.indexOf(languageSetting)
+    const next = LANGUAGES[(position + 1) % LANGUAGES.length]!
+    editor
+      .saveField(['language'], next)
+      .catch((error: unknown) =>
+        setStatus({ text: t('tui.saveFailed', { message: errorText(error, t) }), tone: 'error' }),
+      )
+  }
 
   const save = async () => {
     if (!editor.validation.valid) {
@@ -85,6 +96,11 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
         return
       }
       if (input !== 'q') setQuitArmed(false)
+      // The header's language switch works on every page; a pinned --lang keeps the language.
+      if (input === 'l' && !langPinned && editor.status === 'ready') {
+        switchLanguage()
+        return
+      }
       if (focus !== 'nav' && editor.status === 'ready') return
       const index = PAGES.indexOf(page)
       if (input === 'q') {
@@ -138,6 +154,10 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
         <Text dimColor>v{version}</Text>
         <Text dimColor>{tildify(editor.path, home)}</Text>
         {editor.dirty && <Text color="yellow">● {t('tui.unsaved')}</Text>}
+        <Text dimColor>
+          {t('field.language')}: {t(`language.${languageSetting}`)}
+          {!langPinned && <Text bold> (L)</Text>}
+        </Text>
       </Box>
       <Box borderStyle="round" borderDimColor>
         <Box flexDirection="column" width={18} paddingRight={1}>

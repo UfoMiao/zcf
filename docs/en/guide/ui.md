@@ -18,7 +18,7 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
 | Skills | Add skill sources and, for each, the skills to install. |
-| Settings | Settings for ZCF itself, which no tool's config receives: the interface language and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
+| Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
 | Apply | See the plan for the saved config, with a diff of each file, then apply it. |
 
 Fields are checked as you type. A config with errors cannot be saved, and the page shows what is wrong next to the field.
@@ -27,7 +27,12 @@ Secrets stay hidden. The API key and the values of MCP environment variables and
 
 ## Language
 
-The UI's language is the config's `language`, picked on the Settings page; in the web UI `auto` follows the browser's language, in the terminal UI the system locale. Both switch the moment you change the field, before the change is even saved. `--lang` or `ZCF_LANG` pins the language for one run, and the editors then stop following the setting. The setting applies to the editors; command output such as `zcf plan` follows `--lang` or `ZCF_LANG` instead.
+Two settings sound alike and do different things:
+
+- The **interface language** is what ZCF itself shows. Both editors switch it from their header — the terminal UI with <kbd>L</kbd>, the web UI with the selector next to the path — and save it at once, on its own, without touching the rest of your unsaved draft. It is the config's [`language`](./config#language); `auto` follows the browser's language in the web UI and the system locale in the terminal. `--lang` or `ZCF_LANG` pins it for one run, and the switch is then disabled.
+- The **config language** is what the tools themselves work in once ZCF applies. It is a field on the Settings page, and only the tools with a setting of their own receive it. See [`configLanguage`](./config#configlanguage).
+
+Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either setting.
 
 ## Terminal UI
 
@@ -39,6 +44,7 @@ The UI's language is the config's `language`, picked on the Settings page; in th
 | <kbd>x</kbd> | Remove the selected item. |
 | <kbd>Esc</kbd> or <kbd>←</kbd> | Go back, or cancel an edit. |
 | <kbd>Ctrl</kbd>+<kbd>S</kbd> | Save. Confirm the field you are typing in with <kbd>Enter</kbd> first. |
+| <kbd>L</kbd> | Switch the interface language, from any page, and save it at once. |
 | <kbd>q</kbd> | Quit, from the page list. With unsaved changes, press it twice. |
 
 On the Apply page, <kbd>Enter</kbd> applies, <kbd>r</kbd> plans again, and the arrow keys scroll. The plan is made from the saved file, so the page asks you to save first if you have unsaved changes.

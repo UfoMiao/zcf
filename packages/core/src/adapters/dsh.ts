@@ -231,6 +231,10 @@ export const dsh: ToolAdapter = {
 
     if (!status.installed) steps.push(npmStep('step.install', PACKAGE))
 
+    // dsh has no language setting of its own.
+    if (config.configLanguage === 'zh-CN')
+      notices.push(notice('warning', 'notice.languageNotSupported', { tool: TOOL, language: config.configLanguage }))
+
     const data = await parseConfigText('yaml', await ctx.readFile(patchFile))
     const patches = new PatchList(Array.isArray(data) ? data : [])
     // dsh refuses a patch file that is not a list; ZCF leaves it for the user to fix.

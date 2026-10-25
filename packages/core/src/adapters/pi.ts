@@ -181,6 +181,10 @@ export const pi: ToolAdapter = {
 
     if (!status.installed) steps.push(installStep())
 
+    // pi has no language setting of its own; its docs point at AGENTS.md instructions instead.
+    if (config.configLanguage === 'zh-CN')
+      notices.push(notice('warning', 'notice.languageNotSupported', { tool: TOOL, language: config.configLanguage }))
+
     if (config.provider) {
       const provider = await providerSteps(config.provider, ctx)
       steps.push(...provider.steps)

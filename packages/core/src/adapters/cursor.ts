@@ -95,6 +95,10 @@ export const cursor: ToolAdapter = {
 
     if (!status.installed) steps.push(installStep(ctx))
 
+    // Cursor has no language setting of its own; the docs point at rules files instead.
+    if (config.configLanguage === 'zh-CN')
+      notices.push(notice('warning', 'notice.languageNotSupported', { tool: TOOL, language: config.configLanguage }))
+
     // Cursor only serves its own models; there is no base URL or API key to point elsewhere.
     if (config.provider) notices.push(notice('info', 'notice.providerNotSupported', { tool: TOOL }))
 

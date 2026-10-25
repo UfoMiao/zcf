@@ -109,6 +109,10 @@ export const codex: ToolAdapter = {
     const notices: Notice[] = []
     const file = configFile(ctx)
 
+    // Codex has no language setting of its own; only an instruction string, which is the user's to fill.
+    if (config.configLanguage === 'zh-CN')
+      notices.push(notice('warning', 'notice.languageNotSupported', { tool: TOOL, language: config.configLanguage }))
+
     if (!status.installed) steps.push(npmInstallStep(TOOL, PACKAGE))
 
     const { provider } = config

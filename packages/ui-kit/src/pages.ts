@@ -1,5 +1,5 @@
 import type { ToolId } from '@zcf/core/schema'
-import { LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
+import { CONFIG_LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
 import { isTable } from './draft'
@@ -14,7 +14,7 @@ export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>>
   provider: ['provider'],
   mcp: ['mcpServers'],
   skills: ['skills'],
-  settings: ['mirror', 'language'],
+  settings: ['mirror', 'configLanguage'],
   apply: undefined,
 }
 
@@ -100,7 +100,10 @@ export function mcpFields(type: McpType): readonly Field[] {
   ]
 }
 
-/** ZCF's own settings, such as where it downloads from. */
+/**
+ * ZCF's own settings, such as where it downloads from. The interface `language` is not
+ * here: both editors switch it from their header, and it saves at once.
+ */
 export const SETTINGS_FIELDS: readonly Field[] = [
   {
     label: 'field.mirror',
@@ -111,12 +114,12 @@ export const SETTINGS_FIELDS: readonly Field[] = [
     hint: 'hint.mirror',
   },
   {
-    label: 'field.language',
-    path: ['language'],
+    label: 'field.configLanguage',
+    path: ['configLanguage'],
     kind: 'select',
-    options: LANGUAGES,
+    options: CONFIG_LANGUAGES,
     optionLabel: 'language',
-    hint: 'hint.language',
+    hint: 'hint.configLanguage',
   },
 ]
 
