@@ -92,7 +92,7 @@ const enSidebar: DefaultTheme.SidebarItem[] = createSidebar([
   {
     text: 'Reference',
     items: [
-      { text: 'Tools', link: 'guide/tools' },
+      { text: 'Agent tools', link: 'guide/tools' },
       { text: 'Backups and troubleshooting', link: 'guide/troubleshooting' },
       { text: 'Contributing', link: 'guide/contributing' },
     ],
@@ -121,7 +121,7 @@ const jaSidebar: DefaultTheme.SidebarItem[] = createSidebar([
   {
     text: 'リファレンス',
     items: [
-      { text: 'ツール', link: 'guide/tools' },
+      { text: 'エージェントツール', link: 'guide/tools' },
       { text: 'バックアップとトラブルシューティング', link: 'guide/troubleshooting' },
       { text: '貢献ガイド', link: 'guide/contributing' },
     ],
@@ -161,7 +161,7 @@ export default defineConfig({
       { text: 'Getting started', link: '/en/guide/' },
       { text: 'Config', link: '/en/guide/config' },
       { text: 'Commands', link: '/en/guide/commands' },
-      { text: 'Tools', link: '/en/guide/tools' },
+      { text: 'Agent tools', link: '/en/guide/tools' },
     ],
     sidebar: {
       '/en/': enSidebar,
@@ -216,7 +216,7 @@ export default defineConfig({
           { text: 'はじめに', link: '/ja-JP/guide/' },
           { text: '設定', link: '/ja-JP/guide/config' },
           { text: 'コマンド', link: '/ja-JP/guide/commands' },
-          { text: 'ツール', link: '/ja-JP/guide/tools' },
+          { text: 'エージェントツール', link: '/ja-JP/guide/tools' },
         ],
         sidebar: {
           '/ja-JP/': jaSidebar,

@@ -182,7 +182,7 @@ describe('terminal UI', () => {
     // zh-CN → auto: back to the startup locale.
     await app.press('l')
     expect(app.frame()).toContain('Interface language: Auto (L)')
-    expect(app.frame()).toContain('Tools')
+    expect(app.frame()).toContain('Agent tools')
     app.unmount()
   })
 

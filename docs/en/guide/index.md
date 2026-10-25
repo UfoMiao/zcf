@@ -18,7 +18,7 @@ Supported tools:
 - Pi
 - DeepSeek Harness
 
-See [Tools](./tools) for what ZCF writes for each one.
+See [Agent tools](./tools) for what ZCF writes for each one.
 
 ## Requirements
 
