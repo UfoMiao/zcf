@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { detectTools, planTools, planUpdates } from '../src/adapters'
 import { createContext } from '../src/context'
 import type { CommandRunner } from '../src/exec/runner'
-import { githubFileUrls } from '../src/mirror'
+import { CHINA_GITHUB_PREFIX, githubFileUrls, OFFICIAL_GITHUB } from '../src/mirror'
 import { applyPlan } from '../src/plan/apply'
 import type { Plan } from '../src/plan/types'
 import { parseZcfConfig } from '../src/schema/config'
@@ -132,8 +132,8 @@ function mirrorConfig(mirror: 'official' | 'china') {
 /** The git environment that sends an `npx skills add` clone through the mirror. */
 const gitEnv = {
   GIT_CONFIG_COUNT: '1',
-  GIT_CONFIG_KEY_0: 'url.https://gh-proxy.com/https://github.com.insteadOf',
-  GIT_CONFIG_VALUE_0: 'https://github.com',
+  GIT_CONFIG_KEY_0: `url.${CHINA_GITHUB_PREFIX}.insteadOf`,
+  GIT_CONFIG_VALUE_0: OFFICIAL_GITHUB,
 }
 
 describe('mirrors', () => {
@@ -173,15 +173,13 @@ describe('mirrors', () => {
     ])
   })
 
-  it('rewrites only the download address: a clone is still resolved against official github.com', async () => {
+  it('adds the git rewrite to a skills step without touching the command itself', async () => {
     const plan = await planTools(mirrorConfig('china'), ctx)
     const skillsStep = plan.tools[0]!.steps[0]
-    // The mirror prefix appears only in the URL git rewrites the download to; the URL it
-    // rewrites from, the one that names the repository and its object hashes, stays
-    // github.com itself. Nothing in the environment touches how git verifies the objects.
+    // The skills CLI runs exactly as on the official mirror: the `source` the user wrote is
+    // passed through untouched, and only the step's environment gains the mirror's rewrite.
+    expect(skillsStep).toMatchObject({ command: 'npx', args: expect.arrayContaining(['skills', 'add', 'a/b']) })
     expect(skillsStep?.kind === 'command' && skillsStep.env).toEqual({ ...registry, ...gitEnv })
-    expect(gitEnv.GIT_CONFIG_VALUE_0).toBe('https://github.com')
-    expect(gitEnv.GIT_CONFIG_KEY_0).toContain('https://gh-proxy.com/https://github.com')
   })
 
   it('keeps the git configuration the user already passes a child process', async () => {

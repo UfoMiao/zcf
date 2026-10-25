@@ -5,8 +5,8 @@ import type { Plan } from './plan/types'
  * China mirror switch (「国内镜像」) does. Only mirrors that serve the very same files are used
  * (npmmirror for npm, jsDelivr for GitHub files), never a proxy that could hand back
  * anything it liked. Git clones are the one exception: a prefix mirror in magpie's
- * `--mirror` style, where git's own object-hash check still fails a mirror that hands
- * back anything but the repository's own bytes.
+ * `--mirror` style, where git's object-hash chain still fails a clone whose bytes were
+ * changed in transit, though the refs themselves come from the mirror, as with magpie.
  */
 export const MIRRORS = ['official', 'china'] as const
 export type Mirror = (typeof MIRRORS)[number]
@@ -26,9 +26,9 @@ export function npmRegistry(mirror: Mirror): string {
 /**
  * The prefix a GitHub URL is downloaded through on the China mirror, as magpie's
  * `--mirror` does: the mirror's address first, then the whole official URL, so only
- * the download address changes. What the download is checked against never moves:
- * git verifies every object it receives against the hash the repository addresses it
- * by, so a mirror handing back different bytes fails the clone.
+ * the download address changes. The guarantee is magpie's too: the refs still come
+ * from the mirror, so it decides which history is fetched, while a change inside the
+ * bytes it hands back breaks git's object-hash chain and fails the clone.
  */
 export const OFFICIAL_GITHUB = 'https://github.com'
 export const CHINA_GITHUB_PREFIX = 'https://gh-proxy.com/https://github.com'
@@ -82,10 +82,17 @@ function hasGitConfigEnv(env: Record<string, string | undefined>): boolean {
  * in git's own `GIT_CONFIG_COUNT` form: a `url.<prefix>.insteadOf` rule that rewrites
  * `https://github.com` to the mirror prefix, for this one process only; the user's global
  * git configuration is never touched. Empty for the official mirror, and when the user
- * already passes git configuration this way.
+ * already owns URL rewriting: through `GIT_CONFIG_COUNT`, which cannot be merged with, or
+ * through `url.<base>.insteadOf` rules of their own (`userUrlRewrites`) — git prefers an
+ * env-injected rule over a file rule of the same match length, so the mirror's rewrite
+ * must not shadow theirs.
  */
-export function githubMirrorEnv(mirror: Mirror, env: Record<string, string | undefined>): Record<string, string> {
-  if (mirror === 'official' || hasGitConfigEnv(env)) return {}
+export function githubMirrorEnv(
+  mirror: Mirror,
+  env: Record<string, string | undefined>,
+  userUrlRewrites: boolean,
+): Record<string, string> {
+  if (mirror === 'official' || hasGitConfigEnv(env) || userUrlRewrites) return {}
   return {
     GIT_CONFIG_COUNT: '1',
     GIT_CONFIG_KEY_0: `url.${CHINA_GITHUB_PREFIX}.insteadOf`,

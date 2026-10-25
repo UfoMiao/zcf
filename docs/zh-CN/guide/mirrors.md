@@ -28,11 +28,11 @@ npx zcf mirror official   # 切换回官方源
 | 下载内容 | 使用 `china` 时 |
 |----------|-----------------|
 | npm 安装（`npm install -g`、`npx skills add`，以及用 npm 安装的工具自带的更新命令） | 使用 `https://registry.npmmirror.com`。你已在 `npm_config_registry` 中设置的仓库会保留。 |
-| `npx skills add owner/repo` 内部的 git 克隆 | 经由 `https://gh-proxy.com/https://github.com/...`，与 [magpie](https://github.com/yetone/magpie) 的 `--mirror` 做法相同。只替换下载地址：git 仍按 `github.com` 上仓库命名的对象哈希校验每个对象，镜像返回别的文件会导致克隆失败。你已设置的 `GIT_CONFIG_COUNT` 会保留。 |
+| `npx skills add owner/repo` 内部的 git 克隆 | 经由 `https://gh-proxy.com/https://github.com/...`，与 [magpie](https://github.com/yetone/magpie) 的 `--mirror` 做法相同。镜像仍然决定取到哪些提交（refs 来自镜像），但其中被篡改的字节会破坏 git 的对象哈希链、导致克隆失败——这也是 magpie 提供的保证。你自己的 `url.<base>.insteadOf` 规则与已设置的 `GIT_CONFIG_COUNT` 会保留。 |
 | 安装 Claude Code | 使用 `npm install -g @anthropic-ai/claude-code`（安装的是同一个原生程序），而不是从 Google Cloud Storage 下载的官方脚本。 |
 | 来自 ZCF 仓库的文件，例如[供应商预设](./providers) | 同时请求 `fastly.jsdelivr.net` 和 `gcore.jsdelivr.net`，采用最先返回的结果。 |
 
-ZCF 只使用提供完全相同文件的镜像；唯一的例外是上面的 git 克隆——git 自身的对象哈希校验会拦下返回了仓库自身字节之外内容的镜像。
+ZCF 只使用提供完全相同文件的镜像；唯一的例外是上面的 git 克隆——没有能原样服务 git 克隆的镜像，而 git 的对象哈希链会拦下在传输中篡改字节的镜像（但拦不下返回一套自洽的其他历史：与 magpie 一样，refs 本身仍来自镜像）。
 
 ## 不覆盖的范围
 

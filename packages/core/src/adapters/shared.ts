@@ -133,6 +133,20 @@ export interface SkillsTarget {
 }
 
 /**
+ * Whether the user's own git configuration already rewrites URLs (`url.<base>.insteadOf`
+ * rules, from any config file). The mirror's rewrite is added only when it does not: git
+ * prefers an env-injected rule over a file rule of the same match length, so injecting
+ * anyway would shadow a proxy the user chose.
+ */
+export async function userRewritesGitUrls(ctx: AdapterContext): Promise<boolean> {
+  const result = await ctx.runner.run('git', ['config', '--get-regexp', '^url\\.'])
+  // Exit 1 is git's normal "no rule matches", not a failure. A git that cannot run at all
+  // (missing, or its config broken) leaves the clone itself nothing to work with either,
+  // so it counts as no rewrites too: the injected rule has nothing of the user's to shadow.
+  return result.exitCode === 0
+}
+
+/**
  * Install skills with the `skills` CLI. A source that names its skills is skipped
  * once all of them are installed; one that installs everything always runs, since
  * the skills it holds are only known after fetching it.
@@ -148,8 +162,13 @@ export async function skillSteps(
       async source => source.skills.length === 0 || (await Promise.all(source.skills.map(isInstalled))).includes(false),
     ),
   )
-  const gitMirrorEnv = githubMirrorEnv(ctx.mirror ?? 'official', ctx.env)
-  return sources.filter((_, index) => needed[index]).map(source => skillsAddStep(source, target.agent, gitMirrorEnv))
+  const pending = sources.filter((_, index) => needed[index])
+  if (pending.length === 0) return []
+  const mirror = ctx.mirror ?? 'official'
+  // Asking the user's git costs a process, so it happens only when a rewrite is on the table.
+  const userRewrites = mirror === 'china' ? await userRewritesGitUrls(ctx) : false
+  const gitMirrorEnv = githubMirrorEnv(mirror, ctx.env, userRewrites)
+  return pending.map(source => skillsAddStep(source, target.agent, gitMirrorEnv))
 }
 
 /** An environment variable as a path, or `undefined` when it is unset or blank. */

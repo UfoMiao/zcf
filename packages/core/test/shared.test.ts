@@ -10,6 +10,7 @@ import {
 } from '../src/adapters/shared'
 import type { AdapterContext } from '../src/adapters/types'
 import { createContext } from '../src/context'
+import { CHINA_GITHUB_PREFIX, OFFICIAL_GITHUB } from '../src/mirror'
 import { protocolModel } from '../src/schema/config'
 import { fakeRunner } from './helpers'
 
@@ -68,27 +69,60 @@ describe('skillSteps', () => {
   /** The environment the China mirror sends along, so a fresh clone goes through gh-proxy. */
   const gitMirrorEnv = {
     GIT_CONFIG_COUNT: '1',
-    GIT_CONFIG_KEY_0: 'url.https://gh-proxy.com/https://github.com.insteadOf',
-    GIT_CONFIG_VALUE_0: 'https://github.com',
+    GIT_CONFIG_KEY_0: `url.${CHINA_GITHUB_PREFIX}.insteadOf`,
+    GIT_CONFIG_VALUE_0: OFFICIAL_GITHUB,
   }
 
   it('clones a fresh install through the mirror on the China mirror', async () => {
     // Nothing is installed yet: the step runs, with the git configuration that rewrites
-    // github.com to the mirror prefix and nothing else.
-    const steps = await skillSteps([{ source: 'a/b', skills: [] }], context({}, {}, {}, { mirror: 'china' }), {
+    // github.com to the mirror prefix and nothing else. Git answers the probe with its
+    // normal "no rule matches" exit 1.
+    const noRules = context(
+      { 'git config --get-regexp ^url\\.': { exitCode: 1, stdout: '', stderr: '' } },
+      {},
+      {},
+      { mirror: 'china' },
+    )
+    const steps = await skillSteps([{ source: 'a/b', skills: [] }], noRules, {
       agent: 'claude-code',
       dir: '/home/me/.claude/skills',
     })
     expect(steps.map(step => step.env)).toEqual([gitMirrorEnv])
   })
 
+  it('leaves the clone to the user when their own git configuration rewrites URLs', async () => {
+    // The user points github.com at a proxy of their own; git prefers an env-injected rule
+    // over a file rule of the same length, so the mirror's rewrite must not shadow theirs.
+    const own = context(
+      {
+        'git config --get-regexp ^url\\.': {
+          stdout: 'url.https://m.example/https://github.com.insteadof https://github.com\n',
+        },
+      },
+      {},
+      {},
+      { mirror: 'china' },
+    )
+    const steps = await skillSteps([{ source: 'a/b', skills: [] }], own, { agent: 'claude-code', dir: '/d' })
+    expect(steps.map(step => step.env)).toEqual([undefined])
+  })
+
   it('leaves a clone and an already-installed skill alone', async () => {
-    // Official mirror: no environment at all.
+    // Official mirror: no environment at all, and the user's git is not even asked.
+    const runner = fakeRunner()
+    const untouched = createContext({
+      home: '/home/me',
+      platform: 'linux',
+      env: {},
+      runner,
+      readFile: async () => undefined,
+    })
     expect(
-      (await skillSteps([{ source: 'a/b', skills: [] }], context(), { agent: 'claude-code', dir: '/d' })).map(
+      (await skillSteps([{ source: 'a/b', skills: [] }], untouched, { agent: 'claude-code', dir: '/d' })).map(
         step => step.env,
       ),
     ).toEqual([undefined])
+    expect(runner.calls.map(call => call.join(' '))).not.toContain('git config --get-regexp ^url\\.')
     // Every named skill already installed: no step, so nothing is downloaded anywhere.
     const ctx = context({}, { '/d/keep/SKILL.md': '---' })
     expect(await skillSteps([{ source: 'a/b', skills: ['keep'] }], ctx, { agent: 'claude-code', dir: '/d' })).toEqual(
