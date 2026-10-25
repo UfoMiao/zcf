@@ -1,7 +1,6 @@
 import { join } from 'pathe'
 
-import { localeToLang } from '../lang'
-import type { LanguageSetting } from './config'
+import type { ConfigLanguage } from './config'
 
 /**
  * The `source` value that stands for the skill templates ZCF ships with (v3's built-in
@@ -90,9 +89,10 @@ export function skillDescription(skill: CatalogSkill, lang: string): string {
 }
 
 /**
- * The templates folder `BUILTIN_SKILLS_SOURCE` installs from: the language folder the
- * config's `language` picks, with `auto` following `locale` the way the interface does.
+ * The templates folder `BUILTIN_SKILLS_SOURCE` installs from: the language folder of the
+ * config's `configLanguage`, the language the configured tools work in. Unlike the interface
+ * language it has no `auto`, so one config installs the same templates on every machine.
  */
-export function builtinSkillsPath(dir: string, language: LanguageSetting, locale: string | undefined): string {
-  return join(dir, language === 'auto' ? localeToLang(locale) : language)
+export function builtinSkillsPath(dir: string, language: ConfigLanguage): string {
+  return join(dir, language)
 }

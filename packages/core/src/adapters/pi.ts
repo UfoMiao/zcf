@@ -6,7 +6,7 @@ import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import { expandHome, piAiRoute } from './pi-ai'
-import { detectCommand, envPath, notice, sameJson, selfUpdateStep, skillSteps } from './shared'
+import { detectCommand, envPath, languageNotice, notice, sameJson, selfUpdateStep, skillSteps } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'pi' as const
@@ -181,6 +181,9 @@ export const pi: ToolAdapter = {
 
     if (!status.installed) steps.push(installStep())
 
+    // pi has no language setting of its own; its docs point at AGENTS.md instructions instead.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
+
     if (config.provider) {
       const provider = await providerSteps(config.provider, ctx)
       steps.push(...provider.steps)
@@ -194,7 +197,7 @@ export const pi: ToolAdapter = {
         config.skills,
         ctx,
         { agent: 'pi', dir: join(ctx.home, '.agents', 'skills') },
-        config.language,
+        config.configLanguage,
       )),
     )
 

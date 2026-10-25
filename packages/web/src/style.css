@@ -143,6 +143,20 @@ header {
   font-size: 0.8em;
 }
 
+/* The interface-language switch; it saves at once, so it sits by the path, not the form. */
+.lang {
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: inherit;
+  font-size: 0.9em;
+}
+
+.lang:disabled {
+  opacity: 0.6;
+}
+
 .status {
   margin-left: auto;
   font-size: 0.9em;

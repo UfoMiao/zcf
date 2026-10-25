@@ -60,7 +60,7 @@ describe('skillSteps', () => {
       ],
       ctx,
       { agent: 'gemini-cli', dir: '/home/me/.gemini/skills' },
-      'auto',
+      'en',
     )
     expect(steps.map(step => step.args)).toEqual([
       ['-y', 'skills', 'add', 'o/missing', '-g', '-y', '-a', 'gemini-cli', '-s', 'a', '-s', 'b'],
@@ -91,7 +91,7 @@ describe('skillSteps', () => {
         agent: 'claude-code',
         dir: '/home/me/.claude/skills',
       },
-      'auto',
+      'en',
     )
     expect(steps.map(step => step.env)).toEqual([gitMirrorEnv])
   })
@@ -109,7 +109,7 @@ describe('skillSteps', () => {
       {},
       { mirror: 'china' },
     )
-    const steps = await skillSteps([{ source: 'a/b', skills: [] }], own, { agent: 'claude-code', dir: '/d' }, 'auto')
+    const steps = await skillSteps([{ source: 'a/b', skills: [] }], own, { agent: 'claude-code', dir: '/d' }, 'en')
     expect(steps.map(step => step.env)).toEqual([undefined])
   })
 
@@ -124,7 +124,7 @@ describe('skillSteps', () => {
       readFile: async () => undefined,
     })
     expect(
-      (await skillSteps([{ source: 'a/b', skills: [] }], untouched, { agent: 'claude-code', dir: '/d' }, 'auto')).map(
+      (await skillSteps([{ source: 'a/b', skills: [] }], untouched, { agent: 'claude-code', dir: '/d' }, 'en')).map(
         step => step.env,
       ),
     ).toEqual([undefined])
@@ -132,7 +132,7 @@ describe('skillSteps', () => {
     // Every named skill already installed: no step, so nothing is downloaded anywhere.
     const ctx = context({}, { '/d/keep/SKILL.md': '---' })
     expect(
-      await skillSteps([{ source: 'a/b', skills: ['keep'] }], ctx, { agent: 'claude-code', dir: '/d' }, 'auto'),
+      await skillSteps([{ source: 'a/b', skills: ['keep'] }], ctx, { agent: 'claude-code', dir: '/d' }, 'en'),
     ).toEqual([])
   })
 

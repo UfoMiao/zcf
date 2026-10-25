@@ -5,7 +5,7 @@ import type { CommandStep, KeyEdit, KeyPath, Notice, PlanStep } from '../plan/ty
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import { expandHome, piAiRoute } from './pi-ai'
-import { detectCommand, envPath, notice, sameJson, skillSteps } from './shared'
+import { detectCommand, envPath, languageNotice, notice, sameJson, skillSteps } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'dsh' as const
@@ -231,6 +231,9 @@ export const dsh: ToolAdapter = {
 
     if (!status.installed) steps.push(npmStep('step.install', PACKAGE))
 
+    // dsh has no language setting of its own.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
+
     const data = await parseConfigText('yaml', await ctx.readFile(patchFile))
     const patches = new PatchList(Array.isArray(data) ? data : [])
     // dsh refuses a patch file that is not a list; ZCF leaves it for the user to fix.
@@ -285,7 +288,7 @@ export const dsh: ToolAdapter = {
         config.skills,
         ctx,
         { agent: 'universal', dir: join(ctx.home, '.agents', 'skills') },
-        config.language,
+        config.configLanguage,
       )),
     )
 

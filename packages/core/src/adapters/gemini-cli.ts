@@ -4,7 +4,16 @@ import { isTable, parseConfigText } from '../io/editors'
 import type { KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, npmInstallStep, npmUpdateStep, sameJson, skillSteps } from './shared'
+import {
+  detectCommand,
+  envPath,
+  languageNotice,
+  notice,
+  npmInstallStep,
+  npmUpdateStep,
+  sameJson,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'gemini-cli' as const
@@ -108,6 +117,9 @@ export const geminiCli: ToolAdapter = {
     const notices: Notice[] = []
     const settingsFile = join(geminiDir(ctx), 'settings.json')
 
+    // Gemini CLI has no language setting of its own; the docs point at GEMINI.md instructions instead.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
+
     if (!status.installed) steps.push(npmInstallStep(TOOL, PACKAGE))
 
     const { provider } = config
@@ -131,7 +143,7 @@ export const geminiCli: ToolAdapter = {
         config.skills,
         ctx,
         { agent: TOOL, dir: join(ctx.home, '.agents', 'skills') },
-        config.language,
+        config.configLanguage,
       )),
     )
 

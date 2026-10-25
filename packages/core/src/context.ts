@@ -8,7 +8,6 @@ import { dirname, join } from 'pathe'
 import type { AdapterContext } from './adapters/types'
 import { processRunner } from './exec/runner'
 import { readTextIfExists } from './io/fs'
-import { detectSpokenLang } from './lang'
 
 /**
  * The built-in skill templates as an absolute folder: next to the running code when bundled
@@ -29,7 +28,6 @@ export function createContext(overrides: Partial<AdapterContext> = {}): AdapterC
     runner: processRunner,
     readFile: readTextIfExists,
     builtinSkillsDir: builtinSkillsDir(),
-    locale: detectSpokenLang(env),
     ...overrides,
   }
 }

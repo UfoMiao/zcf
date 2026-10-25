@@ -14,6 +14,7 @@ describe('parseZcfConfig', () => {
         skills: [],
         mirror: 'official',
         language: 'auto',
+        configLanguage: 'en',
       },
     })
   })
@@ -40,6 +41,20 @@ describe('parseZcfConfig', () => {
       success: false,
       issues: [
         { path: 'language', message: { key: 'configIssue.expected', params: { expected: '"auto" | "en" | "zh-CN"' } } },
+      ],
+    })
+  })
+
+  it('accepts a config language and points at an unknown one', () => {
+    expect(parseZcfConfig({ version: 1, configLanguage: 'zh-CN' })).toMatchObject({
+      success: true,
+      config: { configLanguage: 'zh-CN' },
+    })
+    // No `auto`: no tool has one, and Claude Code would pass the word itself to the model.
+    expect(parseZcfConfig({ version: 1, configLanguage: 'auto' })).toEqual({
+      success: false,
+      issues: [
+        { path: 'configLanguage', message: { key: 'configIssue.expected', params: { expected: '"en" | "zh-CN"' } } },
       ],
     })
   })

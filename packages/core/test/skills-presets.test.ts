@@ -45,17 +45,6 @@ describe('createContext', () => {
   it('answers undefined when no templates folder sits next to the code', () => {
     expect(builtinSkillsDir('/nowhere')).toBeUndefined()
   })
-
-  it('maps the environment locale to the interface languages', () => {
-    expect(createContext({ env: { LC_ALL: 'zh_CN.UTF-8' } }).locale).toBe('zh-CN')
-    expect(createContext({ env: { LANG: 'en_US.UTF-8' } }).locale).toBe('en')
-  })
-
-  it('lets ZCF_LANG pin the language over the locale', () => {
-    expect(createContext({ env: { ZCF_LANG: 'zh-CN', LC_ALL: 'en_US.UTF-8' } }).locale).toBe('zh-CN')
-    // A value ZCF does not speak is not a language at all: the locale decides again.
-    expect(createContext({ env: { ZCF_LANG: 'fr', LANG: 'zh_CN.UTF-8' } }).locale).toBe('zh-CN')
-  })
 })
 
 describe('SKILLS_CATALOG', () => {
@@ -97,16 +86,9 @@ describe('built-in skill templates', () => {
 describe('builtinSkillsPath', () => {
   const dir = '/zcf/templates/skills'
 
-  it('picks the folder of the configured language', () => {
-    expect(builtinSkillsPath(dir, 'zh-CN', 'en')).toBe('/zcf/templates/skills/zh-CN')
-    expect(builtinSkillsPath(dir, 'en', 'zh-CN')).toBe('/zcf/templates/skills/en')
-  })
-
-  it('follows the locale when the language is auto', () => {
-    expect(builtinSkillsPath(dir, 'auto', 'zh-CN')).toBe('/zcf/templates/skills/zh-CN')
-    expect(builtinSkillsPath(dir, 'auto', 'zh_TW.UTF-8')).toBe('/zcf/templates/skills/zh-CN')
-    expect(builtinSkillsPath(dir, 'auto', 'en_US.UTF-8')).toBe('/zcf/templates/skills/en')
-    expect(builtinSkillsPath(dir, 'auto', undefined)).toBe('/zcf/templates/skills/en')
+  it('picks the folder of the config language', () => {
+    expect(builtinSkillsPath(dir, 'zh-CN')).toBe('/zcf/templates/skills/zh-CN')
+    expect(builtinSkillsPath(dir, 'en')).toBe('/zcf/templates/skills/en')
   })
 })
 
@@ -117,26 +99,35 @@ describe('skillDescription', () => {
   })
 })
 
+/** The command lines of a plan, leaving out key edits such as the language step. */
+function commandLines(plan: { steps: unknown[] }): string[] {
+  return plan.steps.flatMap(step =>
+    typeof step === 'object' && step !== null && 'args' in step && Array.isArray((step as CommandStep).args)
+      ? [`${(step as CommandStep).command} ${(step as CommandStep).args.join(' ')}`]
+      : [],
+  )
+}
+
 describe('built-in skills in a plan', () => {
-  it('installs them from the language folder the config picks', async () => {
+  it('installs them from the config language folder', async () => {
     const plan = await claudeCode.plan(
-      config({ skills: [{ source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] }] }),
+      config({ configLanguage: 'zh-CN', skills: [{ source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] }] }),
       installed,
-      context({ builtinSkillsDir: TEMPLATES, locale: 'zh-CN' }),
+      context({ builtinSkillsDir: TEMPLATES }),
     )
-    const steps = plan.steps as CommandStep[]
-    expect(steps.map(step => [step.command, ...step.args].join(' '))).toEqual([
+    expect(commandLines(plan)).toEqual([
       `npx -y skills add ${join(TEMPLATES, 'zh-CN')} -g -y -a claude-code -s git-commit`,
     ])
     // The title names the source as the user wrote it, not the long local path.
-    expect(steps[0]!.title.params).toEqual({ source: BUILTIN_SKILLS_SOURCE })
+    const add = plan.steps.find(step => typeof step === 'object' && step !== null && 'args' in step) as CommandStep
+    expect(add.title.params).toEqual({ source: BUILTIN_SKILLS_SOURCE })
   })
 
-  it('prefers the configured language over the locale', async () => {
+  it('defaults to the English templates', async () => {
     const plan = await claudeCode.plan(
-      config({ language: 'en', skills: [{ source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] }] }),
+      config({ skills: [{ source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] }] }),
       installed,
-      context({ builtinSkillsDir: TEMPLATES, locale: 'zh-CN' }),
+      context({ builtinSkillsDir: TEMPLATES }),
     )
     expect((plan.steps as CommandStep[]).map(step => step.args[3])).toEqual([join(TEMPLATES, 'en')])
   })
@@ -144,17 +135,15 @@ describe('built-in skills in a plan', () => {
   it('installs a Windows templates folder with forward slashes on win32', async () => {
     const dir = 'C:/Program Files/zcf/templates/skills'
     const plan = await claudeCode.plan(
-      config({ skills: [{ source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] }] }),
+      config({ configLanguage: 'zh-CN', skills: [{ source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] }] }),
       installed,
       context({
         platform: 'win32',
         home: 'C:/Users/me',
         builtinSkillsDir: dir,
-        locale: 'zh-CN',
       }),
     )
-    const steps = plan.steps as CommandStep[]
-    expect(steps.map(step => [step.command, ...step.args].join(' '))).toEqual([
+    expect(commandLines(plan)).toEqual([
       'npx -y skills add C:/Program Files/zcf/templates/skills/zh-CN -g -y -a claude-code -s git-commit',
     ])
   })
@@ -176,19 +165,17 @@ describe('built-in skills in a plan', () => {
     const plan = await claudeCode.plan(
       config({ skills: [{ source: BUILTIN_SKILLS_SOURCE }] }),
       installed,
-      context({ builtinSkillsDir: dir, locale: 'en' }),
+      context({ builtinSkillsDir: dir }),
     )
     expect((plan.steps as CommandStep[]).map(step => step.args[3])).toEqual([join(dir, 'en')])
   })
 
   it('leaves a source that is not the built-in one as the user wrote it', async () => {
     const plan = await claudeCode.plan(
-      config({ skills: [{ source: 'owner/repo', skills: ['one'] }] }),
+      config({ configLanguage: 'zh-CN', skills: [{ source: 'owner/repo', skills: ['one'] }] }),
       installed,
-      context({ builtinSkillsDir: TEMPLATES, locale: 'zh-CN' }),
+      context({ builtinSkillsDir: TEMPLATES }),
     )
-    expect((plan.steps as CommandStep[]).map(step => [step.command, ...step.args].join(' '))).toEqual([
-      'npx -y skills add owner/repo -g -y -a claude-code -s one',
-    ])
+    expect(commandLines(plan)).toEqual(['npx -y skills add owner/repo -g -y -a claude-code -s one'])
   })
 })

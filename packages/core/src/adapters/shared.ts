@@ -3,7 +3,7 @@ import { join } from 'pathe'
 import { isTable, JsExpression, QuotedString } from '../io/editors'
 import { githubMirrorEnv } from '../mirror'
 import type { CommandStep, Notice, PlanStep } from '../plan/types'
-import type { LanguageSetting, SkillSource, ToolId } from '../schema/config'
+import type { ConfigLanguage, SkillSource, ToolId } from '../schema/config'
 import { builtinSkillsPath, BUILTIN_SKILLS_SOURCE } from '../schema/skills'
 import type { AdapterContext, ToolStatus } from './types'
 
@@ -86,6 +86,15 @@ export function notice(level: Notice['level'], key: string, params: Record<strin
   return { level, message: { key, params } }
 }
 
+/**
+ * The notice for a tool with no language setting of its own, so nothing is written for it: with
+ * `configLanguage` zh-CN the plan says so for that tool. English is what every tool does on its
+ * own, so nothing is said.
+ */
+export function languageNotice(tool: ToolId, language: ConfigLanguage): Notice[] {
+  return language === 'zh-CN' ? [notice('warning', 'notice.languageNotSupported', { tool, language })] : []
+}
+
 /** Compare two JSON-like values, ignoring key order. A `JsExpression` or `QuotedString` equals the string read back from a file. */
 export function sameJson(a: unknown, b: unknown): boolean {
   const sorted = (value: unknown): unknown => {
@@ -158,15 +167,15 @@ export async function skillSteps(
   sources: readonly SkillSource[],
   ctx: AdapterContext,
   target: SkillsTarget,
-  /** The config's `language`, which picks the built-in templates' folder when it is `auto`. */
-  language: LanguageSetting,
+  /** The config's `configLanguage`: the language the tools work in, and so the one the built-in templates speak. */
+  language: ConfigLanguage,
 ): Promise<CommandStep[]> {
   // The built-in `zcf` source installs from the language folder of the shipped templates;
   // every other source is passed to the skills CLI exactly as the user wrote it.
   const each = sources.map(source => {
     const installed =
       ctx.builtinSkillsDir && source.source === BUILTIN_SKILLS_SOURCE
-        ? { ...source, source: builtinSkillsPath(ctx.builtinSkillsDir, language, ctx.locale) }
+        ? { ...source, source: builtinSkillsPath(ctx.builtinSkillsDir, language) }
         : source
     return [installed, source.source] as const
   })

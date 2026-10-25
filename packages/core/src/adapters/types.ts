@@ -21,12 +21,6 @@ export interface AdapterContext {
    * is passed to the skills CLI as written.
    */
   builtinSkillsDir?: string
-  /**
-   * What `language: "auto"` resolves to right now, such as `zh-CN`: `ZCF_LANG` or the locale
-   * of the environment, or the language a `--lang` flag pinned for this run. Picks the
-   * built-in skills' language.
-   */
-  locale?: string
 }
 
 export interface ToolStatus {

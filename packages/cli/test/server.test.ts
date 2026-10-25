@@ -14,7 +14,7 @@ import { browserPlan, contentType, fileAssets, startUiServer } from '../src/serv
 
 const TOKEN = 'test-token-1234567890'
 const secrets = collectSecrets(
-  { version: 1, tools: [], mcpServers: {}, skills: [], mirror: 'official', language: 'auto' },
+  { version: 1, tools: [], mcpServers: {}, skills: [], mirror: 'official', language: 'auto', configLanguage: 'en' },
   ['sk-very-secret-key'],
 )
 
@@ -192,6 +192,24 @@ describe('startUiServer', () => {
       asset: async () => undefined,
     })
     expect(await call('/api/config')).toMatchObject({ status: 500, text: '{"error":"disk on fire"}' })
+  })
+
+  it('masks a secret that a failing call leaks in its error message', async () => {
+    server = await startUiServer({
+      // A plain Error's message can quote the command line, key included.
+      service: {
+        ...service,
+        detect: () => Promise.reject(new Error('claude mcp add-json relay {"env":{"K":"sk-very-secret-key"}} failed')),
+      },
+      lang: 'en',
+      home: '/home/me',
+      token: TOKEN,
+      asset: async () => undefined,
+    })
+    const failed = await call('/api/detect', { method: 'POST' })
+    expect(failed.status).toBe(500)
+    expect(failed.text).not.toContain('sk-very-secret-key')
+    expect(failed.text).toContain('sk-***ey')
   })
 
   it('tells the browser when the language is pinned, and errors speak the language it asks for', async () => {

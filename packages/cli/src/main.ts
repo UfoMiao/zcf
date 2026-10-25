@@ -161,9 +161,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   }
   const lang = detectLang(argv)
   const t = createTranslator(lang)
-  // A pinned language is also what `language: "auto"` resolves to, so the built-in content
-  // the plan installs (such as the skill templates) follows the interface.
-  const ctx = createContext({ locale: isLangPinned(argv) ? lang : undefined, ...options.context })
+  const ctx = createContext(options.context)
   const now = options.now ?? (() => new Date())
   const interactive = options.interactive ?? (process.stdin.isTTY && process.stdout.isTTY)
 

@@ -1,8 +1,8 @@
 /**
  * The language a `ZCF_LANG`-style value or a locale names, by the one rule every part of ZCF
  * follows: `ZCF_LANG` wins when it names a language ZCF speaks, then the first of the locale
- * variables that is set, then the system locale. The CLI's interface language and built-in
- * content such as the skill templates both resolve through this, so pinning one pins the other.
+ * variables that is set, then the system locale. The CLI's `--lang` and the editors' `auto`
+ * interface language both resolve through this.
  */
 export function detectSpokenLang(env: Record<string, string | undefined>): 'en' | 'zh-CN' {
   if (env.ZCF_LANG === 'en' || env.ZCF_LANG === 'zh-CN') return env.ZCF_LANG

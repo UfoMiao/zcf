@@ -179,11 +179,16 @@ describe('zcf plan', () => {
     expect(stdout).not.toContain('DeepSeek Harness')
   })
 
-  it('installs the built-in skills in the language --lang pins for an auto config', async () => {
-    await writeConfig({ version: 1, tools: ['claude-code'], skills: [{ source: 'zcf', skills: ['git-commit'] }] })
-    // The machine is English; the pinned interface language decides what `auto` means.
-    const { stdout } = await run('plan', '--lang', 'zh-CN', '--tools', 'claude-code')
-    expect(stdout).toContain('从 zcf 安装技能')
+  it('installs the built-in skills in the config language, whatever --lang says', async () => {
+    await writeConfig({
+      version: 1,
+      tools: ['claude-code'],
+      configLanguage: 'zh-CN',
+      skills: [{ source: 'zcf', skills: ['git-commit'] }],
+    })
+    // The interface language is English; the templates follow the config language.
+    const { stdout } = await run('plan', '--tools', 'claude-code')
+    expect(stdout).toContain('Install skills from zcf')
     expect(stdout).toMatch(/templates[\\/]skills[\\/]zh-CN/)
   })
 

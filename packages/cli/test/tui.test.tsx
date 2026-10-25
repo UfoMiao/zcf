@@ -117,7 +117,9 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Settings')
     await app.press(KEY.enter)
     expect(app.frame()).toContain('Download mirror')
-    expect(app.frame()).toContain('official sources (default)')
+    // An unset select shows its first option, the schema default, with no extra placeholder.
+    expect(app.frame()).toContain('official sources')
+    expect(app.frame()).not.toContain('(default)')
     // From the default, the next option is the China mirror.
     await app.press(KEY.right)
     expect(app.frame()).toContain('China mirrors')
@@ -156,22 +158,101 @@ describe('terminal UI', () => {
     wide.unmount()
   })
 
-  it('switches the language on the Settings page, and the UI follows before saving', async () => {
+  it('switches the interface language from the header with L, saving it at once', async () => {
+    const zh = createTranslator('zh-CN')
+    const { service, saved, bases } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+
+    // auto → en: the value moves and is saved on its own, without Ctrl+S.
+    await app.press('l')
+    expect(app.frame()).toContain('Interface language: English (L)')
+    expect(saved).toEqual([{ version: 1, tools: [], language: 'en' }])
+    expect(bases).toEqual([{ version: 1, tools: [] }])
+    expect(app.frame()).not.toContain('unsaved')
+
+    // en → zh-CN: the whole UI switches, not just the header.
+    await app.press('l')
+    expect(await app.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
+    expect(app.frame()).toContain('界面语言: 简体中文 (L)')
+    expect(saved.at(-1)).toEqual({ version: 1, tools: [], language: 'zh-CN' })
+    // bases stay the draft as it stood, so only the language key is ever written.
+    expect(bases.at(-1)).toEqual({ version: 1, tools: [], language: 'en' })
+
+    // zh-CN → auto: back to the startup locale.
+    await app.press('l')
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+    expect(app.frame()).toContain('Tools')
+    app.unmount()
+  })
+
+  it('keeps a language pinned by --lang or ZCF_LANG, without the header switch', async () => {
+    const zh = createTranslator('zh-CN')
+    const { service, saved } = fakeService({ version: 1, tools: [], language: 'zh-CN' })
+    const app = await start(service, { lang: 'en', langPinned: true })
+    expect(app.frame()).toContain('Interface language: 简体中文')
+    expect(app.frame()).not.toContain('(L)')
+    await app.press('l')
+    expect(app.frame()).toContain('Settings')
+    expect(app.frame()).not.toContain(zh('tui.page.tools'))
+    expect(saved).toEqual([])
+    app.unmount()
+  })
+
+  it('switches with an uppercase L too, the way the header hint is written', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+    await app.press('L')
+    expect(app.frame()).toContain('Interface language: English (L)')
+    expect(saved).toEqual([{ version: 1, tools: [], language: 'en' }])
+    app.unmount()
+  })
+
+  it('types l into a text field without switching the interface language', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    // To the Provider page, down to the name field, and into its text input.
+    await app.press(KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press('l', 'a', 'n', 'g')
+    expect(app.frame()).toContain('lang')
+    // The language sits where it was, and nothing was saved behind the user's back.
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+    await app.press(KEY.enter)
+    expect(saved).toEqual([])
+    app.unmount()
+  })
+
+  it('shows the error in the status line when a language switch cannot save', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        save: async () => {
+          throw new Error('disk full')
+        },
+      },
+    )
+    const app = await start(service)
+    await app.press('l')
+    expect(await app.until('Could not save: disk full')).toContain('Could not save: disk full')
+    app.unmount()
+  })
+
+  it('picks the config language on the Settings page; the interface language is not a field there', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
-    expect(app.frame()).toContain('Language')
-    expect(app.frame()).toContain('Auto')
-    // Language sits under the mirror: auto → en → zh-CN.
-    await app.press(KEY.down, KEY.right)
+    expect(app.frame()).toContain('Config language')
+    // An unset select shows its first option, which is the schema default (selectValue).
     expect(app.frame()).toContain('English')
-    await app.press(KEY.right)
+    expect(app.frame()).not.toContain('(default)')
+    // The interface language lives in the header now, not among these fields.
+    expect(app.frame()).not.toMatch(/^ {2}Interface language/m)
+    // Config language sits under the mirror: from the default, the next option is zh-CN.
+    await app.press(KEY.down, KEY.right)
     expect(app.frame()).toContain('简体中文')
-    // The whole UI switched, not just the field.
-    const zh = createTranslator('zh-CN')
-    expect(app.frame()).toContain(zh('tui.page.tools'))
     await app.press(KEY.save)
-    expect(saved).toEqual([{ version: 1, tools: [], language: 'zh-CN' }])
+    expect(saved).toEqual([{ version: 1, tools: [], configLanguage: 'zh-CN' }])
     app.unmount()
   })
 
@@ -188,24 +269,6 @@ describe('terminal UI', () => {
     expect(pinned.frame()).toContain('Settings')
     expect(pinned.frame()).not.toContain(zh('tui.page.tools'))
     pinned.unmount()
-  })
-
-  it('goes back to the startup language when the field is set back to Auto', async () => {
-    const zh = createTranslator('zh-CN')
-    const { service, saved } = fakeService({ version: 1, tools: [], language: 'zh-CN' })
-    const app = await start(service)
-    expect(await app.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
-    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
-    // Language sits under the mirror; from zh-CN the next option is Auto, and the UI
-    // goes back to the startup locale with it.
-    await app.press(KEY.down, KEY.right)
-    expect(app.frame()).toContain('Tools')
-    expect(app.frame()).toContain('Auto')
-    await app.press(KEY.right)
-    expect(app.frame()).toContain('English')
-    await app.press(KEY.save)
-    expect(saved).toEqual([{ version: 1, tools: [], language: 'en' }])
-    app.unmount()
   })
 
   it('opens a skill source with the cursor on its first field', async () => {
