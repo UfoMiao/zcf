@@ -3,7 +3,7 @@ import { join } from 'pathe'
 
 import { isTable } from '../io/editors'
 import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
-import type { McpServer, Provider } from '../schema/config'
+import type { ConfigLanguage, McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import {
   envPath,
@@ -168,6 +168,33 @@ async function mcpSteps(servers: Record<string, McpServer>, command: string, ctx
   return steps
 }
 
+/** Claude Code passes this settings value verbatim to the model as the language to respond in. */
+export const RESPONSE_LANGUAGE: Record<ConfigLanguage, string | undefined> = {
+  en: undefined,
+  'zh-CN': 'Simplified Chinese',
+}
+
+/**
+ * Apply `configLanguage` through Claude Code's own `language` key. Nothing to do when the
+ * file already says so. English only removes a value ZCF itself wrote earlier: a language the
+ * user picked themselves in Claude Code (such as "japanese") is theirs, not ZCF's to clear.
+ */
+async function languageStep(language: ConfigLanguage, ctx: AdapterContext): Promise<PlanStep | undefined> {
+  const path = join(settingsDir(ctx), 'settings.json')
+  const text = await ctx.readFile(path)
+  const data: unknown = text ? parse(text) : undefined
+  const current = isTable(data) ? data.language : undefined
+  const desired = RESPONSE_LANGUAGE[language]
+  if (current === desired || (desired === undefined && current !== RESPONSE_LANGUAGE['zh-CN'])) return undefined
+  return {
+    kind: 'file',
+    title: { key: 'step.language', params: { tool: TOOL, language } },
+    path,
+    format: 'json',
+    edits: [{ path: ['language'], value: desired }],
+  }
+}
+
 export const claudeCode: ToolAdapter = {
   id: TOOL,
   displayName: TOOL_NAMES[TOOL],
@@ -219,6 +246,8 @@ export const claudeCode: ToolAdapter = {
       }
     }
 
+    const language = await languageStep(config.configLanguage, ctx)
+    if (language) steps.push(language)
     steps.push(...(await mcpSteps(config.mcpServers, command, ctx)))
     steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(settingsDir(ctx), 'skills') })))
 

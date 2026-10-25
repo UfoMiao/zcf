@@ -5,7 +5,16 @@ import type { CommandStep, KeyEdit, KeyPath, Notice, PlanStep } from '../plan/ty
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import { expandHome, piAiRoute } from './pi-ai'
-import { cleanConfigStep, detectCommand, envPath, notice, npmUninstallSteps, sameJson, skillSteps } from './shared'
+import {
+  cleanConfigStep,
+  detectCommand,
+  envPath,
+  languageNotice,
+  notice,
+  npmUninstallSteps,
+  sameJson,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'dsh' as const
@@ -230,6 +239,9 @@ export const dsh: ToolAdapter = {
     const patchFile = join(home, PATCH_FILE)
 
     if (!status.installed) steps.push(npmStep('step.install', PACKAGE))
+
+    // dsh has no language setting of its own.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
 
     const data = await parseConfigText('yaml', await ctx.readFile(patchFile))
     const patches = new PatchList(Array.isArray(data) ? data : [])

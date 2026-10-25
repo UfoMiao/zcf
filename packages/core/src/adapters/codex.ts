@@ -8,6 +8,7 @@ import {
   cleanConfigStep,
   detectCommand,
   envPath,
+  languageNotice,
   notice,
   npmInstallStep,
   npmUninstallSteps,
@@ -118,6 +119,9 @@ export const codex: ToolAdapter = {
     const steps: PlanStep[] = []
     const notices: Notice[] = []
     const file = configFile(ctx)
+
+    // Codex has no language setting of its own; only an instruction string, which is the user's to fill.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
 
     if (!status.installed) steps.push(npmInstallStep(TOOL, PACKAGE))
 

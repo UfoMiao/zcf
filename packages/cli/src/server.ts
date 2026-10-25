@@ -208,9 +208,20 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
           response.writeHead(200, { 'content-type': asset.type })
           response.end(asset.body)
         })
-    handle.catch((error: unknown) => {
+    handle.catch(async (error: unknown) => {
       if (response.headersSent) response.end()
-      else send(response, 500, { error: errorText(error, t(request)) })
+      else {
+        // A plain Error's message can quote a command line and so leak a secret; mask it with the
+        // secrets of the config on disk, the same source the apply path masks with. When planning
+        // fails too (an invalid config, say), the error text is all there is to send.
+        let secrets: readonly string[] = []
+        try {
+          secrets = (await service.plan()).secrets
+        } catch {
+          // Nothing more to mask with.
+        }
+        send(response, 500, { error: maskSecrets(errorText(error, t(request)), secrets) })
+      }
     })
   })
 

@@ -91,6 +91,18 @@ describe('opencode.plan', () => {
     expect(await opencode.plan(config({}), installed, context())).toEqual({ tool: 'opencode', steps: [], notices: [] })
   })
 
+  it('says OpenCode has no setting of its own when the config language is Chinese', async () => {
+    const plan = await opencode.plan(config({ configLanguage: 'zh-CN' }), installed, context())
+    expect(plan.notices).toEqual([
+      {
+        level: 'warning',
+        message: { key: 'notice.languageNotSupported', params: { tool: 'opencode', language: 'zh-CN' } },
+      },
+    ])
+    // English is what every tool does on its own, so nothing is said or written.
+    expect((await opencode.plan(config({ configLanguage: 'en' }), installed, context())).notices).toEqual([])
+  })
+
   it('adds an Anthropic provider with the version in the base URL and a bearer token', async () => {
     const plan = await opencode.plan(
       config({

@@ -25,6 +25,7 @@ title: 工具
 | 供应商 | `~/.claude/settings.json` 中的 `env`：`ANTHROPIC_BASE_URL`，密钥写为 `ANTHROPIC_AUTH_TOKEN`（`authType: "api_key"` 时为 `ANTHROPIC_API_KEY`），`ANTHROPIC_MODEL` 来自 `models.default`，以及 `ANTHROPIC_DEFAULT_HAIKU_MODEL`、`_SONNET_MODEL` 和 `_OPUS_MODEL`。配置中未设置的这些键会被 ZCF 删除。 |
 | MCP | `claude mcp add-json --scope user`。有变化的服务会先删除再重新添加。Windows 上，`npx` 等命令会包装成 `cmd /c`。 |
 | 技能 | `-a claude-code`，安装到 `~/.claude/skills` |
+| 语言 | Claude Code 自己的 `language` 键，在 `~/.claude/settings.json` 中，对应 [`configLanguage`](./config#configlanguage)。它是唯一有此设置的工具；你在 Claude Code 里自己设置的语言不会被改动。 |
 
 与 Claude Code 一样遵循 `CLAUDE_CONFIG_DIR`。
 

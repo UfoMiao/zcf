@@ -69,6 +69,18 @@ describe('cursor.plan', () => {
     expect(await cursor.plan(config({}), installed, context())).toEqual({ tool: 'cursor', steps: [], notices: [] })
   })
 
+  it('says Cursor has no setting of its own when the config language is Chinese', async () => {
+    const plan = await cursor.plan(config({ configLanguage: 'zh-CN' }), installed, context())
+    expect(plan.notices).toEqual([
+      {
+        level: 'warning',
+        message: { key: 'notice.languageNotSupported', params: { tool: 'cursor', language: 'zh-CN' } },
+      },
+    ])
+    // English is what every tool does on its own, so nothing is said or written.
+    expect((await cursor.plan(config({ configLanguage: 'en' }), installed, context())).notices).toEqual([])
+  })
+
   it('explains that the provider does not apply', async () => {
     const plan = await cursor.plan(
       config({ provider: { name: 'p', apiKey: 'k', openai: { baseUrl: 'https://api.example.com/v1' } } }),

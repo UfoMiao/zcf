@@ -26,7 +26,8 @@ When you save from the editors, only the keys you changed are written, so your c
   },
   "skills": [{ "source": "anthropics/skills", "skills": ["pdf"] }],
   "mirror": "official",
-  "language": "auto"
+  "language": "auto",
+  "configLanguage": "en"
 }
 ```
 
@@ -113,7 +114,18 @@ A source that lists its skills is skipped once all of them are installed. A sour
 
 ## `language`
 
-`auto` (the default), `en` or `zh-CN`. The language ZCF's editors show their interface in. Both editors follow it and switch as soon as the Settings page changes it, before the change is saved; with `auto`, the web UI follows the browser's language and the terminal UI the system locale. `--lang` or `ZCF_LANG` outranks it for a run, and the editors then stop following the setting. Command output (`zcf plan`, `apply`, `update`) does not read this setting: it follows `--lang` or `ZCF_LANG`, then the system locale.
+`auto` (the default), `en` or `zh-CN`. The language ZCF's editors show their **interface** in. It is not a Settings field: both editors switch it from their header — the terminal UI with `L`, the web UI with the selector next to the path — and save it at once. With `auto`, the web UI follows the browser's language and the terminal UI the system locale. `--lang` or `ZCF_LANG` outranks it for a run, and the switch is then disabled. Command output (`zcf plan`, `apply`, `update`) does not read this setting: it follows `--lang` or `ZCF_LANG`, then the system locale.
+
+## `configLanguage`
+
+`en` (the default) or `zh-CN`. The language the tools themselves work in once ZCF applies, written into the settings each tool owns. This is separate from `language`: you can browse ZCF in English while the tools respond in Chinese, or the other way round.
+
+There is no `auto`: no tool offers one, and a tool such as Claude Code passes the value it finds straight to the model, so an unresolved word would end up in its settings.
+
+| Tool | What applying writes |
+|------|----------------------|
+| Claude Code | Its own `language` key in `~/.claude/settings.json`: `Simplified Chinese` for `zh-CN`. `en` removes a value ZCF wrote earlier; a language you set in Claude Code yourself (such as `japanese`) is left alone. |
+| Codex, Gemini CLI, OpenCode, Cursor CLI, Pi, DeepSeek Harness | No language setting of their own. With `zh-CN`, the plan says so for each of them and their config is untouched. |
 
 ## Environment variables
 

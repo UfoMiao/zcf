@@ -68,6 +68,18 @@ describe('geminiCli.plan', () => {
     })
   })
 
+  it('says Gemini CLI has no setting of its own when the config language is Chinese', async () => {
+    const plan = await geminiCli.plan(config({ configLanguage: 'zh-CN' }), installed, context())
+    expect(plan.notices).toEqual([
+      {
+        level: 'warning',
+        message: { key: 'notice.languageNotSupported', params: { tool: 'gemini-cli', language: 'zh-CN' } },
+      },
+    ])
+    // English is what every tool does on its own, so nothing is said or written.
+    expect((await geminiCli.plan(config({ configLanguage: 'en' }), installed, context())).notices).toEqual([])
+  })
+
   it('writes a gateway provider to ~/.gemini/.env and settings.json', async () => {
     const plan = await geminiCli.plan(
       config({

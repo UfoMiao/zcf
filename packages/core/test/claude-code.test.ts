@@ -156,6 +156,37 @@ describe('claudeCode.plan', () => {
     expect(JSON.parse(editJson(undefined, step.edits)).env.ANTHROPIC_AUTH_TOKEN).toBe('secret')
   })
 
+  it("writes the config language into Claude Code's own language key, and clears it for English", async () => {
+    const zh = await claudeCode.plan(config({ configLanguage: 'zh-CN' }), installed, context())
+    expect(zh.steps).toMatchObject([
+      {
+        kind: 'file',
+        title: { key: 'step.language', params: { tool: 'claude-code', language: 'zh-CN' } },
+        path: join(HOME, '.claude', 'settings.json'),
+        edits: [{ path: ['language'], value: 'Simplified Chinese' }],
+      },
+    ])
+
+    const settings = join(HOME, '.claude', 'settings.json')
+    // Already saying so, and English with nothing ZCF wrote: no step at all.
+    const done = context({}, { [settings]: '{"language": "Simplified Chinese"}' })
+    expect(await claudeCode.plan(config({ configLanguage: 'zh-CN' }), installed, done)).toEqual({
+      tool: 'claude-code',
+      steps: [],
+      notices: [],
+    })
+    // English removes a value ZCF wrote earlier...
+    const back = await claudeCode.plan(config({}), installed, done)
+    expect(back.steps).toMatchObject([{ edits: [{ path: ['language'], value: undefined }] }])
+    // ...but a language the user picked themselves in Claude Code is theirs to keep.
+    const theirs = context({}, { [settings]: '{"language": "japanese"}' })
+    expect(await claudeCode.plan(config({}), installed, theirs)).toEqual({
+      tool: 'claude-code',
+      steps: [],
+      notices: [],
+    })
+  })
+
   it('uses ANTHROPIC_API_KEY for api_key providers', async () => {
     const plan = await claudeCode.plan(
       config({

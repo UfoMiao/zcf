@@ -10,6 +10,7 @@ import {
   cleanConfigStep,
   detectCommand,
   envPath,
+  languageNotice,
   notice,
   npmUninstallSteps,
   sameJson,
@@ -189,6 +190,9 @@ export const pi: ToolAdapter = {
     const notices: Notice[] = []
 
     if (!status.installed) steps.push(installStep())
+
+    // pi has no language setting of its own; its docs point at AGENTS.md instructions instead.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
 
     if (config.provider) {
       const provider = await providerSteps(config.provider, ctx)

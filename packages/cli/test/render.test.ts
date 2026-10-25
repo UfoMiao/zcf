@@ -45,6 +45,7 @@ describe('render helpers', () => {
       skills: [],
       mirror: 'official',
       language: 'auto',
+      configLanguage: 'en',
     })
     const json = JSON.stringify({ env: { PASSWORD: 'abc' } })
     expect(maskSecrets(quoteArg(json), secrets)).toBe(`'{"env":{"PASSWORD":"***"}}'`)
@@ -59,6 +60,7 @@ describe('render helpers', () => {
       skills: [],
       mirror: 'official',
       language: 'auto',
+      configLanguage: 'en',
     })
     expect(maskSecrets(quoteArg('PASSWORD=my$$private$$pass'), secrets)).not.toContain('private')
   })

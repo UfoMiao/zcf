@@ -8,6 +8,7 @@ import {
   cleanConfigStep,
   detectCommand,
   envPath,
+  languageNotice,
   notice,
   npmInstallStep,
   npmUninstallSteps,
@@ -118,6 +119,9 @@ export const geminiCli: ToolAdapter = {
     const steps: PlanStep[] = []
     const notices: Notice[] = []
     const settingsFile = join(geminiDir(ctx), 'settings.json')
+
+    // Gemini CLI has no language setting of its own; the docs point at GEMINI.md instructions instead.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
 
     if (!status.installed) steps.push(npmInstallStep(TOOL, PACKAGE))
 

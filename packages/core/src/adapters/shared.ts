@@ -3,7 +3,7 @@ import { basename, join } from 'pathe'
 import { isTable, JsExpression, QuotedString } from '../io/editors'
 import { githubMirrorEnv } from '../mirror'
 import type { CommandStep, FileFormat, FileStep, KeyEdit, Notice, PlanStep, RemoveStep } from '../plan/types'
-import type { SkillSource, ToolId } from '../schema/config'
+import type { ConfigLanguage, SkillSource, ToolId } from '../schema/config'
 import type { AdapterContext, ToolStatus } from './types'
 
 const VERSION_PATTERN = /\d+\.\d+\.\d+(?:-[\w.]+)?/
@@ -209,6 +209,15 @@ export function cleanConfigStep(tool: ToolId, path: string, format: FileFormat, 
 
 export function notice(level: Notice['level'], key: string, params: Record<string, string | number> = {}): Notice {
   return { level, message: { key, params } }
+}
+
+/**
+ * The notice for a tool with no language setting of its own, so nothing is written for it: with
+ * `configLanguage` zh-CN the plan says so for that tool. English is what every tool does on its
+ * own, so nothing is said.
+ */
+export function languageNotice(tool: ToolId, language: ConfigLanguage): Notice[] {
+  return language === 'zh-CN' ? [notice('warning', 'notice.languageNotSupported', { tool, language })] : []
 }
 
 /** Compare two JSON-like values, ignoring key order. A `JsExpression` or `QuotedString` equals the string read back from a file. */

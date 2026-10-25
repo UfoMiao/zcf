@@ -25,6 +25,7 @@ title: ツール
 | プロバイダー | `~/.claude/settings.json` の `env`: `ANTHROPIC_BASE_URL`、キーとして `ANTHROPIC_AUTH_TOKEN`（`authType: "api_key"` の場合は `ANTHROPIC_API_KEY`）、`models.default` からの `ANTHROPIC_MODEL`、そして `ANTHROPIC_DEFAULT_HAIKU_MODEL`、`_SONNET_MODEL`、`_OPUS_MODEL`。これらのキーのうち、設定で指定していないものは ZCF が削除します。 |
 | MCP | `claude mcp add-json --scope user`。変更されたサーバーは削除してから再追加します。Windows では `npx` などのコマンドを `cmd /c` で包みます。 |
 | スキル | `-a claude-code`、`~/.claude/skills` へ |
+| 言語 | `~/.claude/settings.json` の独自 `language` キー。[`configLanguage`](./config#configlanguage) 用です。独自の言語設定を持つのはこのツールだけで、ユーザーが Claude Code 側で設定した言語はそのまま残ります。 |
 
 Claude Code と同じく `CLAUDE_CONFIG_DIR` に従います。
 

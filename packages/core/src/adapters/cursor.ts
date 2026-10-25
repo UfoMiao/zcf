@@ -5,7 +5,16 @@ import { isTable } from '../io/editors'
 import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, removeStep, sameJson, selfUpdateStep, skillSteps } from './shared'
+import {
+  detectCommand,
+  envPath,
+  languageNotice,
+  notice,
+  removeStep,
+  sameJson,
+  selfUpdateStep,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'cursor' as const
@@ -94,6 +103,9 @@ export const cursor: ToolAdapter = {
     const notices: Notice[] = []
 
     if (!status.installed) steps.push(installStep(ctx))
+
+    // Cursor has no language setting of its own; the docs point at rules files instead.
+    notices.push(...languageNotice(TOOL, config.configLanguage))
 
     // Cursor only serves its own models; there is no base URL or API key to point elsewhere.
     if (config.provider) notices.push(notice('info', 'notice.providerNotSupported', { tool: TOOL }))

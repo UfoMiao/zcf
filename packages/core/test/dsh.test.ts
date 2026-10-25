@@ -53,6 +53,18 @@ describe('dsh.detect', () => {
 })
 
 describe('dsh.plan', () => {
+  it('says dsh has no setting of its own when the config language is Chinese', async () => {
+    const plan = await dsh.plan(config({ configLanguage: 'zh-CN' }), installed, context())
+    expect(plan.notices).toEqual([
+      {
+        level: 'warning',
+        message: { key: 'notice.languageNotSupported', params: { tool: 'dsh', language: 'zh-CN' } },
+      },
+    ])
+    // English is what every tool does on its own, so nothing is said or written.
+    expect((await dsh.plan(config({ configLanguage: 'en' }), installed, context())).notices).toEqual([])
+  })
+
   it('installs from npm first when missing, allowing the install scripts dsh needs', async () => {
     const plan = await dsh.plan(config({}), { installed: false, command: 'dsh' }, context())
     expect(plan.steps).toEqual([

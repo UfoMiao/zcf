@@ -138,6 +138,18 @@ describe('codex.plan', () => {
     ])
   })
 
+  it('says Codex has no setting of its own when the config language is Chinese', async () => {
+    const plan = await codex.plan(config({ configLanguage: 'zh-CN' }), installed, context())
+    expect(plan.notices).toEqual([
+      {
+        level: 'warning',
+        message: { key: 'notice.languageNotSupported', params: { tool: 'codex', language: 'zh-CN' } },
+      },
+    ])
+    // English is what every tool does on its own, so nothing is said or written.
+    expect((await codex.plan(config({ configLanguage: 'en' }), installed, context())).notices).toEqual([])
+  })
+
   it('follows CODEX_HOME', async () => {
     const plan = await codex.plan(
       config({ provider: { name: 'P', apiKey: 'k', openai: { baseUrl: 'https://example.com/v1', model: 'm' } } }),

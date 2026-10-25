@@ -1,5 +1,5 @@
 import type { ToolId } from '@zcf/core/schema'
-import { LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
+import { CONFIG_LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
 import { isTable } from './draft'
@@ -14,7 +14,7 @@ export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>>
   provider: ['provider'],
   mcp: ['mcpServers'],
   skills: ['skills'],
-  settings: ['mirror', 'language'],
+  settings: ['mirror', 'configLanguage'],
   apply: undefined,
 }
 
@@ -41,6 +41,15 @@ export interface Field {
 /** The value to store for text typed into a field: an empty optional field is removed instead. */
 export function fieldValue(field: Field, text: string): string | undefined {
   return text === '' && !field.required ? undefined : text
+}
+
+/**
+ * The option a select shows: the stored value, or the first option when the field is unset —
+ * which every select's schema treats as its default, so no placeholder is needed beside it.
+ * A value that is not an option stays as it is, so choosing any option changes it.
+ */
+export function selectValue(field: Field, value: unknown): string {
+  return typeof value === 'string' && value !== '' ? value : (field.options?.[0] ?? '')
 }
 
 export const TOOL_OPTIONS: readonly ToolId[] = TOOL_IDS
@@ -100,7 +109,10 @@ export function mcpFields(type: McpType): readonly Field[] {
   ]
 }
 
-/** ZCF's own settings, such as where it downloads from. */
+/**
+ * ZCF's own settings, such as where it downloads from. The interface `language` is not
+ * here: both editors switch it from their header, and it saves at once.
+ */
 export const SETTINGS_FIELDS: readonly Field[] = [
   {
     label: 'field.mirror',
@@ -111,12 +123,12 @@ export const SETTINGS_FIELDS: readonly Field[] = [
     hint: 'hint.mirror',
   },
   {
-    label: 'field.language',
-    path: ['language'],
+    label: 'field.configLanguage',
+    path: ['configLanguage'],
     kind: 'select',
-    options: LANGUAGES,
+    options: CONFIG_LANGUAGES,
     optionLabel: 'language',
-    hint: 'hint.language',
+    hint: 'hint.configLanguage',
   },
 ]
 
