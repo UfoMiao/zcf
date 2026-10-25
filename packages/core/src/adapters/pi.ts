@@ -6,7 +6,17 @@ import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import { expandHome, piAiRoute } from './pi-ai'
-import { detectCommand, envPath, languageNotice, notice, sameJson, selfUpdateStep, skillSteps } from './shared'
+import {
+  cleanConfigStep,
+  detectCommand,
+  envPath,
+  languageNotice,
+  notice,
+  npmUninstallSteps,
+  sameJson,
+  selfUpdateSteps,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'pi' as const
@@ -197,10 +207,42 @@ export const pi: ToolAdapter = {
     return { tool: TOOL, steps, notices }
   },
 
-  planUpdate(status) {
+  async planUpdate(status, ctx) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     // `pi update --self` updates pi however it was installed, without touching pi packages.
-    return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update', '--self'])], notices: [] }
+    // The npm fallback matches the install ZCF itself performs, scripts and all.
+    return {
+      tool: TOOL,
+      steps: await selfUpdateSteps(TOOL, status, ['update', '--self'], PACKAGE, ctx, [], true),
+      notices: [],
+    }
+  },
+
+  async planUninstall(status, ctx, _provider) {
+    if (!status.installed)
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    // pi documents no uninstall; a global npm install is what ZCF and the docs set up, and
+    // anything else (Nix, brew) has its own manager.
+    const { steps, notices } = await npmUninstallSteps(TOOL, PACKAGE, ctx)
+    // The provider route ZCF wrote: its own entry in models.json, and the default picks in
+    // settings.json while they point at it.
+    const modelsFile = join(agentDir(ctx), 'models.json')
+    const modelsText = await ctx.readFile(modelsFile)
+    const modelsData: unknown = modelsText ? parse(modelsText) : undefined
+    if (isTable(modelsData) && isTable(modelsData.providers) && Object.hasOwn(modelsData.providers, PROVIDER_ID))
+      steps.push(cleanConfigStep(TOOL, modelsFile, 'json', [{ path: ['providers', PROVIDER_ID], value: undefined }]))
+    const settingsFile = join(agentDir(ctx), 'settings.json')
+    const settingsText = await ctx.readFile(settingsFile)
+    const settingsData: unknown = settingsText ? parse(settingsText) : undefined
+    if (isTable(settingsData) && settingsData.defaultProvider === PROVIDER_ID) {
+      steps.push(
+        cleanConfigStep(TOOL, settingsFile, 'json', [
+          { path: ['defaultProvider'], value: undefined },
+          { path: ['defaultModel'], value: undefined },
+        ]),
+      )
+    }
+    return { tool: TOOL, steps, notices }
   },
 }

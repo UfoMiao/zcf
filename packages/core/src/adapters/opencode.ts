@@ -6,19 +6,23 @@ import type { FileStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
 import {
+  cleanConfigStep,
   detectCommand,
   envPath,
   languageNotice,
   notice,
-  sameJson,
   npmInstallStep,
-  selfUpdateStep,
+  npmOwned,
+  npmUninstallStep,
+  sameJson,
+  selfUpdateSteps,
   skillSteps,
   verifyStep,
 } from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'opencode' as const
+const NPM_PACKAGE = 'opencode-ai'
 
 /** The provider id ZCF owns in `provider`; models are picked as `zcf/<model>`. */
 const PROVIDER_ID = 'zcf'
@@ -215,11 +219,43 @@ export const opencode: ToolAdapter = {
     return { tool: TOOL, steps, notices }
   },
 
-  planUpdate(status) {
+  async planUpdate(status, ctx) {
     if (!status.installed) {
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     }
     // `opencode upgrade` detects how it was installed (npm, script, brew, ...) and updates the same way.
-    return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['upgrade'])], notices: [] }
+    return {
+      tool: TOOL,
+      steps: await selfUpdateSteps(TOOL, status, ['upgrade'], NPM_PACKAGE, ctx, [NPM_PACKAGE]),
+      notices: [],
+    }
+  },
+
+  async planUninstall(status, ctx, _provider) {
+    if (!status.installed) {
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    }
+    const steps: PlanStep[] = []
+    // OpenCode is the one tool with an uninstaller of its own; it removes config and data with
+    // it unless told not to, and ZCF removes only what it wrote, so both stay.
+    if (await npmOwned(ctx, NPM_PACKAGE)) steps.push(npmUninstallStep(TOOL, NPM_PACKAGE))
+    else
+      steps.push({
+        kind: 'command',
+        title: { key: 'step.uninstall', params: { tool: TOOL } },
+        command: status.command,
+        args: ['uninstall', '--keep-config', '--keep-data'],
+      })
+    // The provider route ZCF wrote: its own entry under `provider`, and model picks that point
+    // at it. Anything else in opencode.json stays.
+    const file = await configFile(ctx)
+    if (file.data) {
+      const edits: KeyEdit[] = [{ path: ['provider', PROVIDER_ID], value: undefined }]
+      for (const key of ['model', 'small_model'] as const) {
+        if (ownedModel(file.data?.[key])) edits.push({ path: [key], value: undefined })
+      }
+      steps.push(cleanConfigStep(TOOL, file.path, 'json', edits))
+    }
+    return { tool: TOOL, steps, notices: [] }
   },
 }

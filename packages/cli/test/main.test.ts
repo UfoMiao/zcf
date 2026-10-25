@@ -367,6 +367,123 @@ describe('zcf update', () => {
       stderr: expect.stringContaining('No tools selected'),
     })
   })
+
+  it('falls back to npm when the updater fails on an npm install', async () => {
+    responses['claude update'] = { exitCode: 1, stderr: 'updater broke' }
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    responses['npm install -g --allow-scripts=@anthropic-ai/claude-code @anthropic-ai/claude-code@latest'] = {}
+    const { code, stdout } = await run('update', '--tools', 'claude-code')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('✗ Claude Code: Update Claude Code')
+    expect(stdout).toContain('✓ Claude Code: Update Claude Code with npm instead')
+    expect(calls).toContainEqual([
+      'npm',
+      'install',
+      '-g',
+      '--allow-scripts=@anthropic-ai/claude-code',
+      '@anthropic-ai/claude-code@latest',
+    ])
+  })
+
+  it('says nothing about a fallback that never ran', async () => {
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    responses['claude update'] = {}
+    const { stdout } = await run('update', '--tools', 'claude-code')
+    expect(stdout).not.toContain('with npm instead')
+  })
+})
+
+describe('zcf uninstall', () => {
+  it('shows the plan and changes nothing without --yes', async () => {
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    const { code, stdout } = await run('uninstall', 'claude-code')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('1. Uninstall Claude Code')
+    expect(stdout).toContain('npm uninstall -g @anthropic-ai/claude-code')
+    expect(stdout).toContain('Nothing was changed. Run again with --yes to apply.')
+    expect(calls).not.toContainEqual(['npm', 'uninstall', '-g', '@anthropic-ai/claude-code'])
+  })
+
+  it('uninstalls and takes the tool out of the config', async () => {
+    let uninstalled = false
+    responses['claude --version'] = () => (uninstalled ? { exitCode: 1, stderr: 'gone' } : { stdout: '2.1.0' })
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    responses['npm uninstall -g @anthropic-ai/claude-code'] = () => {
+      uninstalled = true
+      return {}
+    }
+    await writeConfig({ version: 1, tools: ['claude-code', 'codex'] })
+    const { code, stdout } = await run('uninstall', 'claude-code', '--yes')
+    expect(code).toBe(EXIT_OK)
+    expect(calls).toContainEqual(['npm', 'uninstall', '-g', '@anthropic-ai/claude-code'])
+    expect(stdout).toContain('Removed Claude Code from "tools"')
+    expect(JSON.parse(await readFile(configFile(), 'utf8')).tools).toEqual(['codex'])
+  })
+
+  it('keeps a tool in the config when its uninstall fails', async () => {
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    responses['npm uninstall -g @anthropic-ai/claude-code'] = { exitCode: 1, stderr: 'nope' }
+    await writeConfig({ version: 1, tools: ['claude-code'] })
+    const { code } = await run('uninstall', 'claude-code', '--yes')
+    expect(code).toBe(EXIT_ERROR)
+    expect(JSON.parse(await readFile(configFile(), 'utf8')).tools).toEqual(['claude-code'])
+  })
+
+  it('says so when a copy still runs after uninstalling', async () => {
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    responses['npm uninstall -g @anthropic-ai/claude-code'] = {}
+    const { code, stdout } = await run('uninstall', 'claude-code', '--yes')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Claude Code still runs after uninstalling')
+  })
+
+  it('says there is nothing to uninstall for a tool that is not installed', async () => {
+    responses['claude --version'] = { exitCode: 1, stderr: 'gone' }
+    const { code, stdout } = await run('uninstall', 'claude-code', '--yes')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Nothing to uninstall.')
+  })
+
+  it('names a broken config instead of guessing the tools list', async () => {
+    responses['claude --version'] = { stdout: '2.1.0' }
+    responses['npm ls -g @anthropic-ai/claude-code --depth=0'] = {}
+    responses['npm uninstall -g @anthropic-ai/claude-code'] = {}
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    const broken = '{ "version": 1, "tools": ["claude-code"],, }'
+    await writeFile(configFile(), broken)
+    const { code, stderr } = await run('uninstall', 'claude-code', '--yes')
+    expect(code).toBe(EXIT_ERROR)
+    expect(stderr).toContain('~/.ufomiao/zcf/zcf.json is not valid JSON')
+    expect(await readFile(configFile(), 'utf8')).toBe(broken)
+  })
+
+  it('masks the secrets the uninstall preview shows', async () => {
+    responses['gemini --version'] = { stdout: '0.65.0' }
+    responses['npm ls -g @google/gemini-cli --depth=0'] = {}
+    await mkdir(join(home, '.gemini'), { recursive: true })
+    await writeFile(
+      join(home, '.gemini', '.env'),
+      'GEMINI_API_KEY=sk-gemini-secret-1\nGOOGLE_GEMINI_BASE_URL=https://gw\n',
+    )
+    await writeConfig({
+      version: 1,
+      provider: { name: 'GLM', apiKey: 'sk-gemini-secret-1', gemini: { baseUrl: 'https://gw' } },
+    })
+    const { stdout } = await run('uninstall', 'gemini-cli')
+    expect(stdout).not.toContain('sk-gemini-secret-1')
+    expect(stdout).toContain('sk-***-1')
+  })
+
+  it('rejects unknown tools and an empty list', async () => {
+    expect(await run('uninstall', 'nope')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('Unknown tools'),
+    })
+    expect(await run('uninstall')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('No tools selected'),
+    })
+  })
 })
 
 /** The environment the last `claude update` ran with; a version check follows it, so it is not the last call. */

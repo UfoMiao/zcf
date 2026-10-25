@@ -162,9 +162,11 @@ describe('cursor.plan', () => {
 })
 
 describe('cursor.planUpdate', () => {
-  it('runs cursor-agent update, or notes a missing install', () => {
-    expect(cursor.planUpdate(installed, context()).steps).toMatchObject([{ command: 'cursor-agent', args: ['update'] }])
-    expect(cursor.planUpdate({ installed: false, command: 'cursor-agent' }, context()).notices).toMatchObject([
+  it('runs cursor-agent update, or notes a missing install', async () => {
+    expect((await cursor.planUpdate(installed, context())).steps).toMatchObject([
+      { command: 'cursor-agent', args: ['update'] },
+    ])
+    expect((await cursor.planUpdate({ installed: false, command: 'cursor-agent' }, context())).notices).toMatchObject([
       { message: { key: 'notice.notInstalled' } },
     ])
   })

@@ -32,6 +32,11 @@ export interface CommandStep {
   touches?: string[]
   /** Commands with the same key run one at a time, even across tools that apply in parallel. */
   serial?: string
+  /**
+   * Run only when an earlier step of the same tool failed, and skip otherwise: npm after a
+   * tool's own updater, which recovers an npm install whose updater broke.
+   */
+  fallback?: boolean
 }
 
 /** Change specific keys in a native config file, keeping the rest of the file as it is. */
@@ -43,7 +48,17 @@ export interface FileStep {
   edits: KeyEdit[]
 }
 
-export type PlanStep = CommandStep | FileStep
+/**
+ * Delete a file or folder the tool's installer put in place, such as a native binary.
+ * It is copied to the backup folder first, and a path that does not exist is `unchanged`.
+ */
+export interface RemoveStep {
+  kind: 'remove'
+  title: Message
+  path: string
+}
+
+export type PlanStep = CommandStep | FileStep | RemoveStep
 
 export interface Notice {
   level: 'info' | 'warning'

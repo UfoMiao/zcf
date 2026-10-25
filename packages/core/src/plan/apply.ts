@@ -1,3 +1,5 @@
+import { rm, stat } from 'node:fs/promises'
+
 import type { CommandRunner } from '../exec/runner'
 import { snapshotFile, writeFileAtomic } from '../io/fs'
 import type { ToolId } from '../schema/config'
@@ -96,6 +98,16 @@ async function runStep(step: PlanStep, options: ApplyOptions, state: RunState): 
       return { step, status: 'failed', detail, backup }
     }
 
+    if (step.kind === 'remove') {
+      const info = await stat(step.path).catch(() => undefined)
+      // A missing path counts as done work of the past: a best-effort removal must not fail the tool.
+      if (info === undefined) return { step, status: 'unchanged' }
+      // The binary is copied to the backups; a folder holds only versions the tool downloads again.
+      const backup = info.isFile() ? await snapshot(step.path) : undefined
+      await rm(step.path, { recursive: true, force: true })
+      return { step, status: 'done', backup }
+    }
+
     const preview = await previewFileStep(step)
     if (!preview.changed) return { step, status: 'unchanged' }
 
@@ -117,7 +129,9 @@ async function applyToolPlan(toolPlan: ToolPlan, options: ApplyOptions, state: R
   let failed = false
 
   for (const [index, step] of toolPlan.steps.entries()) {
-    if (failed) {
+    // Steps of one tool depend on each other, so after a failure only a fallback step runs;
+    // a fallback step whose reason never happened (the updater worked) never runs either.
+    if (failed !== (step.kind === 'command' && step.fallback === true)) {
       const result: StepResult = { step, status: 'skipped' }
       steps.push(result)
       options.onEvent?.({
@@ -154,7 +168,9 @@ async function applyToolPlan(toolPlan: ToolPlan, options: ApplyOptions, state: R
 /**
  * Apply a plan. Tools run in parallel; the steps of one tool run in order, and
  * the first failure skips the rest of that tool's steps (later steps usually
- * depend on earlier ones, such as configuring a tool that failed to install).
+ * depend on earlier ones, such as configuring a tool that failed to install),
+ * except a step marked `fallback`, which runs in the failed step's place —
+ * npm after a tool's own updater.
  */
 export async function applyPlan(plan: Plan, options: ApplyOptions): Promise<ToolResult[]> {
   const state: RunState = { snapshots: new Map(), queues: new Map() }

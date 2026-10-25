@@ -187,7 +187,11 @@ describe('geminiCli.plan', () => {
       context({ platform: 'win32' }, files),
     )
 
-    expect(plan.steps.map(step => (step.kind === 'command' ? step.args.join(' ') : step.edits))).toEqual([
+    expect(
+      plan.steps.map(step =>
+        step.kind === 'command' ? step.args.join(' ') : step.kind === 'remove' ? step.path : step.edits,
+      ),
+    ).toEqual([
       'mcp add -s user -t http changed https://new.example.com',
       [{ path: ['mcpServers', 'changed', 'headers'], value: { Authorization: 'Bearer t' } }],
       'mcp add -s user fresh npx -- -y pkg',
@@ -222,14 +226,14 @@ describe('geminiCli.plan', () => {
 })
 
 describe('geminiCli.planUpdate', () => {
-  it('updates through npm, since Gemini CLI has no update command', () => {
-    expect(commandLines(geminiCli.planUpdate(installed, context()).steps)).toEqual([
+  it('updates through npm, since Gemini CLI has no update command', async () => {
+    expect(commandLines((await geminiCli.planUpdate(installed, context())).steps)).toEqual([
       'npm install -g @google/gemini-cli@latest',
     ])
   })
 
-  it('only notes a missing install', () => {
-    expect(geminiCli.planUpdate({ installed: false, command: 'gemini' }, context()).notices).toEqual([
+  it('only notes a missing install', async () => {
+    expect((await geminiCli.planUpdate({ installed: false, command: 'gemini' }, context())).notices).toEqual([
       { level: 'info', message: { key: 'notice.notInstalled', params: { tool: 'gemini-cli' } } },
     ])
   })
