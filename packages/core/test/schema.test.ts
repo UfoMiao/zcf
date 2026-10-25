@@ -13,6 +13,7 @@ describe('parseZcfConfig', () => {
         mcpServers: {},
         skills: [],
         mirror: 'official',
+        language: 'auto',
       },
     })
   })
@@ -26,6 +27,19 @@ describe('parseZcfConfig', () => {
       success: false,
       issues: [
         { path: 'mirror', message: { key: 'configIssue.expected', params: { expected: '"official" | "china"' } } },
+      ],
+    })
+  })
+
+  it('accepts a set language and points at an unknown one', () => {
+    expect(parseZcfConfig({ version: 1, language: 'zh-CN' })).toMatchObject({
+      success: true,
+      config: { language: 'zh-CN' },
+    })
+    expect(parseZcfConfig({ version: 1, language: 'fr' })).toEqual({
+      success: false,
+      issues: [
+        { path: 'language', message: { key: 'configIssue.expected', params: { expected: '"auto" | "en" | "zh-CN"' } } },
       ],
     })
   })

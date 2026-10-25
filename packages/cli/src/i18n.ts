@@ -140,6 +140,13 @@ const en = {
   'field.mirror': 'Download mirror',
   'hint.mirror':
     'China mirrors: npm packages from registry.npmmirror.com, provider presets from jsDelivr hosts reachable in mainland China',
+  'field.language': 'Language',
+  'hint.language':
+    'What ZCF shows its interface in. Auto follows the system locale; --lang or ZCF_LANG overrides it for a run.',
+  'language.auto': 'Auto (system locale)',
+  'language.en': 'English',
+  'language.zh-CN': '简体中文',
+  'tui.bannerSubtitle': 'One config for your AI tools',
   'tui.page.apply': 'Apply',
   'tui.loading': 'Loading…',
   'tui.empty': '(empty)',
@@ -321,6 +328,12 @@ const zhCN: Record<MessageKey, string> = {
   'tui.settings.envMirror': '当前设置了 ZCF_MIRROR，在这个终端里运行时使用{mirror}。这里保存的选择在去掉该变量后生效。',
   'field.mirror': '下载源',
   'hint.mirror': '国内镜像：npm 包从 registry.npmmirror.com 下载，供应商预设走国内可访问的 jsDelivr 节点',
+  'field.language': '界面语言',
+  'hint.language': 'ZCF 界面显示的语言。“跟随系统”按系统语言显示；--lang 或 ZCF_LANG 可临时覆盖。',
+  'language.auto': '跟随系统',
+  'language.en': 'English',
+  'language.zh-CN': '简体中文',
+  'tui.bannerSubtitle': '一份配置，管好所有 AI 编码工具',
   'tui.page.apply': '应用',
   'tui.loading': '加载中…',
   'tui.empty': '（空）',
@@ -382,6 +395,12 @@ export function detectLang(argv: readonly string[], env: NodeJS.ProcessEnv = pro
   if (isLang(env.ZCF_LANG)) return env.ZCF_LANG
   const locale = env.LC_ALL || env.LC_MESSAGES || env.LANG || new Intl.DateTimeFormat().resolvedOptions().locale
   return locale.toLowerCase().startsWith('zh') ? 'zh-CN' : 'en'
+}
+
+/** Whether `--lang` or `ZCF_LANG` set the language, so the config's `language` cannot override it. */
+export function isLangPinned(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): boolean {
+  const flagged = argv.some(arg => arg === '--lang' || arg.startsWith('--lang='))
+  return flagged || isLang(env.ZCF_LANG)
 }
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string

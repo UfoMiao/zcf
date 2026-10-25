@@ -1,6 +1,9 @@
+import type { StepResult } from '@zcf/core'
 import { describe, expect, it } from 'vitest'
 
+import { createTranslator } from '../src/i18n'
 import { collectSecrets, maskSecrets, quoteArg, secretVariants, tildify } from '../src/render'
+import { Renderer } from '../src/render'
 
 describe('render helpers', () => {
   it('quotes only arguments that need it', () => {
@@ -41,6 +44,7 @@ describe('render helpers', () => {
       mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'abc' } } },
       skills: [],
       mirror: 'official',
+      language: 'auto',
     })
     const json = JSON.stringify({ env: { PASSWORD: 'abc' } })
     expect(maskSecrets(quoteArg(json), secrets)).toBe(`'{"env":{"PASSWORD":"***"}}'`)
@@ -54,7 +58,45 @@ describe('render helpers', () => {
       mcpServers: { db: { type: 'stdio', command: 'npx', args: [], env: { PASSWORD: 'my$private$pass' } } },
       skills: [],
       mirror: 'official',
+      language: 'auto',
     })
     expect(maskSecrets(quoteArg('PASSWORD=my$$private$$pass'), secrets)).not.toContain('private')
+  })
+})
+
+const updateStep = (tool: 'claude-code' | 'codex'): StepResult => ({
+  step: {
+    kind: 'command',
+    title: { key: 'step.update', params: {} },
+    command: 'npm',
+    args: ['install', '-g', `${tool}@latest`],
+  },
+  status: 'done',
+})
+
+describe('summary', () => {
+  const text: string[] = []
+  const out = { write: (line: string) => void text.push(line) }
+
+  it('counts a stepless tool as up to date, but not one that was not installed', () => {
+    const renderer = new Renderer(out, createTranslator('en'), [], '/home/me')
+    renderer.summary(
+      {
+        tools: [
+          { tool: 'claude-code', steps: [updateStep('claude-code').step], notices: [] },
+          // Planned away with a notice, such as an updater that found nothing to do.
+          { tool: 'codex', steps: [], notices: [] },
+          // Not installed: reported at the top, but it is not "already up to date".
+          { tool: 'dsh', steps: [], notices: [{ level: 'info', message: { key: 'notice.notInstalled', params: {} } }] },
+        ],
+      },
+      [
+        { tool: 'claude-code', ok: true, steps: [updateStep('claude-code')] },
+        { tool: 'codex', ok: true, steps: [] },
+        { tool: 'dsh', ok: true, steps: [] },
+      ],
+      '/home/me/backups',
+    )
+    expect(text.join('')).toContain('Done: 1 applied, 1 already up to date.')
   })
 })

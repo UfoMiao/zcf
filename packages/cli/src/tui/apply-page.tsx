@@ -1,4 +1,4 @@
-import type { FilePreview, PlanStep } from '@zcf/core'
+import type { FilePreview, Plan, PlanStep } from '@zcf/core'
 import type { PlanView, ZcfService } from '@zcf/ui-kit'
 import { Box, Text, useInput, useStdout } from 'ink'
 import { useEffect, useRef, useState } from 'react'
@@ -40,6 +40,8 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
   const [work, setWork] = useState(false)
   const [scroll, setScroll] = useState(0)
   const renderer = useRef<Renderer>(undefined)
+  // The plan the renderer last showed, so the apply summary can tell skipped tools apart.
+  const shownPlan = useRef<Plan>({ tools: [] })
   const { stdout } = useStdout()
   const rows = 'rows' in stdout && typeof stdout.rows === 'number' ? stdout.rows : 24
   const height = Math.max(5, rows - 9)
@@ -53,6 +55,7 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
     service.plan().then(
       view => {
         renderer.current = new Renderer(output, t, view.secrets, home)
+        shownPlan.current = view.plan
         const previews = previewMap(view)
         const changes = hasWork(view.plan, previews)
         if (view.plan.tools.length === 0) renderer.current.line(t('tui.apply.noTools'))
@@ -83,7 +86,7 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
     service
       .apply(event => current.stepResult(event.tool, event.result))
       .then(
-        outcome => current.summary(outcome.results, outcome.backupDir),
+        outcome => current.summary(shownPlan.current, outcome.results, outcome.backupDir),
         (error: unknown) => current.line(t('cli.unexpectedError', { message: errorText(error, t) })),
       )
       .finally(() => setPhase('done'))

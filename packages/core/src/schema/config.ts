@@ -101,6 +101,10 @@ export const SkillSourceSchema = v.object({
 })
 export type SkillSource = v.InferOutput<typeof SkillSourceSchema>
 
+/** The languages the config accepts for `language`; `auto` follows the system locale. */
+export const LANGUAGES = ['auto', 'en', 'zh-CN'] as const
+export type LanguageSetting = (typeof LANGUAGES)[number]
+
 export const ZcfConfigSchema = v.object({
   $schema: v.optional(v.string()),
   version: v.literal(1),
@@ -110,6 +114,8 @@ export const ZcfConfigSchema = v.object({
   skills: v.optional(v.array(SkillSourceSchema), []),
   /** Where ZCF downloads tools and packages from; `china` uses mirrors in mainland China. */
   mirror: v.optional(v.picklist(MIRRORS), 'official'),
+  /** The language ZCF talks to the user in; `auto` follows the system locale. */
+  language: v.optional(v.picklist(LANGUAGES), 'auto'),
 })
 export type ZcfConfig = v.InferOutput<typeof ZcfConfigSchema>
 export type ZcfConfigInput = v.InferInput<typeof ZcfConfigSchema>

@@ -163,8 +163,18 @@ export class Renderer {
     }
   }
 
-  summary(results: readonly ToolResult[], backupDir: string): void {
+  summary(plan: Plan, results: readonly ToolResult[], backupDir: string): void {
     const steps = results.flatMap(result => result.steps)
+    // A tool the plan talked out of any step counts as up to date, unless the reason was
+    // that it is not installed: that is reported, but it is not "already up to date".
+    const notInstalled = new Set(
+      plan.tools
+        .filter(toolPlan => toolPlan.notices.some(item => item.message.key === 'notice.notInstalled'))
+        .map(toolPlan => toolPlan.tool),
+    )
+    const quiet = results.filter(
+      result => result.ok && result.steps.length === 0 && !notInstalled.has(result.tool),
+    ).length
     const failedTools = results.filter(result => !result.ok).length
     this.line()
     if (failedTools > 0) this.line(red(this.t('cli.applyFailed', { count: failedTools })))
@@ -173,7 +183,7 @@ export class Renderer {
         green(
           this.t('cli.applyDone', {
             done: steps.filter(step => step.status === 'done').length,
-            unchanged: steps.filter(step => step.status === 'unchanged').length,
+            unchanged: steps.filter(step => step.status === 'unchanged').length + quiet,
           }),
         ),
       )

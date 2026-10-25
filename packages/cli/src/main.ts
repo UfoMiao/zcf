@@ -33,7 +33,7 @@ import { join, resolve } from 'pathe'
 
 import { version } from '../package.json'
 import type { Translate } from './i18n'
-import { createTranslator, detectLang } from './i18n'
+import { createTranslator, detectLang, isLang, isLangPinned } from './i18n'
 import type { Output } from './render'
 import { collectSecrets, hasWork, Renderer, tildify } from './render'
 import { backupFolder, createLocalService } from './service'
@@ -169,7 +169,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     if (!interactive) throw new CliError(t('cli.tuiNeedsTerminal'), EXIT_ERROR)
     const path = file ? resolve(file) : defaultConfigPath(ctx.home)
     const { runTui } = await import('./tui/run')
-    await runTui(createLocalService(ctx, path, now), t, lang, ctx.home)
+    await runTui(createLocalService(ctx, path, now), lang, ctx.home, isLangPinned(argv))
     return EXIT_OK
   }
 
@@ -247,7 +247,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     }
     if (notes.length > 0) renderer.line()
     for (const note of notes) renderer.line(note)
-    renderer.summary(results, backupDir)
+    renderer.summary(plan, results, backupDir)
     return results.every(result => result.ok) ? EXIT_OK : EXIT_ERROR
   }
 
@@ -369,9 +369,13 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         options.webRoot ? [options.webRoot] : [join(here, 'web'), join(here, '../../web/dist')],
       )
       if (!asset) throw new CliError(t('cli.uiMissingAssets'), EXIT_ERROR)
+      // The web UI translates once, as it starts, so the config's language is read here.
+      const loaded = await loadConfigFile(path)
+      const configLang = loaded.success ? loaded.config.language : undefined
+      const uiLang = !isLangPinned(argv) && isLang(configLang) ? configLang : lang
       const server = await startUiServer({
         service: createLocalService(ctx, path, now),
-        lang,
+        lang: uiLang,
         home: ctx.home,
         asset,
         port,
