@@ -140,13 +140,15 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
     onBack: () => setFocus('nav'),
     onEditing: setEditing,
   }
+  // The hints offer the L switch only while it works; --lang or ZCF_LANG pins the language.
+  const keysSuffix = langPinned ? 'NoLang' : ''
   const keys = editing
     ? 'tui.keys.editing'
     : !onPage
-      ? 'tui.keys.nav'
+      ? `tui.keys.nav${keysSuffix}`
       : page === 'apply'
-        ? 'tui.keys.apply'
-        : 'tui.keys.page'
+        ? `tui.keys.apply${keysSuffix}`
+        : `tui.keys.page${keysSuffix}`
 
   return (
     <Box flexDirection="column">

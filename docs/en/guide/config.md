@@ -70,7 +70,7 @@ One provider shared by every tool. It is optional; without it, ZCF leaves each t
 
 `name` and `apiKey` are required, and so is `baseUrl` inside `anthropic` and `openai`.
 
-Each protocol block is optional. A tool uses the protocol it speaks: Claude Code uses `anthropic`, Codex uses `openai`, and Gemini CLI uses `gemini`. OpenCode uses `anthropic` or `openai`, Pi uses the first block that has a model, and DeepSeek Harness uses `anthropic`, then `openai`. When a tool's protocol is missing, the plan shows a notice and that tool keeps its current provider. Cursor CLI only uses Cursor's own models. See [Tools](./tools) for details.
+Each protocol block is optional. A tool uses the protocol it speaks: Claude Code uses `anthropic`, Codex uses `openai`, and Gemini CLI uses `gemini`. OpenCode uses `anthropic` or `openai`, Pi uses the first block that has a model, and DeepSeek Harness uses `anthropic`, then `openai`. When a tool's protocol is missing, the plan shows a notice and that tool keeps its current provider. Cursor CLI only uses Cursor's own models. See [Agent tools](./tools) for details.
 
 To fill these fields from a known provider, see [Provider presets](./providers).
 

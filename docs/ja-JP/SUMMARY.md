@@ -14,6 +14,6 @@
 * [ミラー](guide/mirrors.md)
 
 ## リファレンス
-* [ツール](guide/tools.md)
+* [エージェントツール](guide/tools.md)
 * [バックアップとトラブルシューティング](guide/troubleshooting.md)
 * [貢献ガイド](guide/contributing.md)

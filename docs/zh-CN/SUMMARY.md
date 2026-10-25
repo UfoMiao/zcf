@@ -14,6 +14,6 @@
 * [镜像](guide/mirrors.md)
 
 ## 参考
-* [工具](guide/tools.md)
+* [Agent 工具](guide/tools.md)
 * [备份与故障排除](guide/troubleshooting.md)
 * [参与贡献](guide/contributing.md)

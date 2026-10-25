@@ -45,7 +45,7 @@ Nothing changes before you apply. ZCF edits only the keys it manages, keeps your
 
 ## 📖 Full Documentation
 
-- [Getting started](docs/en/guide/index.md), [Config file](docs/en/guide/config.md), [Commands](docs/en/guide/commands.md) and [Tools](docs/en/guide/tools.md)
+- [Getting started](docs/en/guide/index.md), [Config file](docs/en/guide/config.md), [Commands](docs/en/guide/commands.md) and [Agent tools](docs/en/guide/tools.md)
 - Architecture: [ADR 002](docs/adr/002-v5-architecture.md)
 
 ## ♥️ Sponsors

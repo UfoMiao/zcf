@@ -14,7 +14,7 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 
 | Page | What you do there |
 |------|-------------------|
-| Tools | Tick the tools to configure. Each row shows whether the tool is installed and which version. |
+| Agent tools | Tick the agent tools to configure. Each row shows whether the tool is installed and which version. |
 | Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
 | Skills | Pick from the skills ZCF ships, and add your own sources with, for each, the skills to install. |

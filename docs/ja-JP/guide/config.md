@@ -70,7 +70,7 @@ ZCF が読むのは 1 つのファイル `~/.ufomiao/zcf/zcf.json` だけです�
 
 `name` と `apiKey` は必須で、`anthropic` と `openai` の中では `baseUrl` も必須です。
 
-各プロトコルのブロックは省略可能です。ツールは自分が話すプロトコルを使います。Claude Code は `anthropic`、Codex は `openai`、Gemini CLI は `gemini` を使います。OpenCode は `anthropic` または `openai`、Pi はモデルを持つ最初のブロック、DeepSeek Harness は `anthropic`、次に `openai` を使います。ツールのプロトコルが無い場合、プランに通知が表示され、そのツールは現在のプロバイダーを維持します。Cursor CLI は Cursor 自身のモデルだけを使います。詳しくは [ツール](./tools) を参照してください。
+各プロトコルのブロックは省略可能です。ツールは自分が話すプロトコルを使います。Claude Code は `anthropic`、Codex は `openai`、Gemini CLI は `gemini` を使います。OpenCode は `anthropic` または `openai`、Pi はモデルを持つ最初のブロック、DeepSeek Harness は `anthropic`、次に `openai` を使います。ツールのプロトコルが無い場合、プランに通知が表示され、そのツールは現在のプロバイダーを維持します。Cursor CLI は Cursor 自身のモデルだけを使います。詳しくは [エージェントツール](./tools) を参照してください。
 
 既知のプロバイダーからこれらのフィールドを埋めるには、[プロバイダープリセット](./providers) を参照してください。
 

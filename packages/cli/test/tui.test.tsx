@@ -182,7 +182,7 @@ describe('terminal UI', () => {
     // zh-CN → auto: back to the startup locale.
     await app.press('l')
     expect(app.frame()).toContain('Interface language: Auto (L)')
-    expect(app.frame()).toContain('Tools')
+    expect(app.frame()).toContain('Agent tools')
     app.unmount()
   })
 
@@ -192,6 +192,9 @@ describe('terminal UI', () => {
     const app = await start(service, { lang: 'en', langPinned: true })
     expect(app.frame()).toContain('Interface language: 简体中文')
     expect(app.frame()).not.toContain('(L)')
+    // The footer hints stop offering the switch too: L is a no-op while pinned.
+    expect(app.frame()).not.toContain('L lang')
+    expect(app.frame()).toContain('↑↓ choose · Enter open · Ctrl+S save · q quit')
     await app.press('l')
     expect(app.frame()).toContain('Settings')
     expect(app.frame()).not.toContain(zh('tui.page.tools'))

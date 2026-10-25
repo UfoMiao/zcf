@@ -144,8 +144,8 @@ describe('startUiServer', () => {
       messages: Record<string, Record<string, string>>
     }
     expect(session).toMatchObject({ lang: 'zh-CN', home: '/home/me', langPinned: false })
-    expect(session.messages['zh-CN']!['tui.page.tools']).toBe('工具')
-    expect(session.messages['en']!['tui.page.tools']).toBe('Tools')
+    expect(session.messages['zh-CN']!['tui.page.tools']).toBe('Agent 工具')
+    expect(session.messages['en']!['tui.page.tools']).toBe('Agent tools')
 
     expect(JSON.parse((await call('/api/config')).text)).toMatchObject({ draft: { version: 1 }, exists: true })
     const draft = { version: 1, tools: ['codex'] }

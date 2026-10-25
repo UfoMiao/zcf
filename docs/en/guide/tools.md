@@ -1,10 +1,10 @@
 ---
-title: Tools
+title: Agent tools
 ---
 
-# Tools
+# Agent tools
 
-For each tool, this page lists how ZCF installs and updates it and where your provider, MCP servers and skills end up. `zcf plan` shows the exact commands and file changes for your config before anything happens.
+For each agent tool, this page lists how ZCF installs and updates it and where your provider, MCP servers and skills end up. `zcf plan` shows the exact commands and file changes for your config before anything happens.
 
 Across all tools:
 

@@ -14,6 +14,6 @@
 * [Mirrors](guide/mirrors.md)
 
 ## Reference
-* [Tools](guide/tools.md)
+* [Agent tools](guide/tools.md)
 * [Backups and troubleshooting](guide/troubleshooting.md)
 * [Contributing](guide/contributing.md)
