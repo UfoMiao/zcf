@@ -76,13 +76,13 @@ export function McpPage({ editor, t }: { editor: ConfigEditor; t: Translate }) {
   const addStdio = (
     <Button variant="outline" onClick={() => add('stdio')}>
       <ServerIcon />
-      {t('tui.mcp.addStdio')}
+      {t('web.mcp.addStdio')}
     </Button>
   )
   const addHttp = (
     <Button variant="outline" onClick={() => add('http')}>
       <GlobeIcon />
-      {t('tui.mcp.addHttp')}
+      {t('web.mcp.addHttp')}
     </Button>
   )
   return (

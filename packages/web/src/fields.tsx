@@ -104,7 +104,7 @@ function RecordInput({ editor, path, t }: { editor: ConfigEditor; path: DraftPat
         />
         <Button variant="outline" size="sm" onClick={add} disabled={!key.trim()}>
           <PlusIcon />
-          {t('tui.record.add')}
+          {t('web.record.add')}
         </Button>
       </div>
     </div>

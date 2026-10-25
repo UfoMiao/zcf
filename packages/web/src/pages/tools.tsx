@@ -21,7 +21,7 @@ export function ToolsPage({
   const selected = Array.isArray(editor.draft.tools) ? editor.draft.tools : []
   return (
     <section>
-      <PageHeader title={t('tui.page.tools')} intro={t('tui.tools.intro')} />
+      <PageHeader title={t('tui.page.tools')} intro={t('web.tools.intro')} />
       <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
         {TOOL_OPTIONS.map(tool => {
           const on = selected.includes(tool)

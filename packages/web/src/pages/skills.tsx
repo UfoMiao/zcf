@@ -19,7 +19,7 @@ export function SkillsPage({ editor, t }: { editor: ConfigEditor; t: Translate }
         actions={
           <Button variant="outline" onClick={add}>
             <PlusIcon />
-            {t('tui.skills.add')}
+            {t('web.skills.add')}
           </Button>
         }
       />
@@ -30,7 +30,7 @@ export function SkillsPage({ editor, t }: { editor: ConfigEditor; t: Translate }
           actions={
             <Button variant="outline" onClick={add}>
               <PlusIcon />
-              {t('tui.skills.add')}
+              {t('web.skills.add')}
             </Button>
           }
         >
