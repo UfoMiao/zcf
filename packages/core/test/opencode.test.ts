@@ -301,9 +301,11 @@ describe('opencode.plan', () => {
 })
 
 describe('opencode.planUpdate', () => {
-  it('runs opencode upgrade, or notes a missing install', () => {
-    expect(opencode.planUpdate(installed, context()).steps).toMatchObject([{ command: 'opencode', args: ['upgrade'] }])
-    expect(opencode.planUpdate({ installed: false, command: 'opencode' }, context()).notices).toMatchObject([
+  it('runs opencode upgrade, or notes a missing install', async () => {
+    expect((await opencode.planUpdate(installed, context())).steps).toMatchObject([
+      { command: 'opencode', args: ['upgrade'] },
+    ])
+    expect((await opencode.planUpdate({ installed: false, command: 'opencode' }, context())).notices).toMatchObject([
       { message: { key: 'notice.notInstalled' } },
     ])
   })

@@ -56,7 +56,9 @@ export function contentType(path: string): string {
 type Mask = (text: string) => string
 
 function maskStep(step: PlanStep, mask: Mask): PlanStep {
-  return step.kind === 'file' ? { ...step, path: mask(step.path), edits: [] } : { ...step, args: step.args.map(mask) }
+  if (step.kind === 'file') return { ...step, path: mask(step.path), edits: [] }
+  if (step.kind === 'remove') return { ...step, path: mask(step.path) }
+  return { ...step, args: step.args.map(mask) }
 }
 
 function maskResult(result: StepResult, mask: Mask): StepResult {

@@ -4,7 +4,18 @@ import { isTable, parseConfigText } from '../io/editors'
 import type { KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, npmInstallStep, sameJson, selfUpdateStep, skillSteps } from './shared'
+import {
+  cleanConfigStep,
+  detectCommand,
+  envPath,
+  notice,
+  npmFallbackUpdateStep,
+  npmInstallStep,
+  npmUninstallSteps,
+  sameJson,
+  selfUpdateStep,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'codex' as const
@@ -135,9 +146,38 @@ export const codex: ToolAdapter = {
     return { tool: TOOL, steps, notices }
   },
 
-  planUpdate(status) {
+  async planUpdate(status, ctx) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
-    return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update'])], notices: [] }
+    const fallback = await npmFallbackUpdateStep(TOOL, PACKAGE, ctx)
+    return {
+      tool: TOOL,
+      steps: fallback
+        ? [selfUpdateStep(TOOL, status, ['update']), fallback]
+        : [selfUpdateStep(TOOL, status, ['update'])],
+      notices: [],
+    }
+  },
+
+  async planUninstall(status, ctx) {
+    if (!status.installed)
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    // The standalone install has no uninstaller of its own; its launcher and the packages
+    // folder under CODEX_HOME are what the install script put in place.
+    const { steps, notices } = await npmUninstallSteps(TOOL, PACKAGE, ctx, [
+      join(ctx.home, '.local', 'bin', ctx.platform === 'win32' ? 'codex.exe' : 'codex'),
+      join(envPath(ctx, 'CODEX_HOME') ?? join(ctx.home, '.codex'), 'packages', 'standalone'),
+    ])
+    // The provider route ZCF wrote: its own entry under `model_providers`, and a `model_provider`
+    // pick that points at it. A `model` of the user's own stays.
+    const file = configFile(ctx)
+    const data = await parseConfigText('toml', await ctx.readFile(file))
+    const table: Record<string, unknown> = isTable(data) ? data : {}
+    const edits: KeyEdit[] = []
+    if (isTable(table.model_providers) && Object.hasOwn(table.model_providers, PROVIDER_ID))
+      edits.push({ path: ['model_providers', PROVIDER_ID], value: undefined })
+    if (table.model_provider === PROVIDER_ID) edits.push({ path: ['model_provider'], value: undefined })
+    if (edits.length > 0) steps.push(cleanConfigStep(TOOL, file, 'toml', edits))
+    return { tool: TOOL, steps, notices }
   },
 }

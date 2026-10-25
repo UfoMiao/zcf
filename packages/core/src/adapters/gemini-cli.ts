@@ -4,7 +4,17 @@ import { isTable, parseConfigText } from '../io/editors'
 import type { KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, npmInstallStep, npmUpdateStep, sameJson, skillSteps } from './shared'
+import {
+  cleanConfigStep,
+  detectCommand,
+  envPath,
+  notice,
+  npmInstallStep,
+  npmUninstallSteps,
+  npmUpdateStep,
+  sameJson,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'gemini-cli' as const
@@ -132,9 +142,31 @@ export const geminiCli: ToolAdapter = {
   },
 
   // Gemini CLI has no update command; npm is how it is installed.
-  planUpdate(status) {
+  async planUpdate(status) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     return { tool: TOOL, steps: [npmUpdateStep(TOOL, PACKAGE)], notices: [] }
+  },
+
+  async planUninstall(status, ctx) {
+    if (!status.installed)
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    // The uninstall guide uninstalls the package (npm here, brew and MacPorts elsewhere);
+    // there is no native install whose files ZCF could delete.
+    const { steps, notices } = await npmUninstallSteps(TOOL, PACKAGE, ctx)
+    // The provider route ZCF wrote lives in .env. The auth selection and model in
+    // settings.json are keys the CLI itself writes too, so ZCF cannot tell its own from
+    // the user's and leaves them.
+    const envFile = join(geminiDir(ctx), '.env')
+    if ((await ctx.readFile(envFile)) !== undefined) {
+      steps.push(
+        cleanConfigStep(TOOL, envFile, 'env', [
+          { path: ['GEMINI_API_KEY'], value: undefined },
+          { path: ['GOOGLE_GEMINI_BASE_URL'], value: undefined },
+          { path: ['GEMINI_MODEL'], value: undefined },
+        ]),
+      )
+    }
+    return { tool: TOOL, steps, notices }
   },
 }

@@ -57,7 +57,7 @@ export async function planUpdates(tools: readonly ToolId[], ctx: AdapterContext)
     [...new Set(tools)].map(async tool => {
       const adapter = ADAPTERS[tool]
       const status = await adapter.detect(mirrored)
-      const plan = adapter.planUpdate(status, mirrored)
+      const plan = await adapter.planUpdate(status, mirrored)
       if (status.version) plan.version = status.version
       return plan
     }),
@@ -65,6 +65,20 @@ export async function planUpdates(tools: readonly ToolId[], ctx: AdapterContext)
   const plan = withMirrorEnv({ tools: plans }, mirror, ctx.env)
   await Promise.all(plan.tools.map(toolPlan => skipCurrentNpmUpdate(toolPlan, ctx)))
   return plan
+}
+
+/**
+ * Plan each tool's uninstall: its own uninstall channel (npm, the official uninstaller, or
+ * the native files) and the settings ZCF wrote for it. No mirror applies; nothing downloads.
+ */
+export async function planUninstalls(tools: readonly ToolId[], ctx: AdapterContext): Promise<Plan> {
+  const plans = await Promise.all(
+    [...new Set(tools)].map(async tool => {
+      const adapter = ADAPTERS[tool]
+      return adapter.planUninstall(await adapter.detect(ctx), ctx)
+    }),
+  )
+  return { tools: plans }
 }
 
 /**

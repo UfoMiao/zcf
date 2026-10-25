@@ -146,6 +146,8 @@ export class Renderer {
   }
 
   stepResult(tool: ToolId, result: StepResult): void {
+    // A fallback step that never ran means its reason never happened; there is nothing to say.
+    if (result.status === 'skipped' && result.step.kind === 'command' && result.step.fallback) return
     const title = `${TOOL_NAMES[tool]}: ${this.message(result.step.title)}`
     switch (result.status) {
       case 'done':

@@ -251,12 +251,12 @@ describe('codex.plan', () => {
 })
 
 describe('codex.planUpdate', () => {
-  it('runs codex update', () => {
-    expect(commandLines(codex.planUpdate(installed, context()).steps)).toEqual(['codex update'])
+  it('runs codex update', async () => {
+    expect(commandLines((await codex.planUpdate(installed, context())).steps)).toEqual(['codex update'])
   })
 
-  it('only notes a missing install', () => {
-    expect(codex.planUpdate({ installed: false, command: 'codex' }, context())).toEqual({
+  it('only notes a missing install', async () => {
+    expect(await codex.planUpdate({ installed: false, command: 'codex' }, context())).toEqual({
       tool: 'codex',
       steps: [],
       notices: [{ level: 'info', message: { key: 'notice.notInstalled', params: { tool: 'codex' } } }],

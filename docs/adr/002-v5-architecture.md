@@ -52,7 +52,7 @@ The config is JSON with comments at `~/.ufomiao/zcf/zcf.json` (or `--file`), val
 |------|-----|
 | Detect | `claude --version`, then `~/.local/bin/claude` |
 | Install | The official native installer (`install.sh`, or `install.ps1` on Windows) |
-| Update | `claude update` |
+| Update | `claude update`, with npm as a fallback when npm owns the install |
 | Provider | `env` keys in `~/.claude/settings.json`. ZCF owns the `ANTHROPIC_*` keys it writes and removes the ones the config leaves unset |
 | MCP | `claude mcp add-json --scope user`. Servers already in `~/.claude.json` with the same definition are skipped; changed ones are removed and added again. On Windows, `npx`-style commands are wrapped in `cmd /c` |
 | Skills | `npx skills add <source> -g -a claude-code`, skipped when every named skill is already installed |
@@ -78,6 +78,12 @@ Paths follow `CLAUDE_CONFIG_DIR` when it is set, as Claude Code itself does: `se
 | Skills | `npx skills add -a gemini-cli`, which installs into `~/.gemini/skills` under the real home folder |
 
 Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness follow the same pattern. Each adapter lives in its own file and reuses `adapters/shared.ts` for detection, npm installs and updates, skills and notices.
+
+### Lifecycle
+
+`zcf update` runs each tool's own updater (`claude update`, `codex update`, `opencode upgrade`, `cursor-agent update`, `pi update --self`; npm for Gemini CLI and dsh, which have none). When an updater fails and `npm ls -g` says npm owns the package, a fallback step — `npm install -g <pkg>@latest` with the flags the install uses — runs in its place (a plan step marked `fallback`: it runs only after the failed step, and stays silent when it never ran). A native install gets no fallback, so npm cannot leave a second copy next to it. magpie picks the channel from how the binary was installed; ZCF probes npm ownership instead, which is the same decision at plan time.
+
+`zcf uninstall <tools>` is a command of its own rather than reverse cleanup on apply, because `planTools` only converges the tools the config selects: taking a tool out of `tools` stops managing it, and a later apply would reinstall anything an implicit uninstall had removed. Each tool uninstalls through its own channel — `npm uninstall -g` when npm owns it, OpenCode's `opencode uninstall --keep-config --keep-data`, or a `remove` plan step that deletes the files the native installer put in place (backing the file up first, counting a missing path as `unchanged`) — and a tool ZCF cannot attribute to any channel is left with a notice, in magpie's words: uninstall it the way you installed it. Uninstall removes only the settings ZCF owns — the provider route: the `zcf` entries, the picks that point at them, Claude Code's `env` keys, Gemini CLI's `.env` keys, dsh's route patches. MCP servers, skills and tool-owned folders such as `~/.claude` stay. Afterwards the tool ids come out of `tools` in the config file, and ZCF re-detects the tool to warn when a copy still answers.
 
 The provider has one block per protocol (`anthropic`, `openai`, `gemini`). Each adapter uses the protocol its tool speaks, and reports a notice when the provider lacks it. A tool's model is the protocol block's `model`, or else `models.default`.
 

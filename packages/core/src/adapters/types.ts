@@ -30,6 +30,15 @@ export interface ToolAdapter {
   detect: (ctx: AdapterContext) => Promise<ToolStatus>
   /** Steps that bring the tool in line with the ZCF config, installing it first when needed. */
   plan: (config: ZcfConfig, status: ToolStatus, ctx: AdapterContext) => Promise<ToolPlan>
-  /** Update the tool with its own updater. */
-  planUpdate: (status: ToolStatus, ctx: AdapterContext) => ToolPlan
+  /**
+   * Update the tool with its own updater, such as `claude update`. A tool ZCF also installs
+   * from npm gets an npm step marked `fallback`, which runs when the updater fails.
+   */
+  planUpdate: (status: ToolStatus, ctx: AdapterContext) => Promise<ToolPlan>
+  /**
+   * Steps that remove the tool through its own uninstall channel (npm, the official
+   * uninstaller, or deleting the native binary) and the settings ZCF wrote for it. Keys
+   * ZCF cannot tell apart from the tool's own, MCP servers and skills are left alone.
+   */
+  planUninstall: (status: ToolStatus, ctx: AdapterContext) => Promise<ToolPlan>
 }

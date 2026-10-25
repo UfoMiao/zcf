@@ -1,8 +1,8 @@
-import { join } from 'pathe'
+import { basename, join } from 'pathe'
 
 import { isTable, JsExpression, QuotedString } from '../io/editors'
 import { githubMirrorEnv } from '../mirror'
-import type { CommandStep, Notice, PlanStep } from '../plan/types'
+import type { CommandStep, FileFormat, FileStep, KeyEdit, Notice, PlanStep, RemoveStep } from '../plan/types'
 import type { SkillSource, ToolId } from '../schema/config'
 import type { AdapterContext, ToolStatus } from './types'
 
@@ -78,6 +78,92 @@ export function selfUpdateStep(tool: ToolId, status: ToolStatus, args: string[])
     title: { key: 'step.update', params: { tool } },
     command: status.command,
     args,
+  }
+}
+
+/**
+ * An npm update that runs only when the tool's own updater failed. Only a tool npm owns gets
+ * one: updating a native install through npm would leave two copies behind.
+ */
+export function npmFallbackUpdateStep(
+  tool: ToolId,
+  pkg: string,
+  ctx: AdapterContext,
+  allowScripts: readonly string[] = [],
+  ignoreScripts = false,
+): Promise<CommandStep | undefined> {
+  return npmOwned(ctx, pkg).then(owned =>
+    owned
+      ? {
+          kind: 'command',
+          title: { key: 'step.updateNpm', params: { tool } },
+          command: 'npm',
+          args: [
+            'install',
+            '-g',
+            ...(allowScripts.length > 0 ? [`--allow-scripts=${allowScripts.join(',')}`] : []),
+            ...(ignoreScripts ? ['--ignore-scripts'] : []),
+            `${pkg}@latest`,
+          ],
+          fallback: true,
+        }
+      : undefined,
+  )
+}
+
+/** Whether the global npm prefix holds `pkg`, so `npm uninstall -g` is the uninstall for it. */
+export async function npmOwned(ctx: AdapterContext, pkg: string): Promise<boolean> {
+  // npm exits 1 when the prefix does not hold the package.
+  const result = await ctx.runner.run('npm', ['ls', '-g', pkg, '--depth=0'])
+  return result.exitCode === 0
+}
+
+/** Uninstall a tool through the npm that installed it. */
+export function npmUninstallStep(tool: ToolId, pkg: string): CommandStep {
+  return {
+    kind: 'command',
+    title: { key: 'step.uninstall', params: { tool } },
+    command: 'npm',
+    args: ['uninstall', '-g', pkg],
+  }
+}
+
+/** Delete a file or folder an installer put in place; a path that is not there changes nothing. */
+export function removeStep(tool: ToolId, path: string): RemoveStep {
+  return {
+    kind: 'remove',
+    title: { key: 'step.deleteFile', params: { tool, file: basename(path) } },
+    path,
+  }
+}
+
+/**
+ * The uninstall steps of a tool ZCF installs from npm: `npm uninstall -g` when npm owns it,
+ * else what its official uninstaller says (or `nativePaths` to delete), else a notice in
+ * magpie's words — ZCF cannot tell how it was installed, so it leaves the binary alone.
+ */
+export async function npmUninstallSteps(
+  tool: ToolId,
+  pkg: string,
+  ctx: AdapterContext,
+  nativePaths: readonly string[] = [],
+): Promise<{ steps: PlanStep[]; notices: Notice[] }> {
+  if (await npmOwned(ctx, pkg)) return { steps: [npmUninstallStep(tool, pkg)], notices: [] }
+  if (nativePaths.length > 0) return { steps: nativePaths.map(path => removeStep(tool, path)), notices: [] }
+  return {
+    steps: [],
+    notices: [notice('warning', 'notice.foreignInstall', { tool })],
+  }
+}
+
+/** The file step that takes ZCF's own keys out of a native config file. */
+export function cleanConfigStep(tool: ToolId, path: string, format: FileFormat, edits: KeyEdit[]): FileStep {
+  return {
+    kind: 'file',
+    title: { key: 'step.cleanConfig', params: { tool } },
+    path,
+    format,
+    edits,
   }
 }
 

@@ -355,8 +355,8 @@ describe('pi.plan', () => {
 })
 
 describe('pi.planUpdate', () => {
-  it("updates pi with pi's own updater", () => {
-    expect(pi.planUpdate(installed, context())).toEqual({
+  it("updates pi with pi's own updater", async () => {
+    expect(await pi.planUpdate(installed, context())).toEqual({
       tool: 'pi',
       steps: [
         {
@@ -370,8 +370,8 @@ describe('pi.planUpdate', () => {
     })
   })
 
-  it('reports a missing install', () => {
-    expect(pi.planUpdate({ installed: false, command: 'pi' }, context()).notices).toEqual([
+  it('reports a missing install', async () => {
+    expect((await pi.planUpdate({ installed: false, command: 'pi' }, context())).notices).toEqual([
       { level: 'info', message: { key: 'notice.notInstalled', params: { tool: 'pi' } } },
     ])
   })

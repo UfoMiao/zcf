@@ -17,6 +17,7 @@ import {
   parseConfigText,
   parseMirrorName,
   planTools,
+  planUninstalls,
   planUpdates,
   previewPlan,
   isToolId,
@@ -231,7 +232,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     plan: Plan,
     renderer: Renderer,
     settle?: (results: ToolResult[]) => Promise<{ results: ToolResult[]; notes: string[] }>,
-  ): Promise<number> {
+  ): Promise<{ code: number; results: ToolResult[] }> {
     const backupDir = backupFolder(ctx.home, now())
     const applied = await applyPlan(plan, {
       runner: ctx.runner,
@@ -248,7 +249,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     if (notes.length > 0) renderer.line()
     for (const note of notes) renderer.line(note)
     renderer.summary(plan, results, backupDir)
-    return results.every(result => result.ok) ? EXIT_OK : EXIT_ERROR
+    return { code: results.every(result => result.ok) ? EXIT_OK : EXIT_ERROR, results }
   }
 
   /**
@@ -281,7 +282,9 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         notes.push(green(t('cli.updated', { tool, from, to })))
         return result
       }
-      const viaNpm = toolPlan.steps.some(step => step.kind === 'command' && step.command === 'npm')
+      const viaNpm = result.steps.some(
+        item => item.status === 'done' && item.step.kind === 'command' && item.step.command === 'npm',
+      )
       if (viaNpm) {
         notes.push(yellow(t('cli.updateSameVersion', { tool, version: to })))
         return result
@@ -346,7 +349,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         renderer.line(t('cli.confirmHint'))
         return EXIT_OK
       }
-      return runPlan(plan, renderer)
+      return (await runPlan(plan, renderer)).code
     })
 
   cli
@@ -415,8 +418,72 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       for (const toolPlan of plan.tools) {
         for (const notice of toolPlan.notices) renderer.notice(notice)
       }
-      return runPlan(plan, renderer, results => compareVersions(plan, results, { ...ctx, mirror }))
+      return (await runPlan(plan, renderer, results => compareVersions(plan, results, { ...ctx, mirror }))).code
     })
+
+  cli
+    .command('uninstall [...tools]', t('cli.command.uninstall'))
+    .option('--file <path>', t('cli.option.file'))
+    .option('-y, --yes', t('cli.option.yes'))
+    .action(async (names: string[], flags: CommandFlags) => {
+      // A variadic argument list goes through the same parser as --tools.
+      const tools = parseTools(names.join(','), t) ?? []
+      if (tools.length === 0) throw new CliError(t('cli.noTools'), EXIT_ERROR)
+      const renderer = new Renderer(stdout, t, [], ctx.home)
+      const plan = await planUninstalls(tools, ctx)
+      const previews = await previewPlan(plan, ctx.readFile)
+      renderer.plan(plan, previews)
+      if (!hasWork(plan, previews)) {
+        renderer.line(t('cli.nothingToUninstall'))
+        return EXIT_OK
+      }
+      if (!flags.yes) {
+        renderer.line(t('cli.confirmHint'))
+        return EXIT_OK
+      }
+      const { code, results } = await runPlan(plan, renderer)
+      const removed = results.filter(result => result.ok).map(result => result.tool)
+      await removeFromConfig(removed, flags.file, renderer)
+      // Say so when a copy survives the uninstall, the same way update explains a stale version.
+      const after = await detectTools(removed, ctx)
+      for (const tool of removed) {
+        if (after[tool]?.installed) renderer.line(yellow(t('cli.uninstallLeftover', { tool: TOOL_NAMES[tool] })))
+      }
+      return code
+    })
+
+  /** Take uninstalled tools out of "tools" in the config, so a later apply does not reinstall them. */
+  async function removeFromConfig(
+    removed: readonly ToolId[],
+    file: string | undefined,
+    renderer: Renderer,
+  ): Promise<void> {
+    if (removed.length === 0) return
+    const path = configPath(file)
+    const existing = await readTextIfExists(path)
+    const raw = existing?.trim() ? await parseConfigText('json', existing) : undefined
+    const tools = isTable(raw) && Array.isArray(raw.tools) ? raw.tools.filter(isToolId) : []
+    const dropped = tools.filter(tool => removed.includes(tool))
+    if (dropped.length === 0) return
+    const left = tools.filter(tool => !removed.includes(tool))
+    let next: string
+    try {
+      next = editJson(existing, [{ path: ['tools'], value: left.length > 0 ? left : undefined }])
+    } catch (error) {
+      if (!(error instanceof FileSyntaxError)) throw error
+      throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
+    }
+    const backupDir = backupFolder(ctx.home, now())
+    const backup = next === existing ? undefined : await snapshotFile(path, backupDir, ctx.home)
+    await writeFileAtomic(path, next)
+    renderer.line(
+      t('cli.uninstallConfigUpdated', {
+        tools: dropped.map(tool => TOOL_NAMES[tool]).join(', '),
+        path: tildify(path, ctx.home),
+      }),
+    )
+    if (backup) renderer.line(dim(t('cli.backups', { path: tildify(backupDir, ctx.home) })))
+  }
 
   cli
     .command('mirror [mirror]', t('cli.command.mirror'))
