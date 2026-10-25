@@ -4,7 +4,16 @@ import { isTable, parseConfigText } from '../io/editors'
 import type { KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, notice, npmInstallStep, npmUpdateStep, sameJson, skillSteps } from './shared'
+import {
+  detectCommand,
+  envPath,
+  languageNotice,
+  notice,
+  npmInstallStep,
+  npmUpdateStep,
+  sameJson,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'gemini-cli' as const
@@ -109,8 +118,7 @@ export const geminiCli: ToolAdapter = {
     const settingsFile = join(geminiDir(ctx), 'settings.json')
 
     // Gemini CLI has no language setting of its own; the docs point at GEMINI.md instructions instead.
-    if (config.configLanguage === 'zh-CN')
-      notices.push(notice('warning', 'notice.languageNotSupported', { tool: TOOL, language: config.configLanguage }))
+    notices.push(...languageNotice(TOOL, config.configLanguage))
 
     if (!status.installed) steps.push(npmInstallStep(TOOL, PACKAGE))
 

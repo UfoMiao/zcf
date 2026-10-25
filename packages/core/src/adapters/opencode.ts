@@ -8,6 +8,7 @@ import { protocolModel, TOOL_NAMES } from '../schema/config'
 import {
   detectCommand,
   envPath,
+  languageNotice,
   notice,
   sameJson,
   npmInstallStep,
@@ -166,8 +167,7 @@ export const opencode: ToolAdapter = {
     const notices: Notice[] = []
 
     // OpenCode has no language setting of its own; its i18n requests are closed as not planned.
-    if (config.configLanguage === 'zh-CN')
-      notices.push(notice('warning', 'notice.languageNotSupported', { tool: TOOL, language: config.configLanguage }))
+    notices.push(...languageNotice(TOOL, config.configLanguage))
 
     // npm is the install that works the same on every platform, Windows included. The package's
     // postinstall puts the platform binary in place, and npm 12 only runs it when allowed.

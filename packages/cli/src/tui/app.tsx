@@ -97,7 +97,8 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
       }
       if (input !== 'q') setQuitArmed(false)
       // The header's language switch works on every page; a pinned --lang keeps the language.
-      if (input === 'l' && !langPinned && editor.status === 'ready') {
+      // The hint shows an uppercase L, so Shift+L switches too.
+      if (input?.toLowerCase() === 'l' && !langPinned && editor.status === 'ready') {
         switchLanguage()
         return
       }

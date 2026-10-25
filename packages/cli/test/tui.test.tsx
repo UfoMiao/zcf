@@ -199,6 +199,30 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('switches with an uppercase L too, the way the header hint is written', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+    await app.press('L')
+    expect(app.frame()).toContain('Interface language: English (L)')
+    expect(saved).toEqual([{ version: 1, tools: [], language: 'en' }])
+    app.unmount()
+  })
+
+  it('types l into a text field without switching the interface language', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    // To the Provider page, down to the name field, and into its text input.
+    await app.press(KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press('l', 'a', 'n', 'g')
+    expect(app.frame()).toContain('lang')
+    // The language sits where it was, and nothing was saved behind the user's back.
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+    await app.press(KEY.enter)
+    expect(saved).toEqual([])
+    app.unmount()
+  })
+
   it('shows the error in the status line when a language switch cannot save', async () => {
     const { service } = fakeService(
       { version: 1, tools: [] },
@@ -219,7 +243,9 @@ describe('terminal UI', () => {
     const app = await start(service)
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Config language')
-    expect(app.frame()).toContain('English (default)')
+    // An unset select shows its first option, which is the schema default (selectValue).
+    expect(app.frame()).toContain('English')
+    expect(app.frame()).not.toContain('(default)')
     // The interface language lives in the header now, not among these fields.
     expect(app.frame()).not.toMatch(/^ {2}Interface language/m)
     // Config language sits under the mirror: from the default, the next option is zh-CN.
