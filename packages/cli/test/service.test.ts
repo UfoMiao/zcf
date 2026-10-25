@@ -115,4 +115,24 @@ describe('createLocalService', () => {
   it('refuses to plan a config that is not saved', async () => {
     await expect(service().plan()).rejects.toMatchObject({ detail: { key: 'service.configInvalid' } })
   })
+
+  it('searches community skills, handing the index answer to the front ends', async () => {
+    const real = globalThis.fetch
+    globalThis.fetch = async () =>
+      new Response(
+        JSON.stringify({
+          skills: [
+            { name: 'using-git-worktrees', installs: 541, metadata: { repoOwner: 'obra', repoName: 'superpowers' } },
+          ],
+        }),
+      )
+    try {
+      expect(await service().searchSkills('git')).toEqual({
+        source: 'remote',
+        skills: [{ name: 'using-git-worktrees', source: 'obra/superpowers', installs: 541 }],
+      })
+    } finally {
+      globalThis.fetch = real
+    }
+  })
 })

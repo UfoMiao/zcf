@@ -4,6 +4,7 @@ import type {
   Mirror,
   Plan,
   PresetList,
+  SkillSearchList,
   StepResult,
   ToolId,
   ToolResult,
@@ -57,6 +58,8 @@ export interface ZcfService {
   plan: () => Promise<PlanView>
   /** Provider presets, fetched from the ZCF repository and cached; `refresh` skips a fresh copy. */
   presets: (refresh?: boolean) => Promise<PresetList>
+  /** Search the community skills index for other people's skills to install. */
+  searchSkills: (query: string) => Promise<SkillSearchList>
   /** Apply the saved config, reporting each finished step. */
   apply: (onStep?: (event: StepEvent) => void) => Promise<ApplyOutcome>
 }

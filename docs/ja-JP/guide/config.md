@@ -147,5 +147,6 @@ ZCF は、ツール自身のコマンドがあればそれで各サーバーを�
 | `ZCF_LANG` | コマンド出力の表示言語。`en` または `zh-CN`。`--lang` が優先され、どちらも無い場合はシステムのロケールに従います。エディターの UI は設定ファイルの `language` に従います。 |
 | `ZCF_MIRROR` | `official` または `china`（`cn` も可）。ファイルの `mirror` より優先されます。 |
 | `ZCF_PRESETS_URL` | [プロバイダープリセット](./providers) をこの URL から読み込みます。 |
+| `ZCF_SKILLS_SEARCH_URL` | スキルページの検索を claude-plugins.dev の代わりにこのインデックスで行います。同じ `?q=&limit=` 形式に応答する必要があります。 |
 
 独自の設定フォルダーの場所を変更するツールにも追従します: `CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`GEMINI_CLI_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR`、`DSH_HOME`。

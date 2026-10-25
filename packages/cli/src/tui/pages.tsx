@@ -1,18 +1,21 @@
-import type { PresetList, ProviderPreset, ToolId, ToolStatus } from '@zcf/core'
+import type { PresetList, ProviderPreset, SkillHit, SkillSearchList, ToolId, ToolStatus } from '@zcf/core'
 import {
   applyPreset,
   BUILTIN_SKILLS_SOURCE,
   presetSummary,
   SKILLS_CATALOG,
   skillDescription,
+  SKILLS_SEARCH_MIN_QUERY,
   TOOL_NAMES,
 } from '@zcf/core'
 import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
 import {
+  addSourcedSkill,
   fieldValue,
   formatArgs,
   freshName,
   getAt,
+  hasSourcedSkill,
   isTable,
   issuesAt,
   mcpFields,
@@ -428,12 +431,98 @@ function CatalogPicker({
   )
 }
 
-export function SkillsPage(props: PageProps & { lang: string }) {
-  const { editor, t, active, onBack, onEditing, lang } = props
+/**
+ * Search the community skills index: type a keyword, then Enter on a hit adds it to the
+ * draft. The picker stays open, so one search can add several skills.
+ */
+function SkillSearchPicker({
+  t,
+  active,
+  onBack,
+  onEditing,
+  searchSkills,
+  sources,
+  onAdd,
+}: Omit<PageProps, 'editor'> & {
+  searchSkills: (query: string) => Promise<SkillSearchList>
+  sources: readonly unknown[]
+  onAdd: (hit: SkillHit) => void
+}) {
+  const [answer, setAnswer] = useState<'idle' | 'loading' | SkillSearchList>('idle')
+  // Status rows carry no action: they are notes, and Enter on them does nothing.
+  const results: Row[] =
+    answer === 'idle'
+      ? []
+      : answer === 'loading'
+        ? [{ id: 'loading', label: t('tui.skills.searching') }]
+        : answer.source === 'none'
+          ? [{ id: 'failed', label: t('tui.skills.searchFailed') }]
+          : answer.skills.length === 0
+            ? [{ id: 'empty', label: t('tui.skills.searchNone') }]
+            : answer.skills.map((hit): Row => {
+                const added = hasSourcedSkill(sources, hit.source, hit.name)
+                return {
+                  id: `${hit.source}/${hit.name}`,
+                  label: hit.name,
+                  value: added ? `${hit.source} · ${t('tui.skills.added')}` : hit.source,
+                  hint: hit.description,
+                  action: { type: 'run', run: () => onAdd(hit) },
+                }
+              })
+  const rows: Row[] = [
+    {
+      id: 'query',
+      label: t('tui.skills.searchQuery'),
+      hint: t('tui.skills.searchHint'),
+      action: {
+        type: 'text',
+        initial: '',
+        placeholder: t('tui.skills.searchQuery'),
+        // The index answers nothing for a single character, so it is not asked.
+        commit: text => {
+          const query = text.trim()
+          if (query.length < SKILLS_SEARCH_MIN_QUERY) return
+          setAnswer('loading')
+          searchSkills(query).then(setAnswer, () => setAnswer({ skills: [], source: 'none' }))
+        },
+      },
+    },
+    ...results,
+  ]
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text bold>{t('tui.skills.searchTitle')}</Text>
+      <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+    </Box>
+  )
+}
+
+export function SkillsPage(
+  props: PageProps & { lang: string; searchSkills: (query: string) => Promise<SkillSearchList> },
+) {
+  const { editor, t, active, onBack, onEditing, lang, searchSkills } = props
   const [open, setOpen] = useState<number>()
   const [picking, setPicking] = useState(false)
+  const [searching, setSearching] = useState(false)
   const sources = Array.isArray(editor.draft.skills) ? editor.draft.skills : []
   const picked = pickedCatalogSkills(sources)
+  // A `zcf` source row stands for the catalog whatever its list says, even when it names no
+  // skills and so installs every built-in one.
+  const hasBuiltinSource = sources.some(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
+
+  if (searching) {
+    return (
+      <SkillSearchPicker
+        t={t}
+        active={active}
+        onEditing={onEditing}
+        searchSkills={searchSkills}
+        sources={sources}
+        onBack={() => setSearching(false)}
+        onAdd={hit => editor.update(['skills'], addSourcedSkill(editor.draft.skills, hit.source, hit.name))}
+      />
+    )
+  }
 
   if (picking) {
     return (
@@ -477,21 +566,35 @@ export function SkillsPage(props: PageProps & { lang: string }) {
     ...sources.map((source, index): Row => {
       const item = isTable(source) ? source : {}
       const skills = Array.isArray(item.skills) ? item.skills.map(String) : []
+      // The built-in source is one row named after the catalog it opens; other sources open
+      // their own form.
+      const builtin = asText(item.source) === BUILTIN_SKILLS_SOURCE
       return {
         id: String(index),
-        label: asText(item.source) === BUILTIN_SKILLS_SOURCE ? t('tui.skills.builtin') : asText(item.source),
+        label: builtin ? t('tui.skills.builtin') : asText(item.source),
         value: skills.length > 0 ? skills.join(', ') : t('tui.skills.all'),
+        hint: builtin ? t('tui.skills.catalogHint') : undefined,
         error: firstIssue(editor, ['skills', index], t),
         remove: () => editor.update(['skills', index], undefined),
-        action: { type: 'run', run: () => setOpen(index) },
+        action: { type: 'run', run: () => (builtin ? setPicking(true) : setOpen(index)) },
       }
     }),
+    // With no `zcf` source of its own yet, this row stands in for the catalog.
+    ...(hasBuiltinSource
+      ? []
+      : [
+          {
+            id: '+catalog',
+            label: `+ ${t('tui.skills.builtin')}`,
+            hint: t('tui.skills.catalogHint'),
+            action: { type: 'run' as const, run: () => setPicking(true) },
+          },
+        ]),
     {
-      id: '+catalog',
-      label: t('tui.skills.catalog'),
-      value: picked.length > 0 ? picked.join(', ') : undefined,
-      hint: t('tui.skills.catalogHint'),
-      action: { type: 'run', run: () => setPicking(true) },
+      id: '+search',
+      label: t('tui.skills.search'),
+      hint: t('tui.skills.searchHint'),
+      action: { type: 'run', run: () => setSearching(true) },
     },
     {
       id: '+add',

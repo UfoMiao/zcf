@@ -16,7 +16,8 @@ export interface Row {
   error?: string
   /** Shown dimmed under the row while it is selected. */
   hint?: string
-  action: RowAction
+  /** A row without one is a plain message, such as a loading note; Enter does nothing. */
+  action?: RowAction
   /** Called on `x` or Delete, for rows that stand for a removable item. */
   remove?: () => void
 }
@@ -61,14 +62,14 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
     (input, key) => {
       if (key.upArrow || input === 'k') setSelected(Math.max(0, index - 1))
       else if (key.downArrow || input === 'j') setSelected(Math.min(rows.length - 1, index + 1))
-      else if (key.escape || (key.leftArrow && row?.action.type !== 'cycle')) onBack()
+      else if (key.escape || (key.leftArrow && row?.action?.type !== 'cycle')) onBack()
       else if (!row) return
       else if (input === 'x' && row.remove) row.remove()
-      else if (row.action.type === 'cycle' && (key.leftArrow || key.rightArrow || key.return || input === ' ')) {
+      else if (row.action?.type === 'cycle' && (key.leftArrow || key.rightArrow || key.return || input === ' ')) {
         if (key.leftArrow) (row.action.previous ?? row.action.next)()
         else row.action.next()
-      } else if (key.return && row.action.type === 'run') row.action.run()
-      else if (key.return && row.action.type === 'text') setEdit(true)
+      } else if (key.return && row.action?.type === 'run') row.action.run()
+      else if (key.return && row.action?.type === 'text') setEdit(true)
     },
     { isActive: active && !editing },
   )
@@ -79,14 +80,14 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
         const current = position === index
         const pointer = current && active ? '›' : ' '
         const editor =
-          current && editing && item.action.type === 'text' ? (
+          current && editing && item.action?.type === 'text' ? (
             <TextInput
               initial={item.action.initial}
               placeholder={item.action.placeholder}
               mask={item.action.mask}
               onSubmit={text => {
                 setEdit(false)
-                if (item.action.type === 'text') item.action.commit(text)
+                if (item.action?.type === 'text') item.action.commit(text)
               }}
               onCancel={() => setEdit(false)}
             />

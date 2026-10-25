@@ -12,6 +12,7 @@ import {
   previewPlan,
   resolveMirror,
   saveConfigDraft,
+  searchSkills,
   snapshotFile,
 } from '@zcf/core'
 import type { PlanView, ZcfService } from '@zcf/ui-kit'
@@ -80,6 +81,7 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
         env: ctx.env,
         refresh,
       }),
+    searchSkills: query => searchSkills(query, { env: ctx.env }),
     plan: async () => planWithPreviews(await savedConfig(path), ctx),
     async apply(onStep) {
       const config = await savedConfig(path)

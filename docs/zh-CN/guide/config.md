@@ -147,5 +147,6 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 | `ZCF_LANG` | 命令输出的显示语言，`en` 或 `zh-CN`。`--lang` 优先于它；两者都没有时跟随系统语言。编辑器界面则跟随配置文件里的 `language`。 |
 | `ZCF_MIRROR` | `official` 或 `china`（也可写 `cn`）。优先于文件中的 `mirror`。 |
 | `ZCF_PRESETS_URL` | 改从这个 URL 加载[供应商预设](./providers)。 |
+| `ZCF_SKILLS_SEARCH_URL` | 技能页改用这个技能索引搜索，而不使用 claude-plugins.dev；需支持相同的 `?q=&limit=` 参数。 |
 
 各工具用来移动自身配置目录的变量都会被遵循：`CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`GEMINI_CLI_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR` 和 `DSH_HOME`。

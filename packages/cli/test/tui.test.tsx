@@ -34,6 +34,7 @@ function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = 
     },
     apply: async () => ({ results: [], backupDir: '/home/me/backups' }),
     presets: async () => ({ presets: [], source: 'none' }),
+    searchSkills: async () => ({ skills: [], source: 'none' }),
     ...overrides,
   }
   return { service, saved, bases }
@@ -292,7 +293,7 @@ describe('terminal UI', () => {
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     // The list starts at the custom source; the catalog row is below it.
     await app.press(KEY.down, KEY.enter)
-    expect(app.frame()).toContain('Pick the built-in skills to install')
+    expect(app.frame()).toContain('Pick the ZCF built-in skills to install')
     expect(app.frame()).toContain('Analyze changes and write conventional commit messages')
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('✓ git-commit')
@@ -301,6 +302,8 @@ describe('terminal UI', () => {
     await app.press(KEY.escape)
     expect(app.frame()).toContain('ZCF built-in skills')
     expect(app.frame()).toContain('git-commit, init-project')
+    // One row for the catalog, not a second one repeating the same picked skills.
+    expect(app.frame().match(/ZCF built-in skills/g)).toHaveLength(1)
     await app.press(KEY.save)
     expect(saved).toEqual([
       {
@@ -318,7 +321,8 @@ describe('terminal UI', () => {
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('ZCF built-in skills')
     expect(app.frame()).toContain('feat')
-    await app.press(KEY.down, KEY.enter)
+    // The built-in row itself opens the catalog, so Enter on it goes straight to the checkboxes.
+    await app.press(KEY.enter)
     expect(app.frame()).toContain('✓ feat')
     await app.press(KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).not.toContain('✓ feat')
@@ -326,6 +330,90 @@ describe('terminal UI', () => {
     await app.press(KEY.save)
     expect(saved).toEqual([{ version: 1, tools: [] }])
     app.unmount()
+  })
+
+  it('keeps a single built-in row for a zcf source that names no skills', async () => {
+    // `{ source: 'zcf' }` with no list means every built-in skill; it already has a row.
+    const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf' }] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('ZCF built-in skills')
+    expect(app.frame()).toContain('all skills')
+    expect(app.frame().match(/ZCF built-in skills/g)).toHaveLength(1)
+    // Removing it leaves the stand-in row, which a plain source takes over again.
+    await app.press('x')
+    expect(app.frame()).toContain('+ ZCF built-in skills')
+    await app.press(KEY.down, KEY.down, KEY.enter, 'a', '/', 'b', KEY.enter)
+    expect(app.frame()).toContain('a/b')
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], skills: [{ source: 'a/b' }] }])
+    app.unmount()
+  })
+
+  it('searches community skills and adds a hit to the source it belongs to', async () => {
+    const { service, saved } = fakeService(
+      { version: 1, tools: [], skills: [{ source: 'obra/superpowers', skills: ['existing-one'] }] },
+      {
+        searchSkills: async () => ({
+          skills: [
+            {
+              name: 'using-git-worktrees',
+              source: 'obra/superpowers',
+              description: 'Create and manage git worktrees.',
+            },
+          ],
+          source: 'remote' as const,
+        }),
+      },
+    )
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    // The list starts at the existing source; the search row is two rows below it.
+    await app.press(KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Search skills')
+    await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    await app.until('using-git-worktrees')
+    expect(app.frame()).toContain('obra/superpowers')
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('obra/superpowers · added')
+    await app.press(KEY.escape, KEY.save)
+    expect(saved).toEqual([
+      {
+        version: 1,
+        tools: [],
+        skills: [{ source: 'obra/superpowers', skills: ['existing-one', 'using-git-worktrees'] }],
+      },
+    ])
+    app.unmount()
+  })
+
+  it('says when a search matches nothing, and when the index cannot answer', async () => {
+    // With no sources yet, the list is the catalog stand-in, search and add: one down reaches search.
+    const empty = fakeService(
+      { version: 1, tools: [] },
+      {
+        searchSkills: async () => ({ skills: [], source: 'remote' as const }),
+      },
+    )
+    const app = await start(empty.service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    expect(await app.until('No skills found')).toContain('No skills found')
+    app.unmount()
+
+    const offline = fakeService(
+      { version: 1, tools: [] },
+      {
+        searchSkills: async () => {
+          throw new Error('offline')
+        },
+      },
+    )
+    const retry = await start(offline.service)
+    await retry.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await retry.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    expect(await retry.until('Search failed')).toContain('Search failed')
+    retry.unmount()
   })
 
   it('fills the provider from a preset and keeps the API key', async () => {

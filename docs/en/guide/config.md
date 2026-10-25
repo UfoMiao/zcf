@@ -147,5 +147,6 @@ There is no `auto`: no tool offers one, and a tool such as Claude Code passes th
 | `ZCF_LANG` | Command-output language, `en` or `zh-CN`. `--lang` wins over it; without either, commands follow the system locale. The editors follow `language` in the config file instead. |
 | `ZCF_MIRROR` | `official` or `china` (`cn` works too). Overrides `mirror` in the file. |
 | `ZCF_PRESETS_URL` | Load [provider presets](./providers) from this URL instead. |
+| `ZCF_SKILLS_SEARCH_URL` | Search this skills index instead of claude-plugins.dev on the Skills page. It must answer the same `?q=&limit=` shape. |
 
 Tools that move their own config folder are followed: `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `GEMINI_CLI_HOME`, `XDG_CONFIG_HOME` (OpenCode), `PI_CODING_AGENT_DIR` and `DSH_HOME`.

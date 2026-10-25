@@ -165,6 +165,37 @@ export function toggleCatalogSkill(sources: unknown, id: string): unknown[] | un
   return list
 }
 
+/** The draft's entry for `source`, if the `skills` list has one for it. */
+function findSkillSource(sources: unknown, source: string): Record<string, unknown> | undefined {
+  return (Array.isArray(sources) ? sources : []).find(
+    (item): item is Record<string, unknown> => isTable(item) && item.source === source,
+  )
+}
+
+/** Whether the draft's `skills` list already installs `name` from `source`. */
+export function hasSourcedSkill(sources: unknown, source: string, name: string): boolean {
+  const entry = findSkillSource(sources, source)
+  return !!entry && Array.isArray(entry.skills) && entry.skills.map(String).includes(name)
+}
+
+/**
+ * Add one skill found by search: it joins that source's `skills` entry when there is one,
+ * so a repository the user already draws from stays a single entry.
+ */
+export function addSourcedSkill(sources: unknown, source: string, name: string): unknown[] {
+  const list: unknown[] = Array.isArray(sources) ? [...sources] : []
+  const entry = findSkillSource(list, source)
+  if (!entry) return [...list, { source, skills: [name] }]
+  const picked: string[] = Array.isArray(entry.skills) ? entry.skills.map(String) : []
+  if (!picked.includes(name)) list[list.indexOf(entry)] = { ...entry, skills: [...picked, name] }
+  return list
+}
+
+/** The draft position of the `source` entry, for edits that remove it. */
+export function skillSourceIndex(sources: unknown, source: string): number {
+  return (Array.isArray(sources) ? sources : []).findIndex(item => isTable(item) && item.source === source)
+}
+
 /** A fresh MCP server of the given type, so the form has something to fill in. */
 export function newMcpServer(type: McpType): Record<string, unknown> {
   return type === 'http' ? { type, url: '' } : { type, command: '' }

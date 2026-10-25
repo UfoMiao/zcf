@@ -9,6 +9,12 @@ import type { ConfigLanguage } from './config'
  */
 export const BUILTIN_SKILLS_SOURCE = 'zcf'
 
+/**
+ * The community index answers nothing for queries shorter than this, so both editors hold
+ * back from asking and core never sends one.
+ */
+export const SKILLS_SEARCH_MIN_QUERY = 2
+
 /** One skill of the built-in catalog the Skills page offers as checkboxes. */
 export interface CatalogSkill {
   /** The skill's folder name in the templates, which is also the `skills` entry it installs. */
