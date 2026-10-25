@@ -10,6 +10,13 @@ describe('toggleCatalogSkill', () => {
     ])
   })
 
+  it('keeps custom sources when the first built-in skill is picked', () => {
+    expect(toggleCatalogSkill([{ source: 'a/a' }], 'git-commit')).toEqual([
+      { source: 'a/a' },
+      { source: BUILTIN_SKILLS_SOURCE, skills: ['git-commit'] },
+    ])
+  })
+
   it('adds to the skills of the existing built-in source, keeping other sources in place', () => {
     const sources = [
       { source: 'owner/repo', skills: ['one'] },

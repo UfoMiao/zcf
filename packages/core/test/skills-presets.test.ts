@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import { claudeCode } from '../src/adapters/claude-code'
 import type { AdapterContext } from '../src/adapters/types'
+import { createContext, builtinSkillsDir } from '../src/context'
 import type { CommandStep } from '../src/plan/types'
 import type { ZcfConfig, ZcfConfigInput } from '../src/schema/config'
 import { parseZcfConfig } from '../src/schema/config'
@@ -35,6 +36,21 @@ function config(input: Omit<ZcfConfigInput, 'version'>): ZcfConfig {
 }
 
 const installed = { installed: true, command: 'claude', version: '2.1.0' }
+
+describe('createContext', () => {
+  it('points the built-in skills at the templates that ship in this package', () => {
+    expect(createContext({ env: {} }).builtinSkillsDir).toBe(TEMPLATES)
+  })
+
+  it('answers undefined when no templates folder sits next to the code', () => {
+    expect(builtinSkillsDir('/nowhere')).toBeUndefined()
+  })
+
+  it('maps the environment locale to the interface languages', () => {
+    expect(createContext({ env: { LC_ALL: 'zh_CN.UTF-8' } }).locale).toBe('zh-CN')
+    expect(createContext({ env: { LANG: 'en_US.UTF-8' } }).locale).toBe('en')
+  })
+})
 
 describe('SKILLS_CATALOG', () => {
   it('lists the skills v3 shipped, in the order its workflows installed them', () => {

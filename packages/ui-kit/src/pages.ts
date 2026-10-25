@@ -134,7 +134,7 @@ export const SKILL_FIELDS: readonly Field[] = [
 export function toggleCatalogSkill(sources: unknown, id: string): unknown[] | undefined {
   const list = Array.isArray(sources) ? [...sources] : []
   const entry = list.find(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
-  if (!entry) return [{ source: BUILTIN_SKILLS_SOURCE, skills: [id] }]
+  if (!entry) return [...list, { source: BUILTIN_SKILLS_SOURCE, skills: [id] }]
   const picked: string[] = Array.isArray(entry.skills) ? entry.skills.map(String) : []
   const next = picked.includes(id) ? picked.filter(name => name !== id) : [...picked, id]
   if (next.length === 0) {

@@ -13,9 +13,8 @@ import { readTextIfExists } from './io/fs'
  * The built-in skill templates as an absolute folder: next to the running code when bundled
  * (`dist/templates/skills`), or one level up when running from source (`packages/core/templates/skills`).
  */
-function builtinSkillsDir(): string | undefined {
-  const here = dirname(fileURLToPath(import.meta.url))
-  for (const candidate of [join(here, 'templates', 'skills'), join(here, '..', 'templates', 'skills')])
+export function builtinSkillsDir(from: string = dirname(fileURLToPath(import.meta.url))): string | undefined {
+  for (const candidate of [join(from, 'templates', 'skills'), join(from, '..', 'templates', 'skills')])
     if (existsSync(candidate)) return candidate
   return undefined
 }
@@ -31,14 +30,15 @@ function detectLocale(env: Record<string, string | undefined>): string {
 }
 
 export function createContext(overrides: Partial<AdapterContext> = {}): AdapterContext {
+  const env = overrides.env ?? process.env
   return {
     home: homedir(),
     platform: process.platform,
-    env: process.env,
+    env,
     runner: processRunner,
     readFile: readTextIfExists,
     builtinSkillsDir: builtinSkillsDir(),
-    locale: detectLocale(process.env),
+    locale: detectLocale(env),
     ...overrides,
   }
 }

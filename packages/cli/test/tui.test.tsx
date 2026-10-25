@@ -220,6 +220,48 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('picks built-in skills from the catalog beside a custom source', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'a/a' }] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    // The list starts at the custom source; the catalog row is below it.
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Pick the built-in skills to install')
+    expect(app.frame()).toContain('Analyze changes and write conventional commit messages')
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('✓ git-commit')
+    await app.press(KEY.up, KEY.up, KEY.up, KEY.enter)
+    expect(app.frame()).toContain('✓ init-project')
+    await app.press(KEY.escape)
+    expect(app.frame()).toContain('ZCF built-in skills')
+    expect(app.frame()).toContain('git-commit, init-project')
+    await app.press(KEY.save)
+    expect(saved).toEqual([
+      {
+        version: 1,
+        tools: [],
+        skills: [{ source: 'a/a' }, { source: 'zcf', skills: ['git-commit', 'init-project'] }],
+      },
+    ])
+    app.unmount()
+  })
+
+  it('untoggles a picked built-in skill and drops the source once it is empty', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf', skills: ['feat'] }] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('ZCF built-in skills')
+    expect(app.frame()).toContain('feat')
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('✓ feat')
+    await app.press(KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).not.toContain('✓ feat')
+    await app.press(KEY.escape)
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [] }])
+    app.unmount()
+  })
+
   it('fills the provider from a preset and keeps the API key', async () => {
     const { service, saved } = fakeService(
       {
