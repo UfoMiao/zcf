@@ -2,11 +2,24 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
 import type { CommandResult, CommandRunner } from '@zcf/core'
+import { render } from 'ink'
 import { join } from 'pathe'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MainOptions } from '../src/main'
 import { EXIT_ERROR, EXIT_INVALID_CONFIG, EXIT_OK, main } from '../src/main'
+
+// The real Ink loop never exits in a test; mount is all `zcf tui` does on its own.
+vi.mock('ink', async importOriginal => {
+  const actual = await importOriginal<typeof import('ink')>()
+  return {
+    ...actual,
+    render: vi.fn<() => { waitUntilExit: () => Promise<void>; unmount: () => void }>(() => ({
+      waitUntilExit: () => Promise.resolve(),
+      unmount: () => {},
+    })),
+  }
+})
 
 // Strip colors so assertions read plainly.
 // oxlint-disable-next-line no-control-regex
@@ -64,6 +77,11 @@ async function runWith(extra: MainOptions, ...argv: string[]) {
 async function writeConfig(config: unknown, path = join(home, '.ufomiao', 'zcf', 'zcf.json')) {
   await mkdir(join(path, '..'), { recursive: true })
   await writeFile(path, JSON.stringify(config))
+}
+
+const mountedApp = () => {
+  const node = vi.mocked(render).mock.calls.at(-1)?.[0]
+  return node && typeof node === 'object' && 'props' in node ? (node.props as Record<string, unknown>) : undefined
 }
 
 const fullConfig = {
@@ -531,6 +549,16 @@ describe('help and unknown commands', () => {
       code: EXIT_ERROR,
       stderr: expect.stringContaining('The interactive UI needs a terminal'),
     })
+  })
+
+  it('mounts the interactive UI in the startup language, pinned by --lang', async () => {
+    // The config language only reaches the UI once the app loads it; startup follows --lang/locale.
+    await writeConfig({ version: 1, language: 'zh-CN' })
+    expect((await runWith({ interactive: true }, 'tui')).code).toBe(EXIT_OK)
+    expect(mountedApp()).toMatchObject({ lang: 'en', langPinned: false, home })
+
+    expect((await runWith({ interactive: true }, 'tui', '--lang', 'zh-CN')).code).toBe(EXIT_OK)
+    expect(mountedApp()).toMatchObject({ lang: 'zh-CN', langPinned: true })
   })
 
   it('serves the web UI on 127.0.0.1 until stopped, and opens the browser', async () => {

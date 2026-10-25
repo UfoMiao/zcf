@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import type { Lang } from '../src/i18n'
 import { createTranslator } from '../src/i18n'
 import { App } from '../src/tui/app'
+import { Banner } from '../src/tui/banner'
 
 const KEY = { enter: '\r', up: '\u001B[A', down: '\u001B[B', right: '\u001B[C', escape: '\u001B', save: '\u0013' }
 
@@ -145,6 +146,14 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Zero-Config Code Flow')
     expect(app.frame()).toContain('One config for your AI tools')
     app.unmount()
+  })
+
+  it('trims a subtitle wider than its slot instead of pushing the box apart', () => {
+    // 16 CJK characters are 32 columns wide; the slot is 30, so one character has to go.
+    const wide = render(<Banner t={(key: string) => (key === 'tui.bannerSubtitle' ? '零'.repeat(16) : key)} />)
+    expect(wide.lastFrame()).toContain('零'.repeat(15))
+    expect(wide.lastFrame()).not.toContain('零'.repeat(16))
+    wide.unmount()
   })
 
   it('switches the language on the Settings page, and the UI follows before saving', async () => {
