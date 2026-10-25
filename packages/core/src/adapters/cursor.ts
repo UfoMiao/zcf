@@ -5,7 +5,16 @@ import { isTable } from '../io/editors'
 import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
-import { detectCommand, envPath, languageNotice, notice, sameJson, selfUpdateStep, skillSteps } from './shared'
+import {
+  detectCommand,
+  envPath,
+  languageNotice,
+  notice,
+  removeStep,
+  sameJson,
+  selfUpdateStep,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'cursor' as const
@@ -129,10 +138,26 @@ export const cursor: ToolAdapter = {
     return { tool: TOOL, steps, notices }
   },
 
-  planUpdate(status) {
+  // Cursor CLI keeps itself updated; there is no npm package to fall back to.
+  async planUpdate(status) {
     if (!status.installed) {
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     }
     return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update'])], notices: [] }
+  },
+
+  async planUninstall(status, ctx, _provider) {
+    if (!status.installed) {
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    }
+    // No uninstall command and no npm package; the install put the launcher (and its versions
+    // folder next to it) in place, so deleting them is the whole uninstall.
+    const paths =
+      ctx.platform === 'win32'
+        ? [join(envPath(ctx, 'LOCALAPPDATA') ?? join(ctx.home, 'AppData', 'Local'), 'cursor-agent')]
+        : [join(ctx.home, '.local', 'bin', 'cursor-agent'), join(ctx.home, '.local', 'share', 'cursor-agent')]
+    // Cursor has no provider route, and its MCP servers live in mcp.json shared with the
+    // editor, so there is nothing ZCF owns to take out.
+    return { tool: TOOL, steps: paths.map(path => removeStep(TOOL, path)), notices: [] }
   },
 }

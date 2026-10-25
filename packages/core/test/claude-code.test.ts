@@ -381,8 +381,8 @@ describe('claudeMcpServer', () => {
 })
 
 describe('claudeCode.planUpdate', () => {
-  it('runs claude update', () => {
-    expect(claudeCode.planUpdate(installed, context()).steps).toEqual([
+  it('runs claude update', async () => {
+    expect((await claudeCode.planUpdate(installed, context())).steps).toEqual([
       {
         kind: 'command',
         title: {
@@ -395,8 +395,8 @@ describe('claudeCode.planUpdate', () => {
     ])
   })
 
-  it('only notes a missing install', () => {
-    expect(claudeCode.planUpdate({ installed: false, command: 'claude' }, context())).toEqual({
+  it('only notes a missing install', async () => {
+    expect(await claudeCode.planUpdate({ installed: false, command: 'claude' }, context())).toEqual({
       tool: 'claude-code',
       steps: [],
       notices: [

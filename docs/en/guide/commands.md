@@ -64,13 +64,30 @@ Tools are applied in parallel. If a step fails, the rest of that tool's steps ar
 
 ## `zcf update`
 
-Update the selected tools with their own updaters, such as `claude update`, `codex update`, `opencode upgrade` or `pi update --self`. A tool without its own updater is updated with `npm install -g`, unless npm's latest version is the one already installed. A tool that is not installed is skipped with a notice. Afterwards ZCF checks each updated tool's version and says whether it moved to a newer one or was already up to date.
+Update the selected tools with their own updaters, such as `claude update`, `codex update`, `opencode upgrade` or `pi update --self`. A tool without its own updater is updated with `npm install -g`, unless npm's latest version is the one already installed. When an updater fails and npm owns the package (ZCF checks with `npm ls -g`), the update falls back to `npm install -g <pkg>@latest`; a native install gets no npm fallback, so npm cannot leave a second copy next to it. A tool that is not installed is skipped with a notice. Afterwards ZCF checks each updated tool's version and says whether it moved to a newer one or was already up to date.
 
 | Option | Meaning |
 |--------|---------|
 | `--file <path>` | The config file. Only its `tools` and `mirror` are read. |
 | `--tools <tools>` | The tools to update instead of `tools` in the config. With it, the config file is optional. |
 | `--mirror <mirror>` | `official` or `china` for this run. |
+
+## `zcf uninstall`
+
+Uninstall tools and take the settings ZCF wrote for them out. Like `zcf apply`, it shows the plan first and changes nothing without `-y, --yes`.
+
+```bash
+zcf uninstall claude-code codex --yes
+```
+
+Each tool goes through its own channel: `npm uninstall -g` when npm owns the package, OpenCode's own `opencode uninstall --keep-config --keep-data` when it does not, and for installs without an npm package (Claude Code and Codex native installs, Cursor CLI) the files their installer put in place, copied to the backup folder before they are deleted. On Windows those files are `claude.exe` and `codex.exe`, and Cursor CLI goes as the whole `%LOCALAPPDATA%\cursor-agent` folder. A tool ZCF cannot attribute to npm or its official installer is left alone with a notice: uninstall it the way you installed it.
+
+ZCF removes only the settings it owns — the provider route, such as the `zcf` entries, the picks that point at them, and dsh's route patches. Claude Code's `ANTHROPIC_*` env keys and Gemini CLI's `.env` keys go only when they still hold the values the config writes; same-named settings with other values may be the user's own and stay, with a notice. MCP servers, skills, and settings ZCF cannot tell apart from the tool's own stay, and no file is deleted whole. Afterwards the tool ids come out of `tools` in the config file, so a later `zcf apply` does not install them again, and ZCF checks that the tool's command really stopped answering.
+
+| Option | Meaning |
+|--------|---------|
+| `--file <path>` | The config file whose `tools` list is cleaned up. |
+| `-y, --yes` | Uninstall. Without it, ZCF shows the plan and changes nothing. |
 
 ## `zcf mirror [mirror]`
 

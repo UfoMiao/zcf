@@ -5,7 +5,16 @@ import type { CommandStep, KeyEdit, KeyPath, Notice, PlanStep } from '../plan/ty
 import type { McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
 import { expandHome, piAiRoute } from './pi-ai'
-import { detectCommand, envPath, languageNotice, notice, sameJson, skillSteps } from './shared'
+import {
+  cleanConfigStep,
+  detectCommand,
+  envPath,
+  languageNotice,
+  notice,
+  npmUninstallSteps,
+  sameJson,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'dsh' as const
@@ -295,9 +304,46 @@ export const dsh: ToolAdapter = {
     return { tool: TOOL, steps, notices }
   },
 
-  planUpdate(status) {
+  async planUpdate(status) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     return { tool: TOOL, steps: [npmStep('step.update', `${PACKAGE}@latest`)], notices: [] }
   },
+
+  async planUninstall(status, ctx, _provider) {
+    if (!status.installed)
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    // dsh documents no uninstall; npm is the only channel it ships on.
+    const { steps, notices } = await npmUninstallSteps(TOOL, PACKAGE, ctx)
+    // The provider route ZCF wrote: its key in .env, and the route and default-model picks in
+    // the home patch layer. The MCP entries ZCF inserted are shared config, so they stay.
+    const home = dshHome(ctx)
+    const envFile = join(home, '.env')
+    if ((await ctx.readFile(envFile)) !== undefined)
+      steps.push(cleanConfigStep(TOOL, envFile, 'env', [{ path: [KEY_VARIABLE], value: undefined }]))
+    const patchFile = join(home, PATCH_FILE)
+    const data = await parseConfigText('yaml', await ctx.readFile(patchFile))
+    const patches = new PatchList(Array.isArray(data) ? data : [])
+    const routePatch = patches.find('llm-pi-ai')
+    const routeConfig = patchConfig(data, routePatch)
+    const modelPatch = patches.find('agent-default-model')
+    const modelConfig = patchConfig(data, modelPatch)
+    const routeProviders = isTable(routeConfig?.providers) ? routeConfig.providers : undefined
+    const edits: KeyEdit[] = []
+    if (routePatch >= 0 && routeProviders && Object.hasOwn(routeProviders, ROUTE))
+      edits.push({ path: [routePatch, 'config', 'providers', ROUTE], value: undefined })
+    if (modelConfig?.provider === ROUTE) {
+      edits.push({ path: [modelPatch, 'config', 'provider'], value: undefined })
+      if (Object.hasOwn(modelConfig, 'model')) edits.push({ path: [modelPatch, 'config', 'model'], value: undefined })
+    }
+    if (edits.length > 0) steps.push(cleanConfigStep(TOOL, patchFile, 'yaml', edits))
+    return { tool: TOOL, steps, notices }
+  },
+}
+
+/** The config table of the patch at `index`, when the file holds one there. */
+function patchConfig(data: unknown, index: number): Entry | undefined {
+  const entry = Array.isArray(data) ? data[index] : undefined
+  const config = isTable(entry) ? entry.config : undefined
+  return isTable(config) ? config : undefined
 }

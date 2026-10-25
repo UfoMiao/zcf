@@ -1,7 +1,7 @@
 import type { CommandRunner } from '../exec/runner'
 import type { Mirror } from '../mirror'
 import type { ToolPlan } from '../plan/types'
-import type { ToolId, ZcfConfig } from '../schema/config'
+import type { Provider, ToolId, ZcfConfig } from '../schema/config'
 
 export interface AdapterContext {
   home: string
@@ -36,6 +36,17 @@ export interface ToolAdapter {
   detect: (ctx: AdapterContext) => Promise<ToolStatus>
   /** Steps that bring the tool in line with the ZCF config, installing it first when needed. */
   plan: (config: ZcfConfig, status: ToolStatus, ctx: AdapterContext) => Promise<ToolPlan>
-  /** Update the tool with its own updater. */
-  planUpdate: (status: ToolStatus, ctx: AdapterContext) => ToolPlan
+  /**
+   * Update the tool with its own updater, such as `claude update`. A tool ZCF also installs
+   * from npm gets an npm step marked `fallback`, which runs when the updater fails.
+   */
+  planUpdate: (status: ToolStatus, ctx: AdapterContext) => Promise<ToolPlan>
+  /**
+   * Steps that remove the tool through its own uninstall channel (npm, the official
+   * uninstaller, or deleting the native binary) and the settings ZCF wrote for it. The
+   * provider says what ZCF wrote; without it, or for a value that differs, a setting may
+   * be the user's own and stays. Keys ZCF cannot tell apart from the tool's own, MCP
+   * servers and skills are left alone.
+   */
+  planUninstall: (status: ToolStatus, ctx: AdapterContext, provider: Provider | undefined) => Promise<ToolPlan>
 }

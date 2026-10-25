@@ -5,12 +5,15 @@ import type { KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { McpServer, Provider } from '../schema/config'
 import { protocolModel, TOOL_NAMES } from '../schema/config'
 import {
+  cleanConfigStep,
   detectCommand,
   envPath,
   languageNotice,
   notice,
   npmInstallStep,
+  npmUninstallSteps,
   npmUpdateStep,
+  ownedSettingKeys,
   sameJson,
   skillSteps,
 } from './shared'
@@ -151,9 +154,46 @@ export const geminiCli: ToolAdapter = {
   },
 
   // Gemini CLI has no update command; npm is how it is installed.
-  planUpdate(status) {
+  async planUpdate(status) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     return { tool: TOOL, steps: [npmUpdateStep(TOOL, PACKAGE)], notices: [] }
+  },
+
+  async planUninstall(status, ctx, provider) {
+    if (!status.installed)
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    // The uninstall guide uninstalls the package (npm here, brew and MacPorts elsewhere);
+    // there is no native install whose files ZCF could delete.
+    const { steps, notices } = await npmUninstallSteps(TOOL, PACKAGE, ctx)
+    // The provider route ZCF wrote lives in .env: the keys that still hold the values the
+    // config writes. GEMINI_MODEL never does (the model goes to settings.json, so ZCF removes
+    // the .env copy rather than writing it), and settings.json itself is left alone: its auth
+    // selection and model are keys the CLI writes too, so ZCF cannot tell its own from the user's.
+    const envFile = join(geminiDir(ctx), '.env')
+    const text = await ctx.readFile(envFile)
+    if (text !== undefined) {
+      const data = await parseConfigText('env', text)
+      const written = provider?.gemini
+        ? { GEMINI_API_KEY: provider.apiKey, GOOGLE_GEMINI_BASE_URL: provider.gemini.baseUrl }
+        : undefined
+      const { keys, foreign } = ownedSettingKeys(
+        ['GEMINI_API_KEY', 'GOOGLE_GEMINI_BASE_URL', 'GEMINI_MODEL'],
+        written,
+        isTable(data) ? data : {},
+      )
+      if (foreign) notices.push(notice('info', 'notice.foreignSettings', { tool: TOOL }))
+      if (keys.length > 0) {
+        steps.push(
+          cleanConfigStep(
+            TOOL,
+            envFile,
+            'env',
+            keys.map(key => ({ path: [key], value: undefined })),
+          ),
+        )
+      }
+    }
+    return { tool: TOOL, steps, notices }
   },
 }

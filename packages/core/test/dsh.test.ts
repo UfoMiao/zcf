@@ -455,8 +455,8 @@ describe('dsh.plan', () => {
 })
 
 describe('dsh.planUpdate', () => {
-  it('updates dsh with npm, since it has no updater of its own', () => {
-    expect(dsh.planUpdate(installed, context()).steps).toEqual([
+  it('updates dsh with npm, since it has no updater of its own', async () => {
+    expect((await dsh.planUpdate(installed, context())).steps).toEqual([
       {
         kind: 'command',
         title: { key: 'step.update', params: { tool: 'dsh' } },
@@ -471,8 +471,8 @@ describe('dsh.planUpdate', () => {
     ])
   })
 
-  it('reports a missing install', () => {
-    expect(dsh.planUpdate({ installed: false, command: 'dsh' }, context()).notices).toEqual([
+  it('reports a missing install', async () => {
+    expect((await dsh.planUpdate({ installed: false, command: 'dsh' }, context())).notices).toEqual([
       { level: 'info', message: { key: 'notice.notInstalled', params: { tool: 'dsh' } } },
     ])
   })

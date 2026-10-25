@@ -5,7 +5,17 @@ import { isTable } from '../io/editors'
 import type { CommandStep, KeyEdit, Notice, PlanStep } from '../plan/types'
 import type { ConfigLanguage, McpServer, Provider } from '../schema/config'
 import { TOOL_NAMES } from '../schema/config'
-import { envPath, notice, probe, sameJson, selfUpdateStep, skillSteps } from './shared'
+import {
+  envPath,
+  cleanConfigStep,
+  notice,
+  npmUninstallSteps,
+  ownedSettingKeys,
+  probe,
+  sameJson,
+  selfUpdateSteps,
+  skillSteps,
+} from './shared'
 import type { AdapterContext, ToolAdapter } from './types'
 
 const TOOL = 'claude-code' as const
@@ -251,12 +261,51 @@ export const claudeCode: ToolAdapter = {
     return { tool: TOOL, steps, notices }
   },
 
-  planUpdate(status, ctx) {
+  async planUpdate(status, ctx) {
     if (!status.installed)
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     // `claude update` runs npm on an npm install, which takes the mirror's registry; a native
     // install downloads from Anthropic, and ZCF cannot tell the two apart from `claude --version`.
     const notices = ctx.mirror === 'china' ? [notice('info', 'notice.nativeUpdateNotMirrored', { tool: TOOL })] : []
-    return { tool: TOOL, steps: [selfUpdateStep(TOOL, status, ['update'])], notices }
+    // The npm update is only a fallback, and only when npm owns the package: a native install
+    // updated through npm would leave two copies of claude behind.
+    return {
+      tool: TOOL,
+      steps: await selfUpdateSteps(TOOL, status, ['update'], NPM_PACKAGE, ctx, [NPM_PACKAGE]),
+      notices,
+    }
+  },
+
+  async planUninstall(status, ctx, provider) {
+    if (!status.installed)
+      return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
+    // The docs uninstall an npm install with npm and a native one by deleting the binary and
+    // its versions; ~/.claude holds the user's sessions and login, so it stays.
+    const { steps, notices } = await npmUninstallSteps(TOOL, NPM_PACKAGE, ctx, [
+      nativeBinary(ctx),
+      join(ctx.home, '.local', 'share', 'claude'),
+    ])
+    // The provider route ZCF wrote: the env keys that still hold the values the config writes.
+    // Same-named keys with other values may be the user's own writing and stay.
+    const settings = join(settingsDir(ctx), 'settings.json')
+    const text = await ctx.readFile(settings)
+    if (text !== undefined) {
+      const data: unknown = parse(text)
+      const env = isTable(data) && isTable(data.env) ? data.env : {}
+      const desired = provider?.anthropic ? providerEnv(provider) : undefined
+      const { keys, foreign } = ownedSettingKeys(PROVIDER_ENV_KEYS, desired, env)
+      if (foreign) notices.push(notice('info', 'notice.foreignSettings', { tool: TOOL }))
+      if (keys.length > 0) {
+        steps.push(
+          cleanConfigStep(
+            TOOL,
+            settings,
+            'json',
+            keys.map(key => ({ path: ['env', key], value: undefined })),
+          ),
+        )
+      }
+    }
+    return { tool: TOOL, steps, notices }
   },
 }
