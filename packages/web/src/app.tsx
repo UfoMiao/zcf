@@ -7,7 +7,15 @@ import type { Lang, Translate } from './api'
 import { browserLang, httpService, isLang, setRequestLang, tildify } from './api'
 import { ApplyPage, McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
 
-export function App({ startupLang, langPinned, translators }: { startupLang: Lang; langPinned: boolean; translators: Record<Lang, Translate> }) {
+export function App({
+  startupLang,
+  langPinned,
+  translators,
+}: {
+  startupLang: Lang
+  langPinned: boolean
+  translators: Record<Lang, Translate>
+}) {
   const editor = useConfigEditor(httpService)
   const [page, setPage] = useState<PageId>('tools')
   const [status, setStatus] = useState<{ text: string; tone: 'info' | 'warning' | 'error' }>()
