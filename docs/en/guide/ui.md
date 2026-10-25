@@ -27,7 +27,7 @@ Secrets stay hidden. The API key and the values of MCP environment variables and
 
 ## Language
 
-The UI's language is the config's `language`, picked on the Settings page; in the web UI `auto` follows the browser's language, in the terminal UI the system locale. Both switch the moment you change the field, before the change is even saved. `--lang` or `ZCF_LANG` pins the language for one run, and the editors then stop following the setting. The setting applies to the editors; command output such as `zcf plan` follows `--lang` or `ZCF_LANG` instead.
+The UI's language is the config's `language`, picked on the Settings page; in the web UI `auto` follows the browser's language, in the terminal UI the system locale. Both switch the moment you change the field, before the change is even saved. The web UI's status bar also has an EN/中文 switch for what the page shows right now; it does not touch the config, and the Settings field takes over again the next time it changes. `--lang` or `ZCF_LANG` pins the language for one run, and the editors then stop following the setting. The setting applies to the editors; command output such as `zcf plan` follows `--lang` or `ZCF_LANG` instead.
 
 ## Terminal UI
 
