@@ -189,7 +189,14 @@ export const pi: ToolAdapter = {
 
     steps.push(...(await mcpSteps(config.mcpServers, status.command, ctx)))
     // The `skills` CLI installs pi skills into the shared Agent Skills folder, which pi reads.
-    steps.push(...(await skillSteps(config.skills, ctx, { agent: 'pi', dir: join(ctx.home, '.agents', 'skills') })))
+    steps.push(
+      ...(await skillSteps(
+        config.skills,
+        ctx,
+        { agent: 'pi', dir: join(ctx.home, '.agents', 'skills') },
+        config.language,
+      )),
+    )
 
     return { tool: TOOL, steps, notices }
   },

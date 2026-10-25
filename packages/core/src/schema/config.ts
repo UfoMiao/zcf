@@ -94,7 +94,7 @@ const McpServerNameSchema = v.pipe(
 )
 
 export const SkillSourceSchema = v.object({
-  /** Anything `npx skills add` accepts: owner/repo, a git URL, or a local path. */
+  /** Anything `npx skills add` accepts: owner/repo, a git URL or a local path; `zcf` stands for ZCF's own skill templates. */
   source: NonEmptyString,
   /** Install only these skills from the source; empty installs all of them. */
   skills: v.optional(v.array(NonEmptyString), []),

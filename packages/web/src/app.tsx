@@ -129,7 +129,7 @@ export function App({
         {page === 'tools' && <ToolsPage editor={editor} t={t} detected={detected} />}
         {page === 'provider' && <ProviderPage editor={editor} t={t} lang={uiLang} />}
         {page === 'mcp' && <McpPage editor={editor} t={t} />}
-        {page === 'skills' && <SkillsPage editor={editor} t={t} />}
+        {page === 'skills' && <SkillsPage editor={editor} t={t} lang={uiLang} />}
         {page === 'settings' && <SettingsPage editor={editor} t={t} />}
         {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} />}
       </main>

@@ -3,7 +3,8 @@ import { join } from 'pathe'
 import { isTable, JsExpression, QuotedString } from '../io/editors'
 import { githubMirrorEnv } from '../mirror'
 import type { CommandStep, Notice, PlanStep } from '../plan/types'
-import type { SkillSource, ToolId } from '../schema/config'
+import type { LanguageSetting, SkillSource, ToolId } from '../schema/config'
+import { builtinSkillsPath, BUILTIN_SKILLS_SOURCE } from '../schema/skills'
 import type { AdapterContext, ToolStatus } from './types'
 
 const VERSION_PATTERN = /\d+\.\d+\.\d+(?:-[\w.]+)?/
@@ -110,12 +111,14 @@ export function skillsAddStep(
   { source, skills }: SkillSource,
   agent: string,
   gitMirrorEnv: Record<string, string> = {},
+  /** The source as the user wrote it, shown in the title when the installed path differs, such as `zcf`. */
+  display: string = source,
 ): CommandStep {
   return {
     kind: 'command',
     title: {
       key: 'step.skillsAdd',
-      params: { source },
+      params: { source: display },
     },
     command: 'npx',
     args: ['-y', 'skills', 'add', source, '-g', '-y', '-a', agent, ...skills.flatMap(name => ['-s', name])],
@@ -155,20 +158,31 @@ export async function skillSteps(
   sources: readonly SkillSource[],
   ctx: AdapterContext,
   target: SkillsTarget,
+  language: LanguageSetting = 'auto',
 ): Promise<CommandStep[]> {
+  // The built-in `zcf` source installs from the language folder of the shipped templates;
+  // every other source is passed to the skills CLI exactly as the user wrote it.
+  const each = sources.map(source => {
+    const installed =
+      ctx.builtinSkillsDir && source.source === BUILTIN_SKILLS_SOURCE
+        ? { ...source, source: builtinSkillsPath(ctx.builtinSkillsDir, language, ctx.locale) }
+        : source
+    return [installed, source.source] as const
+  })
   const isInstalled = async (name: string) => (await ctx.readFile(join(target.dir, name, 'SKILL.md'))) !== undefined
   const needed = await Promise.all(
-    sources.map(
-      async source => source.skills.length === 0 || (await Promise.all(source.skills.map(isInstalled))).includes(false),
+    each.map(
+      async ([source]) =>
+        source.skills.length === 0 || (await Promise.all(source.skills.map(isInstalled))).includes(false),
     ),
   )
-  const pending = sources.filter((_, index) => needed[index])
+  const pending = each.filter((_, index) => needed[index])
   if (pending.length === 0) return []
   const mirror = ctx.mirror ?? 'official'
   // Asking the user's git costs a process, so it happens only when a rewrite is on the table.
   const userRewrites = mirror === 'china' ? await userRewritesGitUrls(ctx) : false
   const gitMirrorEnv = githubMirrorEnv(mirror, ctx.env, userRewrites)
-  return pending.map(source => skillsAddStep(source, target.agent, gitMirrorEnv))
+  return pending.map(([source, display]) => skillsAddStep(source, target.agent, gitMirrorEnv, display))
 }
 
 /** An environment variable as a path, or `undefined` when it is unset or blank. */

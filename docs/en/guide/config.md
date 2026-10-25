@@ -102,10 +102,23 @@ Skill sources, each installed with [`npx skills add`](https://github.com/vercel-
 
 | Field | Meaning |
 |-------|---------|
-| `source` | Anything `npx skills add` accepts: `owner/repo`, a git URL, or a local path. |
+| `source` | Anything `npx skills add` accepts: `owner/repo`, a git URL, a local path, or `zcf` for the skills ZCF ships. |
 | `skills` | Only install these skills from the source. Leave it out or empty to install all of them. |
 
 A source that lists its skills is skipped once all of them are installed. A source without a list is installed again on every apply, because ZCF can't tell which skills it holds.
+
+The reserved source `zcf` picks the skills ZCF itself ships, in the folder of the language the interface uses. They are the workflow skills ZCF v3 installed, offered as a checklist in the Skills page:
+
+| Skill | What it does |
+|-------|--------------|
+| `init-project` | Generate CLAUDE.md context indexes for a project. |
+| `workflow` | Run a six-phase development workflow with quality gates. |
+| `feat` | Plan and build a new feature through a structured flow. |
+| `git-commit` | Analyze changes and write conventional commit messages. |
+| `git-rollback` | Roll a branch back to an earlier version interactively. |
+| `git-clean-branches` | Preview and clean up merged or stale branches. |
+| `git-worktree` | Manage git worktrees under a project-local folder. |
+| `bmad-init` | Initialize or update BMad-Method V6 in a project. |
 
 ## `mirror`
 

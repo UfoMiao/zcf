@@ -1,5 +1,5 @@
 import type { ToolId } from '@zcf/core/schema'
-import { LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
+import { BUILTIN_SKILLS_SOURCE, LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
 import { isTable } from './draft'
@@ -125,6 +125,26 @@ export const SKILL_FIELDS: readonly Field[] = [
   { label: 'field.skill.source', path: ['source'], kind: 'text', required: true, hint: 'hint.skill.source' },
   { label: 'field.skill.skills', path: ['skills'], kind: 'list', hint: 'hint.skill.skills' },
 ]
+
+/**
+ * Toggle one catalog skill in the draft's `skills` list: the built-in skills share a single
+ * `zcf` source whose `skills` entry grows and shrinks. `undefined` when nothing is picked
+ * anymore, so the empty key is removed rather than left behind.
+ */
+export function toggleCatalogSkill(sources: unknown, id: string): unknown[] | undefined {
+  const list = Array.isArray(sources) ? [...sources] : []
+  const entry = list.find(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
+  if (!entry) return [{ source: BUILTIN_SKILLS_SOURCE, skills: [id] }]
+  const picked: string[] = Array.isArray(entry.skills) ? entry.skills.map(String) : []
+  const next = picked.includes(id) ? picked.filter(name => name !== id) : [...picked, id]
+  if (next.length === 0) {
+    const rest = list.filter(item => item !== entry)
+    return rest.length > 0 ? rest : undefined
+  }
+  const at = list.indexOf(entry)
+  list[at] = { ...entry, skills: next }
+  return list
+}
 
 /** A fresh MCP server of the given type, so the form has something to fill in. */
 export function newMcpServer(type: McpType): Record<string, unknown> {

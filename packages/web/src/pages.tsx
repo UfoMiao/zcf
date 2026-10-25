@@ -1,5 +1,12 @@
 import type { PresetList, ToolId, ToolStatus } from '@zcf/core'
-import { applyPreset, presetSummary, TOOL_NAMES } from '@zcf/core/schema'
+import {
+  applyPreset,
+  BUILTIN_SKILLS_SOURCE,
+  presetSummary,
+  SKILLS_CATALOG,
+  skillDescription,
+  TOOL_NAMES,
+} from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, McpType, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import {
   freshName,
@@ -13,6 +20,7 @@ import {
   SETTINGS_FIELDS,
   SKILL_FIELDS,
   TOOL_OPTIONS,
+  toggleCatalogSkill,
   withMcpType,
 } from '@zcf/ui-kit'
 import { useEffect, useRef, useState } from 'react'
@@ -198,11 +206,34 @@ export function McpPage({ editor, t }: PageProps) {
   )
 }
 
-export function SkillsPage({ editor, t }: PageProps) {
+/** The ids of the built-in skills the draft already picks, from its `zcf` source. */
+function pickedCatalogSkills(sources: readonly unknown[]): string[] {
+  const builtin = sources.find(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
+  return isTable(builtin) && Array.isArray(builtin.skills) ? builtin.skills.map(String) : []
+}
+
+export function SkillsPage({ editor, t, lang }: PageProps & { lang: string }) {
   const sources = Array.isArray(editor.draft.skills) ? editor.draft.skills : []
+  const picked = pickedCatalogSkills(sources)
   return (
     <section>
       <p className="intro">{t('tui.skills.intro')}</p>
+      <div className="tools">
+        {SKILLS_CATALOG.map(skill => {
+          const on = picked.includes(skill.id)
+          return (
+            <label key={skill.id} className={`tool${on ? ' on' : ''}`}>
+              <input
+                type="checkbox"
+                checked={on}
+                onChange={() => editor.update(['skills'], toggleCatalogSkill(editor.draft.skills, skill.id))}
+              />
+              <span className="tool-name">{skill.id}</span>
+              <small>{skillDescription(skill, lang)}</small>
+            </label>
+          )
+        })}
+      </div>
       {sources.map((_, index) => (
         // Sources have no ids; the index is their identity, as in the config.
         <div className="card" key={index}>

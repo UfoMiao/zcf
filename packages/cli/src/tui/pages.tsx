@@ -1,5 +1,12 @@
 import type { PresetList, ProviderPreset, ToolId, ToolStatus } from '@zcf/core'
-import { applyPreset, presetSummary, TOOL_NAMES } from '@zcf/core'
+import {
+  applyPreset,
+  BUILTIN_SKILLS_SOURCE,
+  presetSummary,
+  SKILLS_CATALOG,
+  skillDescription,
+  TOOL_NAMES,
+} from '@zcf/core'
 import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
 import {
   fieldValue,
@@ -16,6 +23,7 @@ import {
   SETTINGS_FIELDS,
   SKILL_FIELDS,
   TOOL_OPTIONS,
+  toggleCatalogSkill,
   withMcpType,
 } from '@zcf/ui-kit'
 import { Box, Text } from 'ink'
@@ -399,10 +407,56 @@ export function McpPage(props: PageProps) {
   )
 }
 
-export function SkillsPage(props: PageProps) {
-  const { editor, t, active, onBack, onEditing } = props
+/** The ids of the built-in skills the draft already picks, from its `zcf` source. */
+function pickedCatalogSkills(sources: readonly unknown[]): string[] {
+  const builtin = sources.find(item => isTable(item) && item.source === BUILTIN_SKILLS_SOURCE)
+  return isTable(builtin) && Array.isArray(builtin.skills) ? builtin.skills.map(String) : []
+}
+
+/** The built-in skills v3 shipped, one row each: Enter toggles, Esc goes back. */
+function CatalogPicker({
+  t,
+  active,
+  onBack,
+  onEditing,
+  lang,
+  picked,
+  onToggle,
+}: Omit<PageProps, 'editor'> & { lang: string; picked: readonly string[]; onToggle: (id: string) => void }) {
+  const rows: Row[] = SKILLS_CATALOG.map(skill => ({
+    id: skill.id,
+    label: `${picked.includes(skill.id) ? '✓' : ' '} ${skill.id}`,
+    value: skillDescription(skill, lang),
+    action: { type: 'run', run: () => onToggle(skill.id) },
+  }))
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text bold>{t('tui.skills.catalogTitle')}</Text>
+      <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+    </Box>
+  )
+}
+
+export function SkillsPage(props: PageProps & { lang: string }) {
+  const { editor, t, active, onBack, onEditing, lang } = props
   const [open, setOpen] = useState<number>()
+  const [picking, setPicking] = useState(false)
   const sources = Array.isArray(editor.draft.skills) ? editor.draft.skills : []
+  const picked = pickedCatalogSkills(sources)
+
+  if (picking) {
+    return (
+      <CatalogPicker
+        t={t}
+        active={active}
+        onEditing={onEditing}
+        lang={lang}
+        picked={picked}
+        onBack={() => setPicking(false)}
+        onToggle={id => editor.update(['skills'], toggleCatalogSkill(editor.draft.skills, id))}
+      />
+    )
+  }
 
   if (open !== undefined && open < sources.length) {
     const rows: Row[] = [
@@ -434,13 +488,20 @@ export function SkillsPage(props: PageProps) {
       const skills = Array.isArray(item.skills) ? item.skills.map(String) : []
       return {
         id: String(index),
-        label: asText(item.source),
+        label: asText(item.source) === BUILTIN_SKILLS_SOURCE ? t('tui.skills.builtin') : asText(item.source),
         value: skills.length > 0 ? skills.join(', ') : t('tui.skills.all'),
         error: firstIssue(editor, ['skills', index], t),
         remove: () => editor.update(['skills', index], undefined),
         action: { type: 'run', run: () => setOpen(index) },
       }
     }),
+    {
+      id: '+catalog',
+      label: t('tui.skills.catalog'),
+      value: picked.length > 0 ? picked.join(', ') : undefined,
+      hint: t('tui.skills.catalogHint'),
+      action: { type: 'run', run: () => setPicking(true) },
+    },
     {
       id: '+add',
       label: t('tui.skills.add'),

@@ -15,6 +15,14 @@ export interface AdapterContext {
    * and then the config's `mirror` decide; adapters read the result through `planTools`.
    */
   mirror?: Mirror
+  /**
+   * The folder of the built-in skill templates ZCF ships, such as `<zcf>/dist/templates/skills`.
+   * The `zcf` skill source installs from the language folder inside it; without it that source
+   * is passed to the skills CLI as written.
+   */
+  builtinSkillsDir?: string
+  /** The locale of the environment, such as `zh-CN`; picks the built-in skills' language when `language` is `auto`. */
+  locale?: string
 }
 
 export interface ToolStatus {

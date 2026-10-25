@@ -210,7 +210,14 @@ export const claudeCode: ToolAdapter = {
     }
 
     steps.push(...(await mcpSteps(config.mcpServers, command, ctx)))
-    steps.push(...(await skillSteps(config.skills, ctx, { agent: TOOL, dir: join(settingsDir(ctx), 'skills') })))
+    steps.push(
+      ...(await skillSteps(
+        config.skills,
+        ctx,
+        { agent: TOOL, dir: join(settingsDir(ctx), 'skills') },
+        config.language,
+      )),
+    )
 
     return { tool: TOOL, steps, notices }
   },
