@@ -431,6 +431,110 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('fills the terminal height, so the panel reaches the bottom of the screen', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    Object.defineProperty(app.stdout, 'rows', { get: () => 40 })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
+    const lines = app.frame().split('\n')
+    expect(lines).toHaveLength(40)
+    expect(lines[38]).toContain('╰')
+    expect(lines[39]).toContain('Ctrl+S')
+    app.unmount()
+  })
+
+  it('opens rows and pages with a mouse click', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    const lineOf = (text: string) => {
+      const at = app
+        .frame()
+        .split('\n')
+        .findIndex(line => line.includes(text))
+      expect(at).toBeGreaterThanOrEqual(0)
+      // The terminal reports 1-based rows.
+      return at + 1
+    }
+    const click = async (line: number, col: number) => {
+      app.stdin.write(`\u001B[<0;${col};${line}M`)
+      await tick()
+    }
+    await app.press(KEY.enter)
+    // A click selects the row and runs what Enter would run: the Codex checkbox turns on.
+    await click(lineOf('[ ] Codex'), 40)
+    expect(app.frame()).toContain('[x] Codex')
+    // A click on a nav entry opens that page.
+    await click(lineOf('  Provider'), 5)
+    expect(app.frame()).toContain('One API provider for every tool.')
+    app.unmount()
+  })
+
+  it('ignores a click on the page text above the list', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press(KEY.enter)
+    const at = app
+      .frame()
+      .split('\n')
+      .findIndex(line => line.includes('Pick the agent tools'))
+    expect(at).toBeGreaterThanOrEqual(0)
+    app.stdin.write(`\u001B[<0;40;${at + 1}M`)
+    await tick()
+    // The intro line is above every row: nothing toggles and the draft stays clean.
+    const frame = app.frame()
+    expect(frame).toContain('[ ] Claude Code')
+    expect(frame).not.toContain('●')
+    app.unmount()
+  })
+
+  it('moves the page choice with the wheel on the nav column', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    const at = app
+      .frame()
+      .split('\n')
+      .findIndex(line => line.includes('  Provider'))
+    expect(at).toBeGreaterThanOrEqual(0)
+    // The wheel turns the page choice down to Provider and back up to Tools.
+    app.stdin.write(`\u001B[<65;5;${at + 1}M`)
+    await tick()
+    expect(app.frame()).toContain('One API provider for every tool.')
+    app.stdin.write(`\u001B[<64;5;${at + 1}M`)
+    await tick()
+    expect(app.frame()).toContain('Pick the agent tools')
+    app.unmount()
+  })
+
+  it('moves the selection with the mouse wheel', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press(KEY.enter)
+    // One wheel turn down moves one row, to Codex.
+    app.stdin.write('\u001B[<65;40;14M')
+    await tick()
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('[x] Codex')
+    app.unmount()
+  })
+
+  it('opens a text editor with a mouse click', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    const at = app
+      .frame()
+      .split('\n')
+      .findIndex(line => line.includes('keyword'))
+    expect(at).toBeGreaterThanOrEqual(0)
+    app.stdin.write(`\u001B[<0;30;${at + 1}M`)
+    await tick()
+    // The click opened the query editor, the way Enter does.
+    expect(app.frame()).toContain('Enter confirm')
+    app.unmount()
+  })
+
   it('says when a search matches nothing, and when the index cannot answer', async () => {
     // With no sources yet, the list is the catalog stand-in, search and add: one down reaches search.
     const empty = fakeService(
@@ -606,6 +710,35 @@ describe('terminal UI', () => {
     await tick()
     expect(applied).toBe(true)
     expect(app.frame()).toContain('Done: 1 applied, 0 already up to date.')
+    app.unmount()
+  })
+
+  it('scrolls the plan output with the mouse wheel', async () => {
+    const steps: Plan['tools'][number]['steps'] = Array.from({ length: 10 }, (_, i) => ({
+      kind: 'command',
+      title: { key: 'step.install', params: { tool: 'claude-code' } },
+      command: 'npm',
+      args: ['i', '-g', `x${i}`],
+    }))
+    const plan: Plan = { tools: [{ tool: 'claude-code', notices: [], steps }] }
+    const view: PlanView = { plan, previews: [steps.map(() => null)], secrets: [] }
+    const { service } = fakeService({ version: 1, tools: ['claude-code'] }, { plan: async () => view })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    const at = app
+      .frame()
+      .split('\n')
+      .findIndex(line => line.includes('$ npm i -g x0'))
+    expect(at).toBeGreaterThanOrEqual(0)
+    // Ten steps overflow the window; the wheel rolls the plan to its end.
+    for (let i = 0; i < 12; i++) {
+      app.stdin.write(`\u001B[<65;40;${at + 1}M`)
+      // oxlint-disable-next-line no-await-in-loop
+      await tick()
+    }
+    const frame = app.frame()
+    expect(frame).not.toContain('$ npm i -g x0')
+    expect(frame).toContain('$ npm i -g x9')
     app.unmount()
   })
 
