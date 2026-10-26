@@ -1,6 +1,7 @@
-import { Box, Text, useInput } from 'ink'
-import { useState } from 'react'
+import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
+import { useEffect, useRef, useState } from 'react'
 
+import { contains, onMousePress, wheelDirection } from './mouse'
 import { TextInput } from './text-input'
 import { useTerminalRows } from './use-terminal-rows'
 
@@ -45,6 +46,11 @@ export interface RowListProps {
 /** Lines the list may not claim: banner, status rows, panel borders, key bar, page titles and hints. */
 const LIST_CHROME = 18
 
+/** Lines a row takes once rendered: its own, an error, or the selected row's hint while focused. */
+function rowHeight(item: Row, selected: boolean, active: boolean): number {
+  return 1 + (item.error || (selected && active && item.hint) ? 1 : 0)
+}
+
 /**
  * A vertical list of labelled rows. ↑/↓ move, Enter edits a text row, runs an action
  * or cycles a choice (←/→ cycle too), x removes an item, and Esc goes back.
@@ -53,6 +59,7 @@ const LIST_CHROME = 18
 export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   const [selected, setSelected] = useState(0)
   const [editing, setEditing] = useState(false)
+  const listRef = useRef<DOMElement | null>(null)
   const index = Math.min(selected, Math.max(0, rows.length - 1))
   const row = rows[index]
   // Values line up in one column after the longest label. Rows without a value count too:
@@ -72,6 +79,48 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
     onEditing?.(value)
   }
 
+  // What a click and Enter share: run an action, cycle a choice, or open the text editor.
+  const activate = (item: Row) => {
+    if (item.action?.type === 'text') setEdit(true)
+    else {
+      if (editing) setEdit(false)
+      if (item.action?.type === 'run') item.action.run()
+      else if (item.action?.type === 'cycle') item.action.next()
+    }
+  }
+
+  // A click lands on the row it selects, then runs what Enter would run; the wheel moves
+  // the selection. Only presses inside this list act, so the nav column keeps its own.
+  useEffect(() => {
+    if (!active) return undefined
+    return onMousePress(press => {
+      const list = listRef.current
+      if (!list) return
+      const metrics = measureElement(list)
+      if (!contains(metrics, press)) return
+      const direction = wheelDirection(press)
+      if (direction) {
+        setSelected(direction === 'up' ? Math.max(0, index - 1) : Math.min(rows.length - 1, index + 1))
+        return
+      }
+      // Walk the rendered lines: each row takes what rowHeight says, and the top arrow,
+      // when drawn, takes one more. Presses above that belong to the page, not to a row.
+      const offset = press.row - 1 - metrics.y
+      let line = start > 0 ? 1 : 0
+      if (offset < line) return
+      for (let position = start; position < start + shown.length; position++) {
+        const item = rows[position]!
+        const height = rowHeight(item, position === index, active)
+        if (offset < line + height) {
+          setSelected(position)
+          activate(item)
+          return
+        }
+        line += height
+      }
+    })
+  }, [active, rows, index, start, shown.length, editing])
+
   useInput(
     (input, key) => {
       if (key.upArrow || input === 'k') setSelected(Math.max(0, index - 1))
@@ -79,17 +128,16 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
       else if (key.escape || (key.leftArrow && row?.action?.type !== 'cycle')) onBack()
       else if (!row) return
       else if (input === 'x' && row.remove) row.remove()
-      else if (row.action?.type === 'cycle' && (key.leftArrow || key.rightArrow || key.return || input === ' ')) {
+      else if (row.action?.type === 'cycle' && (key.leftArrow || key.rightArrow || input === ' ')) {
         if (key.leftArrow) (row.action.previous ?? row.action.next)()
         else row.action.next()
-      } else if (key.return && row.action?.type === 'run') row.action.run()
-      else if (key.return && row.action?.type === 'text') setEdit(true)
+      } else if (key.return) activate(row)
     },
     { isActive: active && !editing },
   )
 
   return (
-    <Box flexDirection="column">
+    <Box ref={listRef} flexDirection="column">
       {capped && start > 0 && <Text dimColor>{'  ↑'}</Text>}
       {shown.map((item, offset) => {
         const position = start + offset

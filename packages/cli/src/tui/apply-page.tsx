@@ -1,11 +1,12 @@
 import type { FilePreview, Plan, PlanStep } from '@zcf/core'
 import type { PlanView, ZcfService } from '@zcf/ui-kit'
-import { Box, Text, useInput } from 'ink'
+import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
 import { useEffect, useRef, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
 import { hasWork, Renderer } from '../render'
+import { contains, onMousePress, wheelDirection } from './mouse'
 import { useTerminalRows } from './use-terminal-rows'
 
 type Phase = 'waiting' | 'planning' | 'ready' | 'applying' | 'done'
@@ -94,6 +95,21 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
   const maxScroll = Math.max(0, lines.length - height)
   // While applying, follow the newest lines.
   const top = phase === 'applying' ? maxScroll : Math.min(scroll, maxScroll)
+  const outputRef = useRef<DOMElement | null>(null)
+
+  // The wheel scrolls the plan output; presses outside the output, such as on the nav, are not ours.
+  useEffect(() => {
+    if (!active) return undefined
+    return onMousePress(press => {
+      const metrics = outputRef.current ? measureElement(outputRef.current) : undefined
+      if (!metrics) return
+      const direction = wheelDirection(press)
+      if (!direction || !contains(metrics, press)) return
+      if (press.row - 1 < metrics.y || press.row - 1 >= metrics.y + metrics.height) return
+      if (direction === 'up') setScroll(Math.max(0, top - 1))
+      else setScroll(Math.min(maxScroll, top + 1))
+    })
+  }, [active, top, maxScroll])
 
   useInput(
     (input, key) => {
@@ -111,7 +127,7 @@ export function ApplyPage({ service, t, home, active, dirty, onBack }: ApplyPage
   if (dirty) return <Text color="yellow">{t('tui.apply.saveFirst')}</Text>
   if (phase === 'planning') return <Text dimColor>{t('tui.apply.planning')}</Text>
   return (
-    <Box flexDirection="column">
+    <Box ref={outputRef} flexDirection="column">
       {lines.slice(top, top + height).map((line, index) => (
         <Text key={top + index} wrap="truncate-end">
           {line || ' '}

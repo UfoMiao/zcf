@@ -47,6 +47,8 @@ Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either set
 | <kbd>L</kbd> | Switch the interface language, from any page, and save it at once. |
 | <kbd>q</kbd> | Quit, from the page list. With unsaved changes, press it twice. |
 
+The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way.
+
 On the Apply page, <kbd>Enter</kbd> applies, <kbd>r</kbd> plans again, and the arrow keys scroll. The plan is made from the saved file, so the page asks you to save first if you have unsaved changes.
 
 Arguments of an MCP server are typed on one line, the way a shell takes them. Quote an argument that contains spaces: `--header "Authorization: Bearer x"`.

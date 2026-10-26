@@ -2,8 +2,8 @@ import type { ToolId, ToolStatus } from '@zcf/core'
 import { isLanguageSetting, LANGUAGES } from '@zcf/core'
 import type { PageId, ZcfService } from '@zcf/ui-kit'
 import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
-import { Box, Text, useApp, useInput } from 'ink'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { type DOMElement, Box, Text, measureElement, useApp, useInput, useStdin, useStdout } from 'ink'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { version } from '../../package.json'
 import type { Lang } from '../i18n'
@@ -11,8 +11,10 @@ import { createTranslator, errorText, isLang } from '../i18n'
 import { tildify } from '../render'
 import { ApplyPage } from './apply-page'
 import { Banner } from './banner'
+import { attachMouseStdin, contains, onMousePress, publishMousePress, setMouseReporting, wheelDirection } from './mouse'
 import type { PageProps } from './pages'
 import { McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
+import { useTerminalRows } from './use-terminal-rows'
 
 export interface AppProps {
   service: ZcfService
@@ -45,6 +47,43 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const [status, setStatus] = useState<Status>()
   const [quitArmed, setQuitArmed] = useState(false)
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
+  const terminalRows = useTerminalRows()
+  const { stdin } = useStdin()
+  const { stdout } = useStdout()
+  const navRef = useRef<DOMElement | null>(null)
+
+  // Mouse reporting for the whole UI: turn it on, parse what the terminal sends, restore on exit.
+  useEffect(() => {
+    setMouseReporting(stdout, true)
+    const detach = attachMouseStdin(stdin, publishMousePress)
+    return () => {
+      detach()
+      setMouseReporting(stdout, false)
+    }
+  }, [stdin, stdout])
+
+  // Clicking a nav entry opens its page; the wheel moves the page choice. Both only act
+  // when the press lands on the nav column, so lists keep the rest of the screen.
+  useEffect(() => {
+    return onMousePress(press => {
+      const nav = navRef.current
+      if (!nav) return
+      const metrics = measureElement(nav)
+      if (!contains(metrics, press)) return
+      const direction = wheelDirection(press)
+      if (direction) {
+        const index = PAGES.indexOf(page)
+        const next = direction === 'up' ? Math.max(0, index - 1) : Math.min(PAGES.length - 1, index + 1)
+        setPage(PAGES[next]!)
+        return
+      }
+      const row = press.row - 1 - metrics.y
+      if (row >= 0 && row < PAGES.length) {
+        setPage(PAGES[row]!)
+        setFocus('page')
+      }
+    })
+  }, [page])
 
   const loadPresets = useCallback(() => service.presets(), [service])
 
@@ -151,7 +190,8 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
         : `tui.keys.page${keysSuffix}`
 
   return (
-    <Box flexDirection="column">
+    // The column fills the terminal height, so the panel's border always reaches the bottom.
+    <Box flexDirection="column" height={terminalRows}>
       <Banner t={t} />
       <Box gap={2}>
         <Text dimColor>v{version}</Text>
@@ -162,8 +202,8 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
           {!langPinned && <Text bold> (L)</Text>}
         </Text>
       </Box>
-      <Box borderStyle="round" borderDimColor>
-        <Box flexDirection="column" width={18} paddingRight={1}>
+      <Box borderStyle="round" borderDimColor flexDirection="row" flexGrow={1}>
+        <Box ref={navRef} flexDirection="column" width={18} paddingRight={1}>
           {PAGES.map(id => {
             const current = id === page
             const roots = PAGE_ROOTS[id]
