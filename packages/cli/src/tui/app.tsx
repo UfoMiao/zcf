@@ -10,7 +10,7 @@ import type { Lang } from '../i18n'
 import { createTranslator, errorText, isLang } from '../i18n'
 import { tildify } from '../render'
 import { ApplyPage } from './apply-page'
-import { Banner } from './banner'
+import { Banner, FULL_BANNER_ROWS } from './banner'
 import { attachMouseStdin, contains, onMousePress, publishMousePress, setMouseReporting, wheelDirection } from './mouse'
 import type { PageProps } from './pages'
 import { McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
@@ -192,7 +192,7 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   return (
     // The column fills the terminal height, so the panel's border always reaches the bottom.
     <Box flexDirection="column" height={terminalRows}>
-      <Banner t={t} />
+      <Banner t={t} compact={terminalRows < FULL_BANNER_ROWS} />
       <Box gap={2}>
         <Text dimColor>v{version}</Text>
         <Text dimColor>{tildify(editor.path, home)}</Text>
