@@ -445,6 +445,44 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('folds the banner to one line in a terminal too short for the box art', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    Object.defineProperty(app.stdout, 'rows', { get: () => 12 })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
+    // The boxed banner alone is 11 lines; in 12 rows it would push the app off screen.
+    const lines = app.frame().split('\n')
+    expect(lines).toHaveLength(12)
+    expect(lines[0]).toContain('ZCF')
+    expect(lines[0]).not.toContain('╔')
+    expect(lines[11]).toContain('Ctrl+S')
+    app.unmount()
+  })
+
+  it('folds the banner one row below the fold line, and holds the box well above it', async () => {
+    // The box, the status row, a panel around its 6 nav entries, the key bar and a
+    // status message add up to 22 rows; the fold line keeps a row of slack for the
+    // measured minimum drifting between platforms, so 22 folds and 24 holds the box.
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    Object.defineProperty(app.stdout, 'rows', { get: () => 22, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
+    expect(app.frame().split('\n')[0]).toContain('ZCF')
+    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
+    const lines = app.frame().split('\n')
+    expect(lines).toHaveLength(24)
+    expect(lines[0]).toContain('╔')
+    expect(lines[23]).toContain('Ctrl+S')
+    app.unmount()
+  })
+
   it('opens rows and pages with a mouse click', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)

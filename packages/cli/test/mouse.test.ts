@@ -45,6 +45,38 @@ describe('parseMousePresses', () => {
     expect(presses).toEqual([])
     expect(rest).toBe('')
   })
+
+  it('parses the legacy X10 encoding terminals without SGR send', () => {
+    // `\u001B[M` then button+32, col+32, row+32, the encoding xterm grew out of.
+    const legacy = `\u001B[M${String.fromCharCode(32, 42, 35)}`
+    const { presses } = parseMousePresses(legacy)
+    expect(presses).toEqual([{ button: 0, col: 10, row: 3 }])
+    // The wheel is 96/97 there, which lands on the same 64/65 buttons as SGR.
+    const wheel = parseMousePresses(`\u001B[M${String.fromCharCode(97, 33, 34)}`)
+    expect(wheel.presses).toEqual([{ button: 65, col: 1, row: 2 }])
+    // A release is button 3 in the legacy encoding, modifier clicks 4-31 and motion 32-63;
+    // none is a press, and coordinates past byte 126 cannot survive UTF-8.
+    for (const button of [35, 36, 65]) {
+      const dropped = parseMousePresses(`\u001B[M${String.fromCharCode(button, 33, 34)}`)
+      expect(dropped.presses).toEqual([])
+    }
+    const mangled = parseMousePresses(`\u001B[M${String.fromCharCode(32, 255, 34)}`)
+    expect(mangled.presses).toEqual([])
+  })
+
+  it('keeps half of a legacy sequence for the chunk that completes it', () => {
+    const first = parseMousePresses(`\u001B[M${String.fromCharCode(32, 42)}`)
+    expect(first.presses).toEqual([])
+    const second = parseMousePresses(`${first.rest}${String.fromCharCode(35)}`)
+    expect(second.presses).toEqual([{ button: 0, col: 10, row: 3 }])
+  })
+
+  it('skips an abandoned prefix without swallowing the sequences behind it', () => {
+    // A stream that never finishes `\u001B[<0;1` must not cost the press after it.
+    const { presses, rest } = parseMousePresses('\u001B[<0;1\u001B[<0;2;3M')
+    expect(presses).toEqual([{ button: 0, col: 2, row: 3 }])
+    expect(rest).toBe('')
+  })
 })
 
 describe('wheelDirection', () => {

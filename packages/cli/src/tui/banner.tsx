@@ -35,12 +35,29 @@ const LINE = {
 } as const
 
 /**
- * The ZCF banner, carried over from v3: block letters in a box, with the localized
- * subtitle and the tagline inside.
+ * Rows the whole app needs around its boxed banner: the box's 11 lines, the status
+ * row, a panel tall enough for its border and the 6 nav entries, the key bar and a
+ * transient status message — plus a row of slack, since the measured minimum drifts
+ * by a line between platforms. Below that yoga starts squeezing the box's top line
+ * away, so the banner folds to one line and a short terminal still holds the app whole.
  */
-export function Banner({ t }: { t: Translate }) {
+export const FULL_BANNER_ROWS = 23
+
+/**
+ * The ZCF banner, carried over from v3: block letters in a box, with the localized
+ * subtitle and the tagline inside. In a terminal without room for the box (`compact`),
+ * it folds down to the one line that still says what this is.
+ */
+export function Banner({ t, compact = false }: { t: Translate; compact?: boolean }) {
   const subtitle = padTo(t('tui.bannerSubtitle'), 30)
   const title = padTo('Zero-Config Code Flow', 60)
+  if (compact) {
+    return (
+      <Text bold color="cyan">
+        {`ZCF · ${t('tui.bannerSubtitle')}`}
+      </Text>
+    )
+  }
   return (
     <Box flexDirection="column">
       <Text bold color="cyan">

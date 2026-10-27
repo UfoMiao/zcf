@@ -27,6 +27,9 @@ function setIn(container: unknown, path: DraftPath, value: unknown): unknown {
     // Only removing the item itself removes it; an item left empty stays, so its form stays open.
     if (value === undefined && (rest.length === 0 || list[key] === undefined)) list.splice(key, 1)
     else list[key] = setIn(list[key], rest, value) ?? {}
+    // A list emptied by a removal goes too, like a table above: every schema list is
+    // optional with an empty default, so `skills: []` left behind is only litter.
+    if (value === undefined && rest.length === 0 && list.length === 0) return undefined
     return list
   }
   const table = isTable(container) ? { ...container } : {}

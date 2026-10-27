@@ -68,6 +68,13 @@ describe('setAt', () => {
     expect(getAt(draft, ['skills', 1, 'source'])).toBe('b')
     expect(getAt(draft, ['skills', 'x', 'source'])).toBeUndefined()
   })
+
+  it('drops a list whose last item a removal took, like a table', () => {
+    // Every schema list is optional with an empty default, so `skills: []` is only litter.
+    expect(setAt({ version: 1, skills: [{ source: 'a' }] }, ['skills', 0], undefined)).toEqual({ version: 1 })
+    // A list emptied by assignment stays: the user chose an empty list, not a removal.
+    expect(setAt({ skills: [{ source: 'a' }] }, ['skills'], [])).toEqual({ skills: [] })
+  })
 })
 
 describe('renameKey', () => {
