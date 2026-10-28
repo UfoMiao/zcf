@@ -929,7 +929,7 @@ describe('terminal UI', () => {
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
-    const frame = app.frame()
+    const frame = await app.until('$ npm i -g x29')
     expect(frame).not.toContain('$ npm i -g x0')
     expect(frame).toContain('$ npm i -g x29')
     app.unmount()
