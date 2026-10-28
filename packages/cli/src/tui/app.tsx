@@ -1,7 +1,7 @@
 import type { ToolId, ToolStatus } from '@zcf/core'
 import { isLanguageSetting, LANGUAGES } from '@zcf/core'
 import type { PageId, ZcfService } from '@zcf/ui-kit'
-import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
+import { issuesAt, navRows, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useApp, useInput, useStdin, useStdout } from 'ink'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -32,6 +32,19 @@ interface Status {
 
 const TONE_COLOR = { info: 'green', warning: 'yellow', error: 'red' } as const
 
+/** The nav column's rows: section headers and digit-prefixed pages, in render order. */
+const NAV_ROWS = navRows()
+
+/**
+ * Lines the nav column may not claim: the boxed banner, the status row, the panel's
+ * borders and the key bar. A terminal shorter than that gets a windowed nav anyway,
+ * the way a short terminal gets the folded banner.
+ */
+const NAV_CHROME = 15
+
+/** A digit names a page: 1 through 9, then 0 for the tenth. */
+const DIGIT = /^[0-9]$/
+
 /**
  * The terminal UI: pages on the left, the open page on the right. Edits stay in a
  * draft until Ctrl+S writes them to the config file, key by key.
@@ -51,6 +64,15 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const { stdin } = useStdin()
   const { stdout } = useStdout()
   const navRef = useRef<DOMElement | null>(null)
+
+  // The nav windows the way a row list does when it outgrows the panel, keeping the
+  // open page in view; the arrows are reserved whenever the nav is capped.
+  const navCursor = NAV_ROWS.findIndex(row => row.kind === 'page' && row.id === page)
+  const navVisible = Math.max(4, terminalRows - NAV_CHROME)
+  const navCapped = NAV_ROWS.length > navVisible
+  const navSize = navCapped ? navVisible - 2 : NAV_ROWS.length
+  const navStart = navCapped ? Math.max(0, Math.min(navCursor - (navSize >> 1), NAV_ROWS.length - navSize)) : 0
+  const navShown = NAV_ROWS.slice(navStart, navStart + navSize)
 
   // Mouse reporting for the whole UI: turn it on, parse what the terminal sends, restore on exit.
   useEffect(() => {
@@ -77,13 +99,17 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
         setPage(PAGES[next]!)
         return
       }
-      const row = press.row - 1 - metrics.y
-      if (row >= 0 && row < PAGES.length) {
-        setPage(PAGES[row]!)
+      // Walk the flattened rows, each one line; section headers are not clickable, and
+      // the top arrow, when drawn, takes the first line.
+      const offset = press.row - 1 - metrics.y - (navStart > 0 ? 1 : 0)
+      if (offset < 0 || offset >= navShown.length) return
+      const target = NAV_ROWS[navStart + offset]
+      if (target?.kind === 'page') {
+        setPage(target.id)
         setFocus('page')
       }
     })
-  }, [page])
+  }, [page, navStart, navShown.length])
 
   const loadPresets = useCallback(() => service.presets(), [service])
 
@@ -142,6 +168,12 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
         return
       }
       if (focus !== 'nav' && editor.status === 'ready') return
+      // A digit jumps to the page it names: 1 through 9, then 0 for the tenth.
+      if (input && DIGIT.test(input)) {
+        const target = PAGES[input === '0' ? 9 : Number(input) - 1]
+        if (target) setPage(target)
+        return
+      }
       const index = PAGES.indexOf(page)
       if (input === 'q') {
         if (!editor.dirty || quitArmed) exit()
@@ -204,23 +236,31 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
       </Box>
       <Box borderStyle="round" borderDimColor flexDirection="row" flexGrow={1}>
         <Box ref={navRef} flexDirection="column" width={18} paddingRight={1}>
-          {PAGES.map(id => {
-            const current = id === page
-            const roots = PAGE_ROOTS[id]
+          {navCapped && navStart > 0 && <Text dimColor>{'  ↑'}</Text>}
+          {navShown.map(row => {
+            if (row.kind === 'header')
+              return (
+                <Text key={row.id} dimColor>
+                  {t(row.labelKey)}
+                </Text>
+              )
+            const current = row.id === page
+            const roots = PAGE_ROOTS[row.id]
             const broken = roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
             return (
               <Text
-                key={id}
+                key={row.id}
                 color={current ? 'cyan' : undefined}
                 bold={current && !onPage}
                 dimColor={!current && onPage}
               >
                 {current ? '› ' : '  '}
-                {t(`tui.page.${id}`)}
+                {row.digit ?? ' '} {t(`tui.page.${row.id}`)}
                 {broken && <Text color="red"> !</Text>}
               </Text>
             )
           })}
+          {navCapped && navStart + navSize < NAV_ROWS.length && <Text dimColor>{'  ↓'}</Text>}
         </Box>
         <Box flexDirection="column" flexGrow={1}>
           {page === 'tools' && <ToolsPage {...props} detected={detected} />}

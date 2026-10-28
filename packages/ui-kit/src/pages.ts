@@ -6,7 +6,51 @@ import { isTable } from './draft'
 
 export type PageId = 'tools' | 'provider' | 'mcp' | 'skills' | 'settings' | 'apply'
 
-export const PAGES: readonly PageId[] = ['tools', 'provider', 'mcp', 'skills', 'settings', 'apply']
+/** One grouped chunk of the nav column, the way v3 grouped its menu. */
+export interface NavSection {
+  id: string
+  /** Message key of the header shown above the section's pages. */
+  labelKey: string
+  pages: readonly PageId[]
+}
+
+/**
+ * The nav column's sections. Sections without pages yet hold their place so later
+ * waves can add pages without reshuffling the menu; both front ends render this.
+ */
+export const NAV: readonly NavSection[] = [
+  { id: 'init', labelKey: 'nav.init', pages: ['tools', 'provider', 'skills', 'mcp', 'settings', 'apply'] },
+  { id: 'workflow', labelKey: 'nav.workflow', pages: [] },
+  { id: 'extras', labelKey: 'nav.extras', pages: [] },
+  { id: 'backup', labelKey: 'nav.backup', pages: [] },
+]
+
+/** Every page in nav order, flattened from the sections. */
+export const PAGES: readonly PageId[] = NAV.flatMap(section => section.pages)
+
+/** The digit a page is reached by: 1 through 9, then 0 for the tenth. */
+const DIGITS = '1234567890'
+
+export type NavRow =
+  | { kind: 'header'; id: string; labelKey: string }
+  | { kind: 'page'; id: PageId; digit: string | undefined }
+
+/**
+ * NAV flattened into the rows a nav column renders: each section's header, then its
+ * pages with the digit that jumps to them. Pages past the tenth have no digit to press.
+ */
+export function navRows(sections: readonly NavSection[] = NAV): readonly NavRow[] {
+  const rows: NavRow[] = []
+  let index = 0
+  for (const section of sections) {
+    rows.push({ kind: 'header', id: section.id, labelKey: section.labelKey })
+    for (const id of section.pages) {
+      rows.push({ kind: 'page', id, digit: DIGITS[index] })
+      index++
+    }
+  }
+  return rows
+}
 
 /** The config keys each editing page works on, so a page can be flagged when it has problems. */
 export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>> = {

@@ -52,8 +52,9 @@ function rowHeight(item: Row, selected: boolean, active: boolean): number {
 }
 
 /**
- * A vertical list of labelled rows. ↑/↓ move, Enter edits a text row, runs an action
- * or cycles a choice (←/→ cycle too), x removes an item, and Esc goes back.
+ * A vertical list of labelled rows, numbered within the visible window. ↑/↓ move,
+ * a digit picks the row it names without running it, Enter edits a text row, runs an
+ * action or cycles a choice (←/→ cycle too), x removes an item, and Esc goes back.
  * A list taller than the terminal shows a window around the cursor, with arrows at the cut ends.
  */
 export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
@@ -62,9 +63,6 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   const listRef = useRef<DOMElement | null>(null)
   const index = Math.min(selected, Math.max(0, rows.length - 1))
   const row = rows[index]
-  // Values line up in one column after the longest label. Rows without a value count too:
-  // an edited row renders in this box, and its label must never wrap inside a narrower one.
-  const labelWidth = Math.max(0, ...rows.map(item => columns(item.label))) + 4
 
   // The terminal height caps the list; the window follows the cursor.
   const visible = Math.max(3, useTerminalRows() - LIST_CHROME)
@@ -73,6 +71,12 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   const size = capped ? visible - 2 : rows.length
   const start = capped ? Math.max(0, Math.min(index - (size >> 1), rows.length - size)) : 0
   const shown = rows.slice(start, start + size)
+
+  // Values line up in one column after the longest label, ordinal prefix included.
+  // Rows without a value count too: an edited row renders in this box, and its label
+  // must never wrap inside a narrower one.
+  const ordinalWidth = String(shown.length).length + 1
+  const labelWidth = Math.max(0, ...rows.map(item => columns(item.label))) + 2 + ordinalWidth + 2
 
   const setEdit = (value: boolean) => {
     setEditing(value)
@@ -125,7 +129,12 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
     (input, key) => {
       if (key.upArrow || input === 'k') setSelected(Math.max(0, index - 1))
       else if (key.downArrow || input === 'j') setSelected(Math.min(rows.length - 1, index + 1))
-      else if (key.escape || (key.leftArrow && row?.action?.type !== 'cycle')) onBack()
+      // A digit picks the visible row it names — 1 through 9, then 0 for the tenth —
+      // without running it; a digit past the window is ignored.
+      else if (input && /^[0-9]$/.test(input)) {
+        const at = start + (input === '0' ? 9 : Number(input) - 1)
+        if (at < start + shown.length) setSelected(at)
+      } else if (key.escape || (key.leftArrow && row?.action?.type !== 'cycle')) onBack()
       else if (!row) return
       else if (input === 'x' && row.remove) row.remove()
       else if (row.action?.type === 'cycle' && (key.leftArrow || key.rightArrow || input === ' ')) {
@@ -161,7 +170,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
             <Box>
               <Box width={editor || item.value !== undefined ? labelWidth : undefined} flexShrink={0}>
                 <Text color={current && active ? 'cyan' : undefined}>
-                  {pointer} {item.label}
+                  {pointer} {offset + 1} {item.label}
                 </Text>
               </Box>
               {editor ?? (item.value !== undefined && <Text dimColor={!current}>{item.value}</Text>)}

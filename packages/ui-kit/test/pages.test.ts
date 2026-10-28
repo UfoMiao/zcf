@@ -1,7 +1,62 @@
 import { BUILTIN_SKILLS_SOURCE } from '@zcf/core/schema'
 import { describe, expect, it } from 'vitest'
 
-import { addSourcedSkill, hasSourcedSkill, skillSourceIndex, toggleCatalogSkill } from '../src/pages'
+import type { PageId } from '../src/pages'
+import {
+  addSourcedSkill,
+  hasSourcedSkill,
+  NAV,
+  navRows,
+  PAGES,
+  skillSourceIndex,
+  toggleCatalogSkill,
+} from '../src/pages'
+
+describe('NAV', () => {
+  it('keeps PAGES the flat page list, in nav order', () => {
+    expect(NAV.flatMap(section => section.pages)).toEqual(PAGES)
+    expect(PAGES).toEqual(['tools', 'provider', 'skills', 'mcp', 'settings', 'apply'])
+  })
+
+  it('flattens into header and page rows, headed by each section', () => {
+    const rows = navRows()
+    expect(rows).toHaveLength(NAV.length + PAGES.length)
+    // Headers label their section; pages carry the digit that jumps to them.
+    expect(rows.map(row => (row.kind === 'header' ? row.labelKey : row.digit))).toEqual([
+      'nav.init',
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      'nav.workflow',
+      'nav.extras',
+      'nav.backup',
+    ])
+  })
+
+  it('keeps a section without pages as a lone header that adds no pages', () => {
+    const rows = navRows([
+      { id: 'a', labelKey: 'nav.a', pages: [] },
+      { id: 'b', labelKey: 'nav.b', pages: ['tools'] },
+    ])
+    expect(rows).toEqual([
+      { kind: 'header', id: 'a', labelKey: 'nav.a' },
+      { kind: 'header', id: 'b', labelKey: 'nav.b' },
+      { kind: 'page', id: 'tools', digit: '1' },
+    ])
+  })
+
+  it('numbers pages 1 through 9, then 0 for the tenth; later pages have no digit', () => {
+    const ids = Array.from({ length: 12 }, (_, i) => `page-${i}` as PageId)
+    const digits = navRows([{ id: 'a', labelKey: 'nav.a', pages: ids }]).map(row =>
+      row.kind === 'page' ? row.digit : undefined,
+    )
+    expect(digits.slice(1, 11).join('')).toBe('1234567890')
+    expect(digits.slice(11)).toEqual([undefined, undefined])
+  })
+})
 
 describe('toggleCatalogSkill', () => {
   it('adds the built-in source with the skill when nothing is picked yet', () => {
