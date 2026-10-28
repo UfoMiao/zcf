@@ -12,7 +12,7 @@ npx zcf [command] [options]
 
 | 选项 | 含义 |
 |------|------|
-| `--lang <lang>` | 显示语言，`en` 或 `zh-CN`。优先于 `ZCF_LANG` 和系统语言。 |
+| `-l, --lang <lang>` | 显示语言，`en` 或 `zh-CN`。优先于 `ZCF_LANG` 和系统语言。 |
 | `-h, --help` | 显示帮助。 |
 | `-v, --version` | 显示版本。 |
 
@@ -39,6 +39,33 @@ npx zcf [command] [options]
 | `--no-open` | 只打印地址，不打开浏览器。 |
 
 服务器只能从本机访问。打印出的地址带有本次运行生成的随机令牌，不带令牌的 API 请求会被拒绝。见[终端与网页界面](./ui#网页界面)。
+
+## `zcf init`
+
+不进界面，一条命令完成配置：从预设填充供应商、挑选工具和随装的技能等，保存文件，再走一遍 `zcf apply` 的计划与应用流程。
+
+```bash
+zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-commit --yes
+```
+
+不带任何选项运行时，ZCF 只提示你打开界面，不会写出空配置。
+
+| 选项 | 含义 |
+|------|------|
+| `-p, --preset <id>` | [供应商预设](./providers)的 id。填充整个供应商；密钥用 `--api-key` 传入。 |
+| `-k, --api-key <key>` | 供应商的 API 密钥。需要配合 `--preset`，或配置中已有供应商。 |
+| `-t, --tools <tools>` | 要选择的工具，逗号分隔，与 `zcf plan` 相同。 |
+| `--skills <skills>` | 要安装的内置技能，逗号分隔。 |
+| `--agents <agents>` | 要安装的内置子代理，逗号分隔。 |
+| `--styles <styles>` | 要安装的输出风格，逗号分隔。 |
+| `--default-style <style>` | 各工具默认使用的输出风格。 |
+| `--extras <extras>` | 周边工具：`magpie`（等同于 `magpie:client`）、`magpie:cli`、`ccline`。 |
+| `-m, --mirror <mirror>` | 保存为配置中的 `mirror`，并在本次运行中经由它下载。 |
+| `-l, --lang <lang>` | 保存为配置中的 `language`，本次运行也用它显示。 |
+| `-y, --yes` | 保存后应用。不加时，ZCF 保存文件、显示计划，不做其他改动。 |
+| `--file <path>` | 配置文件。不存在则创建；已存在则逐键合并，保留注释和排版。 |
+
+所有 id 都在改动文件之前校验：未知的预设、工具、技能、子代理、风格或周边工具会连同可选值一起报错，不会写入任何内容。`--skills`、`--agents` 等选项与配置中已有的内容合并；`--tools` 这类列表则整体替换。保存后的文件走与 `zcf apply` 相同的步骤，`-y, --yes` 在那里同样起作用；没有选择任何工具时，也会报同样的错误。
 
 ## `zcf plan`
 
@@ -97,6 +124,14 @@ ZCF 只移除自己写入的设置——供应商路由，例如 `zcf` 条目、
 |------|------|
 | `--file <path>` | 配置文件。 |
 
+## `zcf switch <profile>`
+
+切换生效的[供应商档案](./config#profiles)：按 id 或显示名称找到档案，把它的供应商复制到顶层的 `provider`，写入前先备份文件。这一步不会改动任何工具；运行 `zcf apply --yes` 才把切换后的供应商写入它们。
+
+| 选项 | 含义 |
+|------|------|
+| `--file <path>` | 配置文件。 |
+
 ## `zcf backup [command]`
 
 管理 `~/.ufomiao/zcf/backups/` 中的备份。ZCF 在修改或删除文件之前，会把原版本复制到那里，每次运行一个以时间命名的文件夹。
@@ -111,6 +146,10 @@ ZCF 只移除自己写入的设置——供应商路由，例如 `zcf` 条目、
 |------|------|
 | `-y, --yes` | 不再确认，直接恢复或清理。 |
 | `--keep <n>` | 清理时保留的备份数。 |
+
+## `zcf ccu`
+
+用 [ccusage](https://ccusage.com) 查看 Claude Code 的用量与费用，方式是直接运行它：ZCF 启动 `npx -y ccusage@latest`，把终端交给它，并透传退出码。ccusage 保留自己的命令行和更新方式——ZCF 只是转发，需要 PATH 上有 `npx`（Node.js）。ccusage 自身照常从 npm 下载，ZCF 的镜像设置对它不生效。
 
 ## 退出码
 

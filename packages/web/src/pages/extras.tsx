@@ -1,4 +1,4 @@
-import { EXTRA_NAMES } from '@zcf/core/schema'
+import { EXTRA_NAMES, MAGPIE_FACES } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
 import { isTable } from '@zcf/ui-kit'
 
@@ -9,9 +9,6 @@ import { Card, CardContent } from '../components/ui/card'
 import { Checkbox } from '../components/ui/checkbox'
 
 type PageProps = { editor: ConfigEditor; t: Translate }
-
-// TODO(#461): import from '@zcf/core/schema' once #461 merges and exports MAGPIE_FACES.
-const MAGPIE_FACES = ['client', 'cli'] as const
 
 export function ExtrasPage({ editor, t }: PageProps) {
   const extras = isTable(editor.draft.extras) ? editor.draft.extras : {}

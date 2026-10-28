@@ -172,20 +172,14 @@ export const StylesSchema = v.object({
 })
 export type Styles = v.InferOutput<typeof StylesSchema>
 
-/** The faces of the magpie install: the desktop app or the terminal CLI. */
-export const MAGPIE_FACES = ['client', 'cli'] as const
-export type MagpieFace = (typeof MAGPIE_FACES)[number]
-
-/** Whether a value names one of magpie's faces, for front ends switching on it. */
-export function isMagpieFace(value: unknown): value is MagpieFace {
-  return MAGPIE_FACES.some(face => face === value)
-}
-
 /**
  * Optional companion tools. `magpie` picks a face of the same install: `client` for the
  * desktop app, `cli` for terminal use; `ccline` installs the CCometixLine status bar and
  * wires it into Claude Code's settings.
  */
+export const MAGPIE_FACES = ['client', 'cli'] as const
+export type MagpieFace = (typeof MAGPIE_FACES)[number]
+
 export const ExtrasSchema = v.object({
   magpie: v.optional(v.picklist(MAGPIE_FACES)),
   ccline: v.optional(v.boolean()),

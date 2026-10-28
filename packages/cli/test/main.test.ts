@@ -1,7 +1,15 @@
+import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
-import { backupRunDir, BackupRun, type CommandResult, type CommandRunner, readTextIfExists } from '@zcf/core'
+import {
+  backupRunDir,
+  BackupRun,
+  type CommandResult,
+  type CommandRunner,
+  parseConfigText,
+  readTextIfExists,
+} from '@zcf/core'
 import { render } from 'ink'
 import { dirname, join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -64,7 +72,7 @@ async function runWith(extra: MainOptions, ...argv: string[]) {
     stderr: {
       write: text => void (stderr += text),
     },
-    context: { home, platform: 'linux', env, runner },
+    context: { home, platform: 'linux', env, runner, ...extra.context },
     now: () => new Date('2026-10-24T08:00:00.000Z'),
   })
   return {
@@ -865,5 +873,359 @@ describe('zcf backup', () => {
     } finally {
       await rm(away, { recursive: true, force: true })
     }
+  })
+})
+
+/** The preset list `zcf init --preset` picks from; the injected fetch answers with it, offline. */
+const PRESET_LIST = {
+  version: 1,
+  providers: [
+    {
+      id: '302ai',
+      name: '302.AI',
+      anthropic: { baseUrl: 'https://api.302.ai' },
+      openai: { baseUrl: 'https://api.302.ai/v1' },
+      models: { default: 'glm-4.7' },
+    },
+  ],
+}
+
+const fetchPresets: typeof fetch = async () => new Response(JSON.stringify(PRESET_LIST))
+
+/** A fetch whose list holds no preset at all, as when no source could answer with a valid one. */
+const fetchEmptyList: typeof fetch = async () => new Response(JSON.stringify({ version: 1, providers: [] }))
+
+/** A config with one saved profile beside the top-level provider it currently uses. */
+const profiledConfig = () => ({
+  version: 1,
+  tools: ['claude-code'],
+  provider: { name: 'Work', apiKey: 'sk-work', anthropic: { baseUrl: 'https://work.example.com' } },
+  profiles: [
+    {
+      id: 'home',
+      name: 'Home line',
+      provider: { name: 'House', apiKey: 'sk-home', anthropic: { baseUrl: 'https://home.example.com' } },
+    },
+  ],
+})
+
+describe('zcf init', () => {
+  it('points at the editor instead of writing an empty config when run with no flags', async () => {
+    const { code, stdout } = await run('init')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Nothing to set up. Run zcf alone to pick tools and a provider interactively.')
+    expect(await readTextIfExists(configFile())).toBeUndefined()
+  })
+
+  it('writes a full config from the flags, key by key, and shows the plan without --yes', async () => {
+    const { code, stdout } = await runWith(
+      { fetch: fetchPresets },
+      'init',
+      '-p',
+      '302ai',
+      '-k',
+      'sk-init-key',
+      '-t',
+      'claude-code',
+      '--skills',
+      'git-commit',
+      '--agents',
+      'planner',
+      '--styles',
+      'engineer-professional',
+      '--default-style',
+      'engineer-professional',
+      '--extras',
+      'magpie:cli,ccline',
+      '-m',
+      'china',
+    )
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('Saved ~/.ufomiao/zcf/zcf.json.')
+    expect(stdout).toContain('1. Use provider "302.AI"')
+    expect(stdout).toContain('Nothing was changed. Run again with --yes to apply.')
+    expect(stdout).not.toContain('sk-init-key')
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({
+      version: 1,
+      tools: ['claude-code'],
+      provider: {
+        name: '302.AI',
+        apiKey: 'sk-init-key',
+        anthropic: { baseUrl: 'https://api.302.ai' },
+        openai: { baseUrl: 'https://api.302.ai/v1' },
+        models: { default: 'glm-4.7' },
+      },
+      skills: [{ source: 'zcf', skills: ['git-commit'] }],
+      agents: ['planner'],
+      styles: { outputStyles: ['engineer-professional'], defaultOutputStyle: 'engineer-professional' },
+      extras: { magpie: 'cli', ccline: true },
+      mirror: 'china',
+    })
+  })
+
+  it('applies the saved config with --yes, through the same pipeline as apply', async () => {
+    // A mirror already in the config also decides where the preset list itself comes from.
+    await writeConfig({ version: 1, mirror: 'china' })
+    const { code, stdout } = await runWith(
+      { fetch: fetchPresets },
+      'init',
+      '-p',
+      '302ai',
+      '-k',
+      'sk-init-key',
+      '-t',
+      'claude-code',
+      '--yes',
+    )
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('✓ Claude Code: Use provider "302.AI"')
+    expect(stdout).toContain('Done: 1 applied, 0 already up to date.')
+    expect(stdout).not.toContain('sk-init-key')
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    expect(saved.mirror).toBe('china')
+    const settings = JSON.parse(await readFile(join(home, '.claude', 'settings.json'), 'utf8'))
+    expect(settings.env.ANTHROPIC_AUTH_TOKEN).toBe('sk-init-key')
+  })
+
+  it('saves the interface language named by the -l short flag', async () => {
+    const { code, stdout } = await run('init', '-l', 'zh-CN', '-t', 'claude-code')
+    expect(code).toBe(EXIT_OK)
+    expect(stdout).toContain('已保存 ~/.ufomiao/zcf/zcf.json。')
+    expect(JSON.parse(await readFile(configFile(), 'utf8')).language).toBe('zh-CN')
+  })
+
+  it('merges into an existing config, keeping its keys, comments and picks', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(
+      configFile(),
+      '{\n  // mine\n  "version": 1,\n  "tools": ["codex"],\n  "skills": [{ "source": "anthropics/skills", "skills": ["pdf"] }],\n  "agents": ["planner"]\n}\n',
+    )
+    const { code } = await run('init', '--skills', 'git-commit,feat', '--agents', 'planner')
+    expect(code).toBe(EXIT_OK)
+    const saved = (await parseConfigText('json', await readFile(configFile(), 'utf8'))) as Record<string, unknown>
+    // The keys init was not asked about keep their values, and the comment survives.
+    expect(await readFile(configFile(), 'utf8')).toContain('// mine')
+    expect(saved.tools).toEqual(['codex'])
+    expect(saved.skills).toEqual([
+      { source: 'anthropics/skills', skills: ['pdf'] },
+      { source: 'zcf', skills: ['git-commit', 'feat'] },
+    ])
+    expect(saved.agents).toEqual(['planner'])
+  })
+
+  it('rejects unknown ids before the file is touched', async () => {
+    for (const [flag, name, known] of [
+      [
+        '--skills',
+        'skills',
+        'init-project, workflow, feat, git-commit, git-rollback, git-clean-branches, git-worktree, bmad-init',
+      ],
+      ['--agents', 'agents', 'init-architect, get-current-datetime, planner, ui-ux-designer'],
+      [
+        '--styles',
+        'styles',
+        'engineer-professional, nekomata-engineer, laowang-engineer, ojousama-engineer, rem-engineer, leibus-engineer',
+      ],
+      ['--extras', 'extras', 'magpie, magpie:client, magpie:cli, ccline'],
+    ] as const) {
+      // One at a time, so a failure names the flag it belongs to.
+      // oxlint-disable-next-line no-await-in-loop
+      const result = await run('init', flag, 'nope')
+      expect(result.code).toBe(EXIT_ERROR)
+      expect(result.stderr).toContain(`Unknown ${name}: nope. Choose from ${known}.`)
+    }
+    // --default-style takes one style; a list belongs to --styles.
+    const many = await run('init', '--default-style', 'engineer-professional,rem-engineer')
+    expect(many.code).toBe(EXIT_ERROR)
+    expect(many.stderr).toContain('--default-style takes one style id')
+    expect(await readTextIfExists(configFile())).toBeUndefined()
+  })
+
+  it('rejects an unknown preset before the file is touched', async () => {
+    const unknown = await runWith({ fetch: fetchPresets }, 'init', '-p', 'nope')
+    expect(unknown.code).toBe(EXIT_ERROR)
+    expect(unknown.stderr).toContain('Unknown preset: nope. Choose from 302ai.')
+    expect(await readTextIfExists(configFile())).toBeUndefined()
+  })
+
+  it('says so when the preset list comes back empty', async () => {
+    const offline = await runWith({ fetch: fetchEmptyList }, 'init', '-p', '302ai')
+    expect(offline.code).toBe(EXIT_ERROR)
+    expect(offline.stderr).toContain('Could not load the provider presets.')
+    expect(await readTextIfExists(configFile())).toBeUndefined()
+  })
+
+  it('updates the API key of the provider already in the config, and needs one to exist', async () => {
+    await writeConfig(fullConfig)
+    const { code } = await run('init', '-k', 'sk-turned-key', '--tools', 'claude-code')
+    expect(code).toBe(EXIT_OK)
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    expect(saved.provider).toEqual({ ...fullConfig.provider, apiKey: 'sk-turned-key' })
+
+    await writeConfig({ version: 1 })
+    const without = await run('init', '-k', 'sk-turned-key')
+    expect(without.code).toBe(EXIT_ERROR)
+    expect(without.stderr).toContain('--api-key needs --preset, or a provider already in the config.')
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1 })
+  })
+
+  it('installs a bare magpie as the desktop app, and merges styles into a styles block', async () => {
+    await writeConfig({ version: 1, tools: ['claude-code'], styles: { outputStyles: ['rem-engineer'] } })
+    const { code } = await run('init', '--extras', 'magpie', '--styles', 'leibus-engineer')
+    expect(code).toBe(EXIT_OK)
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    expect(saved.extras).toEqual({ magpie: 'client' })
+    // The pick joins the styles already there; the default style is left alone.
+    expect(saved.styles).toEqual({ outputStyles: ['rem-engineer', 'leibus-engineer'] })
+  })
+
+  it('adds to the zcf skill source it finds, and leaves one that names no skills alone', async () => {
+    await writeConfig({
+      version: 1,
+      tools: ['claude-code'],
+      skills: [
+        { source: 'anthropics/skills', skills: ['pdf'] },
+        { source: 'zcf', skills: ['feat'] },
+      ],
+    })
+    await run('init', '--skills', 'git-commit')
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    // The pick joins the zcf source's list; the other source passes through untouched.
+    expect(saved.skills).toEqual([
+      { source: 'anthropics/skills', skills: ['pdf'] },
+      { source: 'zcf', skills: ['feat', 'git-commit'] },
+    ])
+
+    // A `zcf` source that names no skills installs them all, which no pick can add to; the file
+    // is written as it already stands, so no backup run is made for it.
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    const untouched = '{ "version": 1, "tools": ["claude-code"], "skills": [{ "source": "zcf" }] }\n'
+    await writeFile(configFile(), untouched)
+    const again = await run('init', '--skills', 'git-commit')
+    expect(again.code).toBe(EXIT_OK)
+    expect(again.stdout).not.toContain('~/.ufomiao/zcf/backups')
+    expect(await readFile(configFile(), 'utf8')).toBe(untouched)
+  })
+
+  it('refuses a list flag without a value', async () => {
+    await writeConfig({ version: 1, tools: ['claude-code'] })
+    const bare = await run('init', '--skills')
+    expect(bare.code).toBe(EXIT_ERROR)
+    expect(bare.stderr).toContain('The option --skills <skills> needs a value.')
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1, tools: ['claude-code'] })
+  })
+
+  it('refuses a config that is not an object, or does not hold as one after the merge', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), '[]')
+    const notObject = await run('init', '--skills', 'git-commit')
+    expect(notObject.code).toBe(EXIT_INVALID_CONFIG)
+    expect(notObject.stderr).toContain('is not valid:')
+    expect(await readFile(configFile(), 'utf8')).toBe('[]')
+
+    // Valid JSON whose provider is missing its key: the merge itself cannot fix it.
+    await writeConfig({ version: 1, provider: { name: 'Half' } })
+    const invalid = await run('init', '--skills', 'git-commit')
+    expect(invalid.code).toBe(EXIT_INVALID_CONFIG)
+    expect(invalid.stderr).toContain('provider.apiKey: is required')
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1, provider: { name: 'Half' } })
+  })
+
+  it('names a broken config file instead of touching it', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), '{ "version": 1,, }')
+    const broken = await run('init', '--skills', 'git-commit')
+    expect(broken.code).toBe(EXIT_ERROR)
+    expect(broken.stderr).toContain('~/.ufomiao/zcf/zcf.json is not valid JSON (line 1, column 16)')
+    expect(await readFile(configFile(), 'utf8')).toBe('{ "version": 1,, }')
+  })
+})
+
+describe('zcf switch', () => {
+  it("copies a profile's provider over the top-level one, by id or by name", async () => {
+    await writeConfig(profiledConfig())
+    const byId = await run('switch', 'home')
+    expect(byId.code).toBe(EXIT_OK)
+    expect(byId.stdout).toContain('Switched the provider to "Home line".')
+    expect(byId.stdout).toContain('~/.ufomiao/zcf/backups/2026-10-24T08-00-00-000Z')
+
+    await writeConfig(profiledConfig())
+    const byName = await run('switch', 'Home line')
+    expect(byName.code).toBe(EXIT_OK)
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    expect(saved.provider).toEqual({
+      name: 'House',
+      apiKey: 'sk-home',
+      anthropic: { baseUrl: 'https://home.example.com' },
+    })
+    // The profile itself stays for the next switch.
+    expect(saved.profiles).toEqual(profiledConfig().profiles)
+
+    // Switching to what is already written changes nothing, and so makes no backup.
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), `${JSON.stringify(saved, null, 2)}\n`)
+    const again = await run('switch', 'home')
+    expect(again.code).toBe(EXIT_OK)
+    expect(again.stdout).toContain('Switched the provider to "Home line".')
+    expect(again.stdout).not.toContain('~/.ufomiao/zcf/backups')
+  })
+
+  it('names the known profiles when the query matches none', async () => {
+    await writeConfig(profiledConfig())
+    expect(await run('switch', 'nope')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('No profile "nope". The config has: home (Home line).'),
+    })
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual(profiledConfig())
+  })
+
+  it('says so when the config holds no profiles yet, and needs a config at all', async () => {
+    await writeConfig({ version: 1 })
+    expect(await run('switch', 'any')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('No profiles in the config yet.'),
+    })
+    expect(await run('switch', 'any', '--file', join(home, 'none.json'))).toMatchObject({
+      code: EXIT_INVALID_CONFIG,
+      stderr: expect.stringContaining('No ZCF config at'),
+    })
+  })
+})
+
+describe('zcf ccu', () => {
+  /** A passthrough child that fires `event` with `value` on the next tick, as a spawned process would. */
+  const fakeChild =
+    (event: 'close' | 'error', value: number | null | Error) => (command: string, args: readonly string[]) => {
+      spawned.push([command, ...args])
+      const child = new EventEmitter()
+      queueMicrotask(() => child.emit(event, value))
+      return child
+    }
+  let spawned: string[][]
+
+  beforeEach(() => {
+    spawned = []
+    responses['npx --version'] = {}
+  })
+
+  it('passes through to ccusage and forwards its exit code', async () => {
+    expect(await runWith({ passthrough: fakeChild('close', 0) }, 'ccu')).toMatchObject({ code: EXIT_OK })
+    expect(spawned).toEqual([['npx', '-y', 'ccusage@latest']])
+
+    expect(await runWith({ passthrough: fakeChild('close', 3) }, 'ccu')).toMatchObject({ code: 3 })
+    // A close without a code, as when the process is killed by a signal, still ends the run.
+    expect(await runWith({ passthrough: fakeChild('close', null) }, 'ccu')).toMatchObject({ code: EXIT_ERROR })
+  })
+
+  it('reports a failing spawn and a missing npx clearly', async () => {
+    const failed = await runWith({ passthrough: fakeChild('error', new Error('spawn boom')) }, 'ccu')
+    expect(failed.code).toBe(EXIT_ERROR)
+    expect(failed.stderr).toContain('Could not run ccusage: spawn boom')
+
+    responses = { 'claude --version': { stdout: '2.1.0' } }
+    const missing = await run('ccu')
+    expect(missing.code).toBe(EXIT_ERROR)
+    expect(missing.stderr).toContain('Could not find npx, which runs ccusage.')
+    expect(calls).toContainEqual(['npx', '--version'])
   })
 })

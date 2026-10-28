@@ -74,6 +74,31 @@ Each protocol block is optional. A tool uses the protocol it speaks: Claude Code
 
 To fill these fields from a known provider, see [Provider presets](./providers).
 
+## `profiles`
+
+Saved providers to switch between. Only the top-level `provider` is applied; `zcf switch <id|name>` copies a profile's provider there, so the active setup stays one block and every switch is one step back.
+
+```jsonc
+"profiles": [
+  {
+    "id": "work",
+    "name": "Work relay",
+    "provider": { "name": "Work", "apiKey": "sk-...", "anthropic": { "baseUrl": "https://work.example.com" } }
+  },
+  {
+    "id": "home",
+    "name": "Home",
+    "provider": { "name": "House", "apiKey": "sk-...", "openai": { "baseUrl": "https://home.example.com/v1" } }
+  }
+]
+```
+
+| Field | Meaning |
+|-------|---------|
+| `id` | What `zcf switch` and the editors list the profile by. Letters, digits, `_` and `-`. |
+| `name` | A display name; `zcf switch` accepts it too. |
+| `provider` | A full provider block, shaped exactly like the top-level `provider`. |
+
 ## `mcpServers`
 
 MCP servers, keyed by name. A name may use letters, digits, `_` and `-`.
@@ -120,6 +145,73 @@ The reserved source `zcf` picks the skills ZCF itself ships, in the folder of th
 | `git-clean-branches` | Preview and clean up merged or stale branches. |
 | `git-worktree` | Manage git worktrees under a project-local folder. |
 | `bmad-init` | Initialize or update BMad-Method V6 in a project. |
+
+## `agents`
+
+Built-in agent templates to install, for the tools that take agents (Claude Code subagents). The templates ship with ZCF, one folder per agent under `templates/agents/<language>`, installed in the [`configLanguage`](#configlanguage).
+
+```jsonc
+"agents": ["planner", "ui-ux-designer"]
+```
+
+| Id | Agent |
+|----|-------|
+| `init-architect` | Walks a project and writes module-level CLAUDE.md context files. |
+| `get-current-datetime` | Runs `date` and returns only its output. |
+| `planner` | Breaks a complex task into manageable, reviewable steps. |
+| `ui-ux-designer` | Advises on UI/UX design and the project's UI framework. |
+
+## `workflows`
+
+Custom workflow bundles: one name that installs the skills, agents and MCP servers it lists. Skills are full sources; agents and servers are referenced by id or name and must exist in their own sections, so a bundle never repeats a definition.
+
+```jsonc
+"workflows": [
+  {
+    "name": "Git work",
+    "skills": [{ "source": "zcf", "skills": ["git-commit", "git-rollback"] }],
+    "agents": ["planner"],
+    "mcp": ["context7"]
+  }
+]
+```
+
+| Field | Meaning |
+|-------|---------|
+| `name` | The bundle's display name. |
+| `skills` | Skill sources the bundle installs, as under `skills`. |
+| `agents` | Ids from `agents`, the built-in list above. |
+| `mcp` | Names of servers from `mcpServers`. |
+
+## `styles`
+
+Output styles to install, and the one the tools use by default. ZCF ships six templates under `templates/output-styles/<language>`, installed in the [`configLanguage`](#configlanguage); `defaultOutputStyle` becomes Claude Code's `outputStyle` setting.
+
+```jsonc
+"styles": { "outputStyles": ["engineer-professional"], "defaultOutputStyle": "engineer-professional" }
+```
+
+| Id | Style |
+|----|-------|
+| `engineer-professional` | A professional engineer voice: SOLID, KISS, DRY, YAGNI. |
+| `nekomata-engineer` | Rigorous engineering with a catgirl persona. |
+| `laowang-engineer` | The grumpy veteran who tolerates no sloppy code. |
+| `ojousama-engineer` | Engineering excellence with a tsundere persona. |
+| `rem-engineer` | A devoted maid persona; the codebase is the mansion. |
+| `leibus-engineer` | Product-thinking presentation style. |
+
+## `extras`
+
+Optional companion tools. They take no per-tool config; only their install differs.
+
+```jsonc
+"extras": { "magpie": "client", "ccline": true }
+```
+
+| Field | Meaning |
+|-------|---------|
+| `magpie` | The [magpie](https://usemagpie.ai) model gateway's local companion: `client` for the desktop app, `cli` for terminal use. Both install from magpie's own script; magpie writes its keys itself. |
+| `ccline` | The [CCometixLine](https://github.com/Haleclipse/CCometixLine) status bar, installed under `~/.claude/ccline` and wired into Claude Code's `statusLine`. Select Claude Code under Agent tools to finish the wiring. |
 
 ## `mirror`
 

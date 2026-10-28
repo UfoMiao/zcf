@@ -1,4 +1,4 @@
-import type { AdapterContext, ConfigDraft, ZcfConfig } from '@zcf/core'
+import type { AdapterContext, ConfigDraft, Mirror, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
   BackupRun,
@@ -9,6 +9,7 @@ import {
   listBackups,
   loadConfigDraft,
   loadPresets,
+  type PresetList,
   loadConfigFile,
   MessageError,
   planTools,
@@ -31,6 +32,30 @@ export function backupsRoot(home: string): string {
 
 export function backupFolder(home: string, now: Date): string {
   return backupRunDir(backupsRoot(home), now)
+}
+
+/**
+ * The provider presets for this machine: fetched through the mirror in play (the context's, or
+ * the override `zcf init --mirror` gives), cached under home the way `loadPresets` keeps it.
+ * `configMirror` is the mirror the config names, as the draft writes it.
+ */
+export function loadPresetsFor(
+  ctx: AdapterContext,
+  configMirror: unknown,
+  options: { override?: Mirror; fetch?: typeof globalThis.fetch; refresh?: boolean } = {},
+): Promise<PresetList> {
+  return loadPresets({
+    // Presets come from GitHub, so they follow the mirror like other downloads.
+    mirror: resolveMirror({
+      override: options.override ?? ctx.mirror,
+      env: ctx.env,
+      config: { mirror: isMirror(configMirror) ? configMirror : undefined },
+    }),
+    cacheDir: join(ctx.home, '.ufomiao', 'zcf', 'cache'),
+    env: ctx.env,
+    fetch: options.fetch,
+    refresh: options.refresh,
+  })
 }
 
 /** The config at `path`, validated; throws when it is missing or invalid, which front ends prevent by saving first. */
@@ -80,18 +105,7 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
       current = draft
     },
     detect: tools => detectTools(tools, ctx),
-    presets: refresh =>
-      loadPresets({
-        // Presets come from GitHub, so they follow the mirror like other downloads.
-        mirror: resolveMirror({
-          override: ctx.mirror,
-          env: ctx.env,
-          config: { mirror: isMirror(current?.mirror) ? current.mirror : undefined },
-        }),
-        cacheDir: join(ctx.home, '.ufomiao', 'zcf', 'cache'),
-        env: ctx.env,
-        refresh,
-      }),
+    presets: refresh => loadPresetsFor(ctx, current?.mirror, { refresh }),
     searchSkills: query => searchSkills(query, { env: ctx.env }),
     plan: async () => planWithPreviews(await savedConfig(path), ctx),
     async apply(onStep) {

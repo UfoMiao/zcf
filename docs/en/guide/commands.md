@@ -12,7 +12,7 @@ Run `zcf <command> --help` for the options of one command. Every command takes:
 
 | Option | Meaning |
 |--------|---------|
-| `--lang <lang>` | Display language, `en` or `zh-CN`. It overrides `ZCF_LANG` and the system locale. |
+| `-l, --lang <lang>` | Display language, `en` or `zh-CN`. It overrides `ZCF_LANG` and the system locale. |
 | `-h, --help` | Show help. |
 | `-v, --version` | Show the version. |
 
@@ -39,6 +39,33 @@ Edit the config in your browser. ZCF starts a small server on `127.0.0.1`, opens
 | `--no-open` | Only print the address; don't open a browser. |
 
 The server can only be reached from this machine. The printed address carries a random token for this run of the server, and API requests without it are refused. See [Terminal and web UI](./ui#web-ui).
+
+## `zcf init`
+
+Set up a config in one run, without the editor: fill the provider from a preset, pick tools and what installs with them, save the file, then run the same plan and apply `zcf apply` runs.
+
+```bash
+zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-commit --yes
+```
+
+With no flags at all, ZCF points you at the editor instead of writing an empty config.
+
+| Option | Meaning |
+|--------|---------|
+| `-p, --preset <id>` | A [provider preset](./providers) id. Fills the whole provider; pass its key with `--api-key`. |
+| `-k, --api-key <key>` | The provider's API key. Needs `--preset`, or a provider already in the config. |
+| `-t, --tools <tools>` | The tools to select, comma-separated, as in `zcf plan`. |
+| `--skills <skills>` | Built-in skills to install, comma-separated. |
+| `--agents <agents>` | Built-in agents to install, comma-separated. |
+| `--styles <styles>` | Output styles to install, comma-separated. |
+| `--default-style <style>` | The output style the tools use by default. |
+| `--extras <extras>` | Companion tools: `magpie` (same as `magpie:client`), `magpie:cli`, `ccline`. |
+| `-m, --mirror <mirror>` | Save this as `mirror` in the config and download through it in this run. |
+| `-l, --lang <lang>` | Save this as `language` in the config, and speak it in this run. |
+| `-y, --yes` | Apply after saving. Without it, ZCF saves the file, shows the plan and changes nothing else. |
+| `--file <path>` | The config file. Created when missing; an existing one is merged key by key, keeping comments and layout. |
+
+Every id is checked before the file is touched: an unknown preset, tool, skill, agent, style or extra stops the command with the known ids, and nothing is written. Picks such as `--skills` and `--agents` merge with what the config already holds; lists such as `--tools` replace theirs. The saved file is applied through the same steps as `zcf apply`, so `-y, --yes` decides there too, and a config that selects no tools stops with the same error.
 
 ## `zcf plan`
 
@@ -97,6 +124,14 @@ With no argument, show the mirror in use and where the setting comes from: `ZCF_
 |--------|---------|
 | `--file <path>` | The config file. |
 
+## `zcf switch <profile>`
+
+Switch the active [provider profile](./config#profiles): copy the provider of the profile you name — by id, or by its display name — over the top-level `provider`, backing the file up first. Nothing is written to the tools; run `zcf apply --yes` to hand the switched provider to them.
+
+| Option | Meaning |
+|--------|---------|
+| `--file <path>` | The config file. |
+
 ## `zcf backup [command]`
 
 Work with the backups in `~/.ufomiao/zcf/backups/`. Before ZCF changes or deletes a file, it copies the previous version there, one folder per run named by the run's time.
@@ -111,6 +146,10 @@ Work with the backups in `~/.ufomiao/zcf/backups/`. Before ZCF changes or delete
 |--------|---------|
 | `-y, --yes` | Restore or prune without asking. |
 | `--keep <n>` | How many runs pruning keeps. |
+
+## `zcf ccu`
+
+Show Claude Code usage and cost with [ccusage](https://ccusage.com), by running it directly: ZCF starts `npx -y ccusage@latest` with your terminal attached and passes its exit code through. ccusage keeps its own CLI and its own updates — ZCF only forwards to it, and it needs `npx` (Node.js) on the PATH. ccusage downloads itself from npm as usual; ZCF's mirror setting does not apply to it.
 
 ## Exit codes
 
