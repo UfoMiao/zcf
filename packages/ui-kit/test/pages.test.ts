@@ -1,3 +1,4 @@
+import type { ConfigIssue } from '@zcf/core/schema'
 import { BUILTIN_SKILLS_SOURCE } from '@zcf/core/schema'
 import { describe, expect, it } from 'vitest'
 
@@ -9,14 +10,32 @@ import {
   NAV,
   navRows,
   PAGES,
+  pageHasIssues,
+  presetCovered,
+  removeSourcedSkills,
   skillSourceIndex,
   toggleCatalogSkill,
+  togglePreset,
 } from '../src/pages'
+
+/** One issue at `path`, the shape validation reports. */
+const issueAt = (path: string): ConfigIssue[] => [{ path, message: { key: 'configIssue.invalid' } }]
 
 describe('NAV', () => {
   it('keeps PAGES the flat page list, in nav order', () => {
     expect(NAV.flatMap(section => section.pages)).toEqual(PAGES)
-    expect(PAGES).toEqual(['tools', 'provider', 'mcp', 'skills', 'settings', 'apply'])
+    expect(PAGES).toEqual([
+      'tools',
+      'provider',
+      'mcp',
+      'skills',
+      'settings',
+      'apply',
+      'workflows',
+      'agents',
+      'extras',
+      'backup',
+    ])
   })
 
   it('flattens into header and page rows, headed by each section', () => {
@@ -32,8 +51,12 @@ describe('NAV', () => {
       '5',
       '6',
       'nav.workflow',
+      '7',
+      '8',
       'nav.extras',
+      '9',
       'nav.backup',
+      '0',
     ])
   })
 
@@ -62,6 +85,20 @@ describe('NAV', () => {
     )
     expect(digits.slice(1, 11).join('')).toBe('1234567890')
     expect(digits.slice(11)).toEqual([undefined, undefined])
+  })
+})
+
+describe('pageHasIssues', () => {
+  // A page's roots are keys of their own: passing them to issuesAt as one joined path
+  // missed every key but a lone first one, so each root is checked on its own.
+  it('flags a page when any of its root keys has a problem, at any depth', () => {
+    expect(pageHasIssues(issueAt('mirror'), ['mirror', 'configLanguage'])).toBe(true)
+    expect(pageHasIssues(issueAt('configLanguage'), ['mirror', 'configLanguage'])).toBe(true)
+    expect(pageHasIssues(issueAt('provider.apiKey'), ['provider', 'profiles'])).toBe(true)
+    expect(pageHasIssues(issueAt('profiles.0.id'), ['provider', 'profiles'])).toBe(true)
+    expect(pageHasIssues(issueAt('provider.apiKey'), ['tools'])).toBe(false)
+    expect(pageHasIssues([], ['tools'])).toBe(false)
+    expect(pageHasIssues(issueAt('tools.0'), undefined)).toBe(false)
   })
 })
 
@@ -150,5 +187,99 @@ describe('skillSourceIndex', () => {
     expect(skillSourceIndex(sources, 'zcf')).toBe(1)
     expect(skillSourceIndex(sources, 'nope/nope')).toBe(-1)
     expect(skillSourceIndex(undefined, 'zcf')).toBe(-1)
+  })
+})
+
+describe('removeSourcedSkills', () => {
+  it('narrows the entry that installs them and drops it once its list is empty', () => {
+    const sources = [
+      { source: 'zcf', skills: ['feat', 'git-commit'] },
+      { source: 'owner/repo', skills: ['one'] },
+    ]
+    expect(removeSourcedSkills(sources, 'zcf', ['git-commit'])).toEqual([
+      { source: 'zcf', skills: ['feat'] },
+      { source: 'owner/repo', skills: ['one'] },
+    ])
+    expect(removeSourcedSkills(sources, 'zcf', ['feat', 'git-commit'])).toEqual([
+      { source: 'owner/repo', skills: ['one'] },
+    ])
+  })
+
+  it('leaves a bare entry alone and returns undefined when nothing is left', () => {
+    expect(removeSourcedSkills([{ source: 'zcf' }, { source: 'a/a' }], 'zcf', ['feat'])).toEqual([
+      { source: 'zcf' },
+      { source: 'a/a' },
+    ])
+    expect(removeSourcedSkills([{ source: 'zcf', skills: ['feat'] }], 'zcf', ['feat'])).toBeUndefined()
+  })
+})
+
+describe('presetCovered', () => {
+  const preset = {
+    skills: [{ source: 'zcf', skills: ['init-project'] }],
+    agents: ['init-architect', 'get-current-datetime'],
+  }
+
+  it('wants every skill of every source and every agent', () => {
+    expect(presetCovered(undefined, undefined, preset)).toBe(false)
+    expect(presetCovered([{ source: 'zcf', skills: ['init-project'] }], ['init-architect'], preset)).toBe(false)
+    expect(
+      presetCovered(
+        [{ source: 'zcf', skills: ['init-project', 'feat'] }],
+        ['init-architect', 'get-current-datetime'],
+        preset,
+      ),
+    ).toBe(true)
+  })
+
+  it('counts a source that names no skills as covering whatever is picked from it', () => {
+    expect(presetCovered([{ source: 'zcf' }], ['init-architect', 'get-current-datetime'], preset)).toBe(true)
+    expect(presetCovered([{ source: 'owner/repo' }], ['init-architect', 'get-current-datetime'], preset)).toBe(false)
+  })
+})
+
+describe('togglePreset', () => {
+  const preset = {
+    skills: [{ source: 'zcf', skills: ['init-project'] }],
+    agents: ['init-architect'],
+  }
+
+  it('merges the preset into the draft when it is not installed yet', () => {
+    expect(togglePreset([{ source: 'a/a' }], [], preset)).toEqual({
+      skills: [{ source: 'a/a' }, { source: 'zcf', skills: ['init-project'] }],
+      agents: ['init-architect'],
+    })
+  })
+
+  it('keeps the picks that are already there, in the order the draft has them', () => {
+    expect(togglePreset([{ source: 'zcf', skills: ['feat'] }], ['planner'], preset)).toEqual({
+      skills: [{ source: 'zcf', skills: ['feat', 'init-project'] }],
+      agents: ['planner', 'init-architect'],
+    })
+  })
+
+  it('takes the preset back out, dropping keys once they are empty', () => {
+    const installed = {
+      skills: [{ source: 'a/a' }, { source: 'zcf', skills: ['init-project'] }],
+      agents: ['planner', 'init-architect'],
+    }
+    expect(togglePreset(installed.skills, installed.agents, preset)).toEqual({
+      skills: [{ source: 'a/a' }],
+      agents: ['planner'],
+    })
+    expect(togglePreset([{ source: 'zcf', skills: ['init-project'] }], ['init-architect'], preset)).toEqual({
+      skills: undefined,
+      agents: undefined,
+    })
+  })
+
+  it('installs a whole source with a bare entry, which a later toggle-off leaves alone', () => {
+    const whole = { skills: [{ source: 'owner/repo' }], agents: [] }
+    expect(togglePreset([], [], whole)).toEqual({ skills: [{ source: 'owner/repo' }], agents: undefined })
+    // "All but these" has no shape, so the bare entry stays and the preset stays covered.
+    expect(togglePreset([{ source: 'owner/repo' }], [], whole)).toEqual({
+      skills: [{ source: 'owner/repo' }],
+      agents: undefined,
+    })
   })
 })

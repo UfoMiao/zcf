@@ -1,10 +1,20 @@
-import type { ToolId } from '@zcf/core/schema'
+import type { ConfigIssue, ToolId } from '@zcf/core/schema'
 import { BUILTIN_SKILLS_SOURCE, CONFIG_LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
-import { isTable } from './draft'
+import { isTable, issuesAt } from './draft'
 
-export type PageId = 'tools' | 'provider' | 'mcp' | 'skills' | 'settings' | 'apply'
+export type PageId =
+  | 'tools'
+  | 'provider'
+  | 'mcp'
+  | 'skills'
+  | 'settings'
+  | 'apply'
+  | 'workflows'
+  | 'agents'
+  | 'extras'
+  | 'backup'
 
 /** One grouped chunk of the nav column, the way v3 grouped its menu. */
 export interface NavSection {
@@ -14,16 +24,12 @@ export interface NavSection {
   pages: readonly PageId[]
 }
 
-/**
- * The nav column's sections. Sections without pages yet hold their place so later
- * waves can add pages without reshuffling the menu. The terminal UI renders this;
- * the web nav follows PAGES until the new sections gain their pages.
- */
+/** The nav column's sections, the way v3 grouped its menu. The terminal UI renders this. */
 export const NAV: readonly NavSection[] = [
   { id: 'init', labelKey: 'nav.init', pages: ['tools', 'provider', 'mcp', 'skills', 'settings', 'apply'] },
-  { id: 'workflow', labelKey: 'nav.workflow', pages: [] },
-  { id: 'extras', labelKey: 'nav.extras', pages: [] },
-  { id: 'backup', labelKey: 'nav.backup', pages: [] },
+  { id: 'workflow', labelKey: 'nav.workflow', pages: ['workflows', 'agents'] },
+  { id: 'extras', labelKey: 'nav.extras', pages: ['extras'] },
+  { id: 'backup', labelKey: 'nav.backup', pages: ['backup'] },
 ]
 
 /** Every page in nav order, flattened from the sections. */
@@ -63,14 +69,27 @@ export function navRows(sections: readonly NavSection[] = NAV): readonly NavRow[
   return rows
 }
 
-/** The config keys each editing page works on, so a page can be flagged when it has problems. */
+/**
+ * The config keys each editing page works on, so a page can be flagged when it has
+ * problems. Each entry is a key of its own: a problem at or under any of them flags
+ * the page.
+ */
 export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>> = {
   tools: ['tools'],
-  provider: ['provider'],
+  provider: ['provider', 'profiles'],
   mcp: ['mcpServers'],
   skills: ['skills'],
   settings: ['mirror', 'configLanguage'],
   apply: undefined,
+  workflows: ['workflows'],
+  agents: ['agents'],
+  extras: ['extras'],
+  backup: undefined,
+}
+
+/** Whether any of a page's root keys has a problem at or under it. */
+export function pageHasIssues(issues: readonly ConfigIssue[], roots: readonly string[] | undefined): boolean {
+  return roots !== undefined && roots.some(root => issuesAt(issues, [root]).length > 0)
 }
 
 /**
@@ -249,6 +268,84 @@ export function addSourcedSkill(sources: unknown, source: string, name: string):
 /** The draft position of the `source` entry, for edits that remove it. */
 export function skillSourceIndex(sources: unknown, source: string): number {
   return (Array.isArray(sources) ? sources : []).findIndex(item => isTable(item) && item.source === source)
+}
+
+/**
+ * Take skills back out of the sources that install them. The entries keep what they still
+ * pick, and an entry left with no skills goes; `undefined` when nothing is left at all.
+ * An entry that names no skills installs them all, and "all but these" has no shape to
+ * write, so such an entry is left alone.
+ */
+export function removeSourcedSkills(sources: unknown, source: string, names: readonly string[]): unknown[] | undefined {
+  const drop = new Set(names)
+  const list = (Array.isArray(sources) ? sources : []).flatMap(item => {
+    if (!isTable(item) || item.source !== source) return [item]
+    const picked = Array.isArray(item.skills) ? item.skills.map(String) : undefined
+    if (picked === undefined) return [item]
+    const next = picked.filter(name => !drop.has(name))
+    return next.length > 0 ? [{ ...item, skills: next }] : []
+  })
+  return list.length > 0 ? list : undefined
+}
+
+/** What a workflow preset carries into a config, the shape of core's WORKFLOW_PRESETS entries. */
+export interface PresetBundle {
+  skills: readonly { source: string; skills?: readonly string[] }[]
+  agents: readonly string[]
+}
+
+/**
+ * Whether the draft's `skills` covers `names` from `source`: an entry that names no skills
+ * installs them all, so it covers whatever is picked from its source.
+ */
+function sourceCovers(sources: unknown, source: string, names: readonly string[]): boolean {
+  const entries = (Array.isArray(sources) ? sources : []).filter(item => isTable(item) && item.source === source)
+  if (entries.length === 0) return false
+  if (entries.some(item => !Array.isArray(item.skills))) return true
+  return names.every(name => hasSourcedSkill(sources, source, name))
+}
+
+/**
+ * Whether the draft already installs every skill and agent of `preset`. A source entry
+ * that names no skills installs them all, so it covers whatever the preset picks from it.
+ */
+export function presetCovered(sources: unknown, agents: unknown, preset: PresetBundle): boolean {
+  const picked = Array.isArray(agents) ? agents.map(String) : []
+  if (!preset.agents.every(agent => picked.includes(agent))) return false
+  return preset.skills.every(entry => sourceCovers(sources, entry.source, entry.skills ?? []))
+}
+
+/**
+ * Toggle a workflow preset in the draft. Installing merges each of its skill sources into
+ * the draft's `skills` and adds its agents; removing takes its picks back out, dropping the
+ * keys when nothing is left. The caller writes both returned values where they came from.
+ */
+export function togglePreset(
+  sources: unknown,
+  agents: unknown,
+  preset: PresetBundle,
+): { skills: unknown[] | undefined; agents: string[] | undefined } {
+  const pickedAgents = Array.isArray(agents) ? agents.map(String) : []
+  if (presetCovered(sources, agents, preset)) {
+    let list: unknown = sources
+    for (const entry of preset.skills) list = removeSourcedSkills(list, entry.source, entry.skills ?? [])
+    const nextAgents = pickedAgents.filter(agent => !preset.agents.includes(agent))
+    return {
+      skills: Array.isArray(list) && list.length > 0 ? list : undefined,
+      agents: nextAgents.length > 0 ? nextAgents : undefined,
+    }
+  }
+  let list: unknown[] = Array.isArray(sources) ? [...sources] : []
+  for (const entry of preset.skills) {
+    const names = entry.skills ?? []
+    if (names.length === 0) {
+      // The preset installs the whole source; a bare entry is added only when none draws from it yet.
+      if (!list.some(item => isTable(item) && item.source === entry.source)) list.push({ source: entry.source })
+    } else for (const name of names) list = addSourcedSkill(list, entry.source, name)
+  }
+  const nextAgents = [...pickedAgents]
+  for (const agent of preset.agents) if (!nextAgents.includes(agent)) nextAgents.push(agent)
+  return { skills: list.length > 0 ? list : undefined, agents: nextAgents.length > 0 ? nextAgents : undefined }
 }
 
 /** A fresh MCP server of the given type, so the form has something to fill in. */
