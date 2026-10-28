@@ -6,14 +6,15 @@ import type { DraftPath } from './draft'
 import { isTable, issuesAt } from './draft'
 
 export type PageId =
+  | 'init'
   | 'tools'
   | 'provider'
   | 'mcp'
   | 'skills'
+  | 'workflows'
+  | 'styles'
   | 'settings'
   | 'apply'
-  | 'workflows'
-  | 'agents'
   | 'extras'
   | 'backup'
 
@@ -25,12 +26,19 @@ export interface NavSection {
   pages: readonly PageId[]
 }
 
-/** The nav column's sections, the way v3 grouped its menu. The terminal UI renders this. */
+/**
+ * The nav column's sections, layered the way v3 layered its menu: the initialization
+ * walkthrough first, then the single settings it walks through, then the companion
+ * tools around the code tools, then ZCF itself.
+ */
 export const NAV: readonly NavSection[] = [
-  { id: 'init', labelKey: 'nav.init', pages: ['tools', 'provider', 'mcp', 'skills', 'settings', 'apply'] },
-  { id: 'workflow', labelKey: 'nav.workflow', pages: ['workflows', 'agents'] },
+  {
+    id: 'config',
+    labelKey: 'nav.config',
+    pages: ['init', 'tools', 'provider', 'mcp', 'skills', 'workflows', 'styles', 'settings', 'apply'],
+  },
   { id: 'extras', labelKey: 'nav.extras', pages: ['extras'] },
-  { id: 'backup', labelKey: 'nav.backup', pages: ['backup'] },
+  { id: 'zcf', labelKey: 'nav.zcf', pages: ['backup'] },
 ]
 
 /** Every page in nav order, flattened from the sections. */
@@ -76,15 +84,17 @@ export function navRows(sections: readonly NavSection[] = NAV): readonly NavRow[
  * the page.
  */
 export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>> = {
+  // The initialization walkthrough page; it links to every other page, changing nothing itself.
+  init: undefined,
   tools: ['tools'],
   provider: ['provider', 'profiles'],
   mcp: ['mcpServers'],
   skills: ['skills'],
   settings: ['mirror', 'configLanguage'],
   apply: undefined,
-  // The Workflows page hosts the output styles beside its presets and bundles.
-  workflows: ['workflows', 'styles'],
-  agents: ['agents'],
+  // A workflow is a bundle of skills and agents, v3-style; the agents are picked here.
+  workflows: ['workflows', 'agents'],
+  styles: ['styles'],
   extras: ['extras'],
   backup: undefined,
 }

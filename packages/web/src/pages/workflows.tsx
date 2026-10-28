@@ -1,7 +1,7 @@
-import { BUILTIN_AGENT_IDS, BUILTIN_STYLE_IDS, WORKFLOW_PRESETS } from '@zcf/core/schema'
+import { BUILTIN_AGENT_IDS, WORKFLOW_PRESETS } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
 import { draftIds, getAt, isTable, presetCovered, toggleId, togglePreset } from '@zcf/ui-kit'
-import { PlusIcon, Trash2Icon, WorkflowIcon, XIcon } from 'lucide-react'
+import { BotIcon, PlusIcon, Trash2Icon, WorkflowIcon, XIcon } from 'lucide-react'
 
 import type { Translate } from '../api'
 import { EmptyState, PageHeader } from '../components/page'
@@ -12,9 +12,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { FieldInput } from '../fields'
 
 type PageProps = { editor: ConfigEditor; t: Translate }
-
-/** An id shown as a toggle card's main line. */
-const idTitle = (id: string) => <span className="truncate font-mono text-[13px] font-medium">{id}</span>
 
 /** The v3 workflow presets, as toggles that merge their picks into the draft. */
 function PresetsCard({ editor, t }: PageProps) {
@@ -146,53 +143,31 @@ function BundleCard({ editor, t, index }: PageProps & { index: number }) {
 const bundleKey = (bundle: unknown, index: number): string =>
   `${isTable(bundle) && typeof bundle.name === 'string' ? bundle.name : ''}#${index}`
 
-/** The output-style templates: the same shipped content the presets and bundles draw from. */
-function StylesCard({ editor, t }: PageProps) {
-  const stylesTable = isTable(editor.draft.styles) ? editor.draft.styles : {}
-  const styles = draftIds(stylesTable.outputStyles)
-  const def = typeof stylesTable.defaultOutputStyle === 'string' ? stylesTable.defaultOutputStyle : ''
-  const toggleStyle = (id: string) => {
-    editor.update(['styles', 'outputStyles'], toggleId(styles, id))
-    // The default cannot point at a style that no longer installs.
-    if (def === id) editor.update(['styles', 'defaultOutputStyle'], undefined)
-  }
+/**
+ * The built-in agents the workflows draw from, on the page where they are picked —
+ * a workflow is skills plus agents, and both halves belong together.
+ */
+function AgentsCard({ editor, t }: PageProps) {
+  const agents = draftIds(editor.draft.agents)
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('web.styles.title')}</CardTitle>
-        <CardDescription>{t('web.styles.hint')}</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <BotIcon className="text-muted-foreground size-4" />
+          {t('web.agents.builtin')}
+        </CardTitle>
+        <CardDescription>{t('web.agents.builtinHint')}</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-          {BUILTIN_STYLE_IDS.map(id => (
-            <ToggleCard key={id} on={styles.includes(id)} onToggle={() => toggleStyle(id)} title={idTitle(id)} />
-          ))}
-        </div>
-        <div className="flex max-w-xs flex-col gap-1.5">
-          <label htmlFor="styles.default" className="text-[13px] font-medium">
-            {t('web.styles.default')}
-          </label>
-          <select
-            id="styles.default"
-            value={def}
-            onChange={event =>
-              editor.update(
-                ['styles', 'defaultOutputStyle'],
-                event.target.value === '' ? undefined : event.target.value,
-              )
-            }
-            className="flex h-8 w-full rounded-md border bg-card px-2 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
-          >
-            <option value="">{t('web.styles.none')}</option>
-            {/* A default written by hand stays visible, so choosing any option changes it. */}
-            {def && !BUILTIN_STYLE_IDS.some(id => id === def) && <option value={def}>{def}</option>}
-            {BUILTIN_STYLE_IDS.map(id => (
-              <option key={id} value={id}>
-                {id}
-              </option>
-            ))}
-          </select>
-        </div>
+      <CardContent className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+        {BUILTIN_AGENT_IDS.map(id => (
+          <ToggleCard
+            key={id}
+            on={agents.includes(id)}
+            onToggle={() => editor.update(['agents'], toggleId(agents, id))}
+            title={<span className="truncate font-mono text-[13px] font-medium">{id}</span>}
+            detail={<span className="text-muted-foreground text-xs leading-relaxed">{t(`tui.agents.hint.${id}`)}</span>}
+          />
+        ))}
       </CardContent>
     </Card>
   )
@@ -212,6 +187,7 @@ export function WorkflowsPage({ editor, t }: PageProps) {
       <PageHeader title={t('tui.page.workflows')} intro={t('web.workflows.intro')} actions={addButton} />
       <div className="flex flex-col gap-3">
         <PresetsCard editor={editor} t={t} />
+        <AgentsCard editor={editor} t={t} />
         <span className="text-muted-foreground mt-2 px-1 text-[13px] font-medium">{t('web.workflows.custom')}</span>
         {bundles.length === 0 ? (
           <EmptyState icon={<WorkflowIcon />} title={t('web.workflows.emptyTitle')} actions={addButton}>
@@ -222,7 +198,6 @@ export function WorkflowsPage({ editor, t }: PageProps) {
             <BundleCard key={bundleKey(bundle, index)} editor={editor} t={t} index={index} />
           ))
         )}
-        <StylesCard editor={editor} t={t} />
       </div>
     </section>
   )

@@ -28,14 +28,15 @@ describe('NAV', () => {
   it('keeps PAGES the flat page list, in nav order', () => {
     expect(NAV.flatMap(section => section.pages)).toEqual(PAGES)
     expect(PAGES).toEqual([
+      'init',
       'tools',
       'provider',
       'mcp',
       'skills',
+      'workflows',
+      'styles',
       'settings',
       'apply',
-      'workflows',
-      'agents',
       'extras',
       'backup',
     ])
@@ -44,22 +45,23 @@ describe('NAV', () => {
   it('flattens into header and page rows, headed by each section', () => {
     const rows = navRows()
     expect(rows).toHaveLength(NAV.length + PAGES.length)
-    // Headers label their section; pages carry the digit that jumps to them.
+    // Headers label their section; pages carry the digit that jumps to them, and the
+    // eleventh page — backup — has none left to press.
     expect(rows.map(row => (row.kind === 'header' ? row.labelKey : row.digit))).toEqual([
-      'nav.init',
+      'nav.config',
       '1',
       '2',
       '3',
       '4',
       '5',
       '6',
-      'nav.workflow',
       '7',
       '8',
-      'nav.extras',
       '9',
-      'nav.backup',
+      'nav.extras',
       '0',
+      'nav.zcf',
+      undefined,
     ])
   })
 

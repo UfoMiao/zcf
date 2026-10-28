@@ -994,6 +994,15 @@ describe('zcf init', () => {
     expect(JSON.parse(await readFile(configFile(), 'utf8')).language).toBe('zh-CN')
   })
 
+  it('installs workflow presets, folding their skills and agents into the picks', async () => {
+    const { code } = await run('init', '--tools', 'claude-code', '--skills', 'git-commit', '-w', 'feat,six-steps')
+    expect(code).toBe(EXIT_OK)
+    const saved = (await parseConfigText('json', await readFile(configFile(), 'utf8'))) as Record<string, unknown>
+    // The flag's picks and both presets' picks share the one `zcf` source, as on the page.
+    expect(saved.skills).toEqual([{ source: 'zcf', skills: ['git-commit', 'feat', 'workflow'] }])
+    expect(saved.agents).toEqual(['planner', 'ui-ux-designer'])
+  })
+
   it('merges into an existing config, keeping its keys, comments and picks', async () => {
     await mkdir(join(configFile(), '..'), { recursive: true })
     await writeFile(
@@ -1021,6 +1030,7 @@ describe('zcf init', () => {
         'init-project, workflow, feat, git-commit, git-rollback, git-clean-branches, git-worktree, bmad-init',
       ],
       ['--agents', 'agents', 'init-architect, get-current-datetime, planner, ui-ux-designer'],
+      ['-w', 'workflows', 'common, six-steps, feat, git, bmad'],
       [
         '--styles',
         'styles',

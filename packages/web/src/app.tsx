@@ -7,14 +7,15 @@ import { isLang, navRows, PAGE_ROOTS, PAGES, pageHasIssues } from '@zcf/ui-kit'
 import { TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import {
   ArchiveRestoreIcon,
-  BotIcon,
   CircleAlertIcon,
   CircleCheckIcon,
+  ClipboardListIcon,
   InfoIcon,
   LoaderCircleIcon,
   MenuIcon,
   NetworkIcon,
   PackageIcon,
+  PaletteIcon,
   PlayIcon,
   PlugIcon,
   SettingsIcon,
@@ -33,28 +34,30 @@ import { Button } from './components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select'
 import { Sheet, SheetContent, SheetTitle } from './components/ui/sheet'
 import { Skeleton } from './components/ui/skeleton'
-import { AgentsPage } from './pages/agents'
 import { ApplyPage } from './pages/apply'
 import { BackupPage } from './pages/backup'
 import { ExtrasPage } from './pages/extras'
+import { InitPage } from './pages/init'
 import { McpPage } from './pages/mcp'
 import { ProviderPage } from './pages/provider'
 import { SettingsPage } from './pages/settings'
 import { SkillsPage } from './pages/skills'
+import { StylesPage } from './pages/styles'
 import { ToolsPage } from './pages/tools'
 import { WorkflowsPage } from './pages/workflows'
 
 type StatusTone = 'info' | 'warning' | 'error'
 
 const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
+  init: ClipboardListIcon,
   tools: WrenchIcon,
   provider: PlugIcon,
   mcp: NetworkIcon,
   skills: SparklesIcon,
+  workflows: WorkflowIcon,
+  styles: PaletteIcon,
   settings: SettingsIcon,
   apply: PlayIcon,
-  workflows: WorkflowIcon,
-  agents: BotIcon,
   extras: PackageIcon,
   backup: ArchiveRestoreIcon,
 }
@@ -157,7 +160,8 @@ export function App({
   translators: Record<Lang, Translate>
 }) {
   const editor = useConfigEditor(httpService)
-  const [page, setPage] = useState<PageId>('tools')
+  // The terminal opens on its walkthrough page; the web sidebar makes the same first.
+  const [page, setPage] = useState<PageId>('init')
   const [status, setStatus] = useState<{ text: string; tone: StatusTone }>()
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
   const [navOpen, setNavOpen] = useState(false)
@@ -363,6 +367,7 @@ export function App({
 
         <main className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:px-10">
           <div className="mx-auto w-full max-w-3xl pb-16">
+            {page === 'init' && <InitPage editor={editor} t={t} onNavigate={setPage} />}
             {page === 'tools' && <ToolsPage editor={editor} t={t} detected={detected} />}
             {page === 'provider' && <ProviderPage editor={editor} t={t} lang={uiLang} />}
             {page === 'mcp' && <McpPage editor={editor} t={t} />}
@@ -370,7 +375,7 @@ export function App({
             {page === 'settings' && <SettingsPage editor={editor} t={t} />}
             {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} onSave={() => void save()} />}
             {page === 'workflows' && <WorkflowsPage editor={editor} t={t} />}
-            {page === 'agents' && <AgentsPage editor={editor} t={t} />}
+            {page === 'styles' && <StylesPage editor={editor} t={t} />}
             {page === 'extras' && <ExtrasPage editor={editor} t={t} />}
             {page === 'backup' && <BackupPage t={t} />}
           </div>

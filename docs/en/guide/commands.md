@@ -45,7 +45,7 @@ The server can only be reached from this machine. The printed address carries a 
 Set up a config in one run, without the editor: fill the provider from a preset, pick tools and what installs with them, save the file, then run the same plan and apply `zcf apply` runs.
 
 ```bash
-zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-commit --yes
+zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --workflows git --yes
 ```
 
 With no flags at all, ZCF points you at the editor instead of writing an empty config.
@@ -56,6 +56,7 @@ With no flags at all, ZCF points you at the editor instead of writing an empty c
 | `-k, --api-key <key>` | The provider's API key. Needs `--preset`, or a provider already in the config. |
 | `-t, --tools <tools>` | The tools to select, comma-separated, as in `zcf plan`. |
 | `--skills <skills>` | Built-in skills to install, comma-separated. |
+| `-w, --workflows <ids>` | Workflow presets to install, comma-separated (`common, six-steps, feat, git, bmad`); each folds its skills and agents in, as on the Workflows page. |
 | `--agents <agents>` | Built-in agents to install, comma-separated. |
 | `--styles <styles>` | Output styles to install, comma-separated. |
 | `--default-style <style>` | The output style the tools use by default. |
@@ -65,7 +66,7 @@ With no flags at all, ZCF points you at the editor instead of writing an empty c
 | `-y, --yes` | Apply after saving. Without it, ZCF saves the file, shows the plan and changes nothing else. |
 | `--file <path>` | The config file. Created when missing; an existing one is merged key by key, keeping comments and layout. |
 
-Every id is checked before the file is touched: an unknown preset, tool, skill, agent, style or extra stops the command with the known ids, and nothing is written. Picks such as `--skills` and `--agents` merge with what the config already holds; lists such as `--tools` replace theirs. The saved file is applied through the same steps as `zcf apply`, so `-y, --yes` decides there too, and a config that selects no tools stops with the same error.
+Every id is checked before the file is touched: an unknown preset, tool, skill, workflow, agent, style or extra stops the command with the known ids, and nothing is written. Picks such as `--skills`, `--workflows` and `--agents` merge with what the config already holds; lists such as `--tools` replace theirs. The saved file is applied through the same steps as `zcf apply`, so `-y, --yes` decides there too, and a config that selects no tools stops with the same error.
 
 ## `zcf plan`
 

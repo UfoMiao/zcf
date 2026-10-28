@@ -45,7 +45,7 @@ npx zcf [command] [options]
 エディターを開かず、1 回のコマンドで設定を作ります。プリセットからプロバイダーを埋め、ツールと一緒に導入するものを選び、ファイルを保存してから、`zcf apply` と同じプランと適用を実行します。
 
 ```bash
-zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-commit --yes
+zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --workflows git --yes
 ```
 
 オプションを一切付けずに実行した場合は、空の設定を書き込まずにエディターへの案内だけを表示します。
@@ -56,6 +56,7 @@ zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-
 | `-k, --api-key <key>` | プロバイダーの API キー。`--preset` と併用するか、設定にすでにプロバイダーが必要です。 |
 | `-t, --tools <tools>` | 選択するツールをカンマ区切りで。`zcf plan` と同じ書式です。 |
 | `--skills <skills>` | 導入する内蔵スキルをカンマ区切りで。 |
+| `-w, --workflows <ids>` | 導入するワークフロープリセットをカンマ区切りで（`common, six-steps, feat, git, bmad`）。各プリセットのスキルとエージェントが設定に組み込まれます。ワークフローページと同じ動作です。 |
 | `--agents <agents>` | 導入する内蔵エージェントをカンマ区切りで。 |
 | `--styles <styles>` | 導入する出力スタイルをカンマ区切りで。 |
 | `--default-style <style>` | ツールがデフォルトで使う出力スタイル。 |
@@ -65,7 +66,7 @@ zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-
 | `-y, --yes` | 保存後に適用します。付けない場合、ZCF はファイルを保存しプランを表示するだけです。 |
 | `--file <path>` | 設定ファイル。無ければ作成し、あればキー単位でマージし、コメントとレイアウトを残します。 |
 
-すべての id はファイルに触れる前に検査されます。不明なプリセット、ツール、スキル、エージェント、スタイル、周辺ツールは、選択肢の一覧とともにエラーになり、何も書き込まれません。`--skills` や `--agents` のような選択は設定の既存内容とマージされ、`--tools` のようなリストは置き換えます。保存されたファイルは `zcf apply` と同じ手順で適用されるため、`-y, --yes` の判断もそこで働き、ツールを 1 つも選んでいない設定は同じエラーで停止します。
+すべての id はファイルに触れる前に検査されます。不明なプリセット、ツール、スキル、ワークフロー、エージェント、スタイル、周辺ツールは、選択肢の一覧とともにエラーになり、何も書き込まれません。`--skills`、`--workflows`、`--agents` のような選択は設定の既存内容とマージされ、`--tools` のようなリストは置き換えます。保存されたファイルは `zcf apply` と同じ手順で適用されるため、`-y, --yes` の判断もそこで働き、ツールを 1 つも選んでいない設定は同じエラーで停止します。
 
 ## `zcf plan`
 

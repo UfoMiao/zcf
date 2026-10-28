@@ -53,6 +53,7 @@ import {
   SKILLS_CATALOG,
   TOOL_IDS,
   TOOL_NAMES,
+  WORKFLOW_PRESETS,
   writeFileAtomic,
 } from '@zcf/core'
 import { dim, green, yellow } from 'ansis'
@@ -106,6 +107,7 @@ interface CommandFlags {
   preset?: string | number
   apiKey?: string | number
   skills?: string
+  workflows?: string
   agents?: string
   styles?: string
   defaultStyle?: string
@@ -226,6 +228,12 @@ const INIT_OPTIONS = [
     describe: (t: Translate) => t('cli.option.tools', { tools: TOOL_IDS.join(', ') }),
   },
   { key: 'skills', option: '--skills <skills>', describe: (t: Translate) => t('cli.option.skills') },
+  {
+    key: 'workflows',
+    option: '-w, --workflows <ids>',
+    describe: (t: Translate) =>
+      t('cli.option.workflows', { ids: WORKFLOW_PRESETS.map(preset => preset.id).join(', ') }),
+  },
   { key: 'agents', option: '--agents <agents>', describe: (t: Translate) => t('cli.option.agents') },
   { key: 'styles', option: '--styles <styles>', describe: (t: Translate) => t('cli.option.styles') },
   {
@@ -795,6 +803,12 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       'cli.init.unknownSkills',
     )
     const agents = parseKnownIds(flags.agents, BUILTIN_AGENT_IDS, t, 'cli.init.unknownAgents')
+    const workflows = parseKnownIds(
+      flags.workflows,
+      WORKFLOW_PRESETS.map(preset => preset.id),
+      t,
+      'cli.init.unknownWorkflows',
+    )
     const styles = parseKnownIds(flags.styles, BUILTIN_STYLE_IDS, t, 'cli.init.unknownStyles')
     const defaultStyle = parseDefaultStyle(flags.defaultStyle, t)
     const extras = parseExtraPicks(flags.extras, t)
@@ -829,11 +843,26 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         provider = { ...current, apiKey }
       }
 
+      // Workflows merge like they do on the page: each picked preset folds its skills and
+      // agents into whatever the --skills and --agents picks already hold.
+      let skillSources = withSkillPicks(draft.skills, skills)
+      let agentPicks = withPicks(draft.agents, agents)
+      if (workflows.length > 0) {
+        const { togglePreset } = await import('@zcf/ui-kit')
+        for (const id of workflows) {
+          const preset = WORKFLOW_PRESETS.find(item => item.id === id)!
+          const folded = togglePreset(skillSources, agentPicks, preset)
+          skillSources = folded.skills ?? []
+          agentPicks = folded.agents ?? []
+        }
+      }
       const edits: KeyEdit[] = []
       if (tools !== undefined) edits.push({ path: ['tools'], value: tools })
       if (provider !== undefined) edits.push({ path: ['provider'], value: provider })
-      if (skills.length > 0) edits.push({ path: ['skills'], value: withSkillPicks(draft.skills, skills) })
-      if (agents.length > 0) edits.push({ path: ['agents'], value: withPicks(draft.agents, agents) })
+      if (skills.length > 0 || workflows.length > 0)
+        edits.push({ path: ['skills'], value: skillSources.length > 0 ? skillSources : undefined })
+      if (agents.length > 0 || workflows.length > 0)
+        edits.push({ path: ['agents'], value: agentPicks.length > 0 ? agentPicks : undefined })
       if (styles.length > 0 || defaultStyle !== undefined) {
         const styleBlock = isTable(draft.styles) ? draft.styles : {}
         edits.push({
