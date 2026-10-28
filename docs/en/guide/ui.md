@@ -15,11 +15,16 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Page | What you do there |
 |------|-------------------|
 | Agent tools | Tick the agent tools to configure. Each row shows whether the tool is installed and which version. |
-| Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. |
+| Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. A submenu keeps [provider profiles](./config#profiles): save the provider under a name and switch between profiles without retyping the key. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
 | Skills | Pick from the ZCF built-in skills, search the community index for more, and add your own sources with, for each, the skills to install. |
 | Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
 | Apply | See the plan for the saved config, with a diff of each file, then apply it. |
+| Workflows | Install a ready-made workflow preset — the v3 bundles over built-in skills and agents — or compose your own [bundles](./config#workflows), and pick the built-in [agents](./config#agents) to install. |
+| More tools | The [companion tools](./config#extras): magpie (the desktop app or its CLI) and the CCometixLine status bar. |
+| Backup | List the backup runs, restore one and prune the old ones, the same as `zcf backup`. |
+
+In the terminal UI the page list is grouped into sections — Init config, Workflows, More tools and Backup — each with its own heading. Pages carry a number across the whole list: press it to jump there from anywhere in the nav. The web UI lists the same pages in the sidebar; sections that group them render the same way once their pages ship.
 
 Fields are checked as you type. A config with errors cannot be saved, and the page shows what is wrong next to the field.
 
@@ -40,6 +45,7 @@ Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either set
 |------|--------|
 | <kbd>↑</kbd> <kbd>↓</kbd> (or <kbd>k</kbd> <kbd>j</kbd>) | Move between rows or pages. |
 | <kbd>Enter</kbd> | Open a page, edit a field, confirm an edit, or run an action. |
+| <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> | Jump to the numbered page in the nav, or pick the numbered row in a list; <kbd>Enter</kbd> still opens it. |
 | <kbd>←</kbd> <kbd>→</kbd> or <kbd>Space</kbd> | Change a choice, such as an MCP server's type. |
 | <kbd>x</kbd> | Remove the selected item. |
 | <kbd>Esc</kbd> or <kbd>←</kbd> | Go back, or cancel an edit. |
@@ -47,7 +53,9 @@ Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either set
 | <kbd>L</kbd> | Switch the interface language, from any page, and save it at once. |
 | <kbd>q</kbd> | Quit, from the page list. With unsaved changes, press it twice. |
 
-The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way. In a window shorter than 23 rows the banner folds to one line, so the app still covers the screen whole.
+Rows in a list are numbered by what is on screen: `› 3 Label` means <kbd>3</kbd> picks that row, wherever the window has scrolled to.
+
+The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way. In a window shorter than 23 rows the banner folds to one line, so the app still covers the screen whole; the page list scrolls within its section when the window is short.
 
 On the Apply page, <kbd>Enter</kbd> applies, <kbd>r</kbd> plans again, and the arrow keys scroll. The plan is made from the saved file, so the page asks you to save first if you have unsaved changes.
 

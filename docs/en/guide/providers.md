@@ -8,7 +8,7 @@ A preset fills in the [provider](./config#provider) for a known service: its end
 
 ## Using a preset
 
-In either editor, open **Provider** and choose **Start from a preset**. Each preset is listed with the hosts it sends requests to, so you can see where your key would go before you pick one.
+In either editor, open **Provider** and choose **Start from a preset**. Each preset is listed with the hosts it sends requests to, so you can see where your key would go before you pick one. On the command line, `zcf init --preset <id> --api-key <key>` fills the same fields into the config in one run.
 
 Picking a preset:
 
