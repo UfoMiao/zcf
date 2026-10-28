@@ -1,27 +1,36 @@
 import type { AdapterContext, ConfigDraft, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
+  BackupRun,
+  backupRunDir,
   detectTools,
   envMirror,
   isMirror,
+  listBackups,
   loadConfigDraft,
   loadPresets,
   loadConfigFile,
   MessageError,
   planTools,
   previewPlan,
+  pruneBackups,
   resolveMirror,
+  restoreBackup,
   saveConfigDraft,
   searchSkills,
-  snapshotFile,
 } from '@zcf/core'
 import type { PlanView, ZcfService } from '@zcf/ui-kit'
 import { join } from 'pathe'
 
 import { collectSecrets } from './render'
 
+/** Where every backup run of this home lives. */
+export function backupsRoot(home: string): string {
+  return join(home, '.ufomiao', 'zcf', 'backups')
+}
+
 export function backupFolder(home: string, now: Date): string {
-  return join(home, '.ufomiao', 'zcf', 'backups', now.toISOString().replace(/[:.]/g, '-'))
+  return backupRunDir(backupsRoot(home), now)
 }
 
 /** The config at `path`, validated; throws when it is missing or invalid, which front ends prevent by saving first. */
@@ -46,8 +55,8 @@ export async function planWithPreviews(config: ZcfConfig, ctx: AdapterContext): 
 export function createLocalService(ctx: AdapterContext, path: string, now: () => Date = () => new Date()): ZcfService {
   // The draft as last loaded or saved, for the mirror and for a save that does not pass its own base.
   let current: ConfigDraft | undefined
-  // The file as it was before the first save of this session, for when a save goes wrong.
-  let backedUp = false
+  // The run this session's saves are backed up into, written to before the first of them.
+  let saveRun: BackupRun | undefined
   return {
     async load() {
       const loaded = await loadConfigDraft(path)
@@ -59,10 +68,12 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
       return env ? { ...result, envMirror: env } : result
     },
     async save(draft, base) {
-      if (!backedUp) {
-        await snapshotFile(path, backupFolder(ctx.home, now()), ctx.home)
-        backedUp = true
+      if (!saveRun) {
+        const at = now()
+        saveRun = new BackupRun(backupRunDir(backupsRoot(ctx.home), at), ctx.home, () => at, 'save')
       }
+      await saveRun.snapshot(path)
+      await saveRun.finish()
       // Each editor passes its own base: with two browser tabs open, one tab's save must not
       // undo what the other saved.
       await saveConfigDraft(path, draft, base ?? current)
@@ -97,5 +108,13 @@ export function createLocalService(ctx: AdapterContext, path: string, now: () =>
       })
       return { results, backupDir }
     },
+    backups: () => listBackups(backupsRoot(ctx.home)),
+    restoreBackup: async id => {
+      const root = backupsRoot(ctx.home)
+      if (!(await listBackups(root)).some(backup => backup.id === id))
+        throw new MessageError({ key: 'cli.backup.missing', params: { id } }, `No backup with id ${id}`)
+      return restoreBackup(root, id, ctx.home, now)
+    },
+    pruneBackups: keep => pruneBackups(backupsRoot(ctx.home), keep),
   }
 }

@@ -1,7 +1,8 @@
 import { rm, stat } from 'node:fs/promises'
 
 import type { CommandRunner } from '../exec/runner'
-import { snapshotFile, writeFileAtomic } from '../io/fs'
+import { BackupRun } from '../io/backup'
+import { writeFileAtomic } from '../io/fs'
 import { previewCopyStep, previewFileStep } from './diff'
 import type { Plan, PlanActor, PlanStep, ToolPlan } from './types'
 
@@ -59,7 +60,7 @@ function lastLines(text: string, notices = false, count = 5): string {
 /** What one apply run shares across tools. */
 interface RunState {
   /** Each file's backup, taken once per run before its first change. */
-  snapshots: Map<string, Promise<string | undefined>>
+  backup: BackupRun
   /** The last queued command for each `serial` key. */
   queues: Map<string, Promise<unknown>>
 }
@@ -75,12 +76,8 @@ function serialized<T>(queues: RunState['queues'], key: string, task: () => Prom
 }
 
 async function runStep(step: PlanStep, options: ApplyOptions, state: RunState): Promise<StepResult> {
-  const { snapshots } = state
   // Back a file up once per run, before its first change.
-  const snapshot = async (path: string) => {
-    if (!snapshots.has(path)) snapshots.set(path, snapshotFile(path, options.backupDir, options.home))
-    return snapshots.get(path)
-  }
+  const snapshot = (path: string) => state.backup.snapshot(path)
 
   try {
     if (step.kind === 'command') {
@@ -179,9 +176,14 @@ async function applyToolPlan(toolPlan: ToolPlan, options: ApplyOptions, state: R
  * the first failure skips the rest of that tool's steps (later steps usually
  * depend on earlier ones, such as configuring a tool that failed to install),
  * except a step marked `fallback`, which runs in the failed step's place —
- * npm after a tool's own updater.
+ * npm after a tool's own updater. What the run backed up is described in a
+ * manifest in the backup folder, written even when a listener throws.
  */
 export async function applyPlan(plan: Plan, options: ApplyOptions): Promise<ToolResult[]> {
-  const state: RunState = { snapshots: new Map(), queues: new Map() }
-  return Promise.all(plan.tools.map(toolPlan => applyToolPlan(toolPlan, options, state)))
+  const state: RunState = { backup: new BackupRun(options.backupDir, options.home), queues: new Map() }
+  try {
+    return await Promise.all(plan.tools.map(toolPlan => applyToolPlan(toolPlan, options, state)))
+  } finally {
+    await state.backup.finish()
+  }
 }

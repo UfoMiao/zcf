@@ -33,6 +33,9 @@ function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = 
       throw new Error('not planned')
     },
     apply: async () => ({ results: [], backupDir: '/home/me/backups' }),
+    backups: async () => [],
+    restoreBackup: async () => ({ id: 'run', changed: 0, unchanged: 0, missing: 0, corrupt: 0, outside: 0 }),
+    pruneBackups: async () => [],
     presets: async () => ({ presets: [], source: 'none' }),
     searchSkills: async () => ({ skills: [], source: 'none' }),
     ...overrides,

@@ -1,9 +1,9 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
-import type { CommandResult, CommandRunner } from '@zcf/core'
+import { backupRunDir, BackupRun, type CommandResult, type CommandRunner, readTextIfExists } from '@zcf/core'
 import { render } from 'ink'
-import { join } from 'pathe'
+import { dirname, join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MainOptions } from '../src/main'
@@ -736,5 +736,134 @@ describe('help and unknown commands', () => {
       expect(stdout).toContain(text)
     }
     expect(stdout).not.toMatch(/Usage|Options|Display this message|Display version number/)
+  })
+})
+
+/** A run of backups as an apply would leave it: `files` written under home and snapshotted into the run. */
+async function seedBackup(iso: string, files: [string, string][]) {
+  const dir = backupRunDir(join(home, '.ufomiao', 'zcf', 'backups'), new Date(iso))
+  const backup = new BackupRun(dir, home, () => new Date(iso), 'apply')
+  await Promise.all(
+    files.map(async ([rel, content]) => {
+      const path = join(home, rel)
+      await mkdir(dirname(path), { recursive: true })
+      await writeFile(path, content)
+      await backup.snapshot(path)
+    }),
+  )
+  await backup.finish()
+}
+
+describe('zcf backup', () => {
+  it('lists the runs newest first', async () => {
+    await seedBackup('2026-10-20T08:00:00.000Z', [['.claude/settings.json', 'a']])
+    await seedBackup('2026-10-21T08:00:00.000Z', [
+      ['.claude/settings.json', 'b'],
+      ['zcf.json', '{}'],
+    ])
+    const list = await run('backup')
+    expect(list.code).toBe(EXIT_OK)
+    expect(list.stdout).toContain('2026-10-21T08-00-00-000Z — an apply, 2 file(s)')
+    expect(list.stdout.indexOf('2026-10-21T')).toBeLessThan(list.stdout.indexOf('2026-10-20T'))
+    expect((await run('backup', 'list')).stdout).toContain('2026-10-20T08-00-00-000Z — an apply, 1 file(s)')
+    // A run with nothing to back up leaves no folder behind.
+    await seedBackup('2026-10-19T08:00:00.000Z', [])
+    expect(await readdir(join(home, '.ufomiao', 'zcf', 'backups'))).not.toContain('2026-10-19T08-00-00-000Z')
+  })
+
+  it('says so when there are no backups yet', async () => {
+    expect(await run('backup')).toMatchObject({
+      code: EXIT_OK,
+      stdout: expect.stringContaining('No backups yet.'),
+    })
+  })
+
+  it('restores a run with --yes, backing up what is there first', async () => {
+    await seedBackup('2026-10-21T08:00:00.000Z', [['.claude/settings.json', 'old']])
+    await writeFile(join(home, '.claude', 'settings.json'), 'current')
+
+    const ask = await run('backup', 'restore', '2026-10-21T08-00-00-000Z')
+    expect(ask.code).toBe(EXIT_OK)
+    expect(ask.stdout).toContain('Backup 2026-10-21T08-00-00-000Z — an apply, 1 file(s).')
+    expect(ask.stdout).toContain('Run again with --yes')
+    expect(await readFile(join(home, '.claude', 'settings.json'), 'utf8')).toBe('current')
+
+    // The undo run takes the test's fixed time, one that no seeded run uses.
+    const yes = await run('backup', 'restore', '2026-10-21T08-00-00-000Z', '--yes')
+    expect(yes.code).toBe(EXIT_OK)
+    expect(await readFile(join(home, '.claude', 'settings.json'), 'utf8')).toBe('old')
+    expect(yes.stdout).toContain('Restored 1 changed file(s); 0 already matched; 0 were missing and are back.')
+    expect(yes.stdout).toContain('~/.ufomiao/zcf/backups/2026-10-24T08-00-00-000Z')
+    expect(
+      await readFile(
+        join(home, '.ufomiao', 'zcf', 'backups', '2026-10-24T08-00-00-000Z', '.claude', 'settings.json'),
+        'utf8',
+      ),
+    ).toBe('current')
+  })
+
+  it('rejects unknown ids, a missing id, unknown subcommands and a bad keep', async () => {
+    await seedBackup('2026-10-21T08:00:00.000Z', [['zcf.json', '{}']])
+    expect(await run('backup', 'restore', 'nope')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('No backup with id nope'),
+    })
+    expect(await run('backup', 'restore')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('zcf backup restore <id>'),
+    })
+    expect(await run('backup', 'frobnicate')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('Unknown backup command: frobnicate'),
+    })
+    // A run folder with nothing in it comes back from core as a message key, translated.
+    await mkdir(join(home, '.ufomiao', 'zcf', 'backups', '2026-10-22T08-00-00-000Z'), { recursive: true })
+    expect(await run('backup', 'restore', '2026-10-22T08-00-00-000Z', '--yes')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('Backup 2026-10-22T08-00-00-000Z holds no files.'),
+    })
+    expect(await run('backup', 'prune', '--keep', 'x')).toMatchObject({
+      code: EXIT_ERROR,
+      stderr: expect.stringContaining('Not a number of backups to keep: x'),
+    })
+  })
+
+  it('prunes the oldest runs beyond --keep with --yes', async () => {
+    await Promise.all([20, 21, 22].map(day => seedBackup(`2026-10-${day}T08:00:00.000Z`, [['zcf.json', '{}']])))
+
+    const ask = await run('backup', 'prune', '--keep', '1')
+    expect(ask.code).toBe(EXIT_OK)
+    expect(ask.stdout).toContain('2 backup(s) to remove: 2026-10-21T08-00-00-000Z, 2026-10-20T08-00-00-000Z')
+    expect(ask.stdout).toContain('Run again with --yes')
+
+    const yes = await run('backup', 'prune', '--keep', '1', '--yes')
+    expect(yes.code).toBe(EXIT_OK)
+    expect(yes.stdout).toContain('Removed 2 backup(s): 2026-10-21T08-00-00-000Z, 2026-10-20T08-00-00-000Z')
+
+    const after = await run('backup')
+    expect(after.stdout).toContain('2026-10-22T08-00-00-000Z')
+    expect(after.stdout).not.toContain('2026-10-20T')
+    expect((await run('backup', 'prune', '--yes')).stdout).toContain('Nothing to prune; there are only 1 backup(s).')
+  })
+
+  it('refuses to restore a config backed up from outside home, instead of writing it under home', async () => {
+    // The mirror command with --file backs up a config that sits outside home.
+    const away = await mkdtemp(join(tmpdir(), 'zcf-away-'))
+    try {
+      const outside = join(away, 'zcf.json')
+      await writeFile(outside, '{\n  "version": 1,\n  "mirror": "official"\n}\n')
+      const set = await run('mirror', 'china', '--file', outside)
+      expect(set.code).toBe(EXIT_OK)
+      expect(set.stdout).toContain('~/.ufomiao/zcf/backups/2026-10-24T08-00-00-000Z')
+
+      const yes = await run('backup', 'restore', '2026-10-24T08-00-00-000Z', '--yes')
+      expect(yes.code).toBe(EXIT_OK)
+      expect(yes.stdout).toContain('1 file(s) in the backup are from outside home')
+      // The config keeps what the mirror command wrote, and nothing lands at its place under home.
+      expect(await readFile(outside, 'utf8')).toContain('"mirror": "china"')
+      expect(await readTextIfExists(join(home, 'zcf.json'))).toBeUndefined()
+    } finally {
+      await rm(away, { recursive: true, force: true })
+    }
   })
 })
