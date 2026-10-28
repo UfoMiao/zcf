@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 
 import type {
   AdapterContext,
+  ConfigIssue,
   FilePreview,
   KeyEdit,
   Mirror,
@@ -68,6 +69,12 @@ export const EXIT_OK = 0
 export const EXIT_ERROR = 1
 export const EXIT_INVALID_CONFIG = 2
 
+/** What `zcf ccu` runs its passthrough with: the events the command waits for, nothing more. */
+export interface PassthroughChild {
+  once(event: 'error', listener: (error: Error) => void): unknown
+  once(event: 'close', listener: (code: number | null) => void): unknown
+}
+
 export interface MainOptions {
   stdout?: Output
   stderr?: Output
@@ -83,6 +90,8 @@ export interface MainOptions {
   openUrl?: (command: string, args: string[]) => void
   /** Loads the provider presets for `zcf init --preset`; tests inject one so nothing touches the network. */
   fetch?: typeof globalThis.fetch
+  /** Starts `zcf ccu`'s child; tests inject a fake instead of a real interactive spawn. */
+  passthrough?: (command: string, args: readonly string[]) => PassthroughChild
 }
 
 interface CommandFlags {
@@ -218,6 +227,13 @@ function withSkillPicks(sources: unknown, picks: readonly string[]): unknown[] {
   )
 }
 
+/** The issues of an invalid config, one line each, translated; a whole-file issue has no field name. */
+function configIssues(issues: readonly ConfigIssue[], translate: Translate): string[] {
+  return issues.map(
+    ({ path: field, message }) => `  - ${field ? `${field}: ` : ''}${translate(message.key, message.params)}`,
+  )
+}
+
 function parseMirror(value: unknown, t: Translate): Mirror | undefined {
   if (value === undefined) return undefined
   const name = typeof value === 'string' ? value : ''
@@ -270,15 +286,16 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
 
   const configPath = (file: string | undefined) => (file ? resolve(file) : defaultConfigPath(ctx.home))
 
+  /** The issues of an invalid config, one line each, translated; a whole-file issue has no field name. */
   async function loadConfig(file: string | undefined): Promise<ZcfConfig> {
     const path = configPath(file)
     const result = await loadConfigFile(path)
     if (result.success) return result.config
     if ('missing' in result) throw new CliError(t('cli.configMissing', { path }), EXIT_INVALID_CONFIG)
-    const details = result.issues.map(
-      ({ path: field, message }) => `  - ${field ? `${field}: ` : ''}${t(message.key, message.params)}`,
+    throw new CliError(
+      [t('cli.configInvalid', { path }), ...configIssues(result.issues, t)].join('\n'),
+      EXIT_INVALID_CONFIG,
     )
-    throw new CliError([t('cli.configInvalid', { path }), ...details].join('\n'), EXIT_INVALID_CONFIG)
   }
 
   async function preparePlan(
@@ -825,12 +842,11 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         next = editJson(text ?? '{\n  "version": 1\n}\n', edits)
         // The merged result must hold as a config, so init never writes something a plan cannot read.
         const merged = parseZcfConfig(await parseConfigText('json', next))
-        if (!merged.success) {
-          const details = merged.issues.map(
-            ({ path: field, message }) => `  - ${field ? `${field}: ` : ''}${t(message.key, message.params)}`,
+        if (!merged.success)
+          throw new CliError(
+            [t('cli.configInvalid', { path }), ...configIssues(merged.issues, t)].join('\n'),
+            EXIT_INVALID_CONFIG,
           )
-          throw new CliError([t('cli.configInvalid', { path }), ...details].join('\n'), EXIT_INVALID_CONFIG)
-        }
       } catch (error) {
         if (!(error instanceof FileSyntaxError)) throw error
         throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
@@ -861,29 +877,23 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     .action(async (query: string, flags: CommandFlags) => {
       // The config has to validate, so the profiles below it are shaped as the schema expects.
       const config = await loadConfig(flags.file)
-      const known = (config.profiles ?? []).map(item => `${item.id} (${item.name})`)
-      if (known.length === 0) throw new CliError(t('cli.switch.noProfiles'), EXIT_ERROR)
+      if (config.profiles.length === 0) throw new CliError(t('cli.switch.noProfiles'), EXIT_ERROR)
+      const known = config.profiles.map(item => `${item.id} (${item.name})`)
 
       const path = configPath(flags.file)
       const existing = await readTextIfExists(path)
-      let next: string
-      try {
-        // The provider is copied as the file writes it, not with the defaults the schema fills in.
-        const raw = await parseConfigText('json', existing)
-        const profiles = isTable(raw) && Array.isArray(raw.profiles) ? raw.profiles.filter(isTable) : []
-        const entry = profiles.find(item => item.id === query) ?? profiles.find(item => item.name === query)
-        if (!isTable(entry?.provider))
-          throw new CliError(t('cli.switch.unknown', { query, known: known.join(', ') }), EXIT_ERROR)
-        next = editJson(existing, [{ path: ['provider'], value: entry.provider }])
-      } catch (error) {
-        if (!(error instanceof FileSyntaxError)) throw error
-        throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
-      }
+      // The provider is copied as the file writes it, not with the defaults the schema fills in.
+      const raw = await parseConfigText('json', existing)
+      const profiles = isTable(raw) && Array.isArray(raw.profiles) ? raw.profiles.filter(isTable) : []
+      const entry = profiles.find(item => item.id === query) ?? profiles.find(item => item.name === query)
+      const matched = config.profiles.find(item => item.id === query || item.name === query)
+      if (!isTable(entry) || !isTable(entry.provider) || matched === undefined)
+        throw new CliError(t('cli.switch.unknown', { query, known: known.join(', ') }), EXIT_ERROR)
+      const next = editJson(existing, [{ path: ['provider'], value: entry.provider }])
       const backed = next === existing ? undefined : await backupBeforeEdit(path)
       await writeFileAtomic(path, next)
       const renderer = new Renderer(stdout, t, [], ctx.home)
-      const matched = (config.profiles ?? []).find(item => item.id === query || item.name === query)
-      renderer.line(t('cli.switch.done', { profile: matched?.name ?? query }))
+      renderer.line(t('cli.switch.done', { profile: matched.name }))
       if (backed) renderer.line(dim(t('cli.backups', { path: tildify(backed.dir, ctx.home) })))
       return EXIT_OK
     })
@@ -892,11 +902,14 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     // One cheap probe first, so a missing npx is a clear message instead of a bare spawn error.
     const probe = await ctx.runner.run('npx', ['--version'])
     if (probe.exitCode === undefined) throw new CliError(t('cli.ccuNoNpx'), EXIT_ERROR)
-    const { spawn } = await import('node:child_process')
     // Windows keeps npm's shims in .cmd files; everywhere else `npx` is on PATH as-is.
     const command = ctx.platform === 'win32' ? 'npx.cmd' : 'npx'
+    const args = ['-y', 'ccusage@latest']
+    // A real ChildProcess satisfies the interface; only the two events the command waits for are used.
+    const child: PassthroughChild = options.passthrough
+      ? options.passthrough(command, args)
+      : (await import('node:child_process')).spawn(command, args, { stdio: 'inherit' })
     return await new Promise<number>((done, reject) => {
-      const child = spawn(command, ['-y', 'ccusage@latest'], { stdio: 'inherit' })
       child.once('error', error => reject(new CliError(t('cli.ccuFailed', { message: error.message }), EXIT_ERROR)))
       child.once('close', code => done(code ?? EXIT_ERROR))
     })

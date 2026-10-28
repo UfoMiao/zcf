@@ -1,3 +1,4 @@
+import { EventEmitter } from 'node:events'
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
@@ -71,7 +72,7 @@ async function runWith(extra: MainOptions, ...argv: string[]) {
     stderr: {
       write: text => void (stderr += text),
     },
-    context: { home, platform: 'linux', env, runner },
+    context: { home, platform: 'linux', env, runner, ...extra.context },
     now: () => new Date('2026-10-24T08:00:00.000Z'),
   })
   return {
@@ -963,6 +964,8 @@ describe('zcf init', () => {
   })
 
   it('applies the saved config with --yes, through the same pipeline as apply', async () => {
+    // A mirror already in the config also decides where the preset list itself comes from.
+    await writeConfig({ version: 1, mirror: 'china' })
     const { code, stdout } = await runWith(
       { fetch: fetchPresets },
       'init',
@@ -978,6 +981,8 @@ describe('zcf init', () => {
     expect(stdout).toContain('✓ Claude Code: Use provider "302.AI"')
     expect(stdout).toContain('Done: 1 applied, 0 already up to date.')
     expect(stdout).not.toContain('sk-init-key')
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    expect(saved.mirror).toBe('china')
     const settings = JSON.parse(await readFile(join(home, '.claude', 'settings.json'), 'utf8'))
     expect(settings.env.ANTHROPIC_AUTH_TOKEN).toBe('sk-init-key')
   })
@@ -1059,6 +1064,77 @@ describe('zcf init', () => {
     expect(without.stderr).toContain('--api-key needs --preset, or a provider already in the config.')
     expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1 })
   })
+
+  it('installs a bare magpie as the desktop app, and merges styles into a styles block', async () => {
+    await writeConfig({ version: 1, tools: ['claude-code'], styles: { outputStyles: ['rem-engineer'] } })
+    const { code } = await run('init', '--extras', 'magpie', '--styles', 'leibus-engineer')
+    expect(code).toBe(EXIT_OK)
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    expect(saved.extras).toEqual({ magpie: 'client' })
+    // The pick joins the styles already there; the default style is left alone.
+    expect(saved.styles).toEqual({ outputStyles: ['rem-engineer', 'leibus-engineer'] })
+  })
+
+  it('adds to the zcf skill source it finds, and leaves one that names no skills alone', async () => {
+    await writeConfig({
+      version: 1,
+      tools: ['claude-code'],
+      skills: [
+        { source: 'anthropics/skills', skills: ['pdf'] },
+        { source: 'zcf', skills: ['feat'] },
+      ],
+    })
+    await run('init', '--skills', 'git-commit')
+    const saved = JSON.parse(await readFile(configFile(), 'utf8'))
+    // The pick joins the zcf source's list; the other source passes through untouched.
+    expect(saved.skills).toEqual([
+      { source: 'anthropics/skills', skills: ['pdf'] },
+      { source: 'zcf', skills: ['feat', 'git-commit'] },
+    ])
+
+    // A `zcf` source that names no skills installs them all, which no pick can add to; the file
+    // is written as it already stands, so no backup run is made for it.
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    const untouched = '{ "version": 1, "tools": ["claude-code"], "skills": [{ "source": "zcf" }] }\n'
+    await writeFile(configFile(), untouched)
+    const again = await run('init', '--skills', 'git-commit')
+    expect(again.code).toBe(EXIT_OK)
+    expect(again.stdout).not.toContain('~/.ufomiao/zcf/backups')
+    expect(await readFile(configFile(), 'utf8')).toBe(untouched)
+  })
+
+  it('refuses a list flag without a value', async () => {
+    await writeConfig({ version: 1, tools: ['claude-code'] })
+    const bare = await run('init', '--skills')
+    expect(bare.code).toBe(EXIT_ERROR)
+    expect(bare.stderr).toContain('The option --skills <skills> needs a value.')
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1, tools: ['claude-code'] })
+  })
+
+  it('refuses a config that is not an object, or does not hold as one after the merge', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), '[]')
+    const notObject = await run('init', '--skills', 'git-commit')
+    expect(notObject.code).toBe(EXIT_INVALID_CONFIG)
+    expect(notObject.stderr).toContain('is not valid:')
+    expect(await readFile(configFile(), 'utf8')).toBe('[]')
+
+    // Valid JSON whose provider is missing its key: the merge itself cannot fix it.
+    await writeConfig({ version: 1, provider: { name: 'Half' } })
+    const invalid = await run('init', '--skills', 'git-commit')
+    expect(invalid.code).toBe(EXIT_INVALID_CONFIG)
+    expect(invalid.stderr).toContain('provider.apiKey: is required')
+    expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({ version: 1, provider: { name: 'Half' } })
+  })
+
+  it('names a broken config file instead of touching it', async () => {
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), '{ "version": 1,, }')
+    const broken = await run('init', '--skills', 'git-commit')
+    expect(broken.code).toBe(EXIT_ERROR)
+    expect(broken.stderr).toContain('~/.ufomiao/zcf/zcf.json is not valid JSON (line 1, column 16)')
+    expect(await readFile(configFile(), 'utf8')).toBe('{ "version": 1,, }')
+  })
 })
 
 describe('zcf switch', () => {
@@ -1080,6 +1156,14 @@ describe('zcf switch', () => {
     })
     // The profile itself stays for the next switch.
     expect(saved.profiles).toEqual(profiledConfig().profiles)
+
+    // Switching to what is already written changes nothing, and so makes no backup.
+    await mkdir(join(configFile(), '..'), { recursive: true })
+    await writeFile(configFile(), `${JSON.stringify(saved, null, 2)}\n`)
+    const again = await run('switch', 'home')
+    expect(again.code).toBe(EXIT_OK)
+    expect(again.stdout).toContain('Switched the provider to "Home line".')
+    expect(again.stdout).not.toContain('~/.ufomiao/zcf/backups')
   })
 
   it('names the known profiles when the query matches none', async () => {
@@ -1105,10 +1189,44 @@ describe('zcf switch', () => {
 })
 
 describe('zcf ccu', () => {
-  it('reports a missing npx clearly instead of a bare spawn error', async () => {
-    const { code, stderr } = await run('ccu')
-    expect(code).toBe(EXIT_ERROR)
-    expect(stderr).toContain('Could not find npx, which runs ccusage.')
+  /** A passthrough child that fires `event` with `value` on the next tick, as a spawned process would. */
+  const fakeChild =
+    (event: 'close' | 'error', value: number | null | Error) => (command: string, args: readonly string[]) => {
+      spawned.push([command, ...args])
+      const child = new EventEmitter()
+      queueMicrotask(() => child.emit(event, value))
+      return child
+    }
+  let spawned: string[][]
+
+  beforeEach(() => {
+    spawned = []
+    responses['npx --version'] = {}
+  })
+
+  it('passes through to ccusage and forwards its exit code', async () => {
+    expect(await runWith({ passthrough: fakeChild('close', 0) }, 'ccu')).toMatchObject({ code: EXIT_OK })
+    expect(spawned).toEqual([['npx', '-y', 'ccusage@latest']])
+
+    expect(await runWith({ passthrough: fakeChild('close', 3) }, 'ccu')).toMatchObject({ code: 3 })
+    // A close without a code, as when the process is killed by a signal, still ends the run.
+    expect(await runWith({ passthrough: fakeChild('close', null) }, 'ccu')).toMatchObject({ code: EXIT_ERROR })
+  })
+
+  it('runs npx.cmd on Windows', async () => {
+    await runWith({ passthrough: fakeChild('close', 0), context: { platform: 'win32' } }, 'ccu')
+    expect(spawned).toEqual([['npx.cmd', '-y', 'ccusage@latest']])
+  })
+
+  it('reports a failing spawn and a missing npx clearly', async () => {
+    const failed = await runWith({ passthrough: fakeChild('error', new Error('spawn boom')) }, 'ccu')
+    expect(failed.code).toBe(EXIT_ERROR)
+    expect(failed.stderr).toContain('Could not run ccusage: spawn boom')
+
+    responses = { 'claude --version': { stdout: '2.1.0' } }
+    const missing = await run('ccu')
+    expect(missing.code).toBe(EXIT_ERROR)
+    expect(missing.stderr).toContain('Could not find npx, which runs ccusage.')
     expect(calls).toContainEqual(['npx', '--version'])
   })
 })
