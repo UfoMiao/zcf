@@ -9,6 +9,23 @@ export function isTable(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+/**
+ * Whether two draft values are equal, deep and order-insensitive for an object's keys —
+ * `JSON.stringify` would call two tables with the same pairs different when their keys
+ * sit in a different order.
+ */
+export function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((item, index) => deepEqual(item, b[index]))
+  }
+  if (isTable(a) && isTable(b)) {
+    const keys = Object.keys(a)
+    return keys.length === Object.keys(b).length && keys.every(key => key in b && deepEqual(a[key], b[key]))
+  }
+  return false
+}
+
 export function getAt(draft: unknown, path: DraftPath): unknown {
   let value = draft
   for (const key of path) {

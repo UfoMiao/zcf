@@ -1,7 +1,7 @@
 import type { PresetList } from '@zcf/core'
 import { applyPreset, presetSummary } from '@zcf/core/schema'
 import type { ConfigEditor, Field } from '@zcf/ui-kit'
-import { freshName, getAt, isTable, PROVIDER_FIELDS } from '@zcf/ui-kit'
+import { deepEqual, freshName, getAt, isTable, PROVIDER_FIELDS } from '@zcf/ui-kit'
 import { BookmarkPlusIcon, CircleAlertIcon, Trash2Icon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
@@ -135,9 +135,9 @@ function ProfilesCard({ editor, t }: PageProps) {
   const profiles = (Array.isArray(editor.draft.profiles) ? editor.draft.profiles : []).filter(isTable)
   const provider = isTable(editor.draft.provider) ? editor.draft.provider : undefined
   const [name, setName] = useState('')
-  // The active profile is the one whose provider is the config's provider, key for key.
-  const active = (profile: Record<string, unknown>) =>
-    provider !== undefined && JSON.stringify(profile.provider) === JSON.stringify(provider)
+  // The active profile is the one whose provider is the config's provider, key for key —
+  // deep and key-order-insensitive, the way two hand-typed tables can still be equal.
+  const active = (profile: Record<string, unknown>) => provider !== undefined && deepEqual(profile.provider, provider)
 
   const saveAs = () => {
     const label = name.trim()

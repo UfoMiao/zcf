@@ -1,47 +1,50 @@
-import type { SkillSearchList } from '@zcf/core'
 import type { WorkflowPreset } from '@zcf/core/schema'
-import { BUILTIN_AGENT_IDS, SKILLS_SEARCH_MIN_QUERY, WORKFLOW_PRESETS } from '@zcf/core/schema'
+import { BUILTIN_AGENT_IDS, WORKFLOW_PRESETS } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
-import { addSourcedSkill, getAt, hasSourcedSkill, isTable, removeSourcedSkill, toggleId } from '@zcf/ui-kit'
-import { CheckIcon, PlusIcon, SearchIcon, Trash2Icon, WorkflowIcon, XIcon } from 'lucide-react'
-import { useState } from 'react'
+import {
+  addSourcedSkill,
+  draftIds,
+  getAt,
+  hasSourcedSkill,
+  isTable,
+  mergeIds,
+  removeSourcedSkill,
+  toggleId,
+} from '@zcf/ui-kit'
+import { PlusIcon, Trash2Icon, WorkflowIcon, XIcon } from 'lucide-react'
 
 import type { Translate } from '../api'
-import { httpService } from '../api'
 import { EmptyState, PageHeader } from '../components/page'
+import { SkillSearchCard } from '../components/skill-search'
+import { ToggleCard } from '../components/toggle-card'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
-import { Checkbox } from '../components/ui/checkbox'
-import { Input } from '../components/ui/input'
 import { FieldInput } from '../fields'
-import { cn } from '../lib/utils'
 
 type PageProps = { editor: ConfigEditor; t: Translate }
-
-const pickedAgents = (draft: ConfigEditor['draft']): string[] =>
-  Array.isArray(draft.agents) ? draft.agents.map(String) : []
 
 /** Whether every skill and agent a preset names is already in the draft. */
 function presetOn(draft: ConfigEditor['draft'], preset: WorkflowPreset): boolean {
   const skillsOn = preset.skills.every(source =>
     source.skills.every(name => hasSourcedSkill(draft.skills, source.source, name)),
   )
-  return skillsOn && preset.agents.every(id => pickedAgents(draft).includes(id))
+  return skillsOn && preset.agents.every(id => draftIds(draft.agents).includes(id))
 }
 
-/** Add ids to a list without repeating one already there. */
-function mergeIds(list: unknown, ids: readonly string[]): string[] {
-  const current = Array.isArray(list) ? list.map(String) : []
-  return [...current, ...ids.filter(id => !current.includes(id))]
-}
-
-/** Uncheck a preset: its skills leave their sources, its agents leave the list. */
-function presetSkillsAfter(sources: unknown, preset: WorkflowPreset, on: boolean): unknown {
+/** Merge a preset's skills into the draft's sources, source by source. */
+function addPresetSkills(sources: unknown, preset: WorkflowPreset): unknown {
   let next = sources
   for (const source of preset.skills) {
-    for (const name of source.skills) {
-      next = on ? removeSourcedSkill(next, source.source, name) : addSourcedSkill(next, source.source, name)
-    }
+    for (const name of source.skills) next = addSourcedSkill(next, source.source, name)
+  }
+  return next
+}
+
+/** Take a preset's skills back out of the draft's sources, dropping sources that empty. */
+function removePresetSkills(sources: unknown, preset: WorkflowPreset): unknown {
+  let next = sources
+  for (const source of preset.skills) {
+    for (const name of source.skills) next = removeSourcedSkill(next, source.source, name)
   }
   return next
 }
@@ -50,9 +53,12 @@ function presetSkillsAfter(sources: unknown, preset: WorkflowPreset, on: boolean
 function PresetsCard({ editor, t }: PageProps) {
   const apply = (preset: WorkflowPreset) => {
     const on = presetOn(editor.draft, preset)
-    editor.update(['skills'], presetSkillsAfter(editor.draft.skills, preset, on))
+    editor.update(
+      ['skills'],
+      on ? removePresetSkills(editor.draft.skills, preset) : addPresetSkills(editor.draft.skills, preset),
+    )
     const agents = on
-      ? pickedAgents(editor.draft).filter(id => !preset.agents.some(agent => agent === id))
+      ? draftIds(editor.draft.agents).filter(id => !preset.agents.some(agent => agent === id))
       : mergeIds(editor.draft.agents, preset.agents)
     editor.update(['agents'], agents.length > 0 ? agents : undefined)
   }
@@ -64,23 +70,15 @@ function PresetsCard({ editor, t }: PageProps) {
       </CardHeader>
       <CardContent className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
         {WORKFLOW_PRESETS.map(preset => {
-          const on = presetOn(editor.draft, preset)
           const picked = [...preset.skills.flatMap(source => source.skills.map(name => name)), ...preset.agents]
           return (
-            <label
+            <ToggleCard
               key={preset.id}
-              className={cn(
-                'flex cursor-pointer items-start gap-3 rounded-lg border bg-card p-3 transition-colors',
-                'outline-none has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring/40',
-                on ? 'border-primary/50 bg-primary/[0.04]' : 'hover:border-input',
-              )}
-            >
-              <Checkbox checked={on} onCheckedChange={() => apply(preset)} />
-              <span className="flex min-w-0 flex-col gap-0.5">
-                <span className="text-[13px] leading-snug font-medium">{t(preset.nameKey)}</span>
-                <span className="text-muted-foreground truncate font-mono text-xs">{picked.join(' · ')}</span>
-              </span>
-            </label>
+              on={presetOn(editor.draft, preset)}
+              onToggle={() => apply(preset)}
+              title={<span className="text-[13px] leading-snug font-medium">{t(preset.nameKey)}</span>}
+              detail={<span className="text-muted-foreground truncate font-mono text-xs">{picked.join(' · ')}</span>}
+            />
           )
         })}
       </CardContent>
@@ -88,87 +86,13 @@ function PresetsCard({ editor, t }: PageProps) {
   )
 }
 
-/** Search the community index and add hits to one bundle's own skills list. */
-function BundleSkillSearch({ skills, onAdd, t }: { skills: unknown; onAdd: (list: unknown) => void; t: Translate }) {
-  const [query, setQuery] = useState('')
-  const [list, setList] = useState<SkillSearchList>()
-  const [busy, setBusy] = useState(false)
-  const search = () => {
-    const text = query.trim()
-    if (text.length < SKILLS_SEARCH_MIN_QUERY) return
-    setBusy(true)
-    httpService
-      .searchSkills(text)
-      .then(setList, () => setList({ skills: [], source: 'none' }))
-      .finally(() => setBusy(false))
-  }
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
-        <Input
-          value={query}
-          onChange={event => setQuery(event.target.value)}
-          onKeyDown={event => event.key === 'Enter' && search()}
-          placeholder={t('tui.skills.searchQuery')}
-          className="max-w-xs"
-        />
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={busy || query.trim().length < SKILLS_SEARCH_MIN_QUERY}
-          onClick={search}
-        >
-          <SearchIcon />
-          {t('web.skills.search')}
-        </Button>
-      </div>
-      {busy && <p className="text-muted-foreground text-xs">{t('tui.skills.searching')}</p>}
-      {!busy && list?.source === 'none' && (
-        <p className="text-muted-foreground text-xs">{t('tui.skills.searchFailed')}</p>
-      )}
-      {!busy && list?.source === 'remote' && list.skills.length === 0 && (
-        <p className="text-muted-foreground text-xs">{t('tui.skills.searchNone')}</p>
-      )}
-      <div className="flex flex-col gap-0.5">
-        {list?.skills.map(hit => {
-          const added = hasSourcedSkill(skills, hit.source, hit.name)
-          return (
-            <div key={`${hit.source}/${hit.name}`} className="flex items-center justify-between gap-3 px-1 py-1">
-              <span className="truncate font-mono text-[13px]">
-                {hit.name}
-                <span className="text-muted-foreground">{` · ${hit.source}`}</span>
-              </span>
-              {added ? (
-                <span className="text-muted-foreground flex shrink-0 items-center gap-1 text-xs">
-                  <CheckIcon className="size-3.5" />
-                  {t('tui.skills.added')}
-                </span>
-              ) : (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => onAdd(addSourcedSkill(skills, hit.source, hit.name))}
-                >
-                  <PlusIcon />
-                  {t('web.skills.addSkill')}
-                </Button>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 /** One custom bundle: a name over agent picks, skills and MCP references. */
 function BundleCard({ editor, t, index }: PageProps & { index: number }) {
   const root = ['workflows', index] as const
   const bundle = getAt(editor.draft, root)
-  const agents = isTable(bundle) && Array.isArray(bundle.agents) ? bundle.agents.map(String) : []
+  const agents = isTable(bundle) && Array.isArray(bundle.agents) ? draftIds(bundle.agents) : []
   const skills = isTable(bundle) && Array.isArray(bundle.skills) ? bundle.skills : []
-  const mcp = isTable(bundle) && Array.isArray(bundle.mcp) ? bundle.mcp.map(String) : []
+  const mcp = isTable(bundle) && Array.isArray(bundle.mcp) ? draftIds(bundle.mcp) : []
   const serverNames = Object.keys(isTable(editor.draft.mcpServers) ? editor.draft.mcpServers : {})
   return (
     <Card>
@@ -193,21 +117,20 @@ function BundleCard({ editor, t, index }: PageProps & { index: number }) {
         />
         <div className="flex flex-col gap-2">
           <span className="text-[13px] font-medium">{t('web.workflows.agents')}</span>
-          <div className="grid gap-2 sm:grid-cols-2">
+          <div className="grid gap-2.5 sm:grid-cols-2">
             {BUILTIN_AGENT_IDS.map(id => (
-              <label key={id} className="flex cursor-pointer items-center gap-2.5 rounded-lg border bg-card p-2.5">
-                <Checkbox
-                  checked={agents.includes(id)}
-                  onCheckedChange={() => editor.update([...root, 'agents'], toggleId(agents, id))}
-                />
-                <span className="truncate font-mono text-[13px]">{id}</span>
-              </label>
+              <ToggleCard
+                key={id}
+                on={agents.includes(id)}
+                onToggle={() => editor.update([...root, 'agents'], toggleId(agents, id))}
+                title={<span className="truncate font-mono text-[13px] font-medium">{id}</span>}
+              />
             ))}
           </div>
         </div>
         <div className="flex flex-col gap-2">
           <span className="text-[13px] font-medium">{t('tui.page.skills')}</span>
-          <BundleSkillSearch skills={skills} t={t} onAdd={list => editor.update([...root, 'skills'], list)} />
+          <SkillSearchCard skills={skills} t={t} onAdd={list => editor.update([...root, 'skills'], list)} />
           {skills.length > 0 && (
             <div className="flex flex-col gap-1">
               {skills.map((source, at) => {
@@ -240,15 +163,14 @@ function BundleCard({ editor, t, index }: PageProps & { index: number }) {
           {serverNames.length === 0 ? (
             <p className="text-muted-foreground text-xs leading-relaxed">{t('web.workflows.noMcp')}</p>
           ) : (
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               {serverNames.map(name => (
-                <label key={name} className="flex cursor-pointer items-center gap-2.5 rounded-lg border bg-card p-2.5">
-                  <Checkbox
-                    checked={mcp.includes(name)}
-                    onCheckedChange={() => editor.update([...root, 'mcp'], toggleId(mcp, name))}
-                  />
-                  <span className="truncate font-mono text-[13px]">{name}</span>
-                </label>
+                <ToggleCard
+                  key={name}
+                  on={mcp.includes(name)}
+                  onToggle={() => editor.update([...root, 'mcp'], toggleId(mcp, name))}
+                  title={<span className="truncate font-mono text-[13px] font-medium">{name}</span>}
+                />
               ))}
             </div>
           )}
@@ -257,6 +179,11 @@ function BundleCard({ editor, t, index }: PageProps & { index: number }) {
     </Card>
   )
 }
+
+/** A bundle's key: its name with its position, since a draft bundle has no id — a fresh
+ * one has no name yet and two can share a name, so the position is what keeps keys unique. */
+const bundleKey = (bundle: unknown, index: number): string =>
+  `${isTable(bundle) && typeof bundle.name === 'string' ? bundle.name : ''}#${index}`
 
 export function WorkflowsPage({ editor, t }: PageProps) {
   const bundles = Array.isArray(editor.draft.workflows) ? editor.draft.workflows : []
@@ -278,7 +205,9 @@ export function WorkflowsPage({ editor, t }: PageProps) {
             {t('web.workflows.intro')}
           </EmptyState>
         ) : (
-          bundles.map((_, index) => <BundleCard key={index} editor={editor} t={t} index={index} />)
+          bundles.map((bundle, index) => (
+            <BundleCard key={bundleKey(bundle, index)} editor={editor} t={t} index={index} />
+          ))
         )}
       </div>
     </section>

@@ -297,9 +297,20 @@ export function removeSourcedSkill(sources: unknown, source: string, name: strin
  * when nothing is left, so the empty key is removed rather than left behind.
  */
 export function toggleId(list: unknown, id: string): string[] | undefined {
-  const current = Array.isArray(list) ? list.map(String) : []
+  const current = draftIds(list)
   const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id]
   return next.length > 0 ? next : undefined
+}
+
+/** A draft list of ids as strings, treating anything else as no ids. */
+export function draftIds(list: unknown): string[] {
+  return Array.isArray(list) ? list.map(String) : []
+}
+
+/** Add ids to a list without repeating one already there, the way a preset's picks merge in. */
+export function mergeIds(list: unknown, ids: readonly string[]): string[] {
+  const current = draftIds(list)
+  return [...current, ...ids.filter(id => !current.includes(id))]
 }
 
 /** A fresh MCP server of the given type, so the form has something to fill in. */

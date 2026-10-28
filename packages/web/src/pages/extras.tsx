@@ -1,4 +1,4 @@
-import { EXTRA_NAMES } from '@zcf/core/schema'
+import { EXTRA_NAMES, MAGPIE_FACES, isMagpieFace } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
 import { isTable } from '@zcf/ui-kit'
 
@@ -13,7 +13,7 @@ type PageProps = { editor: ConfigEditor; t: Translate }
 export function ExtrasPage({ editor, t }: PageProps) {
   const extras = isTable(editor.draft.extras) ? editor.draft.extras : {}
   // '' is the unset face: neither client nor cli, so magpie does not install.
-  const magpie = extras.magpie === 'client' || extras.magpie === 'cli' ? extras.magpie : ''
+  const magpie = isMagpieFace(extras.magpie) ? extras.magpie : ''
   const ccline = extras.ccline === true
   return (
     <section>
@@ -31,8 +31,7 @@ export function ExtrasPage({ editor, t }: PageProps) {
               onChange={value => editor.update(['extras', 'magpie'], value === '' ? undefined : value)}
               options={[
                 { value: '', label: t('web.extras.none') },
-                { value: 'client', label: 'client' },
-                { value: 'cli', label: 'cli' },
+                ...MAGPIE_FACES.map(face => ({ value: face, label: face })),
               ]}
             />
           </div>

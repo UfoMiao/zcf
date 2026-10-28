@@ -5,7 +5,9 @@ import type { PageId } from '../src/pages'
 import {
   addSourcedSkill,
   digitIndex,
+  draftIds,
   hasSourcedSkill,
+  mergeIds,
   NAV,
   navRows,
   PAGE_ROOTS,
@@ -233,5 +235,20 @@ describe('toggleId', () => {
 
   it('treats a list that is not the draft shape as empty', () => {
     expect(toggleId('nope', 'planner')).toEqual(['planner'])
+  })
+})
+
+describe('draftIds', () => {
+  it('reads a draft list as ids, treating anything else as none', () => {
+    expect(draftIds(['planner', 'ui-ux-designer'])).toEqual(['planner', 'ui-ux-designer'])
+    expect(draftIds(undefined)).toEqual([])
+    expect(draftIds('nope')).toEqual([])
+  })
+})
+
+describe('mergeIds', () => {
+  it('adds only the ids the list lacks, keeping their order', () => {
+    expect(mergeIds(['planner'], ['planner', 'ui-ux-designer'])).toEqual(['planner', 'ui-ux-designer'])
+    expect(mergeIds(undefined, ['planner'])).toEqual(['planner'])
   })
 })

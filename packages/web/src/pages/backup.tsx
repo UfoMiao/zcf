@@ -13,6 +13,9 @@ import { Input } from '../components/ui/input'
 /** What the user asked to go ahead with: one restore, or a prune that keeps so many. */
 type Pending = { kind: 'restore'; id: string } | { kind: 'prune'; keep: number }
 
+/** What an error reads like in the status line: its message, or itself as text. */
+const toMessage = (reason: unknown): string => (reason instanceof Error ? reason.message : String(reason))
+
 /** The one-line description of a run, in the shape the CLI prints. */
 function runSummary(t: Translate, run: BackupInfo): string {
   const reason = run.reason === undefined ? 'unknown' : run.reason
@@ -36,7 +39,7 @@ export function BackupPage({ t }: { t: Translate }) {
     setError(undefined)
     httpService.backups().then(setList, (reason: unknown) => {
       setList([])
-      setError(String(reason instanceof Error ? reason.message : reason))
+      setError(toMessage(reason))
     })
   }
   useEffect(load, [])
@@ -51,7 +54,7 @@ export function BackupPage({ t }: { t: Translate }) {
         // The restore itself added an undo run, so the list as it stands is stale.
         load()
       })
-      .catch((reason: unknown) => setError(String(reason instanceof Error ? reason.message : reason)))
+      .catch((reason: unknown) => setError(toMessage(reason)))
       .finally(() => setBusy(false))
   }
 
@@ -64,7 +67,7 @@ export function BackupPage({ t }: { t: Translate }) {
         setPending(undefined)
         load()
       })
-      .catch((reason: unknown) => setError(String(reason instanceof Error ? reason.message : reason)))
+      .catch((reason: unknown) => setError(toMessage(reason)))
       .finally(() => setBusy(false))
   }
 
