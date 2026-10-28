@@ -45,8 +45,12 @@ export interface RowListProps {
   onEditing?: (editing: boolean) => void
 }
 
-/** Lines the list may not claim: banner, status rows, panel borders, key bar, page titles and hints. */
-const LIST_CHROME = 18
+/**
+ * Lines the list may not claim: banner, status rows, panel borders, key bar, page titles
+ * and the selected row's hint — the hint takes a line of its own inside a capped window,
+ * so it is budgeted here rather than left to push a label out of the render.
+ */
+const LIST_CHROME = 19
 
 /** Lines a row takes once rendered: its own, an error, or the selected row's hint while focused. */
 function rowHeight(item: Row, selected: boolean, active: boolean): number {

@@ -1,4 +1,4 @@
-import type { Plan } from '@zcf/core'
+import type { BackupInfo, Plan } from '@zcf/core'
 import type { Draft, PlanView, ZcfService } from '@zcf/ui-kit'
 import { render } from 'ink-testing-library'
 import { describe, expect, it } from 'vitest'
@@ -8,9 +8,28 @@ import { createTranslator } from '../src/i18n'
 import { App } from '../src/tui/app'
 import { Banner } from '../src/tui/banner'
 
-const KEY = { enter: '\r', up: '\u001B[A', down: '\u001B[B', right: '\u001B[C', escape: '\u001B', save: '\u0013' }
+const KEY = {
+  enter: '\r',
+  up: '\u001B[A',
+  down: '\u001B[B',
+  right: '\u001B[C',
+  left: '\u001B[D',
+  escape: '\u001B',
+  save: '\u0013',
+}
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 30))
+
+/** One backup run, the shape `listBackups` reports. */
+const backupRun = (id: string, at: string) => ({
+  id,
+  createdAt: at,
+  reason: 'apply' as const,
+  entries: [
+    { path: 'a.json', size: 1, mode: 0o644 },
+    { path: 'b.json', size: 2, mode: 0o644 },
+  ],
+})
 
 function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = {}) {
   const saved: Draft[] = []
@@ -101,7 +120,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Name')
     expect(app.frame()).not.toContain('sk-very-secret')
 
-    await app.press(KEY.down, KEY.enter, '\u007F\u007F\u007F', 'relay', KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.enter, '\u007F\u007F\u007F', 'relay', KEY.enter)
     expect(app.frame()).toContain('relay')
     expect(app.frame()).not.toContain('old')
 
@@ -200,9 +219,9 @@ describe('terminal UI', () => {
     expect(app.frame()).not.toContain('(L)')
     // The footer hints stop offering the switch too: L is a no-op while pinned.
     expect(app.frame()).not.toContain('L lang')
-    expect(app.frame()).toContain('↑↓ choose · 1-9 go · Enter open · Ctrl+S save · q quit')
+    expect(app.frame()).toContain('↑↓ choose · 0-9 go · Enter open · Ctrl+S save · q quit')
     await app.press('l')
-    expect(app.frame()).toContain('Settings')
+    expect(app.frame()).toContain('MCP servers')
     expect(app.frame()).not.toContain(zh('tui.page.tools'))
     expect(saved).toEqual([])
     app.unmount()
@@ -221,8 +240,8 @@ describe('terminal UI', () => {
   it('types l into a text field without switching the interface language', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    // To the Provider page, down to the name field, and into its text input.
-    await app.press(KEY.down, KEY.enter, KEY.down, KEY.enter)
+    // To the Provider page, down past the profiles row to the name field, and into its text input.
+    await app.press(KEY.down, KEY.enter, KEY.down, KEY.down, KEY.enter)
     await app.press('l', 'a', 'n', 'g')
     expect(app.frame()).toContain('lang')
     // The language sits where it was, and nothing was saved behind the user's back.
@@ -275,7 +294,7 @@ describe('terminal UI', () => {
       lang: 'en',
       langPinned: true,
     })
-    expect(pinned.frame()).toContain('Settings')
+    expect(pinned.frame()).toContain('MCP servers')
     expect(pinned.frame()).not.toContain(zh('tui.page.tools'))
     pinned.unmount()
   })
@@ -299,7 +318,7 @@ describe('terminal UI', () => {
     // The list starts at the custom source; the catalog row is below it.
     await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('Pick the ZCF built-in skills to install')
-    expect(app.frame()).toContain('Analyze changes and write conventional commit messages')
+    expect(app.frame()).toContain('Generate CLAUDE.md context indexes for a project')
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('✓ git-commit')
     await app.press(KEY.up, KEY.up, KEY.up, KEY.enter)
@@ -573,27 +592,34 @@ describe('terminal UI', () => {
     expect(frame).toContain('Init config')
     expect(frame).toContain('1 Agent tools')
     expect(frame).toContain('2 Provider')
-    expect(frame).toContain('6 Apply')
-    // The empty sections hold their place too once the terminal is tall enough.
+    // A 24-row terminal windows the nav; the later pages show once it is tall enough.
     Object.defineProperty(app.stdout, 'rows', { get: () => 40, configurable: true })
     app.stdout.emit('resize')
     await tick()
     await tick()
     const tall = app.frame()
     for (const header of ['Init config', 'Workflows', 'More tools', 'Backup']) expect(tall).toContain(header)
+    for (const page of ['6 Apply', '7 Workflows', '8 Agents', '9 Extras', '0 Backup']) expect(tall).toContain(page)
     app.unmount()
   })
 
-  it('jumps to a page by its digit, ignoring digits with no page behind them', async () => {
+  it('jumps to a page by its digit, all ten pages now that they exist', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     await app.press('4')
     expect(app.frame()).toContain('Search skills')
     await app.press('1')
     expect(app.frame()).toContain('Pick the agent tools')
-    // Only six pages exist this wave: 7-9 and 0 name none, so the page stays.
-    await app.press('7', '9', '0')
-    expect(app.frame()).toContain('Pick the agent tools')
+    // The wave-2 pages: 7 presets, 8 agents, 9 extras, 0 backup.
+    await app.press('7')
+    expect(app.frame()).toContain('Ready-made bundles')
+    await app.press('8')
+    expect(app.frame()).toContain('Built-in agents')
+    await app.press('9')
+    expect(app.frame()).toContain('Companion tools')
+    await app.press('0')
+    // The fake service answers at once with an empty list.
+    expect(await app.until('No backups yet.')).toContain('No backups yet.')
     app.unmount()
   })
 
@@ -622,7 +648,7 @@ describe('terminal UI', () => {
       provider: { name: 'old', apiKey: 'sk-very-secret' },
     })
     const app = await start(service)
-    await app.press(KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.enter, KEY.down, KEY.down, KEY.enter)
     await app.press('\u007F\u007F\u007F', '4', '2')
     await app.press(KEY.enter, KEY.save)
     expect(saved).toEqual([{ version: 1, tools: [], provider: { name: '42', apiKey: 'sk-very-secret' } }])
@@ -819,11 +845,12 @@ describe('terminal UI', () => {
     const { service, saved } = fakeService({ version: 1, tools: [], provider: { name: '', apiKey: '' } })
     const app = await start(service)
     await app.press(KEY.down, KEY.enter)
-    for (let i = 0; i < 13; i++) {
+    // The profiles row sits between the preset row and the fields now.
+    for (let i = 0; i < 14; i++) {
       // oxlint-disable-next-line no-await-in-loop
       await app.press(KEY.down)
     }
-    expect(app.frame()).toContain('› 4 Remove the provider')
+    expect(app.frame()).toContain('› 3 Remove the provider')
     await app.press(KEY.enter, KEY.save)
     expect(saved).toEqual([{ version: 1, tools: [] }])
     app.unmount()
@@ -931,6 +958,389 @@ describe('terminal UI', () => {
     const app = await start(service)
     expect(app.frame()).toContain('cannot be read')
     expect(app.frame()).toContain('tools: is required')
+    app.unmount()
+  })
+
+  it('toggles a workflow preset in, and back out, writing skills and agents together', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    expect(app.frame()).toContain('[ ] Project init and everyday commands')
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('[x] Project init and everyday commands')
+    expect(app.frame()).toContain('unsaved')
+    await app.press(KEY.save)
+    expect(saved.at(-1)).toEqual({
+      version: 1,
+      tools: [],
+      skills: [{ source: 'zcf', skills: ['init-project'] }],
+      agents: ['init-architect', 'get-current-datetime'],
+    })
+    // Toggling it off takes its picks back out, and the emptied keys go.
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('[ ] Project init and everyday commands')
+    await app.press(KEY.save)
+    expect(saved.at(-1)).toEqual({ version: 1, tools: [] })
+    app.unmount()
+  })
+
+  it('builds a custom bundle with agents, catalog skills and an MCP reference, then removes it', async () => {
+    const { service, saved } = fakeService({
+      version: 1,
+      tools: [],
+      mcpServers: { github: { type: 'http', url: 'https://g.example' } },
+    })
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    // The five presets sit above the new-bundle row.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    // The name row opens its editor before anything can be typed into it.
+    await app.press(KEY.enter, 'g', 'i', 't', '-', 'f', 'l', 'o', 'w', KEY.enter)
+    expect(app.frame()).toContain('Bundle "git-flow"')
+    // Rows: name, four agents, catalog, search, github, save. Pick the planner agent.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[x] planner')
+    // The MCP reference to the draft's own server.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[x] github')
+    // One built-in skill from the catalog.
+    await app.press(KEY.up, KEY.up, KEY.enter)
+    expect(app.frame()).toContain('Pick the ZCF built-in skills')
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('✓ init-project')
+    await app.press(KEY.escape)
+    // The builder list starts over; with the catalog skill added, save sits at the tenth row.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    // The page list starts over at the presets; the new bundle sits under them.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
+    expect(app.frame()).toContain('git-flow')
+    await app.press(KEY.save)
+    expect(saved.at(-1)).toEqual({
+      version: 1,
+      tools: [],
+      mcpServers: { github: { type: 'http', url: 'https://g.example' } },
+      workflows: [
+        {
+          name: 'git-flow',
+          skills: [{ source: 'zcf', skills: ['init-project'] }],
+          agents: ['planner'],
+          mcp: ['github'],
+        },
+      ],
+    })
+    // x on the bundle's own row takes it out of the config again.
+    await app.press('x')
+    expect(app.frame()).not.toContain('git-flow')
+    await app.press(KEY.save)
+    expect(saved.at(-1)).toEqual({
+      version: 1,
+      tools: [],
+      mcpServers: { github: { type: 'http', url: 'https://g.example' } },
+    })
+    app.unmount()
+  })
+
+  it('toggles the built-in agents on the Agents page', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('8', KEY.enter)
+    expect(app.frame()).toContain('[ ] init-architect')
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('[x] init-architect')
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], agents: ['init-architect'] }])
+    app.unmount()
+  })
+
+  it('cycles the magpie face and toggles CCometixLine on the Extras page', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('9', KEY.enter)
+    expect(app.frame()).toContain('off')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('client (desktop app)')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('cli (terminal)')
+    await app.press(KEY.left)
+    expect(app.frame()).toContain('client (desktop app)')
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[x] CCometixLine')
+    await app.press(KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], extras: { magpie: 'client', ccline: true } }])
+    app.unmount()
+  })
+
+  it('lists backups, restores one after a confirm, and prunes the old runs', async () => {
+    const restored: string[] = []
+    let prunes = 0
+    // A legacy run from before manifests: no createdAt, so its row shows no date.
+    const dated = backupRun('2026-09-01T08-00-00-000Z', '2026-09-01T08:00:00.000Z')
+    const legacy: BackupInfo = { id: dated.id, reason: dated.reason, entries: dated.entries }
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [legacy, backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async id => {
+          restored.push(id)
+          return { id: 'undo-1', changed: 1, unchanged: 0, missing: 1, corrupt: 0, outside: 0 }
+        },
+        pruneBackups: async () => {
+          prunes++
+          return ['2026-10-20T08-00-00-000Z']
+        },
+      },
+    )
+    const app = await start(service)
+    await app.press('0', KEY.enter)
+    expect(await app.until('2026-10-24 08:00')).toContain('an apply, 2 file(s)')
+    // Enter asks before anything goes back; the legacy run is first, without its date.
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('Restore backup 2026-09-01T08-00-00-000Z')
+    await app.press(KEY.enter)
+    expect(await app.until('Restored 1 changed file(s)')).toContain('Restore undo-1 to undo this.')
+    expect(restored).toEqual(['2026-09-01T08-00-00-000Z'])
+    // Prune sits under the runs, and asks too.
+    await app.press(KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Prune the oldest backups')
+    await app.press(KEY.enter)
+    expect(await app.until('Removed 1 backup(s)')).toContain('2026-10-20T08-00-00-000Z')
+    expect(prunes).toBe(1)
+    app.unmount()
+  })
+
+  it('switches provider profiles, saves the current one, and removes one', async () => {
+    const { service, saved } = fakeService({
+      version: 1,
+      tools: [],
+      provider: { name: 'old', apiKey: 'sk-old' },
+      profiles: [{ id: 'relay', name: 'Relay', provider: { name: 'Relay', apiKey: 'sk-relay' } }],
+    })
+    const app = await start(service)
+    await app.press('2', KEY.enter, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Relay')
+    expect(app.frame()).not.toContain('active')
+    // Enter copies the profile's provider over the top-level one, then goes back.
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('One API provider for every tool')
+    expect(app.frame()).not.toContain('sk-relay')
+    await app.press(KEY.save)
+    expect(saved.at(-1)?.provider).toEqual({ name: 'Relay', apiKey: 'sk-relay' })
+
+    // The switched-to profile is the active one; saving the current provider adds another.
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('active')
+    await app.press(KEY.down, KEY.enter, 'B', 'a', 'c', 'k', 'u', 'p', KEY.enter)
+    expect(app.frame()).toContain('Backup')
+    await app.press(KEY.save)
+    expect(saved.at(-1)?.profiles).toEqual([
+      { id: 'relay', name: 'Relay', provider: { name: 'Relay', apiKey: 'sk-relay' } },
+      { id: 'backup', name: 'Backup', provider: { name: 'Relay', apiKey: 'sk-relay' } },
+    ])
+    // x takes a profile out.
+    await app.press(KEY.up, 'x')
+    expect(app.frame()).not.toContain('Relay')
+    await app.press(KEY.save)
+    expect(saved.at(-1)?.profiles).toEqual([
+      { id: 'backup', name: 'Backup', provider: { name: 'Relay', apiKey: 'sk-relay' } },
+    ])
+    app.unmount()
+  })
+
+  it('picks output styles and the default one on the Workflows page', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    // The style toggles sit under the presets, the bundles row and the new-bundle row.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[x] engineer-professional')
+    // The default style cycles from unset onto the first built-in style.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.right)
+    expect(app.frame()).toContain('engineer-professional')
+    await app.press(KEY.save)
+    expect(saved.at(-1)?.styles).toEqual({
+      outputStyles: ['engineer-professional'],
+      defaultOutputStyle: 'engineer-professional',
+    })
+    app.unmount()
+  })
+
+  it('warns that unsaved editor changes still sit on top of a restore', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async () => ({ changed: 1, unchanged: 0, missing: 0, corrupt: 0, outside: 0 }),
+      },
+    )
+    const app = await start(service)
+    // Dirty the draft without saving, then restore under it.
+    await app.press(KEY.enter, ' ', KEY.escape)
+    await app.press('0', KEY.enter)
+    await app.until('an apply, 2 file(s)')
+    await app.press(KEY.enter, KEY.enter)
+    expect(await app.until('writes them back over the restored file')).toContain('Restored 1 changed file(s)')
+    app.unmount()
+  })
+
+  it('flags a page whose root key has a problem, at any of its roots', async () => {
+    const { service } = fakeService({ version: 1, tools: [], mirror: 'cn' })
+    const app = await start(service)
+    // Jump to the broken page so the windowed nav shows its row.
+    await app.press('5')
+    expect(app.frame()).toMatch(/Settings !/)
+    app.unmount()
+  })
+
+  it('reports a restore with corrupt and outside files and nothing to undo', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async () => ({ changed: 0, unchanged: 1, missing: 0, corrupt: 1, outside: 1 }),
+      },
+    )
+    const app = await start(service)
+    await app.press('0', KEY.enter)
+    await app.until('an apply, 2 file(s)')
+    await app.press(KEY.enter, KEY.enter)
+    const frame = await app.until('did not match their checksum')
+    expect(frame).toContain('outside home')
+    // Nothing was copied ahead of this restore, so there is no undo run to name.
+    expect(frame).not.toContain('to undo this.')
+    app.unmount()
+  })
+
+  it('cancels a restore from the confirm, by row and by Esc', async () => {
+    const restored: string[] = []
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async id => {
+          restored.push(id)
+          return { changed: 0, unchanged: 0, missing: 0, corrupt: 0, outside: 0 }
+        },
+      },
+    )
+    const app = await start(service)
+    await app.press('0', KEY.enter)
+    await app.until('an apply, 2 file(s)')
+    // The Cancel row brings the list back; the backup is untouched.
+    await app.press(KEY.enter, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('an apply, 2 file(s)')
+    // So does Esc from the confirm rows.
+    await app.press(KEY.enter, KEY.escape)
+    expect(app.frame()).toContain('an apply, 2 file(s)')
+    expect(restored).toEqual([])
+    app.unmount()
+  })
+
+  it('says when the backups cannot be listed, restored or pruned', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => {
+          throw new Error('unreadable')
+        },
+      },
+    )
+    const app = await start(service)
+    await app.press('0', KEY.enter)
+    expect(await app.until('Failed: unreadable')).toContain('No backups yet.')
+    app.unmount()
+
+    const failing = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async () => {
+          throw new Error('disk gone')
+        },
+        pruneBackups: async () => {
+          throw new Error('disk gone')
+        },
+      },
+    )
+    const retry = await start(failing.service)
+    await retry.press('0', KEY.enter)
+    await retry.until('an apply, 2 file(s)')
+    await retry.press(KEY.enter, KEY.enter)
+    await retry.until('Failed: disk gone')
+    await retry.press(KEY.down, KEY.down, KEY.enter, KEY.enter)
+    expect(await retry.until('Failed: disk gone')).toContain('an apply, 2 file(s)')
+    retry.unmount()
+  })
+
+  it('reopens a saved bundle, renames it and takes its picks back out', async () => {
+    const { service, saved } = fakeService({
+      version: 1,
+      tools: [],
+      mcpServers: { github: { type: 'http', url: 'https://g.example' } },
+      workflows: [
+        {
+          name: 'existing',
+          agents: ['planner'],
+          skills: [{ source: 'zcf', skills: ['feat'] }],
+          mcp: ['github'],
+        },
+      ],
+    })
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    // The bundle sits under the five presets.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Bundle "existing"')
+    // Rename through the name row's editor.
+    await app.press(KEY.enter, '\u0015', 'r', 'e', 'n', 'a', 'm', 'e', 'd', KEY.enter)
+    expect(app.frame()).toContain('Bundle "renamed"')
+    // The picked agent comes back out.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[ ] planner')
+    // The catalog skill too: its picker opens from the row under the bundle's own sources.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).not.toContain('✓ feat')
+    await app.press(KEY.escape)
+    // The MCP reference goes too; with the skill's row gone it sits under the search row.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[ ] github')
+    // The bundle now holds nothing but its name; save sits right below.
+    await app.press(KEY.down, KEY.enter)
+    await app.press(KEY.save)
+    expect(saved.at(-1)?.workflows).toEqual([{ name: 'renamed' }])
+    app.unmount()
+  })
+
+  it('adds a community skill to a bundle through the search picker', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        searchSkills: async () => ({
+          skills: [{ name: 'using-git-worktrees', source: 'obra/superpowers', description: 'Worktrees.' }],
+          source: 'remote' as const,
+        }),
+      },
+    )
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.enter, 's', 'e', 'a', 'r', 'c', 'h', '-', '1', KEY.enter)
+    // In the builder the agents come first, then the catalog row, then search.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Search skills')
+    await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    await app.until('using-git-worktrees')
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('obra/superpowers · added')
+    // Esc closes the picker; the hit stays in the bundle as its own source row.
+    await app.press(KEY.escape)
+    expect(app.frame()).toContain('Bundle "search-1"')
+    // The row sits under the agents; the window only shows it once reached.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
+    expect(app.frame()).toContain('obra/superpowers')
+    // x on that row takes the hit out of the bundle again.
+    await app.press('x')
+    expect(app.frame()).not.toContain('obra/superpowers')
     app.unmount()
   })
 })

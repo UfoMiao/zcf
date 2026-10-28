@@ -4,7 +4,7 @@ import type { ToolId, ToolStatus } from '@zcf/core'
 import { isLanguageSetting, LANGUAGES } from '@zcf/core/schema'
 import type { PageId } from '@zcf/ui-kit'
 import { isLang } from '@zcf/ui-kit'
-import { issuesAt, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
+import { PAGE_ROOTS, PAGES, pageHasIssues, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import {
   CircleAlertIcon,
   CircleCheckIcon,
@@ -38,7 +38,9 @@ import { ToolsPage } from './pages/tools'
 
 type StatusTone = 'info' | 'warning' | 'error'
 
-const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
+// The pages this front end renders. The workflow, extras and backup pages are terminal-only
+// for now; they join the web nav when they gain web pages of their own.
+const PAGE_ICONS: Partial<Record<PageId, typeof WrenchIcon>> = {
   tools: WrenchIcon,
   provider: PlugIcon,
   mcp: NetworkIcon,
@@ -46,6 +48,7 @@ const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
   settings: SettingsIcon,
   apply: PlayIcon,
 }
+const WEB_PAGES: readonly PageId[] = PAGES.filter(id => PAGE_ICONS[id] !== undefined)
 
 function StatusMessage({ status, t }: { status: { text: string; tone: StatusTone } | undefined; t: Translate }) {
   if (!status) return null
@@ -92,9 +95,9 @@ function NavList({
 }) {
   return (
     <ul className="flex flex-col gap-0.5">
-      {PAGES.map(id => {
+      {WEB_PAGES.map(id => {
         const roots = PAGE_ROOTS[id]
-        const broken = roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
+        const broken = roots !== undefined && pageHasIssues(editor.validation.issues, roots)
         const Icon = PAGE_ICONS[id]
         return (
           <li key={id}>
@@ -111,7 +114,7 @@ function NavList({
                   : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
               }`}
             >
-              <Icon className="size-4 shrink-0" />
+              {Icon && <Icon className="size-4 shrink-0" />}
               <span className="flex-1 text-left">{t(`tui.page.${id}`)}</span>
               {broken && <span className="bg-destructive size-1.5 shrink-0 rounded-full" aria-label="!" />}
             </button>
@@ -224,9 +227,9 @@ export function App({
   }, [editor.dirty])
 
   const firstBrokenPage = (): PageId | undefined =>
-    PAGES.find(id => {
+    WEB_PAGES.find(id => {
       const roots = PAGE_ROOTS[id]
-      return roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
+      return roots !== undefined && pageHasIssues(editor.validation.issues, roots)
     })
 
   if (editor.status === 'loading') {
