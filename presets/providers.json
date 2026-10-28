@@ -254,6 +254,24 @@
         "default": "deepseek-v4-pro",
         "haiku": "deepseek-v4-flash"
       }
+    },
+    {
+      "id": "magpie",
+      "name": "magpie",
+      "description": {
+        "en": "The magpie local gateway; magpie itself manages the keys, so give it any value",
+        "zh-CN": "magpie 本地网关；密钥由 magpie 自己管理，这里填任意值即可"
+      },
+      "anthropic": {
+        "baseUrl": "http://127.0.0.1:3425",
+        "authType": "api_key"
+      },
+      "openai": {
+        "baseUrl": "http://127.0.0.1:3425/v1"
+      },
+      "gemini": {
+        "baseUrl": "http://127.0.0.1:3425"
+      }
     }
   ]
 }

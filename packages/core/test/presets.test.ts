@@ -43,12 +43,34 @@ describe('parsePresets', () => {
     expect(parsePresets('nope')).toBeUndefined()
   })
 
+  it('accepts a loopback gateway on plain HTTP and rejects remote HTTP', () => {
+    const gateway = parsePresets({
+      version: 1,
+      providers: [
+        {
+          id: 'magpie',
+          name: 'magpie',
+          anthropic: { baseUrl: 'http://127.0.0.1:3425' },
+          openai: { baseUrl: 'http://localhost:3425/v1' },
+        },
+        { id: 'plain-http', name: 'no', anthropic: { baseUrl: 'http://relay.example.com' } },
+        { id: 'lan-http', name: 'no', anthropic: { baseUrl: 'http://192.168.1.4:3425' } },
+      ],
+    })
+    expect(gateway?.map(preset => preset.id)).toEqual(['magpie'])
+  })
+
   it('accepts every preset in the repository file', async () => {
     const data: unknown = JSON.parse(
       await readFile(join(import.meta.dirname, '../../../presets/providers.json'), 'utf8'),
     )
     const raw = (data as { providers: unknown[] }).providers
-    expect(parsePresets(data)).toHaveLength(raw.length)
+    const parsed = parsePresets(data)
+    expect(parsed).toHaveLength(raw.length)
+    // The magpie gateway preset points every protocol at its local address.
+    const magpie = parsed?.find(preset => preset.id === 'magpie')
+    expect(magpie?.anthropic?.baseUrl).toBe('http://127.0.0.1:3425')
+    expect(magpie?.openai?.baseUrl).toBe('http://127.0.0.1:3425/v1')
   })
 })
 

@@ -3,6 +3,13 @@ import * as v from 'valibot'
 import { ProviderSchema } from './config'
 
 const HttpsUrl = v.pipe(v.string(), v.url(), v.startsWith('https://'))
+// Presets come from the network, so every remote endpoint must be HTTPS; a local gateway
+// on loopback is the one exception, plain HTTP included.
+const EndpointUrl = v.pipe(
+  v.string(),
+  v.url(),
+  v.check(url => url.startsWith('https://') || ['127.0.0.1', 'localhost', '[::1]'].includes(new URL(url).hostname)),
+)
 
 /** One preset: a provider without the key, plus an id and a description per language. */
 export const PresetSchema = v.object({
@@ -10,10 +17,12 @@ export const PresetSchema = v.object({
   id: v.pipe(v.string(), v.regex(/^[a-z0-9][a-z0-9-]*$/)),
   description: v.optional(v.record(v.string(), v.string()), {}),
   website: v.optional(HttpsUrl),
-  // Presets come from the network, so every endpoint must be HTTPS.
-  anthropic: v.optional(v.object({ baseUrl: HttpsUrl, authType: v.optional(v.picklist(['auth_token', 'api_key'])) })),
-  openai: v.optional(v.object({ baseUrl: HttpsUrl, model: v.optional(v.string()) })),
-  gemini: v.optional(v.object({ baseUrl: v.optional(HttpsUrl), model: v.optional(v.string()) })),
+  // Presets come from the network, so every endpoint must be HTTPS, loopback excepted.
+  anthropic: v.optional(
+    v.object({ baseUrl: EndpointUrl, authType: v.optional(v.picklist(['auth_token', 'api_key'])) }),
+  ),
+  openai: v.optional(v.object({ baseUrl: EndpointUrl, model: v.optional(v.string()) })),
+  gemini: v.optional(v.object({ baseUrl: v.optional(EndpointUrl), model: v.optional(v.string()) })),
 })
 export type ProviderPreset = v.InferOutput<typeof PresetSchema>
 
