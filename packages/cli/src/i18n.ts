@@ -261,6 +261,27 @@ const en = {
   'tui.apply.noTools': 'No agent tools selected. Pick some on the Agent tools page.',
   'tui.apply.applying': 'Applying…',
   'tui.apply.failed': 'Could not plan: {message}',
+  'cli.command.backup': 'List, restore and clean up the backups of the files ZCF changes',
+  'cli.backup.option.keep': 'How many backups pruning keeps (default: 20)',
+  'cli.backup.badKeep': 'Not a number of backups to keep: {keep}.',
+  'cli.backup.unknownCommand': 'Unknown backup command: {command}. Use list, restore or prune.',
+  'cli.backup.restoreNeedsId': 'Which backup? Pass its id: zcf backup restore <id>.',
+  'cli.backup.missing': 'No backup with id {id}. Run zcf backup to list them.',
+  'cli.backup.empty': 'Backup {id} holds no files.',
+  'cli.backup.none': 'No backups yet.',
+  'cli.backup.summary': 'Backup {id} — {reason}, {count} file(s).',
+  'cli.backup.reason.apply': 'an apply',
+  'cli.backup.reason.save': 'a save',
+  'cli.backup.reason.restore': 'a restore',
+  'cli.backup.reason.unknown': 'an earlier run',
+  'cli.backup.restored':
+    'Restored {changed} changed file(s); {unchanged} already matched; {missing} were missing and are back.',
+  'cli.backup.corrupt': '{count} file(s) in the backup did not match their checksum and were left alone.',
+  'cli.backup.outside':
+    '{count} file(s) in the backup are from outside home; copy them back by hand from the backup folder.',
+  'cli.backup.pruneList': '{count} backup(s) to remove: {ids}',
+  'cli.backup.pruned': 'Removed {count} backup(s): {ids}',
+  'cli.backup.prunedNone': 'Nothing to prune; there are only {count} backup(s).',
 } as const
 
 export type MessageKey = keyof typeof en
@@ -511,6 +532,25 @@ const zhCN: Record<MessageKey, string> = {
   'tui.apply.noTools': '尚未选择 Agent 工具。请在「Agent 工具」页选择。',
   'tui.apply.applying': '正在应用…',
   'tui.apply.failed': '无法生成计划：{message}',
+  'cli.command.backup': '列出、恢复和清理 ZCF 改动文件的备份',
+  'cli.backup.option.keep': '清理时保留的备份数（默认 20）',
+  'cli.backup.badKeep': '保留数量无效：{keep}。',
+  'cli.backup.unknownCommand': '未知的备份子命令：{command}。可用：list、restore、prune。',
+  'cli.backup.restoreNeedsId': '要恢复哪个备份？请传 id：zcf backup restore <id>。',
+  'cli.backup.missing': '找不到 id 为 {id} 的备份。运行 zcf backup 查看列表。',
+  'cli.backup.empty': '备份 {id} 中没有文件。',
+  'cli.backup.none': '还没有备份。',
+  'cli.backup.summary': '备份 {id} — {reason}，{count} 个文件。',
+  'cli.backup.reason.apply': '应用配置',
+  'cli.backup.reason.save': '保存配置',
+  'cli.backup.reason.restore': '恢复之前',
+  'cli.backup.reason.unknown': '更早的运行',
+  'cli.backup.restored': '已恢复 {changed} 个有改动的文件；{unchanged} 个本就一致；{missing} 个此前已缺失，已找回。',
+  'cli.backup.corrupt': '备份中有 {count} 个文件与校验和不符，已保持原样。',
+  'cli.backup.outside': '备份中有 {count} 个文件位于 home 之外，请从备份目录手动复制回来。',
+  'cli.backup.pruneList': '将删除 {count} 个备份：{ids}',
+  'cli.backup.pruned': '已删除 {count} 个备份：{ids}',
+  'cli.backup.prunedNone': '无需清理；当前只有 {count} 个备份。',
 }
 
 const english: Record<string, string> = en

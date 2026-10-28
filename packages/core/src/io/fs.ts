@@ -4,11 +4,16 @@ import process from 'node:process'
 
 import { dirname, join, normalize, relative, resolve } from 'pathe'
 
+/** Whether `error` is the filesystem saying a path is not there, which callers often treat as empty. */
+export function isMissing(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT'
+}
+
 export async function readTextIfExists(path: string): Promise<string | undefined> {
   try {
     return await readFile(path, 'utf8')
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return undefined
+    if (isMissing(error)) return undefined
     throw error
   }
 }
@@ -36,9 +41,10 @@ async function writeTarget(path: string): Promise<string> {
  * Write through a temporary file in the same directory and rename it into place,
  * so a crash never leaves a half-written config. A symlink is followed so the
  * link itself survives. An existing file keeps its mode; a new one is private,
- * since native configs hold API keys.
+ * since native configs hold API keys. Text keeps its bytes; a restore also puts
+ * backed-up binaries back through here.
  */
-export async function writeFileAtomic(path: string, content: string): Promise<void> {
+export async function writeFileAtomic(path: string, content: string | Uint8Array): Promise<void> {
   const target = await writeTarget(path)
   await mkdir(dirname(target), { recursive: true })
   const mode = (await modeOf(target)) ?? 0o600
@@ -52,16 +58,20 @@ export async function writeFileAtomic(path: string, content: string): Promise<vo
   }
 }
 
+/** Whether `path` sits inside `home`, so a backup can name it relative to home. */
+export function isInsideHome(path: string, home?: string): boolean {
+  if (!home) return false
+  const inside = relative(normalize(home), normalize(path))
+  return !!inside && !inside.startsWith('..') && !/^[a-z]:/i.test(inside) && !inside.startsWith('/')
+}
+
 /**
  * Map an absolute path to a relative one that is safe to recreate under a backup folder:
  * relative to `home` when it is inside it, otherwise the absolute path without its root.
  */
 export function backupRelativePath(path: string, home?: string): string {
   const normalized = normalize(path)
-  if (home) {
-    const inside = relative(normalize(home), normalized)
-    if (inside && !inside.startsWith('..') && !/^[a-z]:/i.test(inside) && !inside.startsWith('/')) return inside
-  }
+  if (isInsideHome(path, home)) return relative(normalize(home!), normalized)
   return normalized.replace(/^[a-z]:/i, drive => drive[0]!).replace(/^\/+/, '')
 }
 

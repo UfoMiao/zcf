@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 
 import type { PlanStep, StepResult } from '@zcf/core'
-import { readTextIfExists } from '@zcf/core'
+import { parseBackupKeep, readTextIfExists } from '@zcf/core'
 import type { ApplyOutcome, PlanView, ZcfService } from '@zcf/ui-kit'
 import { isTable, TOOL_OPTIONS } from '@zcf/ui-kit'
 import { extname, join, normalize } from 'pathe'
@@ -161,6 +161,21 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
     if (route === 'skills/search' && method === 'GET')
       return send(response, 200, await service.searchSkills(url.searchParams.get('q') ?? ''))
     if (route === 'detect' && method === 'POST') return send(response, 200, await service.detect(TOOL_OPTIONS))
+    if (route === 'backups' && method === 'GET') return send(response, 200, await service.backups())
+    if (route === 'backups/restore' && method === 'POST') {
+      const body = await readJson(request)
+      if (!isTable(body) || typeof body.id !== 'string') return send(response, 400)
+      return send(response, 200, await service.restoreBackup(body.id))
+    }
+    if (route === 'backups/prune' && method === 'POST') {
+      const body = await readJson(request)
+      let keep: number | undefined
+      if (isTable(body) && body.keep !== undefined) {
+        keep = parseBackupKeep(body.keep)
+        if (keep === undefined) return send(response, 400)
+      }
+      return send(response, 200, await service.pruneBackups(keep))
+    }
     if (route === 'plan' && method === 'POST') {
       return send(response, 200, browserPlan(await service.plan()))
     }

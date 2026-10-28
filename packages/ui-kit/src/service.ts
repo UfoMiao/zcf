@@ -1,10 +1,12 @@
 import type {
+  BackupInfo,
   ConfigIssue,
   FilePreview,
   Mirror,
   Plan,
   PlanActor,
   PresetList,
+  RestoreResult,
   SkillSearchList,
   StepResult,
   ToolId,
@@ -63,4 +65,11 @@ export interface ZcfService {
   searchSkills: (query: string) => Promise<SkillSearchList>
   /** Apply the saved config, reporting each finished step. */
   apply: (onStep?: (event: StepEvent) => void) => Promise<ApplyOutcome>
+  /** The backups of files ZCF changed, newest first; an entry's `id` names it for the calls below. */
+  backups: () => Promise<BackupInfo[]>
+  /** Put a backup's files back. The files as they are now are backed up into a run of their
+   * own first, and that run's id comes back, so the restore itself can be undone. */
+  restoreBackup: (id: string) => Promise<RestoreResult>
+  /** Remove the oldest backups beyond the newest `keep` (20 by default), returning their ids. */
+  pruneBackups: (keep?: number) => Promise<string[]>
 }

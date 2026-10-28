@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import type { AdapterContext, FilePreview, Mirror, Plan, PlanStep, ToolId, ToolResult, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
+  BackupRun,
   createContext,
   defaultConfigPath,
   detectTools,
@@ -11,9 +12,12 @@ import {
   envMirror,
   FileSyntaxError,
   isTable,
+  listBackups,
   loadConfigFile,
   MIRRORS,
   mirrorEnv,
+  MessageError,
+  parseBackupKeep,
   parseConfigText,
   parseMirrorName,
   planTools,
@@ -21,9 +25,11 @@ import {
   planUpdates,
   previewPlan,
   isToolId,
+  pruneBackups,
+  pruneDoomed,
   readTextIfExists,
   resolveMirror,
-  snapshotFile,
+  restoreBackup,
   ACTOR_NAMES,
   TOOL_IDS,
   TOOL_NAMES,
@@ -35,10 +41,10 @@ import { join, resolve } from 'pathe'
 
 import { version } from '../package.json'
 import type { Translate } from './i18n'
-import { createTranslator, detectLang, isLang, isLangPinned } from './i18n'
+import { createTranslator, detectLang, errorText, isLang, isLangPinned } from './i18n'
 import type { Output } from './render'
 import { collectSecrets, hasWork, Renderer, tildify } from './render'
-import { backupFolder, createLocalService } from './service'
+import { backupFolder, backupsRoot, createLocalService } from './service'
 
 export const EXIT_OK = 0
 export const EXIT_ERROR = 1
@@ -66,6 +72,7 @@ interface CommandFlags {
   mirror?: string
   port?: string | number
   open?: boolean
+  keep?: string | number
 }
 
 async function openDetached(command: string, args: string[]): Promise<void> {
@@ -82,6 +89,13 @@ function parsePort(value: string | number | undefined, t: Translate): number | u
     throw new CliError(t('cli.invalidPort', { port: String(value) }), EXIT_ERROR)
   }
   return port
+}
+
+/** How many backup runs `zcf backup prune` keeps; a whole, non-negative count. */
+function parseKeep(value: string | number | undefined, t: Translate): number {
+  const keep = parseBackupKeep(value)
+  if (keep === undefined) throw new CliError(t('cli.backup.badKeep', { keep: String(value) }), EXIT_ERROR)
+  return keep
 }
 
 /** The command that opens a URL in the default browser. */
@@ -465,6 +479,15 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       return code
     })
 
+  /** Back the file at `path` up into a run of its own, for an edit that changes it. */
+  async function backupBeforeEdit(path: string): Promise<{ dir: string; backup: string } | undefined> {
+    const at = now()
+    const run = new BackupRun(backupFolder(ctx.home, at), ctx.home, () => at, 'save')
+    const backup = await run.snapshot(path)
+    await run.finish()
+    return backup === undefined ? undefined : { dir: run.dir, backup }
+  }
+
   /** Take uninstalled tools out of "tools" in the config, so a later apply does not reinstall them. */
   async function removeFromConfig(
     removed: readonly ToolId[],
@@ -486,8 +509,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       if (!(error instanceof FileSyntaxError)) throw error
       throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
     }
-    const backupDir = backupFolder(ctx.home, now())
-    const backup = next === existing ? undefined : await snapshotFile(path, backupDir, ctx.home)
+    const backed = next === existing ? undefined : await backupBeforeEdit(path)
     await writeFileAtomic(path, next)
     renderer.line(
       t('cli.uninstallConfigUpdated', {
@@ -495,7 +517,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         path: tildify(path, ctx.home),
       }),
     )
-    if (backup) renderer.line(dim(t('cli.backups', { path: tildify(backupDir, ctx.home) })))
+    if (backed) renderer.line(dim(t('cli.backups', { path: tildify(backed.dir, ctx.home) })))
   }
 
   cli
@@ -536,14 +558,80 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         if (!(error instanceof FileSyntaxError)) throw error
         throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
       }
-      const backupDir = backupFolder(ctx.home, now())
-      const backup = next === existing ? undefined : await snapshotFile(path, backupDir, ctx.home)
+      const backed = next === existing ? undefined : await backupBeforeEdit(path)
       await writeFileAtomic(path, next)
       renderer.line(t('cli.mirrorSet', { mirror: t(`mirror.${mirror}`), path: tildify(path, ctx.home) }))
-      if (backup) renderer.line(dim(t('cli.backups', { path: tildify(backupDir, ctx.home) })))
+      if (backed) renderer.line(dim(t('cli.backups', { path: tildify(backed.dir, ctx.home) })))
       if (fromEnv && fromEnv !== mirror)
         renderer.line(yellow(t('cli.mirrorEnvOverrides', { value: ctx.env.ZCF_MIRROR ?? '' })))
       return EXIT_OK
+    })
+
+  cli
+    .command('backup [command] [id]', t('cli.command.backup'))
+    .option('-y, --yes', t('cli.option.yes'))
+    .option('--keep <n>', t('cli.backup.option.keep'))
+    .action(async (command: string | undefined, id: string | undefined, flags: CommandFlags) => {
+      const root = backupsRoot(ctx.home)
+      const renderer = new Renderer(stdout, t, [], ctx.home)
+      // The run's own line in lists and summaries: what made it and how much it holds.
+      const describe = (backup: { id: string; reason?: string; entries: unknown[] }) =>
+        t('cli.backup.summary', {
+          id: backup.id,
+          reason: t(`cli.backup.reason.${backup.reason ?? 'unknown'}`),
+          count: backup.entries.length,
+        })
+
+      if (command === undefined || command === 'list') {
+        const backups = await listBackups(root)
+        if (backups.length === 0) {
+          renderer.line(t('cli.backup.none'))
+          return EXIT_OK
+        }
+        for (const backup of backups) renderer.line(describe(backup))
+        return EXIT_OK
+      }
+
+      if (command === 'restore') {
+        if (id === undefined) throw new CliError(t('cli.backup.restoreNeedsId'), EXIT_ERROR)
+        const backup = (await listBackups(root)).find(item => item.id === id)
+        if (backup === undefined) throw new CliError(t('cli.backup.missing', { id }), EXIT_ERROR)
+        renderer.line(describe(backup))
+        if (!flags.yes) {
+          renderer.line(t('cli.confirmHint'))
+          return EXIT_OK
+        }
+        // The restore backs up what is there now, so it can itself be undone with that run.
+        const result = await restoreBackup(root, id, ctx.home, now)
+        renderer.line(
+          t('cli.backup.restored', { changed: result.changed, unchanged: result.unchanged, missing: result.missing }),
+        )
+        if (result.corrupt > 0) renderer.line(yellow(t('cli.backup.corrupt', { count: result.corrupt })))
+        if (result.outside > 0) renderer.line(yellow(t('cli.backup.outside', { count: result.outside })))
+        if (result.id !== undefined)
+          renderer.line(dim(t('cli.backups', { path: tildify(join(root, result.id), ctx.home) })))
+        return EXIT_OK
+      }
+
+      if (command === 'prune') {
+        const keep = flags.keep === undefined ? 20 : parseKeep(flags.keep, t)
+        const backups = await listBackups(root)
+        const doomed = pruneDoomed(backups, keep)
+        if (doomed.length === 0) {
+          renderer.line(t('cli.backup.prunedNone', { count: backups.length }))
+          return EXIT_OK
+        }
+        renderer.line(t('cli.backup.pruneList', { count: doomed.length, ids: doomed.join(', ') }))
+        if (!flags.yes) {
+          renderer.line(t('cli.confirmHint'))
+          return EXIT_OK
+        }
+        const removed = await pruneBackups(root, keep)
+        renderer.line(t('cli.backup.pruned', { count: removed.length, ids: removed.join(', ') }))
+        return EXIT_OK
+      }
+
+      throw new CliError(t('cli.backup.unknownCommand', { command }), EXIT_ERROR)
     })
 
   try {
@@ -569,6 +657,11 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     if (error instanceof CliError) {
       stderr.write(`${error.message}\n`)
       return error.exitCode
+    }
+    // Core and the service throw these with a message key; translate instead of the English fallback.
+    if (error instanceof MessageError) {
+      stderr.write(`${errorText(error, t)}\n`)
+      return EXIT_ERROR
     }
     const message = error instanceof Error ? error.message : String(error)
     stderr.write(`${t('cli.unexpectedError', { message })}\n`)

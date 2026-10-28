@@ -96,6 +96,16 @@ const service: ZcfService = {
     skills: [{ name: 'using-git-worktrees', source: 'obra/superpowers', description: 'Worktrees.', installs: 541 }],
     source: 'remote',
   }),
+  backups: async () => [{ id: '2026-10-24T08-00-00-000Z', reason: 'apply', entries: [] }],
+  restoreBackup: async () => ({
+    id: '2026-10-24T09-00-00-000Z',
+    changed: 1,
+    unchanged: 0,
+    missing: 0,
+    corrupt: 0,
+    outside: 0,
+  }),
+  pruneBackups: async () => [],
 }
 
 const assets = {
@@ -183,6 +193,23 @@ describe('startUiServer', () => {
       source: 'remote',
       skills: [{ name: 'using-git-worktrees', source: 'obra/superpowers' }],
     })
+  })
+
+  it('lists, restores and prunes backups behind the token', async () => {
+    await start()
+    expect(JSON.parse((await call('/api/backups')).text)).toEqual([
+      { id: '2026-10-24T08-00-00-000Z', reason: 'apply', entries: [] },
+    ])
+    expect(
+      JSON.parse((await call('/api/backups/restore', { method: 'POST', body: { id: 'run' } })).text),
+    ).toMatchObject({
+      id: '2026-10-24T09-00-00-000Z',
+      changed: 1,
+    })
+    expect(JSON.parse((await call('/api/backups/prune', { method: 'POST', body: {} })).text)).toEqual([])
+    expect((await call('/api/backups', { token: null })).status).toBe(401)
+    expect((await call('/api/backups/restore', { method: 'POST', body: { id: 1 } })).status).toBe(400)
+    expect((await call('/api/backups/prune', { method: 'POST', body: { keep: 'x' } })).status).toBe(400)
   })
 
   it('never sends secrets, file contents or edit values to the browser', async () => {
