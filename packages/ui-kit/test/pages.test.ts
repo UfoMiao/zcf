@@ -282,4 +282,16 @@ describe('togglePreset', () => {
       agents: undefined,
     })
   })
+
+  it('keeps an existing bare entry and adds the picked skills of another source', () => {
+    const mixed = { skills: [{ source: 'zcf' }, { source: 'owner/repo', skills: ['one'] }], agents: [] }
+    expect(togglePreset([{ source: 'zcf' }], ['planner'], mixed)).toEqual({
+      skills: [{ source: 'zcf' }, { source: 'owner/repo', skills: ['one'] }],
+      agents: ['planner'],
+    })
+  })
+
+  it('drops both keys again when a preset with nothing to install is toggled', () => {
+    expect(togglePreset([], [], { skills: [], agents: [] })).toEqual({ skills: undefined, agents: undefined })
+  })
 })

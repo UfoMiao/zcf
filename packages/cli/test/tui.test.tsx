@@ -1,4 +1,4 @@
-import type { Plan } from '@zcf/core'
+import type { BackupInfo, Plan } from '@zcf/core'
 import type { Draft, PlanView, ZcfService } from '@zcf/ui-kit'
 import { render } from 'ink-testing-library'
 import { describe, expect, it } from 'vitest'
@@ -1073,10 +1073,13 @@ describe('terminal UI', () => {
   it('lists backups, restores one after a confirm, and prunes the old runs', async () => {
     const restored: string[] = []
     let prunes = 0
+    // A legacy run from before manifests: no createdAt, so its row shows no date.
+    const dated = backupRun('2026-09-01T08-00-00-000Z', '2026-09-01T08:00:00.000Z')
+    const legacy: BackupInfo = { id: dated.id, reason: dated.reason, entries: dated.entries }
     const { service } = fakeService(
       { version: 1, tools: [] },
       {
-        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        backups: async () => [legacy, backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
         restoreBackup: async id => {
           restored.push(id)
           return { id: 'undo-1', changed: 1, unchanged: 0, missing: 1, corrupt: 0, outside: 0 }
@@ -1090,12 +1093,12 @@ describe('terminal UI', () => {
     const app = await start(service)
     await app.press('0', KEY.enter)
     expect(await app.until('2026-10-24 08:00')).toContain('an apply, 2 file(s)')
-    // Enter asks before anything goes back.
+    // Enter asks before anything goes back; the legacy run is first, without its date.
     await app.press(KEY.enter)
-    expect(app.frame()).toContain('Restore backup 2026-10-24T08-00-00-000Z')
+    expect(app.frame()).toContain('Restore backup 2026-09-01T08-00-00-000Z')
     await app.press(KEY.enter)
     expect(await app.until('Restored 1 changed file(s)')).toContain('Restore undo-1 to undo this.')
-    expect(restored).toEqual(['2026-10-24T08-00-00-000Z'])
+    expect(restored).toEqual(['2026-09-01T08-00-00-000Z'])
     // Prune sits under the runs, and asks too.
     await app.press(KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Prune the oldest backups')
@@ -1149,6 +1152,159 @@ describe('terminal UI', () => {
     // Jump to the broken page so the windowed nav shows its row.
     await app.press('5')
     expect(app.frame()).toMatch(/Settings !/)
+    app.unmount()
+  })
+
+  it('reports a restore with corrupt and outside files and nothing to undo', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async () => ({ changed: 0, unchanged: 1, missing: 0, corrupt: 1, outside: 1 }),
+      },
+    )
+    const app = await start(service)
+    await app.press('0', KEY.enter)
+    await app.until('an apply, 2 file(s)')
+    await app.press(KEY.enter, KEY.enter)
+    const frame = await app.until('did not match their checksum')
+    expect(frame).toContain('outside home')
+    // Nothing was copied ahead of this restore, so there is no undo run to name.
+    expect(frame).not.toContain('to undo this.')
+    app.unmount()
+  })
+
+  it('cancels a restore from the confirm, by row and by Esc', async () => {
+    const restored: string[] = []
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async id => {
+          restored.push(id)
+          return { changed: 0, unchanged: 0, missing: 0, corrupt: 0, outside: 0 }
+        },
+      },
+    )
+    const app = await start(service)
+    await app.press('0', KEY.enter)
+    await app.until('an apply, 2 file(s)')
+    // The Cancel row brings the list back; the backup is untouched.
+    await app.press(KEY.enter, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('an apply, 2 file(s)')
+    // So does Esc from the confirm rows.
+    await app.press(KEY.enter, KEY.escape)
+    expect(app.frame()).toContain('an apply, 2 file(s)')
+    expect(restored).toEqual([])
+    app.unmount()
+  })
+
+  it('says when the backups cannot be listed, restored or pruned', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => {
+          throw new Error('unreadable')
+        },
+      },
+    )
+    const app = await start(service)
+    await app.press('0', KEY.enter)
+    expect(await app.until('Failed: unreadable')).toContain('No backups yet.')
+    app.unmount()
+
+    const failing = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async () => {
+          throw new Error('disk gone')
+        },
+        pruneBackups: async () => {
+          throw new Error('disk gone')
+        },
+      },
+    )
+    const retry = await start(failing.service)
+    await retry.press('0', KEY.enter)
+    await retry.until('an apply, 2 file(s)')
+    await retry.press(KEY.enter, KEY.enter)
+    await retry.until('Failed: disk gone')
+    await retry.press(KEY.down, KEY.down, KEY.enter, KEY.enter)
+    expect(await retry.until('Failed: disk gone')).toContain('an apply, 2 file(s)')
+    retry.unmount()
+  })
+
+  it('reopens a saved bundle, renames it and takes its picks back out', async () => {
+    const { service, saved } = fakeService({
+      version: 1,
+      tools: [],
+      mcpServers: { github: { type: 'http', url: 'https://g.example' } },
+      workflows: [
+        {
+          name: 'existing',
+          agents: ['planner'],
+          skills: [{ source: 'zcf', skills: ['feat'] }],
+          mcp: ['github'],
+        },
+      ],
+    })
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    // The bundle sits under the five presets.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Bundle "existing"')
+    // Rename through the name row's editor.
+    await app.press(KEY.enter, '\u0015', 'r', 'e', 'n', 'a', 'm', 'e', 'd', KEY.enter)
+    expect(app.frame()).toContain('Bundle "renamed"')
+    // The picked agent comes back out.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[ ] planner')
+    // The catalog skill too: its picker opens from the row under the bundle's own sources.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).not.toContain('✓ feat')
+    await app.press(KEY.escape)
+    // The MCP reference goes too; with the skill's row gone it sits under the search row.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[ ] github')
+    // The bundle now holds nothing but its name; save sits right below.
+    await app.press(KEY.down, KEY.enter)
+    await app.press(KEY.save)
+    expect(saved.at(-1)?.workflows).toEqual([{ name: 'renamed' }])
+    app.unmount()
+  })
+
+  it('adds a community skill to a bundle through the search picker', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        searchSkills: async () => ({
+          skills: [{ name: 'using-git-worktrees', source: 'obra/superpowers', description: 'Worktrees.' }],
+          source: 'remote' as const,
+        }),
+      },
+    )
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.enter, 's', 'e', 'a', 'r', 'c', 'h', '-', '1', KEY.enter)
+    // In the builder the agents come first, then the catalog row, then search.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('Search skills')
+    await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
+    await app.until('using-git-worktrees')
+    await app.press(KEY.down, KEY.enter)
+    expect(app.frame()).toContain('obra/superpowers · added')
+    // Esc closes the picker; the hit stays in the bundle as its own source row.
+    await app.press(KEY.escape)
+    expect(app.frame()).toContain('Bundle "search-1"')
+    // The row sits under the agents; the window only shows it once reached.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
+    expect(app.frame()).toContain('obra/superpowers')
+    // x on that row takes the hit out of the bundle again.
+    await app.press('x')
+    expect(app.frame()).not.toContain('obra/superpowers')
     app.unmount()
   })
 })
