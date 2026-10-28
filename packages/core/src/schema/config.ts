@@ -177,8 +177,11 @@ export type Styles = v.InferOutput<typeof StylesSchema>
  * desktop app, `cli` for terminal use; `ccline` installs the CCometixLine status bar and
  * wires it into Claude Code's settings.
  */
+export const MAGPIE_FACES = ['client', 'cli'] as const
+export type MagpieFace = (typeof MAGPIE_FACES)[number]
+
 export const ExtrasSchema = v.object({
-  magpie: v.optional(v.picklist(['client', 'cli'])),
+  magpie: v.optional(v.picklist(MAGPIE_FACES)),
   ccline: v.optional(v.boolean()),
 })
 export type Extras = v.InferOutput<typeof ExtrasSchema>

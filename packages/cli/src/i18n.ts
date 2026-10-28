@@ -295,7 +295,7 @@ const en = {
   'cli.option.agents': 'Built-in agents to install, comma-separated',
   'cli.option.styles': 'Output styles to install, comma-separated',
   'cli.option.defaultStyle': 'The output style the tools use by default',
-  'cli.option.extras': 'Companion tools: magpie, magpie:cli, magpie:client, ccline',
+  'cli.option.extras': 'Install companion tools, such as magpie and the ccline status bar',
   'cli.init.hintTui': 'Nothing to set up. Run zcf alone to pick tools and a provider interactively.',
   'cli.init.saved': 'Saved {path}.',
   'cli.init.presetsUnavailable':
@@ -306,11 +306,12 @@ const en = {
   'cli.init.unknownAgents': 'Unknown agents: {list}. Choose from {known}.',
   'cli.init.unknownStyles': 'Unknown styles: {list}. Choose from {known}.',
   'cli.init.unknownExtras': 'Unknown extras: {list}. Choose from {known}.',
+  'cli.init.oneStyle': '--default-style takes one style id; list the styles to install with --styles.',
   'cli.switch.noProfiles': 'No profiles in the config yet. Add them under "profiles", in the editor or the file.',
   'cli.switch.unknown': 'No profile "{query}". The config has: {known}.',
   'cli.switch.done': 'Switched the provider to "{profile}". Run zcf apply --yes to write it to the tools.',
-  'cli.ccuNoNpx': 'Could not find npx, which runs ccusage. Check your Node.js installation.',
-  'cli.ccuFailed': 'Could not run ccusage: {message}',
+  'cli.ccu.noNpx': 'Could not find npx, which runs ccusage. Check your Node.js installation.',
+  'cli.ccu.failed': 'Could not run ccusage: {message}',
 } as const
 
 export type MessageKey = keyof typeof en
@@ -593,7 +594,7 @@ const zhCN: Record<MessageKey, string> = {
   'cli.option.agents': '要安装的内置子代理，用逗号分隔',
   'cli.option.styles': '要安装的输出风格，用逗号分隔',
   'cli.option.defaultStyle': '各工具默认使用的输出风格',
-  'cli.option.extras': '周边工具：magpie、magpie:cli、magpie:client、ccline',
+  'cli.option.extras': '安装周边工具，如 magpie 与 ccline 状态栏',
   'cli.init.hintTui': '没有要设置的内容。直接运行 zcf，在界面里挑选工具和供应商。',
   'cli.init.saved': '已保存 {path}。',
   'cli.init.presetsUnavailable': '无法加载供应商预设。请检查网络，或用 zcf 手动填写供应商。',
@@ -603,22 +604,29 @@ const zhCN: Record<MessageKey, string> = {
   'cli.init.unknownAgents': '未知的子代理：{list}。可选：{known}。',
   'cli.init.unknownStyles': '未知的输出风格：{list}。可选：{known}。',
   'cli.init.unknownExtras': '未知的周边工具：{list}。可选：{known}。',
+  'cli.init.oneStyle': '--default-style 只接受一个风格 id；要安装多个风格请用 --styles。',
   'cli.switch.noProfiles': '配置中还没有档案。请在配置文件或界面里的 "profiles" 下添加。',
   'cli.switch.unknown': '没有档案「{query}」。当前有：{known}。',
   'cli.switch.done': '已切换到供应商「{profile}」。运行 zcf apply --yes 写入各工具。',
-  'cli.ccuNoNpx': '找不到运行 ccusage 所需的 npx。请检查 Node.js 安装。',
-  'cli.ccuFailed': '无法运行 ccusage：{message}',
+  'cli.ccu.noNpx': '找不到运行 ccusage 所需的 npx。请检查 Node.js 安装。',
+  'cli.ccu.failed': '无法运行 ccusage：{message}',
 }
 
 const english: Record<string, string> = en
 const dictionaries: Record<Lang, Record<string, string>> = { en: english, 'zh-CN': zhCN }
 
-/** The language a `--lang`/`-l` flag names, in either the `--lang en` or `--lang=en` shape. */
-export function langFlag(argv: readonly string[]): Lang | undefined {
+/** Where a `--lang`/`-l` flag sits in argv, in the `--lang en`, `--lang=en`, `-l en` and `-l=en` shapes. */
+function langFlagIndex(argv: readonly string[]): number | undefined {
   const index = argv.findIndex(
     arg => arg === '--lang' || arg.startsWith('--lang=') || arg === '-l' || arg.startsWith('-l='),
   )
-  if (index === -1) return undefined
+  return index === -1 ? undefined : index
+}
+
+/** The language a `--lang`/`-l` flag names, in either the `--lang en` or `--lang=en` shape. */
+export function langFlag(argv: readonly string[]): Lang | undefined {
+  const index = langFlagIndex(argv)
+  if (index === undefined) return undefined
   const value = argv[index]!.includes('=') ? argv[index]!.split('=')[1] : argv[index + 1]
   return isLang(value) ? value : undefined
 }
@@ -630,10 +638,7 @@ export function detectLang(argv: readonly string[], env: NodeJS.ProcessEnv = pro
 
 /** Whether `--lang` or `ZCF_LANG` set the language, so the config's `language` cannot override it. */
 export function isLangPinned(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): boolean {
-  const flagged = argv.some(
-    arg => arg === '--lang' || arg.startsWith('--lang=') || arg === '-l' || arg.startsWith('-l='),
-  )
-  return flagged || isLang(env.ZCF_LANG)
+  return langFlagIndex(argv) !== undefined || isLang(env.ZCF_LANG)
 }
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string

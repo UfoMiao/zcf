@@ -51,6 +51,13 @@ describe('createLocalService', () => {
     expect(await service().load()).not.toHaveProperty('envMirror')
   })
 
+  it('answers with no presets when no source can be reached', async () => {
+    // A port on this machine that nothing listens on: the fetch refuses at once, so no
+    // real network is touched and the answer is the empty list.
+    const ctx = createContext({ home, platform: 'linux', env: { ZCF_PRESETS_URL: 'https://127.0.0.1:1/none.json' } })
+    await expect(createLocalService(ctx, path).presets()).resolves.toEqual({ presets: [], source: 'none' })
+  })
+
   it('backs up the config before the first save of a session', async () => {
     await mkdir(join(path, '..'), { recursive: true })
     await writeFile(path, '{ "version": 1, "tools": [] }\n')

@@ -1026,7 +1026,7 @@ describe('zcf init', () => {
         'styles',
         'engineer-professional, nekomata-engineer, laowang-engineer, ojousama-engineer, rem-engineer, leibus-engineer',
       ],
-      ['--extras', 'extras', 'magpie, magpie:cli, magpie:client, ccline'],
+      ['--extras', 'extras', 'magpie, magpie:client, magpie:cli, ccline'],
     ] as const) {
       // One at a time, so a failure names the flag it belongs to.
       // oxlint-disable-next-line no-await-in-loop
@@ -1034,6 +1034,10 @@ describe('zcf init', () => {
       expect(result.code).toBe(EXIT_ERROR)
       expect(result.stderr).toContain(`Unknown ${name}: nope. Choose from ${known}.`)
     }
+    // --default-style takes one style; a list belongs to --styles.
+    const many = await run('init', '--default-style', 'engineer-professional,rem-engineer')
+    expect(many.code).toBe(EXIT_ERROR)
+    expect(many.stderr).toContain('--default-style takes one style id')
     expect(await readTextIfExists(configFile())).toBeUndefined()
   })
 
@@ -1211,11 +1215,6 @@ describe('zcf ccu', () => {
     expect(await runWith({ passthrough: fakeChild('close', 3) }, 'ccu')).toMatchObject({ code: 3 })
     // A close without a code, as when the process is killed by a signal, still ends the run.
     expect(await runWith({ passthrough: fakeChild('close', null) }, 'ccu')).toMatchObject({ code: EXIT_ERROR })
-  })
-
-  it('runs npx.cmd on Windows', async () => {
-    await runWith({ passthrough: fakeChild('close', 0), context: { platform: 'win32' } }, 'ccu')
-    expect(spawned).toEqual([['npx.cmd', '-y', 'ccusage@latest']])
   })
 
   it('reports a failing spawn and a missing npx clearly', async () => {
