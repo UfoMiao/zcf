@@ -47,7 +47,6 @@ async function start(service: ZcfService, options: { lang?: Lang; langPinned?: b
   const app = render(
     <App service={service} lang={options.lang ?? 'en'} langPinned={options.langPinned ?? false} home="/home/me" />,
   )
-  await tick()
   const press = async (...keys: string[]) => {
     for (const key of keys) {
       app.stdin.write(key)
@@ -67,6 +66,9 @@ async function start(service: ZcfService, options: { lang?: Lang; langPinned?: b
     await tick()
     return frame()
   }
+  // One tick is not always enough for the config to load on a busy machine, and a key
+  // pressed while it still loads lands on the loading screen and silently moves focus.
+  await until('~/.ufomiao/zcf/config.json')
   return { ...app, press, frame, until }
 }
 
@@ -198,7 +200,7 @@ describe('terminal UI', () => {
     expect(app.frame()).not.toContain('(L)')
     // The footer hints stop offering the switch too: L is a no-op while pinned.
     expect(app.frame()).not.toContain('L lang')
-    expect(app.frame()).toContain('↑↓ choose · Enter open · Ctrl+S save · q quit')
+    expect(app.frame()).toContain('↑↓ choose · 1-9 go · Enter open · Ctrl+S save · q quit')
     await app.press('l')
     expect(app.frame()).toContain('Settings')
     expect(app.frame()).not.toContain(zh('tui.page.tools'))
@@ -397,7 +399,7 @@ describe('terminal UI', () => {
     const app = await start(service)
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter)
-    expect(app.frame()).toContain('› keyword')
+    expect(app.frame()).toContain('› 1 keyword')
     app.unmount()
   })
 
@@ -412,13 +414,31 @@ describe('terminal UI', () => {
       { searchSkills: async () => ({ skills: hits, source: 'remote' as const }) },
     )
     const app = await start(service)
-    // The mock stream reports no rows on its own; speak for a 24-line terminal so the
-    // list reads the height the way a real one does.
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24 })
+    // The mock stream reports no rows on its own; speak for the terminal so the app
+    // and its lists read the height the way a real one does. A 40-line terminal holds
+    // the query row and all 15 hits: the ordinals run to two digits, and every label
+    // still starts in one column whether its ordinal is one digit or two.
+    Object.defineProperty(app.stdout, 'rows', { get: () => 40, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     await app.until('skill-00')
+    expect(app.frame()).toContain('  2 skill-00')
+    expect(app.frame()).toContain(' 10 skill-08')
+    const column = (text: string) =>
+      app
+        .frame()
+        .split('\n')
+        .find(line => line.includes(text))
+        ?.indexOf(text)
+    expect(column('skill-00')).toBe(column('skill-08'))
     // A 24-line terminal cannot hold 16 rows; the list shows a window with arrows.
+    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
     const head = app.frame()
     expect(head).toContain('skill-00')
     expect(head).not.toContain('skill-14')
@@ -465,9 +485,9 @@ describe('terminal UI', () => {
   })
 
   it('folds the banner one row below the fold line, and holds the box well above it', async () => {
-    // The box, the status row, a panel around its 6 nav entries, the key bar and a
-    // status message add up to 22 rows; the fold line keeps a row of slack for the
-    // measured minimum drifting between platforms, so 22 folds and 24 holds the box.
+    // The box, the status row, a panel around a window of nav entries, the key bar
+    // and a status message add up to 22 rows; the fold line keeps a row of slack for
+    // the measured minimum drifting between platforms, so 22 folds and 24 holds the box.
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     Object.defineProperty(app.stdout, 'rows', { get: () => 22, configurable: true })
@@ -505,10 +525,10 @@ describe('terminal UI', () => {
     await app.press(KEY.enter)
     // A click selects the row and runs what Enter would run: the Codex checkbox turns on.
     await click(lineOf('[ ] Codex'), 40)
-    expect(app.frame()).toContain('[x] Codex')
+    expect(await app.until('[x] Codex')).toContain('[x] Codex')
     // A click on a nav entry opens that page.
-    await click(lineOf('  Provider'), 5)
-    expect(app.frame()).toContain('One API provider for every tool.')
+    await click(lineOf('2 Provider'), 5)
+    expect(await app.until('One API provider for every tool.')).toContain('One API provider for every tool.')
     app.unmount()
   })
 
@@ -536,15 +556,115 @@ describe('terminal UI', () => {
     const at = app
       .frame()
       .split('\n')
-      .findIndex(line => line.includes('  Provider'))
+      .findIndex(line => line.includes('2 Provider'))
     expect(at).toBeGreaterThanOrEqual(0)
     // The wheel turns the page choice down to Provider and back up to Tools.
     app.stdin.write(`\u001B[<65;5;${at + 1}M`)
-    await tick()
-    expect(app.frame()).toContain('One API provider for every tool.')
+    expect(await app.until('One API provider for every tool.')).toContain('One API provider for every tool.')
     app.stdin.write(`\u001B[<64;5;${at + 1}M`)
+    expect(await app.until('Pick the agent tools')).toContain('Pick the agent tools')
+    app.unmount()
+  })
+
+  it('groups the nav into sections with headers and digit-prefixed pages', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    const frame = app.frame()
+    expect(frame).toContain('Init config')
+    expect(frame).toContain('1 Agent tools')
+    expect(frame).toContain('2 Provider')
+    expect(frame).toContain('6 Apply')
+    // The empty sections hold their place too once the terminal is tall enough.
+    Object.defineProperty(app.stdout, 'rows', { get: () => 40, configurable: true })
+    app.stdout.emit('resize')
     await tick()
+    await tick()
+    const tall = app.frame()
+    for (const header of ['Init config', 'Workflows', 'More tools', 'Backup']) expect(tall).toContain(header)
+    app.unmount()
+  })
+
+  it('jumps to a page by its digit, ignoring digits with no page behind them', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('4')
+    expect(app.frame()).toContain('Search skills')
+    await app.press('1')
     expect(app.frame()).toContain('Pick the agent tools')
+    // Only six pages exist this wave: 7-9 and 0 name none, so the page stays.
+    await app.press('7', '9', '0')
+    expect(app.frame()).toContain('Pick the agent tools')
+    app.unmount()
+  })
+
+  it('numbers visible rows and picks one with its digit without running it', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('› 1 [ ] Claude Code')
+    expect(app.frame()).toContain('  2 [ ] Codex')
+    // The digit moves the selection only; Enter still does the toggling.
+    await app.press('2')
+    expect(app.frame()).toContain('› 2 [ ] Codex')
+    expect(app.frame()).not.toContain('[x] Codex')
+    // A digit past the visible window is ignored.
+    await app.press('5')
+    expect(app.frame()).toContain('› 2 [ ] Codex')
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('[x] Codex')
+    app.unmount()
+  })
+
+  it('keeps digit keys for the text editor while a row is edited', async () => {
+    const { service, saved } = fakeService({
+      version: 1,
+      tools: [],
+      provider: { name: 'old', apiKey: 'sk-very-secret' },
+    })
+    const app = await start(service)
+    await app.press(KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press('\u007F\u007F\u007F', '4', '2')
+    await app.press(KEY.enter, KEY.save)
+    expect(saved).toEqual([{ version: 1, tools: [], provider: { name: '42', apiKey: 'sk-very-secret' } }])
+    app.unmount()
+  })
+
+  it('ignores a mouse click on a section header', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    Object.defineProperty(app.stdout, 'rows', { get: () => 40, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
+    const at = app
+      .frame()
+      .split('\n')
+      .findIndex(line => line.includes('Workflows'))
+    expect(at).toBeGreaterThanOrEqual(0)
+    app.stdin.write(`\u001B[<0;5;${at + 1}M`)
+    await tick()
+    // The page did not change, and the nav keeps the focus: j still moves the page choice.
+    expect(app.frame()).toContain('Pick the agent tools')
+    await app.press('j')
+    expect(app.frame()).toContain('One API provider for every tool.')
+    app.unmount()
+  })
+
+  it('windows the nav in a short terminal, keeping the open page in view', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
+    const lines = app.frame().split('\n')
+    expect(lines).toHaveLength(24)
+    expect(app.frame()).toContain('1 Agent tools')
+    expect(app.frame()).not.toContain('Backup')
+    // Moving down the pages pulls the later rows into the window.
+    await app.press('j', 'j', 'j', 'j', 'j')
+    expect(app.frame()).toContain('› 6 Apply')
+    expect(app.frame()).toContain('↑')
     app.unmount()
   })
 
@@ -552,9 +672,10 @@ describe('terminal UI', () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     await app.press(KEY.enter)
-    // One wheel turn down moves one row, to Codex.
+    // One wheel turn down moves one row, to Codex — wait for the pointer to move before
+    // the next key, so it reads the selection the wheel just made.
     app.stdin.write('\u001B[<65;40;14M')
-    await tick()
+    expect(await app.until('› 2 [ ] Codex')).toContain('› 2 [ ] Codex')
     await app.press(KEY.enter)
     expect(app.frame()).toContain('[x] Codex')
     app.unmount()
@@ -570,9 +691,8 @@ describe('terminal UI', () => {
       .findIndex(line => line.includes('keyword'))
     expect(at).toBeGreaterThanOrEqual(0)
     app.stdin.write(`\u001B[<0;30;${at + 1}M`)
-    await tick()
     // The click opened the query editor, the way Enter does.
-    expect(app.frame()).toContain('Enter confirm')
+    expect(await app.until('Enter confirm')).toContain('Enter confirm')
     app.unmount()
   })
 
@@ -703,7 +823,7 @@ describe('terminal UI', () => {
       // oxlint-disable-next-line no-await-in-loop
       await app.press(KEY.down)
     }
-    expect(app.frame()).toContain('› Remove the provider')
+    expect(app.frame()).toContain('› 4 Remove the provider')
     await app.press(KEY.enter, KEY.save)
     expect(saved).toEqual([{ version: 1, tools: [] }])
     app.unmount()

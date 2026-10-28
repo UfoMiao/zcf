@@ -36,10 +36,10 @@ const LINE = {
 
 /**
  * Rows the whole app needs around its boxed banner: the box's 11 lines, the status
- * row, a panel tall enough for its border and the 6 nav entries, the key bar and a
- * transient status message — plus a row of slack, since the measured minimum drifts
- * by a line between platforms. Below that yoga starts squeezing the box's top line
- * away, so the banner folds to one line and a short terminal still holds the app whole.
+ * row, a panel tall enough for its border and a window of nav entries, the key bar
+ * and a transient status message — plus a row of slack, since the measured minimum
+ * drifts by a line between platforms. Below that yoga starts squeezing the box's top
+ * line away, so the banner folds to one line and a short terminal still holds the app whole.
  */
 export const FULL_BANNER_ROWS = 23
 

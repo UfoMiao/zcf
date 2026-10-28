@@ -1,9 +1,11 @@
+import { digitIndex, isDigitKey } from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
 import { useEffect, useRef, useState } from 'react'
 
 import { contains, onMousePress, wheelDirection } from './mouse'
 import { TextInput } from './text-input'
 import { useTerminalRows } from './use-terminal-rows'
+import { windowRange } from './window'
 
 export type RowAction =
   | { type: 'text'; initial: string; placeholder?: string; mask?: boolean | 'value'; commit: (text: string) => void }
@@ -52,8 +54,9 @@ function rowHeight(item: Row, selected: boolean, active: boolean): number {
 }
 
 /**
- * A vertical list of labelled rows. ↑/↓ move, Enter edits a text row, runs an action
- * or cycles a choice (←/→ cycle too), x removes an item, and Esc goes back.
+ * A vertical list of labelled rows, numbered within the visible window. ↑/↓ move,
+ * a digit picks the row it names without running it, Enter edits a text row, runs an
+ * action or cycles a choice (←/→ cycle too), x removes an item, and Esc goes back.
  * A list taller than the terminal shows a window around the cursor, with arrows at the cut ends.
  */
 export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
@@ -62,17 +65,21 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   const listRef = useRef<DOMElement | null>(null)
   const index = Math.min(selected, Math.max(0, rows.length - 1))
   const row = rows[index]
-  // Values line up in one column after the longest label. Rows without a value count too:
-  // an edited row renders in this box, and its label must never wrap inside a narrower one.
-  const labelWidth = Math.max(0, ...rows.map(item => columns(item.label))) + 4
 
   // The terminal height caps the list; the window follows the cursor.
   const visible = Math.max(3, useTerminalRows() - LIST_CHROME)
-  const capped = rows.length > visible
-  // Both arrow lines are reserved whenever the list is capped, shown or not.
-  const size = capped ? visible - 2 : rows.length
-  const start = capped ? Math.max(0, Math.min(index - (size >> 1), rows.length - size)) : 0
+  const { capped, start, size } = windowRange(rows.length, index, visible)
   const shown = rows.slice(start, start + size)
+
+  // Ordinals number the visible window — scrolling renumbers what it shows, which is
+  // the design, not a bug to fix — padded to the width of the window's largest ordinal,
+  // so every label starts in the same column whether it sits under a 1 or a 10.
+  const ordinalDigits = String(shown.length).length
+  const ordinalWidth = ordinalDigits + 1
+  // Values line up in one column after the longest label, ordinal prefix included.
+  // Rows without a value count too: an edited row renders in this box, and its label
+  // must never wrap inside a narrower one.
+  const labelWidth = Math.max(0, ...rows.map(item => columns(item.label))) + 2 + ordinalWidth + 2
 
   const setEdit = (value: boolean) => {
     setEditing(value)
@@ -125,7 +132,12 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
     (input, key) => {
       if (key.upArrow || input === 'k') setSelected(Math.max(0, index - 1))
       else if (key.downArrow || input === 'j') setSelected(Math.min(rows.length - 1, index + 1))
-      else if (key.escape || (key.leftArrow && row?.action?.type !== 'cycle')) onBack()
+      // A digit picks the visible row it names without running it; a digit past the
+      // window is ignored.
+      else if (input && isDigitKey(input)) {
+        const at = start + digitIndex(input)
+        if (at < start + shown.length) setSelected(at)
+      } else if (key.escape || (key.leftArrow && row?.action?.type !== 'cycle')) onBack()
       else if (!row) return
       else if (input === 'x' && row.remove) row.remove()
       else if (row.action?.type === 'cycle' && (key.leftArrow || key.rightArrow || input === ' ')) {
@@ -161,7 +173,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
             <Box>
               <Box width={editor || item.value !== undefined ? labelWidth : undefined} flexShrink={0}>
                 <Text color={current && active ? 'cyan' : undefined}>
-                  {pointer} {item.label}
+                  {pointer} {String(offset + 1).padStart(ordinalDigits, ' ')} {item.label}
                 </Text>
               </Box>
               {editor ?? (item.value !== undefined && <Text dimColor={!current}>{item.value}</Text>)}
