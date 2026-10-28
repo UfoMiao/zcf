@@ -1,9 +1,11 @@
+import { digitIndex, isDigitKey } from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
 import { useEffect, useRef, useState } from 'react'
 
 import { contains, onMousePress, wheelDirection } from './mouse'
 import { TextInput } from './text-input'
 import { useTerminalRows } from './use-terminal-rows'
+import { windowRange } from './window'
 
 export type RowAction =
   | { type: 'text'; initial: string; placeholder?: string; mask?: boolean | 'value'; commit: (text: string) => void }
@@ -66,10 +68,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
 
   // The terminal height caps the list; the window follows the cursor.
   const visible = Math.max(3, useTerminalRows() - LIST_CHROME)
-  const capped = rows.length > visible
-  // Both arrow lines are reserved whenever the list is capped, shown or not.
-  const size = capped ? visible - 2 : rows.length
-  const start = capped ? Math.max(0, Math.min(index - (size >> 1), rows.length - size)) : 0
+  const { capped, start, size } = windowRange(rows.length, index, visible)
   const shown = rows.slice(start, start + size)
 
   // Values line up in one column after the longest label, ordinal prefix included.
@@ -129,10 +128,10 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
     (input, key) => {
       if (key.upArrow || input === 'k') setSelected(Math.max(0, index - 1))
       else if (key.downArrow || input === 'j') setSelected(Math.min(rows.length - 1, index + 1))
-      // A digit picks the visible row it names — 1 through 9, then 0 for the tenth —
-      // without running it; a digit past the window is ignored.
-      else if (input && /^[0-9]$/.test(input)) {
-        const at = start + (input === '0' ? 9 : Number(input) - 1)
+      // A digit picks the visible row it names without running it; a digit past the
+      // window is ignored.
+      else if (input && isDigitKey(input)) {
+        const at = start + digitIndex(input)
         if (at < start + shown.length) setSelected(at)
       } else if (key.escape || (key.leftArrow && row?.action?.type !== 'cycle')) onBack()
       else if (!row) return

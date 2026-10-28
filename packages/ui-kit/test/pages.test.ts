@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { PageId } from '../src/pages'
 import {
   addSourcedSkill,
+  digitIndex,
   hasSourcedSkill,
   NAV,
   navRows,
@@ -34,6 +35,12 @@ describe('NAV', () => {
       'nav.extras',
       'nav.backup',
     ])
+  })
+
+  it('maps digit keys to the row they name, 0 being the tenth', () => {
+    expect(digitIndex('1')).toBe(0)
+    expect(digitIndex('9')).toBe(8)
+    expect(digitIndex('0')).toBe(9)
   })
 
   it('keeps a section without pages as a lone header that adds no pages', () => {

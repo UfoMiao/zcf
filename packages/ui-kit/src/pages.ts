@@ -16,7 +16,8 @@ export interface NavSection {
 
 /**
  * The nav column's sections. Sections without pages yet hold their place so later
- * waves can add pages without reshuffling the menu; both front ends render this.
+ * waves can add pages without reshuffling the menu. The terminal UI renders this;
+ * the web nav follows PAGES until the new sections gain their pages.
  */
 export const NAV: readonly NavSection[] = [
   { id: 'init', labelKey: 'nav.init', pages: ['tools', 'provider', 'skills', 'mcp', 'settings', 'apply'] },
@@ -30,6 +31,16 @@ export const PAGES: readonly PageId[] = NAV.flatMap(section => section.pages)
 
 /** The digit a page is reached by: 1 through 9, then 0 for the tenth. */
 const DIGITS = '1234567890'
+
+/** The row a digit key names within whatever list digit keys walk. */
+export function digitIndex(digit: string): number {
+  return digit === '0' ? 9 : Number(digit) - 1
+}
+
+/** Whether an input is one of the digit keys that name a row. */
+export function isDigitKey(input: string): boolean {
+  return /^[0-9]$/.test(input)
+}
 
 export type NavRow =
   | { kind: 'header'; id: string; labelKey: string }

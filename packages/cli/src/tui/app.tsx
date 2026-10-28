@@ -1,7 +1,16 @@
 import type { ToolId, ToolStatus } from '@zcf/core'
 import { isLanguageSetting, LANGUAGES } from '@zcf/core'
 import type { PageId, ZcfService } from '@zcf/ui-kit'
-import { issuesAt, navRows, PAGE_ROOTS, PAGES, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
+import {
+  digitIndex,
+  isDigitKey,
+  issuesAt,
+  navRows,
+  PAGE_ROOTS,
+  PAGES,
+  TOOL_OPTIONS,
+  useConfigEditor,
+} from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useApp, useInput, useStdin, useStdout } from 'ink'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
@@ -15,6 +24,7 @@ import { attachMouseStdin, contains, onMousePress, publishMousePress, setMouseRe
 import type { PageProps } from './pages'
 import { McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
 import { useTerminalRows } from './use-terminal-rows'
+import { windowRange } from './window'
 
 export interface AppProps {
   service: ZcfService
@@ -36,14 +46,11 @@ const TONE_COLOR = { info: 'green', warning: 'yellow', error: 'red' } as const
 const NAV_ROWS = navRows()
 
 /**
- * Lines the nav column may not claim: the boxed banner, the status row, the panel's
- * borders and the key bar. A terminal shorter than that gets a windowed nav anyway,
- * the way a short terminal gets the folded banner.
+ * Lines the nav column may not claim: the banner box (11) + the status row (1) + the
+ * panel's borders (2) + the key bar (1). A transient status message takes one more,
+ * which at worst hides a windowed nav's bottom arrow for as long as it shows.
  */
 const NAV_CHROME = 15
-
-/** A digit names a page: 1 through 9, then 0 for the tenth. */
-const DIGIT = /^[0-9]$/
 
 /**
  * The terminal UI: pages on the left, the open page on the right. Edits stay in a
@@ -66,12 +73,13 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const navRef = useRef<DOMElement | null>(null)
 
   // The nav windows the way a row list does when it outgrows the panel, keeping the
-  // open page in view; the arrows are reserved whenever the nav is capped.
+  // open page in view.
   const navCursor = NAV_ROWS.findIndex(row => row.kind === 'page' && row.id === page)
-  const navVisible = Math.max(4, terminalRows - NAV_CHROME)
-  const navCapped = NAV_ROWS.length > navVisible
-  const navSize = navCapped ? navVisible - 2 : NAV_ROWS.length
-  const navStart = navCapped ? Math.max(0, Math.min(navCursor - (navSize >> 1), NAV_ROWS.length - navSize)) : 0
+  const {
+    capped: navCapped,
+    start: navStart,
+    size: navSize,
+  } = windowRange(NAV_ROWS.length, navCursor, Math.max(4, terminalRows - NAV_CHROME))
   const navShown = NAV_ROWS.slice(navStart, navStart + navSize)
 
   // Mouse reporting for the whole UI: turn it on, parse what the terminal sends, restore on exit.
@@ -168,9 +176,9 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
         return
       }
       if (focus !== 'nav' && editor.status === 'ready') return
-      // A digit jumps to the page it names: 1 through 9, then 0 for the tenth.
-      if (input && DIGIT.test(input)) {
-        const target = PAGES[input === '0' ? 9 : Number(input) - 1]
+      // A digit jumps to the page it names.
+      if (input && isDigitKey(input)) {
+        const target = PAGES[digitIndex(input)]
         if (target) setPage(target)
         return
       }
