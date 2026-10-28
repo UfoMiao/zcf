@@ -1,22 +1,11 @@
 import type { WorkflowPreset } from '@zcf/core'
 import type { ConfigIssue, ToolId } from '@zcf/core/schema'
-import { BUILTIN_SKILLS_SOURCE, CONFIG_LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
+import { BUILTIN_SKILLS_SOURCE, CONFIG_LANGUAGES, MIRRORS, TOOL_IDS, TOOL_NAMES } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
 import { isTable, issuesAt } from './draft'
 
-export type PageId =
-  | 'init'
-  | 'tools'
-  | 'provider'
-  | 'mcp'
-  | 'skills'
-  | 'workflows'
-  | 'styles'
-  | 'settings'
-  | 'apply'
-  | 'extras'
-  | 'backup'
+export type PageId = 'tools' | 'provider' | 'mcp' | 'skills' | 'workflows' | 'styles' | 'settings' | 'extras' | 'backup'
 
 /** One grouped chunk of the nav column, the way v3 grouped its menu. */
 export interface NavSection {
@@ -27,15 +16,14 @@ export interface NavSection {
 }
 
 /**
- * The nav column's sections, layered the way v3 layered its menu: the initialization
- * walkthrough first, then the single settings it walks through, then the companion
- * tools around the code tools, then ZCF itself.
+ * The nav column's sections: the settings that shape the config, the companion tools
+ * around the coding tools, and ZCF itself. Applying sits on a key, not a page.
  */
 export const NAV: readonly NavSection[] = [
   {
     id: 'config',
     labelKey: 'nav.config',
-    pages: ['init', 'tools', 'provider', 'mcp', 'skills', 'workflows', 'styles', 'settings', 'apply'],
+    pages: ['tools', 'provider', 'mcp', 'skills', 'workflows', 'styles', 'settings'],
   },
   { id: 'extras', labelKey: 'nav.extras', pages: ['extras'] },
   { id: 'zcf', labelKey: 'nav.zcf', pages: ['backup'] },
@@ -84,14 +72,11 @@ export function navRows(sections: readonly NavSection[] = NAV): readonly NavRow[
  * the page.
  */
 export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>> = {
-  // The initialization walkthrough page; it links to every other page, changing nothing itself.
-  init: undefined,
   tools: ['tools'],
   provider: ['provider', 'profiles'],
   mcp: ['mcpServers'],
   skills: ['skills'],
   settings: ['mirror', 'configLanguage'],
-  apply: undefined,
   // A workflow is a bundle of skills and agents, v3-style; the agents are picked here.
   workflows: ['workflows', 'agents'],
   styles: ['styles'],
@@ -402,4 +387,86 @@ export function freshName(taken: readonly string[], base = 'server'): string {
   let index = 2
   while (taken.includes(`${base}-${index}`)) index++
   return `${base}-${index}`
+}
+
+/** One line of the apply confirmation: a top-level config key and what it now holds. */
+export interface ConfigChange {
+  /** The top-level config key that differs from what is saved. */
+  key: string
+  /** A short summary of the draft's value; absent when the key is being removed. */
+  value?: string
+}
+
+/** A value shortened for one confirmation line: lists join, anything else stringifies. */
+function lineSummary(value: unknown): string {
+  if (Array.isArray(value)) return value.map(item => (isTable(item) ? lineSummary(item) : String(item))).join(', ')
+  if (isTable(value)) {
+    const provider = typeof value.name === 'string' && value.name ? value.name : undefined
+    if (provider) return provider
+    return Object.entries(value)
+      .filter(([, part]) => part !== undefined)
+      .map(([key, part]) => `${key}: ${lineSummary(part)}`)
+      .join(', ')
+  }
+  return String(value)
+}
+
+/**
+ * The top-level keys the draft changed against the saved config, each with a one-line
+ * summary of what it now holds. Key order never matters, as with `sameProvider`.
+ */
+export function summarizeChanges(base: unknown, draft: unknown): ConfigChange[] {
+  const from = isTable(base) ? base : {}
+  const to = isTable(draft) ? draft : {}
+  const keys = Object.keys(from)
+  for (const key of Object.keys(to)) if (!(key in from) && key !== 'version') keys.push(key)
+  return keys
+    .filter(key => key !== 'version' && !sameProvider(from[key], to[key]))
+    .map(key => ({ key, value: to[key] === undefined ? undefined : lineSummary(to[key]) }))
+}
+
+/** One line of an apply confirmation's "what this installs" half. */
+export interface InstallPick {
+  /** Which list the line belongs to; the front end labels it with a page name. */
+  kind: 'tool' | 'source' | 'agents' | 'bundles' | 'styles' | 'servers' | 'extra'
+  /** The line's own name: a tool, a source, an id. */
+  label: string
+  /** What the line says beside the label; absent for plain installs. */
+  note?: 'installed' | 'all'
+}
+
+/** What applying the draft installs, as confirmation lines. Shared by both front ends. */
+export function installPicks(
+  draft: unknown,
+  detected: Partial<Record<string, { installed?: boolean }>>,
+): InstallPick[] {
+  const table = isTable(draft) ? draft : {}
+  const picks: InstallPick[] = []
+  for (const id of draftIds(table.tools)) {
+    const known = TOOL_OPTIONS.find(tool => tool === id)
+    if (known)
+      picks.push({ kind: 'tool', label: TOOL_NAMES[known], note: detected[known]?.installed ? 'installed' : undefined })
+  }
+  for (const item of Array.isArray(table.skills) ? table.skills : []) {
+    const source = isTable(item) ? item : {}
+    const names = draftIds(source.skills)
+    picks.push({
+      kind: 'source',
+      label: typeof source.source === 'string' ? source.source : '',
+      note: names.length === 0 ? 'all' : undefined,
+    })
+    for (const name of names) picks.push({ kind: 'source', label: `  ${name}` })
+  }
+  for (const id of draftIds(table.agents)) picks.push({ kind: 'agents', label: id })
+  const bundles = Array.isArray(table.workflows) ? table.workflows : []
+  for (const item of bundles)
+    picks.push({ kind: 'bundles', label: isTable(item) && typeof item.name === 'string' ? item.name : '' })
+  for (const id of draftIds(isTable(table.styles) ? table.styles.outputStyles : undefined))
+    picks.push({ kind: 'styles', label: id })
+  for (const name of Object.keys(isTable(table.mcpServers) ? table.mcpServers : {}))
+    picks.push({ kind: 'servers', label: name })
+  const extras = isTable(table.extras) ? table.extras : {}
+  if (extras.magpie !== undefined) picks.push({ kind: 'extra', label: 'magpie', note: undefined })
+  if (extras.ccline === true) picks.push({ kind: 'extra', label: 'ccline' })
+  return picks
 }

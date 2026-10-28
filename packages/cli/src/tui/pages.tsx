@@ -11,10 +11,9 @@ import {
   TOOL_NAMES,
   WORKFLOW_PRESETS,
 } from '@zcf/core'
-import type { ConfigEditor, DraftPath, Field, McpType, PageId } from '@zcf/ui-kit'
+import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
 import {
   addSourcedSkill,
-  draftIds,
   fieldValue,
   formatArgs,
   freshName,
@@ -51,8 +50,6 @@ export interface PageProps {
   active: boolean
   onBack: () => void
   onEditing: (editing: boolean) => void
-  /** Opens another page; the walkthrough page uses it to hand the user on. */
-  onNavigate?: (page: PageId) => void
 }
 
 const MASK = '••••••••'
@@ -201,83 +198,6 @@ export function ToolsPage({
     <Box flexDirection="column" gap={1}>
       <Text dimColor>{t('tui.tools.intro')}</Text>
       <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
-    </Box>
-  )
-}
-
-/**
- * The v3-style first page: every setup step as one row, its value saying where that
- * step stands, Enter opening the page that does it. The walkthrough changes nothing
- * itself — it is the map, not the territory.
- */
-export function InitPage({ editor, t, active, onBack, onEditing, onNavigate }: PageProps) {
-  const draft = editor.draft
-  const todo = t('tui.init.todo')
-  const toolList = draftIds(draft.tools)
-  const toolNames = TOOL_OPTIONS.filter(id => toolList.includes(id)).map(id => TOOL_NAMES[id])
-  const servers = Object.keys(isTable(draft.mcpServers) ? draft.mcpServers : {})
-  const sources = Array.isArray(draft.skills) ? draft.skills : []
-  const agents = draftIds(draft.agents)
-  const styles = isTable(draft.styles) && Array.isArray(draft.styles.outputStyles) ? draft.styles.outputStyles : []
-  const bundles = Array.isArray(draft.workflows) ? draft.workflows : []
-  const mirror = typeof draft.mirror === 'string' ? draft.mirror : 'official'
-  const rows: Row[] = [
-    {
-      id: 'step-tools',
-      label: t('tui.page.tools'),
-      value: toolNames.length > 0 ? toolNames.join(', ') : todo,
-      action: { type: 'run', run: () => onNavigate?.('tools') },
-    },
-    {
-      id: 'step-provider',
-      label: t('tui.page.provider'),
-      value: (isTable(draft.provider) && asText(draft.provider.name)) || todo,
-      action: { type: 'run', run: () => onNavigate?.('provider') },
-    },
-    {
-      id: 'step-mcp',
-      label: t('tui.page.mcp'),
-      value: servers.length > 0 ? servers.join(', ') : todo,
-      action: { type: 'run', run: () => onNavigate?.('mcp') },
-    },
-    {
-      id: 'step-skills',
-      label: t('tui.page.skills'),
-      value: sources.length > 0 ? t('tui.init.skillSources', { count: sources.length }) : todo,
-      action: { type: 'run', run: () => onNavigate?.('skills') },
-    },
-    {
-      id: 'step-workflows',
-      label: t('tui.page.workflows'),
-      value:
-        agents.length + bundles.length > 0
-          ? t('tui.init.workflowSummary', { agents: agents.length, bundles: bundles.length })
-          : todo,
-      action: { type: 'run', run: () => onNavigate?.('workflows') },
-    },
-    {
-      id: 'step-styles',
-      label: t('tui.page.styles'),
-      value: styles.length > 0 ? t('tui.init.picked', { count: styles.length }) : todo,
-      action: { type: 'run', run: () => onNavigate?.('styles') },
-    },
-    {
-      id: 'step-settings',
-      label: t('tui.page.settings'),
-      value: t(`mirror.${mirror}`),
-      action: { type: 'run', run: () => onNavigate?.('settings') },
-    },
-    {
-      id: 'step-apply',
-      label: t('tui.page.apply'),
-      value: editor.dirty ? t('tui.init.pending') : t('tui.init.clean'),
-      action: { type: 'run', run: () => onNavigate?.('apply') },
-    },
-  ]
-  return (
-    <Box flexDirection="column" gap={1}>
-      <Text dimColor>{t('tui.init.intro')}</Text>
-      <RowList key="init" rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
     </Box>
   )
 }

@@ -17,6 +17,8 @@ export interface ConfigEditor {
   /** The mirror `ZCF_MIRROR` picks, which outranks the draft's `mirror` while ZCF runs. */
   envMirror?: Mirror
   dirty: boolean
+  /** The draft as last loaded or saved, the baseline an apply's change list is drawn against. */
+  saved: Draft | undefined
   saving: boolean
   update: (path: DraftPath, value: unknown) => void
   replace: (draft: Draft) => void
@@ -116,6 +118,7 @@ export function useConfigEditor(service: ZcfService): ConfigEditor {
     loadIssues,
     envMirror,
     dirty: JSON.stringify(draft) !== savedText,
+    saved,
     saving,
     update,
     replace: setDraft,

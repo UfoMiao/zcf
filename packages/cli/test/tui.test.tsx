@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest'
 import type { Lang } from '../src/i18n'
 import { createTranslator } from '../src/i18n'
 import { App } from '../src/tui/app'
-import { Banner } from '../src/tui/banner'
 
 const KEY = {
   enter: '\r',
@@ -65,10 +64,18 @@ async function start(service: ZcfService, options: { lang?: Lang; langPinned?: b
   const app = render(
     <App service={service} lang={options.lang ?? 'en'} langPinned={options.langPinned ?? false} home="/home/me" />,
   )
+  // The fake stdout defaults to a stub short of the centered apply dialog; a real-size
+  // terminal is the honest default, and the windowing tests pin their own smaller rows.
+  Object.defineProperty(app.stdout, 'rows', { get: () => 30, configurable: true })
+  Object.defineProperty(app.stdout, 'columns', { get: () => 100, configurable: true })
+  app.stdout.emit('resize')
   const press = async (...keys: string[]) => {
     for (const key of keys) {
       app.stdin.write(key)
-      // Each key needs its own render before the next one arrives.
+      // Each key needs its own render before the next one arrives; a second tick
+      // keeps a busy run from interleaving the next key with the previous render.
+      // oxlint-disable-next-line no-await-in-loop
+      await tick()
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
@@ -198,20 +205,12 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
-  it('shows the v3 banner with the tagline and version at the top', async () => {
+  it('shows the one-line header: badge, version, path and the language', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    expect(app.frame()).toContain('Zero-Config Code Flow')
-    expect(app.frame()).toContain('One config for your AI tools')
+    expect(app.frame()).toContain('zcf')
+    expect(app.frame()).toContain('Interface language: Auto (L)')
     app.unmount()
-  })
-
-  it('trims a subtitle wider than its slot instead of pushing the box apart', () => {
-    // 16 CJK characters are 32 columns wide; the slot is 30, so one character has to go.
-    const wide = render(<Banner t={(key: string) => (key === 'tui.bannerSubtitle' ? '零'.repeat(16) : key)} />)
-    expect(wide.lastFrame()).toContain('零'.repeat(15))
-    expect(wide.lastFrame()).not.toContain('零'.repeat(16))
-    wide.unmount()
   })
 
   it('switches the interface language from the header with L, saving it at once', async () => {
@@ -229,7 +228,7 @@ describe('terminal UI', () => {
 
     // en → zh-CN: the whole UI switches, not just the header.
     await app.press('l')
-    expect(await app.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
+    expect(await app.until(zh('tui.page.tools'))).toContain('a 应用')
     expect(app.frame()).toContain('界面语言: 简体中文 (L)')
     expect(saved.at(-1)).toEqual({ version: 1, tools: [], language: 'zh-CN' })
     // bases stay the draft as it stood, so only the language key is ever written.
@@ -250,7 +249,9 @@ describe('terminal UI', () => {
     expect(app.frame()).not.toContain('(L)')
     // The footer hints stop offering the switch too: L is a no-op while pinned.
     expect(app.frame()).not.toContain('L lang')
-    expect(app.frame()).toContain('↑↓ choose · 0-9 go · Enter open · a apply · q quit')
+    expect(app.frame()).toContain('a apply')
+    expect(app.frame()).toContain('q quit')
+    expect(app.frame()).not.toContain('L lang')
     await app.press('l')
     expect(app.frame()).toContain('MCP servers')
     expect(app.frame()).not.toContain(zh('tui.page.tools'))
@@ -318,7 +319,7 @@ describe('terminal UI', () => {
   it('starts in the config language, unless --lang or ZCF_LANG pinned it', async () => {
     const zh = createTranslator('zh-CN')
     const follows = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service)
-    expect(await follows.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
+    expect(await follows.until(zh('tui.page.tools'))).toContain('Enter 打开')
     follows.unmount()
 
     const pinned = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service, {
@@ -485,7 +486,7 @@ describe('terminal UI', () => {
         ?.indexOf(text)
     expect(column('skill-00')).toBe(column('skill-08'))
     // A 24-line terminal cannot hold 16 rows; the list shows a window with arrows.
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    Object.defineProperty(app.stdout, 'rows', { get: () => 17, configurable: true })
     app.stdout.emit('resize')
     await tick()
     await tick()
@@ -518,41 +519,19 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
-  it('folds the banner to one line in a terminal too short for the box art', async () => {
+  it('holds the whole app in a terminal 12 rows tall', async () => {
+    // One header line leaves the panel and the key bar the rest; nothing folds away.
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    Object.defineProperty(app.stdout, 'rows', { get: () => 12 })
+    Object.defineProperty(app.stdout, 'rows', { get: () => 12, configurable: true })
     app.stdout.emit('resize')
     await tick()
     await tick()
-    // The boxed banner alone is 11 lines; in 12 rows it would push the app off screen.
     const lines = app.frame().split('\n')
     expect(lines).toHaveLength(12)
-    expect(lines[0]).toContain('ZCF')
+    expect(lines[0]).toContain('zcf')
     expect(lines[0]).not.toContain('╔')
     expect(lines[11]).toContain('a apply')
-    app.unmount()
-  })
-
-  it('folds the banner one row below the fold line, and holds the box well above it', async () => {
-    // The box, the status row, a panel around a window of nav entries, the key bar
-    // and a status message add up to 22 rows; the fold line keeps a row of slack for
-    // the measured minimum drifting between platforms, so 22 folds and 24 holds the box.
-    const { service } = fakeService({ version: 1, tools: [] })
-    const app = await start(service)
-    Object.defineProperty(app.stdout, 'rows', { get: () => 22, configurable: true })
-    app.stdout.emit('resize')
-    await tick()
-    await tick()
-    expect(app.frame().split('\n')[0]).toContain('ZCF')
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
-    app.stdout.emit('resize')
-    await tick()
-    await tick()
-    const lines = app.frame().split('\n')
-    expect(lines).toHaveLength(24)
-    expect(lines[0]).toContain('╔')
-    expect(lines[23]).toContain('a apply')
     app.unmount()
   })
 
@@ -660,24 +639,6 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
-  it('numbers visible rows and picks one with its digit without running it', async () => {
-    const { service } = fakeService({ version: 1, tools: [] })
-    const app = await start(service)
-    await app.press('1', KEY.enter)
-    expect(app.frame()).toContain('› 1 [ ] Claude Code')
-    expect(app.frame()).toContain('  2 [ ] Codex')
-    // The digit moves the selection only; Enter still does the toggling.
-    await app.press('2')
-    expect(app.frame()).toContain('› 2 [ ] Codex')
-    expect(app.frame()).not.toContain('[x] Codex')
-    // A digit past the visible window is ignored.
-    await app.press('5')
-    expect(app.frame()).toContain('› 2 [ ] Codex')
-    await app.press(KEY.enter)
-    expect(app.frame()).toContain('[x] Codex')
-    app.unmount()
-  })
-
   it('keeps digit keys for the text editor while a row is edited', async () => {
     const { service, saved } = fakeService({
       version: 1,
@@ -716,17 +677,18 @@ describe('terminal UI', () => {
   it('windows the nav in a short terminal, keeping the open page in view', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    Object.defineProperty(app.stdout, 'rows', { get: () => 17, configurable: true })
     app.stdout.emit('resize')
     await tick()
     await tick()
     const lines = app.frame().split('\n')
-    expect(lines).toHaveLength(24)
+    expect(lines).toHaveLength(17)
     expect(app.frame()).toContain('1 Agent tools')
     expect(app.frame()).not.toContain('Backup')
-    // Moving down the pages pulls the later rows into the window.
+    // Moving down the pages pulls the later rows into the window; the chosen one is
+    // highlighted rather than pointed at while the nav itself has the focus.
     await app.press('j', 'j', 'j', 'j', 'j', 'j', 'j', 'j')
-    expect(app.frame()).toContain('› 9 Backup')
+    expect(app.frame()).toContain('9 Backup')
     expect(app.frame()).toContain('↑')
     app.unmount()
   })
@@ -888,7 +850,7 @@ describe('terminal UI', () => {
       // oxlint-disable-next-line no-await-in-loop
       await app.press(KEY.down)
     }
-    expect(app.frame()).toContain('› 3 Remove the provider')
+    expect(app.frame()).toContain('› 15 Remove the provider')
     await app.press(KEY.enter, 'a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [] }])
     app.unmount()
@@ -948,7 +910,7 @@ describe('terminal UI', () => {
   })
 
   it('scrolls the apply output with the mouse wheel', async () => {
-    const steps: Plan['tools'][number]['steps'] = Array.from({ length: 10 }, (_, i) => ({
+    const steps: Plan['tools'][number]['steps'] = Array.from({ length: 30 }, (_, i) => ({
       kind: 'command',
       title: { key: 'step.install', params: { tool: 'claude-code' } },
       command: 'npm',
@@ -961,15 +923,15 @@ describe('terminal UI', () => {
     await app.press('a', KEY.enter)
     const at = (await app.until('$ npm i -g x0')).split('\n').findIndex(line => line.includes('$ npm i -g x0'))
     expect(at).toBeGreaterThanOrEqual(0)
-    // Ten steps overflow the window; the wheel rolls the output to its end.
-    for (let i = 0; i < 12; i++) {
+    // Thirty steps overflow the window; the wheel rolls the output to its end.
+    for (let i = 0; i < 40; i++) {
       app.stdin.write(`\u001B[<65;40;${at + 1}M`)
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
     const frame = app.frame()
     expect(frame).not.toContain('$ npm i -g x0')
-    expect(frame).toContain('$ npm i -g x9')
+    expect(frame).toContain('$ npm i -g x29')
     app.unmount()
   })
 
@@ -984,6 +946,8 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Apply the configuration')
     expect(saved).toEqual([])
     await app.press(KEY.escape)
+    // The close re-renders the page under the flow; a tick settles it.
+    await tick()
     expect(app.frame()).toContain('Pick the agent tools')
     app.unmount()
   })
@@ -1045,7 +1009,7 @@ describe('terminal UI', () => {
     expect(app.frame()).not.toContain('[x]')
     // A digit picks the first item under the heading, not the heading itself.
     await app.press('1')
-    expect(app.frame()).toContain('› 1 [ ] Project init and everyday commands')
+    expect(app.frame()).toContain('›  1 [ ] Project init and everyday commands')
     // A click on the heading line selects nothing either.
     const at = app
       .frame()
@@ -1054,7 +1018,7 @@ describe('terminal UI', () => {
     expect(at).toBeGreaterThanOrEqual(0)
     app.stdin.write(`\u001B[<0;30;${at + 1}M`)
     await tick()
-    expect(app.frame()).toContain('› 1 [ ] Project init and everyday commands')
+    expect(app.frame()).toContain('›  1 [ ] Project init and everyday commands')
     expect(app.frame()).not.toContain('[x]')
     app.unmount()
   })
@@ -1462,6 +1426,22 @@ describe('terminal UI', () => {
     // x on that row takes the hit out of the bundle again.
     await app.press('x')
     expect(app.frame()).not.toContain('obra/superpowers')
+    app.unmount()
+  })
+})
+
+describe('numbers moved', () => {
+  it('numbers visible rows and picks one with its digit without running it', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    // One press run: the open-page Enter and the picking digit arrive back to back.
+    await app.press('1', KEY.enter, '2')
+    // The digit moves the selection to the second row, without toggling it.
+    expect(app.frame()).toContain('› 2 [ ] Codex')
+    expect(app.frame()).not.toContain('[x] Codex')
+    // A digit past the visible items is ignored, so Enter still toggles the picked row.
+    await app.press('8', KEY.enter)
+    expect(app.frame()).toContain('[x] Codex')
     app.unmount()
   })
 })

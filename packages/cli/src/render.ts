@@ -136,6 +136,14 @@ export class Renderer {
   }
 
   plan(plan: Plan, previews: Map<PlanStep, FilePreview>): void {
+    this.planSteps(plan, previews, true)
+  }
+
+  /**
+   * The plan's steps as one line each — title and target, no diffs. The apply flow's run
+   * view uses this: the confirmation already said what changes, and `zcf plan` shows all.
+   */
+  planSteps(plan: Plan, previews: Map<PlanStep, FilePreview>, withPatches = false): void {
     for (const toolPlan of plan.tools) {
       this.line(bold(ACTOR_NAMES[toolPlan.tool]))
       for (const notice of toolPlan.notices) this.notice(notice)
@@ -151,7 +159,7 @@ export class Renderer {
               : ''
         this.line(`  ${index + 1}. ${this.message(step.title)}${suffix}`)
         this.line(dim(`     ${this.stepTarget(step)}`))
-        if (preview?.changed) this.patch(preview)
+        if (withPatches && preview?.changed) this.patch(preview)
       }
       this.line()
     }

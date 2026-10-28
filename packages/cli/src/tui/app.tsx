@@ -18,14 +18,14 @@ import { version } from '../../package.json'
 import type { Lang } from '../i18n'
 import { createTranslator, errorText, isLang } from '../i18n'
 import { tildify } from '../render'
-import { ApplyPage } from './apply-page'
+import { ApplyFlow } from './apply-page'
 import { BackupPage } from './backup-page'
-import { Banner, FULL_BANNER_ROWS } from './banner'
+import { Header } from './banner'
+import { KeyBar } from './key-bar'
 import { attachMouseStdin, contains, onMousePress, publishMousePress, setMouseReporting, wheelDirection } from './mouse'
 import type { PageProps } from './pages'
 import {
   ExtrasPage,
-  InitPage,
   McpPage,
   ProviderPage,
   SettingsPage,
@@ -63,11 +63,11 @@ const NAV_ROWS = navRows()
  * A transient status message takes one more, which at worst hides a windowed nav's
  * bottom arrow for as long as it shows.
  */
-const NAV_CHROME = 17
+const NAV_CHROME = 7
 
 /**
  * The terminal UI: pages on the left, the open page on the right. Edits stay in a
- * draft until Ctrl+S writes them to the config file, key by key.
+ * draft until the apply key writes them to the config file, key by key, and applies.
  */
 export function App({ service, lang, langPinned = false, home }: AppProps) {
   const editor = useConfigEditor(service)
@@ -75,7 +75,10 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const [uiLang, setUiLang] = useState<Lang>(lang)
   const t = useMemo(() => createTranslator(uiLang), [uiLang])
   // v3 opened on its full-init entry; the walkthrough page plays that part here.
-  const [page, setPage] = useState<PageId>('init')
+  // v5 has no init walkthrough: the editor opens where the tools are picked.
+  const [page, setPage] = useState<PageId>('tools')
+  // The confirm-then-run flow the apply key opens over whatever page is showing.
+  const [applying, setApplying] = useState(false)
   const [focus, setFocus] = useState<'nav' | 'page'>('nav')
   const [editing, setEditing] = useState(false)
   const [status, setStatus] = useState<Status>()
@@ -159,27 +162,31 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
       )
   }
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     if (!editor.validation.valid) {
       const [first] = editor.validation.issues
       const detail = first ? `${first.path ? `${first.path}: ` : ''}${t(first.message.key, first.message.params)}` : ''
       setStatus({ text: t('tui.invalid', { count: editor.validation.issues.length, first: detail }), tone: 'warning' })
-      return
+      return false
     }
     try {
-      if (await editor.save()) setStatus({ text: t('tui.saved'), tone: 'info' })
+      const saved = await editor.save()
+      if (!saved) return false
+      return true
     } catch (error) {
       setStatus({
         text: t('tui.saveFailed', { message: errorText(error, t) }),
         tone: 'error',
       })
+      return false
     }
   }
 
   useInput(
     (input, key) => {
-      if (key.ctrl && input === 's') {
-        void save()
+      // One key applies: the confirm-then-run flow opens over whatever page is showing.
+      if (input?.toLowerCase() === 'a' && editor.status === 'ready') {
+        setApplying(true)
         return
       }
       if (input !== 'q') setQuitArmed(false)
@@ -207,7 +214,7 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
       else if (key.downArrow || input === 'j') setPage(PAGES[Math.min(PAGES.length - 1, index + 1)]!)
       else if (key.return || key.rightArrow) setFocus('page')
     },
-    { isActive: !editing },
+    { isActive: !editing && !applying },
   )
 
   if (editor.status === 'loading') return <Text dimColor>{t('tui.loading')}</Text>
@@ -232,32 +239,25 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
     active: onPage,
     onBack: () => setFocus('nav'),
     onEditing: setEditing,
-    onNavigate: setPage,
   }
-  // The hints offer the L switch only while it works; --lang or ZCF_LANG pins the language.
+  // The bar's two halves: how to move on the left, what to do on the right, cc-switch
+  // style. The L switch only shows while it works; --lang or ZCF_LANG pins the language.
   const keysSuffix = langPinned ? 'NoLang' : ''
-  const keys = editing
-    ? 'tui.keys.editing'
-    : !onPage
-      ? `tui.keys.nav${keysSuffix}`
-      : page === 'apply'
-        ? `tui.keys.apply${keysSuffix}`
-        : `tui.keys.page${keysSuffix}`
+  const navHalf = editing ? undefined : !onPage ? `tui.bar.nav${keysSuffix}` : `tui.bar.page${keysSuffix}`
+  const actHalf = editing ? 'tui.bar.editing' : `tui.bar.act${keysSuffix}`
 
   return (
     // The column fills the terminal height, so the panel's border always reaches the bottom.
     <Box flexDirection="column" height={terminalRows}>
-      <Banner t={t} compact={terminalRows < FULL_BANNER_ROWS} />
-      <Box gap={2}>
-        <Text dimColor>v{version}</Text>
-        <Text dimColor>{tildify(editor.path, home)}</Text>
-        {editor.dirty && <Text color="yellow">● {t('tui.unsaved')}</Text>}
-        <Text dimColor>
-          {t('field.language')}: {t(`language.${languageSetting}`)}
-          {!langPinned && <Text bold> (L)</Text>}
-        </Text>
-      </Box>
-      <Box borderStyle="round" borderDimColor flexDirection="row" flexGrow={1}>
+      <Header
+        t={t}
+        version={version}
+        path={tildify(editor.path, home)}
+        language={t(`language.${languageSetting}`)}
+        langHint={langPinned ? '' : ' (L)'}
+        dirty={editor.dirty}
+      />
+      <Box borderStyle="round" borderDimColor flexDirection="row" flexGrow={1} marginTop={1}>
         <Box ref={navRef} flexDirection="column" width={18} paddingRight={1}>
           {navCapped && navStart > 0 && <Text dimColor>{'  ↑'}</Text>}
           {navShown.map(row => {
@@ -271,14 +271,17 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
             const current = row.id === page
             const roots = PAGE_ROOTS[row.id]
             const broken = roots !== undefined && pageHasIssues(editor.validation.issues, roots)
+            // The chosen page lights up as a whole row, cc-switch style: reversed while
+            // the nav has the focus, plain cyan while the page under it does.
             return (
               <Text
                 key={`page-${row.id}`}
-                color={current ? 'cyan' : undefined}
-                bold={current && !onPage}
-                dimColor={!current && onPage}
+                color={current && onPage ? 'cyan' : undefined}
+                backgroundColor={current && !onPage ? 'cyan' : undefined}
+                bold={current}
+                wrap="truncate-end"
               >
-                {current ? '› ' : '  '}
+                {current && onPage ? '› ' : '  '}
                 {row.digit ?? ' '} {t(`tui.page.${row.id}`)}
                 {broken && <Text color="red"> !</Text>}
               </Text>
@@ -287,24 +290,39 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
           {navCapped && navStart + navSize < NAV_ROWS.length && <Text dimColor>{'  ↓'}</Text>}
         </Box>
         <Box flexDirection="column" flexGrow={1}>
-          {page === 'init' && <InitPage {...props} />}
-          {page === 'tools' && <ToolsPage {...props} detected={detected} />}
-          {page === 'provider' && <ProviderPage {...props} lang={uiLang} loadPresets={loadPresets} />}
-          {page === 'mcp' && <McpPage {...props} />}
-          {page === 'skills' && <SkillsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />}
-          {page === 'settings' && <SettingsPage {...props} />}
-          {page === 'workflows' && <WorkflowsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />}
-          {page === 'styles' && <StylesPage {...props} />}
-          {page === 'extras' && <ExtrasPage {...props} />}
-          {page === 'apply' && (
-            <ApplyPage service={service} t={t} home={home} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
+          {applying && editor.status === 'ready' && (
+            <Box flexDirection="column" flexGrow={1} justifyContent="center">
+              <ApplyFlow
+                service={service}
+                t={t}
+                home={home}
+                active={applying}
+                draft={editor.draft}
+                base={editor.saved}
+                detected={detected ?? {}}
+                save={save}
+                onClose={() => setApplying(false)}
+              />
+            </Box>
           )}
-          {page === 'backup' && (
+          {!applying && page === 'tools' && <ToolsPage {...props} detected={detected} />}
+          {!applying && page === 'provider' && <ProviderPage {...props} lang={uiLang} loadPresets={loadPresets} />}
+          {!applying && page === 'mcp' && <McpPage {...props} />}
+          {!applying && page === 'skills' && (
+            <SkillsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />
+          )}
+          {!applying && page === 'settings' && <SettingsPage {...props} />}
+          {!applying && page === 'workflows' && (
+            <WorkflowsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />
+          )}
+          {!applying && page === 'styles' && <StylesPage {...props} />}
+          {!applying && page === 'extras' && <ExtrasPage {...props} />}
+          {!applying && page === 'backup' && (
             <BackupPage service={service} t={t} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
           )}
         </Box>
       </Box>
-      <Text dimColor>{t(keys)}</Text>
+      {!applying && <KeyBar left={navHalf ? t(navHalf) : undefined} right={t(actHalf)} />}
       {status && <Text color={TONE_COLOR[status.tone]}>{status.text}</Text>}
     </Box>
   )
