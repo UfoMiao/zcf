@@ -935,6 +935,29 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('says so when the plan has nothing to do, and closes', async () => {
+    const step: Plan['tools'][number]['steps'][number] = {
+      kind: 'file',
+      title: { key: 'step.provider', params: { tool: 'claude-code', provider: 'x' } },
+      path: '/home/me/.claude/settings.json',
+      format: 'json',
+      edits: [],
+    }
+    const plan: Plan = { tools: [{ tool: 'claude-code', notices: [], steps: [step] }] }
+    const view: PlanView = {
+      plan,
+      previews: [[{ path: step.path, before: '{}', after: '{}', changed: false, patch: '', secrets: [] }]],
+      secrets: [],
+    }
+    const { service } = fakeService({ version: 1, tools: ['claude-code'] }, { plan: async () => view })
+    const app = await start(service)
+    await app.press('a', KEY.enter)
+    expect(await app.until('nothing to do')).toBeTruthy()
+    await app.press(KEY.escape)
+    expect(app.frame()).toContain('Pick the agent tools')
+    app.unmount()
+  })
+
   it('refuses an invalid draft from the apply flow and stays on its confirmation', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [], provider: { name: 'old', apiKey: '' } })
     const app = await start(service)
