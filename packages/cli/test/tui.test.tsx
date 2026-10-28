@@ -135,6 +135,37 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('walks every step of the init page into its own page', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    // A full lap through the walkthrough: enter the list once, and for each step row
+    // its Enter opens the page it names; Esc then digit 1 walks back into the list,
+    // which restarts on its first row, so the downs walk one row further each time.
+    const opens: [number, string][] = [
+      [0, 'Pick the agent tools'],
+      [1, 'One API provider for every tool'],
+      [2, 'MCP servers added to every selected tool'],
+      [3, 'Skills installed for every selected tool'],
+      [4, 'Ready-made workflows'],
+      [5, 'Built-in output styles'],
+      [6, 'Settings for ZCF itself'],
+      // The fake service's plan rejects, so the page says so — the row opened it all the same.
+      [7, 'Could not plan'],
+    ]
+    await app.press(KEY.enter)
+    for (const [downs, expectText] of opens) {
+      // oxlint-disable-next-line no-await-in-loop
+      await app.press(...Array.from({ length: downs }, () => KEY.down), KEY.enter)
+      // The apply page plans in the background; the others render at once.
+      // oxlint-disable-next-line no-await-in-loop
+      if (downs === 7) await tick()
+      expect(app.frame(), `after ${downs} downs`).toContain(expectText)
+      // oxlint-disable-next-line no-await-in-loop
+      await app.press(KEY.escape, '1', KEY.enter)
+    }
+    app.unmount()
+  })
+
   it('edits provider fields in place and never shows the API key', async () => {
     const { service } = fakeService({ version: 1, tools: [], provider: { name: 'old', apiKey: 'sk-very-secret' } })
     const app = await start(service)
