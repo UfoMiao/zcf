@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  deepEqual,
   formatArgs,
   freshName,
   getAt,
@@ -15,28 +14,6 @@ import {
   validateDraft,
   withMcpType,
 } from '../src'
-
-describe('deepEqual', () => {
-  it('matches primitives and the same shape exactly', () => {
-    expect(deepEqual('a', 'a')).toBe(true)
-    expect(deepEqual('a', 'b')).toBe(false)
-    expect(deepEqual(undefined, undefined)).toBe(true)
-    expect(deepEqual(null, undefined)).toBe(false)
-  })
-
-  it('treats tables with the same pairs as equal whatever order their keys sit in', () => {
-    // JSON.stringify would call these different; a profile saved from a hand-typed table
-    // must still count as the active provider.
-    expect(deepEqual({ name: 'x', apiKey: 'k' }, { apiKey: 'k', name: 'x' })).toBe(true)
-    expect(deepEqual({ name: 'x' }, { name: 'x', apiKey: undefined })).toBe(false)
-  })
-
-  it('walks lists and nested tables', () => {
-    expect(deepEqual([{ a: 1 }, { b: [1, 2] }], [{ a: 1 }, { b: [1, 2] }])).toBe(true)
-    expect(deepEqual([{ a: 1 }], [{ a: 2 }])).toBe(false)
-    expect(deepEqual([1, 2], [2, 1])).toBe(false)
-  })
-})
 
 describe('setAt', () => {
   it('sets nested values without changing the original', () => {

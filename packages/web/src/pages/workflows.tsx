@@ -1,16 +1,6 @@
-import type { WorkflowPreset } from '@zcf/core/schema'
 import { BUILTIN_AGENT_IDS, BUILTIN_STYLE_IDS, WORKFLOW_PRESETS } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
-import {
-  addSourcedSkill,
-  draftIds,
-  getAt,
-  hasSourcedSkill,
-  isTable,
-  mergeIds,
-  removeSourcedSkill,
-  toggleId,
-} from '@zcf/ui-kit'
+import { draftIds, getAt, isTable, presetCovered, toggleId, togglePreset } from '@zcf/ui-kit'
 import { PlusIcon, Trash2Icon, WorkflowIcon, XIcon } from 'lucide-react'
 
 import type { Translate } from '../api'
@@ -26,44 +16,12 @@ type PageProps = { editor: ConfigEditor; t: Translate }
 /** An id shown as a toggle card's main line. */
 const idTitle = (id: string) => <span className="truncate font-mono text-[13px] font-medium">{id}</span>
 
-/** Whether every skill and agent a preset names is already in the draft. */
-function presetOn(draft: ConfigEditor['draft'], preset: WorkflowPreset): boolean {
-  const skillsOn = preset.skills.every(source =>
-    source.skills.every(name => hasSourcedSkill(draft.skills, source.source, name)),
-  )
-  return skillsOn && preset.agents.every(id => draftIds(draft.agents).includes(id))
-}
-
-/** Merge a preset's skills into the draft's sources, source by source. */
-function addPresetSkills(sources: unknown, preset: WorkflowPreset): unknown {
-  let next = sources
-  for (const source of preset.skills) {
-    for (const name of source.skills) next = addSourcedSkill(next, source.source, name)
-  }
-  return next
-}
-
-/** Take a preset's skills back out of the draft's sources, dropping sources that empty. */
-function removePresetSkills(sources: unknown, preset: WorkflowPreset): unknown {
-  let next = sources
-  for (const source of preset.skills) {
-    for (const name of source.skills) next = removeSourcedSkill(next, source.source, name)
-  }
-  return next
-}
-
 /** The v3 workflow presets, as toggles that merge their picks into the draft. */
 function PresetsCard({ editor, t }: PageProps) {
-  const apply = (preset: WorkflowPreset) => {
-    const on = presetOn(editor.draft, preset)
-    editor.update(
-      ['skills'],
-      on ? removePresetSkills(editor.draft.skills, preset) : addPresetSkills(editor.draft.skills, preset),
-    )
-    const agents = on
-      ? draftIds(editor.draft.agents).filter(id => !preset.agents.some(agent => agent === id))
-      : mergeIds(editor.draft.agents, preset.agents)
-    editor.update(['agents'], agents.length > 0 ? agents : undefined)
+  const apply = (preset: (typeof WORKFLOW_PRESETS)[number]) => {
+    const next = togglePreset(editor.draft.skills, editor.draft.agents, preset)
+    editor.update(['skills'], next.skills)
+    editor.update(['agents'], next.agents)
   }
   return (
     <Card>
@@ -77,7 +35,7 @@ function PresetsCard({ editor, t }: PageProps) {
           return (
             <ToggleCard
               key={preset.id}
-              on={presetOn(editor.draft, preset)}
+              on={presetCovered(editor.draft.skills, editor.draft.agents, preset)}
               onToggle={() => apply(preset)}
               title={<span className="text-[13px] leading-snug font-medium">{t(preset.nameKey)}</span>}
               detail={<span className="text-muted-foreground truncate font-mono text-xs">{picked.join(' · ')}</span>}

@@ -19,10 +19,20 @@ import type { Lang } from '../i18n'
 import { createTranslator, errorText, isLang } from '../i18n'
 import { tildify } from '../render'
 import { ApplyPage } from './apply-page'
+import { BackupPage } from './backup-page'
 import { Banner, FULL_BANNER_ROWS } from './banner'
 import { attachMouseStdin, contains, onMousePress, publishMousePress, setMouseReporting, wheelDirection } from './mouse'
 import type { PageProps } from './pages'
-import { McpPage, ProviderPage, SettingsPage, SkillsPage, ToolsPage } from './pages'
+import {
+  AgentsPage,
+  ExtrasPage,
+  McpPage,
+  ProviderPage,
+  SettingsPage,
+  SkillsPage,
+  ToolsPage,
+  WorkflowsPage,
+} from './pages'
 import { useTerminalRows } from './use-terminal-rows'
 import { windowRange } from './window'
 
@@ -46,11 +56,13 @@ const TONE_COLOR = { info: 'green', warning: 'yellow', error: 'red' } as const
 const NAV_ROWS = navRows()
 
 /**
- * Lines the nav column may not claim: the banner box (11) + the status row (1) + the
- * panel's borders (2) + the key bar (1). A transient status message takes one more,
- * which at worst hides a windowed nav's bottom arrow for as long as it shows.
+ * Lines the nav column may not claim: the banner box (12) + the status row (1) + the
+ * panel's borders (2) + the key bar (1), plus one row of slack — yoga's measured
+ * minimum runs a line over that sum, which stayed hidden while the nav never capped.
+ * A transient status message takes one more, which at worst hides a windowed nav's
+ * bottom arrow for as long as it shows.
  */
-const NAV_CHROME = 15
+const NAV_CHROME = 17
 
 /**
  * The terminal UI: pages on the left, the open page on the right. Edits stay in a
@@ -246,17 +258,19 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
         <Box ref={navRef} flexDirection="column" width={18} paddingRight={1}>
           {navCapped && navStart > 0 && <Text dimColor>{'  ↑'}</Text>}
           {navShown.map(row => {
+            // A section header may share its id with one of its pages, so the kind prefixes them apart.
             if (row.kind === 'header')
               return (
-                <Text key={row.id} dimColor>
+                <Text key={`header-${row.id}`} dimColor>
                   {t(row.labelKey)}
                 </Text>
               )
             const current = row.id === page
-            const broken = pageHasIssues(editor.validation.issues, PAGE_ROOTS[row.id])
+            const roots = PAGE_ROOTS[row.id]
+            const broken = roots !== undefined && pageHasIssues(editor.validation.issues, roots)
             return (
               <Text
-                key={row.id}
+                key={`page-${row.id}`}
                 color={current ? 'cyan' : undefined}
                 bold={current && !onPage}
                 dimColor={!current && onPage}
@@ -275,8 +289,14 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
           {page === 'mcp' && <McpPage {...props} />}
           {page === 'skills' && <SkillsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />}
           {page === 'settings' && <SettingsPage {...props} />}
+          {page === 'workflows' && <WorkflowsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />}
+          {page === 'agents' && <AgentsPage {...props} />}
+          {page === 'extras' && <ExtrasPage {...props} />}
           {page === 'apply' && (
             <ApplyPage service={service} t={t} home={home} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
+          )}
+          {page === 'backup' && (
+            <BackupPage service={service} t={t} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
           )}
         </Box>
       </Box>

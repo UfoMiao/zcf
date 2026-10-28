@@ -136,7 +136,7 @@ function NavList({
                   : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
               }`}
             >
-              <Icon className="size-4 shrink-0" />
+              {Icon && <Icon className="size-4 shrink-0" />}
               <span className="flex-1 text-left">{t(`tui.page.${id}`)}</span>
               {broken && <span className="bg-destructive size-1.5 shrink-0 rounded-full" aria-label="!" />}
             </button>
