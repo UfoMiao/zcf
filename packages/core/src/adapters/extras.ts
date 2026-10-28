@@ -51,7 +51,9 @@ export async function planExtras(config: ZcfConfig, ctx: AdapterContext): Promis
         kind: 'command',
         title: { key: 'step.installExtra', params: { extra: 'ccline' } },
         command: 'npm',
-        args: ['install', '-g', CCLINE_PACKAGE],
+        // npm 12 blocks install scripts unless allowed; ccline's postinstall is what puts
+        // the binary in ~/.claude/ccline, where the statusLine points.
+        args: ['install', '-g', `--allow-scripts=${CCLINE_PACKAGE}`, CCLINE_PACKAGE],
       })
     // The statusLine key itself is the claude-code adapter's to write, next to the rest
     // of the settings it owns; without that tool selected the notice says what is missing.

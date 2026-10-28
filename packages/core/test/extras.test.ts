@@ -63,7 +63,9 @@ describe('planExtras', () => {
   it('installs ccline from npm and warns when Claude Code is not selected', async () => {
     const plans = await planExtras(config({ tools: ['codex'], extras: { ccline: true } }), context())
     expect(plans[0]!.tool).toBe('ccline')
-    expect(commandLine(plans[0]!.steps[0]!)).toBe('npm install -g @cometix/ccline')
+    // npm 12 blocks install scripts unless allowed, and ccline's postinstall is what puts
+    // the binary in ~/.claude/ccline; without the flag the statusLine points at nothing.
+    expect(commandLine(plans[0]!.steps[0]!)).toBe('npm install -g --allow-scripts=@cometix/ccline @cometix/ccline')
     expect(plans[0]!.notices.map(notice => notice.message.key)).toContain('notice.cclineNeedsTool')
 
     const quiet = await planExtras(config({ tools: ['claude-code'], extras: { ccline: true } }), context())
