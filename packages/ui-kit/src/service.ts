@@ -4,6 +4,7 @@ import type {
   FilePreview,
   Mirror,
   Plan,
+  PlanActor,
   PresetList,
   RestoreResult,
   SkillSearchList,
@@ -34,7 +35,7 @@ export interface PlanView {
 }
 
 export interface StepEvent {
-  tool: ToolId
+  tool: PlanActor
   index: number
   result: StepResult
 }

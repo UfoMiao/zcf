@@ -37,7 +37,9 @@ function context(overrides: Partial<AdapterContext> = {}, files: Record<string, 
 /** The command lines of a plan, `file` and `remove` steps shown as their path. */
 function lines(plan: Plan): string[] {
   return plan.tools.flatMap(tool =>
-    tool.steps.map(step => (step.kind === 'command' ? [step.command, ...step.args].join(' ') : step.path)),
+    tool.steps.map(step =>
+      step.kind === 'command' ? [step.command, ...step.args].join(' ') : step.kind === 'copy' ? step.to : step.path,
+    ),
   )
 }
 

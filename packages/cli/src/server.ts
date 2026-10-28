@@ -58,6 +58,7 @@ type Mask = (text: string) => string
 function maskStep(step: PlanStep, mask: Mask): PlanStep {
   if (step.kind === 'file') return { ...step, path: mask(step.path), edits: [] }
   if (step.kind === 'remove') return { ...step, path: mask(step.path) }
+  if (step.kind === 'copy') return { ...step, from: mask(step.from), to: mask(step.to) }
   return { ...step, args: step.args.map(mask) }
 }
 

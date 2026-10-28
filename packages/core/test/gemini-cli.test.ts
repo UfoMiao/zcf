@@ -189,7 +189,13 @@ describe('geminiCli.plan', () => {
 
     expect(
       plan.steps.map(step =>
-        step.kind === 'command' ? step.args.join(' ') : step.kind === 'remove' ? step.path : step.edits,
+        step.kind === 'command'
+          ? step.args.join(' ')
+          : step.kind === 'remove'
+            ? step.path
+            : step.kind === 'file'
+              ? step.edits
+              : step.to,
       ),
     ).toEqual([
       'mcp add -s user -t http changed https://new.example.com',

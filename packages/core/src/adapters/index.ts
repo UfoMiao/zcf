@@ -5,6 +5,7 @@ import { claudeCode } from './claude-code'
 import { codex } from './codex'
 import { cursor } from './cursor'
 import { dsh } from './dsh'
+import { planExtras } from './extras'
 import { geminiCli } from './gemini-cli'
 import { opencode } from './opencode'
 import { pi } from './pi'
@@ -46,7 +47,9 @@ export async function planTools(
       return adapter.plan(config, await adapter.detect(mirrored), mirrored)
     }),
   )
-  return withMirrorEnv({ tools: plans }, mirror, ctx.env)
+  // Companion tools ride along whenever the config asks for them, selected tools or not.
+  const extras = await planExtras(config, mirrored)
+  return withMirrorEnv({ tools: [...plans, ...extras] }, mirror, ctx.env)
 }
 
 /** Plan each tool's own update. The mirror is `ctx.mirror`, else `ZCF_MIRROR`. */
