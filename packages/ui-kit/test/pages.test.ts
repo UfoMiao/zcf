@@ -8,6 +8,8 @@ import {
   hasSourcedSkill,
   NAV,
   navRows,
+  PAGE_ROOTS,
+  pageHasIssues,
   PAGES,
   removeSourcedSkill,
   skillSourceIndex,
@@ -79,6 +81,24 @@ describe('NAV', () => {
     )
     expect(digits.slice(1, 11).join('')).toBe('1234567890')
     expect(digits.slice(11)).toEqual([undefined, undefined])
+  })
+})
+
+const issue = (path: string) => ({ path, message: { key: 'configIssue.invalid' } })
+
+describe('pageHasIssues', () => {
+  it('sees a problem under any of the page’s root keys, not only the first', () => {
+    expect(pageHasIssues([issue('profiles.0.name')], PAGE_ROOTS.provider)).toBe(true)
+    expect(pageHasIssues([issue('provider.apiKey')], PAGE_ROOTS.provider)).toBe(true)
+    // Two root keys are checked each on its own; joining them would match nothing.
+    expect(pageHasIssues([issue('configLanguage')], PAGE_ROOTS.settings)).toBe(true)
+    expect(pageHasIssues([issue('mirror')], PAGE_ROOTS.settings)).toBe(true)
+    expect(pageHasIssues([issue('provider.apiKey')], PAGE_ROOTS.settings)).toBe(false)
+  })
+
+  it('says no for a page without roots or without problems', () => {
+    expect(pageHasIssues([], PAGE_ROOTS.tools)).toBe(false)
+    expect(pageHasIssues([issue('provider.apiKey')], PAGE_ROOTS.apply)).toBe(false)
   })
 })
 

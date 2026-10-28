@@ -74,27 +74,25 @@ export function navRows(sections: readonly NavSection[] = NAV): readonly NavRow[
 
 /**
  * The config keys each editing page works on, so a page can be flagged when it has problems.
- * A page can own more than one key, such as the provider page with its profiles beside it.
+ * Each entry is one root key; a page can own several, such as the provider page with its
+ * profiles beside it.
  */
-export const PAGE_ROOTS: Readonly<Record<PageId, readonly (readonly string[])[] | undefined>> = {
-  tools: [['tools']],
-  provider: [['provider'], ['profiles']],
-  mcp: [['mcpServers']],
-  skills: [['skills']],
-  settings: [['mirror'], ['configLanguage']],
+export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>> = {
+  tools: ['tools'],
+  provider: ['provider', 'profiles'],
+  mcp: ['mcpServers'],
+  skills: ['skills'],
+  settings: ['mirror', 'configLanguage'],
   apply: undefined,
-  workflows: [['workflows']],
-  agents: [['agents'], ['styles']],
-  extras: [['extras']],
+  workflows: ['workflows'],
+  agents: ['agents', 'styles'],
+  extras: ['extras'],
   backup: undefined,
 }
 
-/** Whether any of a page's roots has validation problems, so the nav can flag the page. */
-export function pageHasIssues(
-  issues: readonly ConfigIssue[],
-  roots: readonly (readonly string[])[] | undefined,
-): boolean {
-  return roots !== undefined && roots.some(root => issuesAt(issues, root).length > 0)
+/** Whether any of a page's root keys has validation problems, so the nav can flag the page. */
+export function pageHasIssues(issues: readonly ConfigIssue[], roots: readonly string[] | undefined): boolean {
+  return roots !== undefined && roots.some(root => issuesAt(issues, [root]).length > 0)
 }
 
 /**
