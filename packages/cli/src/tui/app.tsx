@@ -24,12 +24,13 @@ import { Banner, FULL_BANNER_ROWS } from './banner'
 import { attachMouseStdin, contains, onMousePress, publishMousePress, setMouseReporting, wheelDirection } from './mouse'
 import type { PageProps } from './pages'
 import {
-  AgentsPage,
   ExtrasPage,
+  InitPage,
   McpPage,
   ProviderPage,
   SettingsPage,
   SkillsPage,
+  StylesPage,
   ToolsPage,
   WorkflowsPage,
 } from './pages'
@@ -73,7 +74,8 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const { exit } = useApp()
   const [uiLang, setUiLang] = useState<Lang>(lang)
   const t = useMemo(() => createTranslator(uiLang), [uiLang])
-  const [page, setPage] = useState<PageId>('tools')
+  // v3 opened on its full-init entry; the walkthrough page plays that part here.
+  const [page, setPage] = useState<PageId>('init')
   const [focus, setFocus] = useState<'nav' | 'page'>('nav')
   const [editing, setEditing] = useState(false)
   const [status, setStatus] = useState<Status>()
@@ -230,6 +232,7 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
     active: onPage,
     onBack: () => setFocus('nav'),
     onEditing: setEditing,
+    onNavigate: setPage,
   }
   // The hints offer the L switch only while it works; --lang or ZCF_LANG pins the language.
   const keysSuffix = langPinned ? 'NoLang' : ''
@@ -284,13 +287,14 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
           {navCapped && navStart + navSize < NAV_ROWS.length && <Text dimColor>{'  ↓'}</Text>}
         </Box>
         <Box flexDirection="column" flexGrow={1}>
+          {page === 'init' && <InitPage {...props} />}
           {page === 'tools' && <ToolsPage {...props} detected={detected} />}
           {page === 'provider' && <ProviderPage {...props} lang={uiLang} loadPresets={loadPresets} />}
           {page === 'mcp' && <McpPage {...props} />}
           {page === 'skills' && <SkillsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />}
           {page === 'settings' && <SettingsPage {...props} />}
           {page === 'workflows' && <WorkflowsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />}
-          {page === 'agents' && <AgentsPage {...props} />}
+          {page === 'styles' && <StylesPage {...props} />}
           {page === 'extras' && <ExtrasPage {...props} />}
           {page === 'apply' && (
             <ApplyPage service={service} t={t} home={home} active={onPage} dirty={editor.dirty} onBack={props.onBack} />

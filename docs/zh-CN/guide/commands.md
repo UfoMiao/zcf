@@ -45,7 +45,7 @@ npx zcf [command] [options]
 不进界面，一条命令完成配置：从预设填充供应商、挑选工具和随装的技能等，保存文件，再走一遍 `zcf apply` 的计划与应用流程。
 
 ```bash
-zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-commit --yes
+zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --workflows git --yes
 ```
 
 不带任何选项运行时，ZCF 只提示你打开界面，不会写出空配置。
@@ -56,6 +56,7 @@ zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-
 | `-k, --api-key <key>` | 供应商的 API 密钥。需要配合 `--preset`，或配置中已有供应商。 |
 | `-t, --tools <tools>` | 要选择的工具，逗号分隔，与 `zcf plan` 相同。 |
 | `--skills <skills>` | 要安装的内置技能，逗号分隔。 |
+| `-w, --workflows <ids>` | 要安装的工作流预设，逗号分隔（`common, six-steps, feat, git, bmad`）；每个预设把它的技能和子代理并入配置，与工作流页一致。 |
 | `--agents <agents>` | 要安装的内置子代理，逗号分隔。 |
 | `--styles <styles>` | 要安装的输出风格，逗号分隔。 |
 | `--default-style <style>` | 各工具默认使用的输出风格。 |
@@ -65,7 +66,7 @@ zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --skills git-
 | `-y, --yes` | 保存后应用。不加时，ZCF 保存文件、显示计划，不做其他改动。 |
 | `--file <path>` | 配置文件。不存在则创建；已存在则逐键合并，保留注释和排版。 |
 
-所有 id 都在改动文件之前校验：未知的预设、工具、技能、子代理、风格或周边工具会连同可选值一起报错，不会写入任何内容。`--skills`、`--agents` 等选项与配置中已有的内容合并；`--tools` 这类列表则整体替换。保存后的文件走与 `zcf apply` 相同的步骤，`-y, --yes` 在那里同样起作用；没有选择任何工具时，也会报同样的错误。
+所有 id 都在改动文件之前校验：未知的预设、工具、技能、工作流、子代理、风格或周边工具会连同可选值一起报错，不会写入任何内容。`--skills`、`--workflows`、`--agents` 等选项与配置中已有的内容合并；`--tools` 这类列表则整体替换。保存后的文件走与 `zcf apply` 相同的步骤，`-y, --yes` 在那里同样起作用；没有选择任何工具时，也会报同样的错误。
 
 ## `zcf plan`
 

@@ -4,7 +4,7 @@ title: Terminal and web UI
 
 # Terminal and web UI
 
-ZCF has two editors for the [config file](./config): one in the terminal (`zcf` or `zcf tui`) and one in the browser (`zcf ui`). They check the same things as you edit and carry the same pages — the web sidebar groups them into the same sections (init config / workflows / more tools / backup) — so pick whichever fits.
+ZCF has two editors for the [config file](./config): one in the terminal (`zcf` or `zcf tui`) and one in the browser (`zcf ui`). They check the same things as you edit and carry the same pages — the web sidebar groups them into the same sections (configuration / more tools / ZCF) — so pick whichever fits.
 
 Both edit a draft. Nothing is written until you save, and saving only writes what you changed. If you edit the file in a text editor while ZCF is open, your edits survive as long as you didn't change the same keys in ZCF.
 
@@ -14,18 +14,19 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 
 | Page | What you do there |
 |------|-------------------|
+| Initialize | The setup walkthrough both editors open on: one row per step (tools, provider, MCP, skills, workflows, output styles, settings), its value saying where that step stands; <kbd>Enter</kbd> opens the page doing it, ending at Apply. |
 | Agent tools | Tick the agent tools to configure. Each row shows whether the tool is installed and which version. |
 | Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. Save providers as [profiles](./config#profiles) on this page to switch between them. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
 | Skills | Pick from the ZCF built-in skills, search the community index for more, and add your own sources with, for each, the skills to install. |
+| Workflows | A workflow is skills plus agents, as in v3: toggle the ready-made presets, pick the built-in agents, and build your own bundles referencing agents, built-in or community skills, and your MCP servers. |
+| Output styles | Pick the built-in output styles to install and the default one. |
 | Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
 | Apply | See the plan for the saved config, with a diff of each file, then apply it. |
-| Workflows | Toggle the ready-made workflow bundles of skills and agents, and build your own bundles referencing agents, built-in or community skills, and your MCP servers. The output styles live here too: pick the ones to install and the default one. |
-| Agents | Pick the built-in agents installed for the tools that take them. |
 | Extras | Add companion tools beside the coding ones: the magpie local gateway (`client` or `cli`) and the CCometixLine status bar. |
 | Backup | Put files back from a backup run ZCF made before changing them, and prune the old runs. The page works on the saved files, not the draft. |
 
-In the terminal UI the page list is grouped into sections — Init config, Workflows, More tools and Backup — each with its own heading, and pages carry a number across the whole list: press it to jump there from anywhere in the nav. The web UI lists the same pages in a flat sidebar.
+In the terminal UI the page list is grouped into sections — Configuration, More tools and ZCF — each with its own heading, and pages carry a number across the whole list: the first ten jump on their keypress from anywhere in the nav, and pages past the tenth are reached with the arrows. The web UI lists the same pages in a flat sidebar.
 
 Fields are checked as you type. A config with errors cannot be saved, and the page shows what is wrong next to the field.
 
