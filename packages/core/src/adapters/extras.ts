@@ -5,8 +5,12 @@ import type { AdapterContext } from './types'
 
 /** The magpie gateway's local address; its installer script, one file for both faces. */
 const MAGPIE_INSTALL_URL = 'https://usemagpie.ai/install.sh'
-/** The mirror prefix magpie's installer takes, in the same style as the git clone mirror. */
-const MAGPIE_MIRROR_PREFIX = 'https://gh-proxy.com/https://github.com'
+/**
+ * The mirror prefix magpie's installer takes: the bare proxy address, which the installer
+ * puts in front of the whole github.com release URL. Unlike git's insteadOf prefix, it must
+ * not itself end in github.com or the joined URL would name github.com twice (a real 404).
+ */
+const MAGPIE_MIRROR_PREFIX = 'https://gh-proxy.com'
 /** The npm wrapper that puts the ccline binary in `~/.claude/ccline/ccline`. */
 const CCLINE_PACKAGE = '@cometix/ccline'
 

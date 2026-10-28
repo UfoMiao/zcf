@@ -39,10 +39,12 @@ describe('planExtras', () => {
     )
     expect(plans[0]!.notices.map(notice => notice.message.key)).toContain('notice.magpieClient')
 
-    // The mirror flag goes to the installer through `sh -s --`, not to curl.
+    // The mirror flag goes to the installer through `sh -s --`, not to curl. The value is
+    // the bare proxy: the installer puts it in front of the whole github.com release URL,
+    // so one that already ends in github.com would double it (a real 404, checked by hand).
     const china = await planExtras(config({ extras: { magpie: 'cli' } }), context({ mirror: 'china' }))
     expect(commandLine(china[0]!.steps[0]!)).toBe(
-      'bash -c set -o pipefail; curl -fsSL https://usemagpie.ai/install.sh | sh -s -- --mirror https://gh-proxy.com/https://github.com',
+      'bash -c set -o pipefail; curl -fsSL https://usemagpie.ai/install.sh | sh -s -- --mirror https://gh-proxy.com',
     )
     expect(china[0]!.notices.map(notice => notice.message.key)).toContain('notice.magpieCli')
   })
