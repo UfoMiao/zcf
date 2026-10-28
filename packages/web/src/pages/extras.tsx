@@ -1,4 +1,4 @@
-import { EXTRA_NAMES, MAGPIE_FACES, isMagpieFace } from '@zcf/core/schema'
+import { EXTRA_NAMES } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
 import { isTable } from '@zcf/ui-kit'
 
@@ -10,10 +10,13 @@ import { Checkbox } from '../components/ui/checkbox'
 
 type PageProps = { editor: ConfigEditor; t: Translate }
 
+// TODO(#461): import from '@zcf/core/schema' once #461 merges and exports MAGPIE_FACES.
+const MAGPIE_FACES = ['client', 'cli'] as const
+
 export function ExtrasPage({ editor, t }: PageProps) {
   const extras = isTable(editor.draft.extras) ? editor.draft.extras : {}
   // '' is the unset face: neither client nor cli, so magpie does not install.
-  const magpie = isMagpieFace(extras.magpie) ? extras.magpie : ''
+  const magpie = MAGPIE_FACES.find(face => face === extras.magpie) ?? ''
   const ccline = extras.ccline === true
   return (
     <section>

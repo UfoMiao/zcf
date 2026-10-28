@@ -84,8 +84,8 @@ export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>>
   skills: ['skills'],
   settings: ['mirror', 'configLanguage'],
   apply: undefined,
-  workflows: ['workflows'],
-  agents: ['agents', 'styles'],
+  workflows: ['workflows', 'styles'],
+  agents: ['agents'],
   extras: ['extras'],
   backup: undefined,
 }

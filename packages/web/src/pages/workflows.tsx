@@ -1,5 +1,5 @@
 import type { WorkflowPreset } from '@zcf/core/schema'
-import { BUILTIN_AGENT_IDS, WORKFLOW_PRESETS } from '@zcf/core/schema'
+import { BUILTIN_AGENT_IDS, BUILTIN_STYLE_IDS, WORKFLOW_PRESETS } from '@zcf/core/schema'
 import type { ConfigEditor } from '@zcf/ui-kit'
 import {
   addSourcedSkill,
@@ -22,6 +22,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { FieldInput } from '../fields'
 
 type PageProps = { editor: ConfigEditor; t: Translate }
+
+/** An id shown as a toggle card's main line. */
+const idTitle = (id: string) => <span className="truncate font-mono text-[13px] font-medium">{id}</span>
 
 /** Whether every skill and agent a preset names is already in the draft. */
 function presetOn(draft: ConfigEditor['draft'], preset: WorkflowPreset): boolean {
@@ -185,6 +188,58 @@ function BundleCard({ editor, t, index }: PageProps & { index: number }) {
 const bundleKey = (bundle: unknown, index: number): string =>
   `${isTable(bundle) && typeof bundle.name === 'string' ? bundle.name : ''}#${index}`
 
+/** The output-style templates: the same shipped content the presets and bundles draw from. */
+function StylesCard({ editor, t }: PageProps) {
+  const stylesTable = isTable(editor.draft.styles) ? editor.draft.styles : {}
+  const styles = draftIds(stylesTable.outputStyles)
+  const def = typeof stylesTable.defaultOutputStyle === 'string' ? stylesTable.defaultOutputStyle : ''
+  const toggleStyle = (id: string) => {
+    editor.update(['styles', 'outputStyles'], toggleId(styles, id))
+    // The default cannot point at a style that no longer installs.
+    if (def === id) editor.update(['styles', 'defaultOutputStyle'], undefined)
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('web.styles.title')}</CardTitle>
+        <CardDescription>{t('web.styles.hint')}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
+          {BUILTIN_STYLE_IDS.map(id => (
+            <ToggleCard key={id} on={styles.includes(id)} onToggle={() => toggleStyle(id)} title={idTitle(id)} />
+          ))}
+        </div>
+        <div className="flex max-w-xs flex-col gap-1.5">
+          <label htmlFor="styles.default" className="text-[13px] font-medium">
+            {t('web.styles.default')}
+          </label>
+          <select
+            id="styles.default"
+            value={def}
+            onChange={event =>
+              editor.update(
+                ['styles', 'defaultOutputStyle'],
+                event.target.value === '' ? undefined : event.target.value,
+              )
+            }
+            className="flex h-8 w-full rounded-md border bg-card px-2 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+          >
+            <option value="">{t('web.styles.none')}</option>
+            {/* A default written by hand stays visible, so choosing any option changes it. */}
+            {def && !BUILTIN_STYLE_IDS.some(id => id === def) && <option value={def}>{def}</option>}
+            {BUILTIN_STYLE_IDS.map(id => (
+              <option key={id} value={id}>
+                {id}
+              </option>
+            ))}
+          </select>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function WorkflowsPage({ editor, t }: PageProps) {
   const bundles = Array.isArray(editor.draft.workflows) ? editor.draft.workflows : []
   const add = () => editor.update(['workflows', bundles.length], { name: '' })
@@ -209,6 +264,7 @@ export function WorkflowsPage({ editor, t }: PageProps) {
             <BundleCard key={bundleKey(bundle, index)} editor={editor} t={t} index={index} />
           ))
         )}
+        <StylesCard editor={editor} t={t} />
       </div>
     </section>
   )
