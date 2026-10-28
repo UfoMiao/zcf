@@ -20,7 +20,7 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Skills | Pick from the ZCF built-in skills, search the community index for more, and add your own sources with, for each, the skills to install. |
 | Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
 | Apply | See the plan for the saved config, with a diff of each file, then apply it. |
-| Presets | Toggle the ready-made workflow bundles of skills and agents, and build your own bundles referencing agents, built-in or community skills, and your MCP servers. |
+| Workflows | Toggle the ready-made workflow bundles of skills and agents, and build your own bundles referencing agents, built-in or community skills, and your MCP servers. The output styles live here too: pick the ones to install and the default one. |
 | Agents | Pick the built-in agents installed for the tools that take them. |
 | Extras | Add companion tools beside the coding ones: the magpie local gateway (`client` or `cli`) and the CCometixLine status bar. |
 | Backup | Put files back from a backup run ZCF made before changing them, and prune the old runs. The page works on the saved files, not the draft. |

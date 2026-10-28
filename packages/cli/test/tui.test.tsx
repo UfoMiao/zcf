@@ -599,7 +599,7 @@ describe('terminal UI', () => {
     await tick()
     const tall = app.frame()
     for (const header of ['Init config', 'Workflows', 'More tools', 'Backup']) expect(tall).toContain(header)
-    for (const page of ['6 Apply', '7 Presets', '8 Agents', '9 Extras', '0 Backup']) expect(tall).toContain(page)
+    for (const page of ['6 Apply', '7 Workflows', '8 Agents', '9 Extras', '0 Backup']) expect(tall).toContain(page)
     app.unmount()
   })
 
@@ -1143,6 +1143,42 @@ describe('terminal UI', () => {
     expect(saved.at(-1)?.profiles).toEqual([
       { id: 'backup', name: 'Backup', provider: { name: 'Relay', apiKey: 'sk-relay' } },
     ])
+    app.unmount()
+  })
+
+  it('picks output styles and the default one on the Workflows page', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('7', KEY.enter)
+    // The style toggles sit under the presets, the bundles row and the new-bundle row.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
+    expect(app.frame()).toContain('[x] engineer-professional')
+    // The default style cycles from unset onto the first built-in style.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.right)
+    expect(app.frame()).toContain('engineer-professional')
+    await app.press(KEY.save)
+    expect(saved.at(-1)?.styles).toEqual({
+      outputStyles: ['engineer-professional'],
+      defaultOutputStyle: 'engineer-professional',
+    })
+    app.unmount()
+  })
+
+  it('warns that unsaved editor changes still sit on top of a restore', async () => {
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async () => ({ changed: 1, unchanged: 0, missing: 0, corrupt: 0, outside: 0 }),
+      },
+    )
+    const app = await start(service)
+    // Dirty the draft without saving, then restore under it.
+    await app.press(KEY.enter, ' ', KEY.escape)
+    await app.press('0', KEY.enter)
+    await app.until('an apply, 2 file(s)')
+    await app.press(KEY.enter, KEY.enter)
+    expect(await app.until('writes them back over the restored file')).toContain('Restored 1 changed file(s)')
     app.unmount()
   })
 

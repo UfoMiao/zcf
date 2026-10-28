@@ -13,6 +13,7 @@ import {
   pageHasIssues,
   presetCovered,
   removeSourcedSkills,
+  sameProvider,
   skillSourceIndex,
   toggleCatalogSkill,
   togglePreset,
@@ -217,7 +218,7 @@ describe('removeSourcedSkills', () => {
 describe('presetCovered', () => {
   const preset = {
     skills: [{ source: 'zcf', skills: ['init-project'] }],
-    agents: ['init-architect', 'get-current-datetime'],
+    agents: ['init-architect', 'get-current-datetime'] as const,
   }
 
   it('wants every skill of every source and every agent', () => {
@@ -238,10 +239,26 @@ describe('presetCovered', () => {
   })
 })
 
+describe('sameProvider', () => {
+  it('matches provider blocks whatever order their keys were written in', () => {
+    const zcfOrder = { name: 'Relay', apiKey: 'k', anthropic: { baseUrl: 'https://r', authType: 'auth_token' } }
+    const handOrder = { anthropic: { authType: 'auth_token', baseUrl: 'https://r' }, apiKey: 'k', name: 'Relay' }
+    expect(sameProvider(zcfOrder, handOrder)).toBe(true)
+    expect(sameProvider(zcfOrder, { ...handOrder, apiKey: 'other' })).toBe(false)
+    expect(sameProvider(zcfOrder, { ...zcfOrder, extra: 1 })).toBe(false)
+  })
+
+  it('says no when either side is missing or not a block', () => {
+    expect(sameProvider(undefined, undefined)).toBe(true)
+    expect(sameProvider(undefined, { name: 'Relay' })).toBe(false)
+    expect(sameProvider('nope', 'nope')).toBe(true)
+  })
+})
+
 describe('togglePreset', () => {
   const preset = {
     skills: [{ source: 'zcf', skills: ['init-project'] }],
-    agents: ['init-architect'],
+    agents: ['init-architect'] as const,
   }
 
   it('merges the preset into the draft when it is not installed yet', () => {
@@ -274,7 +291,7 @@ describe('togglePreset', () => {
   })
 
   it('installs a whole source with a bare entry, which a later toggle-off leaves alone', () => {
-    const whole = { skills: [{ source: 'owner/repo' }], agents: [] }
+    const whole = { skills: [{ source: 'owner/repo', skills: [] }], agents: [] }
     expect(togglePreset([], [], whole)).toEqual({ skills: [{ source: 'owner/repo' }], agents: undefined })
     // "All but these" has no shape, so the bare entry stays and the preset stays covered.
     expect(togglePreset([{ source: 'owner/repo' }], [], whole)).toEqual({
@@ -284,7 +301,13 @@ describe('togglePreset', () => {
   })
 
   it('keeps an existing bare entry and adds the picked skills of another source', () => {
-    const mixed = { skills: [{ source: 'zcf' }, { source: 'owner/repo', skills: ['one'] }], agents: [] }
+    const mixed = {
+      skills: [
+        { source: 'zcf', skills: [] },
+        { source: 'owner/repo', skills: ['one'] },
+      ],
+      agents: [],
+    }
     expect(togglePreset([{ source: 'zcf' }], ['planner'], mixed)).toEqual({
       skills: [{ source: 'zcf' }, { source: 'owner/repo', skills: ['one'] }],
       agents: ['planner'],

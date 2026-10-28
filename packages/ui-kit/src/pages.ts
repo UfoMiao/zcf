@@ -1,3 +1,4 @@
+import type { WorkflowPreset } from '@zcf/core'
 import type { ConfigIssue, ToolId } from '@zcf/core/schema'
 import { BUILTIN_SKILLS_SOURCE, CONFIG_LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
@@ -271,10 +272,23 @@ export function skillSourceIndex(sources: unknown, source: string): number {
 }
 
 /**
+ * Whether two provider blocks hold the same config, whatever order their keys were
+ * written in: a profile saved by hand marks active just as well as one ZCF wrote.
+ */
+export function sameProvider(a: unknown, b: unknown): boolean {
+  if (a === b) return true
+  if (!isTable(a) || !isTable(b)) return false
+  const keys = Object.keys(a)
+  if (keys.length !== Object.keys(b).length) return false
+  return keys.every(key => key in b && sameProvider(a[key], b[key]))
+}
+
+/**
  * Take skills back out of the sources that install them. The entries keep what they still
  * pick, and an entry left with no skills goes; `undefined` when nothing is left at all.
- * An entry that names no skills installs them all, and "all but these" has no shape to
- * write, so such an entry is left alone.
+ * An entry that names no skills installs them all — often hand-written — and "all but
+ * these" has no shape to write, so such an entry is left alone: toggling a preset off
+ * over one is a no-op, not a removal of the entry.
  */
 export function removeSourcedSkills(sources: unknown, source: string, names: readonly string[]): unknown[] | undefined {
   const drop = new Set(names)
@@ -288,11 +302,8 @@ export function removeSourcedSkills(sources: unknown, source: string, names: rea
   return list.length > 0 ? list : undefined
 }
 
-/** What a workflow preset carries into a config, the shape of core's WORKFLOW_PRESETS entries. */
-export interface PresetBundle {
-  skills: readonly { source: string; skills?: readonly string[] }[]
-  agents: readonly string[]
-}
+/** The parts of a workflow preset the draft helpers below look at, straight from core's type. */
+type PresetPick = Pick<WorkflowPreset, 'skills' | 'agents'>
 
 /**
  * Whether the draft's `skills` covers `names` from `source`: an entry that names no skills
@@ -309,7 +320,7 @@ function sourceCovers(sources: unknown, source: string, names: readonly string[]
  * Whether the draft already installs every skill and agent of `preset`. A source entry
  * that names no skills installs them all, so it covers whatever the preset picks from it.
  */
-export function presetCovered(sources: unknown, agents: unknown, preset: PresetBundle): boolean {
+export function presetCovered(sources: unknown, agents: unknown, preset: PresetPick): boolean {
   const picked = Array.isArray(agents) ? agents.map(String) : []
   if (!preset.agents.every(agent => picked.includes(agent))) return false
   return preset.skills.every(entry => sourceCovers(sources, entry.source, entry.skills ?? []))
@@ -323,13 +334,14 @@ export function presetCovered(sources: unknown, agents: unknown, preset: PresetB
 export function togglePreset(
   sources: unknown,
   agents: unknown,
-  preset: PresetBundle,
+  preset: PresetPick,
 ): { skills: unknown[] | undefined; agents: string[] | undefined } {
+  const presetAgents: readonly string[] = preset.agents
   const pickedAgents = Array.isArray(agents) ? agents.map(String) : []
   if (presetCovered(sources, agents, preset)) {
     let list: unknown = sources
     for (const entry of preset.skills) list = removeSourcedSkills(list, entry.source, entry.skills ?? [])
-    const nextAgents = pickedAgents.filter(agent => !preset.agents.includes(agent))
+    const nextAgents = pickedAgents.filter(agent => !presetAgents.includes(agent))
     return {
       skills: Array.isArray(list) && list.length > 0 ? list : undefined,
       agents: nextAgents.length > 0 ? nextAgents : undefined,

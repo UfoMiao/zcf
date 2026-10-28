@@ -14,6 +14,8 @@ export interface BackupPageProps {
   service: ZcfService
   t: Translate
   active: boolean
+  /** Unsaved editor changes: a restore rewrites the file under them, so they warn. */
+  dirty: boolean
   onBack: () => void
 }
 
@@ -32,11 +34,13 @@ function entryValue(backup: BackupInfo, t: Translate): string {
  * and pruning removes the runs past the newest 20. The page works on the files as they
  * are on disk, not on the draft.
  */
-export function BackupPage({ service, t, active, onBack }: BackupPageProps) {
+export function BackupPage({ service, t, active, dirty, onBack }: BackupPageProps) {
   const [state, setState] = useState<'loading' | 'ready' | 'busy'>('loading')
   const [backups, setBackups] = useState<readonly BackupInfo[]>([])
   const [lines, setLines] = useState<string[]>([])
   const [confirm, setConfirm] = useState<Confirm>()
+  // Set when a restore succeeded while the editor held unsaved changes.
+  const [overDirty, setOverDirty] = useState(false)
 
   const load = () => {
     setState('loading')
@@ -52,8 +56,11 @@ export function BackupPage({ service, t, active, onBack }: BackupPageProps) {
     )
   }
 
-  // The list loads when the page opens, and again after each action.
-  useEffect(load, [service])
+  // The list loads when the page opens, and again after each action; `t` is in the
+  // dependencies so a failure notes itself in the language the UI switched to.
+  useEffect(() => {
+    load()
+  }, [service, t])
 
   const note = (text: string) => setLines(current => [...current, text])
 
@@ -69,6 +76,8 @@ export function BackupPage({ service, t, active, onBack }: BackupPageProps) {
           if (result.corrupt > 0) note(t('cli.backup.corrupt', { count: result.corrupt }))
           if (result.outside > 0) note(t('cli.backup.outside', { count: result.outside }))
           if (result.id !== undefined) note(t('tui.backup.undo', { id: result.id }))
+          // The restore rewrote the file under any unsaved editor changes.
+          setOverDirty(dirty)
         },
         (error: unknown) => note(t('tui.backup.failed', { message: errorText(error, t) })),
       )
@@ -137,6 +146,7 @@ export function BackupPage({ service, t, active, onBack }: BackupPageProps) {
       <Text dimColor>{t('tui.backup.intro')}</Text>
       {state === 'loading' && <Text dimColor>{t('tui.backup.loading')}</Text>}
       {state !== 'loading' && backups.length === 0 && !confirm && <Text dimColor>{t('cli.backup.none')}</Text>}
+      {overDirty && <Text color="yellow">{t('tui.backup.restoredDirty')}</Text>}
       {/* Two lines at most, so the list below keeps its rows even when a result runs long. */}
       {lines.slice(-2).map((line, index) => (
         <Text key={`${index}-${line}`}>{line}</Text>

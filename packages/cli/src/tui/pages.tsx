@@ -3,6 +3,7 @@ import {
   applyPreset,
   BUILTIN_AGENT_IDS,
   BUILTIN_SKILLS_SOURCE,
+  BUILTIN_STYLE_IDS,
   presetSummary,
   SKILLS_CATALOG,
   skillDescription,
@@ -27,6 +28,7 @@ import {
   presetCovered,
   PROVIDER_FIELDS,
   renameKey,
+  sameProvider,
   selectValue,
   SETTINGS_FIELDS,
   SKILL_FIELDS,
@@ -54,6 +56,23 @@ const MASK = '••••••••'
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value : ''
+}
+
+/** A `[x]` checkbox row: Enter, Space and a click all flip it through `flip`. */
+function toggleRow(
+  id: string,
+  label: string,
+  on: boolean,
+  flip: () => void,
+  extras: { value?: string; hint?: string } = {},
+): Row {
+  return {
+    id,
+    label: `${on ? '[x]' : '[ ]'} ${label}`,
+    value: extras.value,
+    hint: extras.hint,
+    action: { type: 'cycle', next: flip },
+  }
 }
 
 function firstIssue(editor: ConfigEditor, path: DraftPath, t: Translate): string | undefined {
@@ -173,12 +192,7 @@ export function ToolsPage({
         : t('tui.tools.missing')
     const on = selected.includes(tool)
     const toggle = () => editor.update(['tools'], on ? selected.filter(item => item !== tool) : [...selected, tool])
-    return {
-      id: tool,
-      label: `${on ? '[x]' : '[ ]'} ${TOOL_NAMES[tool]}`,
-      value: state,
-      action: { type: 'cycle', next: toggle },
-    }
+    return toggleRow(tool, TOOL_NAMES[tool], on, toggle, { value: state })
   })
   return (
     <Box flexDirection="column" gap={1}>
@@ -197,12 +211,7 @@ export function AgentsPage({ editor, t, active, onBack, onEditing }: PageProps) 
       const next = on ? picked.filter(agent => agent !== id) : [...picked, id]
       editor.update(['agents'], next.length > 0 ? next : undefined)
     }
-    return {
-      id,
-      label: `${on ? '[x]' : '[ ]'} ${id}`,
-      hint: t(`tui.agents.hint.${id}`),
-      action: { type: 'cycle', next: toggle },
-    }
+    return toggleRow(id, id, on, toggle, { hint: t(`tui.agents.hint.${id}`) })
   })
   return (
     <Box flexDirection="column" gap={1}>
@@ -214,6 +223,9 @@ export function AgentsPage({ editor, t, active, onBack, onEditing }: PageProps) 
 
 /** The magpie install faces a cycle steps through, `undefined` first so it starts off. */
 const MAGPIE_FACES = [undefined, 'client', 'cli'] as const
+
+/** The default output style cycles through unset and every built-in style. */
+const DEFAULT_STYLE_CYCLE = [undefined, ...BUILTIN_STYLE_IDS] as const
 
 export function ExtrasPage({ editor, t, active, onBack, onEditing }: PageProps) {
   const extras = isTable(editor.draft.extras) ? editor.draft.extras : {}
@@ -233,12 +245,15 @@ export function ExtrasPage({ editor, t, active, onBack, onEditing }: PageProps) 
           editor.update(['extras', 'magpie'], MAGPIE_FACES[(at - 1 + MAGPIE_FACES.length) % MAGPIE_FACES.length]),
       },
     },
-    {
-      id: 'ccline',
-      label: `${ccline ? '[x]' : '[ ]'} ${t('tui.extras.ccline')}`,
-      hint: t('tui.extras.cclineHint'),
-      action: { type: 'cycle', next: () => editor.update(['extras', 'ccline'], ccline ? undefined : true) },
-    },
+    toggleRow(
+      'ccline',
+      t('tui.extras.ccline'),
+      ccline,
+      () => editor.update(['extras', 'ccline'], ccline ? undefined : true),
+      {
+        hint: t('tui.extras.cclineHint'),
+      },
+    ),
   ]
   return (
     <Box flexDirection="column" gap={1}>
@@ -340,14 +355,14 @@ function slug(name: string): string {
 /** Saved providers, one row each: Enter copies one into the provider fields. */
 function ProfilePicker({ editor, t, active, onBack, onEditing }: PageProps) {
   const list = Array.isArray(editor.draft.profiles) ? editor.draft.profiles : []
-  const current = JSON.stringify(editor.draft.provider)
   const rows: Row[] = list.map((profile, index): Row => {
     const item = isTable(profile) ? profile : {}
     const provider = isTable(item.provider) ? item.provider : undefined
     return {
       id: asText(item.id) || String(index),
       label: asText(item.name) || asText(item.id) || String(index),
-      value: provider !== undefined && JSON.stringify(provider) === current ? t('tui.profiles.active') : undefined,
+      value:
+        provider !== undefined && sameProvider(editor.draft.provider, provider) ? t('tui.profiles.active') : undefined,
       error: firstIssue(editor, ['profiles', index], t),
       remove: () => editor.update(['profiles', index], undefined),
       action: {
@@ -784,6 +799,10 @@ export function WorkflowsPage(
   const [bundle, setBundle] = useState<BundleDraft>()
   const [picking, setPicking] = useState<'catalog' | 'search'>()
   const bundles = Array.isArray(editor.draft.workflows) ? editor.draft.workflows : []
+  const styles = isTable(editor.draft.styles) ? editor.draft.styles : {}
+  const pickedStyles = Array.isArray(styles.outputStyles) ? styles.outputStyles.map(String) : []
+  const defaultStyle = typeof styles.defaultOutputStyle === 'string' ? styles.defaultOutputStyle : undefined
+  const defaultAt = (DEFAULT_STYLE_CYCLE as readonly (string | undefined)[]).indexOf(defaultStyle)
 
   const leaveBuilder = () => {
     setPicking(undefined)
@@ -860,19 +879,19 @@ export function WorkflowsPage(
           },
         },
       },
-      ...BUILTIN_AGENT_IDS.map((id): Row => ({
-        id: `agent-${id}`,
-        label: `${bundle.agents.includes(id) ? '[x]' : '[ ]'} ${id}`,
-        hint: t(`tui.agents.hint.${id}`),
-        action: {
-          type: 'cycle',
-          next: () =>
+      ...BUILTIN_AGENT_IDS.map((id): Row =>
+        toggleRow(
+          `agent-${id}`,
+          id,
+          bundle.agents.includes(id),
+          () =>
             setBundle({
               ...bundle,
               agents: bundle.agents.includes(id) ? bundle.agents.filter(agent => agent !== id) : [...bundle.agents, id],
             }),
-        },
-      })),
+          { hint: t(`tui.agents.hint.${id}`) },
+        ),
+      ),
       ...bundle.skills.map((source, index): Row => {
         const item = isTable(source) ? source : {}
         const skills = Array.isArray(item.skills) ? item.skills.map(String) : []
@@ -895,19 +914,19 @@ export function WorkflowsPage(
         hint: t('tui.skills.searchHint'),
         action: { type: 'run', run: () => setPicking('search') },
       },
-      ...servers.map((name): Row => ({
-        id: `mcp-${name}`,
-        label: `${bundle.mcp.includes(name) ? '[x]' : '[ ]'} ${name}`,
-        hint: t('tui.workflows.mcpHint'),
-        action: {
-          type: 'cycle',
-          next: () =>
+      ...servers.map((name): Row =>
+        toggleRow(
+          `mcp-${name}`,
+          name,
+          bundle.mcp.includes(name),
+          () =>
             setBundle({
               ...bundle,
               mcp: bundle.mcp.includes(name) ? bundle.mcp.filter(server => server !== name) : [...bundle.mcp, name],
             }),
-        },
-      })),
+          { hint: t('tui.workflows.mcpHint') },
+        ),
+      ),
       {
         id: 'save',
         label: t('tui.workflows.save'),
@@ -975,6 +994,34 @@ export function WorkflowsPage(
       action: {
         type: 'run',
         run: () => setBundle({ at: bundles.length, name: '', agents: [], skills: [], mcp: [], named: false }),
+      },
+    },
+    // The output styles ride on this page beside the bundles, the way the web lays it out.
+    ...BUILTIN_STYLE_IDS.map(id => {
+      const on = pickedStyles.includes(id)
+      const toggle = () => {
+        const next = on ? pickedStyles.filter(style => style !== id) : [...pickedStyles, id]
+        editor.update(['styles', 'outputStyles'], next.length > 0 ? next : undefined)
+      }
+      return toggleRow(`style-${id}`, id, on, toggle, { hint: t('tui.workflows.stylesHint') })
+    }),
+    {
+      id: 'defaultStyle',
+      label: t('tui.workflows.defaultStyle'),
+      value: defaultStyle ?? t('tui.empty'),
+      hint: t('tui.workflows.defaultStyleHint'),
+      action: {
+        type: 'cycle',
+        next: () =>
+          editor.update(
+            ['styles', 'defaultOutputStyle'],
+            DEFAULT_STYLE_CYCLE[(defaultAt + 1) % DEFAULT_STYLE_CYCLE.length],
+          ),
+        previous: () =>
+          editor.update(
+            ['styles', 'defaultOutputStyle'],
+            DEFAULT_STYLE_CYCLE[(defaultAt - 1 + DEFAULT_STYLE_CYCLE.length) % DEFAULT_STYLE_CYCLE.length],
+          ),
       },
     },
   ]

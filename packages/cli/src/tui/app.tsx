@@ -295,7 +295,9 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
           {page === 'apply' && (
             <ApplyPage service={service} t={t} home={home} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
           )}
-          {page === 'backup' && <BackupPage service={service} t={t} active={onPage} onBack={props.onBack} />}
+          {page === 'backup' && (
+            <BackupPage service={service} t={t} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
+          )}
         </Box>
       </Box>
       <Text dimColor>{t(keys)}</Text>
