@@ -174,6 +174,37 @@ export const RESPONSE_LANGUAGE: Record<ConfigLanguage, string | undefined> = {
   'zh-CN': 'Simplified Chinese',
 }
 
+/** The statusLine value v3 wrote; `~` is Claude Code's to expand, on every platform. */
+const CCLINE_STATUS_LINE = { type: 'command', command: '~/.claude/ccline/ccline', padding: 0 } as const
+
+/**
+ * Steps that copy the built-in agent templates into `agents/zcf/<id>.md`, from the config
+ * language's folder. A copy step is content-identical-unchanged, so a rerun refreshes only
+ * what a template update changed.
+ */
+function agentSteps(ids: readonly string[], ctx: AdapterContext, language: ConfigLanguage): PlanStep[] {
+  const dir = ctx.builtinAgentsDir
+  if (ids.length === 0 || dir === undefined) return []
+  return ids.map(id => ({
+    kind: 'copy' as const,
+    title: { key: 'step.agent', params: { tool: TOOL, name: id } },
+    from: join(dir, language, id, 'AGENT.md'),
+    to: join(settingsDir(ctx), 'agents', 'zcf', `${id}.md`),
+  }))
+}
+
+/** Steps that copy the chosen output-style templates into `output-styles/<id>.md`. */
+function styleSteps(ids: readonly string[], ctx: AdapterContext, language: ConfigLanguage): PlanStep[] {
+  const dir = ctx.builtinOutputStylesDir
+  if (ids.length === 0 || dir === undefined) return []
+  return ids.map(id => ({
+    kind: 'copy' as const,
+    title: { key: 'step.style', params: { tool: TOOL, name: id } },
+    from: join(dir, language, `${id}.md`),
+    to: join(settingsDir(ctx), 'output-styles', `${id}.md`),
+  }))
+}
+
 /**
  * Apply `configLanguage` through Claude Code's own `language` key. Nothing to do when the
  * file already says so. English only removes a value ZCF itself wrote earlier: a language the
@@ -257,6 +288,28 @@ export const claudeCode: ToolAdapter = {
         config.configLanguage,
       )),
     )
+    steps.push(...agentSteps(config.agents ?? [], ctx, config.configLanguage))
+    const styles = config.styles ?? {}
+    steps.push(...styleSteps(styles.outputStyles ?? [], ctx, config.configLanguage))
+    if (styles.defaultOutputStyle !== undefined || styles.outputStyles?.length) {
+      // The pick is ZCF's to make and unmake; an unset default removes what ZCF wrote.
+      steps.push({
+        kind: 'file',
+        title: { key: 'step.defaultStyle', params: { tool: TOOL } },
+        path: join(settingsDir(ctx), 'settings.json'),
+        format: 'json',
+        edits: [{ path: ['outputStyle'], value: styles.defaultOutputStyle }],
+      })
+    }
+    if (config.extras?.ccline) {
+      steps.push({
+        kind: 'file',
+        title: { key: 'step.statusLine', params: { tool: TOOL } },
+        path: join(settingsDir(ctx), 'settings.json'),
+        format: 'json',
+        edits: [{ path: ['statusLine'], value: CCLINE_STATUS_LINE }],
+      })
+    }
 
     return { tool: TOOL, steps, notices }
   },

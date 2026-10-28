@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
 import { parseConfigText } from '../src/io/editors'
-import { previewFileStep, previewPlan } from '../src/plan/diff'
-import type { FileStep, Plan } from '../src/plan/types'
+import { previewCopyStep, previewFileStep, previewPlan } from '../src/plan/diff'
+import type { CopyStep, FileStep, Plan } from '../src/plan/types'
 
 const step: FileStep = {
   kind: 'file',
@@ -112,5 +112,54 @@ describe('previewPlan', () => {
     })
     expect(previews.get(second)!.patch).not.toContain('(new file)')
     expect(reads.toSorted()).toEqual(['/home/me/.claude/settings.json', '/home/me/other.json'])
+  })
+
+  it('previews a copy step from the template it ships, with no secrets to mask', async () => {
+    const copy: CopyStep = {
+      kind: 'copy',
+      title: { key: 'x' },
+      from: '/tpl/en/planner.md',
+      to: '/home/me/.claude/agents/zcf/planner.md',
+    }
+    const preview = await previewCopyStep(copy, async path =>
+      path === copy.from ? '# planner\n' : path === copy.to ? '# old\n' : undefined,
+    )
+    expect(preview).toMatchObject({ before: '# old\n', after: '# planner\n', changed: true, secrets: [] })
+    expect(preview.patch).toContain('-# old')
+
+    const same = await previewCopyStep(copy, async () => '# planner\n')
+    expect(same.changed).toBe(false)
+    expect(same.patch).toBe('')
+  })
+
+  it('previews copy steps inside a plan, starting from what an earlier step wrote', async () => {
+    const copy: CopyStep = {
+      kind: 'copy',
+      title: { key: 'x' },
+      from: '/tpl/style.md',
+      to: '/home/me/.claude/settings.json',
+    }
+    const plan: Plan = {
+      tools: [
+        {
+          tool: 'claude-code',
+          steps: [step, { kind: 'command', title: { key: 'x' }, command: 'x', args: [] }, copy],
+          notices: [],
+        },
+      ],
+    }
+    // Only the settings file is read from disk; the copy lands on top of the earlier write,
+    // whatever layout that write kept.
+    const previews = await previewPlan(plan, async path =>
+      path === '/home/me/.claude/settings.json'
+        ? '{ "old": true }\n'
+        : path === '/tpl/style.md'
+          ? '# style\n'
+          : undefined,
+    )
+    const preview = previews.get(copy)
+    expect(preview?.after).toBe('# style\n')
+    expect(preview?.changed).toBe(true)
+    expect(preview?.patch).toContain('+# style')
   })
 })

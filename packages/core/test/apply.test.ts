@@ -20,6 +20,38 @@ const npxStep = (name: string, serial?: string) => ({
 })
 
 describe('applyPlan', () => {
+  it('copies shipped templates, counting an identical copy as unchanged', async () => {
+    const home = await tempDir()
+    const backupDir = join(home, 'backups')
+    const template = join(home, 'tpl', 'planner.md')
+    const target = join(home, '.claude', 'agents', 'zcf', 'planner.md')
+    await mkdir(join(home, 'tpl'))
+    await writeFile(template, '# planner\n')
+
+    const copy = { kind: 'copy' as const, title, from: template, to: target }
+    const plan: Plan = { tools: [{ tool: 'claude-code', notices: [], steps: [copy] }] }
+    const [first] = await applyPlan(plan, { runner: fakeRunner(), backupDir, home })
+    expect(first!.steps[0]!.status).toBe('done')
+    expect(await readFile(target, 'utf8')).toBe('# planner\n')
+
+    // The same content again is no work; a changed template refreshes the file.
+    const [again] = await applyPlan(plan, { runner: fakeRunner(), backupDir: join(home, 'backups2'), home })
+    expect(again!.steps[0]!.status).toBe('unchanged')
+    await writeFile(template, '# planner v2\n')
+    const [updated] = await applyPlan(plan, { runner: fakeRunner(), backupDir: join(home, 'backups3'), home })
+    expect(updated!.steps[0]!.status).toBe('done')
+    expect(updated!.steps[0]!.backup).toBe(join(join(home, 'backups3'), '.claude', 'agents', 'zcf', 'planner.md'))
+    expect(await readFile(target, 'utf8')).toBe('# planner v2\n')
+
+    // A missing template is a packaging bug, reported as a failure, never an empty write.
+    const [broken] = await applyPlan(
+      { tools: [{ tool: 'claude-code', notices: [], steps: [{ ...copy, from: join(home, 'tpl', 'absent.md') }] }] },
+      { runner: fakeRunner(), backupDir: join(home, 'backups4'), home },
+    )
+    expect(broken!.steps[0]!.status).toBe('failed')
+    expect(await readFile(target, 'utf8')).toBe('# planner v2\n')
+  })
+
   it('runs commands, writes files and backs up what it changes', async () => {
     const home = await tempDir()
     const backupDir = join(home, 'backups')

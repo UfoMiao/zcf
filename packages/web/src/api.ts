@@ -1,5 +1,5 @@
 import type { Message, PresetList, SkillSearchList, ToolStatus } from '@zcf/core'
-import { isConfigLanguage, isToolId, TOOL_NAMES } from '@zcf/core/schema'
+import { isConfigLanguage, isExtraId, EXTRA_NAMES, isToolId, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, Draft, LoadedConfig, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
 
@@ -78,6 +78,7 @@ export async function loadSession(): Promise<Session> {
 export function messageText(t: Translate, message: Message): string {
   const params = { ...message.params }
   if (isToolId(params.tool)) params.tool = TOOL_NAMES[params.tool]
+  if (isExtraId(params.extra)) params.extra = EXTRA_NAMES[params.extra]
   if (isConfigLanguage(params.language)) params.language = t(`language.${params.language}`)
   return t(message.key, params)
 }

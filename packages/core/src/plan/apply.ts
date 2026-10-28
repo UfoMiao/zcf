@@ -2,9 +2,8 @@ import { rm, stat } from 'node:fs/promises'
 
 import type { CommandRunner } from '../exec/runner'
 import { snapshotFile, writeFileAtomic } from '../io/fs'
-import type { ToolId } from '../schema/config'
-import { previewFileStep } from './diff'
-import type { Plan, PlanStep, ToolPlan } from './types'
+import { previewCopyStep, previewFileStep } from './diff'
+import type { Plan, PlanActor, PlanStep, ToolPlan } from './types'
 
 export type StepStatus = 'done' | 'unchanged' | 'failed' | 'skipped'
 
@@ -18,14 +17,14 @@ export interface StepResult {
 }
 
 export interface ToolResult {
-  tool: ToolId
+  tool: PlanActor
   ok: boolean
   steps: StepResult[]
 }
 
 export type ApplyEvent =
-  | { type: 'step-start'; tool: ToolId; index: number; step: PlanStep }
-  | { type: 'step-end'; tool: ToolId; index: number; result: StepResult }
+  | { type: 'step-start'; tool: PlanActor; index: number; step: PlanStep }
+  | { type: 'step-end'; tool: PlanActor; index: number; result: StepResult }
 
 export interface ApplyOptions {
   runner: CommandRunner
@@ -105,6 +104,16 @@ async function runStep(step: PlanStep, options: ApplyOptions, state: RunState): 
       // The binary is copied to the backups; a folder holds only versions the tool downloads again.
       const backup = info.isFile() ? await snapshot(step.path) : undefined
       await rm(step.path, { recursive: true, force: true })
+      return { step, status: 'done', backup }
+    }
+
+    if (step.kind === 'copy') {
+      const preview = await previewCopyStep(step)
+      // An unreadable template is a packaging bug; say so rather than emptying the target.
+      if (preview.after === '') throw new Error(`template missing: ${step.from}`)
+      if (!preview.changed) return { step, status: 'unchanged' }
+      const backup = await snapshot(step.to)
+      await writeFileAtomic(step.to, preview.after)
       return { step, status: 'done', backup }
     }
 
