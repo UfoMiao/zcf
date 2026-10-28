@@ -593,9 +593,9 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Pick the agent tools')
     // Ten pages now: 7 reaches the Workflows section's first page, 0 the Backups page.
     await app.press('7')
-    expect(app.frame()).toContain('› 7 Workflows')
+    expect(app.frame()).toContain('› 7 Presets')
     await app.press('0')
-    expect(app.frame()).toContain('› 0 Backups')
+    expect(app.frame()).toContain('› 0 Backup')
     await app.press('1')
     expect(app.frame()).toContain('Pick the agent tools')
     app.unmount()
