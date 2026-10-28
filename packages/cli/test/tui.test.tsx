@@ -6,7 +6,6 @@ import { describe, expect, it } from 'vitest'
 import type { Lang } from '../src/i18n'
 import { createTranslator } from '../src/i18n'
 import { App } from '../src/tui/app'
-import { Banner } from '../src/tui/banner'
 
 const KEY = {
   enter: '\r',
@@ -15,7 +14,6 @@ const KEY = {
   right: '\u001B[C',
   left: '\u001B[D',
   escape: '\u001B',
-  save: '\u0013',
 }
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 30))
@@ -66,10 +64,18 @@ async function start(service: ZcfService, options: { lang?: Lang; langPinned?: b
   const app = render(
     <App service={service} lang={options.lang ?? 'en'} langPinned={options.langPinned ?? false} home="/home/me" />,
   )
+  // The fake stdout defaults to a stub short of the centered apply dialog; a real-size
+  // terminal is the honest default, and the windowing tests pin their own smaller rows.
+  Object.defineProperty(app.stdout, 'rows', { get: () => 30, configurable: true })
+  Object.defineProperty(app.stdout, 'columns', { get: () => 100, configurable: true })
+  app.stdout.emit('resize')
   const press = async (...keys: string[]) => {
     for (const key of keys) {
       app.stdin.write(key)
-      // Each key needs its own render before the next one arrives.
+      // Each key needs its own render before the next one arrives; a second tick
+      // keeps a busy run from interleaving the next key with the previous render.
+      // oxlint-disable-next-line no-await-in-loop
+      await tick()
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
@@ -91,19 +97,27 @@ async function start(service: ZcfService, options: { lang?: Lang; langPinned?: b
   return { ...app, press, frame, until }
 }
 
-// The backup page is the eleventh and carries no digit of its own: every test reaches it
-// the one way the app offers — jump to extras with 0, walk the nav choice down onto it,
-// then open it with Enter.
+// The backup page is the ninth: every test reaches it the one way the app offers — jump
+// to it with 9, then open it with Enter.
 async function openBackup(app: Awaited<ReturnType<typeof start>>) {
-  await app.press('0', KEY.down, KEY.enter)
+  await app.press('9', KEY.enter)
+}
+
+// Saving a draft runs through the apply flow: a opens it, Enter saves, plans and applies,
+// and the fake service's default plan rejects, so the run ends with its failure line. Esc
+// may close the flow only once that run is over — keys are ignored while it is still going.
+async function saveThroughFlow(app: Awaited<ReturnType<typeof start>>) {
+  await app.press('a', KEY.enter)
+  await app.until('Could not plan: not planned')
+  await app.press(KEY.escape)
 }
 
 describe('terminal UI', () => {
-  it('lists the tools with their install state and saves a toggled tool with Ctrl+S', async () => {
+  it('lists the tools with their install state and saves a toggled tool through the apply flow', async () => {
     const { service, saved, bases } = fakeService({ version: 1, tools: ['claude-code'] })
     const app = await start(service)
-    // 2 opens the tools page from the nav; Enter moves into its list.
-    await app.press('2', KEY.enter)
+    // 1 opens the tools page from the nav; Enter moves into its list.
+    await app.press('1', KEY.enter)
     expect(app.frame()).toContain('~/.ufomiao/zcf/config.json')
     expect(app.frame()).toContain('[x] Claude Code')
     expect(app.frame()).toContain('installed 2.1.0')
@@ -111,65 +125,31 @@ describe('terminal UI', () => {
 
     await app.press(KEY.down, ' ')
     expect(app.frame()).toContain('[x] Codex')
-    expect(app.frame()).toContain('unsaved')
+    expect(app.frame()).toContain('to apply')
 
-    await app.press(KEY.save)
+    // a opens the confirm-then-run flow over the page: what changed, what is installed.
+    await app.press('a')
+    expect(app.frame()).toContain('Apply the configuration')
+    expect(app.frame()).toContain('tools: claude-code, codex')
+    expect(app.frame()).toContain('Tools: Claude Code (installed)')
+
+    // Enter saves, plans and applies at once; the fake service's plan rejects, so the run says so.
+    await app.press(KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: ['claude-code', 'codex'] }])
     // The save is compared with what this editor loaded.
     expect(bases).toEqual([{ version: 1, tools: ['claude-code'] }])
-    expect(app.frame()).toContain('Saved.')
-    expect(app.frame()).not.toContain('unsaved')
-    app.unmount()
-  })
-
-  it('opens on the init walkthrough, its rows showing where each step stands', async () => {
-    const { service } = fakeService({ version: 1, tools: ['claude-code'] })
-    const app = await start(service)
-    expect(app.frame()).toContain('The setup walkthrough')
-    // Each row's value says where its step stands: the picked tool, and what is not set yet.
-    expect(app.frame()).toContain('Claude Code')
-    expect(app.frame()).toContain('not set')
-    // Enter moves into the walkthrough; Enter on the tools row opens the tools page.
-    await app.press(KEY.enter, KEY.enter)
+    expect(await app.until('Could not plan: not planned')).toContain('Could not plan: not planned')
+    // Esc closes the flow; with the draft saved, the dirty dot is gone.
+    await app.press(KEY.escape)
     expect(app.frame()).toContain('Pick the agent tools')
-    app.unmount()
-  })
-
-  it('walks every step of the init page into its own page', async () => {
-    const { service } = fakeService({ version: 1, tools: [] })
-    const app = await start(service)
-    // A full lap through the walkthrough: enter the list once, and for each step row
-    // its Enter opens the page it names; Esc then digit 1 walks back into the list,
-    // which restarts on its first row, so the downs walk one row further each time.
-    const opens: [number, string][] = [
-      [0, 'Pick the agent tools'],
-      [1, 'One API provider for every tool'],
-      [2, 'MCP servers added to every selected tool'],
-      [3, 'Skills installed for every selected tool'],
-      [4, 'Ready-made workflows'],
-      [5, 'Built-in output styles'],
-      [6, 'Settings for ZCF itself'],
-      // The fake service's plan rejects, so the page says so — the row opened it all the same.
-      [7, 'Could not plan'],
-    ]
-    await app.press(KEY.enter)
-    for (const [downs, expectText] of opens) {
-      // oxlint-disable-next-line no-await-in-loop
-      await app.press(...Array.from({ length: downs }, () => KEY.down), KEY.enter)
-      // The apply page plans in the background; the others render at once.
-      // oxlint-disable-next-line no-await-in-loop
-      if (downs === 7) await tick()
-      expect(app.frame(), `after ${downs} downs`).toContain(expectText)
-      // oxlint-disable-next-line no-await-in-loop
-      await app.press(KEY.escape, '1', KEY.enter)
-    }
+    expect(app.frame()).not.toContain('to apply')
     app.unmount()
   })
 
   it('edits provider fields in place and never shows the API key', async () => {
     const { service } = fakeService({ version: 1, tools: [], provider: { name: 'old', apiKey: 'sk-very-secret' } })
     const app = await start(service)
-    await app.press('3', KEY.enter)
+    await app.press('2', KEY.enter)
     expect(app.frame()).toContain('Name')
     expect(app.frame()).not.toContain('sk-very-secret')
 
@@ -177,13 +157,15 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('relay')
     expect(app.frame()).not.toContain('old')
 
-    // Emptying a required field shows its problem, and saving is refused.
+    // Emptying a required field shows its problem, and the apply flow refuses to save.
     // The key being edited is shown as stars.
     await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('*'.repeat('sk-very-secret'.length))
     expect(app.frame()).not.toContain('sk-very-secret')
-    await app.press('\u0015', KEY.enter, KEY.save)
+    await app.press('\u0015', KEY.enter, 'a', KEY.enter)
     expect(app.frame()).toContain('Fix 1 problem(s) before saving. provider.apiKey: must not be empty')
+    // The refused save leaves the flow on its confirmation.
+    expect(app.frame()).toContain('Apply the configuration')
     expect(app.frame()).toMatch(/Provider !/)
     app.unmount()
   })
@@ -191,7 +173,7 @@ describe('terminal UI', () => {
   it('switches the download mirror on the Settings page', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('8')
+    await app.press('7')
     expect(app.frame()).toContain('Settings')
     await app.press(KEY.enter)
     expect(app.frame()).toContain('Download mirror')
@@ -201,7 +183,10 @@ describe('terminal UI', () => {
     // From the default, the next option is the China mirror.
     await app.press(KEY.right)
     expect(app.frame()).toContain('China mirrors')
-    await app.press(KEY.save)
+    // The confirmation names the changed key before Enter saves through the flow.
+    await app.press('a')
+    expect(app.frame()).toContain('mirror: china')
+    await app.press(KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], mirror: 'china' }])
     app.unmount()
   })
@@ -211,29 +196,21 @@ describe('terminal UI', () => {
     const loaded = await service.load()
     service.load = async () => ({ ...loaded, envMirror: 'official' })
     const app = await start(service)
-    await app.press('8', KEY.enter)
+    await app.press('7', KEY.enter)
     expect(app.frame()).toContain('ZCF_MIRROR is set, so ZCF uses official sources')
     expect(app.frame()).toMatch(/Download mirror\s+cn/)
     // The first press offers the first option rather than skipping it.
-    await app.press(KEY.right, KEY.save)
+    await app.press(KEY.right, 'a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], mirror: 'official' }])
     app.unmount()
   })
 
-  it('shows the v3 banner with the tagline and version at the top', async () => {
+  it('shows the one-line header: badge, version, path and the language', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    expect(app.frame()).toContain('Zero-Config Code Flow')
-    expect(app.frame()).toContain('One config for your AI tools')
+    expect(app.frame()).toContain('zcf')
+    expect(app.frame()).toContain('Interface language: Auto (L)')
     app.unmount()
-  })
-
-  it('trims a subtitle wider than its slot instead of pushing the box apart', () => {
-    // 16 CJK characters are 32 columns wide; the slot is 30, so one character has to go.
-    const wide = render(<Banner t={(key: string) => (key === 'tui.bannerSubtitle' ? '零'.repeat(16) : key)} />)
-    expect(wide.lastFrame()).toContain('零'.repeat(15))
-    expect(wide.lastFrame()).not.toContain('零'.repeat(16))
-    wide.unmount()
   })
 
   it('switches the interface language from the header with L, saving it at once', async () => {
@@ -242,16 +219,16 @@ describe('terminal UI', () => {
     const app = await start(service)
     expect(app.frame()).toContain('Interface language: Auto (L)')
 
-    // auto → en: the value moves and is saved on its own, without Ctrl+S.
+    // auto → en: the value moves and is saved on its own, without the apply flow.
     await app.press('l')
     expect(app.frame()).toContain('Interface language: English (L)')
     expect(saved).toEqual([{ version: 1, tools: [], language: 'en' }])
     expect(bases).toEqual([{ version: 1, tools: [] }])
-    expect(app.frame()).not.toContain('unsaved')
+    expect(app.frame()).not.toContain('to apply')
 
     // en → zh-CN: the whole UI switches, not just the header.
     await app.press('l')
-    expect(await app.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
+    expect(await app.until(zh('tui.page.tools'))).toContain('a 应用')
     expect(app.frame()).toContain('界面语言: 简体中文 (L)')
     expect(saved.at(-1)).toEqual({ version: 1, tools: [], language: 'zh-CN' })
     // bases stay the draft as it stood, so only the language key is ever written.
@@ -272,7 +249,9 @@ describe('terminal UI', () => {
     expect(app.frame()).not.toContain('(L)')
     // The footer hints stop offering the switch too: L is a no-op while pinned.
     expect(app.frame()).not.toContain('L lang')
-    expect(app.frame()).toContain('↑↓ choose · 0-9 go · Enter open · Ctrl+S save · q quit')
+    expect(app.frame()).toContain('a apply')
+    expect(app.frame()).toContain('q quit')
+    expect(app.frame()).not.toContain('L lang')
     await app.press('l')
     expect(app.frame()).toContain('MCP servers')
     expect(app.frame()).not.toContain(zh('tui.page.tools'))
@@ -294,7 +273,7 @@ describe('terminal UI', () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     // To the Provider page, down past the profiles row to the name field, and into its text input.
-    await app.press('3', KEY.enter, KEY.down, KEY.down, KEY.enter)
+    await app.press('2', KEY.enter, KEY.down, KEY.down, KEY.enter)
     await app.press('l', 'a', 'n', 'g')
     expect(app.frame()).toContain('lang')
     // The language sits where it was, and nothing was saved behind the user's back.
@@ -322,7 +301,7 @@ describe('terminal UI', () => {
   it('picks the config language on the Settings page; the interface language is not a field there', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('8', KEY.enter)
+    await app.press('7', KEY.enter)
     expect(app.frame()).toContain('Config language')
     // An unset select shows its first option, which is the schema default (selectValue).
     expect(app.frame()).toContain('English')
@@ -332,7 +311,7 @@ describe('terminal UI', () => {
     // Config language sits under the mirror: from the default, the next option is zh-CN.
     await app.press(KEY.down, KEY.right)
     expect(app.frame()).toContain('简体中文')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], configLanguage: 'zh-CN' }])
     app.unmount()
   })
@@ -340,7 +319,7 @@ describe('terminal UI', () => {
   it('starts in the config language, unless --lang or ZCF_LANG pinned it', async () => {
     const zh = createTranslator('zh-CN')
     const follows = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service)
-    expect(await follows.until(zh('tui.page.tools'))).toContain(zh('tui.keys.nav'))
+    expect(await follows.until(zh('tui.page.tools'))).toContain('Enter 打开')
     follows.unmount()
 
     const pinned = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service, {
@@ -356,8 +335,8 @@ describe('terminal UI', () => {
     const skills = [{ source: 'a/a' }, { source: 'b/b' }, { source: 'c/c' }]
     const { service, saved } = fakeService({ version: 1, tools: [], skills })
     const app = await start(service)
-    await app.press('5', KEY.enter, KEY.down, KEY.down, KEY.enter)
-    await app.press(KEY.enter, '\u0015', 'x/y', KEY.enter, KEY.save)
+    await app.press('4', KEY.enter, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.enter, '\u0015', 'x/y', KEY.enter, 'a', KEY.enter)
     expect(saved).toEqual([
       { version: 1, tools: [], skills: [{ source: 'a/a' }, { source: 'b/b' }, { source: 'x/y' }] },
     ])
@@ -367,7 +346,7 @@ describe('terminal UI', () => {
   it('picks built-in skills from the catalog beside a custom source', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'a/a' }] })
     const app = await start(service)
-    await app.press('5', KEY.enter)
+    await app.press('4', KEY.enter)
     // The list starts at the custom source; the catalog row is below it.
     await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('Pick the ZCF built-in skills to install')
@@ -381,7 +360,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('git-commit, init-project')
     // One row for the catalog, not a second one repeating the same picked skills.
     expect(app.frame().match(/ZCF built-in skills/g)).toHaveLength(1)
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved).toEqual([
       {
         version: 1,
@@ -395,7 +374,7 @@ describe('terminal UI', () => {
   it('untoggles a picked built-in skill and drops the source once it is empty', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf', skills: ['feat'] }] })
     const app = await start(service)
-    await app.press('5', KEY.enter)
+    await app.press('4', KEY.enter)
     expect(app.frame()).toContain('ZCF built-in skills')
     expect(app.frame()).toContain('feat')
     // The built-in row itself opens the catalog, so Enter on it goes straight to the checkboxes.
@@ -404,7 +383,7 @@ describe('terminal UI', () => {
     await app.press(KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).not.toContain('✓ feat')
     await app.press(KEY.escape)
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [] }])
     app.unmount()
   })
@@ -413,7 +392,7 @@ describe('terminal UI', () => {
     // `{ source: 'zcf' }` with no list means every built-in skill; it already has a row.
     const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf' }] })
     const app = await start(service)
-    await app.press('5', KEY.enter)
+    await app.press('4', KEY.enter)
     expect(app.frame()).toContain('ZCF built-in skills')
     expect(app.frame()).toContain('all skills')
     expect(app.frame().match(/ZCF built-in skills/g)).toHaveLength(1)
@@ -422,7 +401,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('+ ZCF built-in skills')
     await app.press(KEY.down, KEY.down, KEY.enter, 'a', '/', 'b', KEY.enter)
     expect(app.frame()).toContain('a/b')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], skills: [{ source: 'a/b' }] }])
     app.unmount()
   })
@@ -444,7 +423,7 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(service)
-    await app.press('5', KEY.enter)
+    await app.press('4', KEY.enter)
     // The list starts at the existing source; the search row is two rows below it.
     await app.press(KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Search skills')
@@ -453,7 +432,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('obra/superpowers')
     await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('obra/superpowers · added')
-    await app.press(KEY.escape, KEY.save)
+    await app.press(KEY.escape, 'a', KEY.enter)
     expect(saved).toEqual([
       {
         version: 1,
@@ -469,7 +448,7 @@ describe('terminal UI', () => {
     // into the value column width of rows that do not exist.
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('5', KEY.enter, KEY.down, KEY.enter)
+    await app.press('4', KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter)
     expect(app.frame()).toContain('› 1 keyword')
     app.unmount()
@@ -494,7 +473,7 @@ describe('terminal UI', () => {
     app.stdout.emit('resize')
     await tick()
     await tick()
-    await app.press('5', KEY.enter, KEY.down, KEY.enter)
+    await app.press('4', KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     await app.until('skill-00')
     expect(app.frame()).toContain('  2 skill-00')
@@ -507,7 +486,7 @@ describe('terminal UI', () => {
         ?.indexOf(text)
     expect(column('skill-00')).toBe(column('skill-08'))
     // A 24-line terminal cannot hold 16 rows; the list shows a window with arrows.
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    Object.defineProperty(app.stdout, 'rows', { get: () => 17, configurable: true })
     app.stdout.emit('resize')
     await tick()
     await tick()
@@ -536,45 +515,23 @@ describe('terminal UI', () => {
     const lines = app.frame().split('\n')
     expect(lines).toHaveLength(40)
     expect(lines[38]).toContain('╰')
-    expect(lines[39]).toContain('Ctrl+S')
+    expect(lines[39]).toContain('a apply')
     app.unmount()
   })
 
-  it('folds the banner to one line in a terminal too short for the box art', async () => {
+  it('holds the whole app in a terminal 12 rows tall', async () => {
+    // One header line leaves the panel and the key bar the rest; nothing folds away.
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    Object.defineProperty(app.stdout, 'rows', { get: () => 12 })
+    Object.defineProperty(app.stdout, 'rows', { get: () => 12, configurable: true })
     app.stdout.emit('resize')
     await tick()
     await tick()
-    // The boxed banner alone is 11 lines; in 12 rows it would push the app off screen.
     const lines = app.frame().split('\n')
     expect(lines).toHaveLength(12)
-    expect(lines[0]).toContain('ZCF')
+    expect(lines[0]).toContain('zcf')
     expect(lines[0]).not.toContain('╔')
-    expect(lines[11]).toContain('Ctrl+S')
-    app.unmount()
-  })
-
-  it('folds the banner one row below the fold line, and holds the box well above it', async () => {
-    // The box, the status row, a panel around a window of nav entries, the key bar
-    // and a status message add up to 22 rows; the fold line keeps a row of slack for
-    // the measured minimum drifting between platforms, so 22 folds and 24 holds the box.
-    const { service } = fakeService({ version: 1, tools: [] })
-    const app = await start(service)
-    Object.defineProperty(app.stdout, 'rows', { get: () => 22, configurable: true })
-    app.stdout.emit('resize')
-    await tick()
-    await tick()
-    expect(app.frame().split('\n')[0]).toContain('ZCF')
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
-    app.stdout.emit('resize')
-    await tick()
-    await tick()
-    const lines = app.frame().split('\n')
-    expect(lines).toHaveLength(24)
-    expect(lines[0]).toContain('╔')
-    expect(lines[23]).toContain('Ctrl+S')
+    expect(lines[11]).toContain('a apply')
     app.unmount()
   })
 
@@ -594,12 +551,12 @@ describe('terminal UI', () => {
       app.stdin.write(`\u001B[<0;${col};${line}M`)
       await tick()
     }
-    await app.press('2', KEY.enter)
+    await app.press('1', KEY.enter)
     // A click selects the row and runs what Enter would run: the Codex checkbox turns on.
     await click(lineOf('[ ] Codex'), 40)
     expect(await app.until('[x] Codex')).toContain('[x] Codex')
     // A click on a nav entry opens that page.
-    await click(lineOf('3 Provider'), 5)
+    await click(lineOf('2 Provider'), 5)
     expect(await app.until('One API provider for every tool.')).toContain('One API provider for every tool.')
     app.unmount()
   })
@@ -607,7 +564,7 @@ describe('terminal UI', () => {
   it('ignores a click on the page text above the list', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('2', KEY.enter)
+    await app.press('1', KEY.enter)
     const at = app
       .frame()
       .split('\n')
@@ -628,13 +585,13 @@ describe('terminal UI', () => {
     const at = app
       .frame()
       .split('\n')
-      .findIndex(line => line.includes('2 Agent tools'))
+      .findIndex(line => line.includes('1 Agent tools'))
     expect(at).toBeGreaterThanOrEqual(0)
-    // The wheel turns the page choice down from Init to Tools, and back up again.
+    // The wheel turns the page choice down from Tools to Provider, and back up again.
     app.stdin.write(`\u001B[<65;5;${at + 1}M`)
-    expect(await app.until('Pick the agent tools')).toContain('Pick the agent tools')
+    expect(await app.until('One API provider for every tool')).toContain('One API provider for every tool')
     app.stdin.write(`\u001B[<64;5;${at + 1}M`)
-    expect(await app.until('The setup walkthrough')).toContain('The setup walkthrough')
+    expect(await app.until('Pick the agent tools')).toContain('Pick the agent tools')
     app.unmount()
   })
 
@@ -643,8 +600,7 @@ describe('terminal UI', () => {
     const app = await start(service)
     const frame = app.frame()
     expect(frame).toContain('Configuration')
-    expect(frame).toContain('1 Initialize')
-    expect(frame).toContain('2 Agent tools')
+    expect(frame).toContain('1 Agent tools')
     // A 24-row terminal windows the nav; the later pages show once it is tall enough.
     Object.defineProperty(app.stdout, 'rows', { get: () => 40, configurable: true })
     app.stdout.emit('resize')
@@ -652,49 +608,34 @@ describe('terminal UI', () => {
     await tick()
     const tall = app.frame()
     for (const header of ['Configuration', 'More tools', 'ZCF']) expect(tall).toContain(header)
-    for (const page of ['6 Workflows', '7 Output styles', '8 Settings', '9 Apply', '0 Extras'])
+    for (const page of ['5 Workflows', '6 Output styles', '7 Settings', '8 Extras', '9 Backup'])
       expect(tall).toContain(page)
-    // The eleventh page has no digit left to press: its row carries a blank where one would sit.
-    expect(tall).toMatch(/^│ {4}Backup/m)
+    // Nine pages, nine digits: even the last page carries the digit that jumps to it.
+    expect(tall).toMatch(/^│ {2}9 Backup/m)
     app.unmount()
   })
 
-  it('jumps to a page by its digit; the eleventh page is reached by the arrows', async () => {
+  it('jumps to a page by its digit, and 0 names no page any more', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('5')
+    await app.press('4')
     expect(app.frame()).toContain('Skills installed for every selected tool')
     await app.press('1')
-    expect(app.frame()).toContain('The setup walkthrough')
-    // The wave-3 pages: 6 workflows, 7 styles, 0 extras.
-    await app.press('6')
-    expect(app.frame()).toContain('Ready-made workflows')
-    await app.press('7')
-    expect(app.frame()).toContain('Built-in output styles')
-    await app.press('0')
-    expect(app.frame()).toContain('Companion tools')
-    // Backup carries no digit, so the nav choice walks down onto it instead.
-    await app.press(KEY.down)
-    // The fake service answers at once with an empty list.
-    expect(await app.until('No backups yet.')).toContain('No backups yet.')
-    app.unmount()
-  })
-
-  it('numbers visible rows and picks one with its digit without running it', async () => {
-    const { service } = fakeService({ version: 1, tools: [] })
-    const app = await start(service)
-    await app.press('2', KEY.enter)
-    expect(app.frame()).toContain('› 1 [ ] Claude Code')
-    expect(app.frame()).toContain('  2 [ ] Codex')
-    // The digit moves the selection only; Enter still does the toggling.
-    await app.press('2')
-    expect(app.frame()).toContain('› 2 [ ] Codex')
-    expect(app.frame()).not.toContain('[x] Codex')
-    // A digit past the visible window is ignored.
+    expect(app.frame()).toContain('Pick the agent tools')
     await app.press('5')
-    expect(app.frame()).toContain('› 2 [ ] Codex')
-    await app.press(KEY.enter)
-    expect(app.frame()).toContain('[x] Codex')
+    expect(app.frame()).toContain('Ready-made workflows')
+    await app.press('6')
+    expect(app.frame()).toContain('Built-in output styles')
+    await app.press('7')
+    expect(app.frame()).toContain('Download mirror')
+    await app.press('8')
+    expect(app.frame()).toContain('Companion tools')
+    // Backup is the ninth page; the fake service answers at once with an empty list.
+    await app.press('9')
+    expect(await app.until('No backups yet.')).toContain('No backups yet.')
+    // 0 no longer maps to a page: it leaves the backup page showing.
+    await app.press('0')
+    expect(app.frame()).toContain('No backups yet.')
     app.unmount()
   })
 
@@ -705,9 +646,9 @@ describe('terminal UI', () => {
       provider: { name: 'old', apiKey: 'sk-very-secret' },
     })
     const app = await start(service)
-    await app.press('3', KEY.enter, KEY.down, KEY.down, KEY.enter)
+    await app.press('2', KEY.enter, KEY.down, KEY.down, KEY.enter)
     await app.press('\u007F\u007F\u007F', '4', '2')
-    await app.press(KEY.enter, KEY.save)
+    await app.press(KEY.enter, 'a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], provider: { name: '42', apiKey: 'sk-very-secret' } }])
     app.unmount()
   })
@@ -727,26 +668,27 @@ describe('terminal UI', () => {
     app.stdin.write(`\u001B[<0;5;${at + 1}M`)
     await tick()
     // The page did not change, and the nav keeps the focus: j still moves the page choice.
-    expect(app.frame()).toContain('The setup walkthrough')
-    await app.press('j')
     expect(app.frame()).toContain('Pick the agent tools')
+    await app.press('j')
+    expect(app.frame()).toContain('One API provider for every tool')
     app.unmount()
   })
 
   it('windows the nav in a short terminal, keeping the open page in view', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    Object.defineProperty(app.stdout, 'rows', { get: () => 17, configurable: true })
     app.stdout.emit('resize')
     await tick()
     await tick()
     const lines = app.frame().split('\n')
-    expect(lines).toHaveLength(24)
-    expect(app.frame()).toContain('1 Initialize')
+    expect(lines).toHaveLength(17)
+    expect(app.frame()).toContain('1 Agent tools')
     expect(app.frame()).not.toContain('Backup')
-    // Moving down the pages pulls the later rows into the window.
+    // Moving down the pages pulls the later rows into the window; the chosen one is
+    // highlighted rather than pointed at while the nav itself has the focus.
     await app.press('j', 'j', 'j', 'j', 'j', 'j', 'j', 'j')
-    expect(app.frame()).toContain('› 9 Apply')
+    expect(app.frame()).toContain('9 Backup')
     expect(app.frame()).toContain('↑')
     app.unmount()
   })
@@ -754,7 +696,7 @@ describe('terminal UI', () => {
   it('moves the selection with the mouse wheel', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('2', KEY.enter)
+    await app.press('1', KEY.enter)
     // One wheel turn down moves one row, to Codex — wait for the pointer to move before
     // the next key, so it reads the selection the wheel just made.
     app.stdin.write('\u001B[<65;40;14M')
@@ -767,7 +709,7 @@ describe('terminal UI', () => {
   it('opens a text editor with a mouse click', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('5', KEY.enter, KEY.down, KEY.enter)
+    await app.press('4', KEY.enter, KEY.down, KEY.enter)
     const at = app
       .frame()
       .split('\n')
@@ -788,7 +730,7 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(empty.service)
-    await app.press('5', KEY.enter, KEY.down, KEY.enter)
+    await app.press('4', KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     expect(await app.until('No skills found')).toContain('No skills found')
     app.unmount()
@@ -802,7 +744,7 @@ describe('terminal UI', () => {
       },
     )
     const retry = await start(offline.service)
-    await retry.press('5', KEY.enter, KEY.down, KEY.enter)
+    await retry.press('4', KEY.enter, KEY.down, KEY.enter)
     await retry.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     expect(await retry.until('Search failed')).toContain('Search failed')
     retry.unmount()
@@ -836,14 +778,14 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(service)
-    await app.press('3', KEY.enter, KEY.enter)
+    await app.press('2', KEY.enter, KEY.enter)
     // The host comes first, so the user sees where the key would go before picking.
     expect(await app.until('Relay')).toContain('relay.example.com · A relay')
     expect(app.frame()).toContain('saved copy')
 
     await app.press(KEY.enter)
     expect(await app.until('relay.example.com')).toContain('Relay')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved).toEqual([
       {
         version: 1,
@@ -863,7 +805,7 @@ describe('terminal UI', () => {
   it('goes back from the preset list while it is still loading', async () => {
     const { service } = fakeService({ version: 1, tools: [] }, { presets: () => new Promise(() => {}) })
     const app = await start(service)
-    await app.press('3', KEY.enter, KEY.enter)
+    await app.press('2', KEY.enter, KEY.enter)
     expect(await app.until('Loading the preset list')).toContain('Choose a provider preset')
     await app.press(KEY.escape)
     expect(await app.until('Start from a preset')).not.toContain('Loading the preset list')
@@ -873,27 +815,28 @@ describe('terminal UI', () => {
   it('adds an MCP server through its form', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('4', KEY.enter)
+    await app.press('3', KEY.enter)
     expect(app.frame()).toContain('Add a local (stdio) server')
 
     await app.press(KEY.enter)
     expect(app.frame()).toContain('MCP server "server"')
     await app.press(KEY.down, KEY.down, KEY.enter, 'npx', KEY.enter, KEY.down, KEY.enter, '-y "ctx 7"', KEY.enter)
-    await app.press(KEY.save)
+    await saveThroughFlow(app)
     expect(saved.at(-1)).toEqual({
       version: 1,
       tools: [],
       mcpServers: { server: { type: 'stdio', command: 'npx', args: ['-y', 'ctx 7'] } },
     })
 
+    // The flow covered the page, so the server list starts over: open the server again
+    // and walk its form down to the environment variables.
+    await app.press(KEY.enter, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter, KEY.enter, 'TOKEN=sk-abc')
     // A new variable's value is masked while typed.
-    await app.press(KEY.down, KEY.enter, KEY.enter, 'TOKEN=sk-abc')
     expect(app.frame()).toContain('TOKEN=******')
     expect(app.frame()).not.toContain('sk-abc')
-    await app.press(KEY.enter, KEY.escape, KEY.save)
+    await app.press(KEY.enter, KEY.escape)
+    await saveThroughFlow(app)
     expect(saved.at(-1)).toMatchObject({ mcpServers: { server: { env: { TOKEN: 'sk-abc' } } } })
-
-    await app.press(KEY.escape)
     expect(app.frame()).toContain('npx -y')
     app.unmount()
   })
@@ -901,14 +844,14 @@ describe('terminal UI', () => {
   it('removes the provider, so a config without one is valid again', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [], provider: { name: '', apiKey: '' } })
     const app = await start(service)
-    await app.press('3', KEY.enter)
+    await app.press('2', KEY.enter)
     // The profiles row sits between the preset row and the fields now.
     for (let i = 0; i < 14; i++) {
       // oxlint-disable-next-line no-await-in-loop
       await app.press(KEY.down)
     }
-    expect(app.frame()).toContain('› 3 Remove the provider')
-    await app.press(KEY.enter, KEY.save)
+    expect(app.frame()).toContain('› 15 Remove the provider')
+    await app.press(KEY.enter, 'a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [] }])
     app.unmount()
   })
@@ -947,19 +890,27 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(service)
-    await app.press('9', KEY.enter)
-    expect(app.frame()).toContain('Install Claude Code')
-    expect(app.frame()).toContain('$ npm i -g x')
-
+    // a opens the flow over the tools page: nothing changed, and the tool is already installed.
+    await app.press('a')
+    expect(app.frame()).toContain('Apply the configuration')
+    expect(app.frame()).toContain('No unsaved config changes.')
+    expect(app.frame()).toContain('Tools: Claude Code (installed)')
+    // Enter saves, plans and applies in one go.
     await app.press(KEY.enter)
-    await tick()
+    expect(await app.until('$ npm i -g x')).toContain('Install Claude Code')
     expect(applied).toBe(true)
-    expect(app.frame()).toContain('Done: 1 applied, 0 already up to date.')
+    expect(await app.until('Done: 1 applied, 0 already up to date.')).toContain(
+      'Done: 1 applied, 0 already up to date.',
+    )
+    // Enter closes the flow back onto the page it covered.
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('Pick the agent tools')
+    expect(app.frame()).not.toContain('Apply the configuration')
     app.unmount()
   })
 
-  it('scrolls the plan output with the mouse wheel', async () => {
-    const steps: Plan['tools'][number]['steps'] = Array.from({ length: 10 }, (_, i) => ({
+  it('scrolls the apply output with the mouse wheel', async () => {
+    const steps: Plan['tools'][number]['steps'] = Array.from({ length: 30 }, (_, i) => ({
       kind: 'command',
       title: { key: 'step.install', params: { tool: 'claude-code' } },
       command: 'npm',
@@ -969,36 +920,42 @@ describe('terminal UI', () => {
     const view: PlanView = { plan, previews: [steps.map(() => null)], secrets: [] }
     const { service } = fakeService({ version: 1, tools: ['claude-code'] }, { plan: async () => view })
     const app = await start(service)
-    await app.press('9', KEY.enter)
-    const at = app
-      .frame()
-      .split('\n')
-      .findIndex(line => line.includes('$ npm i -g x0'))
+    await app.press('a', KEY.enter)
+    const at = (await app.until('$ npm i -g x0')).split('\n').findIndex(line => line.includes('$ npm i -g x0'))
     expect(at).toBeGreaterThanOrEqual(0)
-    // Ten steps overflow the window; the wheel rolls the plan to its end.
-    for (let i = 0; i < 12; i++) {
+    // Thirty steps overflow the window; the wheel rolls the output to its end.
+    for (let i = 0; i < 40; i++) {
       app.stdin.write(`\u001B[<65;40;${at + 1}M`)
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
     const frame = app.frame()
     expect(frame).not.toContain('$ npm i -g x0')
-    expect(frame).toContain('$ npm i -g x9')
+    expect(frame).toContain('$ npm i -g x29')
     app.unmount()
   })
 
-  it('asks to save before planning unsaved changes', async () => {
-    const { service } = fakeService({ version: 1, tools: [] })
+  it('refuses an invalid draft from the apply flow and stays on its confirmation', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: [], provider: { name: 'old', apiKey: '' } })
     const app = await start(service)
-    await app.press('2', KEY.enter, ' ', KEY.escape, '9')
-    expect(app.frame()).toContain('Save your changes with Ctrl+S to see the plan.')
+    await app.press('a')
+    expect(app.frame()).toContain('Apply the configuration')
+    await app.press(KEY.enter)
+    // The save refused the invalid draft; the flow falls back to its confirmation.
+    expect(app.frame()).toContain('Fix 1 problem(s) before saving. provider.apiKey: must not be empty')
+    expect(app.frame()).toContain('Apply the configuration')
+    expect(saved).toEqual([])
+    await app.press(KEY.escape)
+    // The close re-renders the page under the flow; a tick settles it.
+    await tick()
+    expect(app.frame()).toContain('Pick the agent tools')
     app.unmount()
   })
 
   it('needs a second q to quit with unsaved changes', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('2', KEY.enter, ' ', KEY.escape, 'q')
+    await app.press('1', KEY.enter, ' ', KEY.escape, 'q')
     expect(app.frame()).toContain('Press q again to quit without saving')
     app.unmount()
   })
@@ -1021,23 +978,23 @@ describe('terminal UI', () => {
   it('toggles a workflow preset in, and back out, writing skills and agents together', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('6', KEY.enter)
+    await app.press('5', KEY.enter)
     expect(app.frame()).toContain('[ ] Project init and everyday commands')
     // The list opens on the Presets heading; step down onto the first preset under it.
     await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('[x] Project init and everyday commands')
-    expect(app.frame()).toContain('unsaved')
-    await app.press(KEY.save)
+    expect(app.frame()).toContain('to apply')
+    await saveThroughFlow(app)
     expect(saved.at(-1)).toEqual({
       version: 1,
       tools: [],
       skills: [{ source: 'zcf', skills: ['init-project'] }],
       agents: ['init-architect', 'get-current-datetime'],
     })
-    // Toggling it off takes its picks back out, and the emptied keys go.
-    await app.press(KEY.enter)
+    // The flow covered the page, so the list starts over at its heading.
+    await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('[ ] Project init and everyday commands')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved.at(-1)).toEqual({ version: 1, tools: [] })
     app.unmount()
   })
@@ -1045,14 +1002,14 @@ describe('terminal UI', () => {
   it('renders workflow group headings that carry no ordinal and never select', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('6', KEY.enter)
+    await app.press('5', KEY.enter)
     // The list opens on the Presets heading; Enter on it runs nothing.
     expect(app.frame()).toContain('Presets')
     await app.press(KEY.enter)
     expect(app.frame()).not.toContain('[x]')
     // A digit picks the first item under the heading, not the heading itself.
     await app.press('1')
-    expect(app.frame()).toContain('› 1 [ ] Project init and everyday commands')
+    expect(app.frame()).toContain('›  1 [ ] Project init and everyday commands')
     // A click on the heading line selects nothing either.
     const at = app
       .frame()
@@ -1061,7 +1018,7 @@ describe('terminal UI', () => {
     expect(at).toBeGreaterThanOrEqual(0)
     app.stdin.write(`\u001B[<0;30;${at + 1}M`)
     await tick()
-    expect(app.frame()).toContain('› 1 [ ] Project init and everyday commands')
+    expect(app.frame()).toContain('›  1 [ ] Project init and everyday commands')
     expect(app.frame()).not.toContain('[x]')
     app.unmount()
   })
@@ -1073,7 +1030,7 @@ describe('terminal UI', () => {
       mcpServers: { github: { type: 'http', url: 'https://g.example' } },
     })
     const app = await start(service)
-    await app.press('6', KEY.enter)
+    await app.press('5', KEY.enter)
     // The new-bundle row sits under the five presets, the agents group and the bundles heading.
     await app.press(
       KEY.down,
@@ -1105,10 +1062,8 @@ describe('terminal UI', () => {
     await app.press(KEY.escape)
     // The builder list starts over; with the catalog skill added, save sits at the tenth row.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
-    // The page list starts over at the Presets heading; the new bundle sits under the agents and its heading.
-    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
-    expect(app.frame()).toContain('git-flow')
-    await app.press(KEY.save)
+    // Saving runs through the apply flow, which covers the page until it is closed.
+    await saveThroughFlow(app)
     expect(saved.at(-1)).toEqual({
       version: 1,
       tools: [],
@@ -1122,10 +1077,13 @@ describe('terminal UI', () => {
         },
       ],
     })
+    // The page list starts over at the Presets heading; the new bundle sits under the agents and its heading.
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
+    expect(app.frame()).toContain('git-flow')
     // x on the bundle's own row takes it out of the config again.
     await app.press('x')
     expect(app.frame()).not.toContain('git-flow')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved.at(-1)).toEqual({
       version: 1,
       tools: [],
@@ -1142,13 +1100,13 @@ describe('terminal UI', () => {
     app.stdout.emit('resize')
     await tick()
     await tick()
-    await app.press('6', KEY.enter)
+    await app.press('5', KEY.enter)
     // The agents sit under their own heading, below the five presets.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
     expect(app.frame()).toContain('[ ] init-architect')
     await app.press(KEY.enter)
     expect(app.frame()).toContain('[x] init-architect')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], agents: ['init-architect'] }])
     app.unmount()
   })
@@ -1156,7 +1114,7 @@ describe('terminal UI', () => {
   it('cycles the magpie face and toggles CCometixLine on the Extras page', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('0', KEY.enter)
+    await app.press('8', KEY.enter)
     expect(app.frame()).toContain('off')
     await app.press(KEY.right)
     expect(app.frame()).toContain('client (desktop app)')
@@ -1166,7 +1124,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('client (desktop app)')
     await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('[x] CCometixLine')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], extras: { magpie: 'client', ccline: true } }])
     app.unmount()
   })
@@ -1217,14 +1175,14 @@ describe('terminal UI', () => {
       profiles: [{ id: 'relay', name: 'Relay', provider: { name: 'Relay', apiKey: 'sk-relay' } }],
     })
     const app = await start(service)
-    await app.press('3', KEY.enter, KEY.down, KEY.enter)
+    await app.press('2', KEY.enter, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Relay')
     expect(app.frame()).not.toContain('active')
     // Enter copies the profile's provider over the top-level one, then goes back.
     await app.press(KEY.enter)
     expect(app.frame()).toContain('One API provider for every tool')
     expect(app.frame()).not.toContain('sk-relay')
-    await app.press(KEY.save)
+    await saveThroughFlow(app)
     expect(saved.at(-1)?.provider).toEqual({ name: 'Relay', apiKey: 'sk-relay' })
 
     // The switched-to profile is the active one; saving the current provider adds another.
@@ -1232,15 +1190,16 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('active')
     await app.press(KEY.down, KEY.enter, 'B', 'a', 'c', 'k', 'u', 'p', KEY.enter)
     expect(app.frame()).toContain('Backup')
-    await app.press(KEY.save)
+    await saveThroughFlow(app)
     expect(saved.at(-1)?.profiles).toEqual([
       { id: 'relay', name: 'Relay', provider: { name: 'Relay', apiKey: 'sk-relay' } },
       { id: 'backup', name: 'Backup', provider: { name: 'Relay', apiKey: 'sk-relay' } },
     ])
-    // x takes a profile out.
-    await app.press(KEY.up, 'x')
+    // The flow covered the page: reopen the profiles list, where x takes a profile out.
+    await app.press(KEY.down, KEY.enter)
+    await app.press('x')
     expect(app.frame()).not.toContain('Relay')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved.at(-1)?.profiles).toEqual([
       { id: 'backup', name: 'Backup', provider: { name: 'Relay', apiKey: 'sk-relay' } },
     ])
@@ -1250,14 +1209,14 @@ describe('terminal UI', () => {
   it('picks output styles and the default one on the Output styles page', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('7', KEY.enter)
+    await app.press('6', KEY.enter)
     // The style toggles sit above the default-style row.
     await app.press(KEY.enter)
     expect(app.frame()).toContain('[x] engineer-professional')
     // The default style cycles from unset onto the first built-in style.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.right)
     expect(app.frame()).toContain('engineer-professional')
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved.at(-1)?.styles).toEqual({
       outputStyles: ['engineer-professional'],
       defaultOutputStyle: 'engineer-professional',
@@ -1275,7 +1234,7 @@ describe('terminal UI', () => {
     )
     const app = await start(service)
     // Dirty the draft without saving, then restore under it.
-    await app.press('2', KEY.enter, ' ', KEY.escape)
+    await app.press('1', KEY.enter, ' ', KEY.escape)
     await openBackup(app)
     await app.until('an apply, 2 file(s)')
     await app.press(KEY.enter, KEY.enter)
@@ -1287,7 +1246,7 @@ describe('terminal UI', () => {
     const { service } = fakeService({ version: 1, tools: [], mirror: 'cn' })
     const app = await start(service)
     // Jump to the broken page so the windowed nav shows its row.
-    await app.press('8')
+    await app.press('7')
     expect(app.frame()).toMatch(/Settings !/)
     app.unmount()
   })
@@ -1387,7 +1346,7 @@ describe('terminal UI', () => {
       ],
     })
     const app = await start(service)
-    await app.press('6', KEY.enter)
+    await app.press('5', KEY.enter)
     // The bundle sits under the presets, the agents group and the bundles heading.
     await app.press(
       KEY.down,
@@ -1419,7 +1378,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('[ ] github')
     // The bundle now holds nothing but its name; save sits right below.
     await app.press(KEY.down, KEY.enter)
-    await app.press(KEY.save)
+    await app.press('a', KEY.enter)
     expect(saved.at(-1)?.workflows).toEqual([{ name: 'renamed' }])
     app.unmount()
   })
@@ -1435,7 +1394,7 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(service)
-    await app.press('6', KEY.enter)
+    await app.press('5', KEY.enter)
     // The new-bundle row sits under the presets, the agents group and the bundles heading.
     await app.press(
       KEY.down,
@@ -1467,6 +1426,22 @@ describe('terminal UI', () => {
     // x on that row takes the hit out of the bundle again.
     await app.press('x')
     expect(app.frame()).not.toContain('obra/superpowers')
+    app.unmount()
+  })
+})
+
+describe('numbers moved', () => {
+  it('numbers visible rows and picks one with its digit without running it', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    // One press run: the open-page Enter and the picking digit arrive back to back.
+    await app.press('1', KEY.enter, '2')
+    // The digit moves the selection to the second row, without toggling it.
+    expect(app.frame()).toContain('› 2 [ ] Codex')
+    expect(app.frame()).not.toContain('[x] Codex')
+    // A digit past the visible items is ignored, so Enter still toggles the picked row.
+    await app.press('8', KEY.enter)
+    expect(app.frame()).toContain('[x] Codex')
     app.unmount()
   })
 })

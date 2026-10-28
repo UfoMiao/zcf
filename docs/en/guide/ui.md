@@ -14,7 +14,6 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 
 | Page | What you do there |
 |------|-------------------|
-| Initialize | The setup walkthrough both editors open on: one row per step (tools, provider, MCP, skills, workflows, output styles, settings), its value saying where that step stands; <kbd>Enter</kbd> opens the page doing it, ending at Apply. |
 | Agent tools | Tick the agent tools to configure. Each row shows whether the tool is installed and which version. |
 | Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. Save providers as [profiles](./config#profiles) on this page to switch between them. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
@@ -22,11 +21,10 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Workflows | A workflow is skills plus agents, as in v3: toggle the ready-made presets, pick the built-in agents, and build your own bundles referencing agents, built-in or community skills, and your MCP servers. |
 | Output styles | Pick the built-in output styles to install and the default one. |
 | Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
-| Apply | See the plan for the saved config, with a diff of each file, then apply it. |
 | Extras | Add companion tools beside the coding ones: the magpie local gateway (`client` or `cli`) and the CCometixLine status bar. |
 | Backup | Put files back from a backup run ZCF made before changing them, and prune the old runs. The page works on the saved files, not the draft. |
 
-In the terminal UI the page list is grouped into sections — Configuration, More tools and ZCF — each with its own heading, and pages carry a number across the whole list: the first ten jump on their keypress from anywhere in the nav, and pages past the tenth are reached with the arrows. The web UI lists the same pages in a flat sidebar.
+In the terminal UI the page list is grouped into sections — Configuration, More tools and ZCF — each with its own heading, and pages carry a number across the whole list: press it to jump there from anywhere in the nav. The web UI lists the same pages in a flat sidebar. Saving and applying are one thing: press <kbd>a</kbd> (or the web's Apply button) for the confirmation, below.
 
 Fields are checked as you type. A config with errors cannot be saved, and the page shows what is wrong next to the field.
 
@@ -57,7 +55,7 @@ Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either set
 
 Rows in a list are numbered by what is on screen: `› 3 Label` means <kbd>3</kbd> picks that row, wherever the window has scrolled to.
 
-The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way. In a window shorter than 23 rows the banner folds to one line, so the app still covers the screen whole; the page list scrolls within its section when the window is short.
+The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way. In a window shorter than 23 rows the banner the header is only one line — wordmark, version, config path, language, changes waiting — so even a short window holds the app; the page list scrolls within its section when the window is short.
 
 On the Apply page, <kbd>Enter</kbd> applies, <kbd>r</kbd> plans again, and the arrow keys scroll. The plan is made from the saved file, so the page asks you to save first if you have unsaved changes.
 

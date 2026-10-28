@@ -9,14 +9,12 @@ import {
   ArchiveRestoreIcon,
   CircleAlertIcon,
   CircleCheckIcon,
-  ClipboardListIcon,
   InfoIcon,
   LoaderCircleIcon,
   MenuIcon,
   NetworkIcon,
   PackageIcon,
   PaletteIcon,
-  PlayIcon,
   PlugIcon,
   SettingsIcon,
   SparklesIcon,
@@ -27,6 +25,7 @@ import { useEffect, useState } from 'react'
 
 import type { Lang, Translate } from './api'
 import { browserLang, httpService, setRequestLang, tildify } from './api'
+import { ApplyDialog } from './components/apply-dialog'
 import { BrandMark } from './components/brand'
 import { Alert, AlertDescription, AlertTitle } from './components/ui/alert'
 import { Badge } from './components/ui/badge'
@@ -34,10 +33,8 @@ import { Button } from './components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select'
 import { Sheet, SheetContent, SheetTitle } from './components/ui/sheet'
 import { Skeleton } from './components/ui/skeleton'
-import { ApplyPage } from './pages/apply'
 import { BackupPage } from './pages/backup'
 import { ExtrasPage } from './pages/extras'
-import { InitPage } from './pages/init'
 import { McpPage } from './pages/mcp'
 import { ProviderPage } from './pages/provider'
 import { SettingsPage } from './pages/settings'
@@ -49,7 +46,6 @@ import { WorkflowsPage } from './pages/workflows'
 type StatusTone = 'info' | 'warning' | 'error'
 
 const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
-  init: ClipboardListIcon,
   tools: WrenchIcon,
   provider: PlugIcon,
   mcp: NetworkIcon,
@@ -57,7 +53,6 @@ const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
   workflows: WorkflowIcon,
   styles: PaletteIcon,
   settings: SettingsIcon,
-  apply: PlayIcon,
   extras: PackageIcon,
   backup: ArchiveRestoreIcon,
 }
@@ -65,7 +60,7 @@ const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
 // The nav rows both front ends share: each section's header, then its pages.
 const NAV_ROWS = navRows()
 
-function StatusMessage({ status, t }: { status: { text: string; tone: StatusTone } | undefined; t: Translate }) {
+function StatusMessage({ status }: { status: { text: string; tone: StatusTone } | undefined }) {
   if (!status) return null
   const icon =
     status.tone === 'info' ? (
@@ -90,7 +85,6 @@ function StatusMessage({ status, t }: { status: { text: string; tone: StatusTone
     >
       {icon}
       <span className="truncate">{status.text}</span>
-      <span className="sr-only">{t('web.save')}</span>
     </span>
   )
 }
@@ -160,8 +154,10 @@ export function App({
   translators: Record<Lang, Translate>
 }) {
   const editor = useConfigEditor(httpService)
-  // The terminal opens on its walkthrough page; the web sidebar makes the same first.
-  const [page, setPage] = useState<PageId>('init')
+  // v5 has no init walkthrough: both editors open where the tools are picked.
+  const [page, setPage] = useState<PageId>('tools')
+  // The confirm-then-run flow the Apply button opens over whatever page is showing.
+  const [applying, setApplying] = useState(false)
   const [status, setStatus] = useState<{ text: string; tone: StatusTone }>()
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
   const [navOpen, setNavOpen] = useState(false)
@@ -215,29 +211,36 @@ export function App({
     document.title = editor.dirty ? '• ZCF' : 'ZCF'
   }, [editor.dirty])
 
-  const save = async () => {
+  const save = async (): Promise<boolean> => {
     if (!editor.validation.valid) {
       const [first] = editor.validation.issues
       const detail = first ? `${first.path ? `${first.path}: ` : ''}${t(first.message.key, first.message.params)}` : ''
       setStatus({ text: t('tui.invalid', { count: editor.validation.issues.length, first: detail }), tone: 'warning' })
-      return
+      return false
     }
     try {
-      if (await editor.save()) setStatus({ text: t('tui.saved'), tone: 'info' })
+      return await editor.save()
     } catch (error) {
       setStatus({
         text: t('tui.saveFailed', { message: error instanceof Error ? error.message : String(error) }),
         tone: 'error',
       })
+      return false
     }
   }
 
-  // Ctrl+S or Cmd+S saves, as in the terminal UI.
+  // One key applies, as in the terminal UI; the confirmation dialog takes it from there.
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+      const target = event.target
+      if (
+        target instanceof HTMLElement &&
+        (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      )
+        return
+      if (event.key.toLowerCase() === 'a' && !event.ctrlKey && !event.metaKey) {
         event.preventDefault()
-        void save()
+        setApplying(true)
       }
     }
     addEventListener('keydown', onKey)
@@ -334,7 +337,7 @@ export function App({
             </Badge>
           )}
           <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
-            <StatusMessage status={status} t={t} />
+            <StatusMessage status={status} />
             {issueCount > 0 && brokenPage && (
               <button
                 type="button"
@@ -344,11 +347,11 @@ export function App({
                 {t('web.problems', { count: issueCount })}
               </button>
             )}
-            <Button onClick={() => void save()} disabled={!editor.dirty || editor.saving} className="gap-1.5">
+            <Button onClick={() => setApplying(true)} disabled={applying} className="gap-1.5">
               {editor.saving && <LoaderCircleIcon className="animate-spin" />}
-              {t('web.save')}
+              {t('web.apply')}
               <kbd className="text-muted-foreground hidden rounded border bg-muted px-1 font-mono text-[10px] font-normal sm:inline-block">
-                {/Mac|iPhone|iPad/.test(navigator.userAgent) ? '⌘S' : 'Ctrl S'}
+                a
               </kbd>
             </Button>
           </div>
@@ -367,13 +370,11 @@ export function App({
 
         <main className="min-w-0 flex-1 px-4 py-8 sm:px-8 lg:px-10">
           <div className="mx-auto w-full max-w-3xl pb-16">
-            {page === 'init' && <InitPage editor={editor} t={t} onNavigate={setPage} />}
             {page === 'tools' && <ToolsPage editor={editor} t={t} detected={detected} />}
             {page === 'provider' && <ProviderPage editor={editor} t={t} lang={uiLang} />}
             {page === 'mcp' && <McpPage editor={editor} t={t} />}
             {page === 'skills' && <SkillsPage editor={editor} t={t} lang={uiLang} />}
             {page === 'settings' && <SettingsPage editor={editor} t={t} />}
-            {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} onSave={() => void save()} />}
             {page === 'workflows' && <WorkflowsPage editor={editor} t={t} />}
             {page === 'styles' && <StylesPage editor={editor} t={t} />}
             {page === 'extras' && <ExtrasPage editor={editor} t={t} />}
@@ -397,6 +398,10 @@ export function App({
           </div>
         </SheetContent>
       </Sheet>
+
+      {applying && editor.status === 'ready' && (
+        <ApplyDialog editor={editor} t={t} service={httpService} onSave={save} onClose={() => setApplying(false)} />
+      )}
     </div>
   )
 }

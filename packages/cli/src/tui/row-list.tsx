@@ -55,7 +55,7 @@ export interface RowListProps {
  * and the selected row's hint — the hint takes a line of its own inside a capped window,
  * so it is budgeted here rather than left to push a label out of the render.
  */
-const LIST_CHROME = 19
+const LIST_CHROME = 9
 
 /** Lines a row takes once rendered: its own, an error, or the selected row's hint while focused. */
 function rowHeight(item: Row, selected: boolean, active: boolean): number {
@@ -97,7 +97,9 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   // Values line up in one column after the longest label, ordinal prefix included.
   // Rows without a value count too: an edited row renders in this box, and its label
   // must never wrap inside a narrower one.
-  const labelWidth = Math.max(0, ...shownItems.map(item => columns(item.label))) + 2 + ordinalWidth + 2
+  // + 2 for the pointer, + 2 for the ordinal's separating space, + 2 of slack: a row
+  // must stay on one line, so a label at the measured width never wraps.
+  const labelWidth = Math.max(0, ...shownItems.map(item => columns(item.label))) + 2 + ordinalWidth + 2 + 2
 
   const setEdit = (value: boolean) => {
     setEditing(value)
@@ -205,7 +207,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
             <Box key={item.id} flexDirection="column">
               <Box>
                 <Box width={editor || item.value !== undefined ? labelWidth : undefined} flexShrink={0}>
-                  <Text color={current && active ? 'cyan' : undefined}>
+                  <Text color={current && active ? 'cyan' : undefined} wrap="truncate-end">
                     {pointer} {String(ordinal).padStart(ordinalDigits, ' ')} {item.label}
                   </Text>
                 </Box>
