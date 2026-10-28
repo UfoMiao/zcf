@@ -4,7 +4,7 @@ title: Terminal and web UI
 
 # Terminal and web UI
 
-ZCF has two editors for the [config file](./config): one in the terminal (`zcf` or `zcf tui`) and one in the browser (`zcf ui`). They check the same things as you edit; the terminal UI has the fuller set of pages (the workflow, extras and backup pages are terminal-only for now), so pick whichever fits.
+ZCF has two editors for the [config file](./config): one in the terminal (`zcf` or `zcf tui`) and one in the browser (`zcf ui`). They check the same things as you edit and carry the same pages — the web sidebar groups them into the same sections (init config / workflows / more tools / backup) — so pick whichever fits.
 
 Both edit a draft. Nothing is written until you save, and saving only writes what you changed. If you edit the file in a text editor while ZCF is open, your edits survive as long as you didn't change the same keys in ZCF.
 

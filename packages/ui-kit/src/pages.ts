@@ -82,7 +82,8 @@ export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>>
   skills: ['skills'],
   settings: ['mirror', 'configLanguage'],
   apply: undefined,
-  workflows: ['workflows'],
+  // The Workflows page hosts the output styles beside its presets and bundles.
+  workflows: ['workflows', 'styles'],
   agents: ['agents'],
   extras: ['extras'],
   backup: undefined,
@@ -91,6 +92,21 @@ export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>>
 /** Whether any of a page's root keys has a problem at or under it. */
 export function pageHasIssues(issues: readonly ConfigIssue[], roots: readonly string[] | undefined): boolean {
   return roots !== undefined && roots.some(root => issuesAt(issues, [root]).length > 0)
+}
+
+/** A draft list of ids as strings, treating anything else as no ids. */
+export function draftIds(list: unknown): string[] {
+  return Array.isArray(list) ? list.map(String) : []
+}
+
+/**
+ * Toggle one id in a plain list of ids, such as `agents` or `outputStyles`. `undefined`
+ * when nothing is left, so the empty key is removed rather than left behind.
+ */
+export function toggleId(list: unknown, id: string): string[] | undefined {
+  const current = draftIds(list)
+  const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id]
+  return next.length > 0 ? next : undefined
 }
 
 /**

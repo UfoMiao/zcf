@@ -6,16 +6,18 @@ import type { PageId } from '../src/pages'
 import {
   addSourcedSkill,
   digitIndex,
+  draftIds,
   hasSourcedSkill,
   NAV,
   navRows,
-  PAGES,
   pageHasIssues,
+  PAGES,
   presetCovered,
   removeSourcedSkills,
   sameProvider,
   skillSourceIndex,
   toggleCatalogSkill,
+  toggleId,
   togglePreset,
 } from '../src/pages'
 
@@ -188,6 +190,30 @@ describe('skillSourceIndex', () => {
     expect(skillSourceIndex(sources, 'zcf')).toBe(1)
     expect(skillSourceIndex(sources, 'nope/nope')).toBe(-1)
     expect(skillSourceIndex(undefined, 'zcf')).toBe(-1)
+  })
+})
+
+describe('toggleId', () => {
+  it('adds an id to a list that lacks it, starting one when there is none', () => {
+    expect(toggleId(undefined, 'planner')).toEqual(['planner'])
+    expect(toggleId(['init-architect'], 'planner')).toEqual(['init-architect', 'planner'])
+  })
+
+  it('removes the id, and the whole key once the list empties', () => {
+    expect(toggleId(['planner'], 'planner')).toBeUndefined()
+    expect(toggleId(['planner', 'ui-ux-designer'], 'planner')).toEqual(['ui-ux-designer'])
+  })
+
+  it('treats a list that is not the draft shape as empty', () => {
+    expect(toggleId('nope', 'planner')).toEqual(['planner'])
+  })
+})
+
+describe('draftIds', () => {
+  it('reads a draft list as ids, treating anything else as none', () => {
+    expect(draftIds(['planner', 'ui-ux-designer'])).toEqual(['planner', 'ui-ux-designer'])
+    expect(draftIds(undefined)).toEqual([])
+    expect(draftIds('nope')).toEqual([])
   })
 })
 

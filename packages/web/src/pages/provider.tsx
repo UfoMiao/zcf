@@ -1,16 +1,18 @@
 import type { PresetList } from '@zcf/core'
 import { applyPreset, presetSummary } from '@zcf/core/schema'
 import type { ConfigEditor, Field } from '@zcf/ui-kit'
-import { getAt, isTable, PROVIDER_FIELDS } from '@zcf/ui-kit'
-import { CircleAlertIcon, Trash2Icon } from 'lucide-react'
+import { freshName, getAt, isTable, PROVIDER_FIELDS, sameProvider } from '@zcf/ui-kit'
+import { BookmarkPlusIcon, CircleAlertIcon, Trash2Icon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
 import type { Translate } from '../api'
 import { httpService } from '../api'
 import { PageHeader } from '../components/page'
+import { Badge } from '../components/ui/badge'
 import { Button } from '../components/ui/button'
-import { Card, CardContent, CardHeader } from '../components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible'
+import { Input } from '../components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { FieldInput } from '../fields'
 
@@ -115,6 +117,104 @@ const providerGroups = () => {
     .map(key => ({ key, title: GROUP_TITLES[key], fields: PROVIDER_FIELDS.filter(field => field.path[1] === key) }))
 }
 
+/** A profile id the config accepts, taken from the name the user typed. */
+function profileId(name: string, taken: readonly string[]): string {
+  const slug = name
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return freshName(taken, slug || 'profile')
+}
+
+/** A draft value shown as text: only a real string is, anything else shows as nothing. */
+const asText = (value: unknown): string => (typeof value === 'string' ? value : '')
+
+/** The saved providers beside the active one: switch to one, save the current, delete. */
+function ProfilesCard({ editor, t }: PageProps) {
+  const profiles = (Array.isArray(editor.draft.profiles) ? editor.draft.profiles : []).filter(isTable)
+  const provider = isTable(editor.draft.provider) ? editor.draft.provider : undefined
+  const [name, setName] = useState('')
+  // The active profile is the one whose provider is the config's provider, key for key —
+  // deep and key-order-insensitive, the way two hand-typed tables can still be equal.
+  const active = (profile: Record<string, unknown>) =>
+    provider !== undefined && sameProvider(profile.provider, provider)
+
+  const saveAs = () => {
+    const label = name.trim()
+    if (!label || !provider) return
+    const taken = profiles.map(profile => asText(profile.id))
+    editor.update(['profiles', profiles.length], { id: profileId(label, taken), name: label, provider })
+    setName('')
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('web.profiles.title')}</CardTitle>
+        <CardDescription>{t('web.profiles.hint')}</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col divide-y p-0">
+        {profiles.length === 0 && (
+          <p className="text-muted-foreground px-4 py-3 text-xs leading-relaxed">{t('web.profiles.hint')}</p>
+        )}
+        {profiles.map((profile, index) => {
+          const profileProvider = isTable(profile.provider) ? profile.provider : {}
+          const id = asText(profile.id)
+          return (
+            <div key={id || index} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <span className="flex items-center gap-2 text-[13px] font-medium">
+                  <span className="truncate">{asText(profile.name) || id}</span>
+                  {active(profile) && <Badge variant="secondary">{t('web.profiles.active')}</Badge>}
+                </span>
+                <span className="text-muted-foreground truncate font-mono text-xs">
+                  {id}
+                  {typeof profileProvider.name === 'string' && profileProvider.name ? ` · ${profileProvider.name}` : ''}
+                </span>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={active(profile)}
+                  onClick={() => editor.update(['provider'], profile.provider)}
+                >
+                  {t('web.profiles.switch')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-destructive"
+                  onClick={() => editor.update(['profiles', index], undefined)}
+                  aria-label={t('web.profiles.delete')}
+                >
+                  <Trash2Icon />
+                </Button>
+              </div>
+            </div>
+          )
+        })}
+        <div className="flex flex-wrap items-center gap-2 px-4 py-3">
+          <Input
+            value={name}
+            onChange={event => setName(event.target.value)}
+            onKeyDown={event => event.key === 'Enter' && saveAs()}
+            placeholder={t('web.profiles.namePlaceholder')}
+            className="max-w-xs"
+            aria-label={t('web.profiles.saveAs')}
+          />
+          <Button variant="outline" size="sm" disabled={!name.trim() || !provider} onClick={saveAs}>
+            <BookmarkPlusIcon />
+            {t('web.profiles.saveAs')}
+          </Button>
+          {!provider && <p className="text-muted-foreground w-full text-xs">{t('web.profiles.needsProvider')}</p>}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 export function ProviderPage({ editor, t, lang }: PageProps & { lang: string }) {
   const provider = editor.draft.provider
   const credentials = PROVIDER_FIELDS.filter(field => field.path.length === 2)
@@ -135,6 +235,7 @@ export function ProviderPage({ editor, t, lang }: PageProps & { lang: string }) 
             t={t}
           />
         ))}
+        <ProfilesCard editor={editor} t={t} />
       </div>
       {provider !== undefined && (
         <div className="mt-4 flex justify-end border-t pt-4">

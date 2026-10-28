@@ -5,9 +5,9 @@ import {
   digitIndex,
   isDigitKey,
   navRows,
+  pageHasIssues,
   PAGE_ROOTS,
   PAGES,
-  pageHasIssues,
   TOOL_OPTIONS,
   useConfigEditor,
 } from '@zcf/ui-kit'

@@ -3,19 +3,23 @@ import type { ToolId, ToolStatus } from '@zcf/core'
 // runtime into the browser bundle.
 import { isLanguageSetting, LANGUAGES } from '@zcf/core/schema'
 import type { PageId } from '@zcf/ui-kit'
-import { isLang } from '@zcf/ui-kit'
-import { PAGE_ROOTS, PAGES, pageHasIssues, TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
+import { isLang, navRows, PAGE_ROOTS, PAGES, pageHasIssues } from '@zcf/ui-kit'
+import { TOOL_OPTIONS, useConfigEditor } from '@zcf/ui-kit'
 import {
+  ArchiveRestoreIcon,
+  BotIcon,
   CircleAlertIcon,
   CircleCheckIcon,
   InfoIcon,
   LoaderCircleIcon,
   MenuIcon,
   NetworkIcon,
+  PackageIcon,
   PlayIcon,
   PlugIcon,
   SettingsIcon,
   SparklesIcon,
+  WorkflowIcon,
   WrenchIcon,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -29,26 +33,34 @@ import { Button } from './components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './components/ui/select'
 import { Sheet, SheetContent, SheetTitle } from './components/ui/sheet'
 import { Skeleton } from './components/ui/skeleton'
+import { AgentsPage } from './pages/agents'
 import { ApplyPage } from './pages/apply'
+import { BackupPage } from './pages/backup'
+import { ExtrasPage } from './pages/extras'
 import { McpPage } from './pages/mcp'
 import { ProviderPage } from './pages/provider'
 import { SettingsPage } from './pages/settings'
 import { SkillsPage } from './pages/skills'
 import { ToolsPage } from './pages/tools'
+import { WorkflowsPage } from './pages/workflows'
 
 type StatusTone = 'info' | 'warning' | 'error'
 
-// The pages this front end renders. The workflow, extras and backup pages are terminal-only
-// for now; they join the web nav when they gain web pages of their own.
-const PAGE_ICONS: Partial<Record<PageId, typeof WrenchIcon>> = {
+const PAGE_ICONS: Record<PageId, typeof WrenchIcon> = {
   tools: WrenchIcon,
   provider: PlugIcon,
   mcp: NetworkIcon,
   skills: SparklesIcon,
   settings: SettingsIcon,
   apply: PlayIcon,
+  workflows: WorkflowIcon,
+  agents: BotIcon,
+  extras: PackageIcon,
+  backup: ArchiveRestoreIcon,
 }
-const WEB_PAGES: readonly PageId[] = PAGES.filter(id => PAGE_ICONS[id] !== undefined)
+
+// The nav rows both front ends share: each section's header, then its pages.
+const NAV_ROWS = navRows()
 
 function StatusMessage({ status, t }: { status: { text: string; tone: StatusTone } | undefined; t: Translate }) {
   if (!status) return null
@@ -95,9 +107,19 @@ function NavList({
 }) {
   return (
     <ul className="flex flex-col gap-0.5">
-      {WEB_PAGES.map(id => {
-        const roots = PAGE_ROOTS[id]
-        const broken = roots !== undefined && pageHasIssues(editor.validation.issues, roots)
+      {NAV_ROWS.map(row => {
+        if (row.kind === 'header') {
+          return (
+            <li
+              key={row.id}
+              className="text-muted-foreground px-2.5 pt-4 pb-1 text-[11px] font-medium tracking-wide uppercase max-lg:hidden first:pt-1"
+            >
+              {t(row.labelKey)}
+            </li>
+          )
+        }
+        const { id } = row
+        const broken = pageHasIssues(editor.validation.issues, PAGE_ROOTS[id])
         const Icon = PAGE_ICONS[id]
         return (
           <li key={id}>
@@ -227,10 +249,7 @@ export function App({
   }, [editor.dirty])
 
   const firstBrokenPage = (): PageId | undefined =>
-    WEB_PAGES.find(id => {
-      const roots = PAGE_ROOTS[id]
-      return roots !== undefined && pageHasIssues(editor.validation.issues, roots)
-    })
+    PAGES.find(id => pageHasIssues(editor.validation.issues, PAGE_ROOTS[id]))
 
   if (editor.status === 'loading') {
     return (
@@ -350,6 +369,10 @@ export function App({
             {page === 'skills' && <SkillsPage editor={editor} t={t} lang={uiLang} />}
             {page === 'settings' && <SettingsPage editor={editor} t={t} />}
             {page === 'apply' && <ApplyPage editor={editor} t={t} service={httpService} onSave={() => void save()} />}
+            {page === 'workflows' && <WorkflowsPage editor={editor} t={t} />}
+            {page === 'agents' && <AgentsPage editor={editor} t={t} />}
+            {page === 'extras' && <ExtrasPage editor={editor} t={t} />}
+            {page === 'backup' && <BackupPage t={t} />}
           </div>
         </main>
       </div>
