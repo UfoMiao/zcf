@@ -229,7 +229,7 @@ export function ApplyPage({
                           {step.kind === 'command'
                             ? `$ ${[step.command, ...step.args].join(' ')}`
                             : step.kind === 'copy'
-                              ? `${step.from} -> ${step.to}`
+                              ? `${tildify(step.from)} -> ${tildify(step.to)}`
                               : tildify(step.path)}
                         </code>
                         {preview?.changed && (

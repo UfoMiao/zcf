@@ -4,8 +4,8 @@ import type { PageId, ZcfService } from '@zcf/ui-kit'
 import {
   digitIndex,
   isDigitKey,
-  issuesAt,
   navRows,
+  pageHasIssues,
   PAGE_ROOTS,
   PAGES,
   TOOL_OPTIONS,
@@ -253,8 +253,7 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
                 </Text>
               )
             const current = row.id === page
-            const roots = PAGE_ROOTS[row.id]
-            const broken = roots !== undefined && issuesAt(editor.validation.issues, roots).length > 0
+            const broken = pageHasIssues(editor.validation.issues, PAGE_ROOTS[row.id])
             return (
               <Text
                 key={row.id}

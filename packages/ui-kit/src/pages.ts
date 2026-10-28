@@ -1,10 +1,20 @@
-import type { ToolId } from '@zcf/core/schema'
+import type { ToolId, ConfigIssue } from '@zcf/core/schema'
 import { BUILTIN_SKILLS_SOURCE, CONFIG_LANGUAGES, MIRRORS, TOOL_IDS } from '@zcf/core/schema'
 
 import type { DraftPath } from './draft'
-import { isTable } from './draft'
+import { isTable, issuesAt } from './draft'
 
-export type PageId = 'tools' | 'provider' | 'mcp' | 'skills' | 'settings' | 'apply'
+export type PageId =
+  | 'tools'
+  | 'provider'
+  | 'mcp'
+  | 'skills'
+  | 'settings'
+  | 'apply'
+  | 'workflows'
+  | 'agents'
+  | 'extras'
+  | 'backup'
 
 /** One grouped chunk of the nav column, the way v3 grouped its menu. */
 export interface NavSection {
@@ -16,14 +26,13 @@ export interface NavSection {
 
 /**
  * The nav column's sections. Sections without pages yet hold their place so later
- * waves can add pages without reshuffling the menu. The terminal UI renders this;
- * the web nav follows PAGES until the new sections gain their pages.
+ * waves can add pages without reshuffling the menu. Both front ends render this.
  */
 export const NAV: readonly NavSection[] = [
   { id: 'init', labelKey: 'nav.init', pages: ['tools', 'provider', 'mcp', 'skills', 'settings', 'apply'] },
-  { id: 'workflow', labelKey: 'nav.workflow', pages: [] },
-  { id: 'extras', labelKey: 'nav.extras', pages: [] },
-  { id: 'backup', labelKey: 'nav.backup', pages: [] },
+  { id: 'workflow', labelKey: 'nav.workflow', pages: ['workflows', 'agents'] },
+  { id: 'extras', labelKey: 'nav.extras', pages: ['extras'] },
+  { id: 'backup', labelKey: 'nav.backup', pages: ['backup'] },
 ]
 
 /** Every page in nav order, flattened from the sections. */
@@ -63,14 +72,29 @@ export function navRows(sections: readonly NavSection[] = NAV): readonly NavRow[
   return rows
 }
 
-/** The config keys each editing page works on, so a page can be flagged when it has problems. */
-export const PAGE_ROOTS: Readonly<Record<PageId, readonly string[] | undefined>> = {
-  tools: ['tools'],
-  provider: ['provider'],
-  mcp: ['mcpServers'],
-  skills: ['skills'],
-  settings: ['mirror', 'configLanguage'],
+/**
+ * The config keys each editing page works on, so a page can be flagged when it has problems.
+ * A page can own more than one key, such as the provider page with its profiles beside it.
+ */
+export const PAGE_ROOTS: Readonly<Record<PageId, readonly (readonly string[])[] | undefined>> = {
+  tools: [['tools']],
+  provider: [['provider'], ['profiles']],
+  mcp: [['mcpServers']],
+  skills: [['skills']],
+  settings: [['mirror'], ['configLanguage']],
   apply: undefined,
+  workflows: [['workflows']],
+  agents: [['agents'], ['styles']],
+  extras: [['extras']],
+  backup: undefined,
+}
+
+/** Whether any of a page's roots has validation problems, so the nav can flag the page. */
+export function pageHasIssues(
+  issues: readonly ConfigIssue[],
+  roots: readonly (readonly string[])[] | undefined,
+): boolean {
+  return roots !== undefined && roots.some(root => issuesAt(issues, root).length > 0)
 }
 
 /**
@@ -249,6 +273,35 @@ export function addSourcedSkill(sources: unknown, source: string, name: string):
 /** The draft position of the `source` entry, for edits that remove it. */
 export function skillSourceIndex(sources: unknown, source: string): number {
   return (Array.isArray(sources) ? sources : []).findIndex(item => isTable(item) && item.source === source)
+}
+
+/**
+ * Remove one skill from its source's entry, dropping the entry once its last skill goes,
+ * so unchecking a preset's pick cannot leave an empty source behind.
+ */
+export function removeSourcedSkill(sources: unknown, source: string, name: string): unknown[] | undefined {
+  const list: unknown[] = Array.isArray(sources) ? [...sources] : []
+  const at = skillSourceIndex(list, source)
+  if (at === -1) return list.length > 0 ? list : undefined
+  const entry = list[at]
+  if (!isTable(entry)) return list
+  const picked: string[] = Array.isArray(entry.skills) ? entry.skills.map(String).filter(id => id !== name) : []
+  if (picked.length === 0) {
+    const rest = list.filter((_, index) => index !== at)
+    return rest.length > 0 ? rest : undefined
+  }
+  list[at] = { ...entry, skills: picked }
+  return list
+}
+
+/**
+ * Toggle one id in a plain list of ids, such as `agents` or `outputStyles`. `undefined`
+ * when nothing is left, so the empty key is removed rather than left behind.
+ */
+export function toggleId(list: unknown, id: string): string[] | undefined {
+  const current = Array.isArray(list) ? list.map(String) : []
+  const next = current.includes(id) ? current.filter(item => item !== id) : [...current, id]
+  return next.length > 0 ? next : undefined
 }
 
 /** A fresh MCP server of the given type, so the form has something to fill in. */

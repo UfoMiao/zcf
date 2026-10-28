@@ -584,15 +584,19 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
-  it('jumps to a page by its digit, ignoring digits with no page behind them', async () => {
+  it('jumps to a page by its digit, across all the sections', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     await app.press('4')
     expect(app.frame()).toContain('Search skills')
     await app.press('1')
     expect(app.frame()).toContain('Pick the agent tools')
-    // Only six pages exist this wave: 7-9 and 0 name none, so the page stays.
-    await app.press('7', '9', '0')
+    // Ten pages now: 7 reaches the Workflows section's first page, 0 the Backups page.
+    await app.press('7')
+    expect(app.frame()).toContain('› 7 Workflows')
+    await app.press('0')
+    expect(app.frame()).toContain('› 0 Backups')
+    await app.press('1')
     expect(app.frame()).toContain('Pick the agent tools')
     app.unmount()
   })

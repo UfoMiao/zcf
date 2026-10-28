@@ -9,14 +9,27 @@ import {
   NAV,
   navRows,
   PAGES,
+  removeSourcedSkill,
   skillSourceIndex,
   toggleCatalogSkill,
+  toggleId,
 } from '../src/pages'
 
 describe('NAV', () => {
   it('keeps PAGES the flat page list, in nav order', () => {
     expect(NAV.flatMap(section => section.pages)).toEqual(PAGES)
-    expect(PAGES).toEqual(['tools', 'provider', 'mcp', 'skills', 'settings', 'apply'])
+    expect(PAGES).toEqual([
+      'tools',
+      'provider',
+      'mcp',
+      'skills',
+      'settings',
+      'apply',
+      'workflows',
+      'agents',
+      'extras',
+      'backup',
+    ])
   })
 
   it('flattens into header and page rows, headed by each section', () => {
@@ -32,8 +45,12 @@ describe('NAV', () => {
       '5',
       '6',
       'nav.workflow',
+      '7',
+      '8',
       'nav.extras',
+      '9',
       'nav.backup',
+      '0',
     ])
   })
 
@@ -150,5 +167,51 @@ describe('skillSourceIndex', () => {
     expect(skillSourceIndex(sources, 'zcf')).toBe(1)
     expect(skillSourceIndex(sources, 'nope/nope')).toBe(-1)
     expect(skillSourceIndex(undefined, 'zcf')).toBe(-1)
+  })
+})
+
+describe('removeSourcedSkill', () => {
+  it('drops the skill from its source, keeping the rest of the list', () => {
+    const sources = [
+      { source: 'owner/repo', skills: ['one', 'two'] },
+      { source: BUILTIN_SKILLS_SOURCE, skills: ['feat'] },
+    ]
+    expect(removeSourcedSkill(sources, 'owner/repo', 'two')).toEqual([
+      { source: 'owner/repo', skills: ['one'] },
+      { source: BUILTIN_SKILLS_SOURCE, skills: ['feat'] },
+    ])
+  })
+
+  it('drops the whole source once its last skill goes, keeping the other sources', () => {
+    const sources = [
+      { source: 'a/a', skills: ['one'] },
+      { source: BUILTIN_SKILLS_SOURCE, skills: ['feat'] },
+    ]
+    expect(removeSourcedSkill(sources, 'a/a', 'one')).toEqual([{ source: BUILTIN_SKILLS_SOURCE, skills: ['feat'] }])
+  })
+
+  it('returns undefined when the emptied source was the only one', () => {
+    expect(removeSourcedSkill([{ source: 'a/a', skills: ['one'] }], 'a/a', 'one')).toBeUndefined()
+  })
+
+  it('leaves a list without the source as it is, undefined when empty', () => {
+    expect(removeSourcedSkill([{ source: 'a/a' }], 'zcf', 'feat')).toEqual([{ source: 'a/a' }])
+    expect(removeSourcedSkill(undefined, 'zcf', 'feat')).toBeUndefined()
+  })
+})
+
+describe('toggleId', () => {
+  it('adds an id to a list that lacks it, starting one when there is none', () => {
+    expect(toggleId(undefined, 'planner')).toEqual(['planner'])
+    expect(toggleId(['init-architect'], 'planner')).toEqual(['init-architect', 'planner'])
+  })
+
+  it('removes the id, and the whole key once the list empties', () => {
+    expect(toggleId(['planner'], 'planner')).toBeUndefined()
+    expect(toggleId(['planner', 'ui-ux-designer'], 'planner')).toEqual(['ui-ux-designer'])
+  })
+
+  it('treats a list that is not the draft shape as empty', () => {
+    expect(toggleId('nope', 'planner')).toEqual(['planner'])
   })
 })
