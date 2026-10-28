@@ -354,6 +354,55 @@ describe('claudeCode.plan', () => {
       'npx -y skills add owner/partial -g -y -a claude-code -s present -s absent',
     ])
   })
+
+  it('copies agents and output styles from the shipped templates into the config folder', async () => {
+    const ctx = context({ builtinAgentsDir: '/tpl/agents', builtinOutputStylesDir: '/tpl/output-styles' })
+    const plan = await claudeCode.plan(
+      config({
+        agents: ['planner'],
+        styles: { outputStyles: ['laowang-engineer'], defaultOutputStyle: 'laowang-engineer' },
+      }),
+      installed,
+      ctx,
+    )
+    const copies = plan.steps.filter(step => step.kind === 'copy')
+    expect(copies).toEqual([
+      {
+        kind: 'copy',
+        title: { key: 'step.agent', params: { tool: 'claude-code', name: 'planner' } },
+        from: '/tpl/agents/en/planner/AGENT.md',
+        to: join(HOME, '.claude', 'agents', 'zcf', 'planner.md'),
+      },
+      {
+        kind: 'copy',
+        title: { key: 'step.style', params: { tool: 'claude-code', name: 'laowang-engineer' } },
+        from: '/tpl/output-styles/en/laowang-engineer.md',
+        to: join(HOME, '.claude', 'output-styles', 'laowang-engineer.md'),
+      },
+    ])
+    // The default style lands in the settings ZCF already writes.
+    const files = plan.steps.filter((step): step is FileStep => step.kind === 'file')
+    expect(files.some(step => step.edits.some(edit => edit.path[0] === 'outputStyle'))).toBe(true)
+  })
+
+  it('wires the CCometixLine status bar into settings.json when the config asks for it', async () => {
+    const plan = await claudeCode.plan(config({ tools: [], extras: { ccline: true } }), installed, context())
+    const step = plan.steps.find(
+      (item): item is FileStep => item.kind === 'file' && item.edits.some(edit => edit.path[0] === 'statusLine'),
+    )
+    expect(step?.edits).toEqual([
+      { path: ['statusLine'], value: { type: 'command', command: '~/.claude/ccline/ccline', padding: 0 } },
+    ])
+  })
+
+  it('skips template steps when the templates are not shipped', async () => {
+    const plan = await claudeCode.plan(
+      config({ agents: ['planner'], styles: { outputStyles: ['rem-engineer'], defaultOutputStyle: 'rem-engineer' } }),
+      installed,
+      context(),
+    )
+    expect(plan.steps.filter(step => step.kind === 'copy')).toEqual([])
+  })
 })
 
 describe('claudeMcpServer', () => {

@@ -1,5 +1,15 @@
-import type { FilePreview, Message, Notice, Plan, PlanStep, StepResult, ToolId, ToolResult, ZcfConfig } from '@zcf/core'
-import { isConfigLanguage, isToolId, TOOL_NAMES } from '@zcf/core'
+import type {
+  FilePreview,
+  Message,
+  Notice,
+  Plan,
+  PlanActor,
+  PlanStep,
+  StepResult,
+  ToolResult,
+  ZcfConfig,
+} from '@zcf/core'
+import { ACTOR_NAMES, isConfigLanguage, isExtraId, EXTRA_NAMES, isToolId, TOOL_NAMES } from '@zcf/core'
 import { bold, cyan, dim, green, red, yellow } from 'ansis'
 
 import type { Translate } from './i18n'
@@ -91,14 +101,15 @@ export class Renderer {
   message(message: Message): string {
     const params = { ...message.params }
     if (isToolId(params.tool)) params.tool = TOOL_NAMES[params.tool]
+    if (isExtraId(params.extra)) params.extra = EXTRA_NAMES[params.extra]
     if (isConfigLanguage(params.language)) params.language = this.t(`language.${params.language}`)
     return this.t(message.key, params)
   }
 
   stepTarget(step: PlanStep): string {
-    return step.kind === 'command'
-      ? `$ ${[step.command, ...step.args].map(quoteArg).join(' ')}`
-      : tildify(step.path, this.home)
+    if (step.kind === 'command') return `$ ${[step.command, ...step.args].map(quoteArg).join(' ')}`
+    if (step.kind === 'copy') return `${tildify(step.from, this.home)} -> ${tildify(step.to, this.home)}`
+    return tildify(step.path, this.home)
   }
 
   notice(notice: Notice): void {
@@ -126,7 +137,7 @@ export class Renderer {
 
   plan(plan: Plan, previews: Map<PlanStep, FilePreview>): void {
     for (const toolPlan of plan.tools) {
-      this.line(bold(TOOL_NAMES[toolPlan.tool]))
+      this.line(bold(ACTOR_NAMES[toolPlan.tool]))
       for (const notice of toolPlan.notices) this.notice(notice)
       if (toolPlan.steps.length === 0 && toolPlan.notices.length === 0) this.line(dim(`  ${this.t('cli.nothingToDo')}`))
 
@@ -146,10 +157,10 @@ export class Renderer {
     }
   }
 
-  stepResult(tool: ToolId, result: StepResult): void {
+  stepResult(tool: PlanActor, result: StepResult): void {
     // A fallback step that never ran means its reason never happened; there is nothing to say.
     if (result.status === 'skipped' && result.step.kind === 'command' && result.step.fallback) return
-    const title = `${TOOL_NAMES[tool]}: ${this.message(result.step.title)}`
+    const title = `${ACTOR_NAMES[tool]}: ${this.message(result.step.title)}`
     switch (result.status) {
       case 'done':
         this.line(`${green('✓')} ${title}`)

@@ -1,4 +1,7 @@
-import type { ToolId } from '../schema/config'
+import type { ExtraId, ToolId } from '../schema/config'
+
+/** Who a plan belongs to: a coding tool, or an optional companion tool such as a gateway. */
+export type PlanActor = ToolId | ExtraId
 
 /** A translatable message. Core never formats text for people; front ends look up `key`. */
 export interface Message {
@@ -58,7 +61,19 @@ export interface RemoveStep {
   path: string
 }
 
-export type PlanStep = CommandStep | FileStep | RemoveStep
+/**
+ * Copy a file ZCF ships, such as an agent or output-style template, into the user's
+ * config. Content-identical copies count as `unchanged`, so a rerun after a template
+ * update refreshes the file and a rerun without one does nothing.
+ */
+export interface CopyStep {
+  kind: 'copy'
+  title: Message
+  from: string
+  to: string
+}
+
+export type PlanStep = CommandStep | FileStep | RemoveStep | CopyStep
 
 export interface Notice {
   level: 'info' | 'warning'
@@ -66,7 +81,7 @@ export interface Notice {
 }
 
 export interface ToolPlan {
-  tool: ToolId
+  tool: PlanActor
   steps: PlanStep[]
   notices: Notice[]
   /** The version installed when the plan was made, where known; update plans set it. */

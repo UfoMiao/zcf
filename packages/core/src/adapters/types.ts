@@ -21,6 +21,10 @@ export interface AdapterContext {
    * is passed to the skills CLI as written.
    */
   builtinSkillsDir?: string
+  /** The built-in agent templates, such as `<zcf>/dist/templates/agents`; same layout as the skills. */
+  builtinAgentsDir?: string
+  /** The built-in output-style templates, such as `<zcf>/dist/templates/output-styles`. */
+  builtinOutputStylesDir?: string
 }
 
 export interface ToolStatus {

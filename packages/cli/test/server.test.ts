@@ -14,7 +14,20 @@ import { browserPlan, contentType, fileAssets, startUiServer } from '../src/serv
 
 const TOKEN = 'test-token-1234567890'
 const secrets = collectSecrets(
-  { version: 1, tools: [], mcpServers: {}, skills: [], mirror: 'official', language: 'auto', configLanguage: 'en' },
+  {
+    version: 1,
+    tools: [],
+    mcpServers: {},
+    skills: [],
+    profiles: [],
+    agents: [],
+    workflows: [],
+    styles: { outputStyles: [] },
+    extras: {},
+    mirror: 'official',
+    language: 'auto',
+    configLanguage: 'en',
+  },
   ['sk-very-secret-key'],
 )
 
