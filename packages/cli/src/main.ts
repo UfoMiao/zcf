@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import type { AdapterContext, FilePreview, Mirror, Plan, PlanStep, ToolId, ToolResult, ZcfConfig } from '@zcf/core'
 import {
   applyPlan,
+  BackupRun,
   createContext,
   defaultConfigPath,
   detectTools,
@@ -29,7 +30,6 @@ import {
   readTextIfExists,
   resolveMirror,
   restoreBackup,
-  snapshotFile,
   TOOL_IDS,
   TOOL_NAMES,
   writeFileAtomic,
@@ -472,6 +472,15 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       return code
     })
 
+  /** Back the file at `path` up into a run of its own, for an edit that changes it. */
+  async function backupBeforeEdit(path: string): Promise<{ dir: string; backup: string } | undefined> {
+    const at = now()
+    const run = new BackupRun(backupFolder(ctx.home, at), ctx.home, () => at, 'save')
+    const backup = await run.snapshot(path)
+    await run.finish()
+    return backup === undefined ? undefined : { dir: run.dir, backup }
+  }
+
   /** Take uninstalled tools out of "tools" in the config, so a later apply does not reinstall them. */
   async function removeFromConfig(
     removed: readonly ToolId[],
@@ -493,8 +502,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       if (!(error instanceof FileSyntaxError)) throw error
       throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
     }
-    const backupDir = backupFolder(ctx.home, now())
-    const backup = next === existing ? undefined : await snapshotFile(path, backupDir, ctx.home)
+    const backed = next === existing ? undefined : await backupBeforeEdit(path)
     await writeFileAtomic(path, next)
     renderer.line(
       t('cli.uninstallConfigUpdated', {
@@ -502,7 +510,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         path: tildify(path, ctx.home),
       }),
     )
-    if (backup) renderer.line(dim(t('cli.backups', { path: tildify(backupDir, ctx.home) })))
+    if (backed) renderer.line(dim(t('cli.backups', { path: tildify(backed.dir, ctx.home) })))
   }
 
   cli
@@ -543,11 +551,10 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         if (!(error instanceof FileSyntaxError)) throw error
         throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
       }
-      const backupDir = backupFolder(ctx.home, now())
-      const backup = next === existing ? undefined : await snapshotFile(path, backupDir, ctx.home)
+      const backed = next === existing ? undefined : await backupBeforeEdit(path)
       await writeFileAtomic(path, next)
       renderer.line(t('cli.mirrorSet', { mirror: t(`mirror.${mirror}`), path: tildify(path, ctx.home) }))
-      if (backup) renderer.line(dim(t('cli.backups', { path: tildify(backupDir, ctx.home) })))
+      if (backed) renderer.line(dim(t('cli.backups', { path: tildify(backed.dir, ctx.home) })))
       if (fromEnv && fromEnv !== mirror)
         renderer.line(yellow(t('cli.mirrorEnvOverrides', { value: ctx.env.ZCF_MIRROR ?? '' })))
       return EXIT_OK
@@ -593,7 +600,9 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
           t('cli.backup.restored', { changed: result.changed, unchanged: result.unchanged, missing: result.missing }),
         )
         if (result.corrupt > 0) renderer.line(yellow(t('cli.backup.corrupt', { count: result.corrupt })))
-        renderer.line(dim(t('cli.backups', { path: tildify(join(root, result.id), ctx.home) })))
+        if (result.outside > 0) renderer.line(yellow(t('cli.backup.outside', { count: result.outside })))
+        if (result.id !== undefined)
+          renderer.line(dim(t('cli.backups', { path: tildify(join(root, result.id), ctx.home) })))
         return EXIT_OK
       }
 

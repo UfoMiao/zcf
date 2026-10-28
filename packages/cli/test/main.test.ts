@@ -1,7 +1,7 @@
 import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 
-import { backupRunDir, BackupRun, type CommandResult, type CommandRunner } from '@zcf/core'
+import { backupRunDir, BackupRun, type CommandResult, type CommandRunner, readTextIfExists } from '@zcf/core'
 import { render } from 'ink'
 import { dirname, join } from 'pathe'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -844,5 +844,26 @@ describe('zcf backup', () => {
     expect(after.stdout).toContain('2026-10-22T08-00-00-000Z')
     expect(after.stdout).not.toContain('2026-10-20T')
     expect((await run('backup', 'prune', '--yes')).stdout).toContain('Nothing to prune; there are only 1 backup(s).')
+  })
+
+  it('refuses to restore a config backed up from outside home, instead of writing it under home', async () => {
+    // The mirror command with --file backs up a config that sits outside home.
+    const away = await mkdtemp(join(tmpdir(), 'zcf-away-'))
+    try {
+      const outside = join(away, 'zcf.json')
+      await writeFile(outside, '{\n  "version": 1,\n  "mirror": "official"\n}\n')
+      const set = await run('mirror', 'china', '--file', outside)
+      expect(set.code).toBe(EXIT_OK)
+      expect(set.stdout).toContain('~/.ufomiao/zcf/backups/2026-10-24T08-00-00-000Z')
+
+      const yes = await run('backup', 'restore', '2026-10-24T08-00-00-000Z', '--yes')
+      expect(yes.code).toBe(EXIT_OK)
+      expect(yes.stdout).toContain('1 file(s) in the backup are from outside home')
+      // The config keeps what the mirror command wrote, and nothing lands at its place under home.
+      expect(await readFile(outside, 'utf8')).toContain('"mirror": "china"')
+      expect(await readTextIfExists(join(home, 'zcf.json'))).toBeUndefined()
+    } finally {
+      await rm(away, { recursive: true, force: true })
+    }
   })
 })

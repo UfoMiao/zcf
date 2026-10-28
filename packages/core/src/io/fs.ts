@@ -58,16 +58,20 @@ export async function writeFileAtomic(path: string, content: string | Uint8Array
   }
 }
 
+/** Whether `path` sits inside `home`, so a backup can name it relative to home. */
+export function isInsideHome(path: string, home?: string): boolean {
+  if (!home) return false
+  const inside = relative(normalize(home), normalize(path))
+  return !!inside && !inside.startsWith('..') && !/^[a-z]:/i.test(inside) && !inside.startsWith('/')
+}
+
 /**
  * Map an absolute path to a relative one that is safe to recreate under a backup folder:
  * relative to `home` when it is inside it, otherwise the absolute path without its root.
  */
 export function backupRelativePath(path: string, home?: string): string {
   const normalized = normalize(path)
-  if (home) {
-    const inside = relative(normalize(home), normalized)
-    if (inside && !inside.startsWith('..') && !/^[a-z]:/i.test(inside) && !inside.startsWith('/')) return inside
-  }
+  if (isInsideHome(path, home)) return relative(normalize(home!), normalized)
   return normalized.replace(/^[a-z]:/i, drive => drive[0]!).replace(/^\/+/, '')
 }
 

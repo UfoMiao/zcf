@@ -105,7 +105,7 @@ Work with the backups in `~/.ufomiao/zcf/backups/`. Before ZCF changes or delete
 |---------|---------|
 | `list` (the default) | List the runs, newest first: id, what made them, how many files they hold. |
 | `restore <id>` | Put one run's files back. Without `-y, --yes`, show what it holds and change nothing. The files as they are now are copied into a run of their own first, so a restore can be undone by restoring that run. |
-| `prune` | Remove the oldest runs beyond the newest `--keep <n>` (default 20). Without `-y, --yes`, show what would go. |
+| `prune` | Remove the oldest runs beyond the newest `--keep <n>` (default 20); the newest run always stays. Without `-y, --yes`, show what would go. |
 
 | Option | Meaning |
 |--------|---------|

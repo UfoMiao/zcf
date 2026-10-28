@@ -5,7 +5,7 @@ import { basename, join } from 'pathe'
 
 import { MessageError } from '../message-error'
 import { isTable } from './editors'
-import { backupRelativePath, isMissing, readTextIfExists, snapshotFile, writeFileAtomic } from './fs'
+import { backupRelativePath, isInsideHome, isMissing, readTextIfExists, snapshotFile, writeFileAtomic } from './fs'
 
 /** Why a run's files were copied: an apply, a config save, or the undo copy a restore makes first. */
 export type BackupReason = 'apply' | 'save' | 'restore'
@@ -17,6 +17,8 @@ export interface BackupEntry {
   sha256?: string
   size: number
   mode: number
+  /** Set when the file sits outside home, so a restore cannot map `path` back to its place. */
+  outside?: true
 }
 
 export interface BackupManifest {
@@ -39,8 +41,9 @@ export interface BackupInfo {
 /** What a restore did. Files go back one by one, each atomically; the restore is not
  * transactional, so one that stops partway leaves the files already written in place. */
 export interface RestoreResult {
-  /** The id of the run this restore copied the current files into, so it can be undone. */
-  id: string
+  /** The id of the run this restore copied the current files into, so it can be undone;
+   * undefined when nothing existed to copy, so there is nothing to undo. */
+  id?: string
   /** Files whose content differed and were written back. */
   changed: number
   /** Files already holding the backed-up content; only their recorded mode goes back on. */
@@ -49,14 +52,19 @@ export interface RestoreResult {
   missing: number
   /** Files whose copy in the run no longer hashes to its manifest entry, left untouched. */
   corrupt: number
+  /** Files from outside home, whose place a restore cannot map back to, left untouched. */
+  outside: number
 }
 
-/** A count of runs pruning may keep: a whole number of 0 or more, or undefined when `value` is not one. */
+/** A count of runs pruning may keep: whole decimal 0 or more, or undefined when `value` is not one. */
 export function parseBackupKeep(value: unknown): number | undefined {
-  // The empty string would read as 0, which is a real answer to a different question.
-  const keep = typeof value === 'string' && value.trim() === '' ? Number.NaN : Number(value)
-  if (typeof keep !== 'number' || !Number.isInteger(keep) || keep < 0) return undefined
-  return keep
+  if (typeof value === 'string') {
+    // Decimal only: `0x10` and friends are more likely a typo than an answer.
+    if (!/^\d+$/.test(value.trim())) return undefined
+    return Number(value)
+  }
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) return undefined
+  return value
 }
 
 /** The folder one backup run writes into, named by its time. */
@@ -71,6 +79,7 @@ export function backupRunDir(root: string, at: Date): string {
  */
 export class BackupRun {
   private readonly entries = new Map<string, Promise<BackupEntry | undefined>>()
+  private held: BackupEntry[] = []
 
   constructor(
     /** The folder this run copies files into. */
@@ -80,6 +89,11 @@ export class BackupRun {
     private readonly now: () => Date = () => new Date(),
     private readonly reason: BackupReason = 'apply',
   ) {}
+
+  /** Whether the run holds no copies; settled once `finish` has run. */
+  get empty(): boolean {
+    return this.held.length === 0
+  }
 
   /** Back `path` up once per run, before its first change. Returns where it was copied, or undefined when it does not exist. */
   async snapshot(path: string): Promise<string | undefined> {
@@ -100,6 +114,7 @@ export class BackupRun {
       sha256: sha256(content),
       size: content.byteLength,
       mode: info.mode,
+      outside: isInsideHome(path, this.home) ? undefined : true,
     }
   }
 
@@ -107,8 +122,8 @@ export class BackupRun {
   async finish(): Promise<void> {
     // A snapshot that failed copied nothing, so it is not described; the step that asked for it failed on its own.
     const settled = await Promise.allSettled(this.entries.values())
-    const entries = settled.flatMap(item => (item.status === 'fulfilled' && item.value ? [item.value] : []))
-    if (entries.length === 0) {
+    this.held = settled.flatMap(item => (item.status === 'fulfilled' && item.value ? [item.value] : []))
+    if (this.held.length === 0) {
       await rm(this.dir, { recursive: true, force: true })
       return
     }
@@ -116,7 +131,7 @@ export class BackupRun {
       version: 1,
       createdAt: this.now().toISOString(),
       reason: this.reason,
-      entries,
+      entries: this.held,
     }
     await writeFileAtomic(join(this.dir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
   }
@@ -128,7 +143,8 @@ function isBackupEntry(value: unknown): value is BackupEntry {
     typeof value.path === 'string' &&
     (value.sha256 === undefined || typeof value.sha256 === 'string') &&
     typeof value.size === 'number' &&
-    typeof value.mode === 'number'
+    typeof value.mode === 'number' &&
+    (value.outside === undefined || value.outside === true)
   )
 }
 
@@ -194,12 +210,15 @@ export async function listBackups(root: string): Promise<BackupInfo[]> {
 }
 
 /**
- * Put a backup's files back under `home`, where every file ZCF backs up lives. Every
- * target that exists right now is first copied into a fresh run of its own, so the
- * restore itself can be undone with that run's id. Each file is written back atomically
- * at its recorded mode; a copy missing from the run folder fails the whole call, leaving
- * the files before it in place, while a copy that no longer hashes to its manifest entry
- * is skipped as corrupt and the rest go on. Legacy entries without a hash are trusted.
+ * Put a backup's files back under `home`. Every target that exists right now is first
+ * copied into a fresh run of its own, so the restore itself can be undone with that
+ * run's id — undefined in the result when nothing existed to copy. Each file is written
+ * back atomically at its recorded mode; a copy missing from the run folder fails the
+ * whole call, leaving the files before it in place, while a copy that no longer hashes
+ * to its manifest entry is skipped as corrupt and the rest go on. A file from outside
+ * home is skipped too: its home-relative place names a different folder, so writing it
+ * would put it somewhere it never was. Entries walked out of a legacy run carry no
+ * marker and are treated as files of home, which everything ZCF writes is.
  */
 export async function restoreBackup(
   root: string,
@@ -217,14 +236,19 @@ export async function restoreBackup(
   // The files as they are now, so this restore can itself be restored away.
   const at = now()
   const undo = new BackupRun(backupRunDir(root, at), home, () => at, 'restore')
-  await Promise.all(entries.map(entry => undo.snapshot(join(home, entry.path))))
+  await Promise.all(entries.map(async entry => (entry.outside ? undefined : undo.snapshot(join(home, entry.path)))))
   await undo.finish()
 
   let changed = 0
   let unchanged = 0
   let missing = 0
   let corrupt = 0
+  let outside = 0
   for (const entry of entries) {
+    if (entry.outside) {
+      outside++
+      continue
+    }
     // One file at a time: a later failure leaves the earlier files restored, not half-written.
     // oxlint-disable-next-line no-await-in-loop
     const backedUp = await readFile(join(run, entry.path))
@@ -248,12 +272,16 @@ export async function restoreBackup(
     // oxlint-disable-next-line no-await-in-loop
     await chmod(target, entry.mode & 0o7777).catch(() => undefined)
   }
-  return { id: basename(undo.dir), changed, unchanged, missing, corrupt }
+  return { id: undo.empty ? undefined : basename(undo.dir), changed, unchanged, missing, corrupt, outside }
 }
 
-/** The ids pruning would remove from `backups` beyond the newest `keep`, newest-first like `backups`. */
+/**
+ * The ids pruning would remove from `backups` beyond the newest `keep`, newest-first like
+ * `backups`. At least the newest run always stays: 0 would take the undo copy a restore
+ * just made along with everything else.
+ */
 export function pruneDoomed(backups: readonly BackupInfo[], keep: number): string[] {
-  return backups.slice(Math.max(0, keep)).map(backup => backup.id)
+  return backups.slice(Math.max(1, keep)).map(backup => backup.id)
 }
 
 /** Remove the oldest runs beyond the newest `keep`, returning the ids removed. */

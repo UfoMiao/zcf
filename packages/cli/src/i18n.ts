@@ -260,6 +260,8 @@ const en = {
   'cli.backup.restored':
     'Restored {changed} changed file(s); {unchanged} already matched; {missing} were missing and are back.',
   'cli.backup.corrupt': '{count} file(s) in the backup did not match their checksum and were left alone.',
+  'cli.backup.outside':
+    '{count} file(s) in the backup are from outside home; copy them back by hand from the backup folder.',
   'cli.backup.pruneList': '{count} backup(s) to remove: {ids}',
   'cli.backup.pruned': 'Removed {count} backup(s): {ids}',
   'cli.backup.prunedNone': 'Nothing to prune; there are only {count} backup(s).',
@@ -512,6 +514,7 @@ const zhCN: Record<MessageKey, string> = {
   'cli.backup.reason.unknown': '更早的运行',
   'cli.backup.restored': '已恢复 {changed} 个有改动的文件；{unchanged} 个本就一致；{missing} 个此前已缺失，已找回。',
   'cli.backup.corrupt': '备份中有 {count} 个文件与校验和不符，已保持原样。',
+  'cli.backup.outside': '备份中有 {count} 个文件位于 home 之外，请从备份目录手动复制回来。',
   'cli.backup.pruneList': '将删除 {count} 个备份：{ids}',
   'cli.backup.pruned': '已删除 {count} 个备份：{ids}',
   'cli.backup.prunedNone': '无需清理；当前只有 {count} 个备份。',

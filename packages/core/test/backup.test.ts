@@ -5,7 +5,7 @@ import process from 'node:process'
 import { join } from 'pathe'
 import { describe, expect, it } from 'vitest'
 
-import { BackupRun, backupRunDir, listBackups, pruneBackups, restoreBackup } from '../src/io/backup'
+import { BackupRun, backupRunDir, listBackups, parseBackupKeep, pruneBackups, restoreBackup } from '../src/io/backup'
 import { writeFileAtomic } from '../src/io/fs'
 import { tempDir } from './helpers'
 
@@ -126,18 +126,26 @@ describe('restoreBackup', () => {
     if (process.platform !== 'win32') await chmod(settings, 0o755)
 
     const result = await restoreBackup(root, '2026-10-24T08-00-00-000Z', home, at('2026-10-24T09:00:00.000Z'))
-    expect(result).toEqual({ id: '2026-10-24T09-00-00-000Z', changed: 1, unchanged: 1, missing: 1, corrupt: 0 })
+    expect(result).toEqual({
+      id: '2026-10-24T09-00-00-000Z',
+      changed: 1,
+      unchanged: 1,
+      missing: 1,
+      corrupt: 0,
+      outside: 0,
+    })
     expect(await readFile(settings, 'utf8')).toBe('before')
     expect(await readFile(gone, 'utf8')).toBe('gone-before')
 
     // The undo run holds what the files looked like before the restore, and only those that existed.
-    const undo = (await listBackups(root)).find(backup => backup.id === result.id)
+    const undoId = result.id!
+    const undo = (await listBackups(root)).find(backup => backup.id === undoId)
     expect(undo).toMatchObject({ reason: 'restore' })
     expect(undo!.entries.map(entry => entry.path).toSorted()).toEqual(['.claude/settings.json', 'zcf.json'])
-    expect(await readFile(join(root, result.id, '.claude', 'settings.json'), 'utf8')).toBe('after')
+    expect(await readFile(join(root, undoId, '.claude', 'settings.json'), 'utf8')).toBe('after')
 
     // Restoring the undo run puts the post-apply state back.
-    const undone = await restoreBackup(root, result.id, home, at('2026-10-24T10:00:00.000Z'))
+    const undone = await restoreBackup(root, undoId, home, at('2026-10-24T10:00:00.000Z'))
     expect(undone).toMatchObject({ changed: 1, unchanged: 1, missing: 0 })
     expect(await readFile(settings, 'utf8')).toBe('after')
   })
@@ -201,10 +209,67 @@ describe('restoreBackup', () => {
     await writeFile(bad, 'bad-after')
 
     const result = await restoreBackup(root, '2026-10-24T08-00-00-000Z', home, at('2026-10-24T09:00:00.000Z'))
-    expect(result).toMatchObject({ changed: 1, unchanged: 0, missing: 0, corrupt: 1 })
+    expect(result).toMatchObject({ changed: 1, unchanged: 0, missing: 0, corrupt: 1, outside: 0 })
     expect(await readFile(good, 'utf8')).toBe('good-before')
     // The corrupt copy never reached the file.
     expect(await readFile(bad, 'utf8')).toBe('bad-after')
+  })
+
+  it('has no undo run when nothing existed to copy', async () => {
+    const home = await tempDir()
+    const root = join(home, 'backups')
+    const gone = join(home, '.claude', 'settings.json')
+    await writeFileAtomic(gone, 'before')
+    const run = new BackupRun(
+      backupRunDir(root, new Date('2026-10-24T08:00:00.000Z')),
+      home,
+      at('2026-10-24T08:00:00.000Z'),
+    )
+    await run.snapshot(gone)
+    await run.finish()
+    await rm(gone)
+
+    const result = await restoreBackup(root, '2026-10-24T08-00-00-000Z', home, at('2026-10-24T09:00:00.000Z'))
+    expect(result).toEqual({ id: undefined, changed: 0, unchanged: 0, missing: 1, corrupt: 0, outside: 0 })
+    expect(await readFile(gone, 'utf8')).toBe('before')
+    // No folder under that id exists to point the user at.
+    expect(await readdir(join(root, '2026-10-24T09-00-00-000Z')).catch(() => 'gone')).toBe('gone')
+  })
+
+  it('leaves files from outside home alone instead of writing them under home', async () => {
+    const home = await tempDir()
+    const root = join(home, 'backups')
+    const inside = join(home, '.claude', 'settings.json')
+    const elsewhere = await tempDir()
+    const outside = join(elsewhere, 'zcf.json')
+    await writeFileAtomic(inside, 'inside-before')
+    await writeFileAtomic(outside, 'outside-before')
+    const run = new BackupRun(
+      backupRunDir(root, new Date('2026-10-24T08:00:00.000Z')),
+      home,
+      at('2026-10-24T08:00:00.000Z'),
+    )
+    await Promise.all([run.snapshot(inside), run.snapshot(outside)])
+    await run.finish()
+    const entry = JSON.parse(await readFile(join(root, '2026-10-24T08-00-00-000Z', 'manifest.json'), 'utf8'))
+    expect(entry.entries.find((item: { path: string }) => item.path.endsWith('zcf.json'))!.outside).toBe(true)
+
+    await writeFile(inside, 'inside-after')
+    await rm(outside)
+    const result = await restoreBackup(root, '2026-10-24T08-00-00-000Z', home, at('2026-10-24T09:00:00.000Z'))
+    expect(result).toEqual({
+      id: '2026-10-24T09-00-00-000Z',
+      changed: 1,
+      unchanged: 0,
+      missing: 0,
+      corrupt: 0,
+      outside: 1,
+    })
+    expect(await readFile(inside, 'utf8')).toBe('inside-before')
+    // Nothing was written at the outside entry's place under home, and the undo run skips it too.
+    expect(await readdir(home)).not.toContain('zcf.json')
+    const undo = (await listBackups(root)).find(backup => backup.id === '2026-10-24T09-00-00-000Z')
+    expect(undo!.entries.map(item => item.path)).toEqual(['.claude/settings.json'])
   })
 
   it('refuses an id with no run folder', async () => {
@@ -242,5 +307,30 @@ describe('pruneBackups', () => {
       '2026-10-23T08-00-00-000Z',
     ])
     expect(await pruneBackups(root, 10)).toEqual([])
+
+    // Even 0 keeps the newest run: taking it would drop the undo copy a restore just made.
+    const seeded = [25, 26, 27].map(day => backupRunDir(root, new Date(`2026-10-${day}T08:00:00.000Z`)))
+    await Promise.all(seeded.map(dir => mkdir(dir, { recursive: true }).then(() => writeFile(join(dir, 'a.txt'), 'a'))))
+    expect(await pruneBackups(root, 0)).toEqual([
+      '2026-10-26T08-00-00-000Z',
+      '2026-10-25T08-00-00-000Z',
+      '2026-10-24T08-00-00-000Z',
+      '2026-10-23T08-00-00-000Z',
+    ])
+    expect((await listBackups(root)).map(backup => backup.id)).toEqual(['2026-10-27T08-00-00-000Z'])
+  })
+})
+
+describe('parseBackupKeep', () => {
+  it('takes whole decimal counts only', () => {
+    expect(parseBackupKeep(3)).toBe(3)
+    expect(parseBackupKeep('3')).toBe(3)
+    expect(parseBackupKeep(' 3 ')).toBe(3)
+    expect(parseBackupKeep(0)).toBe(0)
+    expect(parseBackupKeep('0x10')).toBeUndefined()
+    expect(parseBackupKeep('1e2')).toBeUndefined()
+    expect(parseBackupKeep('')).toBeUndefined()
+    expect(parseBackupKeep(-1)).toBeUndefined()
+    expect(parseBackupKeep(1.5)).toBeUndefined()
   })
 })
