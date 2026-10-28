@@ -20,7 +20,7 @@ export interface NavSection {
  * the web nav follows PAGES until the new sections gain their pages.
  */
 export const NAV: readonly NavSection[] = [
-  { id: 'init', labelKey: 'nav.init', pages: ['tools', 'provider', 'skills', 'mcp', 'settings', 'apply'] },
+  { id: 'init', labelKey: 'nav.init', pages: ['tools', 'provider', 'mcp', 'skills', 'settings', 'apply'] },
   { id: 'workflow', labelKey: 'nav.workflow', pages: [] },
   { id: 'extras', labelKey: 'nav.extras', pages: [] },
   { id: 'backup', labelKey: 'nav.backup', pages: [] },

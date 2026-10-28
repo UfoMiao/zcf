@@ -281,7 +281,7 @@ describe('terminal UI', () => {
     const skills = [{ source: 'a/a' }, { source: 'b/b' }, { source: 'c/c' }]
     const { service, saved } = fakeService({ version: 1, tools: [], skills })
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.enter, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.down, KEY.enter)
     await app.press(KEY.enter, '\u0015', 'x/y', KEY.enter, KEY.save)
     expect(saved).toEqual([
       { version: 1, tools: [], skills: [{ source: 'a/a' }, { source: 'b/b' }, { source: 'x/y' }] },
@@ -292,7 +292,7 @@ describe('terminal UI', () => {
   it('picks built-in skills from the catalog beside a custom source', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'a/a' }] })
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     // The list starts at the custom source; the catalog row is below it.
     await app.press(KEY.down, KEY.enter)
     expect(app.frame()).toContain('Pick the ZCF built-in skills to install')
@@ -320,7 +320,7 @@ describe('terminal UI', () => {
   it('untoggles a picked built-in skill and drops the source once it is empty', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf', skills: ['feat'] }] })
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('ZCF built-in skills')
     expect(app.frame()).toContain('feat')
     // The built-in row itself opens the catalog, so Enter on it goes straight to the checkboxes.
@@ -338,7 +338,7 @@ describe('terminal UI', () => {
     // `{ source: 'zcf' }` with no list means every built-in skill; it already has a row.
     const { service, saved } = fakeService({ version: 1, tools: [], skills: [{ source: 'zcf' }] })
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('ZCF built-in skills')
     expect(app.frame()).toContain('all skills')
     expect(app.frame().match(/ZCF built-in skills/g)).toHaveLength(1)
@@ -369,7 +369,7 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     // The list starts at the existing source; the search row is two rows below it.
     await app.press(KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Search skills')
@@ -394,7 +394,7 @@ describe('terminal UI', () => {
     // into the value column width of rows that do not exist.
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter)
     expect(app.frame()).toContain('› 1 keyword')
     app.unmount()
@@ -411,13 +411,31 @@ describe('terminal UI', () => {
       { searchSkills: async () => ({ skills: hits, source: 'remote' as const }) },
     )
     const app = await start(service)
-    // The mock stream reports no rows on its own; speak for a 24-line terminal so the
-    // list reads the height the way a real one does.
-    Object.defineProperty(app.stdout, 'rows', { get: () => 24 })
-    await app.press(KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    // The mock stream reports no rows on its own; speak for the terminal so the app
+    // and its lists read the height the way a real one does. A 40-line terminal holds
+    // the query row and all 15 hits: the ordinals run to two digits, and every label
+    // still starts in one column whether its ordinal is one digit or two.
+    Object.defineProperty(app.stdout, 'rows', { get: () => 40, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     await app.until('skill-00')
+    expect(app.frame()).toContain('  2 skill-00')
+    expect(app.frame()).toContain(' 10 skill-08')
+    const column = (text: string) =>
+      app
+        .frame()
+        .split('\n')
+        .find(line => line.includes(text))
+        ?.indexOf(text)
+    expect(column('skill-00')).toBe(column('skill-08'))
     // A 24-line terminal cannot hold 16 rows; the list shows a window with arrows.
+    Object.defineProperty(app.stdout, 'rows', { get: () => 24, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    await tick()
     const head = app.frame()
     expect(head).toContain('skill-00')
     expect(head).not.toContain('skill-14')
@@ -566,7 +584,7 @@ describe('terminal UI', () => {
   it('jumps to a page by its digit, ignoring digits with no page behind them', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press('3')
+    await app.press('4')
     expect(app.frame()).toContain('Search skills')
     await app.press('1')
     expect(app.frame()).toContain('Pick the agent tools')
@@ -663,7 +681,7 @@ describe('terminal UI', () => {
   it('opens a text editor with a mouse click', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     const at = app
       .frame()
       .split('\n')
@@ -684,7 +702,7 @@ describe('terminal UI', () => {
       },
     )
     const app = await start(empty.service)
-    await app.press(KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await app.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     expect(await app.until('No skills found')).toContain('No skills found')
     app.unmount()
@@ -698,7 +716,7 @@ describe('terminal UI', () => {
       },
     )
     const retry = await start(offline.service)
-    await retry.press(KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
+    await retry.press(KEY.down, KEY.down, KEY.down, KEY.enter, KEY.down, KEY.enter)
     await retry.press(KEY.enter, 'g', 'i', 't', KEY.enter)
     expect(await retry.until('Search failed')).toContain('Search failed')
     retry.unmount()
@@ -769,7 +787,7 @@ describe('terminal UI', () => {
   it('adds an MCP server through its form', async () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
-    await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
+    await app.press(KEY.down, KEY.down, KEY.enter)
     expect(app.frame()).toContain('Add a local (stdio) server')
 
     await app.press(KEY.enter)

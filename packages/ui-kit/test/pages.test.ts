@@ -16,7 +16,7 @@ import {
 describe('NAV', () => {
   it('keeps PAGES the flat page list, in nav order', () => {
     expect(NAV.flatMap(section => section.pages)).toEqual(PAGES)
-    expect(PAGES).toEqual(['tools', 'provider', 'skills', 'mcp', 'settings', 'apply'])
+    expect(PAGES).toEqual(['tools', 'provider', 'mcp', 'skills', 'settings', 'apply'])
   })
 
   it('flattens into header and page rows, headed by each section', () => {

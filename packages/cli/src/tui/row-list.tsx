@@ -71,10 +71,14 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   const { capped, start, size } = windowRange(rows.length, index, visible)
   const shown = rows.slice(start, start + size)
 
+  // Ordinals number the visible window — scrolling renumbers what it shows, which is
+  // the design, not a bug to fix — padded to the width of the window's largest ordinal,
+  // so every label starts in the same column whether it sits under a 1 or a 10.
+  const ordinalDigits = String(shown.length).length
+  const ordinalWidth = ordinalDigits + 1
   // Values line up in one column after the longest label, ordinal prefix included.
   // Rows without a value count too: an edited row renders in this box, and its label
   // must never wrap inside a narrower one.
-  const ordinalWidth = String(shown.length).length + 1
   const labelWidth = Math.max(0, ...rows.map(item => columns(item.label))) + 2 + ordinalWidth + 2
 
   const setEdit = (value: boolean) => {
@@ -169,7 +173,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
             <Box>
               <Box width={editor || item.value !== undefined ? labelWidth : undefined} flexShrink={0}>
                 <Text color={current && active ? 'cyan' : undefined}>
-                  {pointer} {offset + 1} {item.label}
+                  {pointer} {String(offset + 1).padStart(ordinalDigits, ' ')} {item.label}
                 </Text>
               </Box>
               {editor ?? (item.value !== undefined && <Text dimColor={!current}>{item.value}</Text>)}
