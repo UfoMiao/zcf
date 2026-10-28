@@ -58,8 +58,42 @@ describe('createLocalService', () => {
     await local.load()
     await local.save({ version: 1, tools: ['codex'] })
     await local.save({ version: 1, tools: ['claude-code'] })
-    const backup = join(home, '.ufomiao', 'zcf', 'backups', '2026-10-24T08-00-00-000Z', '.ufomiao', 'zcf', 'zcf.json')
+    const run = join(home, '.ufomiao', 'zcf', 'backups', '2026-10-24T08-00-00-000Z')
+    const backup = join(run, '.ufomiao', 'zcf', 'zcf.json')
     expect(await readFile(backup, 'utf8')).toBe('{ "version": 1, "tools": [] }\n')
+    expect(JSON.parse(await readFile(join(run, 'manifest.json'), 'utf8'))).toMatchObject({
+      version: 1,
+      reason: 'save',
+      entries: [{ path: '.ufomiao/zcf/zcf.json', sha256: expect.any(String) }],
+    })
+  })
+
+  it('lists, restores and prunes backups', async () => {
+    const local = service()
+    await mkdir(join(path, '..'), { recursive: true })
+    await writeFile(path, '{ "version": 2 }')
+    // A run from before manifests existed, seeded by hand at an earlier time.
+    const earlier = join(home, '.ufomiao', 'zcf', 'backups', '2026-10-23T08-00-00-000Z', '.ufomiao', 'zcf')
+    await mkdir(earlier, { recursive: true })
+    await writeFile(join(earlier, 'zcf.json'), '{ "version": 0 }')
+    expect(await local.backups()).toMatchObject([
+      { id: '2026-10-23T08-00-00-000Z', entries: [{ path: '.ufomiao/zcf/zcf.json' }] },
+    ])
+
+    const result = await local.restoreBackup('2026-10-23T08-00-00-000Z')
+    expect(result).toMatchObject({ id: '2026-10-24T08-00-00-000Z', changed: 1, unchanged: 0, missing: 0 })
+    expect(await readFile(path, 'utf8')).toBe('{ "version": 0 }')
+    // The restore itself is undoable: its run holds what the file looked like before.
+    expect(
+      await readFile(
+        join(home, '.ufomiao', 'zcf', 'backups', '2026-10-24T08-00-00-000Z', '.ufomiao', 'zcf', 'zcf.json'),
+        'utf8',
+      ),
+    ).toBe('{ "version": 2 }')
+
+    await expect(local.restoreBackup('nope')).rejects.toMatchObject({ detail: { key: 'cli.backup.missing' } })
+    expect(await local.pruneBackups(1)).toEqual(['2026-10-23T08-00-00-000Z'])
+    expect(await local.backups()).toMatchObject([{ id: '2026-10-24T08-00-00-000Z', reason: 'restore' }])
   })
 
   it("keeps one editor's save when another editor saves from the same starting point", async () => {

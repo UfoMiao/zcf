@@ -36,9 +36,10 @@ async function writeTarget(path: string): Promise<string> {
  * Write through a temporary file in the same directory and rename it into place,
  * so a crash never leaves a half-written config. A symlink is followed so the
  * link itself survives. An existing file keeps its mode; a new one is private,
- * since native configs hold API keys.
+ * since native configs hold API keys. Text keeps its bytes; a restore also puts
+ * backed-up binaries back through here.
  */
-export async function writeFileAtomic(path: string, content: string): Promise<void> {
+export async function writeFileAtomic(path: string, content: string | Uint8Array): Promise<void> {
   const target = await writeTarget(path)
   await mkdir(dirname(target), { recursive: true })
   const mode = (await modeOf(target)) ?? 0o600

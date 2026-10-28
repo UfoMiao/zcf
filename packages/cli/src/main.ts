@@ -11,6 +11,7 @@ import {
   envMirror,
   FileSyntaxError,
   isTable,
+  listBackups,
   loadConfigFile,
   MIRRORS,
   mirrorEnv,
@@ -21,8 +22,10 @@ import {
   planUpdates,
   previewPlan,
   isToolId,
+  pruneBackups,
   readTextIfExists,
   resolveMirror,
+  restoreBackup,
   snapshotFile,
   TOOL_IDS,
   TOOL_NAMES,
@@ -37,7 +40,7 @@ import type { Translate } from './i18n'
 import { createTranslator, detectLang, isLang, isLangPinned } from './i18n'
 import type { Output } from './render'
 import { collectSecrets, hasWork, Renderer, tildify } from './render'
-import { backupFolder, createLocalService } from './service'
+import { backupFolder, backupsRoot, createLocalService } from './service'
 
 export const EXIT_OK = 0
 export const EXIT_ERROR = 1
@@ -65,6 +68,7 @@ interface CommandFlags {
   mirror?: string
   port?: string | number
   open?: boolean
+  keep?: string | number
 }
 
 async function openDetached(command: string, args: string[]): Promise<void> {
@@ -81,6 +85,15 @@ function parsePort(value: string | number | undefined, t: Translate): number | u
     throw new CliError(t('cli.invalidPort', { port: String(value) }), EXIT_ERROR)
   }
   return port
+}
+
+/** How many backup runs `zcf backup prune` keeps; a whole, non-negative count. */
+function parseKeep(value: string | number | undefined, t: Translate): number {
+  const keep = Number(value)
+  if (String(value ?? '').trim() === '' || !Number.isInteger(keep) || keep < 0) {
+    throw new CliError(t('cli.backup.badKeep', { keep: String(value) }), EXIT_ERROR)
+  }
+  return keep
 }
 
 /** The command that opens a URL in the default browser. */
@@ -537,6 +550,70 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       if (fromEnv && fromEnv !== mirror)
         renderer.line(yellow(t('cli.mirrorEnvOverrides', { value: ctx.env.ZCF_MIRROR ?? '' })))
       return EXIT_OK
+    })
+
+  cli
+    .command('backup [command] [id]', t('cli.command.backup'))
+    .option('-y, --yes', t('cli.option.yes'))
+    .option('--keep <n>', t('cli.backup.option.keep'))
+    .action(async (command: string | undefined, id: string | undefined, flags: CommandFlags) => {
+      const root = backupsRoot(ctx.home)
+      const renderer = new Renderer(stdout, t, [], ctx.home)
+      // The run's own line in lists and summaries: what made it and how much it holds.
+      const describe = (backup: { id: string; reason?: string; entries: unknown[] }) =>
+        t('cli.backup.summary', {
+          id: backup.id,
+          reason: t(`cli.backup.reason.${backup.reason ?? 'unknown'}`),
+          count: backup.entries.length,
+        })
+
+      if (command === undefined || command === 'list') {
+        const backups = await listBackups(root)
+        if (backups.length === 0) {
+          renderer.line(t('cli.backup.none'))
+          return EXIT_OK
+        }
+        for (const backup of backups) renderer.line(describe(backup))
+        return EXIT_OK
+      }
+
+      if (command === 'restore') {
+        if (id === undefined) throw new CliError(t('cli.backup.restoreNeedsId'), EXIT_ERROR)
+        const backup = (await listBackups(root)).find(item => item.id === id)
+        if (backup === undefined) throw new CliError(t('cli.backup.missing', { id }), EXIT_ERROR)
+        renderer.line(describe(backup))
+        if (!flags.yes) {
+          renderer.line(t('cli.confirmHint'))
+          return EXIT_OK
+        }
+        // The restore backs up what is there now, so it can itself be undone with that run.
+        const result = await restoreBackup(root, id, ctx.home, now)
+        renderer.line(
+          t('cli.backup.restored', { changed: result.changed, unchanged: result.unchanged, missing: result.missing }),
+        )
+        renderer.line(dim(t('cli.backups', { path: tildify(join(root, result.id), ctx.home) })))
+        return EXIT_OK
+      }
+
+      if (command === 'prune') {
+        const keep = flags.keep === undefined ? 20 : parseKeep(flags.keep, t)
+        const backups = await listBackups(root)
+        const doomed = backups.slice(keep).map(item => item.id)
+        if (doomed.length === 0) {
+          renderer.line(t('cli.backup.prunedNone', { count: backups.length }))
+          return EXIT_OK
+        }
+        renderer.line(t('cli.backup.pruneList', { count: doomed.length, ids: doomed.join(', ') }))
+        if (!flags.yes) {
+          renderer.line(t('cli.confirmHint'))
+          return EXIT_OK
+        }
+        const removed = await pruneBackups(root, keep)
+        renderer.line(t('cli.backup.pruned', { count: removed.length, ids: removed.join(', ') }))
+        return EXIT_OK
+      }
+
+      throw new CliError(t('cli.backup.unknownCommand', { command }), EXIT_ERROR)
     })
 
   try {

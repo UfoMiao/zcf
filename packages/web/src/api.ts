@@ -1,4 +1,4 @@
-import type { Message, PresetList, SkillSearchList, ToolStatus } from '@zcf/core'
+import type { BackupInfo, Message, PresetList, RestoreResult, SkillSearchList, ToolStatus } from '@zcf/core'
 import { isConfigLanguage, isToolId, TOOL_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, Draft, LoadedConfig, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import { interpolate, isLang, type Lang } from '@zcf/ui-kit'
@@ -119,4 +119,8 @@ export const httpService: ZcfService = {
     if (!outcome) throw new Error('The apply stream ended early')
     return outcome
   },
+  backups: () => json<BackupInfo[]>('backups'),
+  restoreBackup: (id: string) =>
+    json<RestoreResult>('backups/restore', { method: 'POST', body: JSON.stringify({ id }) }),
+  pruneBackups: (keep?: number) => json<string[]>('backups/prune', { method: 'POST', body: JSON.stringify({ keep }) }),
 }

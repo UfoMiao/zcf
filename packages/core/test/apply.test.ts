@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises'
 
 import { join } from 'pathe'
 import { describe, expect, it } from 'vitest'
@@ -111,6 +111,21 @@ describe('applyPlan', () => {
     expect(await readFile(join(backupDir, '.claude', 'settings.json'), 'utf8')).toBe('{\n  "a": 1\n}\n')
     // A file that did not exist has nothing to back up.
     expect(result!.steps[3]!.backup).toBeUndefined()
+    // The run describes what it copied in a manifest.
+    const manifest = JSON.parse(await readFile(join(backupDir, 'manifest.json'), 'utf8'))
+    expect(manifest).toEqual({
+      version: 1,
+      createdAt: expect.any(String),
+      reason: 'apply',
+      entries: [
+        {
+          path: '.claude/settings.json',
+          sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+          size: 13,
+          mode: (await stat(settings)).mode,
+        },
+      ],
+    })
     expect(events).toEqual([
       'step-start',
       'step-end',
@@ -409,5 +424,17 @@ describe('applyPlan', () => {
       detail: expect.stringContaining('not valid JSON'),
     })
     expect(await readFile(path, 'utf8')).toBe('{ "a": ')
+  })
+
+  it('leaves no backup folder when nothing was backed up', async () => {
+    const home = await tempDir()
+    const backupDir = join(home, 'backups')
+    await applyPlan(
+      {
+        tools: [{ tool: 'codex', notices: [], steps: [{ kind: 'command', title, command: 'ok', args: [] }] }],
+      },
+      { runner: fakeRunner({ ok: {} }), backupDir, home },
+    )
+    await expect(readdir(backupDir)).rejects.toThrow(/ENOENT/)
   })
 })
