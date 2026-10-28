@@ -5,8 +5,12 @@ import type { AdapterContext } from './types'
 
 /** The magpie gateway's local address; its installer script, one file for both faces. */
 const MAGPIE_INSTALL_URL = 'https://usemagpie.ai/install.sh'
-/** The mirror prefix magpie's installer takes, in the same style as the git clone mirror. */
-const MAGPIE_MIRROR_PREFIX = 'https://gh-proxy.com/https://github.com'
+/**
+ * The mirror prefix magpie's installer takes: the bare proxy address, which the installer
+ * puts in front of the whole github.com release URL. Unlike git's insteadOf prefix, it must
+ * not itself end in github.com or the joined URL would name github.com twice (a real 404).
+ */
+const MAGPIE_MIRROR_PREFIX = 'https://gh-proxy.com'
 /** The npm wrapper that puts the ccline binary in `~/.claude/ccline/ccline`. */
 const CCLINE_PACKAGE = '@cometix/ccline'
 
@@ -51,7 +55,9 @@ export async function planExtras(config: ZcfConfig, ctx: AdapterContext): Promis
         kind: 'command',
         title: { key: 'step.installExtra', params: { extra: 'ccline' } },
         command: 'npm',
-        args: ['install', '-g', CCLINE_PACKAGE],
+        // npm 12 blocks install scripts unless allowed; ccline's postinstall is what puts
+        // the binary in ~/.claude/ccline, where the statusLine points.
+        args: ['install', '-g', `--allow-scripts=${CCLINE_PACKAGE}`, CCLINE_PACKAGE],
       })
     // The statusLine key itself is the claude-code adapter's to write, next to the rest
     // of the settings it owns; without that tool selected the notice says what is missing.
