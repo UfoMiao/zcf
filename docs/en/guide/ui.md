@@ -4,7 +4,7 @@ title: Terminal and web UI
 
 # Terminal and web UI
 
-ZCF has two editors for the [config file](./config): one in the terminal (`zcf` or `zcf tui`) and one in the browser (`zcf ui`). They have the same pages and the same checks, so use whichever you prefer.
+ZCF has two editors for the [config file](./config): one in the terminal (`zcf` or `zcf tui`) and one in the browser (`zcf ui`). They check the same things as you edit; the terminal UI has the fuller set of pages (the workflow, extras and backup pages are terminal-only for now), so pick whichever fits.
 
 Both edit a draft. Nothing is written until you save, and saving only writes what you changed. If you edit the file in a text editor while ZCF is open, your edits survive as long as you didn't change the same keys in ZCF.
 
@@ -15,16 +15,17 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Page | What you do there |
 |------|-------------------|
 | Agent tools | Tick the agent tools to configure. Each row shows whether the tool is installed and which version. |
-| Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. A submenu keeps [provider profiles](./config#profiles): save the provider under a name and switch between profiles without retyping the key. |
+| Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. Save providers as [profiles](./config#profiles) on this page to switch between them. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
 | Skills | Pick from the ZCF built-in skills, search the community index for more, and add your own sources with, for each, the skills to install. |
 | Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
 | Apply | See the plan for the saved config, with a diff of each file, then apply it. |
-| Workflows | Install a ready-made workflow preset — the v3 bundles over built-in skills and agents — or compose your own [bundles](./config#workflows), and pick the built-in [agents](./config#agents) to install. |
-| More tools | The [companion tools](./config#extras): magpie (the desktop app or its CLI) and the CCometixLine status bar. |
-| Backup | List the backup runs, restore one and prune the old ones, the same as `zcf backup`. |
+| Workflows | Toggle the ready-made workflow bundles of skills and agents, and build your own bundles referencing agents, built-in or community skills, and your MCP servers. The output styles live here too: pick the ones to install and the default one. |
+| Agents | Pick the built-in agents installed for the tools that take them. |
+| Extras | Add companion tools beside the coding ones: the magpie local gateway (`client` or `cli`) and the CCometixLine status bar. |
+| Backup | Put files back from a backup run ZCF made before changing them, and prune the old runs. The page works on the saved files, not the draft. |
 
-In the terminal UI the page list is grouped into sections — Init config, Workflows, More tools and Backup — each with its own heading. Pages carry a number across the whole list: press it to jump there from anywhere in the nav. The web UI lists the same pages in the sidebar; sections that group them render the same way once their pages ship.
+In the terminal UI the page list is grouped into sections — Init config, Workflows, More tools and Backup — each with its own heading, and pages carry a number across the whole list: press it to jump there from anywhere in the nav. The web UI lists the same pages in a flat sidebar.
 
 Fields are checked as you type. A config with errors cannot be saved, and the page shows what is wrong next to the field.
 
@@ -44,8 +45,8 @@ Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either set
 | Keys | Action |
 |------|--------|
 | <kbd>↑</kbd> <kbd>↓</kbd> (or <kbd>k</kbd> <kbd>j</kbd>) | Move between rows or pages. |
+| <kbd>0</kbd>–<kbd>9</kbd> | Jump to the page the digit names, or pick that row without running it. |
 | <kbd>Enter</kbd> | Open a page, edit a field, confirm an edit, or run an action. |
-| <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> | Jump to the numbered page in the nav, or pick the numbered row in a list; <kbd>Enter</kbd> still opens it. |
 | <kbd>←</kbd> <kbd>→</kbd> or <kbd>Space</kbd> | Change a choice, such as an MCP server's type. |
 | <kbd>x</kbd> | Remove the selected item. |
 | <kbd>Esc</kbd> or <kbd>←</kbd> | Go back, or cancel an edit. |

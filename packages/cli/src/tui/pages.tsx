@@ -1,12 +1,15 @@
 import type { PresetList, ProviderPreset, SkillHit, SkillSearchList, ToolId, ToolStatus } from '@zcf/core'
 import {
   applyPreset,
+  BUILTIN_AGENT_IDS,
   BUILTIN_SKILLS_SOURCE,
+  BUILTIN_STYLE_IDS,
   presetSummary,
   SKILLS_CATALOG,
   skillDescription,
   SKILLS_SEARCH_MIN_QUERY,
   TOOL_NAMES,
+  WORKFLOW_PRESETS,
 } from '@zcf/core'
 import type { ConfigEditor, DraftPath, Field, McpType } from '@zcf/ui-kit'
 import {
@@ -22,13 +25,16 @@ import {
   newMcpServer,
   parseArgs,
   pickedCatalogSkills,
+  presetCovered,
   PROVIDER_FIELDS,
   renameKey,
+  sameProvider,
   selectValue,
   SETTINGS_FIELDS,
   SKILL_FIELDS,
   TOOL_OPTIONS,
   toggleCatalogSkill,
+  togglePreset,
   withMcpType,
 } from '@zcf/ui-kit'
 import { Box, Text } from 'ink'
@@ -50,6 +56,23 @@ const MASK = '••••••••'
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value : ''
+}
+
+/** A `[x]` checkbox row: Enter, Space and a click all flip it through `flip`. */
+function toggleRow(
+  id: string,
+  label: string,
+  on: boolean,
+  flip: () => void,
+  extras: { value?: string; hint?: string } = {},
+): Row {
+  return {
+    id,
+    label: `${on ? '[x]' : '[ ]'} ${label}`,
+    value: extras.value,
+    hint: extras.hint,
+    action: { type: 'cycle', next: flip },
+  }
 }
 
 function firstIssue(editor: ConfigEditor, path: DraftPath, t: Translate): string | undefined {
@@ -169,16 +192,72 @@ export function ToolsPage({
         : t('tui.tools.missing')
     const on = selected.includes(tool)
     const toggle = () => editor.update(['tools'], on ? selected.filter(item => item !== tool) : [...selected, tool])
-    return {
-      id: tool,
-      label: `${on ? '[x]' : '[ ]'} ${TOOL_NAMES[tool]}`,
-      value: state,
-      action: { type: 'cycle', next: toggle },
-    }
+    return toggleRow(tool, TOOL_NAMES[tool], on, toggle, { value: state })
   })
   return (
     <Box flexDirection="column" gap={1}>
       <Text dimColor>{t('tui.tools.intro')}</Text>
+      <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+    </Box>
+  )
+}
+
+/** The built-in agents, one toggle each. */
+export function AgentsPage({ editor, t, active, onBack, onEditing }: PageProps) {
+  const picked = Array.isArray(editor.draft.agents) ? editor.draft.agents.map(String) : []
+  const rows: Row[] = BUILTIN_AGENT_IDS.map(id => {
+    const on = picked.includes(id)
+    const toggle = () => {
+      const next = on ? picked.filter(agent => agent !== id) : [...picked, id]
+      editor.update(['agents'], next.length > 0 ? next : undefined)
+    }
+    return toggleRow(id, id, on, toggle, { hint: t(`tui.agents.hint.${id}`) })
+  })
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text dimColor>{t('tui.agents.intro')}</Text>
+      <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+    </Box>
+  )
+}
+
+/** The magpie install faces a cycle steps through, `undefined` first so it starts off. */
+const MAGPIE_FACES = [undefined, 'client', 'cli'] as const
+
+/** The default output style cycles through unset and every built-in style. */
+const DEFAULT_STYLE_CYCLE = [undefined, ...BUILTIN_STYLE_IDS] as const
+
+export function ExtrasPage({ editor, t, active, onBack, onEditing }: PageProps) {
+  const extras = isTable(editor.draft.extras) ? editor.draft.extras : {}
+  const face = extras.magpie === 'client' || extras.magpie === 'cli' ? extras.magpie : undefined
+  const at = MAGPIE_FACES.indexOf(face)
+  const ccline = extras.ccline === true
+  const rows: Row[] = [
+    {
+      id: 'magpie',
+      label: t('tui.extras.magpie'),
+      value: t(`tui.extras.magpie.${face ?? 'none'}`),
+      hint: t('tui.extras.magpieHint'),
+      action: {
+        type: 'cycle',
+        next: () => editor.update(['extras', 'magpie'], MAGPIE_FACES[(at + 1) % MAGPIE_FACES.length]),
+        previous: () =>
+          editor.update(['extras', 'magpie'], MAGPIE_FACES[(at - 1 + MAGPIE_FACES.length) % MAGPIE_FACES.length]),
+      },
+    },
+    toggleRow(
+      'ccline',
+      t('tui.extras.ccline'),
+      ccline,
+      () => editor.update(['extras', 'ccline'], ccline ? undefined : true),
+      {
+        hint: t('tui.extras.cclineHint'),
+      },
+    ),
+  ]
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text dimColor>{t('tui.extras.intro')}</Text>
       <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
     </Box>
   )
@@ -265,11 +344,75 @@ function PresetPicker({
   )
 }
 
+/** A profile id from a name: lowercase, with anything but word characters folded into dashes. */
+function slug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^\w]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/** Saved providers, one row each: Enter copies one into the provider fields. */
+function ProfilePicker({ editor, t, active, onBack, onEditing }: PageProps) {
+  const list = Array.isArray(editor.draft.profiles) ? editor.draft.profiles : []
+  const rows: Row[] = list.map((profile, index): Row => {
+    const item = isTable(profile) ? profile : {}
+    const provider = isTable(item.provider) ? item.provider : undefined
+    return {
+      id: asText(item.id) || String(index),
+      label: asText(item.name) || asText(item.id) || String(index),
+      value:
+        provider !== undefined && sameProvider(editor.draft.provider, provider) ? t('tui.profiles.active') : undefined,
+      error: firstIssue(editor, ['profiles', index], t),
+      remove: () => editor.update(['profiles', index], undefined),
+      action: {
+        type: 'run',
+        run: () => {
+          if (provider === undefined) return
+          editor.update(['provider'], provider)
+          onBack()
+        },
+      },
+    }
+  })
+  // There is no current provider to save when the config has none.
+  if (editor.draft.provider !== undefined) {
+    rows.push({
+      id: '+save',
+      label: t('tui.profiles.save'),
+      hint: t('tui.profiles.rowHint'),
+      action: {
+        type: 'text',
+        initial: '',
+        placeholder: t('tui.profiles.namePlaceholder'),
+        commit: text => {
+          const name = text.trim()
+          if (!name) return
+          const ids = list.map(profile => (isTable(profile) ? asText(profile.id) : '')).filter(Boolean)
+          editor.update(['profiles', list.length], {
+            id: freshName(ids, slug(name) || 'profile'),
+            name,
+            provider: editor.draft.provider,
+          })
+        },
+      },
+    })
+  }
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text bold>{t('tui.profiles.title')}</Text>
+      <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+    </Box>
+  )
+}
+
 export function ProviderPage(props: PageProps & { lang: string; loadPresets: () => Promise<PresetList> }) {
   const { editor, t, active, onBack, onEditing, lang, loadPresets } = props
   const [record, setRecord] = useState<{ path: DraftPath; title: string }>()
   const [picking, setPicking] = useState(false)
+  const [profiles, setProfiles] = useState(false)
   if (record) return <RecordEditor {...props} {...record} onBack={() => setRecord(undefined)} />
+  if (profiles) return <ProfilePicker {...props} onBack={() => setProfiles(false)} />
   if (picking) {
     return (
       <PresetPicker
@@ -292,6 +435,12 @@ export function ProviderPage(props: PageProps & { lang: string; loadPresets: () 
       label: t('tui.provider.preset'),
       value: t('tui.provider.presetHint'),
       action: { type: 'run', run: () => setPicking(true) },
+    },
+    {
+      id: 'profiles',
+      label: t('tui.profiles.row'),
+      hint: t('tui.profiles.rowHint'),
+      action: { type: 'run', run: () => setProfiles(true) },
     },
     ...fieldRows(editor, t, [], PROVIDER_FIELDS, (path, title) => setRecord({ path, title })),
   ]
@@ -613,6 +762,272 @@ export function SkillsPage(
   return (
     <Box flexDirection="column" gap={1}>
       <Text dimColor>{t('tui.skills.intro')}</Text>
+      <RowList key="list" rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
+    </Box>
+  )
+}
+
+/** What a bundle builder holds before the entry lands in `workflows`. */
+interface BundleDraft {
+  /** Where the bundle lands when saved: its index, or past the end for a new one. */
+  at: number
+  name: string
+  agents: string[]
+  skills: unknown[]
+  mcp: string[]
+  /** A bundle is named before the rest of it is filled in. */
+  named: boolean
+}
+
+/** The contents a bundle row lists: each kind of thing it bundles, counted. */
+function bundleCounts(item: unknown, t: Translate): string {
+  const table = isTable(item) ? item : {}
+  const parts: string[] = []
+  const skills = Array.isArray(table.skills) ? table.skills.length : 0
+  const agents = Array.isArray(table.agents) ? table.agents.length : 0
+  const mcp = Array.isArray(table.mcp) ? table.mcp.length : 0
+  if (skills > 0) parts.push(t('tui.workflows.countSkills', { count: skills }))
+  if (agents > 0) parts.push(t('tui.workflows.countAgents', { count: agents }))
+  if (mcp > 0) parts.push(t('tui.workflows.countMcp', { count: mcp }))
+  return parts.length > 0 ? parts.join(', ') : t('tui.empty')
+}
+
+export function WorkflowsPage(
+  props: PageProps & { lang: string; searchSkills: (query: string) => Promise<SkillSearchList> },
+) {
+  const { editor, t, active, onBack, onEditing, lang, searchSkills } = props
+  const [bundle, setBundle] = useState<BundleDraft>()
+  const [picking, setPicking] = useState<'catalog' | 'search'>()
+  const bundles = Array.isArray(editor.draft.workflows) ? editor.draft.workflows : []
+  const styles = isTable(editor.draft.styles) ? editor.draft.styles : {}
+  const pickedStyles = Array.isArray(styles.outputStyles) ? styles.outputStyles.map(String) : []
+  const defaultStyle = typeof styles.defaultOutputStyle === 'string' ? styles.defaultOutputStyle : undefined
+  const defaultAt = (DEFAULT_STYLE_CYCLE as readonly (string | undefined)[]).indexOf(defaultStyle)
+
+  const leaveBuilder = () => {
+    setPicking(undefined)
+    setBundle(undefined)
+  }
+
+  if (bundle && !bundle.named) {
+    // The name comes first: the builder's title and the saved entry both need one.
+    const rows: Row[] = [
+      {
+        id: 'name',
+        label: t('tui.workflows.name'),
+        action: {
+          type: 'text',
+          initial: bundle.name,
+          placeholder: t('tui.workflows.namePlaceholder'),
+          commit: text => {
+            const name = text.trim()
+            if (name) setBundle({ ...bundle, name, named: true })
+          },
+        },
+      },
+    ]
+    return (
+      <Box flexDirection="column" gap={1}>
+        <Text bold>{t('tui.workflows.nameTitle')}</Text>
+        <RowList rows={rows} active={active} onBack={leaveBuilder} onEditing={onEditing} />
+      </Box>
+    )
+  }
+
+  if (bundle && picking === 'search') {
+    return (
+      <SkillSearchPicker
+        t={t}
+        active={active}
+        onEditing={onEditing}
+        searchSkills={searchSkills}
+        sources={bundle.skills}
+        onBack={() => setPicking(undefined)}
+        onAdd={hit => setBundle({ ...bundle, skills: addSourcedSkill(bundle.skills, hit.source, hit.name) })}
+      />
+    )
+  }
+
+  if (bundle && picking === 'catalog') {
+    return (
+      <CatalogPicker
+        t={t}
+        active={active}
+        onEditing={onEditing}
+        lang={lang}
+        picked={pickedCatalogSkills(bundle.skills)}
+        onBack={() => setPicking(undefined)}
+        onToggle={id => setBundle({ ...bundle, skills: toggleCatalogSkill(bundle.skills, id) ?? [] })}
+      />
+    )
+  }
+
+  if (bundle) {
+    const servers = Object.keys(isTable(editor.draft.mcpServers) ? editor.draft.mcpServers : {})
+    const rows: Row[] = [
+      {
+        id: 'name',
+        label: t('tui.workflows.name'),
+        value: bundle.name,
+        error: firstIssue(editor, ['workflows', bundle.at], t),
+        action: {
+          type: 'text',
+          initial: bundle.name,
+          commit: text => {
+            const name = text.trim()
+            if (name) setBundle({ ...bundle, name })
+          },
+        },
+      },
+      ...BUILTIN_AGENT_IDS.map((id): Row =>
+        toggleRow(
+          `agent-${id}`,
+          id,
+          bundle.agents.includes(id),
+          () =>
+            setBundle({
+              ...bundle,
+              agents: bundle.agents.includes(id) ? bundle.agents.filter(agent => agent !== id) : [...bundle.agents, id],
+            }),
+          { hint: t(`tui.agents.hint.${id}`) },
+        ),
+      ),
+      ...bundle.skills.map((source, index): Row => {
+        const item = isTable(source) ? source : {}
+        const skills = Array.isArray(item.skills) ? item.skills.map(String) : []
+        const builtin = asText(item.source) === BUILTIN_SKILLS_SOURCE
+        return {
+          id: `skill-${index}`,
+          label: builtin ? t('tui.skills.builtin') : asText(item.source),
+          value: skills.length > 0 ? skills.join(', ') : t('tui.skills.all'),
+          remove: () => setBundle({ ...bundle, skills: bundle.skills.filter((_, at) => at !== index) }),
+        }
+      }),
+      {
+        id: '+catalog',
+        label: `+ ${t('tui.skills.builtin')}`,
+        action: { type: 'run', run: () => setPicking('catalog') },
+      },
+      {
+        id: '+search',
+        label: t('tui.skills.search'),
+        hint: t('tui.skills.searchHint'),
+        action: { type: 'run', run: () => setPicking('search') },
+      },
+      ...servers.map((name): Row =>
+        toggleRow(
+          `mcp-${name}`,
+          name,
+          bundle.mcp.includes(name),
+          () =>
+            setBundle({
+              ...bundle,
+              mcp: bundle.mcp.includes(name) ? bundle.mcp.filter(server => server !== name) : [...bundle.mcp, name],
+            }),
+          { hint: t('tui.workflows.mcpHint') },
+        ),
+      ),
+      {
+        id: 'save',
+        label: t('tui.workflows.save'),
+        hint: t('tui.workflows.bundleHint'),
+        action: {
+          type: 'run',
+          run: () => {
+            const entry: Record<string, unknown> = { name: bundle.name }
+            if (bundle.skills.length > 0) entry.skills = bundle.skills
+            if (bundle.agents.length > 0) entry.agents = bundle.agents
+            if (bundle.mcp.length > 0) entry.mcp = bundle.mcp
+            editor.update(['workflows', bundle.at], entry)
+            leaveBuilder()
+          },
+        },
+      },
+    ]
+    return (
+      <Box flexDirection="column" gap={1}>
+        <Text bold>{t('tui.workflows.bundle', { name: bundle.name })}</Text>
+        <RowList key="builder" rows={rows} active={active} onBack={leaveBuilder} onEditing={onEditing} />
+      </Box>
+    )
+  }
+
+  const rows: Row[] = [
+    ...WORKFLOW_PRESETS.map((preset): Row => ({
+      id: `preset-${preset.id}`,
+      label: `${presetCovered(editor.draft.skills, editor.draft.agents, preset) ? '[x]' : '[ ]'} ${t(preset.nameKey)}`,
+      action: {
+        type: 'cycle',
+        next: () => {
+          const next = togglePreset(editor.draft.skills, editor.draft.agents, preset)
+          editor.update(['skills'], next.skills)
+          editor.update(['agents'], next.agents)
+        },
+      },
+    })),
+    ...bundles.map((item, index): Row => {
+      const table = isTable(item) ? item : {}
+      return {
+        id: `bundle-${index}`,
+        label: asText(table.name) || String(index),
+        value: bundleCounts(item, t),
+        error: firstIssue(editor, ['workflows', index], t),
+        remove: () => editor.update(['workflows', index], undefined),
+        action: {
+          type: 'run',
+          run: () => {
+            setBundle({
+              at: index,
+              name: asText(table.name),
+              agents: Array.isArray(table.agents) ? table.agents.map(String) : [],
+              skills: Array.isArray(table.skills) ? [...table.skills] : [],
+              mcp: Array.isArray(table.mcp) ? table.mcp.map(String) : [],
+              named: true,
+            })
+          },
+        },
+      }
+    }),
+    {
+      id: '+add',
+      label: t('tui.workflows.add'),
+      action: {
+        type: 'run',
+        run: () => setBundle({ at: bundles.length, name: '', agents: [], skills: [], mcp: [], named: false }),
+      },
+    },
+    // The output styles ride on this page beside the bundles, the way the web lays it out.
+    ...BUILTIN_STYLE_IDS.map(id => {
+      const on = pickedStyles.includes(id)
+      const toggle = () => {
+        const next = on ? pickedStyles.filter(style => style !== id) : [...pickedStyles, id]
+        editor.update(['styles', 'outputStyles'], next.length > 0 ? next : undefined)
+      }
+      return toggleRow(`style-${id}`, id, on, toggle, { hint: t('tui.workflows.stylesHint') })
+    }),
+    {
+      id: 'defaultStyle',
+      label: t('tui.workflows.defaultStyle'),
+      value: defaultStyle ?? t('tui.empty'),
+      hint: t('tui.workflows.defaultStyleHint'),
+      action: {
+        type: 'cycle',
+        next: () =>
+          editor.update(
+            ['styles', 'defaultOutputStyle'],
+            DEFAULT_STYLE_CYCLE[(defaultAt + 1) % DEFAULT_STYLE_CYCLE.length],
+          ),
+        previous: () =>
+          editor.update(
+            ['styles', 'defaultOutputStyle'],
+            DEFAULT_STYLE_CYCLE[(defaultAt - 1 + DEFAULT_STYLE_CYCLE.length) % DEFAULT_STYLE_CYCLE.length],
+          ),
+      },
+    },
+  ]
+  return (
+    <Box flexDirection="column" gap={1}>
+      <Text dimColor>{t('tui.workflows.intro')}</Text>
       <RowList key="list" rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
     </Box>
   )
