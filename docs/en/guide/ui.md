@@ -15,7 +15,7 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Page | What you do there |
 |------|-------------------|
 | Agent tools | Tick the agent tools to configure. Each row shows whether the tool is installed and which version. |
-| Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. Save providers as profiles on this page to switch between them. |
+| Provider | Start from a [preset](./providers), or fill in the name, API key, endpoints and models. *Remove the provider* takes it out of the config. Save providers as [profiles](./config#profiles) on this page to switch between them. |
 | MCP servers | Add, edit, rename and remove servers. Changing the type between `stdio` and `http` resets the fields that only the other type has. |
 | Skills | Pick from the ZCF built-in skills, search the community index for more, and add your own sources with, for each, the skills to install. |
 | Settings | Settings for ZCF itself, which no tool's config receives: the [config language](./config#configlanguage) and the [download mirror](./mirrors). If `ZCF_MIRROR` is set, the page says so: the variable decides while it is set, and what you save applies once it is unset. |
@@ -24,6 +24,8 @@ The first save in a session copies the config to `~/.ufomiao/zcf/backups/<time>/
 | Agents | Pick the built-in agents installed for the tools that take them. |
 | Extras | Add companion tools beside the coding ones: the magpie local gateway (`client` or `cli`) and the CCometixLine status bar. |
 | Backup | Put files back from a backup run ZCF made before changing them, and prune the old runs. The page works on the saved files, not the draft. |
+
+In the terminal UI the page list is grouped into sections — Init config, Workflows, More tools and Backup — each with its own heading, and pages carry a number across the whole list: press it to jump there from anywhere in the nav. The web UI lists the same pages in a flat sidebar.
 
 Fields are checked as you type. A config with errors cannot be saved, and the page shows what is wrong next to the field.
 
@@ -52,7 +54,9 @@ Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either set
 | <kbd>L</kbd> | Switch the interface language, from any page, and save it at once. |
 | <kbd>q</kbd> | Quit, from the page list. With unsaved changes, press it twice. |
 
-The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way. In a window shorter than 23 rows the banner folds to one line, so the app still covers the screen whole.
+Rows in a list are numbered by what is on screen: `› 3 Label` means <kbd>3</kbd> picks that row, wherever the window has scrolled to.
+
+The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way. In a window shorter than 23 rows the banner folds to one line, so the app still covers the screen whole; the page list scrolls within its section when the window is short.
 
 On the Apply page, <kbd>Enter</kbd> applies, <kbd>r</kbd> plans again, and the arrow keys scroll. The plan is made from the saved file, so the page asks you to save first if you have unsaved changes.
 

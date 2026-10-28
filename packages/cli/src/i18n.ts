@@ -335,6 +335,32 @@ const en = {
   'cli.backup.pruneList': '{count} backup(s) to remove: {ids}',
   'cli.backup.pruned': 'Removed {count} backup(s): {ids}',
   'cli.backup.prunedNone': 'Nothing to prune; there are only {count} backup(s).',
+  'cli.command.init': 'Set up a new config from the command line, then apply it',
+  'cli.command.switch': 'Switch the active provider profile in the config',
+  'cli.command.ccu': 'Show Claude Code usage and cost, passed through to ccusage',
+  'cli.option.preset': 'Fill the provider from this provider preset',
+  'cli.option.apiKey': 'The API key for the provider',
+  'cli.option.skills': 'Built-in skills to install, comma-separated',
+  'cli.option.agents': 'Built-in agents to install, comma-separated',
+  'cli.option.styles': 'Output styles to install, comma-separated',
+  'cli.option.defaultStyle': 'The output style the tools use by default',
+  'cli.option.extras': 'Install companion tools, such as magpie and the ccline status bar',
+  'cli.init.hintTui': 'Nothing to set up. Run zcf alone to pick tools and a provider interactively.',
+  'cli.init.saved': 'Saved {path}.',
+  'cli.init.presetsUnavailable':
+    'Could not load the provider presets. Check your network, or fill the provider in with zcf.',
+  'cli.init.unknownPreset': 'Unknown preset: {list}. Choose from {known}.',
+  'cli.init.apiKeyNoProvider': '--api-key needs --preset, or a provider already in the config.',
+  'cli.init.unknownSkills': 'Unknown skills: {list}. Choose from {known}.',
+  'cli.init.unknownAgents': 'Unknown agents: {list}. Choose from {known}.',
+  'cli.init.unknownStyles': 'Unknown styles: {list}. Choose from {known}.',
+  'cli.init.unknownExtras': 'Unknown extras: {list}. Choose from {known}.',
+  'cli.init.oneStyle': '--default-style takes one style id; list the styles to install with --styles.',
+  'cli.switch.noProfiles': 'No profiles in the config yet. Add them under "profiles", in the editor or the file.',
+  'cli.switch.unknown': 'No profile "{query}". The config has: {known}.',
+  'cli.switch.done': 'Switched the provider to "{profile}". Run zcf apply --yes to write it to the tools.',
+  'cli.ccu.noNpx': 'Could not find npx, which runs ccusage. Check your Node.js installation.',
+  'cli.ccu.failed': 'Could not run ccusage: {message}',
 } as const
 
 export type MessageKey = keyof typeof en
@@ -656,23 +682,60 @@ const zhCN: Record<MessageKey, string> = {
   'cli.backup.pruneList': '将删除 {count} 个备份：{ids}',
   'cli.backup.pruned': '已删除 {count} 个备份：{ids}',
   'cli.backup.prunedNone': '无需清理；当前只有 {count} 个备份。',
+  'cli.command.init': '用命令行一次性生成配置并应用',
+  'cli.command.switch': '切换配置中生效的供应商档案',
+  'cli.command.ccu': '查看 Claude Code 用量与费用（透传给 ccusage）',
+  'cli.option.preset': '用这个供应商预设填充供应商',
+  'cli.option.apiKey': '供应商的 API 密钥',
+  'cli.option.skills': '要安装的内置技能，用逗号分隔',
+  'cli.option.agents': '要安装的内置子代理，用逗号分隔',
+  'cli.option.styles': '要安装的输出风格，用逗号分隔',
+  'cli.option.defaultStyle': '各工具默认使用的输出风格',
+  'cli.option.extras': '安装周边工具，如 magpie 与 ccline 状态栏',
+  'cli.init.hintTui': '没有要设置的内容。直接运行 zcf，在界面里挑选工具和供应商。',
+  'cli.init.saved': '已保存 {path}。',
+  'cli.init.presetsUnavailable': '无法加载供应商预设。请检查网络，或用 zcf 手动填写供应商。',
+  'cli.init.unknownPreset': '未知的预设：{list}。可选：{known}。',
+  'cli.init.apiKeyNoProvider': '--api-key 需要配合 --preset，或配置中已有供应商。',
+  'cli.init.unknownSkills': '未知的技能：{list}。可选：{known}。',
+  'cli.init.unknownAgents': '未知的子代理：{list}。可选：{known}。',
+  'cli.init.unknownStyles': '未知的输出风格：{list}。可选：{known}。',
+  'cli.init.unknownExtras': '未知的周边工具：{list}。可选：{known}。',
+  'cli.init.oneStyle': '--default-style 只接受一个风格 id；要安装多个风格请用 --styles。',
+  'cli.switch.noProfiles': '配置中还没有档案。请在配置文件或界面里的 "profiles" 下添加。',
+  'cli.switch.unknown': '没有档案「{query}」。当前有：{known}。',
+  'cli.switch.done': '已切换到供应商「{profile}」。运行 zcf apply --yes 写入各工具。',
+  'cli.ccu.noNpx': '找不到运行 ccusage 所需的 npx。请检查 Node.js 安装。',
+  'cli.ccu.failed': '无法运行 ccusage：{message}',
 }
 
 const english: Record<string, string> = en
 const dictionaries: Record<Lang, Record<string, string>> = { en: english, 'zh-CN': zhCN }
 
+/** Where a `--lang`/`-l` flag sits in argv, in the `--lang en`, `--lang=en`, `-l en` and `-l=en` shapes. */
+function langFlagIndex(argv: readonly string[]): number | undefined {
+  const index = argv.findIndex(
+    arg => arg === '--lang' || arg.startsWith('--lang=') || arg === '-l' || arg.startsWith('-l='),
+  )
+  return index === -1 ? undefined : index
+}
+
+/** The language a `--lang`/`-l` flag names, in either the `--lang en` or `--lang=en` shape. */
+export function langFlag(argv: readonly string[]): Lang | undefined {
+  const index = langFlagIndex(argv)
+  if (index === undefined) return undefined
+  const value = argv[index]!.includes('=') ? argv[index]!.split('=')[1] : argv[index + 1]
+  return isLang(value) ? value : undefined
+}
+
 /** `--lang` wins; everything else — `ZCF_LANG`, the locale — follows the one rule in core. */
 export function detectLang(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): Lang {
-  const index = argv.findIndex(arg => arg === '--lang' || arg.startsWith('--lang='))
-  const flag = index === -1 ? undefined : argv[index]!.includes('=') ? argv[index]!.split('=')[1] : argv[index + 1]
-  if (isLang(flag)) return flag
-  return detectSpokenLang(env)
+  return langFlag(argv) ?? detectSpokenLang(env)
 }
 
 /** Whether `--lang` or `ZCF_LANG` set the language, so the config's `language` cannot override it. */
 export function isLangPinned(argv: readonly string[], env: NodeJS.ProcessEnv = process.env): boolean {
-  const flagged = argv.some(arg => arg === '--lang' || arg.startsWith('--lang='))
-  return flagged || isLang(env.ZCF_LANG)
+  return langFlagIndex(argv) !== undefined || isLang(env.ZCF_LANG)
 }
 
 export type Translate = (key: string, params?: Record<string, string | number>) => string

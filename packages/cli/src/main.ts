@@ -1,10 +1,26 @@
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 
-import type { AdapterContext, FilePreview, Mirror, Plan, PlanStep, ToolId, ToolResult, ZcfConfig } from '@zcf/core'
+import type {
+  AdapterContext,
+  ConfigIssue,
+  FilePreview,
+  KeyEdit,
+  Mirror,
+  Plan,
+  PlanStep,
+  ToolId,
+  ToolResult,
+  ZcfConfig,
+} from '@zcf/core'
 import {
   applyPlan,
+  applyPreset,
   BackupRun,
+  BUILTIN_AGENT_IDS,
+  BUILTIN_SKILLS_SOURCE,
+  BUILTIN_STYLE_IDS,
+  type BuiltinStyleId,
   createContext,
   defaultConfigPath,
   detectTools,
@@ -14,12 +30,15 @@ import {
   isTable,
   listBackups,
   loadConfigFile,
+  MAGPIE_FACES,
+  type MagpieFace,
   MIRRORS,
   mirrorEnv,
   MessageError,
   parseBackupKeep,
   parseConfigText,
   parseMirrorName,
+  parseZcfConfig,
   planTools,
   planUninstalls,
   planUpdates,
@@ -31,6 +50,7 @@ import {
   resolveMirror,
   restoreBackup,
   ACTOR_NAMES,
+  SKILLS_CATALOG,
   TOOL_IDS,
   TOOL_NAMES,
   writeFileAtomic,
@@ -41,14 +61,20 @@ import { join, resolve } from 'pathe'
 
 import { version } from '../package.json'
 import type { Translate } from './i18n'
-import { createTranslator, detectLang, errorText, isLang, isLangPinned } from './i18n'
+import { createTranslator, detectLang, errorText, isLang, isLangPinned, langFlag } from './i18n'
 import type { Output } from './render'
 import { collectSecrets, hasWork, Renderer, tildify } from './render'
-import { backupFolder, backupsRoot, createLocalService } from './service'
+import { backupFolder, backupsRoot, createLocalService, loadPresetsFor } from './service'
 
 export const EXIT_OK = 0
 export const EXIT_ERROR = 1
 export const EXIT_INVALID_CONFIG = 2
+
+/** What `zcf ccu` runs its passthrough with: the events the command waits for, nothing more. */
+export interface PassthroughChild {
+  once(event: 'error', listener: (error: Error) => void): unknown
+  once(event: 'close', listener: (code: number | null) => void): unknown
+}
 
 export interface MainOptions {
   stdout?: Output
@@ -63,6 +89,10 @@ export interface MainOptions {
   webRoot?: string
   /** Starts the browser; by default a detached process, so it never keeps ZCF running. */
   openUrl?: (command: string, args: string[]) => void
+  /** Loads the provider presets for `zcf init --preset`; tests inject one so nothing touches the network. */
+  fetch?: typeof globalThis.fetch
+  /** Starts `zcf ccu`'s child; tests inject a fake instead of a real interactive spawn. */
+  passthrough?: (command: string, args: readonly string[]) => PassthroughChild
 }
 
 interface CommandFlags {
@@ -73,6 +103,13 @@ interface CommandFlags {
   port?: string | number
   open?: boolean
   keep?: string | number
+  preset?: string | number
+  apiKey?: string | number
+  skills?: string
+  agents?: string
+  styles?: string
+  defaultStyle?: string
+  extras?: string
 }
 
 async function openDetached(command: string, args: string[]): Promise<void> {
@@ -115,16 +152,20 @@ class CliError extends Error {
   }
 }
 
+/** Split a comma-separated flag value into names; a bare flag, which cac hands over as a boolean, names nothing. */
+function parseNames(value: unknown): string[] {
+  if (value === undefined) return []
+  return typeof value === 'string'
+    ? value
+        .split(',')
+        .map(name => name.trim())
+        .filter(Boolean)
+    : []
+}
+
 function parseTools(value: unknown, t: ReturnType<typeof createTranslator>): ToolId[] | undefined {
   if (value === undefined) return undefined
-  // cac hands over a boolean for a bare `--tools`, which selects nothing.
-  const names =
-    typeof value === 'string'
-      ? value
-          .split(',')
-          .map(tool => tool.trim())
-          .filter(Boolean)
-      : []
+  const names = parseNames(value)
   const tools = names.filter(isToolId)
   const unknown = names.filter(tool => !isToolId(tool))
   if (unknown.length > 0) {
@@ -137,6 +178,104 @@ function parseTools(value: unknown, t: ReturnType<typeof createTranslator>): Too
     )
   }
   return tools
+}
+
+/**
+ * A comma-separated flag whose values must all be known ids. Anything unknown fails before a
+ * file is written, naming what may be picked instead.
+ */
+function parseKnownIds<T extends string>(value: unknown, known: readonly T[], t: Translate, key: string): T[] {
+  const names = parseNames(value)
+  const unknown = names.filter(name => !known.some(id => id === name))
+  if (unknown.length > 0) throw new CliError(t(key, { list: unknown.join(', '), known: known.join(', ') }), EXIT_ERROR)
+  return names.filter((name): name is T => known.some(id => id === name))
+}
+
+/** The extras `zcf init --extras` can name: magpie with the face it installs as (the app by default), or ccline. */
+/** The names `zcf init --extras` takes: magpie with the face it installs as (the app by default), or ccline. */
+const EXTRA_CHOICES = ['magpie', ...MAGPIE_FACES.map(face => `magpie:${face}`), 'ccline'] as const
+
+function parseExtraPicks(value: unknown, t: Translate): { magpie?: MagpieFace; ccline?: boolean } {
+  const picks: { magpie?: MagpieFace; ccline?: boolean } = {}
+  for (const name of parseKnownIds(value, EXTRA_CHOICES, t, 'cli.init.unknownExtras')) {
+    if (name === 'ccline') picks.ccline = true
+    else picks.magpie = MAGPIE_FACES.find(face => name === `magpie:${face}`) ?? 'client'
+  }
+  return picks
+}
+
+/** The one style `--default-style` names; a list of them belongs to `--styles` instead. */
+function parseDefaultStyle(value: unknown, t: Translate): BuiltinStyleId | undefined {
+  if (value === undefined) return undefined
+  if (parseNames(value).length > 1) throw new CliError(t('cli.init.oneStyle'), EXIT_ERROR)
+  return parseKnownIds(value, BUILTIN_STYLE_IDS, t, 'cli.init.unknownStyles').at(0)
+}
+
+/**
+ * The options `zcf init` takes besides `--file`, in help order. `key` is the flag's name on the
+ * parsed command line, so this one table drives both the option list and the "was anything
+ * asked" check; the global `-l, --lang` joins that check separately. How each flag's value
+ * reaches the config stays in the action, beside the parsing it depends on.
+ */
+const INIT_OPTIONS = [
+  { key: 'preset', option: '-p, --preset <id>', describe: (t: Translate) => t('cli.option.preset') },
+  { key: 'apiKey', option: '-k, --api-key <key>', describe: (t: Translate) => t('cli.option.apiKey') },
+  {
+    key: 'tools',
+    option: '-t, --tools <tools>',
+    describe: (t: Translate) => t('cli.option.tools', { tools: TOOL_IDS.join(', ') }),
+  },
+  { key: 'skills', option: '--skills <skills>', describe: (t: Translate) => t('cli.option.skills') },
+  { key: 'agents', option: '--agents <agents>', describe: (t: Translate) => t('cli.option.agents') },
+  { key: 'styles', option: '--styles <styles>', describe: (t: Translate) => t('cli.option.styles') },
+  {
+    key: 'defaultStyle',
+    option: '--default-style <style>',
+    describe: (t: Translate) => t('cli.option.defaultStyle'),
+  },
+  { key: 'extras', option: '--extras <extras>', describe: (t: Translate) => t('cli.option.extras') },
+  {
+    key: 'mirror',
+    option: '-m, --mirror <mirror>',
+    describe: (t: Translate) => t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }),
+  },
+  { key: 'yes', option: '-y, --yes', describe: (t: Translate) => t('cli.option.yes') },
+] as const satisfies readonly {
+  key: keyof CommandFlags
+  option: string
+  describe: (t: Translate) => string
+}[]
+
+/** The strings of a config array, so a flag's picks can merge with them without duplicating. */
+function stringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
+/** `held` followed by the picks it does not already hold, so running init again adds without duplicating. */
+function withPicks(held: unknown, picks: readonly string[]): string[] {
+  const names = stringList(held)
+  return [...names, ...picks.filter(pick => !names.includes(pick))]
+}
+
+/**
+ * The `skills` sources after built-in picks merge into the `zcf` source, the way the Skills page
+ * toggles them. A `zcf` source that names no skills installs them all, which no pick can add to.
+ */
+function withSkillPicks(sources: unknown, picks: readonly string[]): unknown[] {
+  const held = Array.isArray(sources) ? sources.filter(isTable) : []
+  const builtin = held.find(source => source.source === BUILTIN_SKILLS_SOURCE)
+  if (builtin === undefined) return [...held, { source: BUILTIN_SKILLS_SOURCE, skills: [...picks] }]
+  if (!Array.isArray(builtin.skills)) return held
+  return held.map(source =>
+    source === builtin ? Object.assign({}, source, { skills: withPicks(source.skills, picks) }) : source,
+  )
+}
+
+/** The issues of an invalid config, one line each, translated; a whole-file issue has no field name. */
+function configIssues(issues: readonly ConfigIssue[], translate: Translate): string[] {
+  return issues.map(
+    ({ path: field, message }) => `  - ${field ? `${field}: ` : ''}${translate(message.key, message.params)}`,
+  )
 }
 
 function parseMirror(value: unknown, t: Translate): Mirror | undefined {
@@ -191,15 +330,16 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
 
   const configPath = (file: string | undefined) => (file ? resolve(file) : defaultConfigPath(ctx.home))
 
+  /** The issues of an invalid config, one line each, translated; a whole-file issue has no field name. */
   async function loadConfig(file: string | undefined): Promise<ZcfConfig> {
     const path = configPath(file)
     const result = await loadConfigFile(path)
     if (result.success) return result.config
     if ('missing' in result) throw new CliError(t('cli.configMissing', { path }), EXIT_INVALID_CONFIG)
-    const details = result.issues.map(
-      ({ path: field, message }) => `  - ${field ? `${field}: ` : ''}${t(message.key, message.params)}`,
+    throw new CliError(
+      [t('cli.configInvalid', { path }), ...configIssues(result.issues, t)].join('\n'),
+      EXIT_INVALID_CONFIG,
     )
-    throw new CliError([t('cli.configInvalid', { path }), ...details].join('\n'), EXIT_INVALID_CONFIG)
   }
 
   async function preparePlan(
@@ -319,7 +459,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
 
   const cli = cac('zcf')
   cli.usage('<command> [options]')
-  cli.option('--lang <lang>', t('cli.option.lang'))
+  cli.option('-l, --lang <lang>', t('cli.option.lang'))
   // cac writes its help headings in English; translate them by their text.
   const helpTitles: Record<string, string> = {
     Usage: t('cli.help.usage'),
@@ -343,8 +483,8 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   cli
     .command('plan', t('cli.command.plan'))
     .option('--file <path>', t('cli.option.file'))
-    .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
-    .option('--mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
+    .option('-t, --tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
+    .option('-m, --mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
     .action(async (flags: CommandFlags) => {
       const { plan, previews, renderer } = await preparePlan(flags)
       renderer.plan(plan, previews)
@@ -354,8 +494,8 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   cli
     .command('apply', t('cli.command.apply'))
     .option('--file <path>', t('cli.option.file'))
-    .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
-    .option('--mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
+    .option('-t, --tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
+    .option('-m, --mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
     .option('-y, --yes', t('cli.option.yes'))
     .action(async (flags: CommandFlags) => {
       const { plan, previews, renderer } = await preparePlan(flags)
@@ -418,8 +558,8 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
   cli
     .command('update', t('cli.command.update'))
     .option('--file <path>', t('cli.option.file'))
-    .option('--tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
-    .option('--mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
+    .option('-t, --tools <tools>', t('cli.option.tools', { tools: TOOL_IDS.join(', ') }))
+    .option('-m, --mirror <mirror>', t('cli.option.mirror', { mirrors: MIRRORS.join(', ') }))
     .action(async (flags: CommandFlags) => {
       const override = parseMirror(flags.mirror, t)
       const listed = parseTools(flags.tools, t)
@@ -633,6 +773,160 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
 
       throw new CliError(t('cli.backup.unknownCommand', { command }), EXIT_ERROR)
     })
+
+  const initCommand = cli.command('init', t('cli.command.init')).option('--file <path>', t('cli.option.file'))
+  for (const flag of INIT_OPTIONS) initCommand.option(flag.option, flag.describe(t))
+  initCommand.action(async (flags: CommandFlags) => {
+    const flaggedLang = langFlag(argv)
+    // Nothing asked for: point at the editor instead of writing an empty config.
+    const asked = INIT_OPTIONS.some(flag => flags[flag.key] !== undefined) || flaggedLang !== undefined
+    if (!asked) {
+      new Renderer(stdout, t, [], ctx.home).line(t('cli.init.hintTui'))
+      return EXIT_OK
+    }
+
+    // Every id is checked before the file is touched, so a typo writes nothing.
+    const tools = parseTools(flags.tools, t)
+    const mirror = parseMirror(flags.mirror, t)
+    const skills = parseKnownIds(
+      flags.skills,
+      SKILLS_CATALOG.map(skill => skill.id),
+      t,
+      'cli.init.unknownSkills',
+    )
+    const agents = parseKnownIds(flags.agents, BUILTIN_AGENT_IDS, t, 'cli.init.unknownAgents')
+    const styles = parseKnownIds(flags.styles, BUILTIN_STYLE_IDS, t, 'cli.init.unknownStyles')
+    const defaultStyle = parseDefaultStyle(flags.defaultStyle, t)
+    const extras = parseExtraPicks(flags.extras, t)
+    const apiKey = flags.apiKey === undefined ? undefined : String(flags.apiKey)
+
+    const path = configPath(flags.file)
+    const existing = await readTextIfExists(path)
+    // A missing or empty config starts as the smallest valid one; an existing one keeps everything but the keys asked for.
+    const text = existing?.trim() ? existing : undefined
+    let next: string
+    try {
+      const raw = text === undefined ? undefined : await parseConfigText('json', text)
+      if (text !== undefined && !isTable(raw)) throw new CliError(t('cli.configInvalid', { path }), EXIT_INVALID_CONFIG)
+      const draft = isTable(raw) ? raw : {}
+
+      let provider: Record<string, unknown> | undefined
+      if (flags.preset !== undefined) {
+        const id = String(flags.preset)
+        const list = await loadPresetsFor(ctx, draft.mirror, { override: mirror, fetch: options.fetch })
+        if (list.presets.length === 0) throw new CliError(t('cli.init.presetsUnavailable'), EXIT_ERROR)
+        const preset = list.presets.find(item => item.id === id)
+        if (preset === undefined)
+          throw new CliError(
+            t('cli.init.unknownPreset', { list: id, known: list.presets.map(item => item.id).join(', ') }),
+            EXIT_ERROR,
+          )
+        provider = applyPreset(preset, draft.provider)
+      }
+      if (apiKey !== undefined) {
+        const current = provider ?? (isTable(draft.provider) ? { ...draft.provider } : undefined)
+        if (current === undefined) throw new CliError(t('cli.init.apiKeyNoProvider'), EXIT_ERROR)
+        provider = { ...current, apiKey }
+      }
+
+      const edits: KeyEdit[] = []
+      if (tools !== undefined) edits.push({ path: ['tools'], value: tools })
+      if (provider !== undefined) edits.push({ path: ['provider'], value: provider })
+      if (skills.length > 0) edits.push({ path: ['skills'], value: withSkillPicks(draft.skills, skills) })
+      if (agents.length > 0) edits.push({ path: ['agents'], value: withPicks(draft.agents, agents) })
+      if (styles.length > 0 || defaultStyle !== undefined) {
+        const styleBlock = isTable(draft.styles) ? draft.styles : {}
+        edits.push({
+          path: ['styles'],
+          value: {
+            ...styleBlock,
+            outputStyles: withPicks(styleBlock.outputStyles, styles),
+            ...(defaultStyle !== undefined ? { defaultOutputStyle: defaultStyle } : {}),
+          },
+        })
+      }
+      for (const [key, value] of Object.entries(extras)) edits.push({ path: ['extras', key], value })
+      if (mirror !== undefined) edits.push({ path: ['mirror'], value: mirror })
+      if (flaggedLang !== undefined) edits.push({ path: ['language'], value: flaggedLang })
+
+      next = editJson(text ?? '{\n  "version": 1\n}\n', edits)
+      // The merged result must hold as a config, so init never writes something a plan cannot read.
+      const merged = parseZcfConfig(await parseConfigText('json', next))
+      if (!merged.success)
+        throw new CliError(
+          [t('cli.configInvalid', { path }), ...configIssues(merged.issues, t)].join('\n'),
+          EXIT_INVALID_CONFIG,
+        )
+    } catch (error) {
+      if (!(error instanceof FileSyntaxError)) throw error
+      throw new FileSyntaxError(error.format, error.line, error.column, tildify(path, ctx.home))
+    }
+
+    const backed = next === existing ? undefined : await backupBeforeEdit(path)
+    await writeFileAtomic(path, next)
+    // The saved file is applied through the same pipeline `zcf apply` runs.
+    const { plan, previews, renderer } = await preparePlan({ file: flags.file })
+    if (backed) renderer.line(dim(t('cli.backups', { path: tildify(backed.dir, ctx.home) })))
+    renderer.line(t('cli.init.saved', { path: tildify(path, ctx.home) }))
+    renderer.line()
+    renderer.plan(plan, previews)
+    if (!hasWork(plan, previews)) {
+      renderer.line(t('cli.nothingToDo'))
+      return EXIT_OK
+    }
+    if (!flags.yes) {
+      renderer.line(t('cli.confirmHint'))
+      return EXIT_OK
+    }
+    return (await runPlan(plan, renderer)).code
+  })
+
+  cli
+    .command('switch <profile>', t('cli.command.switch'))
+    .option('--file <path>', t('cli.option.file'))
+    .action(async (query: string, flags: CommandFlags) => {
+      // The config has to validate, so the profiles below it are shaped as the schema expects.
+      const config = await loadConfig(flags.file)
+      if (config.profiles.length === 0) throw new CliError(t('cli.switch.noProfiles'), EXIT_ERROR)
+      const known = config.profiles.map(item => `${item.id} (${item.name})`)
+
+      const path = configPath(flags.file)
+      const existing = await readTextIfExists(path)
+      // The provider is copied as the file writes it, not with the defaults the schema fills in.
+      const raw = await parseConfigText('json', existing)
+      const profiles = isTable(raw) && Array.isArray(raw.profiles) ? raw.profiles.filter(isTable) : []
+      const entry = profiles.find(item => item.id === query) ?? profiles.find(item => item.name === query)
+      const matched = config.profiles.find(item => item.id === query || item.name === query)
+      if (!isTable(entry) || !isTable(entry.provider) || matched === undefined)
+        throw new CliError(t('cli.switch.unknown', { query, known: known.join(', ') }), EXIT_ERROR)
+      const next = editJson(existing, [{ path: ['provider'], value: entry.provider }])
+      const backed = next === existing ? undefined : await backupBeforeEdit(path)
+      await writeFileAtomic(path, next)
+      const renderer = new Renderer(stdout, t, [], ctx.home)
+      renderer.line(t('cli.switch.done', { profile: matched.name }))
+      if (backed) renderer.line(dim(t('cli.backups', { path: tildify(backed.dir, ctx.home) })))
+      return EXIT_OK
+    })
+
+  cli.command('ccu', t('cli.command.ccu')).action(async () => {
+    // One cheap probe first, so a missing npx is a clear message instead of a bare spawn error.
+    const probe = await ctx.runner.run('npx', ['--version'])
+    if (probe.exitCode === undefined) throw new CliError(t('cli.ccu.noNpx'), EXIT_ERROR)
+    const args = ['-y', 'ccusage@latest']
+    // A real ChildProcess satisfies the interface; only the two events the command waits for are used.
+    const child: PassthroughChild = options.passthrough
+      ? options.passthrough('npx', args)
+      : (await import('node:child_process')).spawn('npx', args, {
+          stdio: 'inherit',
+          // Patched Node refuses to spawn npm's .cmd shims directly (EINVAL); through the shell
+          // cmd.exe finds npx.cmd, and the fixed arguments make the shell call safe.
+          shell: ctx.platform === 'win32',
+        })
+    return await new Promise<number>((done, reject) => {
+      child.once('error', error => reject(new CliError(t('cli.ccu.failed', { message: error.message }), EXIT_ERROR)))
+      child.once('close', code => done(code ?? EXIT_ERROR))
+    })
+  })
 
   try {
     cli.parse(['node', 'zcf', ...argv], { run: false })

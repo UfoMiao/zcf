@@ -74,6 +74,31 @@ ZCF が読むのは 1 つのファイル `~/.ufomiao/zcf/zcf.json` だけです�
 
 既知のプロバイダーからこれらのフィールドを埋めるには、[プロバイダープリセット](./providers) を参照してください。
 
+## `profiles`
+
+切り替えて使うための保存済みプロバイダーです。適用されるのは最上位の `provider` だけです。`zcf switch <id|名前>` がプロファイルのプロバイダーをそこへコピーするため、適用中の構成は常に 1 つのブロックのままです。
+
+```jsonc
+"profiles": [
+  {
+    "id": "work",
+    "name": "仕事回線",
+    "provider": { "name": "Work", "apiKey": "sk-...", "anthropic": { "baseUrl": "https://work.example.com" } }
+  },
+  {
+    "id": "home",
+    "name": "自宅",
+    "provider": { "name": "House", "apiKey": "sk-...", "openai": { "baseUrl": "https://home.example.com/v1" } }
+  }
+]
+```
+
+| フィールド | 意味 |
+|-------|---------|
+| `id` | `zcf switch` とエディターがプロファイルを示す識別子。英数字、`_`、`-` が使えます。 |
+| `name` | 表示名。`zcf switch` はこれも受け付けます。 |
+| `provider` | 完全なプロバイダーのブロック。最上位の `provider` とまったく同じ形です。 |
+
 ## `mcpServers`
 
 名前をキーとする MCP サーバーです。名前には英数字、`_`、`-` を使えます。
@@ -120,6 +145,73 @@ ZCF は、ツール自身のコマンドがあればそれで各サーバーを�
 | `git-clean-branches` | マージ済みや古いブランチをプレビューして整理します。 |
 | `git-worktree` | プロジェクト横のフォルダで git worktree を管理します。 |
 | `bmad-init` | プロジェクトに BMad-Method V6 を初期化・更新します。 |
+
+## `agents`
+
+導入する内蔵エージェントテンプレートです。エージェントを受け付けるツール（Claude Code のサブエージェント）向けです。テンプレートは ZCF に同梱され、`templates/agents/<言語>/<id>/` にあり、[`configLanguage`](#configlanguage) でインストールされます。
+
+```jsonc
+"agents": ["planner", "ui-ux-designer"]
+```
+
+| ID | エージェント |
+|----|-------|
+| `init-architect` | プロジェクトを巡回し、モジュール単位の CLAUDE.md コンテキストを書きます。 |
+| `get-current-datetime` | `date` を実行し、その出力だけを返します。 |
+| `planner` | 複雑なタスクを見直し可能なステップに分解します。 |
+| `ui-ux-designer` | UI/UX デザインとプロジェクトの UI フレームワークについて助言します。 |
+
+## `workflows`
+
+カスタムのワークフローバンドルです。1 つの名前で、リストしたスキル、エージェント、MCP サーバーをインストールします。スキルは完全なソースで、エージェントとサーバーは id または名前で参照され、それぞれのセクションに存在しなければならないため、バンドルが定義を繰り返すことはありません。
+
+```jsonc
+"workflows": [
+  {
+    "name": "Git 作業",
+    "skills": [{ "source": "zcf", "skills": ["git-commit", "git-rollback"] }],
+    "agents": ["planner"],
+    "mcp": ["context7"]
+  }
+]
+```
+
+| フィールド | 意味 |
+|-------|---------|
+| `name` | バンドルの表示名。 |
+| `skills` | バンドルがインストールするスキルのソース。`skills` セクションと同じ形です。 |
+| `agents` | `agents` の id。上の内蔵リストから選びます。 |
+| `mcp` | `mcpServers` のサーバー名。 |
+
+## `styles`
+
+導入する出力スタイルと、ツールがデフォルトで使うものです。ZCF は 6 つのテンプレートを `templates/output-styles/<言語>/` に同梱し、[`configLanguage`](#configlanguage) でインストールします。`defaultOutputStyle` は Claude Code の `outputStyle` 設定になります。
+
+```jsonc
+"styles": { "outputStyles": ["engineer-professional"], "defaultOutputStyle": "engineer-professional" }
+```
+
+| ID | スタイル |
+|----|-------|
+| `engineer-professional` | SOLID・KISS・DRY・YAGNI を守る職業エンジニアの口調。 |
+| `nekomata-engineer` | 厳密なエンジニアリングと猫娘の人格の組み合わせ。 |
+| `laowang-engineer` | 甘いコードを許さない気難しい職人。 |
+| `ojousama-engineer` | エンジニアリングの実力にツンデレお嬢様の人格を組み合わせたもの。 |
+| `rem-engineer` | 献身的なメイドの人格。コードベースは屋敷です。 |
+| `leibus-engineer` | プロダクト思考で伝えるスタイル。 |
+
+## `extras`
+
+省略可能な周辺ツールです。ツールごとの設定はなく、異なるのはインストール方法だけです。
+
+```jsonc
+"extras": { "magpie": "client", "ccline": true }
+```
+
+| フィールド | 意味 |
+|-------|---------|
+| `magpie` | [magpie](https://usemagpie.ai) モデルゲートウェイのローカルコンパニオン。`client` はデスクトップアプリ、`cli` はターミナル用です。どちらも magpie 自身のスクリプトからインストールされ、キーは magpie が自分で書き込みます。 |
+| `ccline` | [CCometixLine](https://github.com/Haleclipse/CCometixLine) ステータスバー。`~/.claude/ccline` にインストールされ、Claude Code の `statusLine` に組み込まれます。組み込みを完了するには、Agent tools で Claude Code を選んでください。 |
 
 ## `mirror`
 

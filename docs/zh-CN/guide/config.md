@@ -74,6 +74,31 @@ ZCF 只读取一个文件：`~/.ufomiao/zcf/zcf.json`。每个命令都可以用
 
 想从已知供应商填入这些字段，见[供应商预设](./providers)。
 
+## `profiles`
+
+保存多个供应商档案，随时切换。只有顶层的 `provider` 会生效；`zcf switch <id|名称>` 把档案的供应商复制到那里，生效配置始终是一个块，切换回去也只需一步。
+
+```jsonc
+"profiles": [
+  {
+    "id": "work",
+    "name": "工作线路",
+    "provider": { "name": "Work", "apiKey": "sk-...", "anthropic": { "baseUrl": "https://work.example.com" } }
+  },
+  {
+    "id": "home",
+    "name": "家庭网络",
+    "provider": { "name": "House", "apiKey": "sk-...", "openai": { "baseUrl": "https://home.example.com/v1" } }
+  }
+]
+```
+
+| 字段 | 含义 |
+|------|------|
+| `id` | `zcf switch` 和界面列出的档案标识。可用字母、数字、`_` 和 `-`。 |
+| `name` | 显示名称；`zcf switch` 也接受它。 |
+| `provider` | 完整的供应商块，形状与顶层 `provider` 完全相同。 |
+
 ## `mcpServers`
 
 MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
@@ -120,6 +145,73 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 | `git-clean-branches` | 预览并清理已合并或过期的分支。 |
 | `git-worktree` | 在项目旁目录中管理 git worktree。 |
 | `bmad-init` | 在项目中初始化或更新 BMad-Method V6。 |
+
+## `agents`
+
+要安装的内置子代理模板，供支持子代理的工具使用（Claude Code 的 subagents）。模板随 ZCF 发布，位于 `templates/agents/<语言>/<id>/`，按[`configLanguage`](#configlanguage)安装。
+
+```jsonc
+"agents": ["planner", "ui-ux-designer"]
+```
+
+| ID | 子代理 |
+|----|--------|
+| `init-architect` | 遍历项目并编写模块级 CLAUDE.md 上下文文件。 |
+| `get-current-datetime` | 执行 `date` 并只返回其输出。 |
+| `planner` | 把复杂任务拆解为可审阅的分步计划。 |
+| `ui-ux-designer` | 就 UI/UX 设计与项目 UI 框架给出建议。 |
+
+## `workflows`
+
+自定义工作流捆绑包：一个名字，安装它列出的技能、子代理和 MCP 服务。技能是完整的来源；子代理和服务按 id 或名称引用，必须已存在于各自的节中，捆绑包不会重复定义。
+
+```jsonc
+"workflows": [
+  {
+    "name": "Git 日常",
+    "skills": [{ "source": "zcf", "skills": ["git-commit", "git-rollback"] }],
+    "agents": ["planner"],
+    "mcp": ["context7"]
+  }
+]
+```
+
+| 字段 | 含义 |
+|------|------|
+| `name` | 捆绑包的显示名称。 |
+| `skills` | 捆绑包安装的技能来源，与 `skills` 节相同。 |
+| `agents` | 来自 `agents` 的 id，即上面的内置清单。 |
+| `mcp` | 来自 `mcpServers` 的服务名称。 |
+
+## `styles`
+
+要安装的输出风格，以及各工具默认使用的那个。ZCF 内置六个模板，位于 `templates/output-styles/<语言>/`，按[`configLanguage`](#configlanguage)安装；`defaultOutputStyle` 会写入 Claude Code 的 `outputStyle` 设置。
+
+```jsonc
+"styles": { "outputStyles": ["engineer-professional"], "defaultOutputStyle": "engineer-professional" }
+```
+
+| ID | 风格 |
+|----|------|
+| `engineer-professional` | 职业工程师口吻：SOLID、KISS、DRY、YAGNI。 |
+| `nekomata-engineer` | 严谨工程与猫娘人设的结合。 |
+| `laowang-engineer` | 容不得烂代码的暴躁老王。 |
+| `ojousama-engineer` | 工程功底加傲娇大小姐人设。 |
+| `rem-engineer` | 蕾姆女仆人设：代码库就是宅邸。 |
+| `leibus-engineer` | 产品思维的表达风格。 |
+
+## `extras`
+
+可选的周边工具。它们没有各自的配置项；区别只在安装方式。
+
+```jsonc
+"extras": { "magpie": "client", "ccline": true }
+```
+
+| 字段 | 含义 |
+|------|------|
+| `magpie` | [magpie](https://usemagpie.ai) 模型网关的本机伴侣：`client` 为桌面应用，`cli` 为终端使用。两者都从 magpie 自己的脚本安装；密钥由 magpie 自己写入。 |
+| `ccline` | [CCometixLine](https://github.com/Haleclipse/CCometixLine) 状态栏，安装到 `~/.claude/ccline` 并接入 Claude Code 的 `statusLine`。需要在 Agent 工具里勾选 Claude Code 才能完成接入。 |
 
 ## `mirror`
 
