@@ -3,8 +3,9 @@ import { chmod, readdir, readFile, rm, stat } from 'node:fs/promises'
 
 import { basename, join } from 'pathe'
 
+import { MessageError } from '../message-error'
 import { isTable } from './editors'
-import { backupRelativePath, readTextIfExists, snapshotFile, writeFileAtomic } from './fs'
+import { backupRelativePath, isMissing, readTextIfExists, snapshotFile, writeFileAtomic } from './fs'
 
 /** Why a run's files were copied: an apply, a config save, or the undo copy a restore makes first. */
 export type BackupReason = 'apply' | 'save' | 'restore'
@@ -46,6 +47,16 @@ export interface RestoreResult {
   unchanged: number
   /** Files that no longer existed and were brought back. */
   missing: number
+  /** Files whose copy in the run no longer hashes to its manifest entry, left untouched. */
+  corrupt: number
+}
+
+/** A count of runs pruning may keep: a whole number of 0 or more, or undefined when `value` is not one. */
+export function parseBackupKeep(value: unknown): number | undefined {
+  // The empty string would read as 0, which is a real answer to a different question.
+  const keep = typeof value === 'string' && value.trim() === '' ? Number.NaN : Number(value)
+  if (typeof keep !== 'number' || !Number.isInteger(keep) || keep < 0) return undefined
+  return keep
 }
 
 /** The folder one backup run writes into, named by its time. */
@@ -86,7 +97,7 @@ export class BackupRun {
     const content = await readFile(target)
     return {
       path: backupRelativePath(path, this.home),
-      sha256: createHash('sha256').update(content).digest('hex'),
+      sha256: sha256(content),
       size: content.byteLength,
       mode: info.mode,
     }
@@ -119,6 +130,10 @@ function isBackupEntry(value: unknown): value is BackupEntry {
     typeof value.size === 'number' &&
     typeof value.mode === 'number'
   )
+}
+
+function sha256(content: Uint8Array): string {
+  return createHash('sha256').update(content).digest('hex')
 }
 
 /** A manifest as `BackupRun` writes it, or undefined when the text is not one. */
@@ -166,7 +181,7 @@ async function describeRun(root: string, id: string): Promise<Omit<BackupInfo, '
 export async function listBackups(root: string): Promise<BackupInfo[]> {
   const dirs = await readdir(root, { withFileTypes: true }).catch(error => {
     // No folder yet means no backups yet, not a failure to read them.
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return []
+    if (isMissing(error)) return []
     throw error
   })
   const backups = await Promise.all(
@@ -183,7 +198,8 @@ export async function listBackups(root: string): Promise<BackupInfo[]> {
  * target that exists right now is first copied into a fresh run of its own, so the
  * restore itself can be undone with that run's id. Each file is written back atomically
  * at its recorded mode; a copy missing from the run folder fails the whole call, leaving
- * the files before it in place.
+ * the files before it in place, while a copy that no longer hashes to its manifest entry
+ * is skipped as corrupt and the rest go on. Legacy entries without a hash are trusted.
  */
 export async function restoreBackup(
   root: string,
@@ -192,9 +208,11 @@ export async function restoreBackup(
   now: () => Date = () => new Date(),
 ): Promise<RestoreResult> {
   const run = join(root, id)
-  if (!(await stat(run).catch(() => undefined))?.isDirectory()) throw new Error(`No backup at ${run}`)
+  if (!(await stat(run).catch(() => undefined))?.isDirectory())
+    throw new MessageError({ key: 'cli.backup.missing', params: { id } }, `No backup at ${run}`)
   const { entries } = await describeRun(root, id)
-  if (entries.length === 0) throw new Error(`No backup files under ${run}`)
+  if (entries.length === 0)
+    throw new MessageError({ key: 'cli.backup.empty', params: { id } }, `No backup files under ${run}`)
 
   // The files as they are now, so this restore can itself be restored away.
   const at = now()
@@ -205,10 +223,16 @@ export async function restoreBackup(
   let changed = 0
   let unchanged = 0
   let missing = 0
+  let corrupt = 0
   for (const entry of entries) {
     // One file at a time: a later failure leaves the earlier files restored, not half-written.
     // oxlint-disable-next-line no-await-in-loop
     const backedUp = await readFile(join(run, entry.path))
+    // The manifest's hash catches a copy that went bad where it sits, before it overwrites.
+    if (entry.sha256 !== undefined && sha256(backedUp) !== entry.sha256) {
+      corrupt++
+      continue
+    }
     const target = join(home, entry.path)
     // oxlint-disable-next-line no-await-in-loop
     const current = await readFile(target).catch(() => undefined)
@@ -224,12 +248,17 @@ export async function restoreBackup(
     // oxlint-disable-next-line no-await-in-loop
     await chmod(target, entry.mode & 0o7777).catch(() => undefined)
   }
-  return { id: basename(undo.dir), changed, unchanged, missing }
+  return { id: basename(undo.dir), changed, unchanged, missing, corrupt }
+}
+
+/** The ids pruning would remove from `backups` beyond the newest `keep`, newest-first like `backups`. */
+export function pruneDoomed(backups: readonly BackupInfo[], keep: number): string[] {
+  return backups.slice(Math.max(0, keep)).map(backup => backup.id)
 }
 
 /** Remove the oldest runs beyond the newest `keep`, returning the ids removed. */
 export async function pruneBackups(root: string, keep = 20): Promise<string[]> {
-  const doomed = (await listBackups(root)).slice(Math.max(0, keep)).map(backup => backup.id)
+  const doomed = pruneDoomed(await listBackups(root), keep)
   for (const id of doomed) {
     // oxlint-disable-next-line no-await-in-loop
     await rm(join(root, id), { recursive: true, force: true })

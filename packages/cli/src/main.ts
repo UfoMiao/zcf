@@ -15,6 +15,8 @@ import {
   loadConfigFile,
   MIRRORS,
   mirrorEnv,
+  MessageError,
+  parseBackupKeep,
   parseConfigText,
   parseMirrorName,
   planTools,
@@ -23,6 +25,7 @@ import {
   previewPlan,
   isToolId,
   pruneBackups,
+  pruneDoomed,
   readTextIfExists,
   resolveMirror,
   restoreBackup,
@@ -37,7 +40,7 @@ import { join, resolve } from 'pathe'
 
 import { version } from '../package.json'
 import type { Translate } from './i18n'
-import { createTranslator, detectLang, isLang, isLangPinned } from './i18n'
+import { createTranslator, detectLang, errorText, isLang, isLangPinned } from './i18n'
 import type { Output } from './render'
 import { collectSecrets, hasWork, Renderer, tildify } from './render'
 import { backupFolder, backupsRoot, createLocalService } from './service'
@@ -89,10 +92,8 @@ function parsePort(value: string | number | undefined, t: Translate): number | u
 
 /** How many backup runs `zcf backup prune` keeps; a whole, non-negative count. */
 function parseKeep(value: string | number | undefined, t: Translate): number {
-  const keep = Number(value)
-  if (String(value ?? '').trim() === '' || !Number.isInteger(keep) || keep < 0) {
-    throw new CliError(t('cli.backup.badKeep', { keep: String(value) }), EXIT_ERROR)
-  }
+  const keep = parseBackupKeep(value)
+  if (keep === undefined) throw new CliError(t('cli.backup.badKeep', { keep: String(value) }), EXIT_ERROR)
   return keep
 }
 
@@ -591,6 +592,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         renderer.line(
           t('cli.backup.restored', { changed: result.changed, unchanged: result.unchanged, missing: result.missing }),
         )
+        if (result.corrupt > 0) renderer.line(yellow(t('cli.backup.corrupt', { count: result.corrupt })))
         renderer.line(dim(t('cli.backups', { path: tildify(join(root, result.id), ctx.home) })))
         return EXIT_OK
       }
@@ -598,7 +600,7 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
       if (command === 'prune') {
         const keep = flags.keep === undefined ? 20 : parseKeep(flags.keep, t)
         const backups = await listBackups(root)
-        const doomed = backups.slice(keep).map(item => item.id)
+        const doomed = pruneDoomed(backups, keep)
         if (doomed.length === 0) {
           renderer.line(t('cli.backup.prunedNone', { count: backups.length }))
           return EXIT_OK
@@ -639,6 +641,11 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     if (error instanceof CliError) {
       stderr.write(`${error.message}\n`)
       return error.exitCode
+    }
+    // Core and the service throw these with a message key; translate instead of the English fallback.
+    if (error instanceof MessageError) {
+      stderr.write(`${errorText(error, t)}\n`)
+      return EXIT_ERROR
     }
     const message = error instanceof Error ? error.message : String(error)
     stderr.write(`${t('cli.unexpectedError', { message })}\n`)

@@ -4,7 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 
 import type { PlanStep, StepResult } from '@zcf/core'
-import { readTextIfExists } from '@zcf/core'
+import { parseBackupKeep, readTextIfExists } from '@zcf/core'
 import type { ApplyOutcome, PlanView, ZcfService } from '@zcf/ui-kit'
 import { isTable, TOOL_OPTIONS } from '@zcf/ui-kit'
 import { extname, join, normalize } from 'pathe'
@@ -170,8 +170,8 @@ export async function startUiServer(options: UiServerOptions): Promise<UiServer>
       const body = await readJson(request)
       let keep: number | undefined
       if (isTable(body) && body.keep !== undefined) {
-        if (typeof body.keep !== 'number' || !Number.isInteger(body.keep) || body.keep < 0) return send(response, 400)
-        keep = body.keep
+        keep = parseBackupKeep(body.keep)
+        if (keep === undefined) return send(response, 400)
       }
       return send(response, 200, await service.pruneBackups(keep))
     }

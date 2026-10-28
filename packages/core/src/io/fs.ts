@@ -4,11 +4,16 @@ import process from 'node:process'
 
 import { dirname, join, normalize, relative, resolve } from 'pathe'
 
+/** Whether `error` is the filesystem saying a path is not there, which callers often treat as empty. */
+export function isMissing(error: unknown): boolean {
+  return error instanceof Error && 'code' in error && error.code === 'ENOENT'
+}
+
 export async function readTextIfExists(path: string): Promise<string | undefined> {
   try {
     return await readFile(path, 'utf8')
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return undefined
+    if (isMissing(error)) return undefined
     throw error
   }
 }

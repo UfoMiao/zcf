@@ -126,7 +126,7 @@ describe('restoreBackup', () => {
     if (process.platform !== 'win32') await chmod(settings, 0o755)
 
     const result = await restoreBackup(root, '2026-10-24T08-00-00-000Z', home, at('2026-10-24T09:00:00.000Z'))
-    expect(result).toEqual({ id: '2026-10-24T09-00-00-000Z', changed: 1, unchanged: 1, missing: 1 })
+    expect(result).toEqual({ id: '2026-10-24T09-00-00-000Z', changed: 1, unchanged: 1, missing: 1, corrupt: 0 })
     expect(await readFile(settings, 'utf8')).toBe('before')
     expect(await readFile(gone, 'utf8')).toBe('gone-before')
 
@@ -180,9 +180,47 @@ describe('restoreBackup', () => {
     expect(await readFile(binary)).toEqual(bytes)
   })
 
+  it('skips a copy that no longer matches its checksum, keeping the file as it is', async () => {
+    const home = await tempDir()
+    const root = join(home, 'backups')
+    const good = join(home, 'good.json')
+    const bad = join(home, 'bad.json')
+    await writeFileAtomic(good, 'good-before')
+    await writeFileAtomic(bad, 'bad-before')
+    const run = new BackupRun(
+      backupRunDir(root, new Date('2026-10-24T08:00:00.000Z')),
+      home,
+      at('2026-10-24T08:00:00.000Z'),
+    )
+    await Promise.all([run.snapshot(good), run.snapshot(bad)])
+    await run.finish()
+
+    // The backup copy of `bad` goes bad where it sits; only the manifest still describes it.
+    await writeFile(join(root, '2026-10-24T08-00-00-000Z', 'bad.json'), 'went bad')
+    await writeFile(good, 'good-after')
+    await writeFile(bad, 'bad-after')
+
+    const result = await restoreBackup(root, '2026-10-24T08-00-00-000Z', home, at('2026-10-24T09:00:00.000Z'))
+    expect(result).toMatchObject({ changed: 1, unchanged: 0, missing: 0, corrupt: 1 })
+    expect(await readFile(good, 'utf8')).toBe('good-before')
+    // The corrupt copy never reached the file.
+    expect(await readFile(bad, 'utf8')).toBe('bad-after')
+  })
+
   it('refuses an id with no run folder', async () => {
     const home = await tempDir()
-    await expect(restoreBackup(join(home, 'backups'), 'nope', home)).rejects.toThrow(/No backup at/)
+    await expect(restoreBackup(join(home, 'backups'), 'nope', home)).rejects.toMatchObject({
+      detail: { key: 'cli.backup.missing' },
+    })
+  })
+
+  it('refuses a run folder that holds no files', async () => {
+    const home = await tempDir()
+    const run = join(home, 'backups', '2026-10-24T08-00-00-000Z')
+    await mkdir(run, { recursive: true })
+    await expect(restoreBackup(join(home, 'backups'), '2026-10-24T08-00-00-000Z', home)).rejects.toMatchObject({
+      detail: { key: 'cli.backup.empty' },
+    })
   })
 })
 

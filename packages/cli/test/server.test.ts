@@ -84,7 +84,7 @@ const service: ZcfService = {
     source: 'remote',
   }),
   backups: async () => [{ id: '2026-10-24T08-00-00-000Z', reason: 'apply', entries: [] }],
-  restoreBackup: async () => ({ id: '2026-10-24T09-00-00-000Z', changed: 1, unchanged: 0, missing: 0 }),
+  restoreBackup: async () => ({ id: '2026-10-24T09-00-00-000Z', changed: 1, unchanged: 0, missing: 0, corrupt: 0 }),
   pruneBackups: async () => [],
 }
 
