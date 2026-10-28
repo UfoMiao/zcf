@@ -16,6 +16,7 @@ import {
   removeSourcedSkills,
   sameProvider,
   skillSourceIndex,
+  summarizeChanges,
   toggleCatalogSkill,
   toggleId,
   togglePreset,
@@ -27,26 +28,13 @@ const issueAt = (path: string): ConfigIssue[] => [{ path, message: { key: 'confi
 describe('NAV', () => {
   it('keeps PAGES the flat page list, in nav order', () => {
     expect(NAV.flatMap(section => section.pages)).toEqual(PAGES)
-    expect(PAGES).toEqual([
-      'init',
-      'tools',
-      'provider',
-      'mcp',
-      'skills',
-      'workflows',
-      'styles',
-      'settings',
-      'apply',
-      'extras',
-      'backup',
-    ])
+    expect(PAGES).toEqual(['tools', 'provider', 'mcp', 'skills', 'workflows', 'styles', 'settings', 'extras', 'backup'])
   })
 
   it('flattens into header and page rows, headed by each section', () => {
     const rows = navRows()
     expect(rows).toHaveLength(NAV.length + PAGES.length)
-    // Headers label their section; pages carry the digit that jumps to them, and the
-    // eleventh page — backup — has none left to press.
+    // Headers label their section; every page carries the digit that jumps to it.
     expect(rows.map(row => (row.kind === 'header' ? row.labelKey : row.digit))).toEqual([
       'nav.config',
       '1',
@@ -56,12 +44,10 @@ describe('NAV', () => {
       '5',
       '6',
       '7',
-      '8',
-      '9',
       'nav.extras',
-      '0',
+      '8',
       'nav.zcf',
-      undefined,
+      '9',
     ])
   })
 
@@ -280,6 +266,21 @@ describe('sameProvider', () => {
     expect(sameProvider(undefined, undefined)).toBe(true)
     expect(sameProvider(undefined, { name: 'Relay' })).toBe(false)
     expect(sameProvider('nope', 'nope')).toBe(true)
+  })
+})
+
+describe('summarizeChanges', () => {
+  it('names the top-level keys the draft changed, whichever order they were written in', () => {
+    const base = { version: 1, tools: ['claude-code'], mirror: 'official' }
+    const draft = { version: 9, tools: ['claude-code', 'codex'], provider: { name: 'Relay', apiKey: 'k' } }
+    expect(summarizeChanges(base, draft)).toEqual([
+      { key: 'tools', value: 'claude-code, codex' },
+      // A key the draft dropped carries no value; the version key never counts.
+      { key: 'mirror', value: undefined },
+      // A provider block is summarized by its name.
+      { key: 'provider', value: 'Relay' },
+    ])
+    expect(summarizeChanges(draft, draft)).toEqual([])
   })
 })
 
