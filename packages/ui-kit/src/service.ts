@@ -3,6 +3,7 @@ import type {
   FilePreview,
   Mirror,
   Plan,
+  PlanActor,
   PresetList,
   SkillSearchList,
   StepResult,
@@ -32,7 +33,7 @@ export interface PlanView {
 }
 
 export interface StepEvent {
-  tool: ToolId
+  tool: PlanActor
   index: number
   result: StepResult
 }

@@ -10,8 +10,13 @@ describe('parseZcfConfig', () => {
       config: {
         version: 1,
         tools: [],
+        profiles: [],
         mcpServers: {},
         skills: [],
+        agents: [],
+        workflows: [],
+        styles: { outputStyles: [] },
+        extras: {},
         mirror: 'official',
         language: 'auto',
         configLanguage: 'en',
@@ -153,5 +158,47 @@ describe('parseZcfConfig', () => {
       ],
     })
     expect(JSON.stringify(result)).not.toContain('sk-pasted')
+  })
+
+  it('takes provider profiles, workflow bundles, styles and extras', () => {
+    const result = parseZcfConfig({
+      version: 1,
+      profiles: [
+        {
+          id: 'work',
+          name: 'Work',
+          provider: { name: 'relay', apiKey: 'sk-1', anthropic: { baseUrl: 'https://a.example' } },
+        },
+      ],
+      workflows: [
+        { name: 'Daily', skills: [{ source: 'zcf', skills: ['workflow'] }], agents: ['planner'], mcp: ['db'] },
+      ],
+      agents: ['planner', 'ui-ux-designer'],
+      styles: { outputStyles: ['laowang-engineer'], defaultOutputStyle: 'laowang-engineer' },
+      extras: { magpie: 'cli', ccline: true },
+    })
+    expect(result.success).toBe(true)
+    expect(result.success ? result.config.profiles[0]?.id : undefined).toBe('work')
+    expect(result.success ? result.config.workflows[0]?.mcp : undefined).toEqual(['db'])
+    expect(result.success ? result.config.extras : undefined).toEqual({ magpie: 'cli', ccline: true })
+
+    // Every id and name has to be one ZCF knows; a profile id follows the server-name rule.
+    const bad = parseZcfConfig({
+      version: 1,
+      profiles: [{ id: 'not ok', name: 'x', provider: { name: 'a', apiKey: 'k' } }],
+      workflows: [{ name: 'x', agents: ['planner'], mcp: ['a b'] }],
+      agents: ['made-up'],
+      styles: { outputStyles: ['nope'] },
+      extras: { magpie: 'both' },
+    })
+    expect(bad.success).toBe(false)
+    expect(bad.success ? undefined : bad.issues.map(issue => issue.path)).toEqual([
+      'profiles.0.id',
+      'agents.0',
+      'workflows.0.mcp.0',
+      'styles.outputStyles.0',
+      'extras.magpie',
+    ])
+    expect(bad.success ? undefined : bad.issues.some(issue => issue.message.key === 'configIssue.profileId')).toBe(true)
   })
 })

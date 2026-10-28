@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import { claudeCode } from '../src/adapters/claude-code'
 import type { AdapterContext } from '../src/adapters/types'
-import { createContext, builtinSkillsDir } from '../src/context'
+import { builtinAgentsDir, builtinOutputStylesDir, builtinSkillsDir, createContext } from '../src/context'
 import type { CommandStep } from '../src/plan/types'
 import type { ZcfConfig, ZcfConfigInput } from '../src/schema/config'
 import { parseZcfConfig } from '../src/schema/config'
@@ -44,6 +44,14 @@ describe('createContext', () => {
 
   it('answers undefined when no templates folder sits next to the code', () => {
     expect(builtinSkillsDir('/nowhere')).toBeUndefined()
+    expect(builtinAgentsDir('/nowhere')).toBeUndefined()
+    expect(builtinOutputStylesDir('/nowhere')).toBeUndefined()
+  })
+
+  it('points the agents and output styles at the same shipped templates tree', () => {
+    const ctx = createContext({ env: {} })
+    expect(ctx.builtinAgentsDir).toBe(join(TEMPLATES, '..', 'agents'))
+    expect(ctx.builtinOutputStylesDir).toBe(join(TEMPLATES, '..', 'output-styles'))
   })
 })
 

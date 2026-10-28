@@ -22,6 +22,25 @@ export const TOOL_NAMES: Record<ToolId, string> = {
   dsh: 'DeepSeek Harness',
 }
 
+/**
+ * Optional companion tools ZCF can install alongside the coding tools, such as a local
+ * model gateway. They take no per-tool config; only their install differs.
+ */
+export const EXTRA_IDS = ['magpie', 'ccline'] as const
+export type ExtraId = (typeof EXTRA_IDS)[number]
+export const EXTRA_NAMES: Record<ExtraId, string> = {
+  magpie: 'magpie',
+  ccline: 'CCometixLine',
+}
+
+/** Whether a value names an extra, the way `isToolId` names a tool. */
+export function isExtraId(value: unknown): value is ExtraId {
+  return EXTRA_IDS.some(id => id === value)
+}
+
+/** Every name a plan can carry: coding tools and the extras beside them. */
+export const ACTOR_NAMES: Record<ToolId | ExtraId, string> = { ...TOOL_NAMES, ...EXTRA_NAMES }
+
 const NonEmptyString = v.pipe(v.string(), v.trim(), v.minLength(1))
 const UrlString = v.pipe(v.string(), v.trim(), v.url())
 
@@ -92,6 +111,7 @@ const McpServerNameSchema = v.pipe(
   // A custom message is a message key; front ends translate it.
   v.regex(/^[\w-]+$/, 'configIssue.mcpServerName'),
 )
+export { McpServerNameSchema }
 
 export const SkillSourceSchema = v.object({
   /** Anything `npx skills add` accepts: owner/repo, a git URL or a local path; `zcf` stands for ZCF's own skill templates. */
@@ -100,6 +120,68 @@ export const SkillSourceSchema = v.object({
   skills: v.optional(v.array(NonEmptyString), []),
 })
 export type SkillSource = v.InferOutput<typeof SkillSourceSchema>
+
+/** The agent templates ZCF ships, in `templates/agents/<language>/<id>/AGENT.md`. */
+export const BUILTIN_AGENT_IDS = ['init-architect', 'get-current-datetime', 'planner', 'ui-ux-designer'] as const
+export type BuiltinAgentId = (typeof BUILTIN_AGENT_IDS)[number]
+
+/** The output-style templates ZCF ships, in `templates/output-styles/<language>/<id>.md`. */
+export const BUILTIN_STYLE_IDS = [
+  'engineer-professional',
+  'nekomata-engineer',
+  'laowang-engineer',
+  'ojousama-engineer',
+  'rem-engineer',
+  'leibus-engineer',
+] as const
+export type BuiltinStyleId = (typeof BUILTIN_STYLE_IDS)[number]
+
+/**
+ * A named provider the user keeps for switching. Only the top-level `provider` is applied;
+ * switching copies a profile's provider there, so the active setup stays one block.
+ */
+export const ProfileSchema = v.object({
+  id: v.pipe(
+    v.string(),
+    // A custom message is a message key; front ends translate it.
+    v.regex(/^[\w-]+$/, 'configIssue.profileId'),
+  ),
+  name: NonEmptyString,
+  provider: ProviderSchema,
+})
+export type Profile = v.InferOutput<typeof ProfileSchema>
+
+/**
+ * A custom workflow bundle: one name that installs the skills, agents and MCP servers it
+ * lists. Skills are full sources; agents and servers are referenced by id or name and must
+ * exist in their own sections, so a bundle never repeats a server's definition.
+ */
+export const WorkflowSchema = v.object({
+  name: NonEmptyString,
+  skills: v.optional(v.array(SkillSourceSchema), []),
+  agents: v.optional(v.array(v.picklist(BUILTIN_AGENT_IDS)), []),
+  mcp: v.optional(v.array(McpServerNameSchema), []),
+})
+export type Workflow = v.InferOutput<typeof WorkflowSchema>
+
+/** The output styles to install; every one is optional, and so is the default. */
+export const StylesSchema = v.object({
+  outputStyles: v.optional(v.array(v.picklist(BUILTIN_STYLE_IDS)), []),
+  /** Claude Code's `outputStyle` settings key; unset removes ZCF's own pick. */
+  defaultOutputStyle: v.optional(v.picklist(BUILTIN_STYLE_IDS)),
+})
+export type Styles = v.InferOutput<typeof StylesSchema>
+
+/**
+ * Optional companion tools. `magpie` picks a face of the same install: `client` for the
+ * desktop app, `cli` for terminal use; `ccline` installs the CCometixLine status bar and
+ * wires it into Claude Code's settings.
+ */
+export const ExtrasSchema = v.object({
+  magpie: v.optional(v.picklist(['client', 'cli'])),
+  ccline: v.optional(v.boolean()),
+})
+export type Extras = v.InferOutput<typeof ExtrasSchema>
 
 /** The languages the config accepts for `language`; `auto` follows the system locale. */
 export const LANGUAGES = ['auto', 'en', 'zh-CN'] as const
@@ -128,8 +210,16 @@ export const ZcfConfigSchema = v.object({
   version: v.literal(1),
   tools: v.optional(v.array(ToolIdSchema), []),
   provider: v.optional(ProviderSchema),
+  /** Saved providers to switch between; the top-level `provider` is the one applied. */
+  profiles: v.optional(v.array(ProfileSchema), []),
   mcpServers: v.optional(v.record(McpServerNameSchema, McpServerSchema), {}),
   skills: v.optional(v.array(SkillSourceSchema), []),
+  /** Built-in agent templates to install for the tools that take agents. */
+  agents: v.optional(v.array(v.picklist(BUILTIN_AGENT_IDS)), []),
+  /** Custom workflow bundles, each a name over skills, agents and MCP servers. */
+  workflows: v.optional(v.array(WorkflowSchema), []),
+  styles: v.optional(StylesSchema, {}),
+  extras: v.optional(ExtrasSchema, {}),
   /** Where ZCF downloads tools and packages from; `china` uses mirrors in mainland China. */
   mirror: v.optional(v.picklist(MIRRORS), 'official'),
   /** The language ZCF talks to the user in; `auto` follows the system locale. */

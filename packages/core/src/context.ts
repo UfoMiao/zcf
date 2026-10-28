@@ -10,13 +10,31 @@ import { processRunner } from './exec/runner'
 import { readTextIfExists } from './io/fs'
 
 /**
- * The built-in skill templates as an absolute folder: next to the running code when bundled
- * (`dist/templates/skills`), or one level up when running from source (`packages/core/templates/skills`).
+ * The built-in templates as an absolute folder: next to the running code when bundled
+ * (`dist/templates`), or one level up when running from source (`packages/core/templates`).
  */
-export function builtinSkillsDir(from: string = dirname(fileURLToPath(import.meta.url))): string | undefined {
-  for (const candidate of [join(from, 'templates', 'skills'), join(from, '..', 'templates', 'skills')])
+export function builtinTemplatesRoot(from: string = dirname(fileURLToPath(import.meta.url))): string | undefined {
+  for (const candidate of [join(from, 'templates'), join(from, '..', 'templates')])
     if (existsSync(candidate)) return candidate
   return undefined
+}
+
+/** The built-in skill templates, such as `<templates>/skills`, when ZCF ships them. */
+export function builtinSkillsDir(from: string = dirname(fileURLToPath(import.meta.url))): string | undefined {
+  const root = builtinTemplatesRoot(from)
+  return root === undefined ? undefined : join(root, 'skills')
+}
+
+/** The built-in agent templates, such as `<templates>/agents`, when ZCF ships them. */
+export function builtinAgentsDir(from: string = dirname(fileURLToPath(import.meta.url))): string | undefined {
+  const root = builtinTemplatesRoot(from)
+  return root === undefined ? undefined : join(root, 'agents')
+}
+
+/** The built-in output-style templates, such as `<templates>/output-styles`, when ZCF ships them. */
+export function builtinOutputStylesDir(from: string = dirname(fileURLToPath(import.meta.url))): string | undefined {
+  const root = builtinTemplatesRoot(from)
+  return root === undefined ? undefined : join(root, 'output-styles')
 }
 
 export function createContext(overrides: Partial<AdapterContext> = {}): AdapterContext {
@@ -28,6 +46,8 @@ export function createContext(overrides: Partial<AdapterContext> = {}): AdapterC
     runner: processRunner,
     readFile: readTextIfExists,
     builtinSkillsDir: builtinSkillsDir(),
+    builtinAgentsDir: builtinAgentsDir(),
+    builtinOutputStylesDir: builtinOutputStylesDir(),
     ...overrides,
   }
 }

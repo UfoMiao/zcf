@@ -24,6 +24,7 @@ import {
   readTextIfExists,
   resolveMirror,
   snapshotFile,
+  ACTOR_NAMES,
   TOOL_IDS,
   TOOL_NAMES,
   writeFileAtomic,
@@ -265,7 +266,11 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     const notes: string[] = []
     const planned = new Map(plan.tools.map(toolPlan => [toolPlan.tool, toolPlan]))
     const updated = results.filter(
-      result => result.ok && planned.get(result.tool)?.version && result.steps.some(step => step.status === 'done'),
+      (result): result is ToolResult & { tool: ToolId } =>
+        isToolId(result.tool) &&
+        result.ok &&
+        planned.get(result.tool)?.version !== undefined &&
+        result.steps.some(step => step.status === 'done'),
     )
     if (updated.length === 0) return { results, notes }
     const after = await detectTools(
@@ -275,9 +280,9 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
     const settled = results.map(result => {
       const toolPlan = planned.get(result.tool)
       const from = toolPlan?.version
-      const to = after[result.tool]?.version
-      if (!updated.includes(result) || !from || !to) return result
-      const tool = TOOL_NAMES[result.tool]
+      const to = isToolId(result.tool) ? after[result.tool]?.version : undefined
+      if (!updated.some(item => item === result) || !from || !to) return result
+      const tool = ACTOR_NAMES[result.tool]
       if (to !== from) {
         notes.push(green(t('cli.updated', { tool, from, to })))
         return result
@@ -448,7 +453,9 @@ export async function main(argv: readonly string[], options: MainOptions = {}): 
         return EXIT_OK
       }
       const { code, results } = await runPlan(plan, renderer)
-      const removed = results.filter(result => result.ok).map(result => result.tool)
+      const removed = results
+        .filter((result): result is ToolResult & { tool: ToolId } => result.ok && isToolId(result.tool))
+        .map(result => result.tool)
       await removeFromConfig(removed, flags.file, renderer)
       // Say so when a copy survives the uninstall, the same way update explains a stale version.
       const after = await detectTools(removed, ctx)

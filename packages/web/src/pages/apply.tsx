@@ -1,5 +1,5 @@
 import type { StepResult } from '@zcf/core'
-import { TOOL_NAMES } from '@zcf/core/schema'
+import { ACTOR_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
 import {
   ArrowRightIcon,
@@ -164,7 +164,7 @@ export function ApplyPage({
         {view.plan.tools.map((toolPlan, toolIndex) => (
           <Card key={toolPlan.tool}>
             <CardHeader className="flex-row items-center justify-between py-3.5">
-              <CardTitle>{TOOL_NAMES[toolPlan.tool]}</CardTitle>
+              <CardTitle>{ACTOR_NAMES[toolPlan.tool]}</CardTitle>
               {outcome && (
                 <span
                   className={cn(
@@ -226,7 +226,11 @@ export function ApplyPage({
                           )}
                         </div>
                         <code className="text-muted-foreground mt-1 block w-fit rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] break-all">
-                          {step.kind === 'command' ? `$ ${[step.command, ...step.args].join(' ')}` : tildify(step.path)}
+                          {step.kind === 'command'
+                            ? `$ ${[step.command, ...step.args].join(' ')}`
+                            : step.kind === 'copy'
+                              ? `${step.from} -> ${step.to}`
+                              : tildify(step.path)}
                         </code>
                         {preview?.changed && (
                           <div className="mt-2">
