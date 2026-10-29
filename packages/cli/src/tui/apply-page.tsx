@@ -96,7 +96,9 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
   const top = phase === 'running' ? maxScroll : Math.min(scroll, maxScroll)
   const outputRef = useRef<DOMElement | null>(null)
 
-  // The wheel scrolls the run output; presses outside the output are not ours.
+  // The wheel scrolls the run output; presses outside the output are not ours. The
+  // scroll math reads the latest state inside the setter, so the subscription itself
+  // never re-arms mid-burst and drops a wheel event between renders.
   useEffect(() => {
     if (!active) return undefined
     return onMousePress(press => {
@@ -105,10 +107,10 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
       const direction = wheelDirection(press)
       if (!direction || !contains(metrics, press)) return
       if (press.row - 1 < metrics.y || press.row - 1 >= metrics.y + metrics.height) return
-      if (direction === 'up') setScroll(Math.max(0, top - 1))
-      else setScroll(Math.min(maxScroll, top + 1))
+      if (direction === 'up') setScroll(current => Math.max(0, current - 1))
+      else setScroll(current => Math.min(Math.max(0, lines.length - height), current + 1))
     })
-  }, [active, top, maxScroll])
+  }, [active, lines.length, height])
 
   useInput(
     (input, key) => {
@@ -125,8 +127,8 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
 
   if (phase === 'confirm' || phase === 'planning')
     return (
-      <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} width={58} gap={1}>
-        <Text bold color="cyan">
+      <Box flexDirection="column" borderStyle="round" borderColor="#c084fc" paddingX={2} width={58} gap={1}>
+        <Text bold color="#c084fc">
           {t('tui.apply.title')}
         </Text>
         <Text dimColor>{t('tui.apply.confirmHint')}</Text>
@@ -168,11 +170,11 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
         {phase === 'planning' ? (
           <Text dimColor>{t('tui.apply.planning')}</Text>
         ) : (
-          <Box justifyContent="center" gap={4}>
-            <Text bold color="black" backgroundColor="cyan">
+          <Box justifyContent="flex-end" gap={2}>
+            <Text color="#c084fc">{` Esc ${t('web.cancel')} `}</Text>
+            <Text bold color="black" backgroundColor="#c084fc">
               {` Enter ${t('web.apply')} `}
             </Text>
-            <Text dimColor>{` Esc ${t('web.cancel')} `}</Text>
           </Box>
         )}
       </Box>

@@ -213,6 +213,36 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('moves the state onto a right sidebar once the terminal is wide enough', async () => {
+    const { service } = fakeService({ version: 1, tools: ['claude-code'] })
+    const app = await start(service)
+    // 100 columns still keep the header: the sidebar only takes over when the page
+    // keeps a full line's worth beside it.
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+    expect(app.frame()).not.toContain('ZERO-CONFIG')
+
+    Object.defineProperty(app.stdout, 'columns', { get: () => 120, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    expect(app.frame()).not.toContain('Interface language:')
+    expect(app.frame()).toContain('ZERO-CONFIG')
+    // The wordmark sits over a live picture of the config: clean state, counts, path.
+    expect(app.frame()).toContain('nothing to apply')
+    // The dim label and the plain value carry an ANSI switch between them, so each
+    // half is asserted on its own.
+    expect(app.frame()).toContain('Agent tools')
+    expect(app.frame()).toContain('1 picked')
+    // The 26-wide column truncates the path; the home it sits under still shows.
+    expect(app.frame()).toContain('~/.ufomiao/zcf')
+    expect(app.frame()).toContain('5.0.0-alpha.0')
+
+    // An edit flips the sidebar's state line without leaving the page.
+    await app.press(KEY.right, ' ')
+    expect(app.frame()).toContain('to apply')
+    expect(app.frame()).not.toContain('nothing to apply')
+    app.unmount()
+  })
+
   it('switches the interface language from the header with L, saving it at once', async () => {
     const zh = createTranslator('zh-CN')
     const { service, saved, bases } = fakeService({ version: 1, tools: [] })
@@ -929,9 +959,32 @@ describe('terminal UI', () => {
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
-    const frame = app.frame()
+    const frame = await app.until('$ npm i -g x29')
     expect(frame).not.toContain('$ npm i -g x0')
     expect(frame).toContain('$ npm i -g x29')
+    app.unmount()
+  })
+
+  it('says so when the plan has nothing to do, and closes', async () => {
+    const step: Plan['tools'][number]['steps'][number] = {
+      kind: 'file',
+      title: { key: 'step.provider', params: { tool: 'claude-code', provider: 'x' } },
+      path: '/home/me/.claude/settings.json',
+      format: 'json',
+      edits: [],
+    }
+    const plan: Plan = { tools: [{ tool: 'claude-code', notices: [], steps: [step] }] }
+    const view: PlanView = {
+      plan,
+      previews: [[{ path: step.path, before: '{}', after: '{}', changed: false, patch: '', secrets: [] }]],
+      secrets: [],
+    }
+    const { service } = fakeService({ version: 1, tools: ['claude-code'] }, { plan: async () => view })
+    const app = await start(service)
+    await app.press('a', KEY.enter)
+    expect(await app.until('nothing to do')).toBeTruthy()
+    await app.press(KEY.escape)
+    expect(app.frame()).toContain('Pick the agent tools')
     app.unmount()
   })
 
