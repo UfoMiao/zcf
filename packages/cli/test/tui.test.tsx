@@ -213,6 +213,36 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
+  it('moves the state onto a right sidebar once the terminal is wide enough', async () => {
+    const { service } = fakeService({ version: 1, tools: ['claude-code'] })
+    const app = await start(service)
+    // 100 columns still keep the header: the sidebar only takes over when the page
+    // keeps a full line's worth beside it.
+    expect(app.frame()).toContain('Interface language: Auto (L)')
+    expect(app.frame()).not.toContain('ZERO-CONFIG')
+
+    Object.defineProperty(app.stdout, 'columns', { get: () => 120, configurable: true })
+    app.stdout.emit('resize')
+    await tick()
+    expect(app.frame()).not.toContain('Interface language:')
+    expect(app.frame()).toContain('ZERO-CONFIG')
+    // The wordmark sits over a live picture of the config: clean state, counts, path.
+    expect(app.frame()).toContain('nothing to apply')
+    // The dim label and the plain value carry an ANSI switch between them, so each
+    // half is asserted on its own.
+    expect(app.frame()).toContain('Agent tools')
+    expect(app.frame()).toContain('1 picked')
+    // The 26-wide column truncates the path; the home it sits under still shows.
+    expect(app.frame()).toContain('~/.ufomiao/zcf')
+    expect(app.frame()).toContain('5.0.0-alpha.0')
+
+    // An edit flips the sidebar's state line without leaving the page.
+    await app.press(KEY.right, ' ')
+    expect(app.frame()).toContain('to apply')
+    expect(app.frame()).not.toContain('nothing to apply')
+    app.unmount()
+  })
+
   it('switches the interface language from the header with L, saving it at once', async () => {
     const zh = createTranslator('zh-CN')
     const { service, saved, bases } = fakeService({ version: 1, tools: [] })

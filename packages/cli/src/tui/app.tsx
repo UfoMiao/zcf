@@ -3,6 +3,7 @@ import { isLanguageSetting, LANGUAGES } from '@zcf/core'
 import type { PageId, ZcfService } from '@zcf/ui-kit'
 import {
   digitIndex,
+  draftIds,
   isDigitKey,
   navRows,
   pageHasIssues,
@@ -34,6 +35,8 @@ import {
   ToolsPage,
   WorkflowsPage,
 } from './pages'
+import { Sidebar } from './sidebar'
+import { useTerminalColumns } from './use-terminal-columns'
 import { useTerminalRows } from './use-terminal-rows'
 import { windowRange } from './window'
 
@@ -85,6 +88,18 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   const [quitArmed, setQuitArmed] = useState(false)
   const [detected, setDetected] = useState<Partial<Record<ToolId, ToolStatus>>>()
   const terminalRows = useTerminalRows()
+  // Wide terminals carry the state on a right sidebar, crush-style; narrower ones keep
+  // the one-line header instead, so the page keeps its room — the sidebar only shows
+  // where taking 26 columns still leaves the page a full line's worth.
+  const wide = useTerminalColumns() >= 112
+  // How many of the picked tools the machine already has, for the sidebar's count.
+  const installedTools =
+    editor.status === 'ready'
+      ? draftIds(editor.draft.tools).filter(id => {
+          const known = TOOL_OPTIONS.find(tool => tool === id)
+          return known !== undefined && detected?.[known]?.installed
+        }).length
+      : 0
   const { stdin } = useStdin()
   const { stdout } = useStdout()
   const navRef = useRef<DOMElement | null>(null)
@@ -249,78 +264,83 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
   return (
     // The column fills the terminal height, so the panel's border always reaches the bottom.
     <Box flexDirection="column" height={terminalRows}>
-      <Header
-        t={t}
-        version={version}
-        path={tildify(editor.path, home)}
-        language={t(`language.${languageSetting}`)}
-        langHint={langPinned ? '' : ' (L)'}
-        dirty={editor.dirty}
-      />
-      <Box borderStyle="round" borderDimColor flexDirection="row" flexGrow={1} marginTop={1}>
-        <Box ref={navRef} flexDirection="column" width={18} paddingRight={1}>
-          {navCapped && navStart > 0 && <Text dimColor>{'  ↑'}</Text>}
-          {navShown.map(row => {
-            // A section header may share its id with one of its pages, so the kind prefixes them apart.
-            if (row.kind === 'header')
+      {!wide && (
+        <Header
+          t={t}
+          version={version}
+          path={tildify(editor.path, home)}
+          language={t(`language.${languageSetting}`)}
+          langHint={langPinned ? '' : ' (L)'}
+          dirty={editor.dirty}
+        />
+      )}
+      <Box flexDirection="row" flexGrow={1} marginTop={1}>
+        <Box borderStyle="round" borderDimColor flexDirection="row" flexGrow={1}>
+          <Box ref={navRef} flexDirection="column" width={18} paddingRight={1}>
+            {navCapped && navStart > 0 && <Text dimColor>{'  ↑'}</Text>}
+            {navShown.map(row => {
+              // A section header may share its id with one of its pages, so the kind prefixes them apart.
+              if (row.kind === 'header')
+                return (
+                  <Text key={`header-${row.id}`} dimColor>
+                    {t(row.labelKey)}
+                  </Text>
+                )
+              const current = row.id === page
+              const roots = PAGE_ROOTS[row.id]
+              const broken = roots !== undefined && pageHasIssues(editor.validation.issues, roots)
+              // The chosen page lights up as a whole row, cc-switch style: reversed while
+              // the nav has the focus, plain cyan while the page under it does.
               return (
-                <Text key={`header-${row.id}`} dimColor>
-                  {t(row.labelKey)}
+                <Text
+                  key={`page-${row.id}`}
+                  color={current && onPage ? 'cyan' : undefined}
+                  backgroundColor={current && !onPage ? 'cyan' : undefined}
+                  bold={current}
+                  wrap="truncate-end"
+                >
+                  {current && onPage ? '› ' : '  '}
+                  {row.digit ?? ' '} {t(`tui.page.${row.id}`)}
+                  {broken && <Text color="red"> !</Text>}
                 </Text>
               )
-            const current = row.id === page
-            const roots = PAGE_ROOTS[row.id]
-            const broken = roots !== undefined && pageHasIssues(editor.validation.issues, roots)
-            // The chosen page lights up as a whole row, cc-switch style: reversed while
-            // the nav has the focus, plain cyan while the page under it does.
-            return (
-              <Text
-                key={`page-${row.id}`}
-                color={current && onPage ? 'cyan' : undefined}
-                backgroundColor={current && !onPage ? 'cyan' : undefined}
-                bold={current}
-                wrap="truncate-end"
-              >
-                {current && onPage ? '› ' : '  '}
-                {row.digit ?? ' '} {t(`tui.page.${row.id}`)}
-                {broken && <Text color="red"> !</Text>}
-              </Text>
-            )
-          })}
-          {navCapped && navStart + navSize < NAV_ROWS.length && <Text dimColor>{'  ↓'}</Text>}
+            })}
+            {navCapped && navStart + navSize < NAV_ROWS.length && <Text dimColor>{'  ↓'}</Text>}
+          </Box>
+          <Box flexDirection="column" flexGrow={1}>
+            {applying && editor.status === 'ready' && (
+              <Box flexDirection="column" flexGrow={1} justifyContent="center">
+                <ApplyFlow
+                  service={service}
+                  t={t}
+                  home={home}
+                  active={applying}
+                  draft={editor.draft}
+                  base={editor.saved}
+                  detected={detected ?? {}}
+                  save={save}
+                  onClose={() => setApplying(false)}
+                />
+              </Box>
+            )}
+            {!applying && page === 'tools' && <ToolsPage {...props} detected={detected} />}
+            {!applying && page === 'provider' && <ProviderPage {...props} lang={uiLang} loadPresets={loadPresets} />}
+            {!applying && page === 'mcp' && <McpPage {...props} />}
+            {!applying && page === 'skills' && (
+              <SkillsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />
+            )}
+            {!applying && page === 'settings' && <SettingsPage {...props} />}
+            {!applying && page === 'workflows' && (
+              <WorkflowsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />
+            )}
+            {!applying && page === 'styles' && <StylesPage {...props} />}
+            {!applying && page === 'extras' && <ExtrasPage {...props} />}
+            {!applying && page === 'backup' && (
+              <BackupPage service={service} t={t} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
+            )}
+          </Box>
         </Box>
-        <Box flexDirection="column" flexGrow={1}>
-          {applying && editor.status === 'ready' && (
-            <Box flexDirection="column" flexGrow={1} justifyContent="center">
-              <ApplyFlow
-                service={service}
-                t={t}
-                home={home}
-                active={applying}
-                draft={editor.draft}
-                base={editor.saved}
-                detected={detected ?? {}}
-                save={save}
-                onClose={() => setApplying(false)}
-              />
-            </Box>
-          )}
-          {!applying && page === 'tools' && <ToolsPage {...props} detected={detected} />}
-          {!applying && page === 'provider' && <ProviderPage {...props} lang={uiLang} loadPresets={loadPresets} />}
-          {!applying && page === 'mcp' && <McpPage {...props} />}
-          {!applying && page === 'skills' && (
-            <SkillsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />
-          )}
-          {!applying && page === 'settings' && <SettingsPage {...props} />}
-          {!applying && page === 'workflows' && (
-            <WorkflowsPage {...props} lang={uiLang} searchSkills={service.searchSkills} />
-          )}
-          {!applying && page === 'styles' && <StylesPage {...props} />}
-          {!applying && page === 'extras' && <ExtrasPage {...props} />}
-          {!applying && page === 'backup' && (
-            <BackupPage service={service} t={t} active={onPage} dirty={editor.dirty} onBack={props.onBack} />
-          )}
-        </Box>
+        {wide && <Sidebar editor={editor} t={t} version={version} home={home} installedTools={installedTools} />}
       </Box>
       {!applying && <KeyBar left={navHalf ? t(navHalf) : undefined} right={t(actHalf)} />}
       {status && <Text color={TONE_COLOR[status.tone]}>{status.text}</Text>}

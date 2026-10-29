@@ -127,8 +127,8 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
 
   if (phase === 'confirm' || phase === 'planning')
     return (
-      <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} width={58} gap={1}>
-        <Text bold color="cyan">
+      <Box flexDirection="column" borderStyle="round" borderColor="#c084fc" paddingX={2} width={58} gap={1}>
+        <Text bold color="#c084fc">
           {t('tui.apply.title')}
         </Text>
         <Text dimColor>{t('tui.apply.confirmHint')}</Text>
@@ -170,11 +170,11 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
         {phase === 'planning' ? (
           <Text dimColor>{t('tui.apply.planning')}</Text>
         ) : (
-          <Box justifyContent="center" gap={4}>
-            <Text bold color="black" backgroundColor="cyan">
+          <Box justifyContent="flex-end" gap={2}>
+            <Text color="#c084fc">{` Esc ${t('web.cancel')} `}</Text>
+            <Text bold color="black" backgroundColor="#c084fc">
               {` Enter ${t('web.apply')} `}
             </Text>
-            <Text dimColor>{` Esc ${t('web.cancel')} `}</Text>
           </Box>
         )}
       </Box>
