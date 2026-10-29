@@ -6,11 +6,51 @@ import type { Translate } from '../i18n'
 import { tildify } from '../render'
 
 /**
- * The wordmark, crush-style: block letters with each row a step along a cyan-to-magenta
- * ramp, so the mark reads as one gradient at a glance.
+ * The wordmark's letterforms, crush-style: three rows of half blocks per letter, each
+ * letter one step along the cyan-to-magenta ramp, so the mark reads as one gradient
+ * flowing through the letters.
  */
-const LOGO_ROWS = ['██╗ █████╗ █████╗', '╚═╝ ╚════╝ ╚════╝'] as const
-const LOGO_COLORS = ['#22d3ee', '#818cf8', '#c084fc'] as const
+const LETTERS = [
+  { color: '#22d3ee', rows: ['▀▀▀▀▀█', '   ▄▀', '█▄▄▄▄▄'] },
+  { color: '#818cf8', rows: ['▄▀▀▀▀', '█    ', '▀▀▀▀ '] },
+  { color: '#c084fc', rows: ['█▀▀▀▀', '█▀▀  ', '▀    '] },
+] as const
+
+/** How wide the letterforms are together, letters and one space between each. */
+const WORD_WIDTH = LETTERS.reduce((sum, letter) => sum + letter.rows[0].length + 1, -1)
+
+/** The diagonal fill that frames the wordmark, the way crush frames its own. */
+const FIELD_COLOR = '#c084fc'
+
+/** The wordmark: a diagonal field over and under the gradient letterforms. The
+ * column's height budget is tight at the usual 30 rows, so the mark carries one
+ * field line above and one below — the column cannot afford crush's two on top. */
+function Wordmark() {
+  return (
+    <Box flexDirection="column" alignItems="center" marginTop={1}>
+      <Text color={FIELD_COLOR}>{'╱'.repeat(WORD_WIDTH)}</Text>
+      {/* Inline color segments rather than nested boxes: yoga's measurement of
+       * half-block rows inside a row of columns drops lines on a real stream. */}
+      {LETTERS[0].rows.map((_, index) => (
+        <Text key={index}>
+          <Text bold color={LETTERS[0].color}>
+            {LETTERS[0].rows[index]}
+          </Text>{' '}
+          <Text bold color={LETTERS[1].color}>
+            {LETTERS[1].rows[index]}
+          </Text>{' '}
+          <Text bold color={LETTERS[2].color}>
+            {LETTERS[2].rows[index]}
+          </Text>
+        </Text>
+      ))}
+      <Text color={FIELD_COLOR}>{'╱'.repeat(WORD_WIDTH)}</Text>
+      <Text bold color={FIELD_COLOR}>
+        ZERO-CONFIG
+      </Text>
+    </Box>
+  )
+}
 
 /** One status entry on its own two lines: a dim label over a plain value, so long
  * values never truncate inside the narrow column. */
@@ -53,16 +93,7 @@ export function Sidebar({
 
   return (
     <Box flexDirection="column" width={26} borderStyle="round" borderDimColor paddingX={1} gap={1}>
-      <Box flexDirection="column" alignItems="center" marginTop={1}>
-        {LOGO_ROWS.map((row, index) => (
-          <Text key={row} bold color={LOGO_COLORS[index % LOGO_COLORS.length]}>
-            {row}
-          </Text>
-        ))}
-        <Text bold color={LOGO_COLORS[2]}>
-          ZERO-CONFIG
-        </Text>
-      </Box>
+      <Wordmark />
 
       <Box flexDirection="column">
         {editor.dirty ? (
@@ -80,11 +111,18 @@ export function Sidebar({
         <Stat label={t('tui.page.mcp')} value={t('tui.sidebar.count', { count: servers })} />
       </Box>
 
-      <Text dimColor> </Text>
-      <Text dimColor wrap="truncate-end">
-        {tildify(editor.path, home)}
-      </Text>
-      <Text dimColor>{version}</Text>
+      {/* One block, so the column's gap does not multiply into its rows: the
+       * height budget is one line of slack at the usual 30 rows, and each extra
+       * gap line would make yoga drop a wordmark row on the real stream. */}
+      <Box flexDirection="column">
+        {/* The diagonal rule that closes the status block, echoing the wordmark's
+         * field; 22 fills the column inside its borders and padding. */}
+        <Text color="#818cf8">{'╱'.repeat(22)}</Text>
+        <Text dimColor wrap="truncate-end">
+          {tildify(editor.path, home)}
+        </Text>
+        <Text dimColor>{version}</Text>
+      </Box>
     </Box>
   )
 }
