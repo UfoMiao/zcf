@@ -127,9 +127,12 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
 
   if (phase === 'confirm' || phase === 'planning')
     return (
-      <Box flexDirection="column" borderStyle="round" borderColor="#c084fc" paddingX={2} width={58} gap={1}>
-        <Text bold color="#c084fc">
-          {t('tui.apply.title')}
+      <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} width={58} gap={1}>
+        <Text bold color="cyan">
+          {t('tui.apply.title')}{' '}
+          <Text color="cyan" dimColor>
+            ╱╱╱╱╱╱
+          </Text>
         </Text>
         <Text dimColor>{t('tui.apply.confirmHint')}</Text>
         <Box flexDirection="column">
@@ -171,8 +174,8 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
           <Text dimColor>{t('tui.apply.planning')}</Text>
         ) : (
           <Box justifyContent="flex-end" gap={2}>
-            <Text color="#c084fc">{` Esc ${t('web.cancel')} `}</Text>
-            <Text bold color="black" backgroundColor="#c084fc">
+            <Text dimColor>{` Esc ${t('web.cancel')} `}</Text>
+            <Text bold color="black" backgroundColor="cyan">
               {` Enter ${t('web.apply')} `}
             </Text>
           </Box>
@@ -183,7 +186,7 @@ export function ApplyFlow({ service, t, home, active, draft, base, detected, sav
   // The run takes the whole overlay: a centered window is for confirming, not for
   // output that outgrows it.
   return (
-    <Box flexDirection="column" ref={outputRef} paddingX={1} gap={1}>
+    <Box alignSelf="stretch" flexDirection="column" ref={outputRef} paddingX={1} gap={1}>
       <Text bold color="cyan">
         {t('tui.apply.title')}
       </Text>
