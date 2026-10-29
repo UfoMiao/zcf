@@ -309,7 +309,7 @@ export function App({ service, lang, langPinned = false, home }: AppProps) {
           </Box>
           <Box flexDirection="column" flexGrow={1}>
             {applying && editor.status === 'ready' && (
-              <Box flexDirection="column" flexGrow={1} justifyContent="center">
+              <Box flexDirection="column" flexGrow={1} justifyContent="center" alignItems="center">
                 <ApplyFlow
                   service={service}
                   t={t}
