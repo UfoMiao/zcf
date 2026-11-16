@@ -256,6 +256,26 @@
       }
     },
     {
+      "id": "teapotrouter",
+      "name": "TeapotRouter",
+      "description": {
+        "en": "TeapotRouter API relay for Claude Code and Codex",
+        "zh-CN": "TeapotRouter Claude Code / Codex API 中转服务"
+      },
+      "website": "https://teapotrouter.com",
+      "anthropic": {
+        "baseUrl": "https://api.teapotrouter.com",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://api.teapotrouter.com/v1"
+      },
+      "models": {
+        "default": "claude-sonnet-5-5",
+        "haiku": "claude-haiku-4-5"
+      }
+    },
+    {
       "id": "magpie",
       "name": "magpie",
       "description": {
