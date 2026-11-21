@@ -15,7 +15,7 @@ import { useOneShot, useTheme } from './fx/context'
 import { Spinner, Hatch, Wave } from './fx/glyphs'
 import { GradientText, Paint } from './fx/paint'
 import { contains, onMousePress, wheelDirection } from './mouse'
-import { textWidth, wrappedLines } from './text-width'
+import { textWidth, wrappedLines, wrapText } from './text-width'
 import { useTerminalRows } from './use-terminal-rows'
 
 export type ApplyPhase = 'confirm' | 'planning' | 'running' | 'done'
@@ -296,15 +296,22 @@ export function ApplyFlow({
           </Text>
         ),
       })
-      for (const [index, notice] of toolPlan.notices.entries())
-        lines.push({
-          key: `notice-${toolIndex}-${index}`,
-          node: (
-            <Text wrap="truncate-end" {...theme.tone(notice.level === 'warning' ? 'warn' : 'dim')}>
-              {`  ${notice.level === 'warning' ? '!' : 'i'} ${mask(render.message(notice.message))}`}
-            </Text>
-          ),
-        })
+      // A notice may carry steps to follow by hand, so it wraps onto as many rows as it needs
+      // (inside the page's padding and its own 4-column indent) rather than being cut off.
+      for (const [index, notice] of toolPlan.notices.entries()) {
+        const tone = theme.tone(notice.level === 'warning' ? 'warn' : 'dim')
+        const glyph = notice.level === 'warning' ? '!' : 'i'
+        const wrapped = wrapText(mask(render.message(notice.message)), Math.max(10, width - 6))
+        for (const [at, text] of wrapped.entries())
+          lines.push({
+            key: `notice-${toolIndex}-${index}-${at}`,
+            node: (
+              <Text wrap="truncate-end" {...tone}>
+                {`${at === 0 ? `  ${glyph} ` : '    '}${text}`}
+              </Text>
+            ),
+          })
+      }
       if (toolPlan.steps.length === 0 && toolPlan.notices.length === 0)
         lines.push({
           key: `empty-${toolIndex}`,

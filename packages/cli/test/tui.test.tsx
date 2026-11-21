@@ -15,7 +15,7 @@ import type { FxOptions } from '../src/tui/fx/detect'
 import type { Clock } from '../src/tui/fx/ticker'
 import { FRAME_MS, systemClock, Ticker } from '../src/tui/fx/ticker'
 import { LOGO_ROWS } from '../src/tui/sidebar'
-import { textWidth, wrappedLines } from '../src/tui/text-width'
+import { textWidth, wrappedLines, wrapText } from '../src/tui/text-width'
 import {
   contrast,
   createTheme,
@@ -977,6 +977,48 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Pick the agent tools')
     expect(app.frame()).not.toContain('Apply the configuration')
     app.unmount()
+  })
+
+  it('wraps a long notice in full at 80 columns, in both languages', async () => {
+    const plan: Plan = {
+      tools: [
+        {
+          tool: 'antigravity-cli',
+          notices: [
+            {
+              level: 'info',
+              message: {
+                key: 'notice.providerEnvOnly',
+                params: { tool: 'antigravity-cli', file: '~/.gemini/antigravity-cli/settings.json' },
+              },
+            },
+          ],
+          steps: [],
+        },
+      ],
+    }
+    const view: PlanView = { plan, previews: [[]], secrets: ['sk-agy-secret-key'] }
+    for (const [lang, opening] of [
+      ['en', 'Antigravity CLI reads an API key only'],
+      ['zh-CN', 'Antigravity CLI 只从环境变量读取'],
+    ] as const) {
+      const { service } = fakeService(
+        { version: 1, tools: ['antigravity-cli'] },
+        { plan: async () => view, apply: async () => ({ results: [], backupDir: '/home/me/b' }) },
+      )
+      // oxlint-disable-next-line no-await-in-loop
+      const app = await start(service, { lang, columns: 80, rows: 24 })
+      // oxlint-disable-next-line no-await-in-loop
+      await app.press('a', KEY.enter)
+      // oxlint-disable-next-line no-await-in-loop
+      const frame = await app.until('GOOGLE_GEMINI_BASE_URL')
+      // Every part of the manual route is on screen, none of it cut off at the panel's edge.
+      for (const part of [opening, '"modelProvider":', '~/.gemini/antigravity-cli/settings.json', 'GEMINI_API_KEY'])
+        expect(frame).toContain(part)
+      expect(frame).not.toContain('…')
+      expect(frame).not.toContain('sk-agy-secret-key')
+      app.unmount()
+    }
   })
 
   it('scrolls the apply output with the mouse wheel', async () => {
@@ -2376,10 +2418,12 @@ describe('Tide text width', () => {
             <Text>{text}</Text>
           </Box>,
         )
-        expect({ text, width, lines: wrappedLines(text, width) }).toEqual({
+        const frame = (lastFrame() ?? '').split('\n')
+        expect({ text, width, lines: wrappedLines(text, width) }).toEqual({ text, width, lines: frame.length })
+        expect({ text, width, lines: wrapText(text, width) }).toEqual({
           text,
           width,
-          lines: (lastFrame() ?? '').split('\n').length,
+          lines: frame.map(line => line.trimEnd()),
         })
         unmount()
       }
