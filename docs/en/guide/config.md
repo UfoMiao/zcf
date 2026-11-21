@@ -240,5 +240,8 @@ There is no `auto`: no tool offers one, and a tool such as Claude Code passes th
 | `ZCF_MIRROR` | `official` or `china` (`cn` works too). Overrides `mirror` in the file. |
 | `ZCF_PRESETS_URL` | Load [provider presets](./providers) from this URL instead. |
 | `ZCF_SKILLS_SEARCH_URL` | Search this skills index instead of claude-plugins.dev on the Skills page. It must answer the same `?q=&limit=` shape. |
+| `ZCF_THEME` | `light` or `dark`: the terminal UI's colours for that background. Without it, `COLORFGBG` decides, then dark. |
+| `ZCF_REDUCED_MOTION` | `1` turns the terminal UI's animations off; every animation shows its still frame. CI, `TERM=dumb` and output that is not a terminal turn them off too. |
+| `NO_COLOR` | The terminal UI draws without colour; the selection shows in inverse video. |
 
 Tools that move their own config folder are followed: `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `GEMINI_CLI_HOME`, `XDG_CONFIG_HOME` (OpenCode), `PI_CODING_AGENT_DIR` and `DSH_HOME`.

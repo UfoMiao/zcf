@@ -86,6 +86,33 @@ export function tildify(path: string, home: string): string {
   return path.startsWith(home) ? `~${path.slice(home.length)}` : path
 }
 
+/**
+ * The counts an apply summary reports: steps that changed something, and steps or
+ * whole tools that were already up to date. A tool the plan talked out of any step
+ * counts as up to date, unless the reason was that it is not installed: that is
+ * reported, but it is not "already up to date".
+ */
+export function applyCounts(
+  plan: Plan,
+  results: readonly ToolResult[],
+): { done: number; unchanged: number; failedTools: number; backedUp: boolean } {
+  const steps = results.flatMap(result => result.steps)
+  const notInstalled = new Set(
+    plan.tools
+      .filter(toolPlan => toolPlan.notices.some(item => item.message.key === 'notice.notInstalled'))
+      .map(toolPlan => toolPlan.tool),
+  )
+  const quiet = results.filter(
+    result => result.ok && result.steps.length === 0 && !notInstalled.has(result.tool),
+  ).length
+  return {
+    done: steps.filter(step => step.status === 'done').length,
+    unchanged: steps.filter(step => step.status === 'unchanged').length + quiet,
+    failedTools: results.filter(result => !result.ok).length,
+    backedUp: steps.some(step => step.backup),
+  }
+}
+
 export class Renderer {
   constructor(
     private readonly out: Output,
@@ -93,6 +120,11 @@ export class Renderer {
     private readonly secrets: readonly string[],
     private readonly home: string,
   ) {}
+
+  /** `text` with every secret this renderer knows masked, for front ends that draw it themselves. */
+  mask(text: string): string {
+    return maskSecrets(text, this.secrets)
+  }
 
   line(text = ''): void {
     this.out.write(`${maskSecrets(text, this.secrets)}\n`)
@@ -186,37 +218,10 @@ export class Renderer {
   }
 
   summary(plan: Plan, results: readonly ToolResult[], backupDir: string): void {
-    const steps = results.flatMap(result => result.steps)
-    // A tool the plan talked out of any step counts as up to date, unless the reason was
-    // that it is not installed: that is reported, but it is not "already up to date".
-    const notInstalled = new Set(
-      plan.tools
-        .filter(toolPlan => toolPlan.notices.some(item => item.message.key === 'notice.notInstalled'))
-        .map(toolPlan => toolPlan.tool),
-    )
-    const quiet = results.filter(
-      result => result.ok && result.steps.length === 0 && !notInstalled.has(result.tool),
-    ).length
-    const failedTools = results.filter(result => !result.ok).length
+    const counts = applyCounts(plan, results)
     this.line()
-    if (failedTools > 0) this.line(red(this.t('cli.applyFailed', { count: failedTools })))
-    else
-      this.line(
-        green(
-          this.t('cli.applyDone', {
-            done: steps.filter(step => step.status === 'done').length,
-            unchanged: steps.filter(step => step.status === 'unchanged').length + quiet,
-          }),
-        ),
-      )
-    if (steps.some(step => step.backup)) {
-      this.line(
-        dim(
-          this.t('cli.backups', {
-            path: tildify(backupDir, this.home),
-          }),
-        ),
-      )
-    }
+    if (counts.failedTools > 0) this.line(red(this.t('cli.applyFailed', { count: counts.failedTools })))
+    else this.line(green(this.t('cli.applyDone', { done: counts.done, unchanged: counts.unchanged })))
+    if (counts.backedUp) this.line(dim(this.t('cli.backups', { path: tildify(backupDir, this.home) })))
   }
 }

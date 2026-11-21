@@ -1,18 +1,26 @@
 import { Box, Text } from 'ink'
 
+import { useTheme } from './fx/context'
+
 /**
- * One `key action` pair of the bottom bar: the key in cyan bold, the action dimmed,
- * so the bar reads like the shortcut strip over a list in other TUIs.
+ * One `key action` pair of the bottom bar: the key as a chip — the chip colour with the
+ * accent in bold, or inverse video without colour — and the action dimmed.
  */
 function Pair({ pair }: { pair: string }) {
+  const theme = useTheme()
   const at = pair.indexOf(' ')
-  if (at < 0) return <Text color="cyan">{pair}</Text>
+  const key = at < 0 ? pair : pair.slice(0, at)
   return (
     <Text>
-      <Text bold color="cyan">
-        {pair.slice(0, at)}
+      <Text
+        bold
+        backgroundColor={theme.surface('chip')}
+        inverse={theme.level === 0}
+        {...(theme.level === 0 ? {} : theme.tone('accent'))}
+      >
+        {` ${key} `}
       </Text>
-      <Text dimColor>{` ${pair.slice(at + 1)}`}</Text>
+      {at >= 0 && <Text {...theme.tone('dim')}>{` ${pair.slice(at + 1)}`}</Text>}
     </Text>
   )
 }
@@ -25,33 +33,27 @@ function pairs(text: string): string[] {
     .filter(Boolean)
 }
 
+function Half({ text }: { text: string }) {
+  return (
+    <Box gap={2}>
+      {pairs(text).map(pair => (
+        <Pair key={pair} pair={pair} />
+      ))}
+    </Box>
+  )
+}
+
 /**
- * The two-part key bar, cc-switch style: navigation on the left of a divider, actions
- * on the right. Each half is `·`-separated `key action` pairs; the divider stands out
- * a touch more than the dots.
+ * The two-part key bar, cc-switch style: navigation on the left of a faint divider,
+ * actions on the right. Each half is `·`-separated `key action` pairs.
  */
 export function KeyBar({ left, right }: { left?: string; right: string }) {
+  const theme = useTheme()
   return (
-    <Box gap={1}>
-      {left && (
-        <Box>
-          {pairs(left).map((pair, index) => (
-            <Text key={pair}>
-              {index > 0 && <Text dimColor>{'  ·  '}</Text>}
-              <Pair pair={pair} />
-            </Text>
-          ))}
-        </Box>
-      )}
-      {left && <Text dimColor>│</Text>}
-      <Box>
-        {pairs(right).map((pair, index) => (
-          <Text key={pair}>
-            {index > 0 && <Text dimColor>{'  ·  '}</Text>}
-            <Pair pair={pair} />
-          </Text>
-        ))}
-      </Box>
+    <Box gap={2}>
+      {left && <Half text={left} />}
+      {left && <Text {...theme.tone('faint')}>│</Text>}
+      <Half text={right} />
     </Box>
   )
 }

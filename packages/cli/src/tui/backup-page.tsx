@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
+import { Dialog } from './dialog'
+import { useTheme } from './fx/context'
 import type { Row } from './row-list'
 import { RowList } from './row-list'
 
@@ -17,6 +19,10 @@ export interface BackupPageProps {
   /** Unsaved editor changes: a restore rewrites the file under them, so they warn. */
   dirty: boolean
   onBack: () => void
+  /** Columns the page has, so its dialogs fit. */
+  width?: number
+  /** Told when a confirmation opens or closes, so the app shows the dialog keys. */
+  onDialog?: (open: boolean) => void
 }
 
 /** One run's line in the list: when it was made, why, and how much it holds. */
@@ -34,7 +40,8 @@ function entryValue(backup: BackupInfo, t: Translate): string {
  * and pruning removes the runs past the newest 20. The page works on the files as they
  * are on disk, not on the draft.
  */
-export function BackupPage({ service, t, active, dirty, onBack }: BackupPageProps) {
+export function BackupPage({ service, t, active, dirty, onBack, width = 64, onDialog }: BackupPageProps) {
+  const theme = useTheme()
   const [state, setState] = useState<'loading' | 'ready' | 'busy'>('loading')
   const [backups, setBackups] = useState<readonly BackupInfo[]>([])
   const [lines, setLines] = useState<string[]>([])
@@ -61,6 +68,11 @@ export function BackupPage({ service, t, active, dirty, onBack }: BackupPageProp
   useEffect(() => {
     load()
   }, [service, t])
+
+  useEffect(() => {
+    onDialog?.(confirm !== undefined)
+  }, [confirm !== undefined])
+  useEffect(() => () => onDialog?.(false), [])
 
   const note = (text: string) => setLines(current => [...current, text])
 
@@ -107,57 +119,63 @@ export function BackupPage({ service, t, active, dirty, onBack }: BackupPageProp
       })
   }
 
-  const rows: Row[] = confirm
-    ? [
-        {
-          id: 'confirm',
-          label:
-            confirm.kind === 'restore'
-              ? t('tui.backup.confirmRestore', { id: confirm.id })
-              : t('tui.backup.confirmPrune'),
-          action: { type: 'run', run: () => (confirm.kind === 'restore' ? restore(confirm.id) : prune()) },
-        },
-        {
-          id: 'cancel',
-          label: t('tui.backup.cancel'),
-          action: { type: 'run', run: () => setConfirm(undefined) },
-        },
-      ]
-    : [
-        ...backups.map((backup): Row => ({
-          id: backup.id,
-          label: backup.id,
-          value: entryValue(backup, t),
-          action: { type: 'run', run: () => setConfirm({ kind: 'restore', id: backup.id }) },
-        })),
-        ...(backups.length > 0
-          ? [
-              {
-                id: 'prune',
-                label: t('tui.backup.prune'),
-                action: { type: 'run' as const, run: () => setConfirm({ kind: 'prune' }) },
-              },
-            ]
-          : []),
-      ]
+  const rows: Row[] = [
+    ...backups.map((backup): Row => ({
+      id: backup.id,
+      label: backup.id,
+      value: entryValue(backup, t),
+      action: { type: 'run', run: () => setConfirm({ kind: 'restore', id: backup.id }) },
+    })),
+    ...(backups.length > 0
+      ? [
+          {
+            id: 'prune',
+            label: t('tui.backup.prune'),
+            action: { type: 'run' as const, run: () => setConfirm({ kind: 'prune' }) },
+          },
+        ]
+      : []),
+  ]
+
+  // Both confirmations open on Cancel: a stray Enter never overwrites files or deletes backups.
+  if (confirm) {
+    const restoring = confirm.kind === 'restore'
+    return (
+      <Box flexDirection="column" flexGrow={1} justifyContent="center" alignItems="center">
+        <Dialog
+          width={Math.min(60, width)}
+          initial={0}
+          active={active && state !== 'busy'}
+          onCancel={() => setConfirm(undefined)}
+          buttons={[
+            { label: t('tui.button.cancel'), run: () => setConfirm(undefined) },
+            restoring
+              ? { label: t('tui.button.restore'), run: () => restore(confirm.id), destructive: true }
+              : { label: t('tui.button.prune'), run: prune, destructive: true },
+          ]}
+        >
+          <Box flexDirection="column">
+            <Text bold {...theme.tone('accent')}>
+              {restoring ? t('tui.backup.restoreTitle') : t('tui.backup.pruneTitle')}
+            </Text>
+            <Text>{restoring ? t('tui.backup.restoreBody', { id: confirm.id }) : t('tui.backup.pruneBody')}</Text>
+          </Box>
+        </Dialog>
+      </Box>
+    )
+  }
 
   return (
     <Box flexDirection="column" gap={1}>
-      <Text dimColor>{t('tui.backup.intro')}</Text>
-      {state === 'loading' && <Text dimColor>{t('tui.backup.loading')}</Text>}
-      {state !== 'loading' && backups.length === 0 && !confirm && <Text dimColor>{t('cli.backup.none')}</Text>}
-      {overDirty && <Text color="yellow">{t('tui.backup.restoredDirty')}</Text>}
+      <Text {...theme.tone('dim')}>{t('tui.backup.intro')}</Text>
+      {state === 'loading' && <Text {...theme.tone('dim')}>{t('tui.backup.loading')}</Text>}
+      {state !== 'loading' && backups.length === 0 && <Text {...theme.tone('dim')}>{t('cli.backup.none')}</Text>}
+      {overDirty && <Text {...theme.tone('warn')}>{t('tui.backup.restoredDirty')}</Text>}
       {/* Two lines at most, so the list below keeps its rows even when a result runs long. */}
       {lines.slice(-2).map((line, index) => (
         <Text key={`${index}-${line}`}>{line}</Text>
       ))}
-      {/* Keyed by mode, so entering the confirm starts at its first row, not where the list left off. */}
-      <RowList
-        key={confirm ? 'confirm' : 'list'}
-        rows={rows}
-        active={active && state !== 'busy'}
-        onBack={confirm ? () => setConfirm(undefined) : onBack}
-      />
+      <RowList rows={rows} active={active && state !== 'busy'} onBack={onBack} />
     </Box>
   )
 }
