@@ -43,7 +43,7 @@ ZCF 只读取一个文件：`~/.ufomiao/zcf/zcf.json`。每个命令都可以用
 |----|------|
 | `claude-code` | Claude Code |
 | `codex` | Codex |
-| `gemini-cli` | Gemini CLI |
+| `antigravity-cli` | Antigravity CLI |
 | `opencode` | OpenCode |
 | `cursor` | Cursor CLI |
 | `pi` | Pi |
@@ -70,7 +70,7 @@ ZCF 只读取一个文件：`~/.ufomiao/zcf/zcf.json`。每个命令都可以用
 
 `name` 和 `apiKey` 必填，`anthropic` 和 `openai` 块中的 `baseUrl` 也必填。
 
-每个协议块都是可选的。工具使用自己支持的协议：Claude Code 用 `anthropic`，Codex 用 `openai`，Gemini CLI 用 `gemini`。OpenCode 使用 `anthropic` 或 `openai`，Pi 使用第一个带有模型的块，DeepSeek Harness 依次使用 `anthropic`、`openai`。工具所需的协议缺失时，计划中会给出提示，该工具保留当前的供应商。Cursor CLI 只使用 Cursor 自家的模型。详见 [Agent 工具](./tools)。
+每个协议块都是可选的。工具使用自己支持的协议：Claude Code 用 `anthropic`，Codex 用 `openai`。OpenCode 使用 `anthropic` 或 `openai`，Pi 使用第一个带有模型的块，DeepSeek Harness 依次使用 `anthropic`、`openai`。工具所需的协议缺失时，计划中会给出提示，该工具保留当前的供应商。Cursor CLI 只使用 Cursor 自家的模型；Antigravity CLI 只从环境变量读取密钥，因此计划中改为给出手动配置的步骤。详见 [Agent 工具](./tools)。
 
 想从已知供应商填入这些字段，见[供应商预设](./providers)。
 
@@ -230,7 +230,7 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 | 工具 | 应用时写入什么 |
 |------|----------------|
 | Claude Code | 它自己的 `language` 键，在 `~/.claude/settings.json` 中：`zh-CN` 写 `Simplified Chinese`。`en` 会移除 ZCF 之前写入的值；你在 Claude Code 里自己设置的语言（如 `japanese`）不会被改动。 |
-| Codex、Gemini CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness | 没有自己的语言设置。选 `zh-CN` 时计划会对每个工具说明这一点，且不改动它们的配置。 |
+| Codex、Antigravity CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness | 没有自己的语言设置。选 `zh-CN` 时计划会对每个工具说明这一点，且不改动它们的配置。 |
 
 ## 环境变量
 
@@ -244,4 +244,4 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 | `ZCF_REDUCED_MOTION` | 设为 `1` 时关闭终端界面的动效，所有动画显示静止帧。CI、`TERM=dumb` 以及输出不是终端时也会关闭。 |
 | `NO_COLOR` | 终端界面不使用颜色，选中项用反色显示。 |
 
-各工具用来移动自身配置目录的变量都会被遵循：`CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`GEMINI_CLI_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR` 和 `DSH_HOME`。
+各工具用来移动自身配置目录的变量都会被遵循：`CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR` 和 `DSH_HOME`。

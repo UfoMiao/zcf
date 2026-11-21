@@ -43,18 +43,19 @@ title: Agent 工具
 
 遵循 `CODEX_HOME`。
 
-## Gemini CLI
+## Antigravity CLI
+
+Antigravity CLI（`agy`）已取代 Gemini CLI 成为 Google 的终端 Agent，因此 ZCF 改为配置它。
 
 | | |
 |---|---|
-| 检测 | `gemini --version` |
-| 安装与更新 | `npm install -g @google/gemini-cli` |
-| 卸载 | `npm uninstall -g @google/gemini-cli`；Homebrew 或 MacPorts 安装的会跳过并提示 |
-| 供应商 | `~/.gemini/.env` 中的 `GEMINI_API_KEY` 和 `GOOGLE_GEMINI_BASE_URL`，以及 `~/.gemini/settings.json` 中的 `security.auth.selectedType = "gemini-api-key"` 和 `model.name`。使用供应商的 `gemini` 块。 |
-| MCP | `gemini mcp add -s user`。环境变量和请求头随后写入 `settings.json`，因为该命令的 `-e` 选项会在值的第二个 `=` 处截断。 |
-| 技能 | `-a gemini-cli`，安装到 `~/.agents/skills` |
-
-`settings.json` 和 `.env` 遵循 `GEMINI_CLI_HOME`。技能仍在 `~/.agents/skills`，因为 skills CLI 安装到那里。
+| 检测 | `agy --version`，然后是安装器的位置：`~/.local/bin/agy`，Windows 上为 `%LOCALAPPDATA%\agy\bin\agy.exe` |
+| 安装 | 来自 `antigravity.google/cli` 的官方安装器（`install.sh`，Windows 上为 `install.ps1`） |
+| 更新 | 无需执行：Antigravity CLI 会在后台自动更新，`zcf update` 会给出提示 |
+| 卸载 | 删除 `~/.local/bin/agy`（Windows 上为 `%LOCALAPPDATA%\agy\bin` 目录），删除前先备份。与 Antigravity App 和 IDE 共用的 `~/.gemini` 保持不变。 |
+| 供应商 | 不应用。Antigravity CLI 只从 `GEMINI_API_KEY` 环境变量读取 API 密钥，因此计划中会给出手动配置的提示：在 `~/.gemini/antigravity-cli/settings.json` 中设置 `"modelProvider": "gemini"`，并导出 `GEMINI_API_KEY` 和 `GOOGLE_GEMINI_BASE_URL`。ZCF 不改动模型和 Google 登录。 |
+| MCP | 写入 `~/.gemini/config/mcp_config.json` 的 `mcpServers`，该文件与 Antigravity App 和 IDE 共用：stdio 服务写 `command`、`args` 和 `env`，HTTP 服务写 `serverUrl` 和 `headers`。没有 `agy mcp add` 命令。ZCF 不管理的设置（如 `disabled`）保持不变。 |
+| 技能 | `-a antigravity-cli`，安装到 `~/.gemini/config/skills` |
 
 ## OpenCode
 

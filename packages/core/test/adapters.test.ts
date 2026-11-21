@@ -51,40 +51,44 @@ describe('planUpdates', () => {
     expect(plan.tools[1]!.notices[0]!.message.key).toBe('notice.notInstalled')
   })
 
-  it('reaches the Codex and Gemini CLI adapters', async () => {
+  it('reaches the Codex and Antigravity CLI adapters', async () => {
     const tools = createContext({
       ...ctx,
       runner: fakeRunner({
         'codex --version': { stdout: 'codex-cli 0.164.0' },
-        'gemini --version': { stdout: '0.65.0' },
+        'agy --version': { stdout: '1.0.3' },
       }),
     })
-    const plan = await planUpdates(['codex', 'gemini-cli'], tools)
+    const plan = await planUpdates(['codex', 'antigravity-cli'], tools)
     expect(
       plan.tools.map(tool => tool.steps.map(step => step.kind === 'command' && [step.command, ...step.args])),
-    ).toEqual([[['codex', 'update']], [['npm', 'install', '-g', '@google/gemini-cli@latest']]])
+    ).toEqual([[['codex', 'update']], []])
+    // Antigravity CLI updates itself in the background, so there is only a notice.
+    expect(plan.tools[1]!.notices).toEqual([
+      { level: 'info', message: { key: 'notice.selfUpdates', params: { tool: 'antigravity-cli' } } },
+    ])
     // The installed version, so the caller can tell whether an update found anything newer.
-    expect(plan.tools.map(tool => tool.version)).toEqual(['0.164.0', '0.65.0'])
+    expect(plan.tools.map(tool => tool.version)).toEqual(['0.164.0', '1.0.3'])
   })
 })
 
-/** Gemini CLI 0.65.0 installed, with `latest` as npm's newest version. */
-function gemini(latest: string) {
+/** dsh 0.2.1 installed, with `latest` as npm's newest version. */
+function dshAt(latest: string) {
   return createContext({
     ...ctx,
     runner: fakeRunner({
-      'gemini --version': { stdout: '0.65.0' },
-      'npm view @google/gemini-cli version': { stdout: `${latest}\n` },
+      'dsh --version': { stdout: '0.2.1' },
+      'npm view @deepseek-ai/dsh version': { stdout: `${latest}\n` },
     }),
   })
 }
 
 describe('planUpdates for tools updated with npm', () => {
   it('skips the reinstall when npm has nothing newer', async () => {
-    const [plan] = (await planUpdates(['gemini-cli'], gemini('0.65.0'))).tools
+    const [plan] = (await planUpdates(['dsh'], dshAt('0.2.1'))).tools
     expect(plan!.steps).toEqual([])
     expect(plan!.notices).toEqual([
-      { level: 'info', message: { key: 'notice.upToDate', params: { tool: 'gemini-cli', version: '0.65.0' } } },
+      { level: 'info', message: { key: 'notice.upToDate', params: { tool: 'dsh', version: '0.2.1' } } },
     ])
   })
 
@@ -102,9 +106,9 @@ describe('planUpdates for tools updated with npm', () => {
   })
 
   it('updates when npm has a newer version, or when it cannot tell', async () => {
-    expect((await planUpdates(['gemini-cli'], gemini('0.66.0'))).tools[0]!.steps).toHaveLength(1)
-    const offline = createContext({ ...ctx, runner: fakeRunner({ 'gemini --version': { stdout: '0.65.0' } }) })
-    expect((await planUpdates(['gemini-cli'], offline)).tools[0]!.steps).toHaveLength(1)
+    expect((await planUpdates(['dsh'], dshAt('0.2.2'))).tools[0]!.steps).toHaveLength(1)
+    const offline = createContext({ ...ctx, runner: fakeRunner({ 'dsh --version': { stdout: '0.2.1' } }) })
+    expect((await planUpdates(['dsh'], offline)).tools[0]!.steps).toHaveLength(1)
   })
 
   it('asks the registry the update would use', async () => {
@@ -112,10 +116,10 @@ describe('planUpdates for tools updated with npm', () => {
     const recorder: CommandRunner = {
       async run(command, _args, options) {
         if (command === 'npm') calls.push(options?.env)
-        return { exitCode: 0, stdout: '0.65.0', stderr: '' }
+        return { exitCode: 0, stdout: '0.2.1', stderr: '' }
       },
     }
-    await planUpdates(['gemini-cli'], createContext({ ...ctx, runner: recorder, mirror: 'china' }))
+    await planUpdates(['dsh'], createContext({ ...ctx, runner: recorder, mirror: 'china' }))
     expect(calls).toEqual([{ npm_config_registry: 'https://registry.npmmirror.com' }])
   })
 })

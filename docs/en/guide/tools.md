@@ -43,18 +43,19 @@ Across all tools:
 
 `CODEX_HOME` is followed.
 
-## Gemini CLI
+## Antigravity CLI
+
+Antigravity CLI (`agy`) replaced Gemini CLI as Google's terminal agent, so ZCF configures it instead.
 
 | | |
 |---|---|
-| Detect | `gemini --version` |
-| Install and update | `npm install -g @google/gemini-cli` |
-| Uninstall | `npm uninstall -g @google/gemini-cli`; a Homebrew or MacPorts install is left with a notice |
-| Provider | `GEMINI_API_KEY` and `GOOGLE_GEMINI_BASE_URL` in `~/.gemini/.env`, plus `security.auth.selectedType = "gemini-api-key"` and `model.name` in `~/.gemini/settings.json`. Uses the provider's `gemini` block. |
-| MCP | `gemini mcp add -s user`. Environment variables and headers are written to `settings.json` afterwards, because the command's `-e` option cuts a value at its second `=`. |
-| Skills | `-a gemini-cli`, into `~/.agents/skills` |
-
-`GEMINI_CLI_HOME` is followed for `settings.json` and `.env`. Skills stay in `~/.agents/skills`, where the skills CLI installs them.
+| Detect | `agy --version`, then the installer's location: `~/.local/bin/agy`, or `%LOCALAPPDATA%\agy\bin\agy.exe` on Windows |
+| Install | The official installer from `antigravity.google/cli` (`install.sh`, or `install.ps1` on Windows) |
+| Update | Nothing to run: Antigravity CLI updates itself in the background, and `zcf update` says so |
+| Uninstall | Deletes `~/.local/bin/agy` (the `%LOCALAPPDATA%\agy\bin` folder on Windows), backed up first. `~/.gemini`, shared with the Antigravity App and IDE, stays. |
+| Provider | Not applied. Antigravity CLI reads an API key only from the `GEMINI_API_KEY` environment variable, so the plan shows a notice with the manual route: set `"modelProvider": "gemini"` in `~/.gemini/antigravity-cli/settings.json`, then export `GEMINI_API_KEY` and `GOOGLE_GEMINI_BASE_URL`. ZCF leaves the model and the Google sign-in alone. |
+| MCP | Written to `mcpServers` in `~/.gemini/config/mcp_config.json`, which the CLI shares with the Antigravity App and IDE: `command`, `args` and `env` for stdio servers, `serverUrl` and `headers` for HTTP. There is no `agy mcp add`. Settings ZCF does not manage, such as `disabled`, stay. |
+| Skills | `-a antigravity-cli`, into `~/.gemini/config/skills` |
 
 ## OpenCode
 

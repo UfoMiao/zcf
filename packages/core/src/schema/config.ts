@@ -3,7 +3,7 @@ import * as v from 'valibot'
 import { MIRRORS } from '../mirror'
 import type { Message } from '../plan/types'
 
-export const TOOL_IDS = ['claude-code', 'codex', 'gemini-cli', 'opencode', 'cursor', 'pi', 'dsh'] as const
+export const TOOL_IDS = ['claude-code', 'codex', 'antigravity-cli', 'opencode', 'cursor', 'pi', 'dsh'] as const
 
 export const ToolIdSchema = v.picklist(TOOL_IDS)
 export type ToolId = v.InferOutput<typeof ToolIdSchema>
@@ -15,7 +15,7 @@ export function isToolId(value: unknown): value is ToolId {
 export const TOOL_NAMES: Record<ToolId, string> = {
   'claude-code': 'Claude Code',
   codex: 'Codex',
-  'gemini-cli': 'Gemini CLI',
+  'antigravity-cli': 'Antigravity CLI',
   opencode: 'OpenCode',
   cursor: 'Cursor CLI',
   pi: 'Pi',

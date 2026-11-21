@@ -264,7 +264,7 @@ export function skillsAddStep(
 }
 
 export interface SkillsTarget {
-  /** The `skills` CLI agent id, such as `claude-code` or `gemini-cli`. */
+  /** The `skills` CLI agent id, such as `claude-code` or `antigravity-cli`. */
   agent: string
   /** The global skills folder the `skills` CLI installs into for that agent. */
   dir: string

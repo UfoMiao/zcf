@@ -32,6 +32,8 @@ ZCF 从不删除备份。不再需要时请自行删除旧目录。
 | 供应商没有 "…" 配置，… 将保留当前的供应商。 | 工具使用的协议你的供应商没有，例如 Codex 缺少 `openai` 块。补上该块，或让该工具保留它自己的供应商。 |
 | 没有为 … 设置模型。 | 在供应商里设置 `models.default`，或在其 `openai`、`gemini` 块里设置 `model`。 |
 | … 只使用自家模型，不会应用供应商配置。 | Cursor CLI。MCP 服务和技能仍会应用。 |
+| … 只从环境变量读取 API 密钥，因此 ZCF 不会应用供应商配置。… | Antigravity CLI。按提示中的步骤使用你的供应商，见 [Agent 工具](./tools#antigravity-cli)。MCP 服务和技能仍会应用。 |
+| … 会在后台自动更新，无需执行更新命令。 | 来自 Antigravity CLI 的 `zcf update`。 |
 | … 尚未安装。 | 来自 `zcf update`。运行 `zcf apply` 安装它。 |
 | 通过 npm 安装的 … 会经镜像更新；原生安装版仍从官方服务器下载。 | 来自使用 `china` 镜像的 `zcf update`。见[镜像](./mirrors#不覆盖的范围)。 |
 

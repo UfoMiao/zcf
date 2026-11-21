@@ -96,6 +96,7 @@ const en = {
   'step.statusLine': 'Wire the CCometixLine status bar into {tool}',
   'step.writeConfig': 'Update {file}',
   'notice.notInstalled': '{tool} is not installed.',
+  'notice.selfUpdates': '{tool} updates itself in the background, so there is nothing to run.',
   'notice.extraInstalled': '{extra} is already installed.',
   'notice.magpieClient': 'Open the magpie app to pick providers; magpie writes the keys itself.',
   'notice.magpieCli': 'Run "magpie tui" to pick providers; magpie writes the keys itself.',
@@ -119,6 +120,8 @@ const en = {
     '{tool} installed with npm updates through the mirror; a native install still downloads from its official servers.',
   'notice.providerMissingProtocol': 'The provider has no "{protocol}" settings, so {tool} keeps its current provider.',
   'notice.providerNotSupported': '{tool} only uses its own models, so the provider is not applied to it.',
+  'notice.providerEnvOnly':
+    '{tool} reads an API key only from its environment, so ZCF does not apply the provider. To use one, set "modelProvider": "gemini" in {file}, then export GEMINI_API_KEY and GOOGLE_GEMINI_BASE_URL before starting it.',
   'notice.mcpNotSupported': '{tool} has no built-in MCP support, so the MCP servers are not applied to it.',
   'notice.modelMissing':
     'No model is set for {tool}. Set "models.default" in the provider, or "model" in its "{protocol}" block (OpenAI and Gemini only).',
@@ -169,7 +172,7 @@ const en = {
   'field.skill.skills': 'Skills',
   'hint.provider.anthropicBaseUrl': 'For Claude Code and other tools that speak the Anthropic API',
   'hint.provider.openaiBaseUrl': 'For Codex, OpenCode and other tools that speak the OpenAI API',
-  'hint.provider.geminiBaseUrl': 'For Gemini CLI; leave empty to use Google directly',
+  'hint.provider.geminiBaseUrl': 'For tools that speak the Gemini API, such as Pi; leave empty to use Google directly',
   'hint.skill.source': "`zcf` picks ZCF's own skills; anything else is a GitHub owner/repo, a git URL or a local path",
   'hint.skill.skills': 'Comma-separated skill names; leave empty to install all of them',
   'tui.page.tools': 'Agent tools',
@@ -557,6 +560,7 @@ const zhCN: Record<MessageKey, string> = {
   'step.statusLine': '把 CCometixLine 状态栏接入 {tool}',
   'step.writeConfig': '更新 {file}',
   'notice.notInstalled': '{tool} 尚未安装。',
+  'notice.selfUpdates': '{tool} 会在后台自动更新，无需执行更新命令。',
   'notice.extraInstalled': '{extra} 已安装。',
   'notice.magpieClient': '打开 magpie 应用挑选供应商；密钥由 magpie 自己写入。',
   'notice.magpieCli': '运行 "magpie tui" 挑选供应商；密钥由 magpie 自己写入。',
@@ -577,6 +581,8 @@ const zhCN: Record<MessageKey, string> = {
   'notice.nativeUpdateNotMirrored': '通过 npm 安装的 {tool} 会经镜像更新；原生安装版仍从官方服务器下载。',
   'notice.providerMissingProtocol': '供应商没有 "{protocol}" 配置，{tool} 将保留当前的供应商。',
   'notice.providerNotSupported': '{tool} 只使用自家模型，不会应用供应商配置。',
+  'notice.providerEnvOnly':
+    '{tool} 只从环境变量读取 API 密钥，因此 ZCF 不会应用供应商配置。如需使用，请在 {file} 中设置 "modelProvider": "gemini"，并在启动前导出 GEMINI_API_KEY 和 GOOGLE_GEMINI_BASE_URL。',
   'notice.mcpNotSupported': '{tool} 不内置 MCP 支持，不会应用 MCP 服务配置。',
   'notice.modelMissing':
     '没有为 {tool} 设置模型。请在供应商里设置 "models.default"，或在 "{protocol}" 配置里设置 "model"（仅 OpenAI 和 Gemini 协议）。',
@@ -626,7 +632,7 @@ const zhCN: Record<MessageKey, string> = {
   'field.skill.skills': '技能',
   'hint.provider.anthropicBaseUrl': '供 Claude Code 等使用 Anthropic 接口的工具',
   'hint.provider.openaiBaseUrl': '供 Codex、OpenCode 等使用 OpenAI 接口的工具',
-  'hint.provider.geminiBaseUrl': '供 Gemini CLI 使用；留空则直接使用 Google',
+  'hint.provider.geminiBaseUrl': '供使用 Gemini 协议的工具（如 Pi）使用；留空则直接使用 Google',
   'hint.skill.source': '`zcf` 表示 ZCF 自带技能；其他为 GitHub 的 owner/repo、git 地址或本地路径',
   'hint.skill.skills': '用逗号分隔的技能名；留空则全部安装',
   'tui.page.tools': 'Agent 工具',

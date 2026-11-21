@@ -158,6 +158,25 @@ describe('zcf plan', () => {
     expect(stdout).not.toContain('abc')
   })
 
+  it('names the manual provider route for Antigravity CLI in both languages, without the key', async () => {
+    await writeConfig({
+      version: 1,
+      tools: ['antigravity-cli'],
+      provider: { name: 'GLM', apiKey: 'sk-agy-secret', gemini: { baseUrl: 'https://gw.example.com' } },
+    })
+    const en = await run('plan')
+    expect(en.code).toBe(EXIT_OK)
+    expect(en.stdout).toContain('Antigravity CLI reads an API key only from its environment')
+    expect(en.stdout).toContain('"modelProvider": "gemini" in ~/.gemini/antigravity-cli/settings.json')
+    expect(en.stdout).toContain('export GEMINI_API_KEY and GOOGLE_GEMINI_BASE_URL')
+    expect(en.stdout).not.toContain('sk-agy-secret')
+
+    const zh = await run('plan', '--lang', 'zh-CN')
+    expect(zh.stdout).toContain('Antigravity CLI 只从环境变量读取 API 密钥')
+    expect(zh.stdout).toContain('~/.gemini/antigravity-cli/settings.json')
+    expect(zh.stdout).not.toContain('sk-agy-secret')
+  })
+
   it('masks credentials already in the native config, not only the new ones', async () => {
     await writeConfig(fullConfig)
     await mkdir(join(home, '.claude'))
@@ -227,7 +246,7 @@ describe('zcf plan', () => {
     expect(invalid.code).toBe(EXIT_INVALID_CONFIG)
     expect(invalid.stderr).toContain('is not valid:')
     expect(invalid.stderr).toContain(
-      '  - tools.0: must be "claude-code" | "codex" | "gemini-cli" | "opencode" | "cursor" | "pi" | "dsh"',
+      '  - tools.0: must be "claude-code" | "codex" | "antigravity-cli" | "opencode" | "cursor" | "pi" | "dsh"',
     )
   })
 
@@ -360,11 +379,13 @@ describe('zcf update', () => {
   })
 
   it('only reports an unchanged version after an npm install', async () => {
-    responses['gemini --version'] = { stdout: '0.65.0' }
-    responses['npm install -g @google/gemini-cli@latest'] = {}
-    const { code, stdout } = await run('update', '--tools', 'gemini-cli')
+    responses['dsh --version'] = { stdout: '0.2.1' }
+    responses[
+      'npm install -g --allow-scripts=@deepseek-ai/dsh-subprocess-local,koffi,node-pty,protobufjs,@google/genai @deepseek-ai/dsh@latest'
+    ] = {}
+    const { code, stdout } = await run('update', '--tools', 'dsh')
     expect(code).toBe(EXIT_OK)
-    expect(stdout).toContain('Gemini CLI still reports 0.65.0 after the npm install.')
+    expect(stdout).toContain('DeepSeek Harness still reports 0.2.1 after the npm install.')
     expect(stdout).toContain('Done: 1 applied, 0 already up to date.')
   })
 
@@ -479,19 +500,16 @@ describe('zcf uninstall', () => {
   })
 
   it('masks the secrets the uninstall preview shows', async () => {
-    responses['gemini --version'] = { stdout: '0.65.0' }
-    responses['npm ls -g @google/gemini-cli --depth=0'] = {}
-    await mkdir(join(home, '.gemini'), { recursive: true })
-    await writeFile(
-      join(home, '.gemini', '.env'),
-      'GEMINI_API_KEY=sk-gemini-secret-1\nGOOGLE_GEMINI_BASE_URL=https://gw\n',
-    )
+    responses['dsh --version'] = { stdout: '0.2.1' }
+    responses['npm ls -g @deepseek-ai/dsh --depth=0'] = {}
+    await mkdir(join(home, '.dsh'), { recursive: true })
+    await writeFile(join(home, '.dsh', '.env'), 'ZCF_API_KEY=sk-dsh-secret-1\n')
     await writeConfig({
       version: 1,
-      provider: { name: 'GLM', apiKey: 'sk-gemini-secret-1', gemini: { baseUrl: 'https://gw' } },
+      provider: { name: 'GLM', apiKey: 'sk-dsh-secret-1', openai: { baseUrl: 'https://gw' } },
     })
-    const { stdout } = await run('uninstall', 'gemini-cli')
-    expect(stdout).not.toContain('sk-gemini-secret-1')
+    const { stdout } = await run('uninstall', 'dsh')
+    expect(stdout).not.toContain('sk-dsh-secret-1')
     expect(stdout).toContain('sk-***-1')
   })
 

@@ -3,7 +3,7 @@
   "type": "module",
   "version": "5.0.0-alpha.0",
   "private": true,
-  "description": "Zero-Config Code Flow: one config for Claude Code, Codex, Gemini CLI and OpenCode, written as each tool's own native settings",
+  "description": "Zero-Config Code Flow: one config for Claude Code, Codex, Antigravity CLI and OpenCode, written as each tool's own native settings",
   "author": {
     "name": "Miao Da",
     "email": "ufo025174@gmail.com",
@@ -22,7 +22,7 @@
   "keywords": [
     "claude-code",
     "codex",
-    "gemini-cli",
+    "antigravity-cli",
     "opencode",
     "ai",
     "cli",

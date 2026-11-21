@@ -147,7 +147,7 @@ describe('parseZcfConfig', () => {
           path: 'tools.0',
           message: {
             key: 'configIssue.expected',
-            params: { expected: '"claude-code" | "codex" | "gemini-cli" | "opencode" | "cursor" | "pi" | "dsh"' },
+            params: { expected: '"claude-code" | "codex" | "antigravity-cli" | "opencode" | "cursor" | "pi" | "dsh"' },
           },
         },
         { path: 'provider.name', message: { key: 'configIssue.empty' } },

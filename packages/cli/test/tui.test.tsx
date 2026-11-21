@@ -161,6 +161,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('◉ Claude Code')
     expect(app.frame()).toContain('installed 2.1.0')
     expect(app.frame()).toContain('○ Codex')
+    expect(app.frame()).toContain('○ Antigravity CLI')
 
     await app.press(KEY.down, ' ')
     expect(app.frame()).toContain('◉ Codex')
@@ -2479,7 +2480,7 @@ function translatedPlan(): { plan: Plan; view: PlanView } {
           },
         ],
       },
-      { tool: 'gemini-cli', notices: [], steps: [] },
+      { tool: 'antigravity-cli', notices: [], steps: [] },
     ],
   }
   return { plan, view: { plan, previews: [[null, null], [null, null], []], secrets: [] } }

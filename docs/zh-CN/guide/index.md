@@ -12,7 +12,7 @@ ZCF 只负责配置工具，它不是网关，也不是代理：运行之后，�
 
 - Claude Code
 - Codex
-- Gemini CLI
+- Antigravity CLI
 - OpenCode
 - Cursor CLI
 - Pi

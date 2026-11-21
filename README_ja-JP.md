@@ -29,7 +29,7 @@
 
 ZCF の設定は 1 つだけです。プロバイダー、MCP サーバー、スキルをそこにまとめます。ZCF は選んだツールをインストールし、`claude mcp add-json` や `npx skills add` などツール自身のコマンドで各ツールの設定を書き込みます。
 
-対応ツール: Claude Code、Codex、Gemini CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness。
+対応ツール: Claude Code、Codex、Antigravity CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness。
 
 v5 の公開後:
 

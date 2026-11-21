@@ -29,7 +29,7 @@
 
 你只需维护一份 ZCF 配置：供应商、MCP 服务和技能。ZCF 会安装你选择的工具，并用各工具自带的命令（例如 `claude mcp add-json` 和 `npx skills add`）写入它们自己的设置。
 
-支持的工具：Claude Code、Codex、Gemini CLI、OpenCode、Cursor CLI、Pi 和 DeepSeek Harness。
+支持的工具：Claude Code、Codex、Antigravity CLI、OpenCode、Cursor CLI、Pi 和 DeepSeek Harness。
 
 v5 发布后：
 

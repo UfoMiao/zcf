@@ -41,7 +41,7 @@ npx zcf ui    # またはブラウザーで編集する
 |--------|:------------:|:------------:|:------:|
 | Claude Code | ✓ | ✓ | ✓ |
 | Codex | ✓ | ✓ | ✓ |
-| Gemini CLI | ✓ | ✓ | ✓ |
+| Antigravity CLI | | ✓ | ✓ |
 | OpenCode | ✓ | ✓ | ✓ |
 | Cursor CLI | | ✓ | ✓ |
 | Pi | ✓ | ✓ | ✓ |

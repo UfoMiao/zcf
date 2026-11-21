@@ -34,6 +34,8 @@ ZCF の表示言語は英語と簡体字中国語です。以下は英語の文�
 | The provider has no "…" settings, so … keeps its current provider. | ツールが話すプロトコルをプロバイダーが持っていません（`openai` ブロックの無い Codex など）。ブロックを追加するか、そのツールは独自のプロバイダーのままにしてください。 |
 | No model is set for …. | プロバイダーの `models.default`、または `openai` か `gemini` ブロックの `model` を設定してください。 |
 | … only uses its own models, so the provider is not applied to it. | Cursor CLI の場合です。MCP サーバーとスキルは適用されます。 |
+| … reads an API key only from its environment, so ZCF does not apply the provider. … | Antigravity CLI の場合です。通知の手順に従ってプロバイダーを設定してください。[エージェントツール](./tools#antigravity-cli) を参照してください。MCP サーバーとスキルは適用されます。 |
+| … updates itself in the background, so there is nothing to run. | Antigravity CLI の `zcf update` からの通知です。 |
 | … is not installed. | `zcf update` からの通知です。`zcf apply` を実行してインストールしてください。 |
 | … installed with npm updates through the mirror; a native install still downloads from its official servers. | `china` ミラーでの `zcf update` からの通知です。[ミラー](./mirrors#対象外) を参照してください。 |
 
