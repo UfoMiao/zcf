@@ -188,14 +188,15 @@ export function ApplyFlow({
   }
 
   const start = () => {
-    setScroll(0)
-    setOutcome(undefined)
-    setError(undefined)
-    setDetails({})
     void (async () => {
       // A refused save stays on the confirmation — the planning phase only starts once
-      // there is a saved config to plan, so Esc works while the refusal lands.
+      // there is a saved config to plan, so Esc works while the refusal lands. What the
+      // last run showed stays up until then too: a retry still saving keeps its card.
       if (!(await save())) return
+      setScroll(0)
+      setOutcome(undefined)
+      setError(undefined)
+      setDetails({})
       setPhase('planning')
       try {
         const planned = await service.plan()
@@ -272,8 +273,12 @@ export function ApplyFlow({
       const pendingAt = toolStates.findIndex(
         (state, index) => state === 'pending' && !hidden(toolPlan.steps[index]!, state),
       )
-      const running = phase === 'running' && !failed && pendingAt >= 0
+      // A tool runs while any of its steps is still pending — a fallback included, which
+      // runs in a failed step's place. Its outcome, once in, has the last word: a tool
+      // that recovered through its fallback is done, though the failed step keeps its ✗.
+      const running = phase === 'running' && toolStates.includes('pending')
       const ok = toolResult ? toolResult.ok : !failed && pendingAt < 0
+      const broken = toolResult ? !toolResult.ok : failed && !running
       if (toolIndex > 0) lines.push({ key: `gap-${toolIndex}`, node: <Text> </Text> })
       lines.push({
         key: `tool-${toolIndex}`,
@@ -283,7 +288,7 @@ export function ApplyFlow({
             {'  '}
             {running ? (
               <Wave width={4} />
-            ) : failed || (toolResult && !toolResult.ok) ? (
+            ) : broken ? (
               <Text {...theme.tone('err')}>✗</Text>
             ) : ok && toolStates.length > 0 ? (
               <Text {...theme.tone('ok')}>✓</Text>
@@ -310,7 +315,8 @@ export function ApplyFlow({
         const raw = toolStates[index]!
         const state: StepState = raw === 'pending' && failed && phase === 'done' ? 'skipped' : raw
         if (hidden(step, state)) continue
-        const current = running && index === pendingAt
+        // The spinner sits on the step running now; after a failure only a hidden fallback runs.
+        const current = running && !failed && index === pendingAt
         const target = state === 'unchanged' ? `(${t('cli.unchanged')})` : mask(render.stepTarget(step))
         lines.push({
           key: `step-${toolIndex}-${index}`,
@@ -494,6 +500,8 @@ export function ApplyFlow({
       </Box>
       {ending && (
         <Dialog
+          // A new ending is a new card: its focus starts on that card's safe choice.
+          key={ending}
           width={cardWidth}
           tone={ending === 'failed' || ending === 'error' ? 'err' : ending === 'noTools' ? 'warn' : 'accent'}
           clear={false}

@@ -2713,3 +2713,105 @@ describe('Tide pieces', () => {
     app.unmount()
   })
 })
+
+describe('Tide QA round 4', () => {
+  it('marks a tool that recovered through its fallback as done, keeping the failed step', async () => {
+    const install: Plan['tools'][number]['steps'][number] = {
+      kind: 'command',
+      title: { key: 'update via updater' },
+      command: 'claude',
+      args: ['update'],
+    }
+    const fallback: Plan['tools'][number]['steps'][number] = {
+      kind: 'command',
+      title: { key: 'install via npm' },
+      command: 'npm',
+      args: ['i', '-g', 'claude'],
+      fallback: true,
+    }
+    const configure: Plan['tools'][number]['steps'][number] = {
+      kind: 'command',
+      title: { key: 'configure it' },
+      command: 'claude',
+      args: ['config'],
+    }
+    const plan: Plan = { tools: [{ tool: 'claude-code', notices: [], steps: [install, fallback, configure] }] }
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      {
+        plan: async () => ({ plan, previews: [[null, null, null]], secrets: [] }),
+        apply: async onStep => {
+          const steps = [
+            { step: install, status: 'failed' as const, detail: 'updater broke' },
+            { step: fallback, status: 'done' as const },
+            { step: configure, status: 'done' as const },
+          ]
+          for (const [index, result] of steps.entries()) onStep?.({ tool: 'claude-code', index, result })
+          return { results: [{ tool: 'claude-code', ok: true, steps }], backupDir: '/home/me/b' }
+        },
+      },
+    )
+    const app = await start(service, { columns: 120 })
+    await app.press('a', KEY.enter)
+    const frame = await app.until('Applied — 2 changed')
+    expect(lineWith(frame, 'Claude Code')).toContain('✓')
+    expect(lineWith(frame, 'Claude Code')).not.toContain('✗')
+    expect(lineWith(frame, 'update via updater')).toContain('✗')
+    expect(lineWith(frame, 'install via npm')).toContain('✓')
+    app.unmount()
+  })
+
+  it('keeps the failure card, and its focus, while a retry is still saving', async () => {
+    const plan = twoToolPlan()
+    let release: (() => void) | undefined
+    let saves = 0
+    let applies = 0
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      {
+        save: () => {
+          saves++
+          // The first save goes through; the retry's is held.
+          return saves === 1 ? Promise.resolve() : new Promise(resolve => (release = resolve))
+        },
+        plan: async () => plan.view,
+        apply: async () => {
+          applies++
+          return {
+            results: [
+              {
+                tool: 'claude-code',
+                ok: false,
+                steps: [{ step: plan.plan.tools[0]!.steps[0]!, status: 'failed', detail: 'boom' }],
+              },
+            ],
+            backupDir: '/home/me/b',
+          }
+        },
+      },
+    )
+    const app = await start(service, { columns: 120 })
+    await app.press('a', KEY.enter)
+    await app.until('tool(s) failed')
+    expect(app.frame()).toContain('▸ Back to editor')
+    // Click Retry, the focus still on Back to editor.
+    const lines = app.frame().split('\n')
+    const row = lines.findIndex(line => line.includes('Retry'))
+    app.stdin.write(`\u001B[<0;${lines[row]!.indexOf('Retry') + 1};${row + 1}M`)
+    await tick()
+    await tick()
+    expect(saves).toBe(2)
+    expect(app.frame()).not.toContain('already up to date')
+    expect(app.frame()).not.toContain('▸ Quit')
+    expect(app.frame()).toContain('tool(s) failed')
+    // Once the save is in, the retry plans and applies again.
+    release?.()
+    for (let waited = 0; waited < 40; waited++) {
+      if (applies >= 2) break
+      // oxlint-disable-next-line no-await-in-loop
+      await tick()
+    }
+    expect(applies).toBe(2)
+    app.unmount()
+  })
+})
