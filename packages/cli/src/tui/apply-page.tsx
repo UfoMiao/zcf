@@ -1,7 +1,7 @@
 import type { FilePreview, PlanStep, StepResult, ToolStatus } from '@zcf/core'
 import { ACTOR_NAMES } from '@zcf/core'
 import type { ApplyOutcome, ConfigChange, PlanView, ZcfService } from '@zcf/ui-kit'
-import { installPicks, isTable, summarizeChanges } from '@zcf/ui-kit'
+import { installPicks, isTable, SECRET_KEYS, summarizeChanges } from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
@@ -10,7 +10,7 @@ import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
 import { applyCounts, hasWork, maskSecrets, Renderer, secretsOf, tildify } from '../render'
 import type { DialogButton } from './dialog'
-import { Dialog } from './dialog'
+import { Dialog, dialogWidth } from './dialog'
 import { useOneShot, useTheme } from './fx/context'
 import { Spinner, Hatch, Wave } from './fx/glyphs'
 import { GradientText, Paint } from './fx/paint'
@@ -74,26 +74,16 @@ function previewMap(view: PlanView): Map<PlanStep, FilePreview> {
 }
 
 /**
- * The secret values a draft holds — provider and profile API keys, MCP env and header
- * values — read leniently, since a draft may not be a valid config. An error from
- * planning or applying can quote them before the plan has listed any secrets.
+ * The secret values a draft holds — every string under an API key, an MCP server's
+ * env or its headers, wherever it sits (the provider, the profiles, the servers) —
+ * read leniently, since a draft may not be a valid config. An error from planning or
+ * applying can quote them before the plan has listed any secrets.
  */
-function draftSecrets(draft: Record<string, unknown>): string[] {
-  const values: string[] = []
-  const strings = (table: unknown) => {
-    if (isTable(table)) for (const value of Object.values(table)) if (typeof value === 'string') values.push(value)
-  }
-  const key = (provider: unknown) => {
-    if (isTable(provider) && typeof provider.apiKey === 'string') values.push(provider.apiKey)
-  }
-  key(draft.provider)
-  for (const profile of Array.isArray(draft.profiles) ? draft.profiles : []) if (isTable(profile)) key(profile.provider)
-  for (const server of Object.values(isTable(draft.mcpServers) ? draft.mcpServers : {})) {
-    if (!isTable(server)) continue
-    strings(server.env)
-    strings(server.headers)
-  }
-  return values.filter(Boolean)
+function draftSecrets(value: unknown, secret = false): string[] {
+  if (typeof value === 'string') return secret ? [value] : []
+  if (Array.isArray(value)) return value.flatMap(item => draftSecrets(item, secret))
+  if (!isTable(value)) return []
+  return Object.entries(value).flatMap(([key, part]) => draftSecrets(part, secret || SECRET_KEYS.has(key)))
 }
 
 /** A fallback step only shows once it ran: it stands in for a step that failed, and usually never runs. */
@@ -114,7 +104,8 @@ function StepGlyph({ state }: { state: StepState }) {
 /** The progress bar under the run's title: filled by finished steps, never by time. */
 function Progress({ done, total, t }: { done: number; total: number; t: Translate }) {
   const theme = useTheme()
-  const filled = total === 0 ? BAR : Math.round((BAR * done) / total)
+  // Only drawn once a plan has steps, so `total` is never 0.
+  const filled = Math.round((BAR * done) / total)
   return (
     <Box gap={2}>
       <Text>
@@ -177,7 +168,8 @@ export function ApplyFlow({
   const [outcome, setOutcome] = useState<ApplyOutcome>()
   const [error, setError] = useState<string>()
   const [scroll, setScroll] = useState(0)
-  const renderer = useRef<Renderer>(undefined)
+  // Until a plan names its secrets, the renderer masks none of its own; the draft's are masked apart.
+  const renderer = useRef(new Renderer({ write: () => {} }, t, [], home))
   const outputRef = useRef<DOMElement | null>(null)
   const rows = useTerminalRows()
 
@@ -221,16 +213,15 @@ export function ApplyFlow({
         const tools = planned.plan.tools.map(toolPlan => toolPlan.tool)
         const result = await service.apply(event => {
           const toolIndex = tools.indexOf(event.tool)
-          if (toolIndex >= 0) settle(toolIndex, event.index, event.result)
+          // An event always names a tool of the plan it came from.
+          settle(toolIndex, event.index, event.result)
         })
         // The outcome is the record: it fills in any step whose event never arrived.
-        for (const toolResult of result.results) {
-          const toolIndex = tools.indexOf(toolResult.tool)
-          const toolPlan = planned.plan.tools[toolIndex]
-          if (!toolPlan) continue
-          for (const stepResult of toolResult.steps) {
+        for (const [toolIndex, toolPlan] of planned.plan.tools.entries()) {
+          const toolResult = result.results.find(item => item.tool === toolPlan.tool)
+          for (const stepResult of toolResult?.steps ?? []) {
             const index = toolPlan.steps.indexOf(stepResult.step)
-            if (index >= 0) settle(toolIndex, index, stepResult)
+            settle(toolIndex, index, stepResult)
           }
         }
         setOutcome(result)
@@ -238,7 +229,7 @@ export function ApplyFlow({
       } catch (failure) {
         // The error may quote a secret: mask what the plan named, and what the draft holds.
         const message = t('tui.apply.failed', { message: errorText(failure, t) })
-        const planned = renderer.current?.mask(message) ?? message
+        const planned = renderer.current.mask(message)
         setError(maskSecrets(planned, secretsOf(draftSecrets(draft))))
       }
       setPhase('done')
@@ -262,18 +253,18 @@ export function ApplyFlow({
 
   // ---- The run's lines: every tool, its notices and its steps, in plan order. ----
   const plan = view?.plan
-  const mask = (text: string) => renderer.current?.mask(text) ?? text
+  const mask = (text: string) => renderer.current.mask(text)
   const lines: { key: string; node: ReactNode }[] = []
   let resolved = 0
   let total = 0
-  if (plan && renderer.current) {
+  if (plan) {
     const render = renderer.current
     const titles = plan.tools.flatMap(toolPlan =>
       toolPlan.steps.map(step => textWidth(mask(render.message(step.title)))),
     )
     const titleColumn = Math.min(Math.max(10, ...titles) + 2, Math.max(16, Math.floor(width / 2)))
     for (const [toolIndex, toolPlan] of plan.tools.entries()) {
-      const toolStates = states[toolIndex] ?? []
+      const toolStates = states[toolIndex]!
       total += toolPlan.steps.length
       resolved += toolStates.filter(state => state !== 'pending').length
       const failed = toolStates.includes('failed')
@@ -316,7 +307,7 @@ export function ApplyFlow({
         })
       for (const [index, step] of toolPlan.steps.entries()) {
         // After a failure the tool's remaining steps never run: once the run is over they read as skipped.
-        const raw = toolStates[index] ?? 'pending'
+        const raw = toolStates[index]!
         const state: StepState = raw === 'pending' && failed && phase === 'done' ? 'skipped' : raw
         if (hidden(step, state)) continue
         const current = running && index === pendingAt
@@ -401,12 +392,12 @@ export function ApplyFlow({
   if (phase === 'confirm' || phase === 'planning') {
     const changes = summarizeChanges(base, draft)
     const picks = installPicks(draft, detected)
-    const dialogWidth = Math.min(58, width)
+    const confirmWidth = dialogWidth(58, width)
     const [changesShown, picksShown] = fitLists(changes.length, picks.length, rows - CONFIRM_CHROME)
     const more = (count: number) => <Text {...theme.tone('dim')}>{`  ${t('tui.apply.more', { count })}`}</Text>
     return (
       <Dialog
-        width={dialogWidth}
+        width={confirmWidth}
         initial={1}
         active={active}
         onCancel={onClose}
@@ -538,7 +529,7 @@ export function ApplyFlow({
                     tool: ACTOR_NAMES[firstFailure.tool],
                     reason: mask(
                       failedStep?.detail?.split('\n')[0] ??
-                        (failedStep ? (renderer.current?.message(failedStep.step.title) ?? '') : ''),
+                        (failedStep ? renderer.current.message(failedStep.step.title) : ''),
                     ),
                   })}`}
                 </Text>

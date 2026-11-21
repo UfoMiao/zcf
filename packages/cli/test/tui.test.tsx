@@ -3,18 +3,29 @@ import { stripVTControlCharacters } from 'node:util'
 import type { BackupInfo, Plan } from '@zcf/core'
 import type { Draft, PlanView, ZcfService } from '@zcf/ui-kit'
 import chalk from 'chalk'
+import { Box, Text } from 'ink'
 import { render } from 'ink-testing-library'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { Lang } from '../src/i18n'
 import { createTranslator } from '../src/i18n'
 import { App } from '../src/tui/app'
+import { fitLists } from '../src/tui/apply-page'
 import type { FxOptions } from '../src/tui/fx/detect'
 import type { Clock } from '../src/tui/fx/ticker'
-import { Ticker } from '../src/tui/fx/ticker'
+import { FRAME_MS, systemClock, Ticker } from '../src/tui/fx/ticker'
 import { LOGO_ROWS } from '../src/tui/sidebar'
 import { textWidth } from '../src/tui/text-width'
-import { contrast, createTheme, DARK, detectBackground, detectColorLevel, detectMotion, LIGHT } from '../src/tui/theme'
+import {
+  contrast,
+  createTheme,
+  DARK,
+  detectBackground,
+  detectColorLevel,
+  detectMotion,
+  gradientColumns,
+  LIGHT,
+} from '../src/tui/theme'
 
 const KEY = {
   enter: '\r',
@@ -90,10 +101,9 @@ async function start(
   const press = async (...keys: string[]) => {
     for (const key of keys) {
       app.stdin.write(key)
-      // Each key needs its own render before the next one arrives; a second tick
-      // keeps a busy run from interleaving the next key with the previous render.
-      // oxlint-disable-next-line no-await-in-loop
-      await tick()
+      // Each key needs its own render before the next one arrives. Ink handles the key
+      // and renders synchronously; one tick lets the effects and promises it started
+      // settle, so the next key never interleaves with the previous render.
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
@@ -106,13 +116,21 @@ async function start(
       // oxlint-disable-next-line no-await-in-loop
       await tick()
     }
+    // A wait that runs out is a wrong expectation, not a slow machine: say so instead of returning.
+    if (!frame().includes(text)) throw new Error(`Timed out waiting for ${JSON.stringify(text)}:\n${frame()}`)
     // One more tick so input handlers of what just appeared are attached.
     await tick()
     return frame()
   }
   // One tick is not always enough for the config to load on a busy machine, and a key
   // pressed while it still loads lands on the loading screen and silently moves focus.
-  await until('~/.ufomiao/zcf/config.json')
+  // A fast load draws nothing until it is in, so the first non-empty frame is the loaded app,
+  // whatever the width shows of it.
+  for (let waited = 0; frame().trim() === '' && waited < 2000; waited += 30) {
+    // oxlint-disable-next-line no-await-in-loop
+    await tick()
+  }
+  await tick()
   // The frame with its escape codes, for the tests that read colour and inverse video.
   const raw = () => app.lastFrame() ?? ''
   return { ...app, press, frame, until, raw }
@@ -1003,7 +1021,7 @@ describe('terminal UI', () => {
     const { service } = fakeService({ version: 1, tools: ['claude-code'] }, { plan: async () => view })
     const app = await start(service)
     await app.press('a', KEY.enter)
-    expect(await app.until('nothing to do')).toBeTruthy()
+    expect(await app.until('Everything is already up to date.')).toContain('(already up to date)')
     await app.press(KEY.escape)
     expect(app.frame()).toContain('Pick the agent tools')
     app.unmount()
@@ -1561,7 +1579,8 @@ function manualClock() {
   return {
     clock,
     ticker,
-    fx: { clock, ticker, motion: true } satisfies FxOptions,
+    // Truecolor, so the motion tests drive the gradient paths too: sweeps, the flowing hatch, the tide.
+    fx: { clock, ticker, motion: true, colorLevel: 3 } satisfies FxOptions,
     /** Intervals ever created. */
     get created() {
       return created
@@ -1724,30 +1743,26 @@ describe('Tide theme', () => {
     expect(detectMotion({ NO_COLOR: '1' }, true)).toBe(true)
   })
 
-  it(
-    'paints the wordmark on the gradient, in cyan on 16 colours, and in no colour under NO_COLOR',
-    { timeout: 20_000 },
-    async () => {
-      const { service } = fakeService({ version: 1, tools: [] })
-      await withChalk(3, async () => {
-        const rich = await start(service, { columns: 120, fx: { colorLevel: 3, background: 'dark' } })
-        const row = rawLineWith(rich.raw(), '██████╗  ██████╗')
-        expect(truecolors(row).size).toBeGreaterThanOrEqual(3)
-        rich.unmount()
+  it('paints the wordmark on the gradient, in cyan on 16 colours, and in no colour under NO_COLOR', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    await withChalk(3, async () => {
+      const rich = await start(service, { columns: 120, fx: { colorLevel: 3, background: 'dark' } })
+      const row = rawLineWith(rich.raw(), '██████╗  ██████╗')
+      expect(truecolors(row).size).toBeGreaterThanOrEqual(3)
+      rich.unmount()
 
-        const named = await start(service, { columns: 120, fx: { colorLevel: 1, background: 'dark' } })
-        const cyanRow = rawLineWith(named.raw(), '██████╗  ██████╗')
-        expect(cyanRow).toContain('\u001B[36m')
-        expect(truecolors(cyanRow).size).toBe(0)
-        named.unmount()
+      const named = await start(service, { columns: 120, fx: { colorLevel: 1, background: 'dark' } })
+      const cyanRow = rawLineWith(named.raw(), '██████╗  ██████╗')
+      expect(cyanRow).toContain('\u001B[36m')
+      expect(truecolors(cyanRow).size).toBe(0)
+      named.unmount()
 
-        const none = await start(service, { columns: 120, fx: { colorLevel: 0, background: 'dark' } })
-        const plainRow = rawLineWith(none.raw(), '██████╗  ██████╗')
-        expect(colours(plainRow)).toBe(false)
-        none.unmount()
-      })
-    },
-  )
+      const none = await start(service, { columns: 120, fx: { colorLevel: 0, background: 'dark' } })
+      const plainRow = rawLineWith(none.raw(), '██████╗  ██████╗')
+      expect(colours(plainRow)).toBe(false)
+      none.unmount()
+    })
+  })
 
   it('shows selection without colour: inverse nav row and button, glyphs for every state', async () => {
     const { service } = fakeService({ version: 1, tools: ['claude-code'] })
@@ -1771,47 +1786,43 @@ describe('Tide theme', () => {
     })
   })
 
-  it(
-    'fits 80x24, 90x28, 120x30 and 160x40 without wrapping, the wordmark whole on wide ones',
-    { timeout: 30_000 },
-    async () => {
-      const { service } = fakeService({ version: 1, tools: ['claude-code'] })
-      for (const [columns, rows] of [
-        [80, 24],
-        [90, 28],
-        [120, 30],
-        [160, 40],
-      ] as const) {
+  it('fits 80x24, 90x28, 120x30 and 160x40 without wrapping, the wordmark whole on wide ones', async () => {
+    const { service } = fakeService({ version: 1, tools: ['claude-code'] })
+    for (const [columns, rows] of [
+      [80, 24],
+      [90, 28],
+      [120, 30],
+      [160, 40],
+    ] as const) {
+      // oxlint-disable-next-line no-await-in-loop
+      const app = await start(service, { columns, rows })
+      // A dirty draft puts `● to apply` in the narrow header, where the hatch must still fit.
+      // oxlint-disable-next-line no-await-in-loop
+      await app.press('1', KEY.enter, KEY.down, ' ', KEY.escape)
+      for (const view of ['editor', 'confirm'] as const) {
         // oxlint-disable-next-line no-await-in-loop
-        const app = await start(service, { columns, rows })
-        // A dirty draft puts `● to apply` in the narrow header, where the hatch must still fit.
-        // oxlint-disable-next-line no-await-in-loop
-        await app.press('1', KEY.enter, KEY.down, ' ', KEY.escape)
-        for (const view of ['editor', 'confirm'] as const) {
-          // oxlint-disable-next-line no-await-in-loop
-          if (view === 'confirm') await app.press('a')
-          const lines = app.frame().split('\n')
-          expect(lines, `${columns}x${rows} ${view}`).toHaveLength(rows)
-          // Every tool row stays on its one line: the next row's ordinal is on the very next line.
-          const first = lines.findIndex(line => line.includes('◉ Claude Code'))
-          const ordinals = lines
-            .slice(first, first + 7)
-            .map(line => /\b(\d) [◉○] /.exec(line)?.[1] ?? '?')
-            .join('')
-          expect(view === 'confirm' ? '1234567' : ordinals, `${columns}x${rows}`).toBe('1234567')
-          for (const line of lines) expect(textWidth(line), `${columns}x${rows}: ${line}`).toBeLessThanOrEqual(columns)
-          // Wide terminals show the whole wordmark; narrow ones the header, its hatch only ever after the facts.
-          const wide = columns >= 112
-          const header = lines[0]!
-          expect(LOGO_ROWS.every(logo => app.frame().includes(logo.trimEnd()))).toBe(wide)
-          expect(wide || header.includes('● to apply')).toBe(true)
-          const hatch = header.indexOf('╱')
-          expect(wide || hatch === -1 || hatch > header.indexOf('● to apply')).toBe(true)
-        }
-        app.unmount()
+        if (view === 'confirm') await app.press('a')
+        const lines = app.frame().split('\n')
+        expect(lines, `${columns}x${rows} ${view}`).toHaveLength(rows)
+        // Every tool row stays on its one line: the next row's ordinal is on the very next line.
+        const first = lines.findIndex(line => line.includes('◉ Claude Code'))
+        const ordinals = lines
+          .slice(first, first + 7)
+          .map(line => /\b(\d) [◉○] /.exec(line)?.[1] ?? '?')
+          .join('')
+        expect(view === 'confirm' ? '1234567' : ordinals, `${columns}x${rows}`).toBe('1234567')
+        for (const line of lines) expect(textWidth(line), `${columns}x${rows}: ${line}`).toBeLessThanOrEqual(columns)
+        // Wide terminals show the whole wordmark; narrow ones the header, its hatch only ever after the facts.
+        const wide = columns >= 112
+        const header = lines[0]!
+        expect(LOGO_ROWS.every(logo => app.frame().includes(logo.trimEnd()))).toBe(wide)
+        expect(wide || header.includes('● to apply')).toBe(true)
+        const hatch = header.indexOf('╱')
+        expect(wide || hatch === -1 || hatch > header.indexOf('● to apply')).toBe(true)
       }
-    },
-  )
+      app.unmount()
+    }
+  })
 
   it('draws nothing but the tide line around the wordmark, still at rest and rolling while busy', async () => {
     const plan = twoToolPlan()
@@ -1850,46 +1861,42 @@ describe('Tide theme', () => {
 })
 
 describe('Tide motion', () => {
-  it(
-    'holds no timer once the launch sweep is over, and again after the success shimmer',
-    { timeout: 20_000 },
-    async () => {
-      const plan = twoToolPlan()
-      const run = heldApply()
-      const { service } = fakeService(
-        { version: 1, tools: ['claude-code'] },
-        { plan: async () => plan.view, apply: run.apply },
-      )
-      const time = manualClock()
-      const app = await start(service, { columns: 120, fx: time.fx })
-      expect(time.ticker.running).toBe(true)
-      await time.step(20)
-      expect(time.ticker.subscribers).toBe(0)
-      expect(time.ticker.running).toBe(false)
-      expect(time.live).toBe(0)
+  it('holds no timer once the launch sweep is over, and again after the success shimmer', async () => {
+    const plan = twoToolPlan()
+    const run = heldApply()
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      { plan: async () => plan.view, apply: run.apply },
+    )
+    const time = manualClock()
+    const app = await start(service, { columns: 120, fx: time.fx })
+    expect(time.ticker.running).toBe(true)
+    await time.step(20)
+    expect(time.ticker.subscribers).toBe(0)
+    expect(time.ticker.running).toBe(false)
+    expect(time.live).toBe(0)
 
-      await app.press('a', KEY.enter)
-      await time.step(5)
-      run.finish({
-        results: plan.plan.tools.map(toolPlan => ({
-          tool: toolPlan.tool,
-          ok: true,
-          steps: toolPlan.steps.map(step => ({ step, status: 'done' as const })),
-        })),
-        backupDir: '/home/me/b',
-      })
-      // The result card grows in over four frames first.
-      await tick()
-      await time.step(4)
-      expect(app.frame()).toContain('Applied — 6 changed')
-      // The shimmer and the wordmark's second sweep play once, then stop.
-      expect(time.ticker.running).toBe(true)
-      await time.step(20)
-      expect(time.ticker.subscribers).toBe(0)
-      expect(time.live).toBe(0)
-      app.unmount()
-    },
-  )
+    await app.press('a', KEY.enter)
+    await time.step(5)
+    run.finish({
+      results: plan.plan.tools.map(toolPlan => ({
+        tool: toolPlan.tool,
+        ok: true,
+        steps: toolPlan.steps.map(step => ({ step, status: 'done' as const })),
+      })),
+      backupDir: '/home/me/b',
+    })
+    // The result card grows in over four frames first.
+    await tick()
+    await time.step(4)
+    expect(app.frame()).toContain('Applied — 6 changed')
+    // The shimmer and the wordmark's second sweep play once, then stop.
+    expect(time.ticker.running).toBe(true)
+    await time.step(20)
+    expect(time.ticker.subscribers).toBe(0)
+    expect(time.live).toBe(0)
+    app.unmount()
+  })
 
   it('never starts the ticker under reduced motion, and shows the still frames', async () => {
     const plan = twoToolPlan()
@@ -1965,6 +1972,15 @@ describe('Tide motion', () => {
     await tick()
     expect(stripVTControlCharacters(app.lastFrame() ?? '')).toContain('Pick the agent tools')
     app.unmount()
+
+    // Under reduced motion the boot screen is the still wordmark and a still spinner.
+    const still = manualClock()
+    const quiet = render(<App service={service} lang="en" home="/home/me" fx={{ ...still.fx, motion: false }} />)
+    still.fireTimeouts()
+    await tick()
+    expect(stripVTControlCharacters(quiet.lastFrame() ?? '')).toContain('… Loading your config…')
+    expect(still.created).toBe(0)
+    quiet.unmount()
   })
 })
 
@@ -2261,11 +2277,17 @@ describe('Tide QA regressions', () => {
 
     // Planning fails before any plan names its secrets: the draft's own key is masked.
     const key = 'QAFAKE-APIKEY-67890'
+    const profileKey = 'QAFAKE-PROFILE-24680'
     const early = fakeService(
-      { version: 1, tools: ['claude-code'], provider: { name: 'p', apiKey: key } },
+      {
+        version: 1,
+        tools: ['claude-code'],
+        provider: { name: 'p', apiKey: key },
+        profiles: [{ id: 'relay', name: 'Relay', provider: { name: 'Relay', apiKey: profileKey } }],
+      },
       {
         plan: async () => {
-          throw new Error(`rejected key ${key}`)
+          throw new Error(`rejected key ${key} and ${profileKey}`)
         },
       },
     )
@@ -2273,6 +2295,7 @@ describe('Tide QA regressions', () => {
     await second.press('a', KEY.enter)
     const failed = await second.until('rejected key')
     expect(failed).not.toContain(key)
+    expect(failed).not.toContain(profileKey)
     second.unmount()
   })
 
@@ -2304,6 +2327,351 @@ describe('Tide QA regressions', () => {
     expect(frame.split('\n')).toHaveLength(24)
     for (const text of ['Apply the configuration', 'Tools: Claude Code', 'Tools: Codex', '▸ Apply', 'Cancel', 'more'])
       expect(frame).toContain(text)
+    app.unmount()
+  })
+})
+
+describe('Tide text width', () => {
+  it('measures mixed Latin and CJK labels the way Ink lays them out', () => {
+    const labels = [
+      'Agent 工具',
+      '供应商：配置（新）。',
+      'MCP 服务；x',
+      '已装 2/3',
+      'ｆｕｌｌ ｗｉｄｔｈ',
+      '— · … ◉ ○ ▸ ━ ╱',
+      '界面语言: 简体中文 (L)',
+      '확인',
+    ]
+    for (const label of labels) {
+      // A box exactly as wide as textWidth says: too narrow truncates the label, too wide pads before the bar.
+      const { lastFrame, unmount } = render(
+        <Box width={60}>
+          <Box width={textWidth(label)} flexShrink={0}>
+            <Text wrap="truncate-end">{label}</Text>
+          </Box>
+          <Text>|</Text>
+        </Box>,
+      )
+      expect({ label, drawn: lastFrame()?.trimEnd() }).toEqual({ label, drawn: `${label}|` })
+      unmount()
+    }
+  })
+})
+
+/** A frame as terminal cells: a wide character fills its cell and leaves the next one empty (''). */
+function cellGrid(frame: string): string[][] {
+  return frame.split('\n').map(line => {
+    const cells: string[] = []
+    for (const char of line) {
+      cells.push(char)
+      if (textWidth(char) === 2) cells.push('')
+    }
+    return cells
+  })
+}
+
+const BORDER = new Set(['│', '╭', '╮', '╰', '╯', '─'])
+
+/**
+ * Every problem with the boxes in a frame: a line wider than the terminal, a side
+ * that leaves its column, a bottom edge that does not run corner to corner, or a box
+ * whose border touches another one's beside it.
+ */
+function boxProblems(frame: string, columns: number): string[] {
+  const grid = cellGrid(frame)
+  const at = (row: number, col: number) => grid[row]?.[col] ?? ' '
+  const problems: string[] = []
+  for (const [row, cells] of grid.entries())
+    if (cells.length > columns) problems.push(`row ${row} is ${cells.length} cells wide`)
+  for (const [top, cells] of grid.entries()) {
+    for (const [left, cell] of cells.entries()) {
+      if (cell !== '╭') continue
+      const right = cells.indexOf('╮', left + 1)
+      if (right < 0) {
+        problems.push(`╭ at ${top}:${left} has no ╮`)
+        continue
+      }
+      let bottom = top + 1
+      while (bottom < grid.length && at(bottom, left) === '│') bottom++
+      if (at(bottom, left) !== '╰') {
+        problems.push(`left side from ${top}:${left} breaks at row ${bottom} (${JSON.stringify(at(bottom, left))})`)
+        continue
+      }
+      if (at(bottom, right) !== '╯') problems.push(`box ${top}:${left} ends at ${bottom}:${right} without ╯`)
+      for (let col = left + 1; col < right; col++)
+        if (at(bottom, col) !== '─') problems.push(`bottom of box ${top}:${left} breaks at col ${col}`)
+      for (let row = top + 1; row < bottom; row++) {
+        if (at(row, right) !== '│') problems.push(`right side of box ${top}:${left} breaks at row ${row}`)
+        // A border never sits right against another box's: one blank cell at least.
+        if (BORDER.has(at(row, left - 1)))
+          problems.push(`box ${top}:${left} touches a border on its left at row ${row}`)
+        if (BORDER.has(at(row, right + 1)))
+          problems.push(`box ${top}:${left} touches a border on its right at row ${row}`)
+      }
+    }
+  }
+  return problems
+}
+
+/** An install step whose title translates, so it reads in the UI's language. */
+function installStep(tool: 'claude-code' | 'codex', n: number): Plan['tools'][number]['steps'][number] {
+  return {
+    kind: 'command',
+    title: { key: 'step.install', params: { tool } },
+    command: 'npm',
+    args: ['i', '-g', `${tool}-${n}`],
+  }
+}
+
+/** A plan whose steps carry translated titles, for the run view in either language. */
+function translatedPlan(): { plan: Plan; view: PlanView } {
+  const step = installStep
+  const plan: Plan = {
+    tools: [
+      { tool: 'claude-code', notices: [], steps: [step('claude-code', 1), step('claude-code', 2)] },
+      {
+        tool: 'codex',
+        notices: [{ level: 'warning', message: { key: 'notice.notInstalled', params: { tool: 'codex' } } }],
+        // The fallback stands in for a failed install; it only shows once it has run.
+        steps: [
+          step('codex', 1),
+          {
+            kind: 'command',
+            title: { key: 'step.install', params: { tool: 'codex' } },
+            command: 'npm',
+            args: ['i', '-g', 'codex'],
+            fallback: true,
+          },
+        ],
+      },
+      { tool: 'gemini-cli', notices: [], steps: [] },
+    ],
+  }
+  return { plan, view: { plan, previews: [[null, null], [null, null], []], secrets: [] } }
+}
+
+/** A draft whose confirmation lists many picks with CJK names. */
+const CJK_DRAFT: Draft = {
+  version: 1,
+  tools: ['claude-code', 'codex'],
+  skills: [{ source: 'owner/技能库', skills: Array.from({ length: 9 }, (_, i) => `中文技能-${i + 1}（测试）`) }],
+  mcpServers: { context7: { type: 'stdio', command: 'npx' } },
+}
+
+const SIZES = [
+  [80, 24],
+  [90, 28],
+  [120, 30],
+  [160, 40],
+] as const
+
+describe('Tide box guard', () => {
+  it('flags a side out of its column, a CJK cell miscount and borders that touch', () => {
+    const straight = ['╭──╮', '│中│', '╰──╯'].join('\n')
+    expect(boxProblems(straight, 4)).toEqual([])
+    // One cell short on the right: the side leaves its column.
+    expect(boxProblems(['╭──╮', '│a│', '╰──╯'].join('\n'), 4)).toContain('right side of box 0:0 breaks at row 1')
+    // A wide character counted as one cell pushes the side out, and the line overflows.
+    expect(boxProblems(['╭──╮', '│中a│', '╰──╯'].join('\n'), 4).length).toBeGreaterThan(0)
+    expect(boxProblems(['╭─╮╭─╮', '│ ││ │', '╰─╯╰─╯'].join('\n'), 6)).toContain(
+      'box 0:0 touches a border on its right at row 1',
+    )
+  })
+})
+
+describe.each(['en', 'zh-CN'] as const)('Tide straight lines in %s', lang => {
+  describe.each(SIZES)('at %ix%i', (columns, rows) => {
+    const check = (frame: string, what: string) => {
+      // The label rides along, so a failure says which frame broke.
+      expect({ what, rows: frame.split('\n').length, problems: boxProblems(frame, columns) }).toEqual({
+        what,
+        rows,
+        problems: [],
+      })
+    }
+
+    it('keeps every page and the quit dialog straight', async () => {
+      const { service } = fakeService(CJK_DRAFT)
+      const app = await start(service, { lang, langPinned: true, columns, rows })
+      for (const digit of ['1', '2', '3', '4', '5', '6', '7', '8', '9']) {
+        // oxlint-disable-next-line no-await-in-loop
+        await app.press(digit)
+        check(app.frame(), `page ${digit}`)
+      }
+      await app.press('1', KEY.enter, ' ', KEY.escape, 'q')
+      check(app.frame(), 'quit dialog')
+      expect(app.frame(), 'quit dialog').toContain('▸')
+      app.unmount()
+    })
+
+    it('keeps the confirmation, the run and both result cards straight', async () => {
+      const { view } = translatedPlan()
+      let runs = 0
+      let finish: ((outcome: Awaited<ReturnType<ZcfService['apply']>>) => void) | undefined
+      const { service } = fakeService(CJK_DRAFT, {
+        plan: async () => view,
+        apply: () =>
+          new Promise(resolve => {
+            runs++
+            finish = resolve
+          }),
+      })
+      const app = await start(service, { lang, langPinned: true, columns, rows })
+      await app.press('a')
+      check(app.frame(), 'confirmation')
+      expect(app.frame(), 'confirmation').toContain('▸')
+      await app.press(KEY.enter)
+      await tick()
+      check(app.frame(), 'run view')
+      const results = (ok: boolean) =>
+        view.plan.tools.map((toolPlan, index) => ({
+          tool: toolPlan.tool,
+          ok: ok || index === 0,
+          steps: toolPlan.steps.map(step => ({
+            step,
+            status: ok || index === 0 ? ('done' as const) : ('failed' as const),
+            detail: '失败：权限不足',
+          })),
+        }))
+      finish?.({ results: results(false), backupDir: '/home/me/b' })
+      await tick()
+      await tick()
+      check(app.frame(), 'failure card')
+      expect(app.frame(), 'failure card').toContain('▸')
+      // Retry runs again; this time it works.
+      await app.press(KEY.left, KEY.enter)
+      await tick()
+      expect(runs).toBe(2)
+      finish?.({ results: results(true), backupDir: '/home/me/b' })
+      await tick()
+      await tick()
+      check(app.frame(), 'success card')
+      expect(app.frame(), 'success card').toContain('▸')
+      app.unmount()
+    })
+
+    it('keeps the restore and prune dialogs straight', async () => {
+      const { service } = fakeService(CJK_DRAFT, {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+      })
+      const app = await start(service, { lang, langPinned: true, columns, rows })
+      await openBackup(app)
+      await app.until('2026-10-24 08:00')
+      await app.press(KEY.enter)
+      check(app.frame(), 'restore dialog')
+      expect(app.frame(), 'restore dialog').toContain('▸')
+      await app.press(KEY.escape, KEY.down, KEY.enter)
+      check(app.frame(), 'prune dialog')
+      expect(app.frame(), 'prune dialog').toContain('▸')
+      app.unmount()
+    })
+  })
+})
+
+describe('Tide pieces', () => {
+  it('runs the real clock only while something subscribes', () => {
+    vi.useFakeTimers()
+    try {
+      const ticker = new Ticker(systemClock)
+      let frames = 0
+      const stop = ticker.subscribe(() => frames++)
+      expect(ticker.running).toBe(true)
+      vi.advanceTimersByTime(FRAME_MS * 3)
+      expect(frames).toBe(3)
+      // A newer driver takes over; letting go of the older one leaves it in place.
+      let driven = ''
+      const first = ticker.drive(() => (driven += 'a'))
+      ticker.drive(() => (driven += 'b'))
+      first()
+      ticker.tick()
+      expect(driven).toBe('b')
+      stop()
+      expect(ticker.running).toBe(false)
+      expect(vi.getTimerCount()).toBe(0)
+      // A timeout fires once and leaves nothing behind; a cleared one never fires.
+      let fired = 0
+      systemClock.setTimeout(() => fired++, 150)
+      systemClock.clearTimeout(systemClock.setTimeout(() => fired++, 150))
+      vi.advanceTimersByTime(150)
+      expect(fired).toBe(1)
+      expect(vi.getTimerCount()).toBe(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('maps colour levels and fills for every kind of terminal', () => {
+    expect(detectColorLevel({}, 2)).toBe(2)
+    expect(detectColorLevel({}, 0)).toBe(0)
+    expect(createTheme(1, 'dark').fill('err')).toEqual({ color: 'black', backgroundColor: 'red', bold: true })
+    expect(createTheme(3, 'light').fill('err').backgroundColor).toBe(LIGHT.err)
+    expect(createTheme(0, 'dark').fill('accent')).toEqual({ inverse: true, bold: true })
+    // One column is the first stop; twelve bands at most, however wide.
+    expect(gradientColumns(DARK.stops, 1)).toEqual([DARK.stops[0]])
+    expect(new Set(gradientColumns(DARK.stops, 90)).size).toBeLessThanOrEqual(12)
+  })
+
+  it('shares the confirmation lines between its lists, taking from the longer one first', () => {
+    expect(fitLists(2, 3, 10)).toEqual([2, 3])
+    // A cut list spends a line on its "more" note.
+    expect(fitLists(2, 12, 6)).toEqual([2, 3])
+    expect(fitLists(12, 2, 6)).toEqual([3, 2])
+    // An empty list still takes its placeholder line.
+    expect(fitLists(0, 12, 4)).toEqual([0, 2])
+  })
+
+  it('quits at once from a clean editor', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('q')
+    const after = app.frame()
+    await app.press('2')
+    expect(app.frame()).toBe(after)
+    app.unmount()
+  })
+
+  it('scrolls a finished run by line and by page, and quits from its card', async () => {
+    const steps: Plan['tools'][number]['steps'] = Array.from({ length: 20 }, (_, i) => ({
+      kind: 'command',
+      title: { key: `long step ${i + 1}` },
+      command: 'npm',
+      args: ['i', `x${i + 1}`],
+    }))
+    const plan: Plan = { tools: [{ tool: 'claude-code', notices: [], steps }] }
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      {
+        plan: async () => ({ plan, previews: [steps.map(() => null)], secrets: [] }),
+        apply: async () => ({
+          results: [{ tool: 'claude-code', ok: true, steps: steps.map(step => ({ step, status: 'done' as const })) }],
+          backupDir: '/home/me/b',
+        }),
+      },
+    )
+    const app = await start(service, { rows: 24 })
+    await app.press('a', KEY.enter)
+    await app.until('▸ Back to editor')
+    expect(app.frame()).toContain('long step 1 ')
+    await app.press('\u001B[6~')
+    expect(app.frame()).not.toContain('long step 1 ')
+    await app.press('\u001B[5~')
+    expect(app.frame()).toContain('long step 1 ')
+    await app.press(' ', 'k')
+    expect(app.frame()).not.toContain('long step 1 ')
+    const at = app
+      .frame()
+      .split('\n')
+      .findIndex(line => line.includes('long step'))
+    for (let i = 0; i < 20; i++) app.stdin.write(`\u001B[<64;40;${at + 1}M`)
+    await tick()
+    await tick()
+    expect(app.frame()).toContain('long step 1 ')
+    // Quit on the card ends the app: keys reach nothing after it.
+    await app.press(KEY.right, KEY.enter)
+    const after = app.frame()
+    await app.press(KEY.left)
+    expect(app.frame()).toBe(after)
     app.unmount()
   })
 })

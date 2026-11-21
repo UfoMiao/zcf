@@ -1,4 +1,4 @@
-import { Box, Text } from 'ink'
+import { Box } from 'ink'
 import type { ReactNode } from 'react'
 
 import { useTheme } from './fx/context'
@@ -71,15 +71,5 @@ export function GradientFrame({
       </Box>
       {edge('╰', '╯', 0, span - 2)}
     </Box>
-  )
-}
-
-/** A one-line title on a frame's top edge, bold in the accent. */
-export function EdgeTitle({ text }: { text: string }) {
-  const theme = useTheme()
-  return (
-    <Text bold {...theme.tone('fg')}>
-      {text}
-    </Text>
   )
 }

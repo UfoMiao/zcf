@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
-import { Dialog } from './dialog'
+import { Dialog, dialogWidth } from './dialog'
 import { useTheme } from './fx/context'
 import type { Row } from './row-list'
 import { RowList } from './row-list'
@@ -143,7 +143,7 @@ export function BackupPage({ service, t, active, dirty, onBack, width = 64, onDi
     return (
       <Box flexDirection="column" flexGrow={1} justifyContent="center" alignItems="center">
         <Dialog
-          width={Math.min(60, width)}
+          width={dialogWidth(60, width)}
           initial={0}
           active={active && state !== 'busy'}
           onCancel={() => setConfirm(undefined)}

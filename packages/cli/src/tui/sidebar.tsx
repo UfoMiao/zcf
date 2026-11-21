@@ -96,7 +96,16 @@ export function Sidebar({
   const column = Math.max(...labels.map(textWidth)) + 1
 
   return (
-    <Box flexDirection="column" width={28} borderStyle="round" borderDimColor paddingX={1} gap={1}>
+    <Box
+      flexDirection="column"
+      width={28}
+      marginLeft={1}
+      flexShrink={0}
+      borderStyle="round"
+      borderDimColor
+      paddingX={1}
+      gap={1}
+    >
       <Box flexDirection="column" marginTop={1}>
         <Wordmark sweepKey={sweepKey} busy={busy} />
         <Text>

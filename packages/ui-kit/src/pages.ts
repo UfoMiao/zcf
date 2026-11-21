@@ -402,7 +402,7 @@ export interface ConfigChange {
  * server's environment and headers. A confirmation line names them but never shows
  * what they hold — the env and header names, `***` for a key.
  */
-const SECRET_KEYS = new Set(['apiKey', 'env', 'headers'])
+export const SECRET_KEYS: ReadonlySet<string> = new Set(['apiKey', 'env', 'headers'])
 
 /** A value shortened for one confirmation line: lists join, anything else stringifies, secrets stay out. */
 function lineSummary(value: unknown): string {

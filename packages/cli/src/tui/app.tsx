@@ -26,7 +26,7 @@ import { ApplyFlow } from './apply-page'
 import { BackupPage } from './backup-page'
 import { Header } from './banner'
 import { Boot } from './boot'
-import { Dialog } from './dialog'
+import { Dialog, dialogWidth } from './dialog'
 import { GradientFrame } from './frame'
 import { FxProvider, useTheme } from './fx/context'
 import type { FxOptions } from './fx/detect'
@@ -75,8 +75,8 @@ const STATUS_TONE = { info: 'ok', warning: 'warn', error: 'err' } as const
 /** How long a config load may take before the boot screen shows; a fast load goes straight to the editor. */
 const BOOT_DELAY_MS = 150
 
-/** The sidebar's width, borders included. */
-const SIDEBAR_WIDTH = 28
+/** The sidebar's width, borders included, plus the blank cell that keeps it off the panel's border. */
+const SIDEBAR_WIDTH = 29
 
 /** The nav column's width, its rule included. */
 const NAV_WIDTH = 18
@@ -100,7 +100,7 @@ const NAV_CHROME = 7
  */
 export function App(props: AppProps) {
   const { stdout } = useStdout()
-  const [fx] = useState(() => resolveFx(props.fx ?? {}, process.env, 'isTTY' in stdout && stdout.isTTY === true))
+  const [fx] = useState(() => resolveFx(props.fx ?? {}, process.env, Reflect.get(stdout, 'isTTY') === true))
   return (
     <FxProvider fx={fx}>
       <Editor {...props} clock={fx.clock} />
@@ -432,7 +432,7 @@ function Editor({
               {!applying && quitOpen && (
                 <Box flexDirection="column" flexGrow={1} justifyContent="center" alignItems="center">
                   <Dialog
-                    width={Math.min(64, pageWidth)}
+                    width={dialogWidth(64, pageWidth)}
                     tone="warn"
                     initial={0}
                     active={quitOpen}
