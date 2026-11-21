@@ -1,14 +1,14 @@
 import type { FilePreview, PlanStep, StepResult, ToolStatus } from '@zcf/core'
 import { ACTOR_NAMES } from '@zcf/core'
 import type { ApplyOutcome, ConfigChange, PlanView, ZcfService } from '@zcf/ui-kit'
-import { installPicks, summarizeChanges } from '@zcf/ui-kit'
+import { installPicks, isTable, summarizeChanges } from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
 import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
-import { applyCounts, hasWork, Renderer, tildify } from '../render'
+import { applyCounts, hasWork, maskSecrets, Renderer, secretsOf, tildify } from '../render'
 import type { DialogButton } from './dialog'
 import { Dialog } from './dialog'
 import { useOneShot, useTheme } from './fx/context'
@@ -32,6 +32,32 @@ const SHIMMER_FRAMES = 12
 /** Lines the run view may not claim: the app's header, edges and key bar, its own title and progress rows. */
 const RUN_CHROME = 9
 
+/**
+ * Lines the confirmation may not give its two lists: the app's header, edges, key bar
+ * and a status line, the dialog's cleared cell, frame and gaps, its title and hint,
+ * the two list headings and the button row.
+ */
+const CONFIRM_CHROME = 18
+
+/** Lines a list of `count` rows takes with `shown` of them drawn: a cut list adds its "more" note; an empty one its placeholder. */
+function listLines(count: number, shown: number): number {
+  return count === 0 ? 1 : shown + (shown < count ? 1 : 0)
+}
+
+/**
+ * How many rows of each confirmation list fit in `budget` lines, taking rows from the
+ * longer list first, so a short terminal keeps the title and the buttons in view.
+ */
+export function fitLists(first: number, second: number, budget: number): [number, number] {
+  let a = first
+  let b = second
+  while (listLines(first, a) + listLines(second, b) > budget && (a > 0 || b > 0)) {
+    if (a >= b) a -= 1
+    else b -= 1
+  }
+  return [a, b]
+}
+
 /** Width of the run view's progress bar. */
 const BAR = 30
 
@@ -45,6 +71,29 @@ function previewMap(view: PlanView): Map<PlanStep, FilePreview> {
     }
   }
   return map
+}
+
+/**
+ * The secret values a draft holds — provider and profile API keys, MCP env and header
+ * values — read leniently, since a draft may not be a valid config. An error from
+ * planning or applying can quote them before the plan has listed any secrets.
+ */
+function draftSecrets(draft: Record<string, unknown>): string[] {
+  const values: string[] = []
+  const strings = (table: unknown) => {
+    if (isTable(table)) for (const value of Object.values(table)) if (typeof value === 'string') values.push(value)
+  }
+  const key = (provider: unknown) => {
+    if (isTable(provider) && typeof provider.apiKey === 'string') values.push(provider.apiKey)
+  }
+  key(draft.provider)
+  for (const profile of Array.isArray(draft.profiles) ? draft.profiles : []) if (isTable(profile)) key(profile.provider)
+  for (const server of Object.values(isTable(draft.mcpServers) ? draft.mcpServers : {})) {
+    if (!isTable(server)) continue
+    strings(server.env)
+    strings(server.headers)
+  }
+  return values.filter(Boolean)
 }
 
 /** A fallback step only shows once it ran: it stands in for a step that failed, and usually never runs. */
@@ -187,7 +236,10 @@ export function ApplyFlow({
         setOutcome(result)
         if (result.results.every(toolResult => toolResult.ok)) onApplied?.()
       } catch (failure) {
-        setError(t('tui.apply.failed', { message: errorText(failure, t) }))
+        // The error may quote a secret: mask what the plan named, and what the draft holds.
+        const message = t('tui.apply.failed', { message: errorText(failure, t) })
+        const planned = renderer.current?.mask(message) ?? message
+        setError(maskSecrets(planned, secretsOf(draftSecrets(draft))))
       }
       setPhase('done')
     })()
@@ -350,6 +402,8 @@ export function ApplyFlow({
     const changes = summarizeChanges(base, draft)
     const picks = installPicks(draft, detected)
     const dialogWidth = Math.min(58, width)
+    const [changesShown, picksShown] = fitLists(changes.length, picks.length, rows - CONFIRM_CHROME)
+    const more = (count: number) => <Text {...theme.tone('dim')}>{`  ${t('tui.apply.more', { count })}`}</Text>
     return (
       <Dialog
         width={dialogWidth}
@@ -383,7 +437,7 @@ export function ApplyFlow({
           {changes.length === 0 ? (
             <Text {...theme.tone('dim')}>{`  ${t('tui.apply.noChanges')}`}</Text>
           ) : (
-            changes.map((change: ConfigChange) => (
+            changes.slice(0, changesShown).map((change: ConfigChange) => (
               <Text key={change.key} wrap="truncate-end">
                 {'  '}
                 <Text {...theme.tone('warn')}>~</Text> {change.key}
@@ -391,6 +445,7 @@ export function ApplyFlow({
               </Text>
             ))
           )}
+          {changesShown < changes.length && more(changes.length - changesShown)}
         </Box>
         <Box flexDirection="column">
           <Text bold {...theme.tone('dim')}>
@@ -399,7 +454,7 @@ export function ApplyFlow({
           {picks.length === 0 ? (
             <Text {...theme.tone('dim')}>{`  ${t('tui.apply.noInstalls')}`}</Text>
           ) : (
-            picks.map((pick, index) => {
+            picks.slice(0, picksShown).map((pick, index) => {
               // A source's skills are listed under it, indented, without a marker of their own.
               if (pick.kind === 'source' && pick.label.startsWith('  '))
                 return (
@@ -419,6 +474,7 @@ export function ApplyFlow({
               )
             })
           )}
+          {picksShown < picks.length && more(picks.length - picksShown)}
         </Box>
       </Dialog>
     )

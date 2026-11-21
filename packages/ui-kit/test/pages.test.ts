@@ -282,6 +282,25 @@ describe('summarizeChanges', () => {
     ])
     expect(summarizeChanges(draft, draft)).toEqual([])
   })
+
+  it('never puts a secret on a line: env and header values and an unnamed provider key stay out', () => {
+    const base = { version: 1, mcpServers: { x: { type: 'stdio', command: 'x', env: { T: 'QAFAKE-MCP-12345' } } } }
+    const draft = {
+      version: 1,
+      mcpServers: {
+        xy: { type: 'stdio', command: 'x', env: { T: 'QAFAKE-MCP-12345' } },
+        web: { type: 'http', url: 'https://w.example', headers: { Authorization: 'Bearer QAFAKE-HDR-67890' } },
+      },
+      provider: { apiKey: 'QAFAKE-KEY-24680' },
+      profiles: [{ id: 'p', provider: { apiKey: 'QAFAKE-KEY-13579' } }],
+    }
+    const lines = summarizeChanges(base, draft)
+    const text = JSON.stringify(lines)
+    expect(text).not.toContain('QAFAKE')
+    // The names of the variables and headers still say what changed.
+    expect(lines.find(line => line.key === 'mcpServers')?.value).toContain('env: T')
+    expect(lines.find(line => line.key === 'mcpServers')?.value).toContain('headers: Authorization')
+  })
 })
 
 describe('togglePreset', () => {
