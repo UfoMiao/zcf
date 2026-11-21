@@ -397,7 +397,14 @@ export interface ConfigChange {
   value?: string
 }
 
-/** A value shortened for one confirmation line: lists join, anything else stringifies. */
+/**
+ * Keys whose values are secrets wherever they sit: a provider's API key and an MCP
+ * server's environment and headers. A confirmation line names them but never shows
+ * what they hold — the env and header names, `***` for a key.
+ */
+const SECRET_KEYS = new Set(['apiKey', 'env', 'headers'])
+
+/** A value shortened for one confirmation line: lists join, anything else stringifies, secrets stay out. */
 function lineSummary(value: unknown): string {
   if (Array.isArray(value)) return value.map(item => (isTable(item) ? lineSummary(item) : String(item))).join(', ')
   if (isTable(value)) {
@@ -405,7 +412,10 @@ function lineSummary(value: unknown): string {
     if (provider) return provider
     return Object.entries(value)
       .filter(([, part]) => part !== undefined)
-      .map(([key, part]) => `${key}: ${lineSummary(part)}`)
+      .map(([key, part]) => {
+        if (!SECRET_KEYS.has(key)) return `${key}: ${lineSummary(part)}`
+        return `${key}: ${isTable(part) ? Object.keys(part).join(', ') : '***'}`
+      })
       .join(', ')
   }
   return String(value)

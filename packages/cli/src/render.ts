@@ -30,6 +30,11 @@ export function collectSecrets(config: ZcfConfig, extra: readonly string[] = [])
   for (const server of Object.values(config.mcpServers)) {
     values.push(...Object.values(server.type === 'stdio' ? server.env : server.headers))
   }
+  return secretsOf(values)
+}
+
+/** The mask list for some secret values: each value, its parts and its escaped forms, longest first. */
+export function secretsOf(values: readonly string[]): string[] {
   // A value like "Bearer <token>" may show up in error output as the bare token.
   const secrets = new Set<string>()
   for (const value of values) {

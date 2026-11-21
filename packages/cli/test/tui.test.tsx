@@ -2234,3 +2234,76 @@ describe('Tide dialogs', () => {
     app.unmount()
   })
 })
+
+describe('Tide QA regressions', () => {
+  it('masks a planned secret, and a draft one, when planning or applying throws', async () => {
+    const secret = 'QAFAKE-TOKEN-12345'
+    const step = { kind: 'command' as const, title: { key: 'Install' }, command: 'fake', args: [secret] }
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      {
+        plan: async () => ({
+          plan: { tools: [{ tool: 'claude-code', notices: [], steps: [step] }] },
+          previews: [[null]],
+          secrets: [secret],
+        }),
+        apply: async () => {
+          throw new Error(`denied ${secret}`)
+        },
+      },
+    )
+    const app = await start(service, { columns: 120 })
+    await app.press('a', KEY.enter)
+    const frame = await app.until('denied')
+    expect(frame).toContain('✗ Could not plan: denied')
+    expect(frame).not.toContain(secret)
+    app.unmount()
+
+    // Planning fails before any plan names its secrets: the draft's own key is masked.
+    const key = 'QAFAKE-APIKEY-67890'
+    const early = fakeService(
+      { version: 1, tools: ['claude-code'], provider: { name: 'p', apiKey: key } },
+      {
+        plan: async () => {
+          throw new Error(`rejected key ${key}`)
+        },
+      },
+    )
+    const second = await start(early.service, { columns: 120 })
+    await second.press('a', KEY.enter)
+    const failed = await second.until('rejected key')
+    expect(failed).not.toContain(key)
+    second.unmount()
+  })
+
+  it('keeps MCP env values out of the confirmation after a rename', async () => {
+    const secret = 'QAFAKE-MCP-12345'
+    // env before type, so a truncated line could not hide the leak.
+    const { service } = fakeService({
+      version: 1,
+      tools: [],
+      mcpServers: { x: { env: { T: secret }, type: 'stdio', command: 'x' } },
+    })
+    const app = await start(service, { columns: 120 })
+    await app.press('3', KEY.enter, KEY.enter, KEY.enter, 'y', KEY.enter, 'a')
+    expect(app.frame()).toContain('mcpServers:')
+    expect(app.frame()).toContain('env: T')
+    expect(app.frame()).not.toContain(secret)
+    app.unmount()
+  })
+
+  it('bounds a long confirmation at 80x24, keeping the title, both lists and the buttons', async () => {
+    const { service } = fakeService({
+      version: 1,
+      tools: ['claude-code', 'codex'],
+      skills: [{ source: 'owner/repo', skills: Array.from({ length: 12 }, (_, i) => `skill-${i + 1}`) }],
+    })
+    const app = await start(service, { columns: 80, rows: 24 })
+    await app.press('a')
+    const frame = app.frame()
+    expect(frame.split('\n')).toHaveLength(24)
+    for (const text of ['Apply the configuration', 'Tools: Claude Code', 'Tools: Codex', '▸ Apply', 'Cancel', 'more'])
+      expect(frame).toContain(text)
+    app.unmount()
+  })
+})
