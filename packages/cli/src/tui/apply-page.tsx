@@ -15,7 +15,7 @@ import { useOneShot, useTheme } from './fx/context'
 import { Spinner, Hatch, Wave } from './fx/glyphs'
 import { GradientText, Paint } from './fx/paint'
 import { contains, onMousePress, wheelDirection } from './mouse'
-import { textWidth } from './text-width'
+import { textWidth, wrappedLines } from './text-width'
 import { useTerminalRows } from './use-terminal-rows'
 
 export type ApplyPhase = 'confirm' | 'planning' | 'running' | 'done'
@@ -355,8 +355,17 @@ export function ApplyFlow({
   const quit: DialogButton = { label: t('tui.button.quit'), run: () => onQuit?.() }
   const retry: DialogButton = { label: t('tui.button.retry'), run: start }
   const cardButtons = ending === 'failed' || ending === 'error' ? [retry, back] : [back, quit]
-  const cardHeight =
-    ending === undefined ? 0 : ending === 'applied' && counts?.backedUp ? 6 : ending === 'failed' ? 6 : 5
+  const cardWidth = Math.min(64, width - 2)
+  // The card's height: its frame's edges, the gap and the button row, one line for its
+  // headline, one for the backup path, and as many as the failure note wraps to inside
+  // the frame's sides and padding — the list above gives up exactly that much.
+  const cardText =
+    ending === 'failed'
+      ? wrappedLines(t('tui.result.others'), cardWidth - 6)
+      : ending === 'applied' && counts?.backedUp
+        ? 1
+        : 0
+  const cardHeight = ending === undefined ? 0 : 5 + cardText
   const height = Math.max(3, rows - RUN_CHROME - cardHeight)
   const maxScroll = Math.max(0, lines.length - height)
   const top = Math.min(scroll, maxScroll)
@@ -471,7 +480,6 @@ export function ApplyFlow({
     )
   }
 
-  const cardWidth = Math.min(64, width - 2)
   const appliedText = counts ? t('tui.result.applied', { done: counts.done, unchanged: counts.unchanged }) : ''
   return (
     <Box alignSelf="stretch" flexDirection="column" paddingX={1} flexGrow={1}>

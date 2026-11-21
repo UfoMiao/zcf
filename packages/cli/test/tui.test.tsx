@@ -15,7 +15,7 @@ import type { FxOptions } from '../src/tui/fx/detect'
 import type { Clock } from '../src/tui/fx/ticker'
 import { FRAME_MS, systemClock, Ticker } from '../src/tui/fx/ticker'
 import { LOGO_ROWS } from '../src/tui/sidebar'
-import { textWidth } from '../src/tui/text-width'
+import { textWidth, wrappedLines } from '../src/tui/text-width'
 import {
   contrast,
   createTheme,
@@ -1850,8 +1850,10 @@ describe('Tide theme', () => {
     const rest = around().below
     await time.step(3)
     expect(around().below).toBe(rest)
-    // Planning rolls it.
+    // Planning rolls it. Planning starts once the save resolves, so wait for the sidebar
+    // to say so before stepping a frame, however long the save takes.
     await app.press('a', KEY.enter)
+    await app.until('applying…')
     const first = around().below
     await time.step(1)
     expect(around().below).not.toBe(first)
@@ -1886,8 +1888,8 @@ describe('Tide motion', () => {
       })),
       backupDir: '/home/me/b',
     })
-    // The result card grows in over four frames first.
-    await tick()
+    // The result card mounts once the run's outcome is in; it then grows over four frames.
+    await app.until('6/6 steps')
     await time.step(4)
     expect(app.frame()).toContain('Applied — 6 changed')
     // The shimmer and the wordmark's second sweep play once, then stop.
@@ -2357,6 +2359,30 @@ describe('Tide text width', () => {
       unmount()
     }
   })
+
+  it('counts wrapped lines the way Ink wraps them', () => {
+    const texts = [
+      createTranslator('en')('tui.result.others'),
+      createTranslator('zh-CN')('tui.result.others'),
+      'short',
+      'a-very-long-unbroken-token-that-runs-past-the-line-width-twice-over',
+      '供应商：配置（新）。 和 MCP 服务；以及更多中文内容一直写到超过这一行的宽度',
+    ]
+    for (const width of [12, 24, 51, 58])
+      for (const text of texts) {
+        const { lastFrame, unmount } = render(
+          <Box width={width}>
+            <Text>{text}</Text>
+          </Box>,
+        )
+        expect({ text, width, lines: wrappedLines(text, width) }).toEqual({
+          text,
+          width,
+          lines: (lastFrame() ?? '').split('\n').length,
+        })
+        unmount()
+      }
+  })
 })
 
 /** A frame as terminal cells: a wide character fills its cell and leaves the next one empty (''). */
@@ -2372,6 +2398,9 @@ function cellGrid(frame: string): string[][] {
 }
 
 const BORDER = new Set(['│', '╭', '╮', '╰', '╯', '─'])
+
+/** What a box's top or bottom edge is drawn with. */
+const EDGE = new Set(['╭', '╮', '╰', '╯', '─'])
 
 /**
  * Every problem with the boxes in a frame: a line wider than the terminal, a side
@@ -2401,6 +2430,11 @@ function boxProblems(frame: string, columns: number): string[] {
       if (at(bottom, right) !== '╯') problems.push(`box ${top}:${left} ends at ${bottom}:${right} without ╯`)
       for (let col = left + 1; col < right; col++)
         if (at(bottom, col) !== '─') problems.push(`bottom of box ${top}:${left} breaks at col ${col}`)
+      // Nor right above or below another's edge: the rows beside its top and bottom stay clear of edges.
+      for (let col = left; col <= right; col++) {
+        if (EDGE.has(at(top - 1, col))) problems.push(`box ${top}:${left} touches an edge above at col ${col}`)
+        if (EDGE.has(at(bottom + 1, col))) problems.push(`box ${top}:${left} touches an edge below at col ${col}`)
+      }
       for (let row = top + 1; row < bottom; row++) {
         if (at(row, right) !== '│') problems.push(`right side of box ${top}:${left} breaks at row ${row}`)
         // A border never sits right against another box's: one blank cell at least.
@@ -2476,6 +2510,10 @@ describe('Tide box guard', () => {
     expect(boxProblems(['╭──╮', '│中a│', '╰──╯'].join('\n'), 4).length).toBeGreaterThan(0)
     expect(boxProblems(['╭─╮╭─╮', '│ ││ │', '╰─╯╰─╯'].join('\n'), 6)).toContain(
       'box 0:0 touches a border on its right at row 1',
+    )
+    // A box sitting right on another's bottom edge.
+    expect(boxProblems(['╭───╮', '│╭─╮│', '││ ││', '│╰─╯│', '╰───╯'].join('\n'), 5)).toContain(
+      'box 1:1 touches an edge below at col 1',
     )
   })
 })
