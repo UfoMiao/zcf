@@ -272,6 +272,21 @@
       "gemini": {
         "baseUrl": "http://127.0.0.1:3425"
       }
+    },
+    {
+      "id": "321ai",
+      "name": "321AI",
+      "description": {
+        "en": "321AI relay with OpenAI- and Anthropic-compatible endpoints",
+        "zh-CN": "321AI 中转，兼容 OpenAI 与 Anthropic 接口"
+      },
+      "anthropic": {
+        "baseUrl": "https://321ai.cc",
+        "authType": "auth_token"
+      },
+      "openai": {
+        "baseUrl": "https://321ai.cc/v1"
+      }
     }
   ]
 }
