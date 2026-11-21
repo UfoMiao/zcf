@@ -151,7 +151,7 @@ export const antigravityCli: ToolAdapter = {
       return { tool: TOOL, steps: [], notices: [notice('info', 'notice.notInstalled', { tool: TOOL })] }
     }
     // No uninstall command exists; the installer only placed the binary. ~/.gemini stays: the
-    // App, the IDE and Gemini CLI share it, and ZCF writes no provider there.
+    // Antigravity App and IDE share it, and ZCF writes no provider there.
     const path = ctx.platform === 'win32' ? binDir(ctx) : nativeBinary(ctx)
     return { tool: TOOL, steps: [removeStep(TOOL, path)], notices: [] }
   },

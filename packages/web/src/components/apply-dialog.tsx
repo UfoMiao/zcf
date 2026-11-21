@@ -1,12 +1,13 @@
-import type { StepResult } from '@zcf/core'
+import type { Notice, StepResult } from '@zcf/core'
 import { ACTOR_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
-import { installPicks, summarizeChanges } from '@zcf/ui-kit'
+import { installPicks, maskSecrets, summarizeChanges } from '@zcf/ui-kit'
 import {
   ArrowRightIcon,
   CheckIcon,
   CircleAlertIcon,
   CircleCheckIcon,
+  InfoIcon,
   LoaderCircleIcon,
   MinusIcon,
   XIcon,
@@ -26,6 +27,31 @@ const STEP_ICONS: Record<StepResult['status'], ReactNode> = {
 }
 
 type Phase = 'confirm' | 'busy' | 'done'
+
+/**
+ * A tool's plan notices, such as the manual steps for a setting ZCF cannot write. They are shown
+ * while the run goes and stay once it is over, masked like everything else the plan shows.
+ */
+function NoticeList({ notices, t, mask }: { notices: Notice[]; t: Translate; mask: (text: string) => string }) {
+  if (notices.length === 0) return null
+  return (
+    <ul className="mb-1 flex flex-col gap-1">
+      {notices.map((notice, index) => (
+        <li
+          key={index}
+          className={`flex gap-2 text-xs ${notice.level === 'warning' ? 'text-warning' : 'text-muted-foreground'}`}
+        >
+          {notice.level === 'warning' ? (
+            <CircleAlertIcon className="mt-px size-3.5 shrink-0" />
+          ) : (
+            <InfoIcon className="mt-px size-3.5 shrink-0" />
+          )}
+          <span className="break-words">{mask(messageText(t, notice.message))}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
 
 /**
  * The apply flow behind the Apply button: a confirmation of what changed in the config
@@ -77,7 +103,8 @@ export function ApplyDialog({
         const next = await service.plan()
         if (request !== latest.current) return
         setView(next)
-        await service.apply(event => setEvents(current => [...current, event]))
+        const result = await service.apply(event => setEvents(current => [...current, event]))
+        if (request === latest.current) setOutcome(result)
       } catch (reason) {
         if (request === latest.current) setError(String(reason instanceof Error ? reason.message : reason))
       } finally {
@@ -90,6 +117,8 @@ export function ApplyDialog({
   const picks = installPicks(editor.draft, {})
   const steps = outcome?.results.flatMap(result => result.steps) ?? []
   const allOk = outcome?.results.every(result => result.ok)
+  const mask = (text: string) => maskSecrets(text, view?.secrets ?? [])
+  const noticed = view?.plan.tools.filter(toolPlan => toolPlan.notices.length > 0) ?? []
 
   return (
     <div
@@ -167,6 +196,7 @@ export function ApplyDialog({
                 {view.plan.tools.map(toolPlan => (
                   <div key={toolPlan.tool} className="flex flex-col">
                     <span className="mb-1 text-[13px] font-medium">{ACTOR_NAMES[toolPlan.tool]}</span>
+                    <NoticeList notices={toolPlan.notices} t={t} mask={mask} />
                     <ol className="flex flex-col">
                       {toolPlan.steps.map((step, index) => {
                         const result = events.find(
@@ -182,7 +212,7 @@ export function ApplyDialog({
                                 STEP_ICONS[state]
                               )}
                             </span>
-                            <span className="text-xs">{messageText(t, step.title)}</span>
+                            <span className="text-xs">{mask(messageText(t, step.title))}</span>
                           </li>
                         )
                       })}
@@ -222,6 +252,12 @@ export function ApplyDialog({
                 </div>
               </Alert>
             )}
+            {noticed.map(toolPlan => (
+              <div key={toolPlan.tool} className="flex flex-col">
+                <span className="mb-1 text-[13px] font-medium">{ACTOR_NAMES[toolPlan.tool]}</span>
+                <NoticeList notices={toolPlan.notices} t={t} mask={mask} />
+              </div>
+            ))}
             <div className="flex justify-end">
               <Button onClick={onClose}>{t('web.close')}</Button>
             </div>

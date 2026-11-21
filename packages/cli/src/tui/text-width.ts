@@ -32,3 +32,37 @@ export function wrappedLines(text: string, width: number): number {
   }
   return lines
 }
+
+/**
+ * `text` wrapped at `width` columns the way Ink wraps it, as the lines themselves, for a list
+ * that gives each line a row of its own.
+ */
+export function wrapText(text: string, width: number): string[] {
+  const lines: string[] = []
+  let line = ''
+  let used = 0
+  for (const word of text.split(' ')) {
+    const size = textWidth(word)
+    if (used > 0 && used + 1 + size <= width) {
+      line += ` ${word}`
+      used += 1 + size
+      continue
+    }
+    if (used > 0) lines.push(line)
+    line = ''
+    used = 0
+    // A word longer than a line breaks across lines, character by character.
+    for (const char of word) {
+      const columns = textWidth(char)
+      if (used > 0 && used + columns > width) {
+        lines.push(line)
+        line = ''
+        used = 0
+      }
+      line += char
+      used += columns
+    }
+  }
+  lines.push(line)
+  return lines
+}

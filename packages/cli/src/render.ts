@@ -10,9 +10,13 @@ import type {
   ZcfConfig,
 } from '@zcf/core'
 import { ACTOR_NAMES, isConfigLanguage, isExtraId, EXTRA_NAMES, isToolId, TOOL_NAMES } from '@zcf/core'
+import { maskSecrets } from '@zcf/ui-kit'
 import { bold, cyan, dim, green, red, yellow } from 'ansis'
 
 import type { Translate } from './i18n'
+
+// Shared with the web UI, which masks the notices and steps it draws itself.
+export { maskSecrets }
 
 export interface Output {
   write: (text: string) => void
@@ -68,18 +72,6 @@ export function secretVariants(secrets: readonly string[]): string[] {
     }
   }
   return [...variants].toSorted((a, b) => b.length - a.length)
-}
-
-export function maskSecrets(text: string, secrets: readonly string[]): string {
-  let masked = text
-  // Long secrets keep a few characters so people can tell which one it is; short ones are hidden whole.
-  for (const secret of secrets) {
-    const quoted = secret.length > 1 && secret.startsWith('"') && secret.endsWith('"')
-    const hint = secret.length >= 12 ? `${secret.slice(0, 3)}***${secret.slice(-2)}` : quoted ? '"***"' : '***'
-    // A callback, so `$&` and similar in the secret are inserted literally, not as replacement patterns.
-    masked = masked.replaceAll(secret, () => hint)
-  }
-  return masked
 }
 
 /** Whether applying would change anything: a file step with changes, or any command step. */

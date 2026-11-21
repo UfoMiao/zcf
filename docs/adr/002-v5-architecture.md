@@ -70,7 +70,7 @@ Paths follow `CLAUDE_CONFIG_DIR` when it is set, as Claude Code itself does: `se
 
 ### Antigravity CLI adapter
 
-Antigravity CLI (`agy`) replaced Gemini CLI as Google's terminal agent (announced 2026-05-19), so v5 configures it instead; v5 never shipped a Gemini CLI adapter, so there is no alias.
+Antigravity CLI (`agy`) is Google's terminal agent since 2026-05-19, so v5 configures it. The adapter it replaced never shipped, so there is no alias for the old tool id.
 
 | Item | How |
 |------|-----|
