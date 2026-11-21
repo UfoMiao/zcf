@@ -32,6 +32,8 @@ ZCF never deletes backups. Remove old folders yourself when you no longer need t
 | The provider has no "…" settings, so … keeps its current provider. | The tool speaks a protocol your provider doesn't have, such as Codex without an `openai` block. Add the block, or leave that tool on its own provider. |
 | No model is set for …. | Set `models.default` in the provider, or `model` in its `openai` or `gemini` block. |
 | … only uses its own models, so the provider is not applied to it. | Cursor CLI. MCP servers and skills are still applied. |
+| … reads an API key only from its environment, so ZCF does not apply the provider. … | Antigravity CLI. Follow the steps in the notice to use your provider; see [Agent tools](./tools#antigravity-cli). MCP servers and skills are still applied. |
+| … updates itself in the background, so there is nothing to run. | From `zcf update` for Antigravity CLI. |
 | … is not installed. | From `zcf update`. Run `zcf apply` to install it. |
 | … installed with npm updates through the mirror; a native install still downloads from its official servers. | From `zcf update` with the `china` mirror. See [Mirrors](./mirrors#not-covered). |
 

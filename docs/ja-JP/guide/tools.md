@@ -43,18 +43,19 @@ Claude Code と同じく `CLAUDE_CONFIG_DIR` に従います。
 
 `CODEX_HOME` に従います。
 
-## Gemini CLI
+## Antigravity CLI
+
+Google のターミナルエージェントは Gemini CLI から Antigravity CLI（`agy`）に置き換わったため、ZCF は代わりにこちらを設定します。
 
 | | |
 |---|---|
-| 検出 | `gemini --version` |
-| インストールと更新 | `npm install -g @google/gemini-cli` |
-| アンインストール | `npm uninstall -g @google/gemini-cli`。Homebrew や MacPorts でインストールされたものは通知とともにスキップします |
-| プロバイダー | `~/.gemini/.env` の `GEMINI_API_KEY` と `GOOGLE_GEMINI_BASE_URL`、および `~/.gemini/settings.json` の `security.auth.selectedType = "gemini-api-key"` と `model.name`。プロバイダーの `gemini` ブロックを使います。 |
-| MCP | `gemini mcp add -s user`。コマンドの `-e` オプションは値を 2 つ目の `=` で切ってしまうため、環境変数とヘッダーは後から `settings.json` に書き込みます。 |
-| スキル | `-a gemini-cli`、`~/.agents/skills` へ |
-
-`settings.json` と `.env` については `GEMINI_CLI_HOME` に従います。スキルは skills CLI がインストールする `~/.agents/skills` のままです。
+| 検出 | `agy --version`、次にインストーラーの配置先：`~/.local/bin/agy`、Windows では `%LOCALAPPDATA%\agy\bin\agy.exe` |
+| インストール | `antigravity.google/cli` の公式インストーラー（`install.sh`、Windows では `install.ps1`） |
+| 更新 | 実行するものはありません。Antigravity CLI はバックグラウンドで自動更新され、`zcf update` はその旨を表示します |
+| アンインストール | `~/.local/bin/agy`（Windows では `%LOCALAPPDATA%\agy\bin` フォルダー）をバックアップしてから削除します。Antigravity App や IDE と共有する `~/.gemini` は残します。 |
+| プロバイダー | 適用しません。Antigravity CLI は API キーを環境変数 `GEMINI_API_KEY` からしか読まないため、プランに手動の手順を示す通知を表示します：`~/.gemini/antigravity-cli/settings.json` に `"modelProvider": "gemini"` を設定し、`GEMINI_API_KEY` と `GOOGLE_GEMINI_BASE_URL` をエクスポートしてください。モデルと Google ログインには触れません。 |
+| MCP | Antigravity App や IDE と共有する `~/.gemini/config/mcp_config.json` の `mcpServers` に書き込みます。stdio サーバーは `command`、`args`、`env`、HTTP サーバーは `serverUrl` と `headers` です。`agy mcp add` はありません。`disabled` など ZCF が管理しない設定は残ります。 |
+| スキル | `-a antigravity-cli`、`~/.gemini/config/skills` へ |
 
 ## OpenCode
 

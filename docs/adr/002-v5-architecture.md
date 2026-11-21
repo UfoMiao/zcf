@@ -36,7 +36,7 @@ Every action is planned before anything changes:
 2. Front ends show the plan, with a unified diff for each file step, using `previewFileStep`.
 3. `applyPlan` runs tools in parallel and each tool's steps in order. A failed step skips the rest of that tool, because later steps depend on earlier ones. Each file is backed up once per run, before its first change.
 
-File edits are format-preserving: jsonc-parser for JSON/JSONC, toml-patch for TOML, and a small line editor for dotenv files (such as Gemini CLI's `~/.gemini/.env`). Writes go through a temporary file and a rename, and keep the file's mode. Comments, key order and unrelated keys stay as they are.
+File edits are format-preserving: jsonc-parser for JSON/JSONC, toml-patch for TOML, and a small line editor for dotenv files (such as dsh's `~/.dsh/.env`). Writes go through a temporary file and a rename, and keep the file's mode. Comments, key order and unrelated keys stay as they are.
 
 Adapters are pure apart from what goes through `AdapterContext` (home, platform, environment, command runner, file reader). Tests therefore never touch the real home directory or run real installers.
 
@@ -68,22 +68,24 @@ Paths follow `CLAUDE_CONFIG_DIR` when it is set, as Claude Code itself does: `se
 | MCP | `codex mcp add`, which replaces a server of the same name; servers already in `config.toml` with the same definition are skipped. It has no header flag, so `http_headers` is a file edit after the command. Codex resolves `.cmd` shims on Windows itself, so commands are not wrapped |
 | Skills | `npx skills add -a codex`, which installs into `~/.agents/skills` |
 
-### Gemini CLI adapter
+### Antigravity CLI adapter
+
+Antigravity CLI (`agy`) replaced Gemini CLI as Google's terminal agent (announced 2026-05-19), so v5 configures it instead; v5 never shipped a Gemini CLI adapter, so there is no alias.
 
 | Item | How |
 |------|-----|
-| Detect, install, update | `gemini --version`; `npm install -g @google/gemini-cli`, also for updates since there is no update command |
-| Provider | `GEMINI_API_KEY` and `GOOGLE_GEMINI_BASE_URL` in `~/.gemini/.env` (settings.json has no key setting), `security.auth.selectedType = "gemini-api-key"` and `model.name` in `settings.json`. The interactive CLI rejects a `gateway` selection, and `gemini-api-key` honours the base URL. `GEMINI_CLI_HOME` replaces the home folder |
-| MCP | `gemini mcp add -s user`, with server arguments after `--` so options like `npx -y` reach the server. `-e` cuts values at a second `=`, so env and headers are a file edit after the command |
-| Skills | `npx skills add -a gemini-cli`, which installs into `~/.gemini/skills` under the real home folder |
+| Detect, install, update | `agy --version`, then `~/.local/bin/agy` (`%LOCALAPPDATA%\agy\bin\agy.exe` on Windows); the official `install.sh` / `install.ps1`. No update step: the binary updates itself in the background and the installer exits when it is already there |
+| Provider | Not written. The CLI reads the key only from the `GEMINI_API_KEY` environment variable (no `.env`), and API-key mode also needs `modelProvider` in `~/.gemini/antigravity-cli/settings.json`; writing that without the variable would break Google sign-in. ZCF is not a launcher, so a notice names the manual route. `model` takes a display label, not an ID, so it is not written either |
+| MCP | No `agy mcp add`, so `mcpServers` in `~/.gemini/config/mcp_config.json` (shared with the App and IDE) is edited field by field: `command`/`args`/`env` or `serverUrl`/`headers` |
+| Skills | `npx skills add -a antigravity-cli`, which installs into `~/.gemini/config/skills` |
 
-Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness follow the same pattern. Each adapter lives in its own file and reuses `adapters/shared.ts` for detection, npm installs and updates, skills and notices.
+Codex, Antigravity CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness follow the same pattern. Each adapter lives in its own file and reuses `adapters/shared.ts` for detection, npm installs and updates, skills and notices.
 
 ### Lifecycle
 
-`zcf update` runs each tool's own updater (`claude update`, `codex update`, `opencode upgrade`, `cursor-agent update`, `pi update --self`; npm for Gemini CLI and dsh, which have none). When an updater fails and `npm ls -g` says npm owns the package, a fallback step — `npm install -g <pkg>@latest` with the flags the install uses — runs in its place (a plan step marked `fallback`: it runs only after the failed step, and stays silent when it never ran). A native install gets no fallback, so npm cannot leave a second copy next to it. magpie picks the channel from how the binary was installed; ZCF probes npm ownership instead, which is the same decision at plan time.
+`zcf update` runs each tool's own updater (`claude update`, `codex update`, `opencode upgrade`, `cursor-agent update`, `pi update --self`; npm for dsh, which has none; nothing for Antigravity CLI, which updates itself). When an updater fails and `npm ls -g` says npm owns the package, a fallback step — `npm install -g <pkg>@latest` with the flags the install uses — runs in its place (a plan step marked `fallback`: it runs only after the failed step, and stays silent when it never ran). A native install gets no fallback, so npm cannot leave a second copy next to it. magpie picks the channel from how the binary was installed; ZCF probes npm ownership instead, which is the same decision at plan time.
 
-`zcf uninstall <tools>` is a command of its own rather than reverse cleanup on apply, because `planTools` only converges the tools the config selects: taking a tool out of `tools` stops managing it, and a later apply would reinstall anything an implicit uninstall had removed. Each tool uninstalls through its own channel — `npm uninstall -g` when npm owns it, OpenCode's `opencode uninstall --keep-config --keep-data`, or a `remove` plan step that deletes the files the native installer put in place (`claude`/`claude.exe`, `codex`/`codex.exe`, backing the file up first, counting a missing path as `unchanged`) — and a tool ZCF cannot attribute to any channel is left with a notice, in magpie's words: uninstall it the way you installed it. Uninstall removes only the settings ZCF owns — the provider route: the `zcf` entries, the picks that point at them, and dsh's route patches. Claude Code's `env` keys and Gemini CLI's `.env` keys go only when they still hold the values the config writes, since a same-named key with another value may be the user's own writing. MCP servers, skills and tool-owned folders such as `~/.claude` stay. Afterwards the tool ids come out of `tools` in the config file, and ZCF re-detects the tool to warn when a copy still answers.
+`zcf uninstall <tools>` is a command of its own rather than reverse cleanup on apply, because `planTools` only converges the tools the config selects: taking a tool out of `tools` stops managing it, and a later apply would reinstall anything an implicit uninstall had removed. Each tool uninstalls through its own channel — `npm uninstall -g` when npm owns it, OpenCode's `opencode uninstall --keep-config --keep-data`, or a `remove` plan step that deletes the files the native installer put in place (`claude`/`claude.exe`, `codex`/`codex.exe`, backing the file up first, counting a missing path as `unchanged`) — and a tool ZCF cannot attribute to any channel is left with a notice, in magpie's words: uninstall it the way you installed it. Uninstall removes only the settings ZCF owns — the provider route: the `zcf` entries, the picks that point at them, and dsh's route patches. Claude Code's `env` keys go only when they still hold the values the config writes, since a same-named key with another value may be the user's own writing. MCP servers, skills and tool-owned folders such as `~/.claude` stay. Afterwards the tool ids come out of `tools` in the config file, and ZCF re-detects the tool to warn when a copy still answers.
 
 The provider has one block per protocol (`anthropic`, `openai`, `gemini`). Each adapter uses the protocol its tool speaks, and reports a notice when the provider lacks it. A tool's model is the protocol block's `model`, or else `models.default`.
 

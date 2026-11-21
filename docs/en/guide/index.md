@@ -12,7 +12,7 @@ Supported tools:
 
 - Claude Code
 - Codex
-- Gemini CLI
+- Antigravity CLI
 - OpenCode
 - Cursor CLI
 - Pi

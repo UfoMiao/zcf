@@ -224,7 +224,7 @@ describe('applyPlan', () => {
           ],
         },
         {
-          tool: 'gemini-cli',
+          tool: 'antigravity-cli',
           notices: [],
           steps: [
             {

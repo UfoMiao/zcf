@@ -41,7 +41,7 @@ npx zcf ui    # or in the browser
 |------|:--------:|:-----------:|:------:|
 | Claude Code | ✓ | ✓ | ✓ |
 | Codex | ✓ | ✓ | ✓ |
-| Gemini CLI | ✓ | ✓ | ✓ |
+| Antigravity CLI | | ✓ | ✓ |
 | OpenCode | ✓ | ✓ | ✓ |
 | Cursor CLI | | ✓ | ✓ |
 | Pi | ✓ | ✓ | ✓ |

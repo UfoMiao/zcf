@@ -29,7 +29,7 @@
 
 You keep one ZCF config: your provider, your MCP servers and your skills. ZCF installs the tools you pick and writes each tool's own settings with the tool's own commands, such as `claude mcp add-json` and `npx skills add`.
 
-Supported tools: Claude Code, Codex, Gemini CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness.
+Supported tools: Claude Code, Codex, Antigravity CLI, OpenCode, Cursor CLI, Pi and DeepSeek Harness.
 
 Once v5 is published:
 

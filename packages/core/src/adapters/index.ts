@@ -1,12 +1,12 @@
 import { resolveMirror, withMirrorEnv } from '../mirror'
 import type { Plan, ToolPlan } from '../plan/types'
 import type { Provider, ToolId, ZcfConfig } from '../schema/config'
+import { antigravityCli } from './antigravity-cli'
 import { claudeCode } from './claude-code'
 import { codex } from './codex'
 import { cursor } from './cursor'
 import { dsh } from './dsh'
 import { planExtras } from './extras'
-import { geminiCli } from './gemini-cli'
 import { opencode } from './opencode'
 import { pi } from './pi'
 import { notice, npmLatestPackage } from './shared'
@@ -15,7 +15,7 @@ import type { AdapterContext, ToolAdapter, ToolStatus } from './types'
 export const ADAPTERS: Record<ToolId, ToolAdapter> = {
   'claude-code': claudeCode,
   codex,
-  'gemini-cli': geminiCli,
+  'antigravity-cli': antigravityCli,
   opencode,
   cursor,
   pi,

@@ -249,20 +249,18 @@ describe('planUninstalls', () => {
     expect(lines(own)).toEqual([`${HOME}/.local/bin/codex`, `${HOME}/.codex/packages/standalone`])
   })
 
-  it('uninstalls Gemini CLI through npm and takes its keys out of .env', async () => {
-    const files = { [`${HOME}/.gemini/.env`]: 'GEMINI_API_KEY=k\nGOOGLE_GEMINI_BASE_URL=https://gw\n' }
-    const runner = fakeRunner({
-      'gemini --version': { stdout: '0.65.0' },
-      'npm ls -g @google/gemini-cli --depth=0': {},
-    })
+  it('uninstalls Antigravity CLI by deleting its binary and leaves the shared ~/.gemini alone', async () => {
+    const files = { [`${HOME}/.gemini/config/mcp_config.json`]: '{ "mcpServers": { "docs": { "command": "npx" } } }' }
+    const runner = fakeRunner({ 'agy --version': { stdout: '1.0.3' } })
     const provider = providerOf({ name: 'GLM', apiKey: 'k', gemini: { baseUrl: 'https://gw' } })
-    const plan = await planUninstalls(['gemini-cli'], context({ runner }, files), provider)
-    expect(lines(plan)).toEqual(['npm uninstall -g @google/gemini-cli', `${HOME}/.gemini/.env`])
-    const edits = plan.tools[0]!.steps[1]!
-    expect(edits.kind === 'file' && edits.edits).toEqual([
-      { path: ['GEMINI_API_KEY'], value: undefined },
-      { path: ['GOOGLE_GEMINI_BASE_URL'], value: undefined },
-    ])
+    const plan = await planUninstalls(['antigravity-cli'], context({ runner }, files), provider)
+    expect(lines(plan)).toEqual([`${HOME}/.local/bin/agy`])
+
+    const windows = await planUninstalls(
+      ['antigravity-cli'],
+      context({ platform: 'win32', env: { LOCALAPPDATA: 'C:/Users/me/AppData/Local' }, runner }, files),
+    )
+    expect(lines(windows)).toEqual(['C:/Users/me/AppData/Local/agy/bin'])
   })
 
   it('keeps provider settings whose values are not the ones ZCF wrote', async () => {
@@ -282,25 +280,6 @@ describe('planUninstalls', () => {
     const bare = await planUninstalls(['claude-code'], context({ runner }, files))
     expect(lines(bare)).toEqual(['npm uninstall -g @anthropic-ai/claude-code'])
     expect(bare.tools[0]!.notices.map(item => item.message.key)).toContain('notice.foreignSettings')
-  })
-
-  it('takes only the Gemini .env keys whose values ZCF wrote', async () => {
-    const files = {
-      [`${HOME}/.gemini/.env`]: 'GEMINI_API_KEY=sk-own\nGOOGLE_GEMINI_BASE_URL=https://gw\nGEMINI_MODEL=glm-4.7\n',
-    }
-    const runner = fakeRunner({
-      'gemini --version': { stdout: '0.65.0' },
-      'npm ls -g @google/gemini-cli --depth=0': {},
-    })
-    const provider = providerOf({ name: 'GLM', apiKey: 'sk-1', gemini: { baseUrl: 'https://gw' } })
-    const plan = await planUninstalls(['gemini-cli'], context({ runner }, files), provider)
-    expect(lines(plan)).toEqual(['npm uninstall -g @google/gemini-cli', `${HOME}/.gemini/.env`])
-    const edits = plan.tools[0]!.steps[1]!
-    // The base URL is ZCF's; the user's key stays, and GEMINI_MODEL is never ZCF's writing.
-    expect(edits.kind === 'file' && edits.edits).toEqual([{ path: ['GOOGLE_GEMINI_BASE_URL'], value: undefined }])
-    expect(plan.tools[0]!.notices).toEqual([
-      { level: 'info', message: { key: 'notice.foreignSettings', params: { tool: 'gemini-cli' } } },
-    ])
   })
 
   it("uses OpenCode's own uninstaller off npm, and drops only picks that point at the zcf provider", async () => {
@@ -432,16 +411,16 @@ describe('planUninstalls', () => {
   })
 
   it('leaves a tool that is neither npm-owned nor native, in magpie wording', async () => {
-    const runner = fakeRunner({ 'gemini --version': { stdout: '0.65.0' } })
-    const plan = await planUninstalls(['gemini-cli'], context({ runner }))
+    const runner = fakeRunner({ 'dsh --version': { stdout: '0.2.1' } })
+    const plan = await planUninstalls(['dsh'], context({ runner }))
     expect(plan.tools[0]!.steps).toEqual([])
     expect(plan.tools[0]!.notices).toEqual([
-      { level: 'warning', message: { key: 'notice.foreignInstall', params: { tool: 'gemini-cli' } } },
+      { level: 'warning', message: { key: 'notice.foreignInstall', params: { tool: 'dsh' } } },
     ])
   })
 
   it('only notes tools that are not installed', async () => {
-    const plan = await planUninstalls(['claude-code', 'codex', 'gemini-cli', 'opencode', 'cursor'], context())
+    const plan = await planUninstalls(['claude-code', 'codex', 'antigravity-cli', 'opencode', 'cursor'], context())
     for (const tool of plan.tools) {
       expect(tool).toMatchObject({ steps: [], notices: [{ message: { key: 'notice.notInstalled' } }] })
     }

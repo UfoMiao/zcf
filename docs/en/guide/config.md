@@ -43,7 +43,7 @@ The tools that `zcf apply` and `zcf update` work on:
 |----|------|
 | `claude-code` | Claude Code |
 | `codex` | Codex |
-| `gemini-cli` | Gemini CLI |
+| `antigravity-cli` | Antigravity CLI |
 | `opencode` | OpenCode |
 | `cursor` | Cursor CLI |
 | `pi` | Pi |
@@ -70,7 +70,7 @@ One provider shared by every tool. It is optional; without it, ZCF leaves each t
 
 `name` and `apiKey` are required, and so is `baseUrl` inside `anthropic` and `openai`.
 
-Each protocol block is optional. A tool uses the protocol it speaks: Claude Code uses `anthropic`, Codex uses `openai`, and Gemini CLI uses `gemini`. OpenCode uses `anthropic` or `openai`, Pi uses the first block that has a model, and DeepSeek Harness uses `anthropic`, then `openai`. When a tool's protocol is missing, the plan shows a notice and that tool keeps its current provider. Cursor CLI only uses Cursor's own models. See [Agent tools](./tools) for details.
+Each protocol block is optional. A tool uses the protocol it speaks: Claude Code uses `anthropic` and Codex uses `openai`. OpenCode uses `anthropic` or `openai`, Pi uses the first block that has a model, and DeepSeek Harness uses `anthropic`, then `openai`. When a tool's protocol is missing, the plan shows a notice and that tool keeps its current provider. Cursor CLI only uses Cursor's own models, and Antigravity CLI reads its key only from the environment, so the plan shows the manual steps instead. See [Agent tools](./tools) for details.
 
 To fill these fields from a known provider, see [Provider presets](./providers).
 
@@ -230,7 +230,7 @@ There is no `auto`: no tool offers one, and a tool such as Claude Code passes th
 | Tool | What applying writes |
 |------|----------------------|
 | Claude Code | Its own `language` key in `~/.claude/settings.json`: `Simplified Chinese` for `zh-CN`. `en` removes a value ZCF wrote earlier; a language you set in Claude Code yourself (such as `japanese`) is left alone. |
-| Codex, Gemini CLI, OpenCode, Cursor CLI, Pi, DeepSeek Harness | No language setting of their own. With `zh-CN`, the plan says so for each of them and their config is untouched. |
+| Codex, Antigravity CLI, OpenCode, Cursor CLI, Pi, DeepSeek Harness | No language setting of their own. With `zh-CN`, the plan says so for each of them and their config is untouched. |
 
 ## Environment variables
 
@@ -244,4 +244,4 @@ There is no `auto`: no tool offers one, and a tool such as Claude Code passes th
 | `ZCF_REDUCED_MOTION` | `1` turns the terminal UI's animations off; every animation shows its still frame. CI, `TERM=dumb` and output that is not a terminal turn them off too. |
 | `NO_COLOR` | The terminal UI draws without colour; the selection shows in inverse video. |
 
-Tools that move their own config folder are followed: `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `GEMINI_CLI_HOME`, `XDG_CONFIG_HOME` (OpenCode), `PI_CODING_AGENT_DIR` and `DSH_HOME`.
+Tools that move their own config folder are followed: `CLAUDE_CONFIG_DIR`, `CODEX_HOME`, `XDG_CONFIG_HOME` (OpenCode), `PI_CODING_AGENT_DIR` and `DSH_HOME`.

@@ -52,18 +52,18 @@ describe('npm steps', () => {
 
 describe('skillSteps', () => {
   it('checks the target folder and passes the agent to the skills CLI', async () => {
-    const ctx = context({}, { '/home/me/.gemini/skills/a/SKILL.md': '---' })
+    const ctx = context({}, { '/home/me/.gemini/config/skills/a/SKILL.md': '---' })
     const steps = await skillSteps(
       [
         { source: 'o/done', skills: ['a'] },
         { source: 'o/missing', skills: ['a', 'b'] },
       ],
       ctx,
-      { agent: 'gemini-cli', dir: '/home/me/.gemini/skills' },
+      { agent: 'antigravity-cli', dir: '/home/me/.gemini/config/skills' },
       'en',
     )
     expect(steps.map(step => step.args)).toEqual([
-      ['-y', 'skills', 'add', 'o/missing', '-g', '-y', '-a', 'gemini-cli', '-s', 'a', '-s', 'b'],
+      ['-y', 'skills', 'add', 'o/missing', '-g', '-y', '-a', 'antigravity-cli', '-s', 'a', '-s', 'b'],
     ])
   })
 

@@ -43,7 +43,7 @@ ZCF が読むのは 1 つのファイル `~/.ufomiao/zcf/zcf.json` だけです�
 |----|--------|
 | `claude-code` | Claude Code |
 | `codex` | Codex |
-| `gemini-cli` | Gemini CLI |
+| `antigravity-cli` | Antigravity CLI |
 | `opencode` | OpenCode |
 | `cursor` | Cursor CLI |
 | `pi` | Pi |
@@ -70,7 +70,7 @@ ZCF が読むのは 1 つのファイル `~/.ufomiao/zcf/zcf.json` だけです�
 
 `name` と `apiKey` は必須で、`anthropic` と `openai` の中では `baseUrl` も必須です。
 
-各プロトコルのブロックは省略可能です。ツールは自分が話すプロトコルを使います。Claude Code は `anthropic`、Codex は `openai`、Gemini CLI は `gemini` を使います。OpenCode は `anthropic` または `openai`、Pi はモデルを持つ最初のブロック、DeepSeek Harness は `anthropic`、次に `openai` を使います。ツールのプロトコルが無い場合、プランに通知が表示され、そのツールは現在のプロバイダーを維持します。Cursor CLI は Cursor 自身のモデルだけを使います。詳しくは [エージェントツール](./tools) を参照してください。
+各プロトコルのブロックは省略可能です。ツールは自分が話すプロトコルを使います。Claude Code は `anthropic`、Codex は `openai` を使います。OpenCode は `anthropic` または `openai`、Pi はモデルを持つ最初のブロック、DeepSeek Harness は `anthropic`、次に `openai` を使います。ツールのプロトコルが無い場合、プランに通知が表示され、そのツールは現在のプロバイダーを維持します。Cursor CLI は Cursor 自身のモデルだけを使い、Antigravity CLI はキーを環境変数からしか読まないため、代わりにプランで手動の手順を示します。詳しくは [エージェントツール](./tools) を参照してください。
 
 既知のプロバイダーからこれらのフィールドを埋めるには、[プロバイダープリセット](./providers) を参照してください。
 
@@ -230,7 +230,7 @@ ZCF は、ツール自身のコマンドがあればそれで各サーバーを�
 | ツール | 適用時に書き込むもの |
 |---------|----------------------|
 | Claude Code | `~/.claude/settings.json` の独自 `language` キー。`zh-CN` では `Simplified Chinese`。`en` は ZCF が以前書き込んだ値だけを削除し、ユーザーが Claude Code 側で設定した言語（`japanese` など）はそのまま残します。 |
-| Codex、Gemini CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness | 独自の言語設定がありません。`zh-CN` のときは計画にその旨が表示され、設定は変更されません。 |
+| Codex、Antigravity CLI、OpenCode、Cursor CLI、Pi、DeepSeek Harness | 独自の言語設定がありません。`zh-CN` のときは計画にその旨が表示され、設定は変更されません。 |
 
 ## 環境変数
 
@@ -244,4 +244,4 @@ ZCF は、ツール自身のコマンドがあればそれで各サーバーを�
 | `ZCF_REDUCED_MOTION` | `1` でターミナル UI のアニメーションを止め、静止フレームを表示します。CI、`TERM=dumb`、出力が端末でない場合も止まります。 |
 | `NO_COLOR` | ターミナル UI を色なしで描画し、選択は反転表示します。 |
 
-独自の設定フォルダーの場所を変更するツールにも追従します: `CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`GEMINI_CLI_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR`、`DSH_HOME`。
+独自の設定フォルダーの場所を変更するツールにも追従します: `CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR`、`DSH_HOME`。
