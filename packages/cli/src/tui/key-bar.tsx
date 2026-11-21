@@ -8,8 +8,8 @@ import { useTheme } from './fx/context'
  */
 function Pair({ pair }: { pair: string }) {
   const theme = useTheme()
-  const at = pair.indexOf(' ')
-  const key = at < 0 ? pair : pair.slice(0, at)
+  // Every pair is a key, a space and what it does.
+  const [key, ...action] = pair.split(' ')
   return (
     <Text>
       <Text
@@ -20,7 +20,7 @@ function Pair({ pair }: { pair: string }) {
       >
         {` ${key} `}
       </Text>
-      {at >= 0 && <Text {...theme.tone('dim')}>{` ${pair.slice(at + 1)}`}</Text>}
+      <Text {...theme.tone('dim')}>{` ${action.join(' ')}`}</Text>
     </Text>
   )
 }

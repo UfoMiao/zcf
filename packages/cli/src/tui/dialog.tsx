@@ -7,7 +7,6 @@ import { GradientFrame } from './frame'
 import { useOneShot, useTheme } from './fx/context'
 import { FillText } from './fx/paint'
 import { onMousePress, wheelDirection } from './mouse'
-import { textWidth } from './text-width'
 
 export interface DialogButton {
   label: string
@@ -182,7 +181,11 @@ export function Dialog({
   )
 }
 
-/** The width a dialog needs for its button row, chips and gaps included, inside its frame and padding. */
-export function buttonRowWidth(labels: readonly string[]): number {
-  return labels.reduce((sum, label) => sum + textWidth(label) + 4, 0) + 2 * (labels.length - 1) + 6
+/**
+ * The frame width for a dialog drawn over an area `room` columns wide: as wide as it
+ * prefers, but always leaving its cleared cell on each side, so its border never sits
+ * against the panel's.
+ */
+export function dialogWidth(preferred: number, room: number): number {
+  return Math.max(4, Math.min(preferred, room - 2))
 }

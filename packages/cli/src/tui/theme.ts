@@ -119,7 +119,6 @@ export function mix(a: string, b: string, amount: number): string {
 
 /** The colour at `t` (0–1) along the stops, interpolated linearly between neighbours. */
 export function gradientAt(stops: readonly string[], t: number): string {
-  if (stops.length === 1) return stops[0]!
   const clamped = Math.max(0, Math.min(1, t))
   const span = clamped * (stops.length - 1)
   const index = Math.min(stops.length - 2, Math.floor(span))
