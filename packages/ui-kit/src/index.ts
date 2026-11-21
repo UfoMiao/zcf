@@ -1,6 +1,5 @@
 export * from './draft'
 export * from './lang'
-export * from './mask'
 export * from './pages'
 export type * from './service'
 export * from './use-config-editor'
