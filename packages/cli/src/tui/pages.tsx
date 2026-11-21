@@ -41,6 +41,7 @@ import { Box, Text } from 'ink'
 import { useEffect, useState } from 'react'
 
 import type { Translate } from '../i18n'
+import { useTheme } from './fx/context'
 import type { Row } from './row-list'
 import { RowList } from './row-list'
 
@@ -58,18 +59,20 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value : ''
 }
 
-/** A `[x]` checkbox row: Enter, Space and a click all flip it through `flip`. */
+/** A toggle row, `◉` on and `○` off: Enter, Space and a click all flip it through `flip`. */
 function toggleRow(
   id: string,
   label: string,
   on: boolean,
   flip: () => void,
-  extras: { value?: string; hint?: string } = {},
+  extras: { value?: string; hint?: string; valueTone?: 'ok' } = {},
 ): Row {
   return {
     id,
-    label: `${on ? '[x]' : '[ ]'} ${label}`,
+    label,
+    toggle: on,
     value: extras.value,
+    valueTone: extras.valueTone,
     hint: extras.hint,
     action: { type: 'cycle', next: flip },
   }
@@ -160,12 +163,13 @@ function fieldRows(
 }
 
 export function SettingsPage({ editor, t, active, onBack, onEditing }: PageProps) {
+  const theme = useTheme()
   const rows = fieldRows(editor, t, [], SETTINGS_FIELDS, () => {})
   return (
     <Box flexDirection="column" gap={1}>
       <Text dimColor>{t('tui.settings.intro')}</Text>
       {editor.envMirror && (
-        <Text color="yellow">{t('tui.settings.envMirror', { mirror: t(`mirror.${editor.envMirror}`) })}</Text>
+        <Text {...theme.tone('warn')}>{t('tui.settings.envMirror', { mirror: t(`mirror.${editor.envMirror}`) })}</Text>
       )}
       <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
     </Box>
@@ -188,11 +192,14 @@ export function ToolsPage({
     const state = !detected
       ? t('tui.tools.checking')
       : status?.installed
-        ? t('tui.tools.installed', { version: status.version ?? '?' })
+        ? `✓ ${t('tui.tools.installed', { version: status.version ?? '?' })}`
         : t('tui.tools.missing')
     const on = selected.includes(tool)
     const toggle = () => editor.update(['tools'], on ? selected.filter(item => item !== tool) : [...selected, tool])
-    return toggleRow(tool, TOOL_NAMES[tool], on, toggle, { value: state })
+    return toggleRow(tool, TOOL_NAMES[tool], on, toggle, {
+      value: state,
+      valueTone: status?.installed ? 'ok' : undefined,
+    })
   })
   return (
     <Box flexDirection="column" gap={1}>
@@ -303,6 +310,7 @@ function PresetPicker({
   loadPresets: () => Promise<PresetList>
   onPick: (preset: ProviderPreset) => void
 }) {
+  const theme = useTheme()
   const [list, setList] = useState<PresetList>()
   useEffect(() => {
     loadPresets().then(setList, () => setList({ presets: [], source: 'none' }))
@@ -317,7 +325,7 @@ function PresetPicker({
     <Box flexDirection="column" gap={1}>
       <Text bold>{t('tui.provider.presetTitle')}</Text>
       {!list && <Text dimColor>{t('tui.provider.presetsLoading')}</Text>}
-      {list?.source === 'none' && <Text color="yellow">{t('tui.provider.presetsUnavailable')}</Text>}
+      {list?.source === 'none' && <Text {...theme.tone('warn')}>{t('tui.provider.presetsUnavailable')}</Text>}
       {list?.source === 'cache' && <Text dimColor>{t('tui.provider.presetsCached')}</Text>}
       {/* Mounted while loading too, so Esc goes back without waiting for the network. */}
       <RowList rows={rows} active={active} onBack={onBack} onEditing={onEditing} />
@@ -938,7 +946,8 @@ export function WorkflowsPage(
       const skills = preset.skills.reduce((count, source) => count + (source.skills?.length ?? 0), 0)
       return {
         id: `preset-${preset.id}`,
-        label: `${presetCovered(editor.draft.skills, editor.draft.agents, preset) ? '[x]' : '[ ]'} ${t(preset.nameKey)}`,
+        label: t(preset.nameKey),
+        toggle: presetCovered(editor.draft.skills, editor.draft.agents, preset),
         value: t('tui.workflows.presetValue', { skills, agents: preset.agents.length }),
         action: {
           type: 'cycle',

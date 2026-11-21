@@ -68,6 +68,7 @@ catalogs:
     vite: ^8.3.5
   ui:
     '@types/react': ^19.2.0
+    chalk: ^6.0.1
     ink: ^8.0.0
     ink-testing-library: ^4.0.0
     react: ^19.3.0

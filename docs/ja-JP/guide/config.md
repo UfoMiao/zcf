@@ -240,5 +240,8 @@ ZCF は、ツール自身のコマンドがあればそれで各サーバーを�
 | `ZCF_MIRROR` | `official` または `china`（`cn` も可）。ファイルの `mirror` より優先されます。 |
 | `ZCF_PRESETS_URL` | [プロバイダープリセット](./providers) をこの URL から読み込みます。 |
 | `ZCF_SKILLS_SEARCH_URL` | スキルページの検索を claude-plugins.dev の代わりにこのインデックスで行います。同じ `?q=&limit=` 形式に応答する必要があります。 |
+| `ZCF_THEME` | `light` または `dark`。ターミナル UI をその背景向けの色にします。未設定なら `COLORFGBG`、それもなければダークです。 |
+| `ZCF_REDUCED_MOTION` | `1` でターミナル UI のアニメーションを止め、静止フレームを表示します。CI、`TERM=dumb`、出力が端末でない場合も止まります。 |
+| `NO_COLOR` | ターミナル UI を色なしで描画し、選択は反転表示します。 |
 
 独自の設定フォルダーの場所を変更するツールにも追従します: `CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`GEMINI_CLI_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR`、`DSH_HOME`。

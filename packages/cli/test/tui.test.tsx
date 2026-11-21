@@ -1,11 +1,20 @@
+import { stripVTControlCharacters } from 'node:util'
+
 import type { BackupInfo, Plan } from '@zcf/core'
 import type { Draft, PlanView, ZcfService } from '@zcf/ui-kit'
+import chalk from 'chalk'
 import { render } from 'ink-testing-library'
 import { describe, expect, it } from 'vitest'
 
 import type { Lang } from '../src/i18n'
 import { createTranslator } from '../src/i18n'
 import { App } from '../src/tui/app'
+import type { FxOptions } from '../src/tui/fx/detect'
+import type { Clock } from '../src/tui/fx/ticker'
+import { Ticker } from '../src/tui/fx/ticker'
+import { LOGO_ROWS } from '../src/tui/sidebar'
+import { textWidth } from '../src/tui/text-width'
+import { contrast, createTheme, DARK, detectBackground, detectColorLevel, detectMotion, LIGHT } from '../src/tui/theme'
 
 const KEY = {
   enter: '\r',
@@ -60,14 +69,23 @@ function fakeService(draft: Draft | undefined, overrides: Partial<ZcfService> = 
   return { service, saved, bases }
 }
 
-async function start(service: ZcfService, options: { lang?: Lang; langPinned?: boolean } = {}) {
+async function start(
+  service: ZcfService,
+  options: { lang?: Lang; langPinned?: boolean; fx?: FxOptions; columns?: number; rows?: number } = {},
+) {
   const app = render(
-    <App service={service} lang={options.lang ?? 'en'} langPinned={options.langPinned ?? false} home="/home/me" />,
+    <App
+      service={service}
+      lang={options.lang ?? 'en'}
+      langPinned={options.langPinned ?? false}
+      home="/home/me"
+      fx={options.fx}
+    />,
   )
   // The fake stdout defaults to a stub short of the centered apply dialog; a real-size
   // terminal is the honest default, and the windowing tests pin their own smaller rows.
-  Object.defineProperty(app.stdout, 'rows', { get: () => 30, configurable: true })
-  Object.defineProperty(app.stdout, 'columns', { get: () => 100, configurable: true })
+  Object.defineProperty(app.stdout, 'rows', { get: () => options.rows ?? 30, configurable: true })
+  Object.defineProperty(app.stdout, 'columns', { get: () => options.columns ?? 100, configurable: true })
   app.stdout.emit('resize')
   const press = async (...keys: string[]) => {
     for (const key of keys) {
@@ -80,7 +98,8 @@ async function start(service: ZcfService, options: { lang?: Lang; langPinned?: b
       await tick()
     }
   }
-  const frame = () => app.lastFrame() ?? ''
+  // Colour codes come and go with the terminal the suite runs in; the text is what these tests read.
+  const frame = () => stripVTControlCharacters(app.lastFrame() ?? '')
   // Waits for something that loads in the background, which can take longer than one tick on a busy machine.
   const until = async (text: string) => {
     for (let waited = 0; !frame().includes(text) && waited < 2000; waited += 30) {
@@ -94,7 +113,9 @@ async function start(service: ZcfService, options: { lang?: Lang; langPinned?: b
   // One tick is not always enough for the config to load on a busy machine, and a key
   // pressed while it still loads lands on the loading screen and silently moves focus.
   await until('~/.ufomiao/zcf/config.json')
-  return { ...app, press, frame, until }
+  // The frame with its escape codes, for the tests that read colour and inverse video.
+  const raw = () => app.lastFrame() ?? ''
+  return { ...app, press, frame, until, raw }
 }
 
 // The backup page is the ninth: every test reaches it the one way the app offers — jump
@@ -119,12 +140,12 @@ describe('terminal UI', () => {
     // 1 opens the tools page from the nav; Enter moves into its list.
     await app.press('1', KEY.enter)
     expect(app.frame()).toContain('~/.ufomiao/zcf/config.json')
-    expect(app.frame()).toContain('[x] Claude Code')
+    expect(app.frame()).toContain('◉ Claude Code')
     expect(app.frame()).toContain('installed 2.1.0')
-    expect(app.frame()).toContain('[ ] Codex')
+    expect(app.frame()).toContain('○ Codex')
 
     await app.press(KEY.down, ' ')
-    expect(app.frame()).toContain('[x] Codex')
+    expect(app.frame()).toContain('◉ Codex')
     expect(app.frame()).toContain('to apply')
 
     // a opens the confirm-then-run flow over the page: what changed, what is installed.
@@ -231,7 +252,7 @@ describe('terminal UI', () => {
     // The dim label and the plain value carry an ANSI switch between them, so each
     // half is asserted on its own.
     expect(app.frame()).toContain('Agent tools')
-    expect(app.frame()).toContain('1 picked')
+    expect(app.frame()).toContain('1/1 installed')
     // The 26-wide column truncates the path; the home it sits under still shows.
     expect(app.frame()).toContain('~/.ufomiao/zcf')
     expect(app.frame()).toContain('5.0.0-alpha.0')
@@ -258,7 +279,7 @@ describe('terminal UI', () => {
 
     // en → zh-CN: the whole UI switches, not just the header.
     await app.press('l')
-    expect(await app.until(zh('tui.page.tools'))).toContain('a 应用')
+    expect(await app.until(zh('tui.page.tools'))).toContain('a  应用')
     expect(app.frame()).toContain('界面语言: 简体中文 (L)')
     expect(saved.at(-1)).toEqual({ version: 1, tools: [], language: 'zh-CN' })
     // bases stay the draft as it stood, so only the language key is ever written.
@@ -278,10 +299,10 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Interface language: 简体中文')
     expect(app.frame()).not.toContain('(L)')
     // The footer hints stop offering the switch too: L is a no-op while pinned.
-    expect(app.frame()).not.toContain('L lang')
-    expect(app.frame()).toContain('a apply')
-    expect(app.frame()).toContain('q quit')
-    expect(app.frame()).not.toContain('L lang')
+    expect(app.frame()).not.toContain('L  lang')
+    expect(app.frame()).toContain('a  apply')
+    expect(app.frame()).toContain('q  quit')
+    expect(app.frame()).not.toContain('L  lang')
     await app.press('l')
     expect(app.frame()).toContain('MCP servers')
     expect(app.frame()).not.toContain(zh('tui.page.tools'))
@@ -349,7 +370,7 @@ describe('terminal UI', () => {
   it('starts in the config language, unless --lang or ZCF_LANG pinned it', async () => {
     const zh = createTranslator('zh-CN')
     const follows = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service)
-    expect(await follows.until(zh('tui.page.tools'))).toContain('Enter 打开')
+    expect(await follows.until(zh('tui.page.tools'))).toContain('Enter  打开')
     follows.unmount()
 
     const pinned = await start(fakeService({ version: 1, tools: [], language: 'zh-CN' }).service, {
@@ -545,7 +566,7 @@ describe('terminal UI', () => {
     const lines = app.frame().split('\n')
     expect(lines).toHaveLength(40)
     expect(lines[38]).toContain('╰')
-    expect(lines[39]).toContain('a apply')
+    expect(lines[39]).toContain('a  apply')
     app.unmount()
   })
 
@@ -561,7 +582,7 @@ describe('terminal UI', () => {
     expect(lines).toHaveLength(12)
     expect(lines[0]).toContain('zcf')
     expect(lines[0]).not.toContain('╔')
-    expect(lines[11]).toContain('a apply')
+    expect(lines[11]).toContain('a  apply')
     app.unmount()
   })
 
@@ -583,8 +604,8 @@ describe('terminal UI', () => {
     }
     await app.press('1', KEY.enter)
     // A click selects the row and runs what Enter would run: the Codex checkbox turns on.
-    await click(lineOf('[ ] Codex'), 40)
-    expect(await app.until('[x] Codex')).toContain('[x] Codex')
+    await click(lineOf('○ Codex'), 40)
+    expect(await app.until('◉ Codex')).toContain('◉ Codex')
     // A click on a nav entry opens that page.
     await click(lineOf('2 Provider'), 5)
     expect(await app.until('One API provider for every tool.')).toContain('One API provider for every tool.')
@@ -604,7 +625,7 @@ describe('terminal UI', () => {
     await tick()
     // The intro line is above every row: nothing toggles and the draft stays clean.
     const frame = app.frame()
-    expect(frame).toContain('[ ] Claude Code')
+    expect(frame).toContain('○ Claude Code')
     expect(frame).not.toContain('●')
     app.unmount()
   })
@@ -730,9 +751,9 @@ describe('terminal UI', () => {
     // One wheel turn down moves one row, to Codex — wait for the pointer to move before
     // the next key, so it reads the selection the wheel just made.
     app.stdin.write('\u001B[<65;40;14M')
-    expect(await app.until('› 2 [ ] Codex')).toContain('› 2 [ ] Codex')
+    expect(await app.until('› 2 ○ Codex')).toContain('› 2 ○ Codex')
     await app.press(KEY.enter)
-    expect(app.frame()).toContain('[x] Codex')
+    expect(app.frame()).toContain('◉ Codex')
     app.unmount()
   })
 
@@ -747,7 +768,7 @@ describe('terminal UI', () => {
     expect(at).toBeGreaterThanOrEqual(0)
     app.stdin.write(`\u001B[<0;30;${at + 1}M`)
     // The click opened the query editor, the way Enter does.
-    expect(await app.until('Enter confirm')).toContain('Enter confirm')
+    expect(await app.until('Enter  confirm')).toContain('Enter  confirm')
     app.unmount()
   })
 
@@ -929,10 +950,10 @@ describe('terminal UI', () => {
     await app.press(KEY.enter)
     expect(await app.until('$ npm i -g x')).toContain('Install Claude Code')
     expect(applied).toBe(true)
-    expect(await app.until('Done: 1 applied, 0 already up to date.')).toContain(
-      'Done: 1 applied, 0 already up to date.',
-    )
-    // Enter closes the flow back onto the page it covered.
+    expect(await app.until('Applied — 1 changed · 0 already up to date')).toContain('✓ Install Claude Code')
+    expect(app.frame()).toContain('1/1 steps')
+    // The result card opens on Back to editor: Enter closes the flow back onto the page it covered.
+    expect(app.frame()).toContain('▸ Back to editor')
     await app.press(KEY.enter)
     expect(app.frame()).toContain('Pick the agent tools')
     expect(app.frame()).not.toContain('Apply the configuration')
@@ -1005,11 +1026,19 @@ describe('terminal UI', () => {
     app.unmount()
   })
 
-  it('needs a second q to quit with unsaved changes', async () => {
+  it('asks before quitting with unapplied changes, and a second q still quits', async () => {
     const { service } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     await app.press('1', KEY.enter, ' ', KEY.escape, 'q')
-    expect(app.frame()).toContain('Press q again to quit without saving')
+    expect(app.frame()).toContain('Quit without applying?')
+    // Focus opens on Stay, the safe choice.
+    expect(app.frame()).toContain('▸ Stay')
+    expect(app.frame()).toContain('Esc  cancel')
+    await app.press('q')
+    // The app has exited: nothing reads keys any more, so a key changes nothing on screen.
+    const after = app.frame()
+    await app.press('2')
+    expect(app.frame()).toBe(after)
     app.unmount()
   })
 
@@ -1032,10 +1061,10 @@ describe('terminal UI', () => {
     const { service, saved } = fakeService({ version: 1, tools: [] })
     const app = await start(service)
     await app.press('5', KEY.enter)
-    expect(app.frame()).toContain('[ ] Project init and everyday commands')
+    expect(app.frame()).toContain('○ Project init and everyday commands')
     // The list opens on the Presets heading; step down onto the first preset under it.
     await app.press(KEY.down, KEY.enter)
-    expect(app.frame()).toContain('[x] Project init and everyday commands')
+    expect(app.frame()).toContain('◉ Project init and everyday commands')
     expect(app.frame()).toContain('to apply')
     await saveThroughFlow(app)
     expect(saved.at(-1)).toEqual({
@@ -1046,7 +1075,7 @@ describe('terminal UI', () => {
     })
     // The flow covered the page, so the list starts over at its heading.
     await app.press(KEY.down, KEY.enter)
-    expect(app.frame()).toContain('[ ] Project init and everyday commands')
+    expect(app.frame()).toContain('○ Project init and everyday commands')
     await app.press('a', KEY.enter)
     expect(saved.at(-1)).toEqual({ version: 1, tools: [] })
     app.unmount()
@@ -1059,10 +1088,10 @@ describe('terminal UI', () => {
     // The list opens on the Presets heading; Enter on it runs nothing.
     expect(app.frame()).toContain('Presets')
     await app.press(KEY.enter)
-    expect(app.frame()).not.toContain('[x]')
+    expect(app.frame()).not.toContain('◉')
     // A digit picks the first item under the heading, not the heading itself.
     await app.press('1')
-    expect(app.frame()).toContain('›  1 [ ] Project init and everyday commands')
+    expect(app.frame()).toContain('›  1 ○ Project init and everyday commands')
     // A click on the heading line selects nothing either.
     const at = app
       .frame()
@@ -1071,8 +1100,8 @@ describe('terminal UI', () => {
     expect(at).toBeGreaterThanOrEqual(0)
     app.stdin.write(`\u001B[<0;30;${at + 1}M`)
     await tick()
-    expect(app.frame()).toContain('›  1 [ ] Project init and everyday commands')
-    expect(app.frame()).not.toContain('[x]')
+    expect(app.frame()).toContain('›  1 ○ Project init and everyday commands')
+    expect(app.frame()).not.toContain('◉')
     app.unmount()
   })
 
@@ -1103,10 +1132,10 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Bundle "git-flow"')
     // Rows: name, four agents, catalog, search, github, save. Pick the planner agent.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
-    expect(app.frame()).toContain('[x] planner')
+    expect(app.frame()).toContain('◉ planner')
     // The MCP reference to the draft's own server.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
-    expect(app.frame()).toContain('[x] github')
+    expect(app.frame()).toContain('◉ github')
     // One built-in skill from the catalog.
     await app.press(KEY.up, KEY.up, KEY.enter)
     expect(app.frame()).toContain('Pick the ZCF built-in skills')
@@ -1156,9 +1185,9 @@ describe('terminal UI', () => {
     await app.press('5', KEY.enter)
     // The agents sit under their own heading, below the five presets.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down)
-    expect(app.frame()).toContain('[ ] init-architect')
+    expect(app.frame()).toContain('○ init-architect')
     await app.press(KEY.enter)
-    expect(app.frame()).toContain('[x] init-architect')
+    expect(app.frame()).toContain('◉ init-architect')
     await app.press('a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], agents: ['init-architect'] }])
     app.unmount()
@@ -1176,7 +1205,7 @@ describe('terminal UI', () => {
     await app.press(KEY.left)
     expect(app.frame()).toContain('client (desktop app)')
     await app.press(KEY.down, KEY.enter)
-    expect(app.frame()).toContain('[x] CCometixLine')
+    expect(app.frame()).toContain('◉ CCometixLine')
     await app.press('a', KEY.enter)
     expect(saved).toEqual([{ version: 1, tools: [], extras: { magpie: 'client', ccline: true } }])
     app.unmount()
@@ -1206,15 +1235,19 @@ describe('terminal UI', () => {
     await openBackup(app)
     expect(await app.until('2026-10-24 08:00')).toContain('an apply, 2 file(s)')
     // Enter asks before anything goes back; the legacy run is first, without its date.
+    // The dialog opens on Cancel, so → moves to Restore before Enter runs it.
     await app.press(KEY.enter)
-    expect(app.frame()).toContain('Restore backup 2026-09-01T08-00-00-000Z')
-    await app.press(KEY.enter)
+    expect(app.frame()).toContain('Restore this backup?')
+    expect(app.frame()).toContain('The files in backup')
+    expect(app.frame()).toContain('2026-09-01T08-00-00-000Z')
+    await app.press(KEY.right, KEY.enter)
     expect(await app.until('Restored 1 changed file(s)')).toContain('Restore undo-1 to undo this.')
     expect(restored).toEqual(['2026-09-01T08-00-00-000Z'])
     // Prune sits under the runs, and asks too.
     await app.press(KEY.down, KEY.down, KEY.enter)
-    expect(app.frame()).toContain('Prune the oldest backups')
-    await app.press(KEY.enter)
+    expect(app.frame()).toContain('Prune old backups?')
+    expect(app.frame()).toContain('The newest 20 backup runs are kept')
+    await app.press(KEY.right, KEY.enter)
     expect(await app.until('Removed 1 backup(s)')).toContain('2026-10-20T08-00-00-000Z')
     expect(prunes).toBe(1)
     app.unmount()
@@ -1265,7 +1298,7 @@ describe('terminal UI', () => {
     await app.press('6', KEY.enter)
     // The style toggles sit above the default-style row.
     await app.press(KEY.enter)
-    expect(app.frame()).toContain('[x] engineer-professional')
+    expect(app.frame()).toContain('◉ engineer-professional')
     // The default style cycles from unset onto the first built-in style.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.right)
     expect(app.frame()).toContain('engineer-professional')
@@ -1290,7 +1323,7 @@ describe('terminal UI', () => {
     await app.press('1', KEY.enter, ' ', KEY.escape)
     await openBackup(app)
     await app.until('an apply, 2 file(s)')
-    await app.press(KEY.enter, KEY.enter)
+    await app.press(KEY.enter, KEY.right, KEY.enter)
     expect(await app.until('writes them back over the restored file')).toContain('Restored 1 changed file(s)')
     app.unmount()
   })
@@ -1315,7 +1348,7 @@ describe('terminal UI', () => {
     const app = await start(service)
     await openBackup(app)
     await app.until('an apply, 2 file(s)')
-    await app.press(KEY.enter, KEY.enter)
+    await app.press(KEY.enter, KEY.right, KEY.enter)
     const frame = await app.until('did not match their checksum')
     expect(frame).toContain('outside home')
     // Nothing was copied ahead of this restore, so there is no undo run to name.
@@ -1338,11 +1371,13 @@ describe('terminal UI', () => {
     const app = await start(service)
     await openBackup(app)
     await app.until('an apply, 2 file(s)')
-    // The Cancel row brings the list back; the backup is untouched.
-    await app.press(KEY.enter, KEY.down, KEY.enter)
+    // The dialog opens on Cancel, so Enter brings the list back; the backup is untouched.
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press(KEY.enter)
     expect(app.frame()).toContain('an apply, 2 file(s)')
-    // So does Esc from the confirm rows.
-    await app.press(KEY.enter, KEY.escape)
+    // So does Esc, even with Restore focused.
+    await app.press(KEY.enter, KEY.right, KEY.escape)
     expect(app.frame()).toContain('an apply, 2 file(s)')
     expect(restored).toEqual([])
     app.unmount()
@@ -1377,9 +1412,9 @@ describe('terminal UI', () => {
     const retry = await start(failing.service)
     await openBackup(retry)
     await retry.until('an apply, 2 file(s)')
-    await retry.press(KEY.enter, KEY.enter)
+    await retry.press(KEY.enter, KEY.right, KEY.enter)
     await retry.until('Failed: disk gone')
-    await retry.press(KEY.down, KEY.down, KEY.enter, KEY.enter)
+    await retry.press(KEY.down, KEY.down, KEY.enter, KEY.right, KEY.enter)
     expect(await retry.until('Failed: disk gone')).toContain('an apply, 2 file(s)')
     retry.unmount()
   })
@@ -1420,7 +1455,7 @@ describe('terminal UI', () => {
     expect(app.frame()).toContain('Bundle "renamed"')
     // The picked agent comes back out.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
-    expect(app.frame()).toContain('[ ] planner')
+    expect(app.frame()).toContain('○ planner')
     // The catalog skill too: its picker opens from the row under the bundle's own sources.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.enter)
     await app.press(KEY.down, KEY.down, KEY.enter)
@@ -1428,7 +1463,7 @@ describe('terminal UI', () => {
     await app.press(KEY.escape)
     // The MCP reference goes too; with the skill's row gone it sits under the search row.
     await app.press(KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.down, KEY.enter)
-    expect(app.frame()).toContain('[ ] github')
+    expect(app.frame()).toContain('○ github')
     // The bundle now holds nothing but its name; save sits right below.
     await app.press(KEY.down, KEY.enter)
     await app.press('a', KEY.enter)
@@ -1490,11 +1525,712 @@ describe('numbers moved', () => {
     // One press run: the open-page Enter and the picking digit arrive back to back.
     await app.press('1', KEY.enter, '2')
     // The digit moves the selection to the second row, without toggling it.
-    expect(app.frame()).toContain('› 2 [ ] Codex')
-    expect(app.frame()).not.toContain('[x] Codex')
+    expect(app.frame()).toContain('› 2 ○ Codex')
+    expect(app.frame()).not.toContain('◉ Codex')
     // A digit past the visible items is ignored, so Enter still toggles the picked row.
     await app.press('8', KEY.enter)
-    expect(app.frame()).toContain('[x] Codex')
+    expect(app.frame()).toContain('◉ Codex')
+    app.unmount()
+  })
+})
+
+/** A clock that never fires on its own: the test steps the ticker, and counts the intervals it was asked for. */
+function manualClock() {
+  const intervals = new Map<number, () => void>()
+  const timeouts = new Map<number, () => void>()
+  let next = 1
+  let created = 0
+  const clock: Clock = {
+    setInterval: callback => {
+      created++
+      intervals.set(next, callback)
+      return next++
+    },
+    clearInterval: handle => {
+      intervals.delete(handle)
+    },
+    setTimeout: callback => {
+      timeouts.set(next, callback)
+      return next++
+    },
+    clearTimeout: handle => {
+      timeouts.delete(handle)
+    },
+  }
+  const ticker = new Ticker(clock)
+  return {
+    clock,
+    ticker,
+    fx: { clock, ticker, motion: true } satisfies FxOptions,
+    /** Intervals ever created. */
+    get created() {
+      return created
+    },
+    /** Intervals still alive. */
+    get live() {
+      return intervals.size
+    },
+    fireTimeouts() {
+      const due = [...timeouts.values()]
+      timeouts.clear()
+      for (const callback of due) callback()
+    },
+    /** Advances `frames` frames, letting each one render. */
+    async step(frames = 1) {
+      for (let i = 0; i < frames; i++) {
+        ticker.tick()
+        // oxlint-disable-next-line no-await-in-loop
+        await tick()
+      }
+    },
+  }
+}
+
+/** Runs `body` with chalk painting at `level`, so the frames carry the escape codes Ink would write. */
+async function withChalk(level: 0 | 1 | 2 | 3, body: () => Promise<void>) {
+  const before = chalk.level
+  chalk.level = level
+  try {
+    await body()
+  } finally {
+    chalk.level = before
+  }
+}
+
+/** The parameters of every SGR escape in `text`, such as `1` or `38;2;26;166;179`. */
+function sgr(text: string): string[] {
+  return text
+    .split('\u001B[')
+    .slice(1)
+    .map(part => part.slice(0, part.indexOf('m')))
+}
+
+/** The truecolor foregrounds in `text`, as `r;g;b`. */
+function truecolors(text: string): Set<string> {
+  return new Set(
+    sgr(text)
+      .filter(code => code.startsWith('38;2;'))
+      .map(code => code.slice(5)),
+  )
+}
+
+/** Whether `text` sets any foreground or background colour; resets (39, 49) and attributes do not count. */
+function colours(text: string): boolean {
+  return sgr(text).some(code => {
+    const first = Number(code.split(';')[0])
+    return (first >= 30 && first <= 38) || (first >= 40 && first <= 48) || (first >= 90 && first <= 107)
+  })
+}
+
+/** The sidebar's part of a frame line at 120 columns: what follows the panel's right edge. */
+function sidebarPart(line: string): string {
+  return line.slice(line.lastIndexOf('││') + 2)
+}
+
+/** The title of a step in `twoToolPlan`. */
+function stepTitle(tool: 'claude' | 'codex', n: number): string {
+  return `${tool} step ${n}`
+}
+
+/** A plan of two tools, three steps each, every title its own. */
+function twoToolPlan(secret = 'sk-run-secret-123456'): { plan: Plan; view: PlanView } {
+  const steps = (tool: string): Plan['tools'][number]['steps'] =>
+    [1, 2, 3].map(n => ({
+      kind: 'command',
+      title: { key: `${tool} step ${n}` },
+      command: 'npm',
+      args: ['i', `${tool}-${n}`, ...(n === 1 ? [`--token=${secret}`] : [])],
+    }))
+  const plan: Plan = {
+    tools: [
+      { tool: 'claude-code', notices: [], steps: steps('claude') },
+      { tool: 'codex', notices: [], steps: steps('codex') },
+    ],
+  }
+  return {
+    plan,
+    view: {
+      plan,
+      previews: [
+        [null, null, null],
+        [null, null, null],
+      ],
+      secrets: [secret],
+    },
+  }
+}
+
+/** An apply the test drives: each event is sent by hand, and the run ends when the test says so. */
+function heldApply() {
+  let send: ((event: Parameters<NonNullable<Parameters<ZcfService['apply']>[0]>>[0]) => void) | undefined
+  let finish: ((outcome: Awaited<ReturnType<ZcfService['apply']>>) => void) | undefined
+  const apply: ZcfService['apply'] = onStep => {
+    send = onStep
+    return new Promise(resolve => {
+      finish = resolve
+    })
+  }
+  return {
+    apply,
+    send: (event: Parameters<NonNullable<Parameters<ZcfService['apply']>[0]>>[0]) => send?.(event),
+    finish: (outcome: Awaited<ReturnType<ZcfService['apply']>>) => finish?.(outcome),
+  }
+}
+
+/** The raw line (escape codes kept) whose text holds `text`. */
+function rawLineWith(raw: string, text: string): string {
+  const lines = raw.split('\n')
+  return lines.find(line => stripVTControlCharacters(line).includes(text)) ?? ''
+}
+
+/** The line of `frame` that holds `text`. */
+function lineWith(frame: string, text: string): string {
+  return frame.split('\n').find(line => line.includes(text)) ?? ''
+}
+
+const SHIFT_TAB = '\u001B[Z'
+
+describe('Tide theme', () => {
+  it('keeps body text at 4.5:1 or better on both backgrounds', () => {
+    for (const [palette, base] of [
+      [DARK, '#000000'],
+      [LIGHT, '#ffffff'],
+    ] as const) {
+      for (const tone of ['fg', 'dim', 'ok', 'warn', 'err', 'accent'] as const)
+        expect(contrast(palette[tone], base), `${tone} on ${base}`).toBeGreaterThanOrEqual(4.5)
+    }
+  })
+
+  it('reads the background from ZCF_THEME, then COLORFGBG, and defaults to dark', () => {
+    expect(detectBackground({ ZCF_THEME: 'light' })).toBe('light')
+    expect(detectBackground({ ZCF_THEME: 'dark', COLORFGBG: '0;15' })).toBe('dark')
+    expect(detectBackground({ COLORFGBG: '0;15' })).toBe('light')
+    expect(detectBackground({ COLORFGBG: '0;7' })).toBe('light')
+    expect(detectBackground({ COLORFGBG: '15;0' })).toBe('dark')
+    expect(detectBackground({})).toBe('dark')
+    expect(createTheme(3, detectBackground({ ZCF_THEME: 'light' })).palette).toBe(LIGHT)
+  })
+
+  it('turns colour off for NO_COLOR, and motion off for reduced motion, CI, dumb terminals and pipes', () => {
+    expect(detectColorLevel({ NO_COLOR: '1' }, 3)).toBe(0)
+    expect(detectColorLevel({}, 3)).toBe(3)
+    expect(detectColorLevel({}, 1)).toBe(1)
+    expect(detectMotion({}, true)).toBe(true)
+    expect(detectMotion({ ZCF_REDUCED_MOTION: '1' }, true)).toBe(false)
+    expect(detectMotion({ CI: '1' }, true)).toBe(false)
+    expect(detectMotion({ TERM: 'dumb' }, true)).toBe(false)
+    expect(detectMotion({}, false)).toBe(false)
+    // NO_COLOR alone keeps the glyph motion.
+    expect(detectMotion({ NO_COLOR: '1' }, true)).toBe(true)
+  })
+
+  it(
+    'paints the wordmark on the gradient, in cyan on 16 colours, and in no colour under NO_COLOR',
+    { timeout: 20_000 },
+    async () => {
+      const { service } = fakeService({ version: 1, tools: [] })
+      await withChalk(3, async () => {
+        const rich = await start(service, { columns: 120, fx: { colorLevel: 3, background: 'dark' } })
+        const row = rawLineWith(rich.raw(), '██████╗  ██████╗')
+        expect(truecolors(row).size).toBeGreaterThanOrEqual(3)
+        rich.unmount()
+
+        const named = await start(service, { columns: 120, fx: { colorLevel: 1, background: 'dark' } })
+        const cyanRow = rawLineWith(named.raw(), '██████╗  ██████╗')
+        expect(cyanRow).toContain('\u001B[36m')
+        expect(truecolors(cyanRow).size).toBe(0)
+        named.unmount()
+
+        const none = await start(service, { columns: 120, fx: { colorLevel: 0, background: 'dark' } })
+        const plainRow = rawLineWith(none.raw(), '██████╗  ██████╗')
+        expect(colours(plainRow)).toBe(false)
+        none.unmount()
+      })
+    },
+  )
+
+  it('shows selection without colour: inverse nav row and button, glyphs for every state', async () => {
+    const { service } = fakeService({ version: 1, tools: ['claude-code'] })
+    await withChalk(1, async () => {
+      const app = await start(service, { fx: { colorLevel: 0 } })
+      expect(rawLineWith(app.raw(), '1 Agent tools')).toContain('\u001B[7m')
+      expect(colours(app.raw())).toBe(false)
+      expect(app.frame()).toContain('◉ Claude Code')
+      expect(app.frame()).toContain('○ Codex')
+      await app.press('a')
+      expect(rawLineWith(app.raw(), '▸ Apply')).toContain('\u001B[7m')
+      // Moving the focus moves the marker and the inverse, never the buttons themselves.
+      const before = lineWith(app.frame(), 'Cancel')
+      await app.press(KEY.left)
+      const after = lineWith(app.frame(), 'Cancel')
+      expect(after).toContain('▸ Cancel')
+      expect(after.length).toBe(before.length)
+      expect(after.indexOf('Apply')).toBe(before.indexOf('Apply'))
+      expect(rawLineWith(app.raw(), '▸ Cancel')).toContain('\u001B[7m')
+      app.unmount()
+    })
+  })
+
+  it(
+    'fits 80x24, 90x28, 120x30 and 160x40 without wrapping, the wordmark whole on wide ones',
+    { timeout: 30_000 },
+    async () => {
+      const { service } = fakeService({ version: 1, tools: ['claude-code'] })
+      for (const [columns, rows] of [
+        [80, 24],
+        [90, 28],
+        [120, 30],
+        [160, 40],
+      ] as const) {
+        // oxlint-disable-next-line no-await-in-loop
+        const app = await start(service, { columns, rows })
+        // A dirty draft puts `● to apply` in the narrow header, where the hatch must still fit.
+        // oxlint-disable-next-line no-await-in-loop
+        await app.press('1', KEY.enter, KEY.down, ' ', KEY.escape)
+        for (const view of ['editor', 'confirm'] as const) {
+          // oxlint-disable-next-line no-await-in-loop
+          if (view === 'confirm') await app.press('a')
+          const lines = app.frame().split('\n')
+          expect(lines, `${columns}x${rows} ${view}`).toHaveLength(rows)
+          // Every tool row stays on its one line: the next row's ordinal is on the very next line.
+          const first = lines.findIndex(line => line.includes('◉ Claude Code'))
+          const ordinals = lines
+            .slice(first, first + 7)
+            .map(line => /\b(\d) [◉○] /.exec(line)?.[1] ?? '?')
+            .join('')
+          expect(view === 'confirm' ? '1234567' : ordinals, `${columns}x${rows}`).toBe('1234567')
+          for (const line of lines) expect(textWidth(line), `${columns}x${rows}: ${line}`).toBeLessThanOrEqual(columns)
+          // Wide terminals show the whole wordmark; narrow ones the header, its hatch only ever after the facts.
+          const wide = columns >= 112
+          const header = lines[0]!
+          expect(LOGO_ROWS.every(logo => app.frame().includes(logo.trimEnd()))).toBe(wide)
+          expect(wide || header.includes('● to apply')).toBe(true)
+          const hatch = header.indexOf('╱')
+          expect(wide || hatch === -1 || hatch > header.indexOf('● to apply')).toBe(true)
+        }
+        app.unmount()
+      }
+    },
+  )
+
+  it('draws nothing but the tide line around the wordmark, still at rest and rolling while busy', async () => {
+    const plan = twoToolPlan()
+    let release: (() => void) | undefined
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      {
+        plan: () =>
+          new Promise(resolve => {
+            release = () => resolve(plan.view)
+          }),
+      },
+    )
+    const time = manualClock()
+    const app = await start(service, { columns: 120, fx: time.fx })
+    const around = () => {
+      const lines = app.frame().split('\n')
+      const top = lines.findIndex(line => line.includes(LOGO_ROWS[0]))
+      return { above: sidebarPart(lines[top - 1]!), below: sidebarPart(lines[top + LOGO_ROWS.length]!) }
+    }
+    expect(around().above).not.toContain('╱')
+    expect(around().below).toContain('▁▂▃')
+    expect(around().below).not.toContain('╱')
+    // The launch sweep plays; the tide stays still through it.
+    const rest = around().below
+    await time.step(3)
+    expect(around().below).toBe(rest)
+    // Planning rolls it.
+    await app.press('a', KEY.enter)
+    const first = around().below
+    await time.step(1)
+    expect(around().below).not.toBe(first)
+    release?.()
+    app.unmount()
+  })
+})
+
+describe('Tide motion', () => {
+  it(
+    'holds no timer once the launch sweep is over, and again after the success shimmer',
+    { timeout: 20_000 },
+    async () => {
+      const plan = twoToolPlan()
+      const run = heldApply()
+      const { service } = fakeService(
+        { version: 1, tools: ['claude-code'] },
+        { plan: async () => plan.view, apply: run.apply },
+      )
+      const time = manualClock()
+      const app = await start(service, { columns: 120, fx: time.fx })
+      expect(time.ticker.running).toBe(true)
+      await time.step(20)
+      expect(time.ticker.subscribers).toBe(0)
+      expect(time.ticker.running).toBe(false)
+      expect(time.live).toBe(0)
+
+      await app.press('a', KEY.enter)
+      await time.step(5)
+      run.finish({
+        results: plan.plan.tools.map(toolPlan => ({
+          tool: toolPlan.tool,
+          ok: true,
+          steps: toolPlan.steps.map(step => ({ step, status: 'done' as const })),
+        })),
+        backupDir: '/home/me/b',
+      })
+      // The result card grows in over four frames first.
+      await tick()
+      await time.step(4)
+      expect(app.frame()).toContain('Applied — 6 changed')
+      // The shimmer and the wordmark's second sweep play once, then stop.
+      expect(time.ticker.running).toBe(true)
+      await time.step(20)
+      expect(time.ticker.subscribers).toBe(0)
+      expect(time.live).toBe(0)
+      app.unmount()
+    },
+  )
+
+  it('never starts the ticker under reduced motion, and shows the still frames', async () => {
+    const plan = twoToolPlan()
+    const run = heldApply()
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      { plan: async () => plan.view, apply: run.apply },
+    )
+    const time = manualClock()
+    const app = await start(service, { columns: 120, fx: { ...time.fx, motion: false } })
+    await app.press('a')
+    // No grow: the confirmation is whole at once.
+    expect(app.frame()).toContain('Apply the configuration')
+    await app.press(KEY.enter)
+    expect(await app.until('claude step 1')).toContain('… claude step 1')
+    // The planning wave and the tide are the still ramp.
+    expect(app.frame()).toContain('▁▂▃▅▆▇▆▅▃▂▁▁▂▃▄▅▄▃▂▁▁▂▄▅')
+    expect(time.created).toBe(0)
+    run.finish({ results: [], backupDir: '/home/me/b' })
+    await app.until('▸ Back to editor')
+    expect(time.created).toBe(0)
+    app.unmount()
+  })
+
+  it('acts on keys during the launch sweep and the dialog grow', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: ['claude-code'] })
+    const time = manualClock()
+    const app = await start(service, { columns: 120, fx: time.fx })
+    expect(time.ticker.running).toBe(true)
+    // a during the sweep opens the confirmation at once; it grows over four frames.
+    await app.press('a')
+    expect(app.frame()).toContain('Esc  cancel')
+    expect(app.frame()).not.toContain('Apply the configuration')
+    // Esc during the grow closes it.
+    await app.press(KEY.escape)
+    expect(app.frame()).toContain('Pick the agent tools')
+    await app.press('a')
+    await time.step(4)
+    expect(app.frame()).toContain('Apply the configuration')
+    expect(saved).toEqual([])
+    app.unmount()
+  })
+
+  it('shows the boot screen only for a slow load', async () => {
+    let finish: (() => void) | undefined
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        load: () =>
+          new Promise(resolve => {
+            finish = () =>
+              resolve({
+                path: '/home/me/.ufomiao/zcf/config.json',
+                draft: { version: 1, tools: [] },
+                exists: true,
+                issues: [],
+              })
+          }),
+      },
+    )
+    const time = manualClock()
+    const app = render(<App service={service} lang="en" home="/home/me" fx={time.fx} />)
+    await tick()
+    expect(app.lastFrame() ?? '').not.toContain('Loading your config')
+    time.fireTimeouts()
+    await tick()
+    const frame = stripVTControlCharacters(app.lastFrame() ?? '')
+    expect(frame).toContain('Loading your config…')
+    for (const logo of LOGO_ROWS) expect(frame).toContain(logo.trimEnd())
+    expect(frame).not.toContain('╱')
+    finish?.()
+    await tick()
+    await tick()
+    expect(stripVTControlCharacters(app.lastFrame() ?? '')).toContain('Pick the agent tools')
+    app.unmount()
+  })
+})
+
+describe('Tide run view', () => {
+  it('ticks each step off as its event arrives, and a failure ends in the failure card', async () => {
+    const plan = twoToolPlan()
+    const run = heldApply()
+    let plans = 0
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      {
+        plan: async () => {
+          plans++
+          return plan.view
+        },
+        apply: run.apply,
+      },
+    )
+    const app = await start(service, { columns: 120, rows: 40 })
+    await app.press('a', KEY.enter)
+    await app.until('0/6 steps')
+    const step = stepTitle
+    // Each tool's first step is running (the still spinner), the rest are waiting.
+    expect(lineWith(app.frame(), step('claude', 2))).toContain('○ claude step 2')
+    expect(lineWith(app.frame(), step('codex', 3))).toContain('○ codex step 3')
+    expect(lineWith(app.frame(), step('claude', 1))).toContain('… claude step 1')
+
+    const steps = (tool: number) => plan.plan.tools[tool]!.steps
+    const events: [number, number, 'done' | 'unchanged' | 'failed' | 'skipped', string][] = [
+      [0, 0, 'done', '✓'],
+      [1, 0, 'unchanged', '·'],
+      [0, 1, 'done', '✓'],
+      [1, 1, 'failed', '✗'],
+      [1, 2, 'skipped', '-'],
+      [0, 2, 'done', '✓'],
+    ]
+    for (const [count, [tool, index, status, mark]] of events.entries()) {
+      run.send({
+        tool: plan.plan.tools[tool]!.tool,
+        index,
+        result: { step: steps(tool)[index]!, status, ...(status === 'failed' ? { detail: 'boom\nmore' } : {}) },
+      })
+      // oxlint-disable-next-line no-await-in-loop
+      await tick()
+      expect(app.frame()).toContain(`${count + 1}/6 steps`)
+      expect(lineWith(app.frame(), `${tool === 0 ? 'claude' : 'codex'} step ${index + 1}`)).toContain(
+        `${mark} ${tool === 0 ? 'claude' : 'codex'} step ${index + 1}`,
+      )
+    }
+    expect(lineWith(app.frame(), 'Codex')).toContain('✗')
+    run.finish({
+      results: [
+        { tool: 'claude-code', ok: true, steps: steps(0).map(s => ({ step: s, status: 'done' as const })) },
+        {
+          tool: 'codex',
+          ok: false,
+          steps: [
+            { step: steps(1)[0]!, status: 'unchanged' },
+            { step: steps(1)[1]!, status: 'failed', detail: 'boom\nmore' },
+            { step: steps(1)[2]!, status: 'skipped' },
+          ],
+        },
+      ],
+      backupDir: '/home/me/b',
+    })
+    const frame = await app.until('1 tool(s) failed')
+    expect(frame).toContain('✗ 1 tool(s) failed — Codex: boom')
+    expect(frame).toContain('The other tools finished')
+    expect(lineWith(frame, 'Claude Code')).toContain('✓')
+    // The failure card opens on Back to editor, with Retry beside it; Retry plans again.
+    expect(frame).toContain('▸ Back to editor')
+    await app.press(KEY.left, KEY.enter)
+    await app.until('0/6 steps')
+    expect(plans).toBe(2)
+    app.unmount()
+  })
+
+  it('never shows a secret in the confirmation, the run or the result card', async () => {
+    const secret = 'sk-run-secret-123456'
+    const plan = twoToolPlan(secret)
+    const run = heldApply()
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'], provider: { name: 'p', apiKey: 'sk-old-key-000000' } },
+      { plan: async () => plan.view, apply: run.apply },
+    )
+    const app = await start(service, { columns: 120, rows: 40 })
+    const frames: string[] = []
+    // A new key makes the draft dirty, so the confirmation lists the provider change.
+    await app.press('2', KEY.enter)
+    const at = app
+      .frame()
+      .split('\n')
+      .findIndex(line => line.includes('API key'))
+    expect(at).toBeGreaterThanOrEqual(0)
+    await app.press(KEY.down, KEY.enter, 's', 'k', '-', KEY.enter, KEY.escape)
+    await app.press('a')
+    frames.push(app.frame())
+    await app.press(KEY.enter)
+    frames.push(await app.until('0/6 steps'))
+    run.send({
+      tool: 'codex',
+      index: 0,
+      result: { step: plan.plan.tools[1]!.steps[0]!, status: 'failed', detail: `denied for ${secret}` },
+    })
+    await tick()
+    frames.push(app.frame())
+    run.finish({
+      results: [
+        {
+          tool: 'codex',
+          ok: false,
+          steps: [{ step: plan.plan.tools[1]!.steps[0]!, status: 'failed', detail: `denied for ${secret}` }],
+        },
+      ],
+      backupDir: '/home/me/b',
+    })
+    frames.push(await app.until('tool(s) failed'))
+    expect(frames.at(-1)).toContain('denied for sk-')
+    for (const frame of frames) {
+      expect(frame).not.toContain(secret)
+      expect(frame).not.toContain('sk-old-key-000000')
+    }
+    app.unmount()
+  })
+})
+
+describe('Tide dialogs', () => {
+  it('moves the apply confirmation focus with arrows and Tab, and runs only the focused button', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: ['claude-code'] })
+    const app = await start(service)
+    await app.press('a')
+    expect(app.frame()).toContain('▸ Apply')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('▸ Apply')
+    await app.press(KEY.left)
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press(KEY.left)
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press('\t')
+    expect(app.frame()).toContain('▸ Apply')
+    await app.press('\t')
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press(SHIFT_TAB)
+    expect(app.frame()).toContain('▸ Apply')
+    await app.press(KEY.up)
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press(KEY.down)
+    expect(app.frame()).toContain('▸ Apply')
+    // Enter on Cancel closes without saving; Esc with Apply focused does too.
+    await app.press(KEY.left, KEY.enter)
+    expect(app.frame()).toContain('Pick the agent tools')
+    await app.press('a', KEY.escape)
+    expect(app.frame()).toContain('Pick the agent tools')
+    expect(saved).toEqual([])
+    app.unmount()
+  })
+
+  it('runs a dialog button on a click', async () => {
+    const { service, saved } = fakeService({ version: 1, tools: ['claude-code'] })
+    const app = await start(service)
+    await app.press('a')
+    const lines = app.frame().split('\n')
+    const row = lines.findIndex(line => line.includes('▸ Apply'))
+    const col = lines[row]!.indexOf('Cancel')
+    app.stdin.write(`\u001B[<0;${col + 1};${row + 1}M`)
+    await tick()
+    await tick()
+    expect(app.frame()).toContain('Pick the agent tools')
+    expect(saved).toEqual([])
+    app.unmount()
+  })
+
+  it('keeps ↑↓ for scrolling on the result card, and moves its focus with ←→ and Tab', async () => {
+    const plan = twoToolPlan()
+    const { service } = fakeService(
+      { version: 1, tools: ['claude-code'] },
+      {
+        plan: async () => plan.view,
+        apply: async () => ({
+          results: plan.plan.tools.map(toolPlan => ({
+            tool: toolPlan.tool,
+            ok: true,
+            steps: toolPlan.steps.map(step => ({ step, status: 'done' as const })),
+          })),
+          backupDir: '/home/me/b',
+        }),
+      },
+    )
+    // Short enough that the six steps outgrow the list above the card.
+    const app = await start(service, { rows: 20 })
+    await app.press('a', KEY.enter)
+    await app.until('▸ Back to editor')
+    expect(app.frame()).toContain('↑↓  scroll')
+    const top = app.frame()
+    await app.press(KEY.down)
+    expect(app.frame()).toContain('▸ Back to editor')
+    // The list moved; the focus did not.
+    expect(app.frame()).not.toBe(top)
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('▸ Quit')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('▸ Quit')
+    await app.press('\t')
+    expect(app.frame()).toContain('▸ Back to editor')
+    await app.press(SHIFT_TAB)
+    expect(app.frame()).toContain('▸ Quit')
+    await app.press(KEY.left, KEY.escape)
+    expect(app.frame()).toContain('Pick the agent tools')
+    app.unmount()
+  })
+
+  it('opens the quit dialog on Stay, and Apply first opens the confirmation', async () => {
+    const { service } = fakeService({ version: 1, tools: [] })
+    const app = await start(service)
+    await app.press('1', KEY.enter, ' ', KEY.escape, 'q')
+    expect(app.frame()).toContain('▸ Stay')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('▸ Apply first')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('▸ Quit anyway')
+    await app.press(KEY.right)
+    expect(app.frame()).toContain('▸ Quit anyway')
+    await app.press('\t')
+    expect(app.frame()).toContain('▸ Stay')
+    await app.press(SHIFT_TAB)
+    expect(app.frame()).toContain('▸ Quit anyway')
+    await app.press(KEY.up, KEY.up)
+    expect(app.frame()).toContain('▸ Stay')
+    // Stay closes the dialog and keeps the edits.
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('Pick the agent tools')
+    expect(app.frame()).toContain('to apply')
+    // Esc cancels too.
+    await app.press('q', KEY.escape)
+    expect(app.frame()).not.toContain('Quit without applying?')
+    await app.press('q', KEY.right, KEY.enter)
+    expect(app.frame()).toContain('Apply the configuration')
+    app.unmount()
+  })
+
+  it('stops the restore focus at the ends and wraps it with Tab', async () => {
+    const restored: string[] = []
+    const { service } = fakeService(
+      { version: 1, tools: [] },
+      {
+        backups: async () => [backupRun('2026-10-24T08-00-00-000Z', '2026-10-24T08:00:00.000Z')],
+        restoreBackup: async id => {
+          restored.push(id)
+          return { changed: 0, unchanged: 0, missing: 0, corrupt: 0, outside: 0 }
+        },
+      },
+    )
+    const app = await start(service)
+    await openBackup(app)
+    await app.until('an apply, 2 file(s)')
+    await app.press(KEY.enter)
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press(KEY.left)
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press(KEY.right, KEY.right)
+    expect(app.frame()).toContain('▸ Restore')
+    await app.press('\t')
+    expect(app.frame()).toContain('▸ Cancel')
+    await app.press(SHIFT_TAB, KEY.enter)
+    expect(await app.until('Restored')).toContain('an apply, 2 file(s)')
+    expect(restored).toEqual(['2026-10-24T08-00-00-000Z'])
     app.unmount()
   })
 })

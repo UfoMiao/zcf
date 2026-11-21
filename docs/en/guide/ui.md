@@ -51,13 +51,17 @@ Command output such as `zcf plan` follows `--lang` or `ZCF_LANG`, not either set
 | <kbd>Esc</kbd> or <kbd>←</kbd> | Go back, or cancel an edit. |
 | <kbd>Ctrl</kbd>+<kbd>S</kbd> | Save. Confirm the field you are typing in with <kbd>Enter</kbd> first. |
 | <kbd>L</kbd> | Switch the interface language, from any page, and save it at once. |
-| <kbd>q</kbd> | Quit, from the page list. With unsaved changes, press it twice. |
+| <kbd>q</kbd> | Quit, from the page list. With changes not applied yet, a dialog asks first (Stay · Apply first · Quit anyway); a second <kbd>q</kbd> quits. |
 
 Rows in a list are numbered by what is on screen: `› 3 Label` means <kbd>3</kbd> picks that row, wherever the window has scrolled to.
 
 The terminal UI covers the whole window (the shell gets its screen back on exit) and takes the mouse: click a row to select it and run what <kbd>Enter</kbd> runs, click the page list on the left to switch pages, and turn the wheel to move the selection — on the Apply page it scrolls the plan. Shift-click selects text the terminal's own way. In a window shorter than 23 rows the banner the header is only one line — wordmark, version, config path, language, changes waiting — so even a short window holds the app; the page list scrolls within its section when the window is short.
 
-On the Apply page, <kbd>Enter</kbd> applies, <kbd>r</kbd> plans again, and the arrow keys scroll. The plan is made from the saved file, so the page asks you to save first if you have unsaved changes.
+<kbd>a</kbd> opens the apply confirmation: what changed in the config and what applying installs. Apply saves, plans and applies; the run then lists every step of the plan and ticks each one off as it finishes (`✓` done, `·` up to date, `-` skipped, `✗` failed), with a progress bar of finished steps, and ends on a result card. The arrow keys scroll the run.
+
+Every dialog — the apply confirmation, the result card, the quit dialog and the Backup page's restore and prune confirmations — has a row of buttons with one focused, marked `▸`. <kbd>←</kbd> <kbd>→</kbd> (or <kbd>h</kbd> <kbd>l</kbd>) move the focus, <kbd>Tab</kbd> and <kbd>Shift</kbd>+<kbd>Tab</kbd> move it round, <kbd>↑</kbd> <kbd>↓</kbd> move it too except on the result card, where they scroll. <kbd>Enter</kbd> runs the focused button, <kbd>Esc</kbd> cancels, and a click runs the button it lands on. The focus always opens on the safe choice: Apply on the confirmation, Back to editor on the result card, Stay on the quit dialog and Cancel on restore and prune.
+
+Colours follow the terminal: gradients where it has 256 colours or more, one cyan accent on 16 colours, and no colour at all under `NO_COLOR` (selection then shows in inverse video). Motion — the wordmark's sweep, spinners, the tide line while applying — plays only while something is happening, and stops for `ZCF_REDUCED_MOTION=1`, in CI, on `TERM=dumb` and when the output is not a terminal. See [environment variables](./config#environment-variables).
 
 Arguments of an MCP server are typed on one line, the way a shell takes them. Quote an argument that contains spaces: `--header "Authorization: Bearer x"`.
 

@@ -240,5 +240,8 @@ MCP 服务，以名称为键。名称可使用字母、数字、`_` 和 `-`。
 | `ZCF_MIRROR` | `official` 或 `china`（也可写 `cn`）。优先于文件中的 `mirror`。 |
 | `ZCF_PRESETS_URL` | 改从这个 URL 加载[供应商预设](./providers)。 |
 | `ZCF_SKILLS_SEARCH_URL` | 技能页改用这个技能索引搜索，而不使用 claude-plugins.dev；需支持相同的 `?q=&limit=` 参数。 |
+| `ZCF_THEME` | `light` 或 `dark`：终端界面按该背景配色。未设置时看 `COLORFGBG`，再否则用深色。 |
+| `ZCF_REDUCED_MOTION` | 设为 `1` 时关闭终端界面的动效，所有动画显示静止帧。CI、`TERM=dumb` 以及输出不是终端时也会关闭。 |
+| `NO_COLOR` | 终端界面不使用颜色，选中项用反色显示。 |
 
 各工具用来移动自身配置目录的变量都会被遵循：`CLAUDE_CONFIG_DIR`、`CODEX_HOME`、`GEMINI_CLI_HOME`、`XDG_CONFIG_HOME`（OpenCode）、`PI_CODING_AGENT_DIR` 和 `DSH_HOME`。

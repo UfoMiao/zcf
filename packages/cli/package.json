@@ -47,6 +47,7 @@
     "@zcf/ui-kit": "workspace:*",
     "ansis": "catalog:cli",
     "cac": "catalog:cli",
+    "chalk": "catalog:ui",
     "ink": "catalog:ui",
     "ink-testing-library": "catalog:ui",
     "pathe": "catalog:runtime",

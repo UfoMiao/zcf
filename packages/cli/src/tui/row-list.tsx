@@ -2,8 +2,10 @@ import { digitIndex, isDigitKey } from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
 import { useEffect, useRef, useState } from 'react'
 
+import { useTheme } from './fx/context'
 import { contains, onMousePress, wheelDirection } from './mouse'
 import { TextInput } from './text-input'
+import { textWidth } from './text-width'
 import { useTerminalRows } from './use-terminal-rows'
 import { windowRange } from './window'
 
@@ -29,16 +31,15 @@ export interface Row {
    * selected by keys, digits or the mouse — the nav's section headers, for a list.
    */
   heading?: boolean
+  /** A toggle's state, drawn before the label as `◉` (on, in the accent) or `○` (off). */
+  toggle?: boolean
+  /** `ok` paints the value in the success colour, such as a tool that is installed. */
+  valueTone?: 'ok'
 }
 
-/** Terminal columns a label takes; CJK and other wide characters take two. */
-function columns(text: string): number {
-  let width = 0
-  for (const char of text)
-    width += /[\u1100-\u115F\u2E80-\uA4CF\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]/u.test(char)
-      ? 2
-      : 1
-  return width
+/** Terminal columns a row's label takes, its toggle mark included. */
+function labelColumns(item: Row): number {
+  return textWidth(item.label) + (item.toggle === undefined ? 0 : 2)
 }
 
 export interface RowListProps {
@@ -69,6 +70,7 @@ function rowHeight(item: Row, selected: boolean, active: boolean): number {
  * A list taller than the terminal shows a window around the cursor, with arrows at the cut ends.
  */
 export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
+  const theme = useTheme()
   const [selected, setSelected] = useState(0)
   const [editing, setEditing] = useState(false)
   const listRef = useRef<DOMElement | null>(null)
@@ -99,7 +101,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
   // must never wrap inside a narrower one.
   // + 2 for the pointer, + 2 for the ordinal's separating space, + 2 of slack: a row
   // must stay on one line, so a label at the measured width never wraps.
-  const labelWidth = Math.max(0, ...shownItems.map(item => columns(item.label))) + 2 + ordinalWidth + 2 + 2
+  const labelWidth = Math.max(0, ...shownItems.map(labelColumns)) + 2 + ordinalWidth + 2 + 2
 
   const setEdit = (value: boolean) => {
     setEditing(value)
@@ -173,7 +175,7 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
 
   return (
     <Box ref={listRef} flexDirection="column">
-      {capped && start > 0 && <Text dimColor>{'  ↑'}</Text>}
+      {capped && start > 0 && <Text {...theme.tone('dim')}>{'  ↑'}</Text>}
       {/* Ordinals count the items only, so a heading in between renumbers nothing. */}
       {(() => {
         let ordinal = 0
@@ -182,14 +184,13 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
           if (item.heading)
             return (
               <Box key={item.id}>
-                <Text bold dimColor>
+                <Text bold {...theme.tone('dim')}>
                   {item.label}
                 </Text>
               </Box>
             )
           ordinal += 1
           const current = position === index
-          const pointer = current && active ? '›' : ' '
           const editor =
             current && editing && item.action?.type === 'text' ? (
               <TextInput
@@ -203,23 +204,43 @@ export function RowList({ rows, active, onBack, onEditing }: RowListProps) {
                 onCancel={() => setEdit(false)}
               />
             ) : undefined
+          const lit = current && active
           return (
             <Box key={item.id} flexDirection="column">
-              <Box>
+              {/* The selected row lights up as a whole: the row-select background where the
+               * terminal has the colours, an accent pointer everywhere. */}
+              <Box backgroundColor={lit ? theme.surface('rowSelect') : undefined}>
                 <Box width={editor || item.value !== undefined ? labelWidth : undefined} flexShrink={0}>
-                  <Text color={current && active ? 'cyan' : undefined} wrap="truncate-end">
-                    {pointer} {String(ordinal).padStart(ordinalDigits, ' ')} {item.label}
+                  <Text wrap="truncate-end">
+                    <Text bold {...theme.tone('accent')}>
+                      {lit ? '›' : ' '}
+                    </Text>{' '}
+                    <Text {...theme.tone('dim')}>{String(ordinal).padStart(ordinalDigits, ' ')}</Text>{' '}
+                    {item.toggle !== undefined && (
+                      <Text {...theme.tone(item.toggle ? 'accent' : 'dim')}>{item.toggle ? '◉ ' : '○ '}</Text>
+                    )}
+                    <Text bold={lit} {...(lit ? theme.tone('accent') : {})}>
+                      {item.label}
+                    </Text>
                   </Text>
                 </Box>
-                {editor ?? (item.value !== undefined && <Text dimColor={!current}>{item.value}</Text>)}
+                {editor ??
+                  (item.value !== undefined && (
+                    <Text
+                      wrap="truncate-end"
+                      {...(item.valueTone ? theme.tone(item.valueTone) : current ? {} : theme.tone('dim'))}
+                    >
+                      {item.value}
+                    </Text>
+                  ))}
               </Box>
-              {item.error && <Text color="red">{`    ${item.error}`}</Text>}
-              {current && active && item.hint && !item.error && <Text dimColor>{`    ${item.hint}`}</Text>}
+              {item.error && <Text {...theme.tone('err')}>{`    ${item.error}`}</Text>}
+              {lit && item.hint && !item.error && <Text {...theme.tone('dim')}>{`    ${item.hint}`}</Text>}
             </Box>
           )
         })
       })()}
-      {capped && start + size < rows.length && <Text dimColor>{'  ↓'}</Text>}
+      {capped && start + size < rows.length && <Text {...theme.tone('dim')}>{'  ↓'}</Text>}
     </Box>
   )
 }

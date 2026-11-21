@@ -1,16 +1,39 @@
-import type { FilePreview, Plan, PlanStep, ToolStatus } from '@zcf/core'
-import type { ConfigChange, PlanView, ZcfService } from '@zcf/ui-kit'
+import type { FilePreview, PlanStep, StepResult, ToolStatus } from '@zcf/core'
+import { ACTOR_NAMES } from '@zcf/core'
+import type { ApplyOutcome, ConfigChange, PlanView, ZcfService } from '@zcf/ui-kit'
 import { installPicks, summarizeChanges } from '@zcf/ui-kit'
 import { type DOMElement, Box, Text, measureElement, useInput } from 'ink'
+import type { ReactNode } from 'react'
 import { useEffect, useRef, useState } from 'react'
 
 import type { Translate } from '../i18n'
 import { errorText } from '../i18n'
-import { hasWork, Renderer } from '../render'
+import { applyCounts, hasWork, Renderer, tildify } from '../render'
+import type { DialogButton } from './dialog'
+import { Dialog } from './dialog'
+import { useOneShot, useTheme } from './fx/context'
+import { Spinner, Hatch, Wave } from './fx/glyphs'
+import { GradientText, Paint } from './fx/paint'
 import { contains, onMousePress, wheelDirection } from './mouse'
+import { textWidth } from './text-width'
 import { useTerminalRows } from './use-terminal-rows'
 
-type Phase = 'confirm' | 'planning' | 'running' | 'done'
+export type ApplyPhase = 'confirm' | 'planning' | 'running' | 'done'
+
+/** Where a step stands in the run view: not reached yet, or how it ended. */
+type StepState = 'pending' | StepResult['status']
+
+/** How a finished run ended, which picks the result card. */
+type Ending = 'applied' | 'nothing' | 'noTools' | 'failed' | 'error'
+
+/** Frames of the success card's one shimmer pass. */
+const SHIMMER_FRAMES = 12
+
+/** Lines the run view may not claim: the app's header, edges and key bar, its own title and progress rows. */
+const RUN_CHROME = 9
+
+/** Width of the run view's progress bar. */
+const BAR = 30
 
 /** Pair each step with its file preview, by position in the plan. */
 function previewMap(view: PlanView): Map<PlanStep, FilePreview> {
@@ -24,11 +47,43 @@ function previewMap(view: PlanView): Map<PlanStep, FilePreview> {
   return map
 }
 
+/** A fallback step only shows once it ran: it stands in for a step that failed, and usually never runs. */
+function hidden(step: PlanStep, state: StepState): boolean {
+  return step.kind === 'command' && step.fallback === true && (state === 'pending' || state === 'skipped')
+}
+
+/** The glyph a finished or waiting step shows; a running one gets the spinner instead. */
+function StepGlyph({ state }: { state: StepState }) {
+  const theme = useTheme()
+  if (state === 'done') return <Text {...theme.tone('ok')}>✓</Text>
+  if (state === 'unchanged') return <Text {...theme.tone('dim')}>·</Text>
+  if (state === 'skipped') return <Text {...theme.tone('dim')}>-</Text>
+  if (state === 'failed') return <Text {...theme.tone('err')}>✗</Text>
+  return <Text {...theme.tone('dim')}>○</Text>
+}
+
+/** The progress bar under the run's title: filled by finished steps, never by time. */
+function Progress({ done, total, t }: { done: number; total: number; t: Translate }) {
+  const theme = useTheme()
+  const filled = total === 0 ? BAR : Math.round((BAR * done) / total)
+  return (
+    <Box gap={2}>
+      <Text>
+        <Paint text={'━'.repeat(filled)} colors={theme.gradient(BAR)} />
+        <Text {...theme.tone('faint')}>{'─'.repeat(BAR - filled)}</Text>
+      </Text>
+      <Text {...theme.tone('dim')}>{t('tui.run.steps', { done, total })}</Text>
+    </Box>
+  )
+}
+
 export interface ApplyFlowProps {
   service: ZcfService
   t: Translate
   home: string
   active: boolean
+  /** Columns the flow may take: the page area beside the nav. */
+  width: number
   /** The draft about to be saved, and the config it replaces. */
   draft: Record<string, unknown>
   base: Record<string, unknown> | undefined
@@ -37,170 +92,405 @@ export interface ApplyFlowProps {
   /** Saves the draft before planning; resolves false when it refused an invalid one. */
   save: () => Promise<boolean>
   onClose: () => void
+  /** Told each time the flow moves on, so the app can set its key bar and sidebar. */
+  onPhase?: (phase: ApplyPhase) => void
+  /** Called once a run applied without a failure. */
+  onApplied?: () => void
+  onQuit?: () => void
 }
 
 /**
- * The confirm-then-run flow behind the apply key: the confirmation shows what changed
- * in the config and what will be installed — never a diff — and Enter saves, plans
- * and applies, listing each step as it finishes.
+ * The confirm-then-run flow behind the apply key. The confirmation says what changed
+ * in the config and what will be installed — never a diff — and Apply saves, plans and
+ * applies. The run lists every step of the plan up front and ticks each one off as its
+ * event arrives; a result card with buttons closes it.
  */
-export function ApplyFlow({ service, t, home, active, draft, base, detected, save, onClose }: ApplyFlowProps) {
-  const [phase, setPhase] = useState<Phase>('confirm')
-  const [lines, setLines] = useState<string[]>([])
+export function ApplyFlow({
+  service,
+  t,
+  home,
+  active,
+  width,
+  draft,
+  base,
+  detected,
+  save,
+  onClose,
+  onPhase,
+  onApplied,
+  onQuit,
+}: ApplyFlowProps) {
+  const theme = useTheme()
+  const [phase, setPhase] = useState<ApplyPhase>('confirm')
+  const [view, setView] = useState<PlanView>()
+  const [states, setStates] = useState<StepState[][]>([])
+  const [details, setDetails] = useState<Record<string, string>>({})
+  const [outcome, setOutcome] = useState<ApplyOutcome>()
+  const [error, setError] = useState<string>()
   const [scroll, setScroll] = useState(0)
   const renderer = useRef<Renderer>(undefined)
-  // The plan the renderer last showed, so the apply summary can tell skipped tools apart.
-  const shownPlan = useRef<Plan>({ tools: [] })
-  const height = Math.max(5, useTerminalRows() - 9)
+  const outputRef = useRef<DOMElement | null>(null)
+  const rows = useTerminalRows()
 
-  const output = { write: (text: string) => setLines(current => [...current, ...text.replace(/\n$/, '').split('\n')]) }
+  useEffect(() => {
+    onPhase?.(phase)
+  }, [phase])
+
+  const settle = (toolIndex: number, index: number, result: StepResult) => {
+    setStates(current =>
+      current.map((steps, at) =>
+        at === toolIndex ? steps.map((state, step) => (step === index ? result.status : state)) : steps,
+      ),
+    )
+    if (result.status === 'failed' && result.detail)
+      setDetails(current => ({ ...current, [`${toolIndex}:${index}`]: result.detail! }))
+  }
 
   const start = () => {
-    setLines([])
     setScroll(0)
+    setOutcome(undefined)
+    setError(undefined)
+    setDetails({})
     void (async () => {
       // A refused save stays on the confirmation — the planning phase only starts once
       // there is a saved config to plan, so Esc works while the refusal lands.
       if (!(await save())) return
       setPhase('planning')
       try {
-        const view = await service.plan()
-        renderer.current = new Renderer(output, t, view.secrets, home)
-        shownPlan.current = view.plan
-        const previews = previewMap(view)
-        const changes = hasWork(view.plan, previews)
-        if (view.plan.tools.length === 0) renderer.current.line(t('tui.apply.noTools'))
-        // The run view lists each step once — its title and what it runs — without the
-        // diffs; the confirmation has said what changed, and `zcf plan` still shows all.
-        else renderer.current.planSteps(view.plan, previews)
-        if (!changes && view.plan.tools.length > 0) renderer.current.line(t('cli.nothingToDo'))
-        setPhase('running')
-        if (!changes) {
+        const planned = await service.plan()
+        renderer.current = new Renderer({ write: () => {} }, t, planned.secrets, home)
+        const previews = previewMap(planned)
+        const changes = hasWork(planned.plan, previews)
+        setView(planned)
+        // Nothing to do means every step is a file already as it should be.
+        setStates(planned.plan.tools.map(toolPlan => toolPlan.steps.map(() => (changes ? 'pending' : 'unchanged'))))
+        if (!changes || planned.plan.tools.length === 0) {
           setPhase('done')
           return
         }
-        const outcome = await service.apply(event => renderer.current?.stepResult(event.tool, event.result))
-        renderer.current.summary(shownPlan.current, outcome.results, outcome.backupDir)
-      } catch (error) {
-        output.write(`${t('tui.apply.failed', { message: errorText(error, t) })}\n`)
+        setPhase('running')
+        const tools = planned.plan.tools.map(toolPlan => toolPlan.tool)
+        const result = await service.apply(event => {
+          const toolIndex = tools.indexOf(event.tool)
+          if (toolIndex >= 0) settle(toolIndex, event.index, event.result)
+        })
+        // The outcome is the record: it fills in any step whose event never arrived.
+        for (const toolResult of result.results) {
+          const toolIndex = tools.indexOf(toolResult.tool)
+          const toolPlan = planned.plan.tools[toolIndex]
+          if (!toolPlan) continue
+          for (const stepResult of toolResult.steps) {
+            const index = toolPlan.steps.indexOf(stepResult.step)
+            if (index >= 0) settle(toolIndex, index, stepResult)
+          }
+        }
+        setOutcome(result)
+        if (result.results.every(toolResult => toolResult.ok)) onApplied?.()
+      } catch (failure) {
+        setError(t('tui.apply.failed', { message: errorText(failure, t) }))
       }
       setPhase('done')
     })()
   }
 
-  // The confirmation's two halves: what changed in the config, and what applying installs.
-  const changes = summarizeChanges(base, draft)
-  const picks = installPicks(draft, detected)
+  const ending: Ending | undefined =
+    phase !== 'done'
+      ? undefined
+      : error !== undefined
+        ? 'error'
+        : !view || view.plan.tools.length === 0
+          ? 'noTools'
+          : !outcome
+            ? 'nothing'
+            : outcome.results.some(result => !result.ok)
+              ? 'failed'
+              : 'applied'
 
+  const shimmer = useOneShot(SHIMMER_FRAMES, outcome, ending === 'applied')
+
+  // ---- The run's lines: every tool, its notices and its steps, in plan order. ----
+  const plan = view?.plan
+  const mask = (text: string) => renderer.current?.mask(text) ?? text
+  const lines: { key: string; node: ReactNode }[] = []
+  let resolved = 0
+  let total = 0
+  if (plan && renderer.current) {
+    const render = renderer.current
+    const titles = plan.tools.flatMap(toolPlan =>
+      toolPlan.steps.map(step => textWidth(mask(render.message(step.title)))),
+    )
+    const titleColumn = Math.min(Math.max(10, ...titles) + 2, Math.max(16, Math.floor(width / 2)))
+    for (const [toolIndex, toolPlan] of plan.tools.entries()) {
+      const toolStates = states[toolIndex] ?? []
+      total += toolPlan.steps.length
+      resolved += toolStates.filter(state => state !== 'pending').length
+      const failed = toolStates.includes('failed')
+      const toolResult = outcome?.results.find(result => result.tool === toolPlan.tool)
+      const pendingAt = toolStates.findIndex(
+        (state, index) => state === 'pending' && !hidden(toolPlan.steps[index]!, state),
+      )
+      const running = phase === 'running' && !failed && pendingAt >= 0
+      const ok = toolResult ? toolResult.ok : !failed && pendingAt < 0
+      if (toolIndex > 0) lines.push({ key: `gap-${toolIndex}`, node: <Text> </Text> })
+      lines.push({
+        key: `tool-${toolIndex}`,
+        node: (
+          <Text>
+            <Text bold>{ACTOR_NAMES[toolPlan.tool]}</Text>
+            {'  '}
+            {running ? (
+              <Wave width={4} />
+            ) : failed || (toolResult && !toolResult.ok) ? (
+              <Text {...theme.tone('err')}>✗</Text>
+            ) : ok && toolStates.length > 0 ? (
+              <Text {...theme.tone('ok')}>✓</Text>
+            ) : null}
+          </Text>
+        ),
+      })
+      for (const [index, notice] of toolPlan.notices.entries())
+        lines.push({
+          key: `notice-${toolIndex}-${index}`,
+          node: (
+            <Text wrap="truncate-end" {...theme.tone(notice.level === 'warning' ? 'warn' : 'dim')}>
+              {`  ${notice.level === 'warning' ? '!' : 'i'} ${mask(render.message(notice.message))}`}
+            </Text>
+          ),
+        })
+      if (toolPlan.steps.length === 0 && toolPlan.notices.length === 0)
+        lines.push({
+          key: `empty-${toolIndex}`,
+          node: <Text {...theme.tone('dim')}>{`  ${t('cli.nothingToDo')}`}</Text>,
+        })
+      for (const [index, step] of toolPlan.steps.entries()) {
+        // After a failure the tool's remaining steps never run: once the run is over they read as skipped.
+        const raw = toolStates[index] ?? 'pending'
+        const state: StepState = raw === 'pending' && failed && phase === 'done' ? 'skipped' : raw
+        if (hidden(step, state)) continue
+        const current = running && index === pendingAt
+        const target = state === 'unchanged' ? `(${t('cli.unchanged')})` : mask(render.stepTarget(step))
+        lines.push({
+          key: `step-${toolIndex}-${index}`,
+          node: (
+            <Box>
+              <Box width={titleColumn + 4} flexShrink={0}>
+                <Text
+                  wrap="truncate-end"
+                  bold={current}
+                  {...(state === 'pending' && !current ? theme.tone('dim') : {})}
+                >
+                  {'  '}
+                  {current ? <Spinner /> : <StepGlyph state={state} />} {mask(render.message(step.title))}
+                </Text>
+              </Box>
+              <Text wrap="truncate-end" {...theme.tone('dim')}>
+                {target}
+              </Text>
+            </Box>
+          ),
+        })
+        const detail = details[`${toolIndex}:${index}`]
+        if (state === 'failed' && detail)
+          for (const [at, text] of detail.split('\n').slice(0, 3).entries())
+            lines.push({
+              key: `detail-${toolIndex}-${index}-${at}`,
+              node: (
+                <Text wrap="truncate-end" {...theme.tone('err')}>
+                  {`      ${mask(text)}`}
+                </Text>
+              ),
+            })
+      }
+    }
+  }
+
+  // The result card under the list: what happened, and where to go from here.
+  const counts = plan && outcome ? applyCounts(plan, outcome.results) : undefined
+  const firstFailure = outcome?.results.find(result => !result.ok)
+  const failedStep = firstFailure?.steps.find(step => step.status === 'failed')
+  const back: DialogButton = { label: t('tui.button.back'), run: onClose }
+  const quit: DialogButton = { label: t('tui.button.quit'), run: () => onQuit?.() }
+  const retry: DialogButton = { label: t('tui.button.retry'), run: start }
+  const cardButtons = ending === 'failed' || ending === 'error' ? [retry, back] : [back, quit]
+  const cardHeight =
+    ending === undefined ? 0 : ending === 'applied' && counts?.backedUp ? 6 : ending === 'failed' ? 6 : 5
+  const height = Math.max(3, rows - RUN_CHROME - cardHeight)
   const maxScroll = Math.max(0, lines.length - height)
-  const top = phase === 'running' ? maxScroll : Math.min(scroll, maxScroll)
-  const outputRef = useRef<DOMElement | null>(null)
+  const top = Math.min(scroll, maxScroll)
 
   // The wheel scrolls the run output; presses outside the output are not ours. The
   // scroll math reads the latest state inside the setter, so the subscription itself
   // never re-arms mid-burst and drops a wheel event between renders.
   useEffect(() => {
-    if (!active) return undefined
+    if (!active || phase === 'confirm' || phase === 'planning') return undefined
     return onMousePress(press => {
       const metrics = outputRef.current ? measureElement(outputRef.current) : undefined
       if (!metrics) return
       const direction = wheelDirection(press)
       if (!direction || !contains(metrics, press)) return
       if (press.row - 1 < metrics.y || press.row - 1 >= metrics.y + metrics.height) return
-      if (direction === 'up') setScroll(current => Math.max(0, current - 1))
-      else setScroll(current => Math.min(Math.max(0, lines.length - height), current + 1))
+      if (direction === 'up') setScroll(current => Math.max(0, Math.min(current, maxScroll) - 1))
+      else setScroll(current => Math.min(maxScroll, current + 1))
     })
-  }, [active, lines.length, height])
+  }, [active, phase, maxScroll])
 
+  // ↑↓, PgUp/PgDn and Space scroll the run while it goes and after; the card's buttons
+  // take ←→, Tab, Enter and Esc, so the two never claim the same key.
   useInput(
     (input, key) => {
-      if (key.escape || key.leftArrow) onClose()
-      else if (phase === 'confirm' && key.return) start()
-      else if (phase !== 'confirm' && (key.upArrow || input === 'k')) setScroll(Math.max(0, top - 1))
-      else if (phase !== 'confirm' && (key.downArrow || input === 'j')) setScroll(Math.min(maxScroll, top + 1))
-      else if (phase !== 'confirm' && key.pageUp) setScroll(Math.max(0, top - height))
-      else if (phase !== 'confirm' && (key.pageDown || input === ' ')) setScroll(Math.min(maxScroll, top + height))
-      else if (phase === 'done' && key.return) onClose()
+      if (key.upArrow || input === 'k') setScroll(Math.max(0, top - 1))
+      else if (key.downArrow || input === 'j') setScroll(Math.min(maxScroll, top + 1))
+      else if (key.pageUp) setScroll(Math.max(0, top - height))
+      else if (key.pageDown || input === ' ') setScroll(Math.min(maxScroll, top + height))
     },
-    { isActive: active && phase !== 'running' && phase !== 'planning' },
+    { isActive: active && (phase === 'running' || phase === 'done') },
   )
 
-  if (phase === 'confirm' || phase === 'planning')
+  if (phase === 'confirm' || phase === 'planning') {
+    const changes = summarizeChanges(base, draft)
+    const picks = installPicks(draft, detected)
+    const dialogWidth = Math.min(58, width)
     return (
-      <Box flexDirection="column" borderStyle="round" borderColor="cyan" paddingX={2} width={58} gap={1}>
-        <Text bold color="cyan">
-          {t('tui.apply.title')}{' '}
-          <Text color="cyan" dimColor>
-            ╱╱╱╱╱╱
+      <Dialog
+        width={dialogWidth}
+        initial={1}
+        active={active}
+        onCancel={onClose}
+        buttons={
+          phase === 'confirm'
+            ? [
+                { label: t('tui.button.cancel'), run: onClose },
+                { label: t('tui.button.apply'), run: start },
+              ]
+            : undefined
+        }
+        footer={
+          <Text>
+            <Wave width={6} /> <Text {...theme.tone('dim')}>{t('tui.apply.planning')}</Text>
           </Text>
-        </Text>
-        <Text dimColor>{t('tui.apply.confirmHint')}</Text>
+        }
+      >
         <Box flexDirection="column">
-          <Text bold dimColor>
+          <Text bold {...theme.tone('accent')}>
+            {t('tui.apply.title')} <Hatch width={8} flowing={phase === 'planning'} />
+          </Text>
+          <Text {...theme.tone('dim')}>{t('tui.apply.confirmHint')}</Text>
+        </Box>
+        <Box flexDirection="column">
+          <Text bold {...theme.tone('dim')}>
             {t('tui.apply.changes')}
           </Text>
           {changes.length === 0 ? (
-            <Text dimColor>{`  ${t('tui.apply.noChanges')}`}</Text>
+            <Text {...theme.tone('dim')}>{`  ${t('tui.apply.noChanges')}`}</Text>
           ) : (
             changes.map((change: ConfigChange) => (
               <Text key={change.key} wrap="truncate-end">
                 {'  '}
-                {change.key}
+                <Text {...theme.tone('warn')}>~</Text> {change.key}
                 {change.value !== undefined ? `: ${change.value}` : ''}
               </Text>
             ))
           )}
         </Box>
         <Box flexDirection="column">
-          <Text bold dimColor>
+          <Text bold {...theme.tone('dim')}>
             {t('tui.apply.installs')}
           </Text>
           {picks.length === 0 ? (
-            <Text dimColor>{`  ${t('tui.apply.noInstalls')}`}</Text>
+            <Text {...theme.tone('dim')}>{`  ${t('tui.apply.noInstalls')}`}</Text>
           ) : (
-            picks.map((pick, index) => (
-              <Text key={`${pick.kind}-${index}`} wrap="truncate-end">
-                {'  '}
-                {pick.kind === 'source' && pick.label.startsWith('  ')
-                  ? pick.label
-                  : `${t(`tui.apply.pick.${pick.kind}`)}: ${pick.label.trim()}`}
-                {pick.note === 'installed' ? ` (${t('tui.apply.installed')})` : ''}
-                {pick.note === 'all' ? ` (${t('tui.apply.allSkills')})` : ''}
-              </Text>
-            ))
+            picks.map((pick, index) => {
+              // A source's skills are listed under it, indented, without a marker of their own.
+              if (pick.kind === 'source' && pick.label.startsWith('  '))
+                return (
+                  <Text key={`${pick.kind}-${index}`} wrap="truncate-end">
+                    {`  ${pick.label}`}
+                  </Text>
+                )
+              const installed = pick.note === 'installed'
+              return (
+                <Text key={`${pick.kind}-${index}`} wrap="truncate-end">
+                  {'  '}
+                  {installed ? <Text {...theme.tone('ok')}>✓</Text> : <Text {...theme.tone('accent')}>+</Text>}{' '}
+                  {`${t(`tui.apply.pick.${pick.kind}`)}: ${pick.label.trim()}`}
+                  {installed && <Text {...theme.tone('dim')}>{` (${t('tui.apply.installed')})`}</Text>}
+                  {pick.note === 'all' ? ` (${t('tui.apply.allSkills')})` : ''}
+                </Text>
+              )
+            })
           )}
         </Box>
-        {phase === 'planning' ? (
-          <Text dimColor>{t('tui.apply.planning')}</Text>
-        ) : (
-          <Box justifyContent="flex-end" gap={2}>
-            <Text dimColor>{` Esc ${t('web.cancel')} `}</Text>
-            <Text bold color="black" backgroundColor="cyan">
-              {` Enter ${t('web.apply')} `}
-            </Text>
-          </Box>
-        )}
-      </Box>
+      </Dialog>
     )
+  }
 
-  // The run takes the whole overlay: a centered window is for confirming, not for
-  // output that outgrows it.
+  const cardWidth = Math.min(64, width - 2)
+  const appliedText = counts ? t('tui.result.applied', { done: counts.done, unchanged: counts.unchanged }) : ''
   return (
-    <Box alignSelf="stretch" flexDirection="column" ref={outputRef} paddingX={1} gap={1}>
-      <Text bold color="cyan">
-        {t('tui.apply.title')}
+    <Box alignSelf="stretch" flexDirection="column" paddingX={1} flexGrow={1}>
+      <Text bold {...theme.tone('accent')}>
+        {t('tui.apply.title')} <Hatch width={10} flowing={phase === 'running'} />
       </Text>
-      {lines.slice(top, top + height).map((line, index) => (
-        <Text key={top + index} wrap="truncate-end">
-          {line || ' '}
-        </Text>
-      ))}
-      {phase === 'done' && (
-        <Box justifyContent="center">
-          <Text bold color="black" backgroundColor="cyan">
-            {` Enter/Esc ${t('web.close')} `}
-          </Text>
-        </Box>
+      {total > 0 && <Progress done={resolved} total={total} t={t} />}
+      <Box ref={outputRef} flexDirection="column" marginTop={1} height={height} overflow="hidden">
+        {lines.slice(top, top + height).map(line => (
+          <Box key={line.key}>{line.node}</Box>
+        ))}
+      </Box>
+      {ending && (
+        <Dialog
+          width={cardWidth}
+          tone={ending === 'failed' || ending === 'error' ? 'err' : ending === 'noTools' ? 'warn' : 'accent'}
+          clear={false}
+          buttons={cardButtons}
+          initial={ending === 'failed' || ending === 'error' ? 1 : 0}
+          active={active}
+          onCancel={onClose}
+          verticalMoves={false}
+        >
+          <Box flexDirection="column">
+            {ending === 'applied' && (
+              <Text bold wrap="truncate-end">
+                <Text {...theme.tone('ok')}>✓ </Text>
+                {theme.rich && shimmer !== undefined ? (
+                  <GradientText
+                    text={appliedText}
+                    sweep={Math.round((shimmer * (textWidth(appliedText) + 8)) / SHIMMER_FRAMES) - 4}
+                  />
+                ) : (
+                  <Text {...theme.tone('accent')}>{appliedText}</Text>
+                )}
+              </Text>
+            )}
+            {ending === 'applied' && counts?.backedUp && outcome && (
+              <Text wrap="truncate-end" {...theme.tone('dim')}>
+                {t('tui.result.backup', { path: tildify(outcome.backupDir, home) })}
+              </Text>
+            )}
+            {ending === 'nothing' && <Text {...theme.tone('ok')}>{`✓ ${t('cli.nothingToDo')}`}</Text>}
+            {ending === 'noTools' && <Text {...theme.tone('warn')}>{`! ${t('tui.apply.noTools')}`}</Text>}
+            {ending === 'error' && (
+              <Text wrap="truncate-end" {...theme.tone('err')}>
+                {`✗ ${error ?? ''}`}
+              </Text>
+            )}
+            {ending === 'failed' && firstFailure && (
+              <>
+                <Text bold wrap="truncate-end" {...theme.tone('err')}>
+                  {`✗ ${t('tui.result.failed', {
+                    count: outcome?.results.filter(result => !result.ok).length ?? 0,
+                    tool: ACTOR_NAMES[firstFailure.tool],
+                    reason: mask(
+                      failedStep?.detail?.split('\n')[0] ??
+                        (failedStep ? (renderer.current?.message(failedStep.step.title) ?? '') : ''),
+                    ),
+                  })}`}
+                </Text>
+                <Text {...theme.tone('dim')}>{t('tui.result.others')}</Text>
+              </>
+            )}
+          </Box>
+        </Dialog>
       )}
     </Box>
   )
