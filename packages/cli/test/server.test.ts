@@ -35,7 +35,13 @@ const plan: Plan = {
   tools: [
     {
       tool: 'claude-code',
-      notices: [],
+      // A notice or a step title may repeat a secret, such as a key reused as an MCP server name.
+      notices: [
+        {
+          level: 'warning',
+          message: { key: 'notice.mcpNameTooLong', params: { tool: 'dsh', name: 'sk-very-secret-key', max: 32 } },
+        },
+      ],
       steps: [
         {
           kind: 'file',
@@ -46,7 +52,7 @@ const plan: Plan = {
         },
         {
           kind: 'command',
-          title: { key: 'x' },
+          title: { key: 'step.mcpAdd', params: { name: 'sk-very-secret-key' } },
           command: 'claude',
           args: ['mcp', 'add-json', 'x', '{"env":{"K":"sk-very-secret-key"}}'],
         },
@@ -220,6 +226,9 @@ describe('startUiServer', () => {
     const view = JSON.parse(text) as ReturnType<typeof browserPlan>
     expect(view.previews[0]![0]).toMatchObject({ before: '', after: '', secrets: [] })
     expect(view.plan.tools[0]!.steps[0]).toMatchObject({ kind: 'file', edits: [] })
+    // The browser gets no secret list to mask with, so message parameters arrive masked already.
+    expect(view.plan.tools[0]!.notices[0]!.message.params).toEqual({ tool: 'dsh', name: 'sk-***ey', max: 32 })
+    expect(view.plan.tools[0]!.steps[1]!.title.params).toEqual({ name: 'sk-***ey' })
 
     const applied = await call('/api/apply', { method: 'POST' })
     expect(applied.type).toBe('application/x-ndjson')

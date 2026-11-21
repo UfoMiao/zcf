@@ -1,7 +1,7 @@
 import type { Notice, StepResult } from '@zcf/core'
 import { ACTOR_NAMES } from '@zcf/core/schema'
 import type { ApplyOutcome, ConfigEditor, PlanView, StepEvent, ZcfService } from '@zcf/ui-kit'
-import { installPicks, maskSecrets, summarizeChanges } from '@zcf/ui-kit'
+import { installPicks, summarizeChanges } from '@zcf/ui-kit'
 import {
   ArrowRightIcon,
   CheckIcon,
@@ -30,9 +30,10 @@ type Phase = 'confirm' | 'busy' | 'done'
 
 /**
  * A tool's plan notices, such as the manual steps for a setting ZCF cannot write. They are shown
- * while the run goes and stay once it is over, masked like everything else the plan shows.
+ * while the run goes and stay once it is over. The server masks secrets in their parameters
+ * before the plan reaches the browser (`browserPlan`), so they are drawn as they arrive.
  */
-function NoticeList({ notices, t, mask }: { notices: Notice[]; t: Translate; mask: (text: string) => string }) {
+function NoticeList({ notices, t }: { notices: Notice[]; t: Translate }) {
   if (notices.length === 0) return null
   return (
     <ul className="mb-1 flex flex-col gap-1">
@@ -46,7 +47,7 @@ function NoticeList({ notices, t, mask }: { notices: Notice[]; t: Translate; mas
           ) : (
             <InfoIcon className="mt-px size-3.5 shrink-0" />
           )}
-          <span className="break-words">{mask(messageText(t, notice.message))}</span>
+          <span className="break-words">{messageText(t, notice.message)}</span>
         </li>
       ))}
     </ul>
@@ -117,7 +118,6 @@ export function ApplyDialog({
   const picks = installPicks(editor.draft, {})
   const steps = outcome?.results.flatMap(result => result.steps) ?? []
   const allOk = outcome?.results.every(result => result.ok)
-  const mask = (text: string) => maskSecrets(text, view?.secrets ?? [])
   const noticed = view?.plan.tools.filter(toolPlan => toolPlan.notices.length > 0) ?? []
 
   return (
@@ -196,7 +196,7 @@ export function ApplyDialog({
                 {view.plan.tools.map(toolPlan => (
                   <div key={toolPlan.tool} className="flex flex-col">
                     <span className="mb-1 text-[13px] font-medium">{ACTOR_NAMES[toolPlan.tool]}</span>
-                    <NoticeList notices={toolPlan.notices} t={t} mask={mask} />
+                    <NoticeList notices={toolPlan.notices} t={t} />
                     <ol className="flex flex-col">
                       {toolPlan.steps.map((step, index) => {
                         const result = events.find(
@@ -212,7 +212,7 @@ export function ApplyDialog({
                                 STEP_ICONS[state]
                               )}
                             </span>
-                            <span className="text-xs">{mask(messageText(t, step.title))}</span>
+                            <span className="text-xs">{messageText(t, step.title)}</span>
                           </li>
                         )
                       })}
@@ -255,7 +255,7 @@ export function ApplyDialog({
             {noticed.map(toolPlan => (
               <div key={toolPlan.tool} className="flex flex-col">
                 <span className="mb-1 text-[13px] font-medium">{ACTOR_NAMES[toolPlan.tool]}</span>
-                <NoticeList notices={toolPlan.notices} t={t} mask={mask} />
+                <NoticeList notices={toolPlan.notices} t={t} />
               </div>
             ))}
             <div className="flex justify-end">

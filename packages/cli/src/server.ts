@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import type { IncomingMessage, ServerResponse } from 'node:http'
 import { createServer } from 'node:http'
 
-import type { PlanStep, StepResult } from '@zcf/core'
+import type { Message, PlanStep, StepResult } from '@zcf/core'
 import { parseBackupKeep, readTextIfExists } from '@zcf/core'
 import type { ApplyOutcome, PlanView, ZcfService } from '@zcf/ui-kit'
 import { isTable, TOOL_OPTIONS } from '@zcf/ui-kit'
@@ -55,7 +55,17 @@ export function contentType(path: string): string {
 
 type Mask = (text: string) => string
 
-function maskStep(step: PlanStep, mask: Mask): PlanStep {
+/** A message with its text parameters masked, since a parameter may repeat a secret (a key reused as a name). */
+function maskMessage(message: Message, mask: Mask): Message {
+  if (!message.params) return message
+  const params = Object.fromEntries(
+    Object.entries(message.params).map(([name, value]) => [name, typeof value === 'string' ? mask(value) : value]),
+  )
+  return { ...message, params }
+}
+
+function maskStep(plain: PlanStep, mask: Mask): PlanStep {
+  const step = { ...plain, title: maskMessage(plain.title, mask) }
   if (step.kind === 'file') return { ...step, path: mask(step.path), edits: [] }
   if (step.kind === 'remove') return { ...step, path: mask(step.path) }
   if (step.kind === 'copy') return { ...step, from: mask(step.from), to: mask(step.to) }
@@ -80,6 +90,7 @@ export function browserPlan(view: PlanView): PlanView {
     plan: {
       tools: view.plan.tools.map(toolPlan => ({
         ...toolPlan,
+        notices: toolPlan.notices.map(notice => ({ ...notice, message: maskMessage(notice.message, mask) })),
         steps: toolPlan.steps.map(step => maskStep(step, mask)),
       })),
     },
