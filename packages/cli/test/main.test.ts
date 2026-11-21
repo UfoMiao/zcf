@@ -881,10 +881,10 @@ const PRESET_LIST = {
   version: 1,
   providers: [
     {
-      id: '302ai',
-      name: '302.AI',
-      anthropic: { baseUrl: 'https://api.302.ai' },
-      openai: { baseUrl: 'https://api.302.ai/v1' },
+      id: 'example-provider',
+      name: 'Example Provider',
+      anthropic: { baseUrl: 'https://api.example.com' },
+      openai: { baseUrl: 'https://api.example.com/v1' },
       models: { default: 'glm-4.7' },
     },
   ],
@@ -922,7 +922,7 @@ describe('zcf init', () => {
       { fetch: fetchPresets },
       'init',
       '-p',
-      '302ai',
+      'example-provider',
       '-k',
       'sk-init-key',
       '-t',
@@ -942,17 +942,17 @@ describe('zcf init', () => {
     )
     expect(code).toBe(EXIT_OK)
     expect(stdout).toContain('Saved ~/.ufomiao/zcf/zcf.json.')
-    expect(stdout).toContain('1. Use provider "302.AI"')
+    expect(stdout).toContain('1. Use provider "Example Provider"')
     expect(stdout).toContain('Nothing was changed. Run again with --yes to apply.')
     expect(stdout).not.toContain('sk-init-key')
     expect(JSON.parse(await readFile(configFile(), 'utf8'))).toEqual({
       version: 1,
       tools: ['claude-code'],
       provider: {
-        name: '302.AI',
+        name: 'Example Provider',
         apiKey: 'sk-init-key',
-        anthropic: { baseUrl: 'https://api.302.ai' },
-        openai: { baseUrl: 'https://api.302.ai/v1' },
+        anthropic: { baseUrl: 'https://api.example.com' },
+        openai: { baseUrl: 'https://api.example.com/v1' },
         models: { default: 'glm-4.7' },
       },
       skills: [{ source: 'zcf', skills: ['git-commit'] }],
@@ -970,7 +970,7 @@ describe('zcf init', () => {
       { fetch: fetchPresets },
       'init',
       '-p',
-      '302ai',
+      'example-provider',
       '-k',
       'sk-init-key',
       '-t',
@@ -978,7 +978,7 @@ describe('zcf init', () => {
       '--yes',
     )
     expect(code).toBe(EXIT_OK)
-    expect(stdout).toContain('✓ Claude Code: Use provider "302.AI"')
+    expect(stdout).toContain('✓ Claude Code: Use provider "Example Provider"')
     expect(stdout).toContain('Done: 1 applied, 0 already up to date.')
     expect(stdout).not.toContain('sk-init-key')
     const saved = JSON.parse(await readFile(configFile(), 'utf8'))
@@ -1054,12 +1054,12 @@ describe('zcf init', () => {
   it('rejects an unknown preset before the file is touched', async () => {
     const unknown = await runWith({ fetch: fetchPresets }, 'init', '-p', 'nope')
     expect(unknown.code).toBe(EXIT_ERROR)
-    expect(unknown.stderr).toContain('Unknown preset: nope. Choose from 302ai.')
+    expect(unknown.stderr).toContain('Unknown preset: nope. Choose from example-provider.')
     expect(await readTextIfExists(configFile())).toBeUndefined()
   })
 
   it('says so when the preset list comes back empty', async () => {
-    const offline = await runWith({ fetch: fetchEmptyList }, 'init', '-p', '302ai')
+    const offline = await runWith({ fetch: fetchEmptyList }, 'init', '-p', 'example-provider')
     expect(offline.code).toBe(EXIT_ERROR)
     expect(offline.stderr).toContain('Could not load the provider presets.')
     expect(await readTextIfExists(configFile())).toBeUndefined()

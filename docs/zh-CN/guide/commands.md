@@ -45,8 +45,10 @@ npx zcf [command] [options]
 不进界面，一条命令完成配置：从预设填充供应商、挑选工具和随装的技能等，保存文件，再走一遍 `zcf apply` 的计划与应用流程。
 
 ```bash
-zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --workflows git --yes
+zcf init --preset example --api-key sk-... --tools claude-code,codex --workflows git --yes
 ```
+
+请把 `example` 换成当前 ZCF 版本支持的预设 ID。
 
 不带任何选项运行时，ZCF 只提示你打开界面，不会写出空配置。
 
