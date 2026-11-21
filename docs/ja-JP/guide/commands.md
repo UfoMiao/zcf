@@ -45,8 +45,10 @@ npx zcf [command] [options]
 エディターを開かず、1 回のコマンドで設定を作ります。プリセットからプロバイダーを埋め、ツールと一緒に導入するものを選び、ファイルを保存してから、`zcf apply` と同じプランと適用を実行します。
 
 ```bash
-zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --workflows git --yes
+zcf init --preset example --api-key sk-... --tools claude-code,codex --workflows git --yes
 ```
+
+`example` は、お使いの ZCF バージョンで利用できるプリセット ID に置き換えてください。
 
 オプションを一切付けずに実行した場合は、空の設定を書き込まずにエディターへの案内だけを表示します。
 

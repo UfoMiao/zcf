@@ -45,8 +45,10 @@ The server can only be reached from this machine. The printed address carries a 
 Set up a config in one run, without the editor: fill the provider from a preset, pick tools and what installs with them, save the file, then run the same plan and apply `zcf apply` runs.
 
 ```bash
-zcf init --preset 302ai --api-key sk-... --tools claude-code,codex --workflows git --yes
+zcf init --preset example --api-key sk-... --tools claude-code,codex --workflows git --yes
 ```
+
+Replace `example` with a preset ID available in your version of ZCF.
 
 With no flags at all, ZCF points you at the editor instead of writing an empty config.
 
